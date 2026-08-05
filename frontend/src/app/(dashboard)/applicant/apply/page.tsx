@@ -24,14 +24,16 @@ export default function ApplyPage() {
   const [uploadedFileUrl, setUploadedFileUrl] = useState("");
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setUploading(true);
     setUploadError("");
 
     const formData = new FormData();
-    formData.append("file", file);
+    for (let i = 0; i < files.length; i++) {
+      formData.append("files", files[i]);
+    }
     
     // Format "building_permit" to "Building Permit"
     const formattedPermitType = selectedPermitType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -49,11 +51,11 @@ export default function ApplyPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload file");
+        throw new Error("Failed to upload files");
       }
 
       const data = await response.json();
-      setUploadedFileUrl(data.url);
+      setUploadedFileUrl(data.urls.join(','));
     } catch (err: any) {
       setUploadError(err.message || "An error occurred during upload");
     } finally {
@@ -182,22 +184,23 @@ export default function ApplyPage() {
                 ) : uploadedFileUrl ? (
                   <div className="success-state">
                     <CheckCircle size={48} color="#10b981" style={{ margin: "0 auto 1rem auto" }} />
-                    <h3 style={{ color: "#0f172a", marginBottom: "0.5rem" }}>File Uploaded Successfully!</h3>
-                    <a href={uploadedFileUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", textDecoration: "underline" }}>View File in Google Drive</a>
+                    <h3 style={{ color: "#0f172a", marginBottom: "0.5rem" }}>Files Uploaded Successfully!</h3>
+                    <p style={{ color: "#64748b", marginBottom: "1rem" }}>{uploadedFileUrl.split(',').length} file(s) securely attached.</p>
                   </div>
                 ) : (
                   <>
                     <Upload size={48} color="#94a3b8" style={{ margin: "0 auto 1rem auto" }} />
-                    <h3 style={{ color: "#334155", marginBottom: "1rem" }}>Select a file to upload</h3>
+                    <h3 style={{ color: "#334155", marginBottom: "1rem" }}>Select files to upload</h3>
                     <input 
                       type="file" 
                       id="file-upload" 
                       style={{ display: "none" }}
                       onChange={handleFileUpload}
                       accept=".pdf,.png,.jpg,.jpeg"
+                      multiple
                     />
                     <label htmlFor="file-upload" className="btn-primary" style={{ cursor: "pointer", display: "inline-block" }}>
-                      Choose File
+                      Choose Files
                     </label>
                   </>
                 )}

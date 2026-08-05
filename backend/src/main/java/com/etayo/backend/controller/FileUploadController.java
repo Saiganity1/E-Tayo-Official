@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -28,11 +29,11 @@ public class FileUploadController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, String>> uploadFile(
-            @RequestParam("file") MultipartFile file, 
+    public ResponseEntity<Map<String, Object>> uploadFiles(
+            @RequestParam("files") List<MultipartFile> files, 
             @RequestParam(value = "permitType", required = false, defaultValue = "General Application") String permitType,
             Principal principal) {
-        Map<String, String> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
         try {
             String applicantName = "Unknown Applicant";
             if (principal != null) {
@@ -42,15 +43,21 @@ public class FileUploadController {
                 }
             }
 
+            // Generate ONE timestamp for the entire batch of files
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
 
-            String fileUrl = googleDriveService.uploadApplicantFile(file, applicantName, permitType, timestamp);
-            response.put("url", fileUrl);
-            response.put("message", "File uploaded successfully to Google Drive");
+            java.util.List<String> fileUrls = new java.util.ArrayList<>();
+            for (MultipartFile file : files) {
+                String fileUrl = googleDriveService.uploadApplicantFile(file, applicantName, permitType, timestamp);
+                fileUrls.add(fileUrl);
+            }
+            
+            response.put("urls", fileUrls);
+            response.put("message", files.size() + " files uploaded successfully to Google Drive");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
-            response.put("error", "Failed to upload file: " + e.getMessage());
+            response.put("error", "Failed to upload files: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }

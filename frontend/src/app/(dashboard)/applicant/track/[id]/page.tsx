@@ -134,15 +134,19 @@ export default function ApplicationTrackDetail() {
           <div className="glass-panel" style={{ padding: "2rem", background: "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
             <h2 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#1e293b", marginBottom: "1.5rem" }}>Attachments</h2>
             {appData.fileUrl ? (
-              <a href={appData.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", border: "1px solid #e2e8f0", borderRadius: "12px", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.borderColor = "#3b82f6"} onMouseLeave={(e) => e.currentTarget.style.borderColor = "#e2e8f0"}>
-                <div style={{ background: "#eff6ff", color: "#3b82f6", padding: "10px", borderRadius: "10px" }}>
-                  <FileText size={24} />
-                </div>
-                <div>
-                  <span style={{ display: "block", color: "#0f172a", fontWeight: "600" }}>View Uploaded Document</span>
-                  <span style={{ display: "block", color: "#64748b", fontSize: "0.85rem", marginTop: "2px" }}>Opens securely in Google Drive</span>
-                </div>
-              </a>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {appData.fileUrl.split(',').map((url: string, idx: number) => (
+                  <a key={idx} href={url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", border: "1px solid #e2e8f0", borderRadius: "12px", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.borderColor = "#3b82f6"} onMouseLeave={(e) => e.currentTarget.style.borderColor = "#e2e8f0"}>
+                    <div style={{ background: "#eff6ff", color: "#3b82f6", padding: "10px", borderRadius: "10px" }}>
+                      <FileText size={24} />
+                    </div>
+                    <div>
+                      <span style={{ display: "block", color: "#0f172a", fontWeight: "600" }}>Document {idx + 1}</span>
+                      <span style={{ display: "block", color: "#64748b", fontSize: "0.85rem", marginTop: "2px" }}>Opens securely in Google Drive</span>
+                    </div>
+                  </a>
+                ))}
+              </div>
             ) : (
               <p style={{ color: "#64748b", fontSize: "0.95rem" }}>No files attached to this application.</p>
             )}
