@@ -47,6 +47,32 @@ public class SecurityConfig {
     }
 
     @Bean
+    @org.springframework.core.annotation.Order(1)
+    SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
+        org.springframework.security.core.userdetails.UserDetails admin = org.springframework.security.core.userdetails.User.withUsername("Admin")
+                .password(passwordEncoder().encode("Admin"))
+                .roles("SUPERADMIN")
+                .build();
+        org.springframework.security.core.userdetails.UserDetailsService adminDetailsService = new org.springframework.security.provisioning.InMemoryUserDetailsManager(admin);
+
+        http.securityMatcher("/admin/**")
+                .cors(org.springframework.security.config.Customizer.withDefaults())
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().hasRole("SUPERADMIN")
+                )
+                .userDetailsService(adminDetailsService)
+                .httpBasic(org.springframework.security.config.Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        // Required to allow H2 console frames if HAL needs them
+        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
+
+        return http.build();
+    }
+
+    @Bean
+    @org.springframework.core.annotation.Order(2)
     SecurityFilterChain securityFilterChain(HttpSecurity http, org.springframework.security.authentication.AuthenticationProvider authenticationProvider) throws Exception {
 
         http.cors(org.springframework.security.config.Customizer.withDefaults())
@@ -76,7 +102,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
