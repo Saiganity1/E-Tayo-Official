@@ -36,14 +36,15 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<JwtAuthResponse> authenticateUser(@RequestBody LoginDto loginDto) {
+        String email = loginDto.getEmail().trim().toLowerCase();
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
+                new UsernamePasswordAuthenticationToken(email, loginDto.getPassword())
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String token = jwtTokenProvider.generateToken(authentication);
         
-        User user = userRepository.findByEmail(loginDto.getEmail())
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return ResponseEntity.ok(new JwtAuthResponse(token, user.getRole().name(), user.getName()));
@@ -51,12 +52,13 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterDto registerDto) {
-        if (userRepository.existsByEmail(registerDto.getEmail())) {
+        String email = registerDto.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmail(email)) {
             return new ResponseEntity<>("Email is already taken!", HttpStatus.BAD_REQUEST);
         }
 
         User user = new User(
-                registerDto.getEmail(),
+                email,
                 passwordEncoder.encode(registerDto.getPassword()),
                 Role.ROLE_APPLICANT,
                 registerDto.getName()

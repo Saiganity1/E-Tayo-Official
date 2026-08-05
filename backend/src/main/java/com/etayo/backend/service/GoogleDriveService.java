@@ -83,16 +83,45 @@ public class GoogleDriveService {
         return uploadedFile.getWebViewLink();
     }
 
+    private String getOrCreateBackupFolderId(Drive driveService) throws Exception {
+        if (folderId == null || folderId.isEmpty()) return null;
+
+        // Search for "Database Backups" folder inside the main folder
+        String query = "name='Database Backups' and mimeType='application/vnd.google-apps.folder' and '" + folderId + "' in parents and trashed=false";
+        com.google.api.services.drive.model.FileList result = driveService.files().list()
+                .setQ(query)
+                .setSpaces("drive")
+                .setFields("files(id)")
+                .execute();
+
+        if (!result.getFiles().isEmpty()) {
+            return result.getFiles().get(0).getId();
+        }
+
+        // Create it
+        File folderMetadata = new File();
+        folderMetadata.setName("Database Backups");
+        folderMetadata.setMimeType("application/vnd.google-apps.folder");
+        folderMetadata.setParents(Collections.singletonList(folderId));
+
+        File folder = driveService.files().create(folderMetadata)
+                .setFields("id")
+                .execute();
+        
+        return folder.getId();
+    }
+
     /**
      * Uploads or updates a specific backup file in Google Drive.
      */
     public void uploadBackupData(String filename, byte[] data) throws Exception {
         Drive driveService = getDriveService();
+        String backupFolderId = getOrCreateBackupFolderId(driveService);
         
         // Check if file exists
         String query = "name='" + filename + "' and trashed=false";
-        if (folderId != null && !folderId.isEmpty()) {
-            query += " and '" + folderId + "' in parents";
+        if (backupFolderId != null) {
+            query += " and '" + backupFolderId + "' in parents";
         }
         
         com.google.api.services.drive.model.FileList result = driveService.files().list()
@@ -107,8 +136,8 @@ public class GoogleDriveService {
             // Create new
             File fileMetadata = new File();
             fileMetadata.setName(filename);
-            if (folderId != null && !folderId.isEmpty()) {
-                fileMetadata.setParents(Collections.singletonList(folderId));
+            if (backupFolderId != null) {
+                fileMetadata.setParents(Collections.singletonList(backupFolderId));
             }
             driveService.files().create(fileMetadata, mediaContent).execute();
         } else {
@@ -123,10 +152,11 @@ public class GoogleDriveService {
      */
     public byte[] downloadBackupData(String filename) throws Exception {
         Drive driveService = getDriveService();
+        String backupFolderId = getOrCreateBackupFolderId(driveService);
         
         String query = "name='" + filename + "' and trashed=false";
-        if (folderId != null && !folderId.isEmpty()) {
-            query += " and '" + folderId + "' in parents";
+        if (backupFolderId != null) {
+            query += " and '" + backupFolderId + "' in parents";
         }
         
         com.google.api.services.drive.model.FileList result = driveService.files().list()
