@@ -19,8 +19,14 @@ import java.util.Collections;
 @Service
 public class GoogleDriveService {
 
-    @Value("${google.drive.credentials.json}")
-    private String credentialsJson;
+    @Value("${google.drive.client.id}")
+    private String clientId;
+
+    @Value("${google.drive.client.secret}")
+    private String clientSecret;
+
+    @Value("${google.drive.refresh.token}")
+    private String refreshToken;
 
     @Value("${google.drive.folder.id}")
     private String folderId;
@@ -32,14 +38,16 @@ public class GoogleDriveService {
      * Initializes the Google Drive API client using the Service Account JSON stored in the environment variable.
      */
     private Drive getDriveService() throws Exception {
-        if (credentialsJson == null || credentialsJson.isEmpty()) {
-            throw new IllegalStateException("Google Drive credentials are not configured in environment variables.");
+        if (clientId == null || clientSecret == null || refreshToken == null) {
+            throw new IllegalStateException("Google Drive OAuth credentials are not fully configured in environment variables.");
         }
 
-        // Load credentials directly from the environment variable string
-        InputStream credentialsStream = new ByteArrayInputStream(credentialsJson.getBytes());
-        GoogleCredential credential = GoogleCredential.fromStream(credentialsStream)
-                .createScoped(Collections.singleton(DriveScopes.DRIVE_FILE));
+        GoogleCredential credential = new GoogleCredential.Builder()
+                .setTransport(GoogleNetHttpTransport.newTrustedTransport())
+                .setJsonFactory(JSON_FACTORY)
+                .setClientSecrets(clientId, clientSecret)
+                .build()
+                .setRefreshToken(refreshToken);
 
         return new Drive.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, credential)
                 .setApplicationName(APPLICATION_NAME)
