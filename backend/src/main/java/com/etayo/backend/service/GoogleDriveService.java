@@ -91,6 +91,49 @@ public class GoogleDriveService {
         return uploadedFile.getWebViewLink();
     }
 
+    /**
+     * Uploads a file for an applicant into Applications / <Applicant Name> / <Timestamp> / file.pdf
+     */
+    public String uploadApplicantFile(MultipartFile multipartFile, String applicantName, String timestamp) throws Exception {
+        Drive driveService = getDriveService();
+
+        String parentFolderId = folderId;
+
+        if (parentFolderId != null && !parentFolderId.isEmpty()) {
+            // 1. Applications folder
+            String applicationsFolderId = getOrCreateSubFolderId(driveService, parentFolderId, "Applications");
+            // 2. Applicant Name folder
+            String applicantFolderId = getOrCreateSubFolderId(driveService, applicationsFolderId, applicantName);
+            // 3. Timestamp folder
+            parentFolderId = getOrCreateSubFolderId(driveService, applicantFolderId, timestamp);
+        }
+
+        File fileMetadata = new File();
+        fileMetadata.setName(multipartFile.getOriginalFilename());
+        
+        if (parentFolderId != null && !parentFolderId.isEmpty()) {
+            fileMetadata.setParents(Collections.singletonList(parentFolderId));
+        }
+
+        java.io.File tempFile = java.io.File.createTempFile("etayo-upload-", multipartFile.getOriginalFilename());
+        multipartFile.transferTo(tempFile);
+        
+        FileContent mediaContent = new FileContent(multipartFile.getContentType(), tempFile);
+
+        File uploadedFile = driveService.files().create(fileMetadata, mediaContent)
+                .setFields("id, webViewLink")
+                .execute();
+
+        tempFile.delete();
+
+        com.google.api.services.drive.model.Permission permission = new com.google.api.services.drive.model.Permission()
+                .setType("anyone")
+                .setRole("reader");
+        driveService.permissions().create(uploadedFile.getId(), permission).execute();
+
+        return uploadedFile.getWebViewLink();
+    }
+
     private String getOrCreateSubFolderId(Drive driveService, String parentId, String folderName) throws Exception {
         if (parentId == null || parentId.isEmpty()) return null;
 
