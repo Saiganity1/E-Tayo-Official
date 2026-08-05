@@ -14,9 +14,9 @@ public class BackendApplication {
 
 	public static void main(String[] args) {
 		String dbUrl = System.getenv("DATABASE_URL");
-		if (dbUrl != null && dbUrl.startsWith("postgres://")) {
+		if (dbUrl != null && (dbUrl.startsWith("postgres://") || dbUrl.startsWith("postgresql://"))) {
 			// e.g. postgres://user:password@host:port/database
-			String uri = dbUrl.substring("postgres://".length());
+			String uri = dbUrl.replaceFirst("^postgres(?:ql)?://", "");
 			if (uri.contains("@")) {
 				String[] credentialsAndHost = uri.split("@");
 				String[] credentials = credentialsAndHost[0].split(":");
