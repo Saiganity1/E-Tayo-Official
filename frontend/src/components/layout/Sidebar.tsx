@@ -14,6 +14,20 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
+  const [userName, setUserName] = useState("");
+  
+  React.useEffect(() => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        if (userObj.name) setUserName(userObj.name);
+      }
+    } catch (e) {
+      console.error("Failed to parse user from localStorage");
+    }
+  }, []);
+
   const getNavItems = () => {
     switch (userRole) {
       case "public":
@@ -47,6 +61,17 @@ export default function Sidebar() {
   };
 
   const navItems = getNavItems();
+  
+  // Fallback names if not loaded
+  const defaultNames: Record<string, string> = {
+    "applicant": "Applicant",
+    "staff": "OBO Evaluator",
+    "admin": "System Admin",
+    "public": "Guest"
+  };
+  
+  const displayName = userName || defaultNames[userRole] || "Guest";
+  const avatarChar = displayName.charAt(0).toUpperCase();
 
   return (
     <>
@@ -72,11 +97,11 @@ export default function Sidebar() {
 
         <div className="user-profile">
           <div className="user-avatar">
-            {userRole === "applicant" ? "J" : userRole === "staff" ? "S" : userRole === "admin" ? "A" : "G"}
+            {avatarChar}
           </div>
           <div className="user-info">
-            <span className="user-name">
-              {userRole === "applicant" ? "Juan Dela Cruz" : userRole === "staff" ? "OBO Evaluator" : userRole === "admin" ? "System Admin" : "Guest"}
+            <span className="user-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {displayName}
             </span>
             <span className="user-role">{userRole}</span>
           </div>
