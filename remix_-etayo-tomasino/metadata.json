@@ -1,0 +1,10 @@
+{
+  "name": "Remix: eTAYO Tomasino",
+  "description": "Paperless Application and Tracking System for the Office of the Building Official, Sto. Tomas, Pampanga.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
