@@ -13,6 +13,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class BackendApplication {
 
 	public static void main(String[] args) {
+		String dbUrl = System.getenv("DATABASE_URL");
+		if (dbUrl != null && dbUrl.startsWith("postgres://")) {
+			// e.g. postgres://user:password@host:port/database
+			String uri = dbUrl.substring("postgres://".length());
+			if (uri.contains("@")) {
+				String[] credentialsAndHost = uri.split("@");
+				String[] credentials = credentialsAndHost[0].split(":");
+				String hostAndDatabase = credentialsAndHost[1];
+				System.setProperty("spring.datasource.url", "jdbc:postgresql://" + hostAndDatabase);
+				if (credentials.length > 0) System.setProperty("spring.datasource.username", credentials[0]);
+				if (credentials.length > 1) System.setProperty("spring.datasource.password", credentials[1]);
+			} else {
+				System.setProperty("spring.datasource.url", "jdbc:postgresql://" + uri);
+			}
+			System.setProperty("spring.datasource.driverClassName", "org.postgresql.Driver");
+		}
 		SpringApplication.run(BackendApplication.class, args);
 	}
 
