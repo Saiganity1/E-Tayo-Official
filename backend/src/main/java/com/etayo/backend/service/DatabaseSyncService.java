@@ -63,13 +63,13 @@ public class DatabaseSyncService {
             List<User> users = userRepository.findAll();
             List<ChatMessage> chatMessages = chatMessageRepository.findAll();
             
-            DatabaseDump dump = new DatabaseDump(users, chatMessages);
-            String jsonStr = objectMapper.writeValueAsString(dump);
+            String usersJson = objectMapper.writeValueAsString(users);
+            String chatMessagesJson = objectMapper.writeValueAsString(chatMessages);
             
-            byte[] encryptedData = encrypt(jsonStr, secretKeyString);
+            googleDriveService.uploadBackupData("Accounts", "users_backup.json", usersJson.getBytes(StandardCharsets.UTF_8));
+            googleDriveService.uploadBackupData("Applications", "applications_backup.json", chatMessagesJson.getBytes(StandardCharsets.UTF_8));
             
-            googleDriveService.uploadBackupData(BACKUP_FILENAME, encryptedData);
-            System.out.println("Database Backup Successful: " + BACKUP_FILENAME);
+            System.out.println("Database Backup Successful!");
         } catch (Exception e) {
             System.err.println("Failed to backup database to Google Drive: " + e.getMessage());
             e.printStackTrace();
@@ -82,21 +82,23 @@ public class DatabaseSyncService {
     public void restoreFromGoogleDrive() {
         try {
             System.out.println("Attempting to restore database from Google Drive...");
-            byte[] encryptedData = googleDriveService.downloadBackupData(BACKUP_FILENAME);
             
-            if (encryptedData == null) {
-                System.out.println("No backup found on Google Drive. Skipping restore.");
-                return;
+            byte[] usersData = googleDriveService.downloadBackupData("Accounts", "users_backup.json");
+            if (usersData != null) {
+                String usersJson = new String(usersData, StandardCharsets.UTF_8);
+                List<User> users = objectMapper.readValue(usersJson, objectMapper.getTypeFactory().constructCollectionType(List.class, User.class));
+                if (!users.isEmpty()) {
+                    userRepository.saveAll(users);
+                }
             }
             
-            String jsonStr = decrypt(encryptedData, secretKeyString);
-            DatabaseDump dump = objectMapper.readValue(jsonStr, DatabaseDump.class);
-            
-            if (dump.users != null && !dump.users.isEmpty()) {
-                userRepository.saveAll(dump.users);
-            }
-            if (dump.chatMessages != null && !dump.chatMessages.isEmpty()) {
-                chatMessageRepository.saveAll(dump.chatMessages);
+            byte[] chatMessagesData = googleDriveService.downloadBackupData("Applications", "applications_backup.json");
+            if (chatMessagesData != null) {
+                String chatMessagesJson = new String(chatMessagesData, StandardCharsets.UTF_8);
+                List<ChatMessage> chatMessages = objectMapper.readValue(chatMessagesJson, objectMapper.getTypeFactory().constructCollectionType(List.class, ChatMessage.class));
+                if (!chatMessages.isEmpty()) {
+                    chatMessageRepository.saveAll(chatMessages);
+                }
             }
             
             System.out.println("Database Restore Successful!");

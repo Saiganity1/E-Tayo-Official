@@ -1,7 +1,25 @@
+"use client";
+
 import Link from "next/link";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem("token"));
+  }, []);
+
+  const handleApplyClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isLoggedIn) {
+      e.preventDefault();
+      alert("You need to login first ok?");
+      router.push("/login");
+    }
+  };
+
   return (
     <main className="landing-page">
       <header className="glass-panel header-nav">
@@ -13,7 +31,7 @@ export default function Home() {
           <nav className="nav-links">
             <Link href="/applicant/track" className="nav-link">Track Permit</Link>
             <Link href="/login" className="btn-secondary">Log In</Link>
-            <Link href="/applicant/apply" className="btn-primary">Apply Now</Link>
+            <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary">Apply Now</Link>
           </nav>
         </div>
       </header>
@@ -27,14 +45,14 @@ export default function Home() {
             The official fast, secure, and accessible portal for Locational Clearances, Building Permits, and Occupancy Certificates. Track your progress in real-time.
           </p>
           <div className="hero-actions">
-            <Link href="/applicant/apply" className="btn-primary btn-large">Start New Application</Link>
+            <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary btn-large">Start New Application</Link>
             <Link href="/applicant/track" className="btn-secondary btn-large">Track Existing Permit</Link>
           </div>
         </div>
       </section>
 
       {/* Landing page specific layout classes that extend the global CSS */}
-      <style>{`
+      <style jsx global>{`
         .landing-page {
           min-height: 100vh;
           background-color: var(--bg-main);
