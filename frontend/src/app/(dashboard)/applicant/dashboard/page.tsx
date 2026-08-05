@@ -22,7 +22,7 @@ export default function ApplicantDashboard() {
   }, []);
 
   // Filter by the actual logged-in applicant name
-  const applicantApps = applications.filter(app => app.applicantName === userName || app.applicantName === "Juan Dela Cruz" /* fallback for demo data */);
+  const applicantApps = applications.filter(app => app.applicantName === userName);
 
   const filteredApps = applicantApps.filter(app => {
     const matchesSearch = app.projectName.toLowerCase().includes(searchTerm.toLowerCase()) || 
