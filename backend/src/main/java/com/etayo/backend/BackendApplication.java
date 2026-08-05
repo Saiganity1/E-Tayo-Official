@@ -9,7 +9,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 @SpringBootApplication
+@EnableScheduling
 public class BackendApplication {
 
 	public static void main(String[] args) {
@@ -33,8 +36,13 @@ public class BackendApplication {
 	}
 
 	@Bean
-	CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+	CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder, com.etayo.backend.service.DatabaseSyncService databaseSyncService) {
 		return args -> {
+			if (userRepository.count() == 0) {
+				System.out.println("Local database is empty. Attempting to restore from Google Drive...");
+				databaseSyncService.restoreFromGoogleDrive();
+			}
+
 			if (!userRepository.existsByEmail("admin@etayo.gov.ph")) {
 				userRepository.save(new User("admin@etayo.gov.ph", passwordEncoder.encode("admin123"), Role.ROLE_ADMIN, "Admin User"));
 			}

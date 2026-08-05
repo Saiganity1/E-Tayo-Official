@@ -82,4 +82,73 @@ public class GoogleDriveService {
 
         return uploadedFile.getWebViewLink();
     }
+
+    /**
+     * Uploads or updates a specific backup file in Google Drive.
+     */
+    public void uploadBackupData(String filename, byte[] data) throws Exception {
+        Drive driveService = getDriveService();
+        
+        // Check if file exists
+        String query = "name='" + filename + "' and trashed=false";
+        if (folderId != null && !folderId.isEmpty()) {
+            query += " and '" + folderId + "' in parents";
+        }
+        
+        com.google.api.services.drive.model.FileList result = driveService.files().list()
+                .setQ(query)
+                .setSpaces("drive")
+                .setFields("files(id, name)")
+                .execute();
+                
+        FileContent mediaContent = new FileContent("application/octet-stream", createTempFileFromBytes(filename, data));
+        
+        if (result.getFiles().isEmpty()) {
+            // Create new
+            File fileMetadata = new File();
+            fileMetadata.setName(filename);
+            if (folderId != null && !folderId.isEmpty()) {
+                fileMetadata.setParents(Collections.singletonList(folderId));
+            }
+            driveService.files().create(fileMetadata, mediaContent).execute();
+        } else {
+            // Update existing
+            String existingFileId = result.getFiles().get(0).getId();
+            driveService.files().update(existingFileId, null, mediaContent).execute();
+        }
+    }
+
+    /**
+     * Downloads a specific backup file from Google Drive. Returns null if not found.
+     */
+    public byte[] downloadBackupData(String filename) throws Exception {
+        Drive driveService = getDriveService();
+        
+        String query = "name='" + filename + "' and trashed=false";
+        if (folderId != null && !folderId.isEmpty()) {
+            query += " and '" + folderId + "' in parents";
+        }
+        
+        com.google.api.services.drive.model.FileList result = driveService.files().list()
+                .setQ(query)
+                .setSpaces("drive")
+                .setFields("files(id, name)")
+                .execute();
+                
+        if (result.getFiles().isEmpty()) {
+            return null; // Not found
+        }
+        
+        String fileId = result.getFiles().get(0).getId();
+        java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+        driveService.files().get(fileId).executeMediaAndDownloadTo(outputStream);
+        return outputStream.toByteArray();
+    }
+    
+    private java.io.File createTempFileFromBytes(String name, byte[] data) throws Exception {
+        java.io.File temp = java.io.File.createTempFile("backup-", name);
+        temp.deleteOnExit();
+        java.nio.file.Files.write(temp.toPath(), data);
+        return temp;
+    }
 }
