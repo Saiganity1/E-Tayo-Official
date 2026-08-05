@@ -3,6 +3,8 @@ package com.etayo.backend;
 import com.etayo.backend.model.Role;
 import com.etayo.backend.model.User;
 import com.etayo.backend.repository.UserRepository;
+import com.etayo.backend.service.DatabaseSyncService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -36,21 +38,29 @@ public class BackendApplication {
 	}
 
 	@Bean
-	CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder, com.etayo.backend.service.DatabaseSyncService databaseSyncService) {
+	public CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder, DatabaseSyncService databaseSyncService, @Value("${jwt.secret}") String jwtSecret) {
 		return args -> {
+			try {
+				byte[] bytes = io.jsonwebtoken.io.Decoders.BASE64.decode(jwtSecret);
+				System.out.println("Base64 decoding of jwtSecret SUCCESS! Length: " + bytes.length);
+			} catch (Exception e) {
+				System.err.println("Base64 decoding of jwtSecret FAILED: " + e.getMessage());
+				e.printStackTrace();
+			}
+
 			if (userRepository.count() == 0) {
 				System.out.println("Local database is empty. Attempting to restore from Google Drive...");
 				databaseSyncService.restoreFromGoogleDrive();
 			}
 
-			if (!userRepository.existsByEmail("admin@etayo.gov.ph")) {
-				userRepository.save(new User("admin@etayo.gov.ph", passwordEncoder.encode("admin123"), Role.ROLE_ADMIN, "Admin User"));
-			}
-			if (!userRepository.existsByEmail("staff@etayo.gov.ph")) {
-				userRepository.save(new User("staff@etayo.gov.ph", passwordEncoder.encode("staff123"), Role.ROLE_STAFF, "Staff User"));
-			}
 			if (!userRepository.existsByEmail("applicant@etayo.gov.ph")) {
 				userRepository.save(new User("applicant@etayo.gov.ph", passwordEncoder.encode("password123"), Role.ROLE_APPLICANT, "Juan Dela Cruz"));
+			}
+			if (!userRepository.existsByEmail("staff@etayo.gov.ph")) {
+				userRepository.save(new User("staff@etayo.gov.ph", passwordEncoder.encode("password123"), Role.ROLE_STAFF, "Staff User"));
+			}
+			if (!userRepository.existsByEmail("admin@etayo.gov.ph")) {
+				userRepository.save(new User("admin@etayo.gov.ph", passwordEncoder.encode("password123"), Role.ROLE_ADMIN, "Admin User"));
 			}
 		};
 	}

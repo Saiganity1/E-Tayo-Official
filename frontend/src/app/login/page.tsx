@@ -25,7 +25,8 @@ export default function LoginPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Invalid credentials");
+        const errorText = await response.text();
+        throw new Error(errorText || "Invalid credentials");
       }
 
       const data = await response.json();

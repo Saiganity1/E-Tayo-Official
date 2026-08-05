@@ -35,19 +35,25 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtAuthResponse> authenticateUser(@RequestBody LoginDto loginDto) {
-        String email = loginDto.getEmail().trim().toLowerCase();
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, loginDto.getPassword())
-        );
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginDto loginDto) {
+        try {
+            String email = loginDto.getEmail().trim().toLowerCase();
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, loginDto.getPassword())
+            );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String token = jwtTokenProvider.generateToken(authentication);
-        
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String token = jwtTokenProvider.generateToken(authentication);
+            
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return ResponseEntity.ok(new JwtAuthResponse(token, user.getRole().name(), user.getName()));
+            return ResponseEntity.ok(new JwtAuthResponse(token, user.getRole().name(), user.getName()));
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Auth Error: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server Error: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+        }
     }
 
     @PostMapping("/register")
