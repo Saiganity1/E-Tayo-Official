@@ -92,9 +92,9 @@ public class GoogleDriveService {
     }
 
     /**
-     * Uploads a file for an applicant into Applications / <Applicant Name> / <Timestamp> / file.pdf
+     * Uploads a file for an applicant into Applications / <Applicant Name> / <Permit Type> / <Timestamp> / file.pdf
      */
-    public String uploadApplicantFile(MultipartFile multipartFile, String applicantName, String timestamp) throws Exception {
+    public String uploadApplicantFile(MultipartFile multipartFile, String applicantName, String permitType, String timestamp) throws Exception {
         Drive driveService = getDriveService();
 
         String parentFolderId = folderId;
@@ -104,8 +104,10 @@ public class GoogleDriveService {
             String applicationsFolderId = getOrCreateSubFolderId(driveService, parentFolderId, "Applications");
             // 2. Applicant Name folder
             String applicantFolderId = getOrCreateSubFolderId(driveService, applicationsFolderId, applicantName);
-            // 3. Timestamp folder
-            parentFolderId = getOrCreateSubFolderId(driveService, applicantFolderId, timestamp);
+            // 3. Permit Type folder
+            String permitFolderId = getOrCreateSubFolderId(driveService, applicantFolderId, permitType);
+            // 4. Timestamp folder
+            parentFolderId = getOrCreateSubFolderId(driveService, permitFolderId, timestamp);
         }
 
         File fileMetadata = new File();

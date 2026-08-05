@@ -28,7 +28,10 @@ public class FileUploadController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file, Principal principal) {
+    public ResponseEntity<Map<String, String>> uploadFile(
+            @RequestParam("file") MultipartFile file, 
+            @RequestParam(value = "permitType", required = false, defaultValue = "General Application") String permitType,
+            Principal principal) {
         Map<String, String> response = new HashMap<>();
         try {
             String applicantName = "Unknown Applicant";
@@ -41,7 +44,7 @@ public class FileUploadController {
 
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
 
-            String fileUrl = googleDriveService.uploadApplicantFile(file, applicantName, timestamp);
+            String fileUrl = googleDriveService.uploadApplicantFile(file, applicantName, permitType, timestamp);
             response.put("url", fileUrl);
             response.put("message", "File uploaded successfully to Google Drive");
             return ResponseEntity.ok(response);

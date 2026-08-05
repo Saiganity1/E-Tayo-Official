@@ -32,6 +32,10 @@ export default function ApplyPage() {
 
     const formData = new FormData();
     formData.append("file", file);
+    
+    // Format "building_permit" to "Building Permit"
+    const formattedPermitType = selectedPermitType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    formData.append("permitType", formattedPermitType);
 
     try {
       const token = localStorage.getItem("token");
