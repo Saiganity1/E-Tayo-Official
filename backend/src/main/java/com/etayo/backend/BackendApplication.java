@@ -40,14 +40,6 @@ public class BackendApplication {
 	@Bean
 	public CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder, DatabaseSyncService databaseSyncService, @Value("${jwt.secret}") String jwtSecret) {
 		return args -> {
-			try {
-				byte[] bytes = io.jsonwebtoken.io.Decoders.BASE64.decode(jwtSecret);
-				System.out.println("Base64 decoding of jwtSecret SUCCESS! Length: " + bytes.length);
-			} catch (Exception e) {
-				System.err.println("Base64 decoding of jwtSecret FAILED: " + e.getMessage());
-				e.printStackTrace();
-			}
-
 			if (userRepository.count() == 0) {
 				System.out.println("Local database is empty. Attempting to restore from Google Drive...");
 				databaseSyncService.restoreFromGoogleDrive();

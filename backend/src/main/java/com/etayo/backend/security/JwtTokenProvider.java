@@ -33,7 +33,15 @@ public class JwtTokenProvider {
     }
 
     private Key key() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
+        try {
+            // Hash the secret using SHA-256 to guarantee it's exactly 256 bits (32 bytes)
+            // This prevents WeakKeyException regardless of what the user sets in JWT_SECRET
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] keyBytes = digest.digest(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new RuntimeException("Failed to initialize SHA-256 for JWT secret", e);
+        }
     }
 
     public String getUsername(String token) {
