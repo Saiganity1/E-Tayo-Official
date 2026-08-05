@@ -12,7 +12,7 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 
 # Databases
-data/
+backend/data/
 *.h2.db
 *.trace.db
 
