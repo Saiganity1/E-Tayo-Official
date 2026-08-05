@@ -3,7 +3,6 @@ package com.etayo.backend;
 import com.etayo.backend.model.Role;
 import com.etayo.backend.model.User;
 import com.etayo.backend.repository.UserRepository;
-import com.etayo.backend.service.DatabaseSyncService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -38,12 +37,8 @@ public class BackendApplication {
 	}
 
 	@Bean
-	public CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder, DatabaseSyncService databaseSyncService, @Value("${jwt.secret}") String jwtSecret) {
+	public CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder, @Value("${jwt.secret}") String jwtSecret) {
 		return args -> {
-			if (userRepository.count() == 0) {
-				System.out.println("Local database is empty. Attempting to restore from Google Drive...");
-				databaseSyncService.restoreFromGoogleDrive();
-			}
 
 			if (!userRepository.existsByEmail("applicant@etayo.gov.ph")) {
 				userRepository.save(new User("applicant@etayo.gov.ph", passwordEncoder.encode("password123"), Role.ROLE_APPLICANT, "Juan Dela Cruz"));
