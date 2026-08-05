@@ -1,17 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Lock, Mail, ArrowRight, ShieldCheck } from "lucide-react";
+import { Lock, Mail, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [timeoutMessage, setTimeoutMessage] = useState(false);
+  
   const router = useRouter();
   const { setUserRole } = usePermitContext();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("timeout") === "true") {
+        setTimeoutMessage(true);
+      }
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +89,13 @@ export default function LoginPage() {
             <h1>Welcome Back</h1>
             <p>Please enter your credentials to access your account.</p>
           </div>
+
+          {timeoutMessage && (
+            <div className="alert-timeout" style={{ backgroundColor: "#fef2f2", color: "#991b1b", padding: "12px", borderRadius: "8px", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "8px", border: "1px solid #f87171" }}>
+              <AlertCircle size={18} />
+              <span style={{ fontSize: "14px", fontWeight: "500" }}>Your session has expired due to inactivity. Please log in again.</span>
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="login-form">
             <div className="form-group">

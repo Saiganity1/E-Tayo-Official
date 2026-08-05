@@ -41,8 +41,64 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (savedApps) setApplications(JSON.parse(savedApps));
     if (savedLogs) setSystemLogs(JSON.parse(savedLogs));
     if (savedFees) setFeeStructures(JSON.parse(savedFees));
+
+    // Restore user role from login session
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        let role = "public";
+        if (userObj.role === "ROLE_APPLICANT") role = "applicant";
+        if (userObj.role === "ROLE_STAFF") role = "staff";
+        if (userObj.role === "ROLE_ADMIN") role = "admin";
+        setUserRole(role as UserRole);
+      }
+    } catch(e) {}
+
     setMounted(true);
   }, []);
+
+  // Idle Logout Logic (10 minutes)
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 minutes in ms
+
+    const resetIdleTimer = () => {
+      localStorage.setItem("etayo_last_activity", Date.now().toString());
+    };
+
+    const checkIdle = setInterval(() => {
+      if (userRole === "public") return; // Not logged in
+
+      const lastActivity = parseInt(localStorage.getItem("etayo_last_activity") || Date.now().toString(), 10);
+      if (Date.now() - lastActivity > IDLE_TIMEOUT) {
+        // Log out
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("etayo_last_activity");
+        setUserRole("public");
+        window.location.href = "/login?timeout=true";
+      }
+    }, 10000); // Check every 10 seconds
+
+    // Track activity
+    window.addEventListener("mousemove", resetIdleTimer);
+    window.addEventListener("keydown", resetIdleTimer);
+    window.addEventListener("click", resetIdleTimer);
+    window.addEventListener("scroll", resetIdleTimer);
+    
+    // Initialize
+    resetIdleTimer();
+
+    return () => {
+      clearInterval(checkIdle);
+      window.removeEventListener("mousemove", resetIdleTimer);
+      window.removeEventListener("keydown", resetIdleTimer);
+      window.removeEventListener("click", resetIdleTimer);
+      window.removeEventListener("scroll", resetIdleTimer);
+    };
+  }, [mounted, userRole]);
 
   useEffect(() => {
     if (mounted) {
