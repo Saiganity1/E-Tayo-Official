@@ -19,7 +19,7 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/users`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/users?role=ROLE_APPLICANT`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       
@@ -77,10 +77,10 @@ export default function AdminUsersPage() {
     <div className="dashboard-page animate-fade-in-up">
       <header className="page-header" style={{ marginBottom: "2rem" }}>
         <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Users size={32} color="#1d4ed8" /> User Management
+          <Users size={32} color="#1d4ed8" /> Applicants Management
         </h1>
         <p className="page-subtitle" style={{ fontSize: "1.1rem", marginTop: "0.5rem", color: "#475569" }}>
-          View all registered users and manage system roles.
+          View all registered applicants and promote them to Staff if necessary.
         </p>
       </header>
 

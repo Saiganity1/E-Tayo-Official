@@ -53,7 +53,8 @@ export default function Sidebar() {
         return [
           { href: "/admin/dashboard", label: "Admin Portal", icon: ShieldAlert },
           { href: "/staff/dashboard", label: "Review Workspaces", icon: FileCheck },
-          { href: "/admin/users", label: "User Management", icon: Users },
+          { href: "/admin/users", label: "Applicants Management", icon: Users },
+          { href: "/admin/staff", label: "Staff Management", icon: ShieldAlert },
           { href: "/admin/settings", label: "Settings", icon: Settings },
         ];
       default:

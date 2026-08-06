@@ -31,9 +31,13 @@ public class UserController {
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
-    public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
+    public ResponseEntity<List<Map<String, Object>>> getAllUsers(@RequestParam(required = false) String role) {
         List<User> users = userRepository.findAll();
         
+        if (role != null && !role.isEmpty()) {
+            users = users.stream().filter(u -> u.getRole().name().equals(role)).collect(Collectors.toList());
+        }
+
         List<Map<String, Object>> userList = users.stream().map(user -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", user.getId());
