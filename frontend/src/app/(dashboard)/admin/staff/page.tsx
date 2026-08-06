@@ -163,12 +163,19 @@ export default function AdminStaffPage() {
                    <p style={{ color: "#64748b", fontSize: "1.1rem", fontWeight: "500", animation: "pulse 2s infinite" }}>Synchronizing audit trails...</p>
                 </div>
               ) : logs.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "4rem", background: "rgba(241, 245, 249, 0.5)", borderRadius: "24px", border: "2px dashed #e2e8f0" }}>
-                  <div style={{ width: "80px", height: "80px", background: "white", borderRadius: "24px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem auto", boxShadow: "0 10px 25px rgba(0,0,0,0.05)" }}>
-                    <FileText size={40} color="#cbd5e1" />
+                <div style={{ textAlign: "center", padding: "5rem 2rem", position: "relative", overflow: "hidden", borderRadius: "28px", background: "linear-gradient(145deg, rgba(248, 250, 252, 0.8), rgba(241, 245, 249, 0.4))", border: "1px solid rgba(255, 255, 255, 0.6)", boxShadow: "inset 0 2px 10px rgba(255,255,255,0.5), 0 10px 30px rgba(0,0,0,0.02)" }}>
+                  
+                  {/* Decorative glowing background elements */}
+                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "250px", height: "250px", background: "radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, rgba(255,255,255,0) 70%)", borderRadius: "50%", pointerEvents: "none" }}></div>
+                  <div style={{ position: "absolute", top: "40%", left: "40%", transform: "translate(-50%, -50%)", width: "150px", height: "150px", background: "radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, rgba(255,255,255,0) 70%)", borderRadius: "50%", pointerEvents: "none" }}></div>
+
+                  <div style={{ position: "relative", zIndex: 1 }}>
+                    <div className="animate-bounce" style={{ width: "90px", height: "90px", background: "linear-gradient(135deg, #ffffff, #f8fafc)", borderRadius: "28px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.75rem auto", boxShadow: "0 20px 40px rgba(0,0,0,0.06), inset 0 2px 0 rgba(255,255,255,1), inset 0 -2px 0 rgba(226,232,240,0.5)", border: "1px solid rgba(226, 232, 240, 0.8)" }}>
+                      <FileText size={44} color="#94a3b8" strokeWidth={1.5} style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.05))" }} />
+                    </div>
+                    <h3 style={{ margin: "0 0 12px 0", fontWeight: "800", fontSize: "1.5rem", background: "linear-gradient(135deg, #0f172a 0%, #334155 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>No Evaluations Found</h3>
+                    <p style={{ color: "#64748b", fontSize: "1.05rem", margin: 0, maxWidth: "300px", marginInline: "auto", lineHeight: "1.6" }}>This staff member has not processed or reviewed any applications yet.</p>
                   </div>
-                  <h3 style={{ margin: "0 0 8px 0", color: "#334155", fontWeight: "700", fontSize: "1.25rem" }}>No Evaluations Found</h3>
-                  <p style={{ color: "#64748b", fontSize: "1rem", margin: 0 }}>This staff member has not processed any applications yet.</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
