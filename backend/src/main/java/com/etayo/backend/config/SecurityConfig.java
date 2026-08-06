@@ -55,7 +55,7 @@ public class SecurityConfig {
                 .build();
         org.springframework.security.core.userdetails.UserDetailsService adminDetailsService = new org.springframework.security.provisioning.InMemoryUserDetailsManager(admin);
 
-        http.securityMatcher("/admin/**")
+        http.securityMatcher("/admin", "/admin/**")
                 .cors(org.springframework.security.config.Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
