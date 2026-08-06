@@ -58,20 +58,24 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterDto registerDto) {
-        String email = registerDto.getEmail().trim().toLowerCase();
-        if (userRepository.existsByEmail(email)) {
-            return new ResponseEntity<>("Email is already taken!", HttpStatus.BAD_REQUEST);
+        try {
+            String email = registerDto.getEmail().trim().toLowerCase();
+            if (userRepository.existsByEmail(email)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("error", "Email is already taken!"));
+            }
+
+            User user = new User(
+                    email,
+                    passwordEncoder.encode(registerDto.getPassword()),
+                    Role.ROLE_APPLICANT,
+                    registerDto.getName()
+            );
+
+            userRepository.save(user);
+
+            return ResponseEntity.ok(java.util.Map.of("message", "User registered successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(java.util.Map.of("error", "Registration error: " + e.getMessage()));
         }
-
-        User user = new User(
-                email,
-                passwordEncoder.encode(registerDto.getPassword()),
-                Role.ROLE_APPLICANT,
-                registerDto.getName()
-        );
-
-        userRepository.save(user);
-
-        return new ResponseEntity<>("User registered successfully", HttpStatus.OK);
     }
 }

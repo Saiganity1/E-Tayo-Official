@@ -33,14 +33,20 @@ export default function RegisterPage() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Registration failed");
+        let errorMessage = "Registration failed";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = await response.text() || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       alert("Registration successful! You can now log in.");
       router.push("/login");
     } catch (err: any) {
-      setErrorMsg(err.message);
+      setErrorMsg(err.message || "Network Error: Failed to fetch");
     } finally {
       setIsLoading(false);
     }
