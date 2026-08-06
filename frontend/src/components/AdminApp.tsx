@@ -4,18 +4,22 @@ import React from "react";
 import { Admin, Resource, List, Datagrid, TextField, EmailField, EditButton, Edit, SimpleForm, TextInput, SelectInput, fetchUtils } from "react-admin";
 import simpleRestProvider from "ra-data-simple-rest";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : "http://localhost:8080/api";
+
 const httpClient = (url: string, options: any = {}) => {
-    if (!options.headers) {
-        options.headers = new Headers({ Accept: "application/json" });
-    }
+    const headers = new Headers(options.headers || {});
+    headers.set("Accept", "application/json");
+    
     const token = localStorage.getItem("token");
     if (token) {
-        options.headers.set("Authorization", `Bearer ${token}`);
+        headers.set("Authorization", `Bearer ${token}`);
     }
+    
+    options.headers = headers;
     return fetchUtils.fetchJson(url, options);
 };
 
-const dataProvider = simpleRestProvider(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api", httpClient);
+const dataProvider = simpleRestProvider(API_URL, httpClient);
 
 export const UserList = () => (
     <List>
@@ -46,7 +50,7 @@ export const UserEdit = () => (
 
 const authProvider = {
     login: async ({ username, password }: any) => {
-        const request = new Request(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/auth/login`, {
+        const request = new Request(`${API_URL}/auth/login`, {
             method: 'POST',
             body: JSON.stringify({ email: username, password }),
             headers: new Headers({ 'Content-Type': 'application/json' }),
