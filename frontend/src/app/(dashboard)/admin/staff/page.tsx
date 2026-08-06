@@ -140,7 +140,7 @@ export default function AdminStaffPage() {
           <div className="animate-fade-in-up" style={{ background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)", borderRadius: "32px", width: "100%", maxWidth: "750px", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.5) inset", display: "flex", flexDirection: "column" }}>
             
             {/* Modal Header */}
-            <div style={{ padding: "2rem 2.5rem", borderBottom: "1px solid rgba(226, 232, 240, 0.8)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "sticky", top: 0, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(16px)", zIndex: 10 }}>
+            <div style={{ padding: "2rem 2.5rem", borderBottom: "1px solid rgba(226, 232, 240, 0.8)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "sticky", top: 0, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(16px)", zIndex: 10, borderTopLeftRadius: "32px", borderTopRightRadius: "32px" }}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
                   <div style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)", padding: "10px", borderRadius: "14px", color: "#1d4ed8" }}>
