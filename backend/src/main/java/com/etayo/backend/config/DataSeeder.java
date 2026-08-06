@@ -20,7 +20,7 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        String adminEmail = "Admin";
+        String adminEmail = "admin";
         if (!userRepository.existsByEmail(adminEmail)) {
             User admin = new User(
                     adminEmail,
