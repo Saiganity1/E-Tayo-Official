@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
 // React-Admin relies on window being defined, so it MUST be loaded dynamically with SSR disabled
-const AdminApp = dynamic(() => import("../../../components/AdminApp"), {
+const AdminApp = dynamic(() => import("../../components/AdminApp"), {
     ssr: false,
     loading: () => (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
