@@ -40,7 +40,66 @@ public class UserController {
             return map;
         }).collect(Collectors.toList());
 
-        return ResponseEntity.ok(userList);
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(users.size()))
+                .header("Access-Control-Expose-Headers", "X-Total-Count")
+                .body(userList);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getUser(@PathVariable Long id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) return ResponseEntity.notFound().build();
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", user.getId());
+        map.put("name", user.getName());
+        map.put("email", user.getEmail());
+        map.put("role", user.getRole().name());
+        
+        return ResponseEntity.ok(map);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> updateUser(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) return ResponseEntity.notFound().build();
+
+        if (payload.containsKey("name")) user.setName((String) payload.get("name"));
+        if (payload.containsKey("email")) user.setEmail((String) payload.get("email"));
+        if (payload.containsKey("role")) {
+            String roleStr = (String) payload.get("role");
+            try {
+                user.setRole(Role.valueOf(roleStr));
+            } catch (Exception e) {
+                // Ignore invalid roles
+            }
+        }
+        
+        userRepository.save(user);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", user.getId());
+        map.put("name", user.getName());
+        map.put("email", user.getEmail());
+        map.put("role", user.getRole().name());
+
+        return ResponseEntity.ok(map);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Long id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) return ResponseEntity.notFound().build();
+
+        userRepository.delete(user);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", user.getId());
+        return ResponseEntity.ok(map);
     }
 
     /**
