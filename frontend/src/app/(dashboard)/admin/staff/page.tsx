@@ -78,8 +78,9 @@ export default function AdminStaffPage() {
   };
 
   return (
-    <div className="dashboard-page animate-fade-in-up">
-      <header className="page-header" style={{ marginBottom: "2rem" }}>
+    <>
+      <div className="dashboard-page animate-fade-in-up">
+        <header className="page-header" style={{ marginBottom: "2rem" }}>
         <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <ShieldAlert size={32} color="#1d4ed8" /> Staff Management
         </h1>
@@ -134,9 +135,11 @@ export default function AdminStaffPage() {
         )}
       </div>
 
+      </div>
+
       {/* Audit Log Modal */}
       {selectedStaff && (
-        <div className="animate-fade-in" style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(12px)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "2rem 1rem" }}>
+        <div className="animate-fade-in" style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(12px)", zIndex: 9999, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "2rem 1rem" }}>
           <div className="animate-fade-in-up" style={{ margin: "auto", background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)", borderRadius: "32px", width: "100%", maxWidth: "750px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.5) inset", display: "flex", flexDirection: "column", position: "relative" }}>
             
             {/* Modal Header */}
@@ -222,6 +225,6 @@ export default function AdminStaffPage() {
       )}
 
       <style dangerouslySetInnerHTML={{__html: `@keyframes spin { 100% { transform: rotate(360deg); } }`}} />
-    </div>
+    </>
   );
 }
