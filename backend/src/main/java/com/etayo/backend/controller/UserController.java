@@ -42,7 +42,7 @@ public class UserController {
 
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(users.size()))
-                .header("Access-Control-Expose-Headers", "X-Total-Count")
+                .header("Content-Range", "users 0-" + (users.size() - 1) + "/" + users.size())
                 .body(userList);
     }
 
