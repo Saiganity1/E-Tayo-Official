@@ -25,7 +25,7 @@ public class DataSeeder implements CommandLineRunner {
             User admin = new User(
                     adminEmail,
                     passwordEncoder.encode("Admin"),
-                    Role.ROLE_ADMIN,
+                    Role.ROLE_SUPERADMIN,
                     "Super Admin"
             );
             userRepository.save(admin);

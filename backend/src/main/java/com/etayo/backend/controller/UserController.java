@@ -5,6 +5,7 @@ import com.etayo.backend.model.User;
 import com.etayo.backend.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -18,16 +19,18 @@ import java.util.stream.Collectors;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserController(UserRepository userRepository) {
+    public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
      * Fetch all users. Only ADMIN can access this.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
         List<User> users = userRepository.findAll();
         
@@ -47,7 +50,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> getUser(@PathVariable Long id) {
         User user = userRepository.findById(id).orElse(null);
         if (user == null) return ResponseEntity.notFound().build();
@@ -62,7 +65,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> updateUser(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
         User user = userRepository.findById(id).orElse(null);
         if (user == null) return ResponseEntity.notFound().build();
@@ -89,8 +92,41 @@ public class UserController {
         return ResponseEntity.ok(map);
     }
 
+    @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    public ResponseEntity<Map<String, Object>> createUser(@RequestBody Map<String, Object> payload) {
+        String email = (String) payload.get("email");
+        String name = (String) payload.get("name");
+        String roleStr = (String) payload.get("role");
+        
+        if (email == null || name == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Role role = Role.ROLE_APPLICANT;
+        if (roleStr != null) {
+            try { role = Role.valueOf(roleStr); } catch (Exception e) {}
+        }
+
+        User user = new User(
+                email,
+                passwordEncoder.encode("password123"), // Default password for manually created users
+                role,
+                name
+        );
+        userRepository.save(user);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", user.getId());
+        map.put("name", user.getName());
+        map.put("email", user.getEmail());
+        map.put("role", user.getRole().name());
+
+        return ResponseEntity.ok(map);
+    }
+
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Long id) {
         User user = userRepository.findById(id).orElse(null);
         if (user == null) return ResponseEntity.notFound().build();
@@ -106,7 +142,7 @@ public class UserController {
      * Promote a user to ROLE_STAFF. Only ADMIN can access this.
      */
     @PutMapping("/{id}/promote")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Map<String, String>> promoteToStaff(@PathVariable Long id) {
         Map<String, String> response = new HashMap<>();
         

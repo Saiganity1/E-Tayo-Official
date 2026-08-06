@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Admin, Resource, List, Datagrid, TextField, EmailField, EditButton, Edit, SimpleForm, TextInput, SelectInput, fetchUtils } from "react-admin";
+import { Admin, Resource, List, Datagrid, TextField, EmailField, EditButton, DeleteButton, Edit, Create, SimpleForm, TextInput, SelectInput, fetchUtils, defaultTheme } from "react-admin";
 import simpleRestProvider from "ra-data-simple-rest";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : "http://localhost:8080/api";
@@ -29,6 +29,7 @@ export const UserList = () => (
             <EmailField source="email" />
             <TextField source="role" />
             <EditButton />
+            <DeleteButton />
         </Datagrid>
     </List>
 );
@@ -43,9 +44,25 @@ export const UserEdit = () => (
                 { id: 'ROLE_APPLICANT', name: 'Applicant' },
                 { id: 'ROLE_STAFF', name: 'Staff' },
                 { id: 'ROLE_ADMIN', name: 'Admin' },
+                { id: 'ROLE_SUPERADMIN', name: 'SuperAdmin' },
             ]} />
         </SimpleForm>
     </Edit>
+);
+
+export const UserCreate = () => (
+    <Create>
+        <SimpleForm>
+            <TextInput source="name" required />
+            <TextInput source="email" required />
+            <SelectInput source="role" choices={[
+                { id: 'ROLE_APPLICANT', name: 'Applicant' },
+                { id: 'ROLE_STAFF', name: 'Staff' },
+                { id: 'ROLE_ADMIN', name: 'Admin' },
+                { id: 'ROLE_SUPERADMIN', name: 'SuperAdmin' },
+            ]} required defaultValue="ROLE_APPLICANT" />
+        </SimpleForm>
+    </Create>
 );
 
 const authProvider = {
@@ -61,9 +78,9 @@ const authProvider = {
         }
         const auth = await response.json();
         
-        // Only allow admins
-        if (auth.role !== 'ROLE_ADMIN' && auth.role !== 'ROLE_SUPERADMIN') {
-            throw new Error('Access denied: You are not an Admin');
+        // Strict Developer Access Only
+        if (auth.role !== 'ROLE_SUPERADMIN') {
+            throw new Error('Access denied: Only Developers (SuperAdmins) can access this system.');
         }
 
         localStorage.setItem('token', auth.accessToken);
@@ -94,7 +111,7 @@ const authProvider = {
         const name = localStorage.getItem('userName');
         return Promise.resolve({
             id: 'user',
-            fullName: name || 'Admin',
+            fullName: name || 'Super Admin',
         });
     },
     getPermissions: () => {
@@ -103,10 +120,59 @@ const authProvider = {
     },
 };
 
+const eTayoTheme = {
+    ...defaultTheme,
+    palette: {
+        mode: 'light' as const,
+        primary: {
+            main: '#1d4ed8', // e-Tayo Blue
+        },
+        secondary: {
+            main: '#f59e0b', // e-Tayo Yellow/Orange accent
+        },
+        background: {
+            default: '#f8fafc', // Clean slate background
+            paper: '#ffffff',
+        },
+    },
+    typography: {
+        fontFamily: 'Inter, sans-serif',
+        button: {
+            textTransform: 'none' as const,
+            fontWeight: 600,
+        },
+    },
+    components: {
+        MuiButton: {
+            styleOverrides: {
+                root: {
+                    borderRadius: '8px',
+                },
+            },
+        },
+        MuiPaper: {
+            styleOverrides: {
+                root: {
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                },
+            },
+        },
+        MuiAppBar: {
+            styleOverrides: {
+                root: {
+                    backgroundColor: '#1e3a8a', // Darker blue for app bar
+                    boxShadow: 'none',
+                },
+            },
+        },
+    },
+};
+
 const AdminApp = () => {
     return (
-        <Admin dataProvider={dataProvider} authProvider={authProvider} requireAuth>
-            <Resource name="users" list={UserList} edit={UserEdit} />
+        <Admin dataProvider={dataProvider} authProvider={authProvider} theme={eTayoTheme} requireAuth>
+            <Resource name="users" list={UserList} edit={UserEdit} create={UserCreate} />
         </Admin>
     );
 };
