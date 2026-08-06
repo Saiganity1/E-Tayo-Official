@@ -103,9 +103,9 @@ export default function LoginPage() {
               <div className="input-with-icon">
                 <Mail size={18} className="input-icon" />
                 <input 
-                  type="email" 
+                  type="text" 
                   required
-                  placeholder="name@example.com" 
+                  placeholder="name@example.com or Username" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
