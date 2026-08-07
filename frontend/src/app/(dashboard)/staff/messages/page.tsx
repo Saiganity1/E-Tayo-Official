@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Send, User, Clock, Inbox } from "lucide-react";
+import { Send, User, Clock, Inbox, MessageSquare } from "lucide-react";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
 
@@ -11,18 +11,28 @@ export default function StaffMessagesPage() {
   const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [connected, setConnected] = useState(false);
   const [applicantEmail, setApplicantEmail] = useState<string | null>(null);
+  const [contacts, setContacts] = useState<string[]>([]);
   
   const stompClient = useRef<Client | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Fetch unique conversations on load
   useEffect(() => {
-    // 1. Get current user from localStorage
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/messages/conversations?user=staff@etayo.gov.ph`)
+      .then(res => res.json())
+      .then(data => {
+        // Filter out the staff inbox itself if it's in the list
+        setContacts(data.filter((c: string) => c !== "staff@etayo.gov.ph"));
+      })
+      .catch(err => console.error("Failed to load conversations", err));
+  }, []);
+
+  useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setCurrentUserEmail(parsedUser.email);
       
-      // 2. Connect to WebSocket
       let wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
       if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
         wsUrl = wsUrl.replace('ws://', 'wss://');
@@ -41,25 +51,38 @@ export default function StaffMessagesPage() {
           
           const handleIncomingMessage = (message: any) => {
             const receivedMessage = JSON.parse(message.body);
-            setApplicantEmail(receivedMessage.senderEmail);
-            setMessages(prev => {
-              const exists = prev.find(m => m.id === receivedMessage.id);
-              if (exists) return prev;
-              return [...prev, receivedMessage];
+            const sender = receivedMessage.senderEmail;
+            const recipient = receivedMessage.recipientEmail;
+            
+            // If message is from someone not in contacts, add them
+            if (sender !== "staff@etayo.gov.ph") {
+              setContacts(prev => prev.includes(sender) ? prev : [sender, ...prev]);
+            } else if (recipient !== "staff@etayo.gov.ph") {
+               // We sent it, add recipient to contacts
+              setContacts(prev => prev.includes(recipient) ? prev : [recipient, ...prev]);
+            }
+
+            // Only append to chat window if we are actively chatting with them
+            setApplicantEmail(currentApplicant => {
+              if (sender === currentApplicant || (sender === "staff@etayo.gov.ph" && recipient === currentApplicant)) {
+                 setMessages(prev => {
+                   const exists = prev.find(m => m.id === receivedMessage.id);
+                   if (exists) return prev;
+                   return [...prev, receivedMessage];
+                 });
+              }
+              return currentApplicant;
             });
           };
 
-          // Subscribe to personal messages
           client.subscribe(`/topic/messages/${parsedUser.email}`, handleIncomingMessage);
           
-          // Also subscribe to the generic "Mang Tomas" staff inbox so they get messages sent by applicants
           if (parsedUser.email !== "staff@etayo.gov.ph") {
              client.subscribe(`/topic/messages/staff@etayo.gov.ph`, handleIncomingMessage);
           }
         },
         onStompError: (frame) => {
           console.error("Broker reported error: " + frame.headers["message"]);
-          console.error("Additional details: " + frame.body);
         },
         onWebSocketClose: () => {
           setConnected(false);
@@ -77,10 +100,8 @@ export default function StaffMessagesPage() {
     };
   }, []);
 
-  // Fetch history only when an applicant is selected/messages us
   useEffect(() => {
     if (applicantEmail) {
-      // Always fetch history as the generic staff inbox so we can see the full thread
       const staffInbox = "staff@etayo.gov.ph";
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/messages/history?user1=${staffInbox}&user2=${applicantEmail}`)
         .then(res => res.json())
@@ -89,7 +110,6 @@ export default function StaffMessagesPage() {
     }
   }, [applicantEmail]);
 
-  // Scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -98,7 +118,6 @@ export default function StaffMessagesPage() {
     e.preventDefault();
     if (inputMessage.trim() && stompClient.current && connected && applicantEmail) {
       const chatMessage = {
-        // Always send as the generic staff inbox so applicant's history doesn't break
         senderEmail: "staff@etayo.gov.ph",
         recipientEmail: applicantEmail,
         content: inputMessage.trim(),
@@ -108,93 +127,125 @@ export default function StaffMessagesPage() {
         body: JSON.stringify(chatMessage),
       });
       setInputMessage("");
-      
-      // Optimistically add our own message to the UI so it feels instant
-      setMessages(prev => [...prev, { ...chatMessage, timestamp: new Date().toISOString() }]);
     }
   };
 
-  // If no applicant has messaged yet, show a blank waiting screen
-  if (!applicantEmail) {
-    return (
-      <div className="chat-container" style={{ justifyContent: 'center', alignItems: 'center', background: '#f9fafb' }}>
-        <div className="empty-state">
-           <Inbox size={48} style={{ color: '#9ca3af', marginBottom: '1rem' }} />
-           <h2 style={{ fontSize: '1.25rem', color: '#374151', fontWeight: 600 }}>Waiting for Messages</h2>
-           <p style={{ color: '#6b7280', maxWidth: '300px', textAlign: 'center', marginTop: '0.5rem' }}>
-             When an applicant sends you a message, their chat will automatically appear here.
-           </p>
-           <p className="status-text" style={{ marginTop: '2rem' }}>
-              <span className={`status-dot ${connected ? 'online' : 'offline'}`}></span>
-              {connected ? 'Connected to messaging server' : 'Reconnecting...'}
-            </p>
-        </div>
-      </div>
-    );
-  }
+  const getValidDate = (ts: any) => {
+    if (!ts) return new Date();
+    if (typeof ts === 'string' && !ts.endsWith('Z')) {
+      return new Date(ts + 'Z');
+    }
+    return new Date(ts);
+  };
 
   return (
-    <div className="chat-container">
-      {/* Header */}
-      <div className="chat-header">
-        <div className="chat-header-info">
-          <div className="chat-avatar staff-avatar">
-            <User size={20} />
-          </div>
-          <div>
-            <h2>{applicantEmail} (Applicant)</h2>
-            <p className="status-text">
-              <span className={`status-dot ${connected ? 'online' : 'offline'}`}></span>
-              {connected ? 'Online' : 'Reconnecting...'}
-            </p>
-          </div>
+    <div className="messenger-layout">
+      {/* Sidebar Contacts */}
+      <div className="messenger-sidebar">
+        <div className="messenger-sidebar-header">
+          <h2><MessageSquare size={18} /> Active Chats</h2>
+        </div>
+        <div className="messenger-contacts-list">
+          {contacts.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
+              <p>No conversations yet.</p>
+            </div>
+          ) : (
+            contacts.map((email, idx) => (
+              <div 
+                key={idx} 
+                className={`contact-item ${applicantEmail === email ? 'active' : ''}`}
+                onClick={() => setApplicantEmail(email)}
+              >
+                <div className="contact-avatar">
+                  {email.charAt(0).toUpperCase()}
+                </div>
+                <div className="contact-info">
+                  <p className="contact-email">{email}</p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* Messages Area */}
-      <div className="chat-messages">
-        {messages.length === 0 ? (
-          <div className="empty-state">
-            <Clock size={32} />
-            <p>No messages yet. Say hello!</p>
+      {/* Main Chat Area */}
+      <div className="messenger-main">
+        {!applicantEmail ? (
+          <div className="messenger-empty">
+             <Inbox size={48} />
+             <h2>Select a Conversation</h2>
+             <p>Choose an applicant from the sidebar to view their messages.</p>
+             <p className="status-text" style={{ marginTop: '1rem' }}>
+                <span className={`status-dot ${connected ? 'online' : 'offline'}`}></span>
+                {connected ? 'Connected to messaging server' : 'Reconnecting...'}
+              </p>
           </div>
         ) : (
-          messages.map((msg, idx) => {
-            const isMe = msg.senderEmail === currentUserEmail;
-            return (
-              <div key={idx} className={`message-row ${isMe ? 'me' : 'them'}`}>
-                <div className={`message-bubble ${isMe ? 'me' : 'them'}`}>
-                  <p>{msg.content}</p>
-                  <span className="timestamp">
-                    {msg.timestamp ? format(new Date(msg.timestamp), "h:mm a") : format(new Date(), "h:mm a")}
-                  </span>
+          <div className="chat-container" style={{ borderRadius: 0, border: 'none', boxShadow: 'none' }}>
+            {/* Header */}
+            <div className="chat-header">
+              <div className="chat-header-info">
+                <div className="chat-avatar staff-avatar">
+                  <User size={20} />
+                </div>
+                <div>
+                  <h2>{applicantEmail} (Applicant)</h2>
+                  <p className="status-text">
+                    <span className={`status-dot ${connected ? 'online' : 'offline'}`}></span>
+                    {connected ? 'Online' : 'Reconnecting...'}
+                  </p>
                 </div>
               </div>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+            </div>
 
-      {/* Input Area */}
-      <div className="chat-input-area">
-        <form onSubmit={sendMessage} className="chat-form">
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message..."
-            className="chat-input"
-            disabled={!connected}
-          />
-          <button
-            type="submit"
-            disabled={!connected || !inputMessage.trim()}
-            className="chat-send-btn staff-btn"
-          >
-            <Send size={18} />
-          </button>
-        </form>
+            {/* Messages Area */}
+            <div className="chat-messages">
+              {messages.length === 0 ? (
+                <div className="empty-state">
+                  <Clock size={32} />
+                  <p>No messages yet. Say hello!</p>
+                </div>
+              ) : (
+                messages.map((msg, idx) => {
+                  const isMe = msg.senderEmail === currentUserEmail || msg.senderEmail === "staff@etayo.gov.ph";
+                  return (
+                    <div key={idx} className={`message-row ${isMe ? 'me' : 'them'}`}>
+                      <div className={`message-bubble ${isMe ? 'me' : 'them'}`}>
+                        <p>{msg.content}</p>
+                        <span className="timestamp">
+                          {format(getValidDate(msg.timestamp), "h:mm a")}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="chat-input-area">
+              <form onSubmit={sendMessage} className="chat-form">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="chat-input"
+                  disabled={!connected}
+                />
+                <button
+                  type="submit"
+                  disabled={!connected || !inputMessage.trim()}
+                  className="chat-send-btn staff-btn"
+                >
+                  <Send size={18} />
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

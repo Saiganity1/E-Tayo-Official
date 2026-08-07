@@ -45,4 +45,10 @@ public class ChatController {
         List<ChatMessage> history = chatMessageRepository.findChatHistory(user1, user2);
         return ResponseEntity.ok(history);
     }
+
+    @GetMapping("/api/messages/conversations")
+    public ResponseEntity<List<String>> getConversations(@RequestParam String user) {
+        List<String> conversations = chatMessageRepository.findConversationsForUser(user);
+        return ResponseEntity.ok(conversations);
+    }
 }
