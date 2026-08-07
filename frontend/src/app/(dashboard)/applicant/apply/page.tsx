@@ -89,14 +89,34 @@ export default function ApplyPage() {
       }
     } catch (e) {}
 
-    const newApp = {
+    const newApp: any = {
       id: `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
       projectName,
       permitType: selectedPermitType,
       status: "pending",
       dateSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
       applicantName,
-      fileUrl: uploadedFileUrl
+      fileUrl: uploadedFileUrl,
+      location: {
+        lat: parseFloat(latitude) || 15.0050,
+        lng: parseFloat(longitude) || 120.7100,
+        address: projectAddress || 'Sto. Tomas, Pampanga',
+      },
+      requirements: [
+        {
+          name: 'Uploaded Document',
+          required: true,
+          status: 'approved',
+          fileName: 'submitted_document.pdf'
+        }
+      ],
+      trackingSteps: [
+        { title: 'Application Submitted', status: 'completed', date: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }), notes: 'Online application file successfully received.' },
+        { title: 'Initial Document Verification', status: 'upcoming', notes: 'Reviewing all required attachments for completeness.' }
+      ],
+      historyLog: [
+        { date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute:"2-digit" }), action: 'Application Submitted', actor: applicantName, details: 'Application package uploaded online.' }
+      ]
     };
 
     addApplication(newApp);

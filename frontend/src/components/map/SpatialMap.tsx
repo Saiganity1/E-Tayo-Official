@@ -284,6 +284,10 @@ export default function SpatialMap() {
         {/* CLUSTERED PERMITS (Temporarily rendering as direct markers due to React 19 compatibility issues with react-leaflet-cluster) */}
         <>
           {filteredApps.map((app) => {
+            if (!app.location || typeof app.location.lat === 'undefined' || typeof app.location.lng === 'undefined') {
+              return null; // Skip rendering applications without valid location data to prevent crashes
+            }
+
             let symbol = SVGS.locationalClearance;
             let bgColor = "var(--color-primary)";
 
