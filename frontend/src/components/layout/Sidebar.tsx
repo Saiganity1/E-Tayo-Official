@@ -130,21 +130,27 @@ export default function Sidebar() {
             );
           })}
           
-          <div className="nav-divider"></div>
-          
-          <Link 
-            href="/"
-            className="nav-item text-danger hover-danger"
-            onClick={() => {
-              setUserRole("public");
-              setIsOpen(false);
-            }}
-          >
-            <div className="nav-item-content">
-              <LogOut size={18} strokeWidth={2.25} />
-              <span>Sign Out</span>
-            </div>
-          </Link>
+          {userRole !== "public" && (
+            <>
+              <div className="nav-divider"></div>
+              
+              <Link 
+                href="/"
+                className="nav-item text-danger hover-danger"
+                onClick={() => {
+                  localStorage.removeItem("token");
+                  localStorage.removeItem("user");
+                  setUserRole("public");
+                  setIsOpen(false);
+                }}
+              >
+                <div className="nav-item-content">
+                  <LogOut size={18} strokeWidth={2.25} />
+                  <span>Sign Out</span>
+                </div>
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="sidebar-footer">
