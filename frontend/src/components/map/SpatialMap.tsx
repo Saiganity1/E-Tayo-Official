@@ -135,8 +135,11 @@ export default function SpatialMap() {
       if (searchQuery && !app.projectName.toLowerCase().includes(searchQuery.toLowerCase()) && !app.id.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       
       // If a barangay is selected, filter by its bounds (simplified by matching address text for mock data)
-      if (selectedBarangay && !app.location.address.toLowerCase().includes(selectedBarangay.toLowerCase())) {
-        return false;
+      if (selectedBarangay) {
+        if (!app.location || !app.location.address) return false;
+        if (!app.location.address.toLowerCase().includes(selectedBarangay.toLowerCase())) {
+          return false;
+        }
       }
       return true;
     });
