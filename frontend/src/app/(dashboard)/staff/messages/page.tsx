@@ -23,8 +23,13 @@ export default function StaffMessagesPage() {
       setCurrentUserEmail(parsedUser.email);
       
       // 2. Connect to WebSocket
+      let wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        wsUrl = wsUrl.replace('ws://', 'wss://');
+      }
+
       const client = new Client({
-        brokerURL: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws",
+        brokerURL: wsUrl,
         reconnectDelay: 5000,
         onConnect: () => {
           console.log("Connected to WebSocket");

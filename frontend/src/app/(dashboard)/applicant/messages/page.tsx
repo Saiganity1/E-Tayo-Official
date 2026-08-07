@@ -30,8 +30,13 @@ export default function ApplicantMessagesPage() {
         .catch(err => console.error("Failed to load history", err));
 
       // 3. Connect to WebSocket
+      let wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        wsUrl = wsUrl.replace('ws://', 'wss://');
+      }
+
       const client = new Client({
-        brokerURL: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws",
+        brokerURL: wsUrl,
         reconnectDelay: 5000,
         onConnect: () => {
           console.log("Connected to WebSocket");
@@ -92,7 +97,7 @@ export default function ApplicantMessagesPage() {
             <User size={20} />
           </div>
           <div>
-            <h2>City Planning Staff</h2>
+            <h2>Mang Tomas</h2>
             <p className="status-text">
               <span className={`status-dot ${connected ? 'online' : 'offline'}`}></span>
               {connected ? 'Online' : 'Reconnecting...'}
