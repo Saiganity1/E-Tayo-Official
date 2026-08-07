@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Lock, Mail, User, ShieldCheck } from "lucide-react";
+import { Lock, Mail, User, ShieldCheck, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -63,7 +63,12 @@ export default function RegisterPage() {
         <div className="visual-overlay"></div>
       </div>
 
-      <div className="login-form-container">
+      <div className="login-form-container" style={{ position: "relative" }}>
+        
+        {/* Back Button */}
+        <Link href="/" style={{ position: "absolute", top: "2rem", left: "2rem", display: "flex", alignItems: "center", gap: "8px", color: "#64748b", textDecoration: "none", fontSize: "0.9rem", fontWeight: "600", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.color = "#0f172a"; e.currentTarget.style.transform = "translateX(-4px)"; }} onMouseLeave={(e) => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.transform = "translateX(0)"; }}>
+          <ArrowRight size={18} style={{ transform: "rotate(180deg)" }} /> Back to Home
+        </Link>
         <div className="login-card animate-fade-in-up">
           <div className="logo-group">
             <div className="logo-icon"></div>
