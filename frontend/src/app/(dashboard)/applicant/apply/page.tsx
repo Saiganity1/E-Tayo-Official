@@ -4,6 +4,12 @@ import React, { useState } from "react";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const LocationPickerMap = dynamic(() => import("../../../../components/map/LocationPickerMap"), { 
+  ssr: false, 
+  loading: () => <div style={{ height: "200px", background: "#f8fafc", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #cbd5e1", color: "#64748b", fontWeight: "600" }}>Loading Map...</div> 
+});
 
 const STEPS = [
   { id: 1, title: "Permit Type", icon: FileText },
@@ -204,13 +210,8 @@ export default function ApplyPage() {
                       </div>
                     </div>
 
-                    <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", border: "1px solid #cbd5e1", height: "200px", background: "#f8fafc" }}>
-                      <iframe 
-                        src={`https://maps.google.com/maps?q=14.995,120.705&t=&z=14&ie=UTF8&iwloc=&output=embed`} 
-                        width="100%" 
-                        height="100%" 
-                        style={{ border: "none" }}
-                      ></iframe>
+                    <div style={{ marginTop: "1rem" }}>
+                      <LocationPickerMap />
                     </div>
                   </div>
                 </div>
