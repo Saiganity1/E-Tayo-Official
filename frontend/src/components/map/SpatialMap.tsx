@@ -464,9 +464,26 @@ export default function SpatialMap() {
       ) : (
         <button 
           onClick={() => setShowLegend(true)}
-          style={{ position: 'absolute', bottom: '24px', left: '24px', zIndex: 1000, background: 'rgba(255, 255, 255, 0.95)', padding: '10px 16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', cursor: 'pointer', fontWeight: 'bold' }}
+          style={{ 
+            position: 'absolute', 
+            bottom: '24px', 
+            left: '24px', 
+            zIndex: 10000, 
+            background: 'var(--color-primary)', 
+            color: 'white',
+            padding: '10px 16px', 
+            borderRadius: 'var(--radius-md)', 
+            border: 'none', 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)', 
+            cursor: 'pointer', 
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
         >
-          🗺️ Show Legend
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          Show Map Legend
         </button>
       )}
       
@@ -477,7 +494,7 @@ export default function SpatialMap() {
           position: 'absolute',
           top: '24px',
           left: '70px', // placed to the right of Leaflet zoom controls
-          zIndex: 1000,
+          zIndex: 10000,
           background: 'rgba(255, 255, 255, 0.95)',
           padding: '20px',
           borderRadius: 'var(--radius-md)',
@@ -561,22 +578,39 @@ export default function SpatialMap() {
       ) : (
         <button 
           onClick={() => setShowFilters(true)}
-          style={{ position: 'absolute', top: '24px', left: '70px', zIndex: 1000, background: 'rgba(255, 255, 255, 0.95)', padding: '10px 16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', cursor: 'pointer', fontWeight: 'bold' }}
+          style={{ 
+            position: 'absolute', 
+            top: '24px', 
+            left: '70px', 
+            zIndex: 10000, 
+            background: 'var(--color-primary)', 
+            color: 'white',
+            padding: '10px 16px', 
+            borderRadius: 'var(--radius-md)', 
+            border: 'none', 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)', 
+            cursor: 'pointer', 
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
         >
-          🔍 Show Filters
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          Show Filters
         </button>
       )}
 
       {/* FULLSCREEN BUTTON */}
       <button 
         onClick={toggleFullscreen}
-        style={{ position: 'absolute', bottom: '80px', right: '10px', zIndex: 1000, background: 'white', padding: '6px', borderRadius: '4px', border: '2px solid rgba(0,0,0,0.2)', boxShadow: '0 1px 5px rgba(0,0,0,0.65)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'absolute', bottom: '24px', right: '24px', zIndex: 10000, background: 'white', padding: '10px', borderRadius: 'var(--radius-md)', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Map"}
       >
         {isFullscreen ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
         ) : (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         )}
       </button>
 
