@@ -12,8 +12,8 @@ const SpatialMap = dynamic(() => import("../../../../components/map/SpatialMap")
 
 export default function MapPage() {
   return (
-    <div className="dashboard-page animate-fade-in-up" style={{ height: 'calc(100vh - 4rem)' }}>
-      <header className="page-header" style={{ marginBottom: 0 }}>
+    <div className="dashboard-page animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 4rem)' }}>
+      <header className="page-header" style={{ marginBottom: 0, paddingBottom: '1rem' }}>
         <div>
           <h1 className="page-title flex items-center gap-2">
             <MapIcon size={32} className="text-primary" />

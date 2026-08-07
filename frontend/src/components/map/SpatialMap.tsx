@@ -192,15 +192,15 @@ export default function SpatialMap() {
 
   return (
     <div ref={mapWrapperRef} style={{ 
-      height: isFullscreen ? "100%" : "calc(100vh - 120px)", 
+      height: "100%", 
       width: "100%", 
       borderRadius: isFullscreen ? "0" : "var(--radius-lg)", 
       overflow: "hidden", 
       position: "relative",
       boxShadow: isFullscreen ? "none" : "var(--shadow-md)",
-      background: "var(--background-primary, white)"
+      background: "var(--background-primary, white)",
+      minHeight: "500px" // Fallback minimum height
     }}>
-      
       {/* MAP CONTAINER */}
       <MapContainer 
         center={STO_TOMAS_CENTER} 
