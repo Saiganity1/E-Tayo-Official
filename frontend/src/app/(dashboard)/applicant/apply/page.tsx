@@ -18,10 +18,17 @@ export default function ApplyPage() {
   const router = useRouter();
 
   const [projectName, setProjectName] = useState("");
-  const [projectAddress, setProjectAddress] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [barangay, setBarangay] = useState("San Bartolome");
+  const [lotArea, setLotArea] = useState("");
+  const [floorArea, setFloorArea] = useState("");
+  const [projectCost, setProjectCost] = useState("");
+  
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadedFileUrl, setUploadedFileUrl] = useState("");
+
+  const projectAddress = `${streetAddress}, Brgy. ${barangay}, Sto. Tomas, Pampanga`;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -145,27 +152,124 @@ export default function ApplyPage() {
           {currentStep === 2 && (
             <div className="step-pane animate-fade-in-up">
               <h2>Project Details</h2>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Project Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. 2-Storey Residential" 
-                    className="form-input" 
-                    value={projectName}
-                    onChange={e => setProjectName(e.target.value)}
-                  />
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", marginTop: "1.5rem" }}>
+                
+                {/* Left Column: Basic Details & Location */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                  <div className="form-group">
+                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block" }}>Project Name</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. 2-Storey Residential" 
+                      className="form-input" 
+                      value={projectName}
+                      onChange={e => setProjectName(e.target.value)}
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1" }}
+                    />
+                  </div>
+
+                  <div>
+                    <h3 style={{ fontSize: "1.1rem", color: "#0f172a", marginBottom: "1rem", borderBottom: "1px solid #e2e8f0", paddingBottom: "0.5rem" }}>Location (Sto. Tomas Only)</h3>
+                    
+                    <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block", fontSize: "0.9rem" }}>Barangay</label>
+                        <select 
+                          className="form-input" 
+                          value={barangay}
+                          onChange={e => setBarangay(e.target.value)}
+                          style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "white" }}
+                        >
+                          <option value="San Bartolome">San Bartolome</option>
+                          <option value="San Vicente">San Vicente</option>
+                          <option value="San Matias">San Matias</option>
+                          <option value="Poblacion">Poblacion</option>
+                          <option value="Santo Rosario">Santo Rosario</option>
+                          <option value="Sapa (Santo Niño)">Sapa (Santo Niño)</option>
+                          <option value="Moras De La Paz">Moras De La Paz</option>
+                        </select>
+                      </div>
+                      
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block", fontSize: "0.9rem" }}>Street / Lot No.</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. Lot 12, Block 3" 
+                          className="form-input" 
+                          value={streetAddress}
+                          onChange={e => setStreetAddress(e.target.value)}
+                          style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1" }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", border: "1px solid #cbd5e1", height: "200px", background: "#f8fafc" }}>
+                      <iframe 
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=120.67%2C14.98%2C120.73%2C15.02&layer=mapnik&marker=14.995,120.705`} 
+                        width="100%" 
+                        height="100%" 
+                        style={{ border: "none" }}
+                      ></iframe>
+                      <div style={{ position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", background: "white", padding: "6px 16px", borderRadius: "99px", fontSize: "0.85rem", fontWeight: "700", color: "#0f172a", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: "6px", border: "1px solid #e2e8f0", pointerEvents: "none" }}>
+                        <MapPin size={14} color="#1d4ed8" /> Drag map to pin exact location
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Project Address</label>
-                  <input 
-                    type="text" 
-                    placeholder="Lot No, Street, Barangay" 
-                    className="form-input" 
-                    value={projectAddress}
-                    onChange={e => setProjectAddress(e.target.value)}
-                  />
+
+                {/* Right Column: Advanced Details */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                  <div>
+                    <h3 style={{ fontSize: "1.1rem", color: "#0f172a", marginBottom: "1rem", borderBottom: "1px solid #e2e8f0", paddingBottom: "0.5rem" }}>Advanced Project Details</h3>
+                    
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      <div className="form-group">
+                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block", fontSize: "0.9rem" }}>Total Lot Area (sq.m)</label>
+                        <input 
+                          type="number" 
+                          placeholder="e.g. 150" 
+                          className="form-input" 
+                          value={lotArea}
+                          onChange={e => setLotArea(e.target.value)}
+                          style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1" }}
+                        />
+                      </div>
+                      
+                      <div className="form-group">
+                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block", fontSize: "0.9rem" }}>Total Floor Area (sq.m)</label>
+                        <input 
+                          type="number" 
+                          placeholder="e.g. 200" 
+                          className="form-input" 
+                          value={floorArea}
+                          onChange={e => setFloorArea(e.target.value)}
+                          style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1" }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block", fontSize: "0.9rem" }}>Estimated Project Cost (₱)</label>
+                        <input 
+                          type="number" 
+                          placeholder="e.g. 2500000" 
+                          className="form-input" 
+                          value={projectCost}
+                          onChange={e => setProjectCost(e.target.value)}
+                          style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "1rem", borderRadius: "12px", marginTop: "auto" }}>
+                    <p style={{ margin: 0, fontSize: "0.85rem", color: "#166534", lineHeight: "1.5", display: "flex", gap: "8px" }}>
+                      <CheckCircle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
+                      These details help the OBO automatically calculate your accurate fee multipliers in the next stages.
+                    </p>
+                  </div>
                 </div>
+
               </div>
             </div>
           )}
