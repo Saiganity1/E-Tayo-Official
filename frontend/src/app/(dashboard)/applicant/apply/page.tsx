@@ -206,7 +206,7 @@ export default function ApplyPage() {
 
                     <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", border: "1px solid #cbd5e1", height: "200px", background: "#f8fafc" }}>
                       <iframe 
-                        src={`https://www.openstreetmap.org/export/embed.html?bbox=120.67%2C14.98%2C120.73%2C15.02&layer=mapnik&marker=14.995,120.705`} 
+                        src={`https://maps.google.com/maps?q=14.995,120.705&t=&z=14&ie=UTF8&iwloc=&output=embed`} 
                         width="100%" 
                         height="100%" 
                         style={{ border: "none" }}
