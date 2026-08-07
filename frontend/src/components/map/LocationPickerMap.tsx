@@ -49,8 +49,11 @@ export default function LocationPickerMap({ onLocationChange }: LocationPickerMa
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const boundaryFeature = stoTomasZoningGeoJSON.features.find((f: any) => f.properties.isBoundary);
-  const boundaryCoords = boundaryFeature?.geometry.coordinates[0];
+  const boundaryFeature = stoTomasZoningGeoJSON.features.find((f: any) => f.properties?.isBoundary);
+  // Support both Polygon and MultiPolygon
+  const boundaryCoords = boundaryFeature?.geometry.type === 'Polygon' 
+    ? boundaryFeature.geometry.coordinates[0]
+    : boundaryFeature?.geometry.coordinates[0][0];
 
   const handleLocationChange = (lat: number, lng: number) => {
     if (boundaryCoords && !isPointInPolygon([lng, lat], boundaryCoords)) {
@@ -116,12 +119,16 @@ export default function LocationPickerMap({ onLocationChange }: LocationPickerMa
           </LayersControl.BaseLayer>
         </LayersControl>
 
-        {boundaryFeature && (
-          <GeoJSON 
-            data={boundaryFeature} 
-            style={{ color: "#1e40af", weight: 3, fillOpacity: 0.1, dashArray: "5, 5" }} 
-          />
-        )}
+        <GeoJSON 
+          key="sto-tomas-boundary"
+          data={stoTomasZoningGeoJSON} 
+          style={(feature: any) => {
+            if (feature?.properties?.isBoundary) {
+              return { color: "#ef4444", weight: 4, fillOpacity: 0.1, dashArray: "5, 10" };
+            }
+            return { weight: 0, fillOpacity: 0 };
+          }}
+        />
 
         <Marker 
           position={position} 
@@ -143,8 +150,8 @@ export default function LocationPickerMap({ onLocationChange }: LocationPickerMa
         onClick={(e) => { e.preventDefault(); toggleFullscreen(); }}
         style={{ 
           position: "absolute", 
-          top: "10px", 
-          left: "50px", 
+          bottom: "20px", 
+          left: "10px", 
           zIndex: 1000, 
           background: "white", 
           border: "1px solid #cbd5e1", 
@@ -158,7 +165,7 @@ export default function LocationPickerMap({ onLocationChange }: LocationPickerMa
         }}
         title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Map"}
       >
-        {isFullscreen ? <Minimize size={18} color="#0f172a" /> : <Maximize size={18} color="#0f172a" />}
+        {isFullscreen ? <Minimize size={20} color="#0f172a" /> : <Maximize size={20} color="#0f172a" />}
       </button>
 
       {!isFullscreen && (
