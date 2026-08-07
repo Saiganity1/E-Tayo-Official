@@ -182,7 +182,7 @@ export default function AdminMessagesPage() {
               </p>
           </div>
         ) : (
-          <div className="chat-container" style={{ borderRadius: 0, border: 'none', boxShadow: 'none' }}>
+          <>
             {/* Header */}
             <div className="chat-header">
               <div className="chat-header-info">
@@ -244,7 +244,7 @@ export default function AdminMessagesPage() {
                 </button>
               </form>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
