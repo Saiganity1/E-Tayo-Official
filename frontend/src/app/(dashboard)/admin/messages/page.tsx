@@ -79,13 +79,15 @@ export default function AdminMessagesPage() {
 
   // Fetch history only when an applicant is selected/messages us
   useEffect(() => {
-    if (currentUserEmail && applicantEmail) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/messages/history?user1=${currentUserEmail}&user2=${applicantEmail}`)
+    if (applicantEmail) {
+      // Always fetch history as the generic staff inbox so we can see the full thread
+      const staffInbox = "staff@etayo.gov.ph";
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/messages/history?user1=${staffInbox}&user2=${applicantEmail}`)
         .then(res => res.json())
         .then(data => setMessages(data))
         .catch(err => console.error("Failed to load history", err));
     }
-  }, [currentUserEmail, applicantEmail]);
+  }, [applicantEmail]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -96,7 +98,8 @@ export default function AdminMessagesPage() {
     e.preventDefault();
     if (inputMessage.trim() && stompClient.current && connected && applicantEmail) {
       const chatMessage = {
-        senderEmail: currentUserEmail,
+        // Always send as the generic staff inbox so applicant's history doesn't break
+        senderEmail: "staff@etayo.gov.ph",
         recipientEmail: applicantEmail,
         content: inputMessage.trim(),
       };
