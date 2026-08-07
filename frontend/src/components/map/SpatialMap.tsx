@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, GeoJSON, LayersControl, useMap } from "react-leaflet";
 import { createLayerComponent } from "@react-leaflet/core";
-import MarkerClusterGroup from "react-leaflet-cluster";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 // Dynamic import for leaflet.heat to avoid SSR and hoisting issues with window.L
