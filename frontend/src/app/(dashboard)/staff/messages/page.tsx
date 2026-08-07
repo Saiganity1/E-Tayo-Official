@@ -27,6 +27,10 @@ export default function StaffMessagesPage() {
       if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
         wsUrl = wsUrl.replace('ws://', 'wss://');
       }
+      
+      if (!wsUrl.endsWith('/ws')) {
+        wsUrl = wsUrl.replace(/\/$/, '') + '/ws';
+      }
 
       const client = new Client({
         brokerURL: wsUrl,

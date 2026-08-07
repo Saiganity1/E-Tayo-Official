@@ -34,6 +34,11 @@ export default function ApplicantMessagesPage() {
       if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
         wsUrl = wsUrl.replace('ws://', 'wss://');
       }
+      
+      // Ensure the URL targets the /ws endpoint explicitly (in case the env var just points to the domain)
+      if (!wsUrl.endsWith('/ws')) {
+        wsUrl = wsUrl.replace(/\/$/, '') + '/ws';
+      }
 
       const client = new Client({
         brokerURL: wsUrl,
