@@ -313,14 +313,8 @@ export default function SpatialMap() {
             </Marker>
           );
         })}
-
-        {/* CLUSTERED PERMITS */}
-        <MarkerClusterGroup
-          chunkedLoading
-          maxClusterRadius={45}
-          spiderfyOnMaxZoom={true}
-          polygonOptions={{ fillColor: 'var(--color-primary)', color: 'var(--color-primary)', weight: 2, opacity: 1, fillOpacity: 0.2 }}
-        >
+        {/* CLUSTERED PERMITS (Temporarily rendering as direct markers due to React 19 compatibility issues with react-leaflet-cluster) */}
+        <>
           {filteredApps.map((app) => {
             let symbol = SVGS.locationalClearance;
             let bgColor = "var(--color-primary)";
@@ -348,57 +342,79 @@ export default function SpatialMap() {
                   display: flex;
                   align-items: center;
                   justify-content: center;
-                  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
                   transform: translate(-50%, -50%);
-                  position: relative;
                 ">
                   ${symbol}
-                  <div style="
-                    position: absolute;
-                    bottom: -6px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    width: 0;
-                    height: 0;
-                    border-left: 6px solid transparent;
-                    border-right: 6px solid transparent;
-                    border-top: 8px solid ${bgColor};
-                  "></div>
                 </div>
               `,
-              className: 'custom-permit-icon',
-              iconSize: [40, 48],
-              iconAnchor: [20, 48],
-              popupAnchor: [0, -48]
+              className: 'custom-div-icon',
+              iconSize: [40, 40],
+              iconAnchor: [20, 20],
+              popupAnchor: [0, -20]
             });
 
             return (
               <Marker key={app.id} position={[app.location.lat, app.location.lng]} icon={permitIcon}>
-                <Popup>
-                  <div style={{ padding: '4px', minWidth: '180px' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                      {app.id}
+                <Popup className="permit-popup">
+                  <div style={{ padding: '0.5rem', minWidth: '220px' }}>
+                    <div style={{ 
+                      background: bgColor, 
+                      color: 'white', 
+                      padding: '4px 8px', 
+                      borderRadius: '4px', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '700', 
+                      display: 'inline-block', 
+                      marginBottom: '10px' 
+                    }}>
+                      {app.permitType.replace("_", " ")}
                     </div>
-                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: '8px' }}>
-                      {app.projectName}
+                    <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', color: '#0f172a' }}>{app.projectName}</h3>
+                    <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                      {app.location.address}
+                    </p>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
+                      <div>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Status</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 
+                          app.status === 'APPROVED' ? '#10b981' : 
+                          app.status === 'REJECTED' ? '#ef4444' : 
+                          app.status === 'UNDER_REVIEW' ? '#3b82f6' : '#f59e0b'
+                        }}>
+                          {app.status.replace("_", " ")}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Submitted</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>
+                          {new Date(app.submissionDate).toLocaleDateString()}
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
-                      <strong>Type:</strong> <span style={{ color: bgColor, fontWeight: 'bold' }}>{app.permitType.replace('_', ' ').toUpperCase()}</span>
-                    </div>
-                    <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
-                      <strong>Address:</strong> {app.location.address}
-                    </div>
-                    <div>
-                      <span className={`status-badge ${app.status}`} style={{ fontSize: '0.7rem' }}>
-                        {app.status.replace('_', ' ')}
-                      </span>
-                    </div>
+                    
+                    <a href={`/applicant/track/${app.id}`} style={{ 
+                      display: 'block', 
+                      background: '#f1f5f9', 
+                      color: 'var(--color-primary)', 
+                      textAlign: 'center', 
+                      padding: '8px', 
+                      borderRadius: '6px', 
+                      textDecoration: 'none', 
+                      fontSize: '0.85rem', 
+                      fontWeight: '600',
+                      border: '1px solid #e2e8f0'
+                    }}>
+                      View Application Details
+                    </a>
                   </div>
                 </Popup>
               </Marker>
             );
           })}
-        </MarkerClusterGroup>
+        </>
       </MapContainer>
 
       {/* FLOATING MAP LEGEND */}
