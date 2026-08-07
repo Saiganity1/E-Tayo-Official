@@ -29,6 +29,8 @@ export default function ApplyPage() {
   const [lotArea, setLotArea] = useState("");
   const [floorArea, setFloorArea] = useState("");
   const [projectCost, setProjectCost] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -208,10 +210,36 @@ export default function ApplyPage() {
                           style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1" }}
                         />
                       </div>
+                    <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block", fontSize: "0.85rem" }}>Latitude</label>
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={latitude}
+                          className="form-input" 
+                          style={{ width: "100%", padding: "0.5rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#f1f5f9", color: "#64748b" }}
+                        />
+                      </div>
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block", fontSize: "0.85rem" }}>Longitude</label>
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={longitude}
+                          className="form-input" 
+                          style={{ width: "100%", padding: "0.5rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#f1f5f9", color: "#64748b" }}
+                        />
+                      </div>
                     </div>
 
                     <div style={{ marginTop: "1rem" }}>
-                      <LocationPickerMap />
+                      <LocationPickerMap 
+                        onLocationChange={(lat, lng) => {
+                          setLatitude(lat.toFixed(6));
+                          setLongitude(lng.toFixed(6));
+                        }} 
+                      />
                     </div>
                   </div>
                 </div>

@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents, LayersControl } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMapEvents, LayersControl, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Maximize, Minimize } from "lucide-react";
+import { stoTomasZoningGeoJSON } from "../../data/stoTomasGeoJSON";
 
 // Fix marker icon issue in Next.js
 const customIcon = new L.Icon({
@@ -17,6 +18,19 @@ const customIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Ray-casting algorithm to check if point is in polygon
+function isPointInPolygon(point: [number, number], vs: number[][]) {
+  const x = point[0], y = point[1];
+  let inside = false;
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    const xi = vs[i][0], yi = vs[i][1];
+    const xj = vs[j][0], yj = vs[j][1];
+    const intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
 function MapEvents({ onLocationSelected }: { onLocationSelected: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
@@ -26,16 +40,36 @@ function MapEvents({ onLocationSelected }: { onLocationSelected: (lat: number, l
   return null;
 }
 
-export default function LocationPickerMap() {
+interface LocationPickerMapProps {
+  onLocationChange?: (lat: number, lng: number) => void;
+}
+
+export default function LocationPickerMap({ onLocationChange }: LocationPickerMapProps) {
   const [position, setPosition] = useState<[number, number]>([14.995, 120.705]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
+
+  const boundaryFeature = stoTomasZoningGeoJSON.features.find((f: any) => f.properties.isBoundary);
+  const boundaryCoords = boundaryFeature?.geometry.coordinates[0];
+
+  const handleLocationChange = (lat: number, lng: number) => {
+    if (boundaryCoords && !isPointInPolygon([lng, lat], boundaryCoords)) {
+      alert("Error: Location must be within Sto. Tomas, Pampanga only.");
+      return;
+    }
+    setPosition([lat, lng]);
+    if (onLocationChange) {
+      onLocationChange(lat, lng);
+    }
+  };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    // Initial emit
+    if (onLocationChange) onLocationChange(position[0], position[1]);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
@@ -76,11 +110,18 @@ export default function LocationPickerMap() {
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Satellite View">
             <TileLayer
-              attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+              attribution='Tiles &copy; Esri'
               url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             />
           </LayersControl.BaseLayer>
         </LayersControl>
+
+        {boundaryFeature && (
+          <GeoJSON 
+            data={boundaryFeature} 
+            style={{ color: "#1e40af", weight: 3, fillOpacity: 0.1, dashArray: "5, 5" }} 
+          />
+        )}
 
         <Marker 
           position={position} 
@@ -90,11 +131,12 @@ export default function LocationPickerMap() {
             dragend: (e) => {
               const marker = e.target;
               const pos = marker.getLatLng();
-              setPosition([pos.lat, pos.lng]);
+              handleLocationChange(pos.lat, pos.lng);
+              marker.setLatLng(position); // reset if invalid, or it updates to new if valid (because of state)
             }
           }}
         />
-        <MapEvents onLocationSelected={(lat, lng) => setPosition([lat, lng])} />
+        <MapEvents onLocationSelected={(lat, lng) => handleLocationChange(lat, lng)} />
       </MapContainer>
       
       <button 
@@ -102,7 +144,7 @@ export default function LocationPickerMap() {
         style={{ 
           position: "absolute", 
           top: "10px", 
-          left: "10px", 
+          left: "50px", 
           zIndex: 1000, 
           background: "white", 
           border: "1px solid #cbd5e1", 
