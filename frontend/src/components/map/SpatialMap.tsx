@@ -5,11 +5,6 @@ import { MapContainer, TileLayer, Marker, Popup, GeoJSON, LayersControl, useMap 
 import { createLayerComponent } from "@react-leaflet/core";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-// Dynamic import for leaflet.heat to avoid SSR and hoisting issues with window.L
-if (typeof window !== "undefined") {
-  (window as any).L = (window as any).L || L;
-  require("leaflet.heat");
-}
 import { usePermitContext } from "../../context/PermitContext";
 import { stoTomasZoningGeoJSON } from "../../data/stoTomasGeoJSON";
 
@@ -74,23 +69,6 @@ function LocateControl() {
   }, [map]);
   return null;
 }
-
-const HeatmapLayer = createLayerComponent(
-  function createHeatmapLayer({ points }: any, context: any) {
-    const heat = (L as any).heatLayer(points, { 
-      radius: 35, 
-      blur: 25, 
-      maxZoom: 17,
-      gradient: { 0.4: 'blue', 0.6: 'cyan', 0.7: 'lime', 0.8: 'yellow', 1.0: 'red' }
-    });
-    return { instance: heat, context };
-  },
-  function updateHeatmapLayer(instance: any, props: any, prevProps: any) {
-    if (props.points !== prevProps.points) {
-      instance.setLatLngs(props.points);
-    }
-  }
-);
 
 function MapResizer({ isFullscreen }: { isFullscreen: boolean }) {
   const map = useMap();
@@ -163,11 +141,6 @@ export default function SpatialMap() {
       return true;
     });
   }, [applications, filterType, searchQuery, selectedBarangay]);
-
-  // Heatmap Data Extraction
-  const heatPoints: [number, number, number][] = useMemo(() => {
-    return filteredApps.map(app => [app.location.lat, app.location.lng, 1.0]); // Lat, Lng, Intensity
-  }, [filteredApps]);
 
   const onEachFeature = (feature: any, layer: L.Layer) => {
     layer.on('click', () => {
@@ -267,10 +240,6 @@ export default function SpatialMap() {
               style={styleFeature}
               onEachFeature={onEachFeature}
             />
-          </LayersControl.Overlay>
-          
-          <LayersControl.Overlay name="Permit Heatmap">
-            <HeatmapLayer points={heatPoints} />
           </LayersControl.Overlay>
         </LayersControl>
 
