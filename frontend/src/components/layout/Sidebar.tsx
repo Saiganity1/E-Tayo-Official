@@ -55,6 +55,7 @@ export default function Sidebar() {
           { href: "/staff/dashboard", label: "Review Workspaces", icon: FileCheck },
           { href: "/admin/users", label: "Applicants Management", icon: Users },
           { href: "/admin/staff", label: "Staff Management", icon: ShieldAlert },
+          { href: "/admin/messages", label: "Messages", icon: MessageSquare, badge: 1 },
           { href: "/admin/settings", label: "Settings", icon: Settings },
         ];
       default:

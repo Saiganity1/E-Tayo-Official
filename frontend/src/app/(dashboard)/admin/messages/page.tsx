@@ -5,7 +5,7 @@ import { Send, User, Clock, Inbox } from "lucide-react";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
 
-export default function StaffMessagesPage() {
+export default function AdminMessagesPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [currentUserEmail, setCurrentUserEmail] = useState("");
