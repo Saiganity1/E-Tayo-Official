@@ -119,6 +119,7 @@ export default function StaffMessagesPage() {
     if (inputMessage.trim() && stompClient.current && connected && applicantEmail) {
       const chatMessage = {
         senderEmail: "staff@etayo.gov.ph",
+        actualSender: currentUserEmail,
         recipientEmail: applicantEmail,
         content: inputMessage.trim(),
       };
@@ -211,7 +212,10 @@ export default function StaffMessagesPage() {
                   const isMe = msg.senderEmail === currentUserEmail || msg.senderEmail === "staff@etayo.gov.ph";
                   return (
                     <div key={idx} className={`message-row ${isMe ? 'me' : 'them'}`}>
-                      <div className={`message-bubble ${isMe ? 'me' : 'them'}`}>
+                      <div 
+                        className={`message-bubble ${isMe ? 'me' : 'them'}`}
+                        title={isMe && msg.actualSender ? `Sent by ${msg.actualSender}` : undefined}
+                      >
                         <p>{msg.content}</p>
                         <span className="timestamp">
                           {format(getValidDate(msg.timestamp), "h:mm a")}

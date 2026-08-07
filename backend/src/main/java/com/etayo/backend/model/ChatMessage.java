@@ -20,6 +20,9 @@ public class ChatMessage {
     @Column(nullable = false, length = 1000)
     private String content;
 
+    @Column(nullable = true)
+    private String actualSender;
+
     @Column(nullable = false)
     private Instant timestamp;
 
@@ -45,6 +48,9 @@ public class ChatMessage {
 
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+
+    public String getActualSender() { return actualSender; }
+    public void setActualSender(String actualSender) { this.actualSender = actualSender; }
 
     public Instant getTimestamp() { return timestamp; }
     public void setTimestamp(Instant timestamp) { this.timestamp = timestamp; }
