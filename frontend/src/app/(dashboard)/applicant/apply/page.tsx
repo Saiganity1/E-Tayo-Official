@@ -211,9 +211,6 @@ export default function ApplyPage() {
                         height="100%" 
                         style={{ border: "none" }}
                       ></iframe>
-                      <div style={{ position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", background: "white", padding: "6px 16px", borderRadius: "99px", fontSize: "0.85rem", fontWeight: "700", color: "#0f172a", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: "6px", border: "1px solid #e2e8f0", pointerEvents: "none" }}>
-                        <MapPin size={14} color="#1d4ed8" /> Drag map to pin exact location
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -260,13 +257,6 @@ export default function ApplyPage() {
                         />
                       </div>
                     </div>
-                  </div>
-                  
-                  <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "1rem", borderRadius: "12px", marginTop: "auto" }}>
-                    <p style={{ margin: 0, fontSize: "0.85rem", color: "#166534", lineHeight: "1.5", display: "flex", gap: "8px" }}>
-                      <CheckCircle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
-                      These details help the OBO automatically calculate your accurate fee multipliers in the next stages.
-                    </p>
                   </div>
                 </div>
 
