@@ -219,6 +219,11 @@ export default function AdminMessagesPage() {
                         <p>{msg.content}</p>
                         <span className="timestamp">
                           {format(getValidDate(msg.timestamp), "h:mm a")}
+                          {isMe && msg.actualSender && (
+                            <span style={{ display: 'block', color: '#bfdbfe', marginTop: '2px' }}>
+                              by {msg.actualSender.split('@')[0]}
+                            </span>
+                          )}
                         </span>
                       </div>
                     </div>
