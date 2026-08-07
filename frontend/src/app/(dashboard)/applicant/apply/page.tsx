@@ -31,6 +31,7 @@ export default function ApplyPage() {
   const [projectCost, setProjectCost] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [detectedZone, setDetectedZone] = useState<{barangay?: string, zoneType?: string, description?: string} | null>(null);
   
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -237,12 +238,28 @@ export default function ApplyPage() {
 
                     <div style={{ marginTop: "1rem" }}>
                       <LocationPickerMap 
-                        onLocationChange={(lat, lng) => {
+                        onLocationChange={(lat, lng, zone) => {
                           setLatitude(lat.toFixed(6));
                           setLongitude(lng.toFixed(6));
+                          if (zone) setDetectedZone(zone);
                         }} 
                       />
                     </div>
+                    
+                    {detectedZone && detectedZone.zoneType && (
+                      <div className="animate-fade-in-up" style={{ marginTop: "1rem", padding: "1rem", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", display: "flex", gap: "1rem", alignItems: "center" }}>
+                        <div style={{ width: "40px", height: "40px", background: "#22c55e", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <MapPin size={20} color="white" />
+                        </div>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: "0.95rem", color: "#166534", fontWeight: "700" }}>Detected Zone: {detectedZone.zoneType}</h4>
+                          <p style={{ margin: "0.25rem 0 0 0", fontSize: "0.85rem", color: "#15803d" }}>
+                            {detectedZone.barangay ? `Barangay ${detectedZone.barangay} - ` : ""}
+                            {detectedZone.description}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

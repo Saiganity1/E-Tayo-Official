@@ -6,8 +6,11 @@ import { createLayerComponent } from "@react-leaflet/core";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-// Dynamic import for leaflet.heat to avoid SSR issues
-import "leaflet.heat";
+// Dynamic import for leaflet.heat to avoid SSR and hoisting issues with window.L
+if (typeof window !== "undefined") {
+  (window as any).L = (window as any).L || L;
+  require("leaflet.heat");
+}
 import { usePermitContext } from "../../context/PermitContext";
 import { stoTomasZoningGeoJSON } from "../../data/stoTomasGeoJSON";
 

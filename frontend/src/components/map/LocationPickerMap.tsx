@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, LayersControl, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Maximize, Minimize } from "lucide-react";
+import { Maximize, Minimize, AlertCircle, CheckCircle2 } from "lucide-react";
 import { stoTomasZoningGeoJSON } from "../../data/stoTomasGeoJSON";
 
 // Fix marker icon issue in Next.js
@@ -31,6 +31,24 @@ function isPointInPolygon(point: [number, number], vs: number[][]) {
   return inside;
 }
 
+// Check which zone a point belongs to
+function getZoneForPoint(lng: number, lat: number) {
+  for (const feature of stoTomasZoningGeoJSON.features) {
+    if (!feature.properties?.isBoundary && feature.geometry) {
+      let coords = feature.geometry.coordinates;
+      if (feature.geometry.type === 'Polygon') {
+        coords = coords[0];
+      } else if (feature.geometry.type === 'MultiPolygon') {
+        coords = coords[0][0]; // Simplified for first polygon
+      }
+      if (isPointInPolygon([lng, lat], coords)) {
+        return feature.properties;
+      }
+    }
+  }
+  return null;
+}
+
 function MapEvents({ onLocationSelected }: { onLocationSelected: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
@@ -40,13 +58,20 @@ function MapEvents({ onLocationSelected }: { onLocationSelected: (lat: number, l
   return null;
 }
 
+export interface ZoneInfo {
+  barangay?: string;
+  zoneType?: string;
+  description?: string;
+}
+
 interface LocationPickerMapProps {
-  onLocationChange?: (lat: number, lng: number) => void;
+  onLocationChange?: (lat: number, lng: number, zone?: ZoneInfo | null) => void;
 }
 
 export default function LocationPickerMap({ onLocationChange }: LocationPickerMapProps) {
   const [position, setPosition] = useState<[number, number]>([14.995, 120.705]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showError, setShowError] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
 
   const boundaryFeature = stoTomasZoningGeoJSON.features.find((f: any) => f.properties?.isBoundary);
@@ -57,12 +82,15 @@ export default function LocationPickerMap({ onLocationChange }: LocationPickerMa
 
   const handleLocationChange = (lat: number, lng: number) => {
     if (boundaryCoords && !isPointInPolygon([lng, lat], boundaryCoords)) {
-      alert("Error: Location must be within Sto. Tomas, Pampanga only.");
+      setShowError(true);
       return;
     }
+    setShowError(false);
     setPosition([lat, lng]);
+    
     if (onLocationChange) {
-      onLocationChange(lat, lng);
+      const zoneInfo = getZoneForPoint(lng, lat);
+      onLocationChange(lat, lng, zoneInfo);
     }
   };
 
@@ -72,7 +100,10 @@ export default function LocationPickerMap({ onLocationChange }: LocationPickerMa
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     // Initial emit
-    if (onLocationChange) onLocationChange(position[0], position[1]);
+    if (onLocationChange) {
+      const zoneInfo = getZoneForPoint(position[1], position[0]);
+      onLocationChange(position[0], position[1], zoneInfo);
+    }
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
@@ -171,6 +202,27 @@ export default function LocationPickerMap({ onLocationChange }: LocationPickerMa
       {!isFullscreen && (
         <div style={{ position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", zIndex: 1000, background: "rgba(255,255,255,0.95)", padding: "6px 16px", borderRadius: "99px", fontSize: "0.85rem", fontWeight: "700", color: "#1d4ed8", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", pointerEvents: "none", border: "1px solid #bfdbfe", whiteSpace: "nowrap" }}>
           Click or drag pin to set location
+        </div>
+      )}
+
+      {/* Custom Error Modal */}
+      {showError && (
+        <div className="animate-fade-in-up" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 2000, background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "white", padding: "2rem", borderRadius: "16px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)", maxWidth: "320px", textAlign: "center" }}>
+            <div style={{ width: "64px", height: "64px", background: "#fee2e2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem auto" }}>
+              <AlertCircle size={32} color="#dc2626" />
+            </div>
+            <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#0f172a", marginBottom: "0.5rem" }}>Out of Bounds</h3>
+            <p style={{ color: "#64748b", fontSize: "0.95rem", marginBottom: "1.5rem", lineHeight: "1.5" }}>
+              The selected location falls outside the jurisdictional boundary of <strong>Sto. Tomas, Pampanga</strong>. Please pinpoint a location within the municipal borders.
+            </p>
+            <button 
+              onClick={(e) => { e.preventDefault(); setShowError(false); }}
+              style={{ width: "100%", padding: "0.75rem", background: "#3b82f6", color: "white", borderRadius: "8px", fontWeight: "600", border: "none", cursor: "pointer", transition: "background 0.2s" }}
+            >
+              Understood
+            </button>
+          </div>
         </div>
       )}
     </div>
