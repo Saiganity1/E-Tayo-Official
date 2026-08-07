@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import React, { useState, useEffect, useRef } from "react";
+import { MapContainer, TileLayer, Marker, useMapEvents, LayersControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Maximize, Minimize } from "lucide-react";
@@ -29,32 +29,59 @@ function MapEvents({ onLocationSelected }: { onLocationSelected: (lat: number, l
 export default function LocationPickerMap() {
   const [position, setPosition] = useState<[number, number]>([14.995, 120.705]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
 
-  // Toggle body overflow when fullscreen
   useEffect(() => {
-    if (isFullscreen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-    return () => { document.body.style.overflow = 'auto'; };
-  }, [isFullscreen]);
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
-  const containerStyle = isFullscreen 
-    ? { position: "fixed" as const, top: 0, left: 0, width: "100vw", height: "100vh", zIndex: 99999, background: "white" }
-    : { position: "relative" as const, borderRadius: "12px", overflow: "hidden", border: "1px solid #cbd5e1", height: "200px", background: "#f8fafc", width: "100%" };
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      mapRef.current?.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen mode: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   return (
-    <div style={containerStyle}>
+    <div 
+      ref={mapRef} 
+      style={{ 
+        position: "relative", 
+        borderRadius: isFullscreen ? "0" : "12px", 
+        overflow: "hidden", 
+        border: isFullscreen ? "none" : "1px solid #cbd5e1", 
+        height: isFullscreen ? "100vh" : "250px", 
+        background: "#f8fafc", 
+        width: "100%" 
+      }}
+    >
       <MapContainer 
         center={position} 
         zoom={14} 
         style={{ width: "100%", height: "100%" }}
       >
-        <TileLayer
-          attribution='&copy; OpenStreetMap'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <LayersControl position="topright">
+          <LayersControl.BaseLayer checked name="Street View">
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Satellite View">
+            <TileLayer
+              attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            />
+          </LayersControl.BaseLayer>
+        </LayersControl>
+
         <Marker 
           position={position} 
           icon={customIcon}
@@ -71,11 +98,11 @@ export default function LocationPickerMap() {
       </MapContainer>
       
       <button 
-        onClick={(e) => { e.preventDefault(); setIsFullscreen(!isFullscreen); }}
+        onClick={(e) => { e.preventDefault(); toggleFullscreen(); }}
         style={{ 
           position: "absolute", 
           top: "10px", 
-          right: "10px", 
+          left: "10px", 
           zIndex: 1000, 
           background: "white", 
           border: "1px solid #cbd5e1", 
@@ -92,9 +119,11 @@ export default function LocationPickerMap() {
         {isFullscreen ? <Minimize size={18} color="#0f172a" /> : <Maximize size={18} color="#0f172a" />}
       </button>
 
-      <div style={{ position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", zIndex: 1000, background: "rgba(255,255,255,0.95)", padding: "6px 16px", borderRadius: "99px", fontSize: "0.85rem", fontWeight: "700", color: "#1d4ed8", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", pointerEvents: "none", border: "1px solid #bfdbfe", whiteSpace: "nowrap" }}>
-        Click or drag pin to set location
-      </div>
+      {!isFullscreen && (
+        <div style={{ position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", zIndex: 1000, background: "rgba(255,255,255,0.95)", padding: "6px 16px", borderRadius: "99px", fontSize: "0.85rem", fontWeight: "700", color: "#1d4ed8", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", pointerEvents: "none", border: "1px solid #bfdbfe", whiteSpace: "nowrap" }}>
+          Click or drag pin to set location
+        </div>
+      )}
     </div>
   );
 }
