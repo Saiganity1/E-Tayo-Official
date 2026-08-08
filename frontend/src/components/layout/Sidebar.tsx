@@ -8,6 +8,7 @@ import {
   MessageSquare, ShieldAlert, Map, X, Menu, Settings, LogOut, Users
 } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
+import NotificationBell from "./NotificationBell";
 
 export default function Sidebar() {
   const { userRole, setUserRole } = usePermitContext();
@@ -98,16 +99,19 @@ export default function Sidebar() {
           </button>
         </div>
 
-        <div className="user-profile">
-          <div className="user-avatar">
-            {avatarChar}
+        <div className="user-profile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div className="user-avatar">
+              {avatarChar}
+            </div>
+            <div className="user-info">
+              <span className="user-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {displayName}
+              </span>
+              <span className="user-role">{userRole}</span>
+            </div>
           </div>
-          <div className="user-info">
-            <span className="user-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {displayName}
-            </span>
-            <span className="user-role">{userRole}</span>
-          </div>
+          {userRole !== "public" && <NotificationBell />}
         </div>
 
         <nav className="sidebar-nav">
