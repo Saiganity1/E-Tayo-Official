@@ -13,25 +13,34 @@ public class EmailService {
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
+    @org.springframework.beans.factory.annotation.Value("${spring.mail.username:}")
+    private String fromEmail;
+
     public void sendEmail(String to, String subject, String htmlBody) {
         if (mailSender == null) {
             System.out.println("Email ignored (mailSender not configured). To: " + to + " Subject: " + subject);
             return;
         }
 
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(htmlBody, true); // true indicates HTML content
-            
-            mailSender.send(message);
-        } catch (MessagingException e) {
-            System.err.println("Failed to send email to " + to + ": " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Error sending email: " + e.getMessage());
-        }
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                
+                if (fromEmail != null && !fromEmail.isEmpty()) {
+                    helper.setFrom(fromEmail);
+                }
+                helper.setTo(to);
+                helper.setSubject(subject);
+                helper.setText(htmlBody, true); // true indicates HTML content
+                
+                mailSender.send(message);
+                System.out.println("Email sent successfully to " + to);
+            } catch (MessagingException e) {
+                System.err.println("Failed to send email to " + to + ": " + e.getMessage());
+            } catch (Exception e) {
+                System.err.println("Error sending email: " + e.getMessage());
+            }
+        });
     }
 }
