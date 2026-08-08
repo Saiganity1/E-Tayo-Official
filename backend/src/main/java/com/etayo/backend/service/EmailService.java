@@ -13,6 +13,10 @@ public class EmailService {
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
+    public JavaMailSender getMailSender() {
+        return mailSender;
+    }
+
     @org.springframework.beans.factory.annotation.Value("${spring.mail.username:}")
     private String fromEmail;
 

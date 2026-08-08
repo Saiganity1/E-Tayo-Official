@@ -84,6 +84,51 @@ public class AuthController {
         return ResponseEntity.ok(java.util.Map.of("message", "OTP sent to email"));
     }
 
+    @GetMapping("/test-email")
+    public ResponseEntity<?> testEmailRoute() {
+        try {
+            String emailUser = System.getenv("EMAIL_USERNAME");
+            String emailPass = System.getenv("EMAIL_PASSWORD");
+            
+            boolean userExists = emailUser != null && !emailUser.trim().isEmpty();
+            boolean passExists = emailPass != null && !emailPass.trim().isEmpty();
+            
+            if (!userExists || !passExists) {
+                return ResponseEntity.ok(java.util.Map.of(
+                    "status", "FAILED_NO_ENV_VARS",
+                    "email_username_configured", userExists,
+                    "email_password_configured", passExists
+                ));
+            }
+
+            // Test sending synchronously
+            try {
+                org.springframework.mail.javamail.JavaMailSender sender = emailService.getMailSender();
+                if (sender == null) throw new RuntimeException("JavaMailSender is null (AutoConfiguration failed)");
+                
+                jakarta.mail.internet.MimeMessage message = sender.createMimeMessage();
+                org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(message, true, "UTF-8");
+                helper.setFrom(emailUser);
+                helper.setTo(emailUser);
+                helper.setSubject("Diagnostics Test");
+                helper.setText("This is a direct test from the live server.");
+                sender.send(message);
+
+                return ResponseEntity.ok(java.util.Map.of(
+                    "status", "SUCCESS",
+                    "message", "Email sent successfully to " + emailUser
+                ));
+            } catch (Exception e) {
+                return ResponseEntity.ok(java.util.Map.of(
+                    "status", "FAILED_EXCEPTION",
+                    "exception", e.getMessage() != null ? e.getMessage() : e.getClass().getName()
+                ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginDto loginDto) {
         try {
