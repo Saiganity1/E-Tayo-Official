@@ -6,15 +6,17 @@ import Link from "next/link";
 import { Lock, Mail, User, ShieldCheck, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
+  const [step, setStep] = useState<"details" | "verification">("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const router = useRouter();
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
@@ -26,10 +28,41 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to send verification code";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = await response.text() || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      setStep("verification");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Network Error: Failed to fetch");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setIsLoading(true);
+
+    try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, otp }),
       });
 
       if (!response.ok) {
@@ -76,8 +109,17 @@ export default function RegisterPage() {
           </div>
           
           <div className="form-header">
-            <h1>Create Account</h1>
-            <p>Please enter your details to register.</p>
+            {step === "details" ? (
+              <>
+                <h1>Create Account</h1>
+                <p>Please enter your details to register.</p>
+              </>
+            ) : (
+              <>
+                <h1>Verify Email</h1>
+                <p>We sent a 6-digit code to <b>{email}</b>. Please enter it below.</p>
+              </>
+            )}
           </div>
 
           {errorMsg && (
@@ -86,71 +128,105 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="login-form">
-            <div className="form-group">
-              <label>Full Name</label>
-              <div className="input-with-icon">
-                <User size={18} className="input-icon" />
-                <input 
-                  type="text" 
-                  required
-                  placeholder="Juan Dela Cruz" 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
+          {step === "details" ? (
+            <form onSubmit={handleSendOtp} className="login-form">
+              <div className="form-group">
+                <label>Full Name</label>
+                <div className="input-with-icon">
+                  <User size={18} className="input-icon" />
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="Juan Dela Cruz" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="form-group">
-              <label>Email Address</label>
-              <div className="input-with-icon">
-                <Mail size={18} className="input-icon" />
-                <input 
-                  type="email" 
-                  required
-                  placeholder="name@example.com" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+              <div className="form-group">
+                <label>Email Address</label>
+                <div className="input-with-icon">
+                  <Mail size={18} className="input-icon" />
+                  <input 
+                    type="email" 
+                    required
+                    placeholder="name@example.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="form-group">
-              <label>Password</label>
-              <div className="input-with-icon">
-                <Lock size={18} className="input-icon" />
-                <input 
-                  type="password" 
-                  required
-                  placeholder="••••••••" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+              <div className="form-group">
+                <label>Password</label>
+                <div className="input-with-icon">
+                  <Lock size={18} className="input-icon" />
+                  <input 
+                    type="password" 
+                    required
+                    placeholder="••••••••" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="form-group">
-              <label>Confirm Password</label>
-              <div className="input-with-icon">
-                <Lock size={18} className="input-icon" />
-                <input 
-                  type="password" 
-                  required
-                  placeholder="••••••••" 
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
+              <div className="form-group">
+                <label>Confirm Password</label>
+                <div className="input-with-icon">
+                  <Lock size={18} className="input-icon" />
+                  <input 
+                    type="password" 
+                    required
+                    placeholder="••••••••" 
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
 
-            <button type="submit" className="login-btn" disabled={isLoading}>
-              {isLoading ? "Registering..." : "Create Account"}
-            </button>
-            
-            <div className="register-prompt">
-              Already have an account? <Link href="/login" className="register-link">Log in here</Link>
-            </div>
-          </form>
+              <button type="submit" className="login-btn" disabled={isLoading}>
+                {isLoading ? "Sending Code..." : "Create Account"}
+              </button>
+              
+              <div className="register-prompt">
+                Already have an account? <Link href="/login" className="register-link">Log in here</Link>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="login-form">
+              <div className="form-group">
+                <label>6-Digit Verification Code</label>
+                <div className="input-with-icon">
+                  <ShieldCheck size={18} className="input-icon" />
+                  <input 
+                    type="text" 
+                    required
+                    maxLength={6}
+                    placeholder="123456" 
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    style={{ letterSpacing: '0.5em', fontSize: '1.2rem', fontWeight: 'bold', textAlign: 'center' }}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="login-btn" disabled={isLoading}>
+                {isLoading ? "Verifying..." : "Verify & Complete Registration"}
+              </button>
+              
+              <div className="register-prompt">
+                <button 
+                  type="button" 
+                  onClick={() => setStep("details")} 
+                  style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', fontWeight: 500, fontSize: '0.9rem' }}
+                >
+                  Change email address
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
 
