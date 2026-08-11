@@ -82,7 +82,7 @@ function UserLocationMarker() {
   if (!position) return null;
 
   const userIcon = L.divIcon({
-    html: \`<div style="width: 20px; height: 20px; background-color: #2563eb; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); animation: pulse 2s infinite;"></div>\`,
+    html: `<div style="width: 20px; height: 20px; background-color: #2563eb; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); animation: pulse 2s infinite;"></div>`,
     className: 'user-location-marker',
     iconSize: [20, 20],
     iconAnchor: [10, 10]
