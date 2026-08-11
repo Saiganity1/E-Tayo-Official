@@ -258,10 +258,39 @@ export default function ApplyPage() {
 
                     <div style={{ marginTop: "1rem" }}>
                       <LocationPickerMap 
-                        onLocationChange={(lat, lng, zone) => {
+                        onLocationChange={async (lat, lng, zone) => {
                           setLatitude(lat.toFixed(6));
                           setLongitude(lng.toFixed(6));
-                          if (zone) setDetectedZone(zone);
+                          
+                          if (zone) {
+                            setDetectedZone(zone);
+                            // Auto-select the barangay dropdown if the zone has it
+                            if (zone.barangay) {
+                              setBarangay(zone.barangay);
+                            }
+                          }
+                          
+                          // Reverse Geocoding to auto-fill street address, but preserve user edits
+                          try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                            const data = await res.json();
+                            if (data && data.address) {
+                              const road = data.address.road || data.address.pedestrian || "";
+                              const neighborhood = data.address.neighbourhood || data.address.suburb || "";
+                              
+                              let autoAddress = road;
+                              if (neighborhood && !road.includes(neighborhood)) {
+                                autoAddress += autoAddress ? `, ${neighborhood}` : neighborhood;
+                              }
+                              
+                              // Auto-fill if user hasn't typed much, or if it's empty
+                              if (autoAddress && streetAddress.length < 5) {
+                                setStreetAddress(autoAddress);
+                              }
+                            }
+                          } catch (e) {
+                            console.error("Reverse geocoding failed", e);
+                          }
                         }} 
                       />
                     </div>
