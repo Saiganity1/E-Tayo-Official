@@ -181,7 +181,7 @@ export default function LocationPickerMap({ onLocationChange }: LocationPickerMa
         onClick={(e) => { e.preventDefault(); toggleFullscreen(); }}
         style={{ 
           position: "absolute", 
-          bottom: "20px", 
+          top: "10px", 
           left: "10px", 
           zIndex: 1000, 
           background: "white", 
