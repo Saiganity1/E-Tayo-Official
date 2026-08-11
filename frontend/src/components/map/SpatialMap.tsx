@@ -607,7 +607,7 @@ export default function SpatialMap() {
       {/* FULLSCREEN BUTTON */}
       <button 
         onClick={toggleFullscreen}
-        style={{ position: 'absolute', bottom: '24px', right: '24px', zIndex: 10000, background: 'white', padding: '10px', borderRadius: 'var(--radius-md)', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'absolute', bottom: '80px', right: '24px', zIndex: 10000, background: 'white', padding: '10px', borderRadius: 'var(--radius-md)', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Map"}
       >
         {isFullscreen ? (
