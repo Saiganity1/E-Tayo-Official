@@ -4,12 +4,15 @@ import React, { useState } from "react";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { Search, Plus, Filter, Bell, User, Clock, CheckCircle2, AlertTriangle, FileText } from "lucide-react";
 import Link from "next/link";
+import Skeleton from "../../../../components/Skeleton";
 
 export default function ApplicantDashboard() {
   const { applications } = usePermitContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [userName, setUserName] = useState("Applicant");
+
+  const [isLoading, setIsLoading] = useState(true);
 
   React.useEffect(() => {
     try {
@@ -19,6 +22,12 @@ export default function ApplicantDashboard() {
         if (userObj.name) setUserName(userObj.name);
       }
     } catch (e) {}
+
+    // Simulate network request to show off skeleton loading UX
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
   }, []);
 
   // Filter by the actual logged-in applicant name
@@ -48,6 +57,25 @@ export default function ApplicantDashboard() {
       default: return { color: "#64748b", bg: "rgba(100, 116, 139, 0.15)", icon: FileText, label: "Unknown", border: "#cbd5e1" };
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="dashboard-page p-8">
+        <Skeleton className="h-32 w-full mb-8 rounded-2xl" />
+        <div className="flex gap-6 mb-12">
+          <Skeleton className="h-32 flex-1 rounded-2xl" />
+          <Skeleton className="h-32 flex-1 rounded-2xl" />
+          <Skeleton className="h-32 flex-1 rounded-2xl" />
+        </div>
+        <Skeleton className="h-10 w-48 mb-6" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-48 w-full rounded-2xl" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-page animate-fade-in-up">

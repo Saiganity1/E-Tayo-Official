@@ -9,9 +9,20 @@ const jakarta = Plus_Jakarta_Sans({
 
 import { PermitProvider } from "../context/PermitContext";
 
+import { Viewport } from "next";
+
 export const metadata: Metadata = {
   title: "e-Tayo | Government Permit Portal",
   description: "Secure and fast application for building, locational, and occupancy permits.",
+  manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0d9488",
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
