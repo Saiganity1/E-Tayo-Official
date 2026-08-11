@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { PermitApplication, SystemLog, FeeStructure, PermitType } from "../types";
-import { INITIAL_APPLICATIONS, INITIAL_SYSTEM_LOGS, FEE_STRUCTURES } from "../data/mock";
+
+const API_BASE_URL = "http://localhost:8080/api";
 
 type UserRole = "public" | "applicant" | "staff" | "admin";
 
@@ -26,21 +27,32 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [userRole, setUserRole] = useState<UserRole>("public");
   const [selectedPermitType, setSelectedPermitType] = useState<PermitType>("building_permit");
 
-  const [applications, setApplications] = useState<PermitApplication[]>(INITIAL_APPLICATIONS);
-  const [systemLogs, setSystemLogs] = useState<SystemLog[]>(INITIAL_SYSTEM_LOGS);
-  const [feeStructures, setFeeStructures] = useState<FeeStructure[]>(FEE_STRUCTURES);
+  const [applications, setApplications] = useState<PermitApplication[]>([]);
+  const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
+  const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
 
   // Client-side hydration
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const savedApps = localStorage.getItem("etayo_applications");
-    const savedLogs = localStorage.getItem("etayo_system_logs");
-    const savedFees = localStorage.getItem("etayo_fee_structures");
-    
-    if (savedApps) setApplications(JSON.parse(savedApps));
-    if (savedLogs) setSystemLogs(JSON.parse(savedLogs));
-    if (savedFees) setFeeStructures(JSON.parse(savedFees));
+    // Fetch data from backend
+    const fetchData = async () => {
+      try {
+        const [appsRes, logsRes, feesRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/permits`),
+          fetch(`${API_BASE_URL}/logs`),
+          fetch(`${API_BASE_URL}/fees`)
+        ]);
+
+        if (appsRes.ok) setApplications(await appsRes.json());
+        if (logsRes.ok) setSystemLogs(await logsRes.json());
+        if (feesRes.ok) setFeeStructures(await feesRes.json());
+      } catch (error) {
+        console.error("Error fetching data from backend:", error);
+      }
+    };
+
+    fetchData();
 
     // Restore user role from login session
     try {
@@ -100,42 +112,37 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [mounted, userRole]);
 
-  useEffect(() => {
-    if (mounted) {
-      localStorage.setItem("etayo_applications", JSON.stringify(applications));
-      localStorage.setItem("etayo_system_logs", JSON.stringify(systemLogs));
-      localStorage.setItem("etayo_fee_structures", JSON.stringify(feeStructures));
-    }
-  }, [applications, systemLogs, feeStructures, mounted]);
+  // We no longer sync to localStorage since we are using a real backend database.
 
-  const addApplication = (newApp: PermitApplication) => {
+  const addApplication = async (newApp: PermitApplication) => {
+    // Optimistic UI update
     setApplications((prev) => [newApp, ...prev]);
 
-    const newLog: SystemLog = {
-      id: `LOG-${Math.floor(100 + Math.random() * 900)}`,
-      timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
-      category: "application",
-      message: `Created digital dossier ${newApp.id} for "${newApp.projectName}"`,
-      user: newApp.applicantName,
-      status: "success",
-    };
-    setSystemLogs((prev) => [newLog, ...prev]);
+    try {
+      await fetch(`${API_BASE_URL}/permits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newApp)
+      });
+    } catch (e) {
+      console.error("Failed to save permit", e);
+    }
   };
 
-  const updateApplication = (updatedApp: PermitApplication) => {
+  const updateApplication = async (updatedApp: PermitApplication) => {
     setApplications((prev) =>
       prev.map((app) => (app.id === updatedApp.id ? updatedApp : app))
     );
 
-    const newLog: SystemLog = {
-      id: `LOG-${Math.floor(100 + Math.random() * 900)}`,
-      timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
-      category: "application",
-      message: `Permit folder ${updatedApp.id} status modified to ${updatedApp.status.toUpperCase()}`,
-      user: userRole === "staff" ? "OBO Reviewer Staff" : updatedApp.applicantName,
-      status: updatedApp.status === "incomplete_requirements" ? "warning" : "info",
-    };
-    setSystemLogs((prev) => [newLog, ...prev]);
+    try {
+      await fetch(`${API_BASE_URL}/permits/${updatedApp.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedApp)
+      });
+    } catch (e) {
+      console.error("Failed to update permit", e);
+    }
   };
 
   const updateFeeMultiplier = (id: string, newValue: number) => {
