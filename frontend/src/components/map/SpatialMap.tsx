@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, GeoJSON, LayersControl, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON, LayersControl, useMap, useMapEvents } from "react-leaflet";
 import { createLayerComponent } from "@react-leaflet/core";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -60,7 +60,7 @@ function LocateControl() {
       </button>`;
       div.onclick = function(e){
         e.preventDefault();
-        map.locate({setView: true, maxZoom: 16});
+        map.locate();
       }
       return div;
     };
@@ -68,6 +68,33 @@ function LocateControl() {
     return () => { map.removeControl(locateBtn); };
   }, [map]);
   return null;
+}
+
+function UserLocationMarker() {
+  const [position, setPosition] = useState<L.LatLng | null>(null);
+  const map = useMapEvents({
+    locationfound(e) {
+      setPosition(e.latlng);
+      map.flyTo(e.latlng, 16);
+    },
+  });
+
+  if (!position) return null;
+
+  const userIcon = L.divIcon({
+    html: \`<div style="width: 20px; height: 20px; background-color: #2563eb; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); animation: pulse 2s infinite;"></div>\`,
+    className: 'user-location-marker',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  });
+
+  return (
+    <Marker position={position} icon={userIcon}>
+      <Popup>
+        <div style={{ textAlign: "center", fontWeight: "bold", color: "#1e40af" }}>You are here</div>
+      </Popup>
+    </Marker>
+  );
 }
 
 function MapResizer({ isFullscreen }: { isFullscreen: boolean }) {
@@ -215,6 +242,7 @@ export default function SpatialMap() {
       >
         <MapResizer isFullscreen={isFullscreen} />
         <LocateControl />
+        <UserLocationMarker />
         
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Standard Map (OSM)">
