@@ -18,7 +18,12 @@ import com.etayo.backend.model.Role;
 import com.etayo.backend.model.OtpVerification;
 import com.etayo.backend.repository.OtpVerificationRepository;
 import com.etayo.backend.service.EmailService;
+import com.etayo.backend.service.AuditLoggingService;
+import com.etayo.backend.service.RefreshTokenService;
+import com.etayo.backend.model.RefreshToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.Optional;
@@ -34,19 +39,25 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final OtpVerificationRepository otpVerificationRepository;
     private final EmailService emailService;
+    private final AuditLoggingService auditLoggingService;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthController(AuthenticationManager authenticationManager, 
                           UserRepository userRepository, 
                           JwtTokenProvider jwtTokenProvider, 
                           PasswordEncoder passwordEncoder,
                           OtpVerificationRepository otpVerificationRepository,
-                          EmailService emailService) {
+                          EmailService emailService,
+                          AuditLoggingService auditLoggingService,
+                          RefreshTokenService refreshTokenService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
         this.otpVerificationRepository = otpVerificationRepository;
         this.emailService = emailService;
+        this.auditLoggingService = auditLoggingService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @PostMapping("/send-otp")
@@ -80,31 +91,60 @@ public class AuthController {
                           "<p>Your verification code is: <b>" + otp + "</b></p>" +
                           "<p>This code will expire in 10 minutes.</p>";
         emailService.sendEmail(email, "e-Tayo Verification Code", htmlBody);
+        
+        auditLoggingService.logAction("OTP_REQUESTED", email, "OTP requested for registration");
 
         return ResponseEntity.ok(java.util.Map.of("message", "OTP sent to email"));
     }
 
 
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginDto loginDto) {
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginDto loginDto, HttpServletResponse response) {
         try {
             String email = loginDto.getEmail().trim().toLowerCase();
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, loginDto.getPassword())
-            );
+                    new UsernamePasswordAuthenticationToken(email, loginDto.getPassword()));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            String token = jwtTokenProvider.generateToken(authentication);
-            
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-            return ResponseEntity.ok(new JwtAuthResponse(token, user.getRole().name(), user.getName()));
-        } catch (org.springframework.security.core.AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Auth Error: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+
+            String jwt = jwtTokenProvider.generateToken(authentication);
+            
+            // Create Refresh Token
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+            
+            // Add Refresh Token to HTTP-Only Cookie
+            Cookie refreshCookie = new Cookie("refreshToken", refreshToken.getToken());
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setPath("/api/auth/");
+            refreshCookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
+            response.addCookie(refreshCookie);
+            
+            auditLoggingService.logAction("USER_LOGIN", email, "User logged in successfully");
+
+            return ResponseEntity.ok(new JwtAuthResponse(jwt, user.getRole().name(), user.getName()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server Error: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            auditLoggingService.logAction("LOGIN_FAILED", loginDto.getEmail(), "Failed login attempt: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(java.util.Map.of("error", "Invalid email or password"));
         }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@CookieValue(name = "refreshToken", required = false) String requestRefreshToken) {
+        if (requestRefreshToken == null || requestRefreshToken.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("error", "Refresh Token is missing!"));
+        }
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtTokenProvider.generateTokenFromUsername(user.getEmail());
+                    auditLoggingService.logAction("TOKEN_REFRESHED", user.getEmail(), "JWT successfully refreshed");
+                    return ResponseEntity.ok(java.util.Map.of("accessToken", token));
+                })
+                .orElse(ResponseEntity.status(HttpStatus.FORBIDDEN).body(java.util.Map.of("error", "Refresh token is not in database!")));
     }
 
     @PostMapping("/register")
