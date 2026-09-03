@@ -122,26 +122,18 @@ export default function AdminApp() {
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
+      } else if (response.status === 401 || response.status === 403 || response.status === 500) {
+        // Token is invalid/expired or rejected by server - force re-login to obtain fresh JWT
+        console.warn("Session token expired or rejected by server. Prompting re-login.");
+        localStorage.removeItem("token");
+        setIsAuthenticated(false);
+        setLoginError("Session expired or unauthorized. Please log in to SuperAdmin.");
       } else {
-        // Fallback default sample data if backend is starting or demo
-        setUsers([
-          { id: 1, name: "Admin User", email: "admin@etayo.gov.ph", role: "ROLE_ADMIN" },
-          { id: 2, name: "Staff Reviewer", email: "staff@etayo.gov.ph", role: "ROLE_STAFF" },
-          { id: 12, name: "Super Admin", email: "admin", role: "ROLE_SUPERADMIN" },
-          { id: 21, name: "Dave Sical", email: "michaeldavesical0411@gmail.com", role: "ROLE_APPLICANT" },
-          { id: 22, name: "Juan Dela Cruz", email: "juan.delacruz@email.com", role: "ROLE_APPLICANT" }
-        ]);
+        showToast("Could not load users from database.", "error");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching users:", err);
-      // Fallback sample data
-      setUsers([
-        { id: 1, name: "Admin User", email: "admin@etayo.gov.ph", role: "ROLE_ADMIN" },
-        { id: 2, name: "Staff Reviewer", email: "staff@etayo.gov.ph", role: "ROLE_STAFF" },
-        { id: 12, name: "Super Admin", email: "admin", role: "ROLE_SUPERADMIN" },
-        { id: 21, name: "Dave Sical", email: "michaeldavesical0411@gmail.com", role: "ROLE_APPLICANT" },
-        { id: 22, name: "Juan Dela Cruz", email: "juan.delacruz@email.com", role: "ROLE_APPLICANT" }
-      ]);
+      showToast("Could not connect to database.", "error");
     } finally {
       setIsLoading(false);
     }

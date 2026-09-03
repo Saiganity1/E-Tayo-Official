@@ -43,13 +43,15 @@ public class UserController {
             map.put("id", user.getId());
             map.put("name", user.getName());
             map.put("email", user.getEmail());
-            map.put("role", user.getRole().name());
+            map.put("role", user.getRole() != null ? user.getRole().name() : "ROLE_APPLICANT");
             return map;
         }).collect(Collectors.toList());
 
+        String contentRange = users.isEmpty() ? "users 0-0/0" : ("users 0-" + (users.size() - 1) + "/" + users.size());
+
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(users.size()))
-                .header("Content-Range", "users 0-" + (users.size() - 1) + "/" + users.size())
+                .header("Content-Range", contentRange)
                 .body(userList);
     }
 
@@ -63,7 +65,7 @@ public class UserController {
         map.put("id", user.getId());
         map.put("name", user.getName());
         map.put("email", user.getEmail());
-        map.put("role", user.getRole().name());
+        map.put("role", user.getRole() != null ? user.getRole().name() : "ROLE_APPLICANT");
         
         return ResponseEntity.ok(map);
     }
@@ -99,24 +101,29 @@ public class UserController {
         map.put("id", user.getId());
         map.put("name", user.getName());
         map.put("email", user.getEmail());
-        map.put("role", user.getRole().name());
+        map.put("role", user.getRole() != null ? user.getRole().name() : "ROLE_APPLICANT");
 
         return ResponseEntity.ok(map);
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
-    public ResponseEntity<Map<String, Object>> createUser(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> createUser(@RequestBody Map<String, Object> payload) {
         String rawEmail = (String) payload.get("email");
         String name = (String) payload.get("name");
         String roleStr = (String) payload.get("role");
         String rawPassword = (String) payload.get("password");
         
         if (rawEmail == null || name == null) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", "Email and full name are required"));
         }
 
         String email = rawEmail.trim().toLowerCase();
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                    .body(Map.of("error", "User with email '" + email + "' already exists in the database"));
+        }
 
         Role role = Role.ROLE_APPLICANT;
         if (roleStr != null) {
