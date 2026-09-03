@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePermitContext } from "../../../../../context/PermitContext";
 import { 
@@ -31,6 +31,44 @@ export default function StaffEvaluatePage() {
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string>("/templates/ANNEX_D_TEMPLATE.pdf");
+
+  useEffect(() => {
+    if (!app?.fileUrl) {
+      setBlobUrl("/templates/ANNEX_D_TEMPLATE.pdf");
+      return;
+    }
+
+    if (app.fileUrl.startsWith("http") || app.fileUrl.startsWith("/")) {
+      setBlobUrl(app.fileUrl);
+      return;
+    }
+
+    if (app.fileUrl.startsWith("data:application/pdf")) {
+      try {
+        const parts = app.fileUrl.split(",");
+        if (parts.length > 1 && parts[1].length > 100) {
+          const byteCharacters = atob(parts[1]);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: "application/pdf" });
+          const url = URL.createObjectURL(blob);
+          setBlobUrl(url);
+
+          return () => {
+            URL.revokeObjectURL(url);
+          };
+        }
+      } catch (e) {
+        console.error("Failed to convert base64 to blob URL, using template fallback:", e);
+      }
+    }
+
+    setBlobUrl("/templates/ANNEX_D_TEMPLATE.pdf");
+  }, [app?.fileUrl]);
 
   if (!app) {
     return (
@@ -97,9 +135,6 @@ export default function StaffEvaluatePage() {
     setIsProcessing(false);
     setSuccessMessage("Application has been tagged for requirements revision.");
   };
-
-  // Determine PDF source
-  const pdfSource = app.fileUrl || "/templates/ANNEX_D_TEMPLATE.pdf";
 
   return (
     <div className="evaluate-page animate-fade-in-up" style={{ maxWidth: "1400px", margin: "0 auto", padding: "1.5rem 1rem 4rem 1rem" }}>
@@ -341,15 +376,15 @@ export default function StaffEvaluatePage() {
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <a
-                href={pdfSource}
-                download={`ANNEX_D_${app.applicantName.replace(/\s+/g, "_")}.pdf`}
+                href={blobUrl}
+                download={`ANNEX_D_${(app.applicantName || "Applicant").replace(/\s+/g, "_")}.pdf`}
                 className="btn-outline"
                 style={{ padding: "0.45rem 0.85rem", fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none" }}
               >
                 <Download size={15} /> Download PDF
               </a>
               <a
-                href={pdfSource}
+                href={blobUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary"
@@ -363,7 +398,7 @@ export default function StaffEvaluatePage() {
           {/* Embedded PDF iframe */}
           <div style={{ flex: 1, position: "relative", background: "#525659", minHeight: "680px" }}>
             <iframe
-              src={`${pdfSource}#toolbar=1&navpanes=0`}
+              src={`${blobUrl}#toolbar=1&navpanes=0`}
               title="ANNEX D - Project Evaluation Report Preview"
               style={{ width: "100%", height: "100%", border: "none", minHeight: "720px" }}
             />
