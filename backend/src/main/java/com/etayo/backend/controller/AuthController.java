@@ -158,13 +158,13 @@ public class AuthController {
 
         List<User> adminList = userRepository.findAllByEmailIgnoreCase("admin");
         if (adminList.isEmpty()) {
-            User admin = new User("admin", passwordEncoder.encode(newPassword), Role.ROLE_SUPERADMIN, "Super Admin");
+            User admin = new User("admin", passwordEncoder.encode(newPassword), Role.ROLE_ADMIN, "Super Admin");
             userRepository.save(admin);
         } else {
             for (User u : adminList) {
                 u.setEmail("admin");
                 u.setPassword(passwordEncoder.encode(newPassword));
-                u.setRole(Role.ROLE_SUPERADMIN);
+                u.setRole(Role.ROLE_ADMIN);
                 userRepository.save(u);
             }
         }

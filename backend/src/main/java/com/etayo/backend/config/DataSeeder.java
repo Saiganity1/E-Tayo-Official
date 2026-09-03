@@ -43,19 +43,19 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         // Ensure SuperAdmin account always exists and password is set to Admin
-        User admin = userRepository.findByEmail("admin").orElse(null);
+        User admin = userRepository.findByEmailIgnoreCase("admin").orElse(null);
         if (admin == null) {
             admin = new User(
                     "admin",
                     passwordEncoder.encode("Admin"),
-                    Role.ROLE_SUPERADMIN,
+                    Role.ROLE_ADMIN,
                     "Super Admin"
             );
             userRepository.save(admin);
             System.out.println("Created SUPERADMIN user with email: admin");
         } else {
             admin.setPassword(passwordEncoder.encode("Admin"));
-            admin.setRole(Role.ROLE_SUPERADMIN);
+            admin.setRole(Role.ROLE_ADMIN);
             userRepository.save(admin);
         }
 
