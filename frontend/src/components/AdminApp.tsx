@@ -245,15 +245,15 @@ export default function AdminApp() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update password on server");
+        const errorText = await response.text();
+        throw new Error(errorText || "Server rejected password update");
       }
 
       showToast(`Password successfully updated for ${selectedUser.name}!`);
       setIsPasswordModalOpen(false);
     } catch (err: any) {
-      console.warn("Password saved in local session:", err);
-      showToast(`Password successfully updated for ${selectedUser.name}!`);
-      setIsPasswordModalOpen(false);
+      console.error("Password change error:", err);
+      showToast(err.message || "Failed to update password on server", "error");
     } finally {
       setModalLoading(false);
     }
@@ -273,7 +273,7 @@ export default function AdminApp() {
 
     try {
       if (selfUser) {
-        await fetch(`${API_BASE_URL}/users/${selfUser.id}`, {
+        const res = await fetch(`${API_BASE_URL}/users/${selfUser.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -287,14 +287,18 @@ export default function AdminApp() {
             newPassword: formNewPassword.trim()
           })
         });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || "Server rejected password update");
+        }
       }
       showToast("Your SuperAdmin password has been successfully updated!");
       setIsSelfPasswordModalOpen(false);
       setFormNewPassword("");
       setFormConfirmPassword("");
     } catch (err: any) {
-      showToast("SuperAdmin password changed successfully!", "success");
-      setIsSelfPasswordModalOpen(false);
+      showToast(err.message || "Failed to update password on server", "error");
     } finally {
       setModalLoading(false);
     }
@@ -332,19 +336,17 @@ export default function AdminApp() {
         })
       });
 
-      if (response.ok) {
-        const updated = await response.json();
-        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: updated.name, email: updated.email, role: updated.role } : u));
-      } else {
-        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: formName, email: sanitizedEmail, role: formRole } : u));
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText || "Failed to update user on server");
       }
 
+      const updated = await response.json();
+      setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: updated.name, email: updated.email, role: updated.role } : u));
       showToast(`User ${formName} updated successfully.`);
       setIsEditModalOpen(false);
-    } catch (err) {
-      setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: formName, email: sanitizedEmail, role: formRole } : u));
-      showToast(`User ${formName} updated.`);
-      setIsEditModalOpen(false);
+    } catch (err: any) {
+      showToast(err.message || "Failed to update user", "error");
     } finally {
       setModalLoading(false);
     }
@@ -373,34 +375,20 @@ export default function AdminApp() {
         })
       });
 
-      if (response.ok) {
-        const created = await response.json();
-        setUsers([created, ...users]);
-      } else {
-        const newRecord: UserRecord = {
-          id: Date.now(),
-          name: formName.trim(),
-          email: sanitizedEmail,
-          role: formRole
-        };
-        setUsers([newRecord, ...users]);
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText || "Failed to create user on server");
       }
 
+      const created = await response.json();
+      setUsers([created, ...users]);
       showToast(`New user ${formName} created successfully.`);
       setIsCreateModalOpen(false);
       setFormName("");
       setFormEmail("");
       setFormPassword("");
-    } catch (err) {
-      const newRecord: UserRecord = {
-        id: Date.now(),
-        name: formName,
-        email: formEmail,
-        role: formRole
-      };
-      setUsers([newRecord, ...users]);
-      showToast(`User ${formName} created.`);
-      setIsCreateModalOpen(false);
+    } catch (err: any) {
+      showToast(err.message || "Failed to create user on server", "error");
     } finally {
       setModalLoading(false);
     }
