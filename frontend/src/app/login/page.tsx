@@ -52,7 +52,7 @@ export default function LoginPage() {
       if (data.role === "ROLE_STAFF") {
         role = "staff";
         destination = "/staff/dashboard";
-      } else if (data.role === "ROLE_ADMIN") {
+      } else if (data.role === "ROLE_ADMIN" || data.role === "ROLE_SUPERADMIN") {
         role = "admin";
         destination = "/admin/dashboard";
       }

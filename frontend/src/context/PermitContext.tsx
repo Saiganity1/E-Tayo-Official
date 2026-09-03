@@ -62,7 +62,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         let role = "public";
         if (userObj.role === "ROLE_APPLICANT") role = "applicant";
         if (userObj.role === "ROLE_STAFF") role = "staff";
-        if (userObj.role === "ROLE_ADMIN") role = "admin";
+        if (userObj.role === "ROLE_ADMIN" || userObj.role === "ROLE_SUPERADMIN") role = "admin";
         setUserRole(role as UserRole);
       }
     } catch(e) {}
