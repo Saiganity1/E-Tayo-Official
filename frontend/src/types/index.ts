@@ -60,6 +60,7 @@ export interface PermitApplication {
   assignedStaff?: string;
   historyLog: HistoryLog[];
   remarks?: string;
+  locationalClearanceRef?: string;
 }
 
 export interface SystemLog {

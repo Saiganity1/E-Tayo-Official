@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePermitContext } from "../../../../context/PermitContext";
-import { FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft } from "lucide-react";
+import { FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft, Lock, ShieldCheck, AlertCircle, Check, Building2, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -20,8 +20,32 @@ const STEPS = [
 
 export default function ApplyPage() {
   const [currentStep, setCurrentStep] = useState(1);
-  const { selectedPermitType, setSelectedPermitType, addApplication } = usePermitContext();
+  const { applications, selectedPermitType, setSelectedPermitType, addApplication } = usePermitContext();
   const router = useRouter();
+
+  // Locational Clearance Prerequisite State
+  const [manualClearanceRef, setManualClearanceRef] = useState("");
+  const [isManualVerified, setIsManualVerified] = useState(false);
+  const [showManualVerifyInput, setShowManualVerifyInput] = useState(false);
+  const [lockedNotice, setLockedNotice] = useState<string | null>(null);
+
+  // Detect if applicant has an approved Locational Clearance in the system
+  const approvedLC = (applications || []).find(
+    app => (app.permitType === "locational_clearance") &&
+           (app.status === "approved" || app.status === "released")
+  );
+  const hasSystemApprovedLC = !!approvedLC;
+  const isClearancePassed = hasSystemApprovedLC || isManualVerified;
+  const activeClearanceRef = hasSystemApprovedLC ? approvedLC.id : (isManualVerified ? manualClearanceRef : null);
+
+  // Sync selected permit type based on clearance status
+  useEffect(() => {
+    if (!isClearancePassed) {
+      setSelectedPermitType("locational_clearance");
+    } else if (selectedPermitType === "locational_clearance") {
+      setSelectedPermitType("building_permit");
+    }
+  }, [isClearancePassed]);
 
   const [projectName, setProjectName] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
@@ -79,6 +103,15 @@ export default function ApplyPage() {
     }
   };
 
+  const handleVerifyManualClearance = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualClearanceRef.trim()) return;
+    setIsManualVerified(true);
+    setShowManualVerifyInput(false);
+    setLockedNotice(null);
+    setSelectedPermitType("building_permit");
+  };
+
   const handleSubmitApplication = () => {
     let applicantName = "Juan Dela Cruz";
     try {
@@ -97,6 +130,7 @@ export default function ApplyPage() {
       dateSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
       applicantName,
       fileUrl: uploadedFileUrl,
+      locationalClearanceRef: activeClearanceRef || undefined,
       location: {
         lat: parseFloat(latitude) || 15.0050,
         lng: parseFloat(longitude) || 120.7100,
@@ -156,25 +190,339 @@ export default function ApplyPage() {
           {currentStep === 1 && (
             <div className="step-pane animate-fade-in-up">
               <h2>Select Permit Type</h2>
-              <p>What type of permit are you applying for?</p>
-              
-              <div className="permit-options">
-                {["building_permit", "locational_clearance", "occupancy_permit"].map(type => (
-                  <label key={type} className={`permit-card ${selectedPermitType === type ? "selected" : ""}`}>
-                    <input 
-                      type="radio" 
-                      name="permit_type" 
-                      value={type} 
-                      checked={selectedPermitType === type}
-                      onChange={() => setSelectedPermitType(type as any)}
-                    />
-                    <div className="card-content">
-                      <div className="card-icon"><FileText size={24} /></div>
-                      <h3>{type.replace("_", " ")}</h3>
+              <p>Municipal ordinances require a sequential 2-stage permit process:</p>
+
+              {/* STAGE STATUS BANNER */}
+              {isClearancePassed ? (
+                <div style={{
+                  background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
+                  border: "1px solid #86efac",
+                  borderRadius: "14px",
+                  padding: "1.25rem 1.5rem",
+                  marginBottom: "1.75rem",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "1rem",
+                  boxShadow: "0 4px 15px rgba(34, 197, 94, 0.08)"
+                }}>
+                  <div style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "50%",
+                    background: "#22c55e",
+                    color: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    boxShadow: "0 4px 10px rgba(34, 197, 94, 0.3)"
+                  }}>
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: "700", color: "#14532d", fontSize: "1.05rem" }}>
+                        Stage 1 Complete: Locational Clearance Passed
+                      </span>
+                      <span style={{
+                        background: "#bbf7d0",
+                        color: "#166534",
+                        padding: "2px 10px",
+                        borderRadius: "999px",
+                        fontSize: "0.75rem",
+                        fontWeight: "700"
+                      }}>
+                        Ref: {activeClearanceRef || "Verified"}
+                      </span>
                     </div>
-                  </label>
-                ))}
-              </div>
+                    <p style={{ margin: "0.4rem 0 0 0", color: "#166534", fontSize: "0.9rem", lineHeight: "1.4" }}>
+                      You have passed the mandatory zoning & land use clearance. Please choose between a <strong>Building Permit</strong> or <strong>Occupancy Permit</strong> for Stage 2 below.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  background: "linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: "14px",
+                  padding: "1.25rem 1.5rem",
+                  marginBottom: "1.75rem",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "1rem"
+                }}>
+                  <div style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "50%",
+                    background: "#3b82f6",
+                    color: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0
+                  }}>
+                    <FileText size={22} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ margin: 0, fontSize: "1rem", color: "#1e3a8a", fontWeight: "700" }}>
+                      Step 1: Apply for Locational Clearance First
+                    </h3>
+                    <p style={{ margin: "0.35rem 0 0 0", color: "#334155", fontSize: "0.88rem", lineHeight: "1.4" }}>
+                      Before applying for construction or occupancy, municipal regulations require every project to pass a <strong>Locational Clearance</strong> to confirm zoning and land use compliance.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* LOCKED WARNING NOTIFICATION */}
+              {lockedNotice && (
+                <div className="animate-fade-in-up" style={{
+                  background: "#fffbeb",
+                  border: "1px solid #fde68a",
+                  borderRadius: "12px",
+                  padding: "1rem 1.25rem",
+                  marginBottom: "1.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  color: "#92400e"
+                }}>
+                  <AlertCircle size={20} color="#d97706" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: "0.9rem", fontWeight: "500" }}>{lockedNotice}</span>
+                  <button 
+                    onClick={() => setLockedNotice(null)}
+                    style={{ marginLeft: "auto", background: "none", border: "none", color: "#92400e", cursor: "pointer", fontWeight: "700" }}
+                  >
+                    &times;
+                  </button>
+                </div>
+              )}
+
+              {/* PERMIT CARDS */}
+              {isClearancePassed ? (
+                /* STAGE 2: CHOOSE BETWEEN BUILDING PERMIT OR OCCUPANCY PERMIT */
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                    <h3 style={{ fontSize: "1rem", fontWeight: "700", color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Stage 2 Options: Choose Permit
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPermitType("locational_clearance")}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#2563eb",
+                        fontSize: "0.85rem",
+                        cursor: "pointer",
+                        textDecoration: "underline"
+                      }}
+                    >
+                      Applying for another property? Apply for new Locational Clearance
+                    </button>
+                  </div>
+
+                  <div className="permit-options" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                    {/* Building Permit Card */}
+                    <label className={`permit-card ${selectedPermitType === "building_permit" ? "selected" : ""}`}>
+                      <input 
+                        type="radio" 
+                        name="permit_type" 
+                        value="building_permit" 
+                        checked={selectedPermitType === "building_permit"}
+                        onChange={() => setSelectedPermitType("building_permit")}
+                      />
+                      <div className="card-content" style={{ padding: "1.75rem", textAlign: "left" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                          <div className="card-icon" style={{ margin: 0 }}><Building2 size={30} /></div>
+                          {selectedPermitType === "building_permit" && (
+                            <span style={{ background: "#2563eb", color: "white", borderRadius: "50%", padding: "4px", display: "flex" }}>
+                              <Check size={16} />
+                            </span>
+                          )}
+                        </div>
+                        <h3 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#0f172a", marginBottom: "0.35rem" }}>Building Permit</h3>
+                        <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b", lineHeight: "1.4" }}>
+                          Required prior to starting new construction, structural alterations, addition, or repair of any building or structure.
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* Occupancy Permit Card */}
+                    <label className={`permit-card ${selectedPermitType === "occupancy_permit" ? "selected" : ""}`}>
+                      <input 
+                        type="radio" 
+                        name="permit_type" 
+                        value="occupancy_permit" 
+                        checked={selectedPermitType === "occupancy_permit"}
+                        onChange={() => setSelectedPermitType("occupancy_permit")}
+                      />
+                      <div className="card-content" style={{ padding: "1.75rem", textAlign: "left" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                          <div className="card-icon" style={{ margin: 0 }}><Home size={30} /></div>
+                          {selectedPermitType === "occupancy_permit" && (
+                            <span style={{ background: "#2563eb", color: "white", borderRadius: "50%", padding: "4px", display: "flex" }}>
+                              <Check size={16} />
+                            </span>
+                          )}
+                        </div>
+                        <h3 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#0f172a", marginBottom: "0.35rem" }}>Occupancy Permit</h3>
+                        <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b", lineHeight: "1.4" }}>
+                          Certificate of Occupancy required once construction is completed to verify safe standards before moving in.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                /* STAGE 1: MUST PASS LOCATIONAL CLEARANCE FIRST */
+                <div>
+                  <div className="permit-options" style={{ gridTemplateColumns: "1.2fr 1fr 1fr" }}>
+                    {/* Locational Clearance (Active & Required) */}
+                    <label className={`permit-card ${selectedPermitType === "locational_clearance" ? "selected" : ""}`}>
+                      <input 
+                        type="radio" 
+                        name="permit_type" 
+                        value="locational_clearance" 
+                        checked={selectedPermitType === "locational_clearance"}
+                        onChange={() => {
+                          setSelectedPermitType("locational_clearance");
+                          setLockedNotice(null);
+                        }}
+                      />
+                      <div className="card-content" style={{ border: "2px solid #3b82f6", background: "#f8fafc", position: "relative" }}>
+                        <div style={{
+                          position: "absolute",
+                          top: "10px",
+                          right: "10px",
+                          background: "#2563eb",
+                          color: "white",
+                          fontSize: "0.7rem",
+                          fontWeight: "700",
+                          padding: "3px 8px",
+                          borderRadius: "999px"
+                        }}>
+                          STEP 1 REQUIRED
+                        </div>
+                        <div className="card-icon"><FileText size={28} color="#2563eb" /></div>
+                        <h3 style={{ fontWeight: "700", color: "#1e3a8a", marginBottom: "0.5rem" }}>Locational Clearance</h3>
+                        <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: "1.4" }}>
+                          Zoning clearance evaluation for land use, building location, and municipal zoning boundaries.
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* Building Permit (Locked) */}
+                    <div 
+                      onClick={() => setLockedNotice("Building Permit is locked. You must first pass and obtain an approved Locational Clearance before applying.")}
+                      style={{ cursor: "not-allowed", opacity: 0.65, position: "relative" }}
+                    >
+                      <div className="card-content" style={{ background: "#f1f5f9", border: "1px dashed #cbd5e1" }}>
+                        <div style={{
+                          position: "absolute",
+                          top: "10px",
+                          right: "10px",
+                          background: "#64748b",
+                          color: "white",
+                          fontSize: "0.68rem",
+                          fontWeight: "700",
+                          padding: "3px 8px",
+                          borderRadius: "999px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}>
+                          <Lock size={10} /> LOCKED
+                        </div>
+                        <div className="card-icon"><Building2 size={28} color="#94a3b8" /></div>
+                        <h3 style={{ color: "#475569" }}>Building Permit</h3>
+                        <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>
+                          Requires approved Locational Clearance first.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Occupancy Permit (Locked) */}
+                    <div 
+                      onClick={() => setLockedNotice("Occupancy Permit is locked. You must first pass and obtain an approved Locational Clearance before applying.")}
+                      style={{ cursor: "not-allowed", opacity: 0.65, position: "relative" }}
+                    >
+                      <div className="card-content" style={{ background: "#f1f5f9", border: "1px dashed #cbd5e1" }}>
+                        <div style={{
+                          position: "absolute",
+                          top: "10px",
+                          right: "10px",
+                          background: "#64748b",
+                          color: "white",
+                          fontSize: "0.68rem",
+                          fontWeight: "700",
+                          padding: "3px 8px",
+                          borderRadius: "999px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}>
+                          <Lock size={10} /> LOCKED
+                        </div>
+                        <div className="card-icon"><Home size={28} color="#94a3b8" /></div>
+                        <h3 style={{ color: "#475569" }}>Occupancy Permit</h3>
+                        <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>
+                          Requires approved Locational Clearance first.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* LINK EXISTING CLEARANCE HELPER */}
+                  <div style={{ marginTop: "1.75rem", padding: "1rem 1.25rem", background: "white", border: "1px solid #e2e8f0", borderRadius: "12px" }}>
+                    {!showManualVerifyInput ? (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "#475569" }}>
+                          <ShieldCheck size={18} color="#2563eb" />
+                          <span>Already passed and received an official Locational Clearance Certificate?</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowManualVerifyInput(true)}
+                          className="btn-outline"
+                          style={{ fontSize: "0.85rem", padding: "0.4rem 0.9rem", borderRadius: "8px" }}
+                        >
+                          Link Reference No.
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleVerifyManualClearance} style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+                        <div style={{ flex: 1, minWidth: "220px" }}>
+                          <input 
+                            type="text"
+                            placeholder="Enter Locational Clearance Reference (e.g. LC-2025-0001)"
+                            value={manualClearanceRef}
+                            onChange={(e) => setManualClearanceRef(e.target.value)}
+                            style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
+                            autoFocus
+                          />
+                        </div>
+                        <button 
+                          type="submit" 
+                          className="btn-primary" 
+                          style={{ padding: "0.6rem 1.2rem", fontSize: "0.85rem" }}
+                          disabled={!manualClearanceRef.trim()}
+                        >
+                          Verify & Unlock Stage 2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowManualVerifyInput(false)}
+                          style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "0.85rem" }}
+                        >
+                          Cancel
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -408,6 +756,14 @@ export default function ApplyPage() {
                   <span style={{ color: "#64748b", fontWeight: "600" }}>Permit Type:</span>
                   <span style={{ color: "#0f172a", fontWeight: "700", textTransform: "capitalize" }}>{selectedPermitType.replace("_", " ")}</span>
                 </div>
+                {activeClearanceRef && (
+                  <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #e2e8f0", paddingBottom: "1rem" }}>
+                    <span style={{ color: "#64748b", fontWeight: "600" }}>Locational Clearance:</span>
+                    <span style={{ color: "#166534", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Check size={16} color="#16a34a" /> Passed ({activeClearanceRef})
+                    </span>
+                  </div>
+                )}
                 <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #e2e8f0", paddingBottom: "1rem" }}>
                   <span style={{ color: "#64748b", fontWeight: "600" }}>Project Name:</span>
                   <span style={{ color: "#0f172a", fontWeight: "700" }}>{projectName || "Not provided"}</span>
