@@ -42,16 +42,36 @@ public class DataSeeder implements CommandLineRunner {
             System.out.println("Could not drop constraint (might not exist or using H2): " + e.getMessage());
         }
 
-        String adminEmail = "admin";
-        if (!userRepository.existsByEmail(adminEmail)) {
-            User admin = new User(
-                    adminEmail,
+        // Ensure SuperAdmin account always exists and password is set to Admin
+        User admin = userRepository.findByEmail("admin").orElse(null);
+        if (admin == null) {
+            admin = new User(
+                    "admin",
                     passwordEncoder.encode("Admin"),
                     Role.ROLE_SUPERADMIN,
                     "Super Admin"
             );
             userRepository.save(admin);
             System.out.println("Created SUPERADMIN user with email: admin");
+        } else {
+            admin.setPassword(passwordEncoder.encode("Admin"));
+            admin.setRole(Role.ROLE_SUPERADMIN);
+            userRepository.save(admin);
+        }
+
+        // Also ensure admin@etayo.gov.ph has password Admin
+        User municipalAdmin = userRepository.findByEmail("admin@etayo.gov.ph").orElse(null);
+        if (municipalAdmin == null) {
+            municipalAdmin = new User(
+                    "admin@etayo.gov.ph",
+                    passwordEncoder.encode("Admin"),
+                    Role.ROLE_ADMIN,
+                    "Admin User"
+            );
+            userRepository.save(municipalAdmin);
+        } else {
+            municipalAdmin.setPassword(passwordEncoder.encode("Admin"));
+            userRepository.save(municipalAdmin);
         }
 
         // Dummy Staff User for Audit Logging Demo

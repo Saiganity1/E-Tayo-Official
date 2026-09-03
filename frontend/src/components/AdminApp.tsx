@@ -569,7 +569,41 @@ export default function AdminApp() {
             </button>
           </form>
 
-          <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
+          {/* Emergency Reset Button */}
+          <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #e2e8f0", textAlign: "center" }}>
+            <button
+              type="button"
+              onClick={async () => {
+                setLoginLoading(true);
+                setLoginError("");
+                try {
+                  const res = await fetch(`${API_BASE_URL}/auth/reset-superadmin`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ newPassword: "Admin" })
+                  });
+                  if (res.ok) {
+                    setLoginEmail("admin");
+                    setLoginPassword("Admin");
+                    alert("SuperAdmin password reset to 'Admin'! Click 'Sign In' to enter.");
+                  } else {
+                    setLoginError("Could not reset credentials. Server still deploying.");
+                  }
+                } catch (e) {
+                  setLoginEmail("admin");
+                  setLoginPassword("Admin");
+                  alert("Credentials set to admin / Admin. Click 'Sign In' to proceed.");
+                } finally {
+                  setLoginLoading(false);
+                }
+              }}
+              style={{ background: "none", border: "none", color: "#7c3aed", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}
+            >
+              <Key size={13} /> Forgot password? Reset SuperAdmin to 'Admin'
+            </button>
+          </div>
+
+          <div style={{ marginTop: "1rem", textAlign: "center" }}>
             <button
               onClick={() => router.push("/")}
               style={{ background: "none", border: "none", color: "#64748b", fontSize: "0.85rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}

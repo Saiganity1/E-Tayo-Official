@@ -130,6 +130,36 @@ public class AuthController {
         }
     }
 
+    /**
+     * Emergency / Master Reset for SuperAdmin credentials
+     */
+    @PostMapping("/reset-superadmin")
+    public ResponseEntity<?> resetSuperadmin(@RequestBody(required = false) Map<String, String> body) {
+        String newPassword = (body != null && body.containsKey("newPassword") && !body.get("newPassword").trim().isEmpty())
+                ? body.get("newPassword").trim()
+                : "Admin";
+
+        User admin = userRepository.findByEmail("admin").orElse(null);
+        if (admin == null) {
+            admin = new User("admin", passwordEncoder.encode(newPassword), Role.ROLE_SUPERADMIN, "Super Admin");
+        } else {
+            admin.setPassword(passwordEncoder.encode(newPassword));
+            admin.setRole(Role.ROLE_SUPERADMIN);
+        }
+        userRepository.save(admin);
+
+        User municipalAdmin = userRepository.findByEmail("admin@etayo.gov.ph").orElse(null);
+        if (municipalAdmin != null) {
+            municipalAdmin.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(municipalAdmin);
+        }
+
+        return ResponseEntity.ok(java.util.Map.of(
+                "message", "SuperAdmin credentials successfully reset to password: " + newPassword,
+                "email", "admin"
+        ));
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@CookieValue(name = "refreshToken", required = false) String requestRefreshToken) {
         if (requestRefreshToken == null || requestRefreshToken.isEmpty()) {
