@@ -76,6 +76,12 @@ public class UserController {
 
         if (payload.containsKey("name")) user.setName((String) payload.get("name"));
         if (payload.containsKey("email")) user.setEmail((String) payload.get("email"));
+        if (payload.containsKey("password") && payload.get("password") != null) {
+            String rawPassword = (String) payload.get("password");
+            if (!rawPassword.trim().isEmpty()) {
+                user.setPassword(passwordEncoder.encode(rawPassword.trim()));
+            }
+        }
         if (payload.containsKey("role")) {
             String roleStr = (String) payload.get("role");
             try {
@@ -161,5 +167,30 @@ public class UserController {
 
         response.put("message", "User " + user.getName() + " promoted to Staff successfully");
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Change user password. Only ADMIN and SUPERADMIN can execute this.
+     */
+    @PutMapping("/{id}/change-password")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    public ResponseEntity<Map<String, String>> changePassword(
+            @PathVariable Long id, 
+            @RequestBody Map<String, String> body) {
+        Map<String, String> res = new HashMap<>();
+        String newPassword = body.get("newPassword");
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            res.put("error", "New password cannot be empty");
+            return ResponseEntity.badRequest().body(res);
+        }
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            res.put("error", "User not found");
+            return ResponseEntity.notFound().build();
+        }
+        user.setPassword(passwordEncoder.encode(newPassword.trim()));
+        userRepository.save(user);
+        res.put("message", "Password successfully updated for " + user.getEmail());
+        return ResponseEntity.ok(res);
     }
 }
