@@ -37,6 +37,7 @@ export interface LocationalClearanceFormData {
 
 /**
  * Automatically populates user data into the official ANNEX D - TEMPLATE PDF
+ * with exact pixel-level alignment matching the official LGU Sto. Tomas format,
  * and embeds the uploaded vicinity map image into Section D.
  */
 export async function generateAnnexDPdf(data: LocationalClearanceFormData): Promise<{
@@ -66,9 +67,9 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
     y: number,
     coverWidth: number,
     coverHeight: number = 13,
-    fontSize: number = 9.5,
+    fontSize: number = 8.5,
     isBold: boolean = true,
-    fontColor = rgb(0.08, 0.15, 0.3) // Official dark navy
+    fontColor = rgb(0.05, 0.12, 0.3) // Official dark navy
   ) => {
     page1.drawRectangle({
       x: x - 1,
@@ -78,7 +79,7 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
       color: rgb(1, 1, 1),
     });
 
-    if (text) {
+    if (text && text.trim()) {
       page1.drawText(text.toUpperCase(), {
         x: x + 1,
         y: y + 1,
@@ -89,54 +90,151 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
     }
   };
 
-  // 1. APPLICANT INFORMATION
-  replaceText(data.applicantName || "N/A", 35, 738, 250, 13, 9.5, true);
-  replaceText(data.corporationName || "N/A", 305, 738, 250, 13, 9.5, false);
+  // ==========================================
+  // 1. SECTION A: APPLICANTS INFORMATION
+  // ==========================================
+  // Name of Applicant (Row 1 Left: x=38, y=712, w=262, h=16)
+  replaceText(data.applicantName || "N/A", 38, 712, 262, 16, 9.5, true);
 
-  const applicantContactStr = `${data.applicantAddress || ""} ${data.applicantPhone ? `| Tel: ${data.applicantPhone}` : ""}`;
-  replaceText(applicantContactStr.trim() || "N/A", 35, 703, 250, 13, 8.5, false);
-  replaceText(data.corporationAddress || "N/A", 305, 703, 250, 13, 8.5, false);
+  // Name of Corporation (Row 1 Right: x=306, y=712, w=262, h=16)
+  replaceText(data.corporationName || "N/A", 306, 712, 262, 16, 9, false);
 
-  // 2. PROJECT INFORMATION
-  const fullProjectType = `${data.projectName || ""} - ${data.projectType || ""}`.trim();
-  replaceText(fullProjectType.slice(0, 42), 110, 670, 185, 12, 8.5, true);
-  if (fullProjectType.length > 42) {
-    replaceText(fullProjectType.slice(42, 85), 35, 658, 260, 12, 8.5, true);
+  // Address & Telephone of Applicant (Row 2 Left: x=38, y=662-680, w=262, h=28)
+  page1.drawRectangle({
+    x: 37,
+    y: 660,
+    width: 264,
+    height: 32,
+    color: rgb(1, 1, 1),
+  });
+  if (data.applicantAddress) {
+    page1.drawText(data.applicantAddress.toUpperCase(), {
+      x: 39,
+      y: 678,
+      size: 8,
+      font: regularFont,
+      color: rgb(0.05, 0.12, 0.3),
+    });
+  }
+  if (data.applicantPhone) {
+    page1.drawText(`TEL / MOB: ${data.applicantPhone}`.toUpperCase(), {
+      x: 39,
+      y: 666,
+      size: 8,
+      font: boldFont,
+      color: rgb(0.05, 0.12, 0.3),
+    });
   }
 
-  replaceText(data.classification || "RESIDENTIAL", 389, 670, 190, 12, 9, true);
+  // Address & Telephone of Corporation (Row 2 Right: x=306, y=662-680, w=262, h=28)
+  page1.drawRectangle({
+    x: 305,
+    y: 660,
+    width: 264,
+    height: 32,
+    color: rgb(1, 1, 1),
+  });
+  if (data.corporationAddress) {
+    page1.drawText(data.corporationAddress.toUpperCase(), {
+      x: 307,
+      y: 678,
+      size: 8,
+      font: regularFont,
+      color: rgb(0.05, 0.12, 0.3),
+    });
+  } else {
+    page1.drawText("N/A", {
+      x: 307,
+      y: 678,
+      size: 8,
+      font: regularFont,
+      color: rgb(0.05, 0.12, 0.3),
+    });
+  }
 
-  const zoningClass = data.siteZoningClass || (data.classification === "COMMERCIAL" ? "GENERAL COMMERCIAL ZONE (GCZ)" : "GENERAL RESIDENTIAL ZONE (GRZ)");
-  replaceText(zoningClass, 415, 658, 165, 12, 8.5, true);
+  // ==========================================
+  // 2. SECTION B: PROJECT INFORMATION
+  // ==========================================
+  // Name/Type of Project (x=92, y=646.5, w=208; line 2 x=36, y=634.5, w=264)
+  const fullProjectType = `${data.projectName ? data.projectName + " - " : ""}${data.projectType || ""}`.trim();
+  replaceText(fullProjectType.slice(0, 36), 92, 646.5, 208, 13, 8, true);
+  replaceText(fullProjectType.length > 36 ? fullProjectType.slice(36, 76) : "", 36, 634.5, 264, 12, 8, true);
 
-  const locStr = `${data.projectLocation || ""}, BRGY. ${data.barangay || ""}, STO. TOMAS, PAMPANGA`;
-  replaceText(locStr.slice(0, 38), 92, 647, 205, 12, 8, true);
-  replaceText(locStr.slice(38, 80), 35, 635, 255, 12, 8, true);
+  // Classification (x=369, y=646.5, w=195)
+  replaceText(data.classification || "RESIDENTIAL", 369, 646.5, 195, 13, 8.5, true);
 
-  replaceText(data.rightOverLand || "TRANSFER CERTIFICATE OF TITLE (TCT)", 407, 647, 175, 12, 8, true);
-  replaceText(`${data.lotArea || "0.00"} SQ.M.`, 112, 624, 150, 12, 9, true);
-  replaceText(`${data.bldgArea || "0.00"} SQ.M.`, 123, 612, 140, 12, 9, true);
+  // Site Zoning Class (x=389, y=634.5, w=178)
+  const defaultZoning = data.classification === "COMMERCIAL" ? "GENERAL COMMERCIAL ZONE (GCZ)" : "GENERAL RESIDENTIAL ZONE (GRZ)";
+  replaceText(data.siteZoningClass || defaultZoning, 389, 634.5, 178, 13, 8, true);
 
+  // Location (Line 1 x=80, y=623, w=220; Line 2 x=38, y=611.5, w=262)
+  const locLine1 = `${data.projectLocation || ""}, BRGY. ${data.barangay || ""}`.trim();
+  replaceText(locLine1.slice(0, 38), 80, 623, 220, 13, 7.5, true);
+  const locLine2 = locLine1.length > 38 ? `${locLine1.slice(38)}, STO. TOMAS, PAMPANGA` : "STO. TOMAS, PAMPANGA";
+  replaceText(locLine2, 38, 611.5, 262, 12, 7.5, true);
+
+  // Right Over Land (x=383, y=623, w=184)
+  replaceText(data.rightOverLand || "TRANSFER CERTIFICATE OF TITLE (TCT)", 383, 623, 184, 13, 8, true);
+
+  // Lot Area (sq.m.) (x=94, y=600, w=206)
+  replaceText(`${data.lotArea || "0.00"} SQ.M.`, 94, 600, 206, 13, 8.5, true);
+
+  // Area of Bldg. (sq.m.) (x=102, y=588.5, w=198)
+  replaceText(`${data.bldgArea || "0.00"} SQ.M.`, 102, 588.5, 198, 13, 8.5, true);
+
+  // ==========================================
+  // 3. SECTION C: SITE INSPECTION FINDINGS
+  // ==========================================
+  // Date of Inspection / Filing (x=121, y=553.5, w=175)
   const fileDate = data.submissionDate || new Date().toLocaleDateString("en-US", { month: "long", day: "2-digit", year: "numeric" });
-  replaceText(fileDate.toUpperCase(), 149, 576, 140, 12, 8.5, true);
+  replaceText(fileDate.toUpperCase(), 121, 553.5, 175, 13, 8.5, true);
 
-  // Abutting Lot Boundaries (North, South, East, West)
-  if (data.northAbutting) replaceText(data.northAbutting, 91, 484, 40, 12, 8.5, false);
-  if (data.southAbutting) replaceText(data.southAbutting, 192, 484, 40, 12, 8.5, false);
-  if (data.eastAbutting) replaceText(data.eastAbutting, 84, 473, 50, 12, 8.5, false);
-  if (data.westAbutting) replaceText(data.westAbutting, 192, 473, 40, 12, 8.5, false);
-
-  // Project Status checkbox marks
+  // Project Status checkboxes
+  // White-out the default Proposed [X] mark if not Proposed
   if (data.projectStatus && data.projectStatus !== "Proposed") {
-    replaceText(" ", 42, 554, 13, 11, 8.5, false);
+    page1.drawRectangle({
+      x: 41,
+      y: 541,
+      width: 14,
+      height: 12,
+      color: rgb(1, 1, 1),
+    });
+    page1.drawText("[   ]", {
+      x: 40,
+      y: 542,
+      size: 8.5,
+      font: regularFont,
+      color: rgb(0.2, 0.2, 0.2),
+    });
+
     if (data.projectStatus === "Completed") {
-      replaceText("X", 204, 554, 8, 11, 8.5, true);
+      page1.drawText("[ X ]", {
+        x: 176,
+        y: 542,
+        size: 8.5,
+        font: boldFont,
+        color: rgb(0.05, 0.12, 0.3),
+      });
     } else if (data.projectStatus === "Operational") {
-      replaceText("X", 53, 543, 8, 11, 8.5, true);
+      page1.drawText("[ X ]", {
+        x: 40,
+        y: 530.5,
+        size: 8.5,
+        font: boldFont,
+        color: rgb(0.05, 0.12, 0.3),
+      });
     }
   }
 
-  // 3. SECTION D: SKETCH OF PROJECT LOCATION & SIGNIFICANT FINDINGS (IMAGE ATTACHMENT)
+  // Abutting Lot Boundaries (North, South, East, West)
+  replaceText(data.northAbutting || "GRZ", 76, 460.5, 45, 12, 8.5, false);
+  replaceText(data.southAbutting || "GRZ", 152, 460.5, 45, 12, 8.5, false);
+  replaceText(data.eastAbutting || "ROAD", 71, 449, 45, 12, 8.5, false);
+  replaceText(data.westAbutting || "GRZ", 152, 449, 45, 12, 8.5, false);
+
+  // ==========================================
+  // 4. SECTION D: SKETCH OF PROJECT LOCATION
+  // ==========================================
   let imgBytes = data.sketchImageBytes;
   if (!imgBytes && data.sketchImageBase64) {
     try {
@@ -155,10 +253,10 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
     try {
       // Clean white cover over the placeholder map in Section D
       page1.drawRectangle({
-        x: 35,
-        y: 35,
-        width: 525,
-        height: 325,
+        x: 35.5,
+        y: 35.5,
+        width: 534,
+        height: 307,
         color: rgb(1, 1, 1),
       });
 
@@ -172,9 +270,9 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
 
       if (embeddedImage) {
         // Fit proportionally inside Section D bounding box
-        const scaled = embeddedImage.scaleToFit(510, 310);
-        const posX = 35 + (525 - scaled.width) / 2;
-        const posY = 35 + (325 - scaled.height) / 2;
+        const scaled = embeddedImage.scaleToFit(520, 295);
+        const posX = 35.5 + (534 - scaled.width) / 2;
+        const posY = 35.5 + (307 - scaled.height) / 2;
 
         page1.drawImage(embeddedImage, {
           x: posX,
@@ -183,7 +281,7 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
           height: scaled.height,
         });
 
-        // Add small caption border
+        // Add subtle border
         page1.drawRectangle({
           x: posX,
           y: posY,
@@ -200,16 +298,18 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
     }
   }
 
-  // 4. SECTION E, F, & G ON PAGE 2
+  // ==========================================
+  // 5. SECTION E, F, & G ON PAGE 2
+  // ==========================================
   if (pages.length > 1) {
     const page2 = pages[1];
 
     // Stamp current date in Section G (Signatories Date)
     const stampDate = new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }).replace(/\//g, "-");
     
-    // Prepared by Date (Y ≈ 163.9, X ≈ 176)
+    // Prepared by Date (Y ≈ 163, X ≈ 172)
     page2.drawRectangle({
-      x: 170,
+      x: 168,
       y: 160,
       width: 85,
       height: 14,
@@ -223,9 +323,9 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
       color: rgb(0.08, 0.15, 0.3),
     });
 
-    // Noted by Date (Y ≈ 163.9, X ≈ 447)
+    // Noted by Date (Y ≈ 163, X ≈ 442)
     page2.drawRectangle({
-      x: 440,
+      x: 438,
       y: 160,
       width: 85,
       height: 14,
@@ -245,11 +345,14 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
   const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
   const downloadUrl = URL.createObjectURL(blob);
 
-  // Create base64 Data URI for storage/database attachments
+  // Fast chunked base64 Data URI for storage/database attachments
   let binary = "";
-  const len = pdfBytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(pdfBytes[i]);
+  const chunkSize = 8192;
+  for (let i = 0; i < pdfBytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(
+      null,
+      pdfBytes.subarray(i, i + chunkSize) as any
+    );
   }
   const base64 = btoa(binary);
   const dataUri = `data:application/pdf;base64,${base64}`;
