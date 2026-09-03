@@ -29,6 +29,7 @@ import java.util.Random;
 import java.util.Optional;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -155,24 +156,31 @@ public class AuthController {
                 ? body.get("newPassword").trim()
                 : "Admin";
 
-        User admin = userRepository.findByEmailIgnoreCase("admin").orElse(null);
-        if (admin == null) {
-            admin = new User("admin", passwordEncoder.encode(newPassword), Role.ROLE_SUPERADMIN, "Super Admin");
+        List<User> adminList = userRepository.findAllByEmailIgnoreCase("admin");
+        if (adminList.isEmpty()) {
+            User admin = new User("admin", passwordEncoder.encode(newPassword), Role.ROLE_SUPERADMIN, "Super Admin");
+            userRepository.save(admin);
         } else {
-            admin.setEmail("admin");
-            admin.setPassword(passwordEncoder.encode(newPassword));
-            admin.setRole(Role.ROLE_SUPERADMIN);
+            for (User u : adminList) {
+                u.setEmail("admin");
+                u.setPassword(passwordEncoder.encode(newPassword));
+                u.setRole(Role.ROLE_SUPERADMIN);
+                userRepository.save(u);
+            }
         }
-        userRepository.save(admin);
 
-        User municipalAdmin = userRepository.findByEmailIgnoreCase("admin@etayo.gov.ph").orElse(null);
-        if (municipalAdmin == null) {
-            municipalAdmin = new User("admin@etayo.gov.ph", passwordEncoder.encode(newPassword), Role.ROLE_ADMIN, "Admin User");
+        List<User> municipalList = userRepository.findAllByEmailIgnoreCase("admin@etayo.gov.ph");
+        if (municipalList.isEmpty()) {
+            User municipalAdmin = new User("admin@etayo.gov.ph", passwordEncoder.encode(newPassword), Role.ROLE_ADMIN, "Admin User");
+            userRepository.save(municipalAdmin);
         } else {
-            municipalAdmin.setPassword(passwordEncoder.encode(newPassword));
-            municipalAdmin.setRole(Role.ROLE_ADMIN);
+            for (User u : municipalList) {
+                u.setEmail("admin@etayo.gov.ph");
+                u.setPassword(passwordEncoder.encode(newPassword));
+                u.setRole(Role.ROLE_ADMIN);
+                userRepository.save(u);
+            }
         }
-        userRepository.save(municipalAdmin);
 
         return ResponseEntity.ok(java.util.Map.of(
                 "message", "SuperAdmin credentials successfully reset to password: " + newPassword,
