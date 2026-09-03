@@ -41,4 +41,13 @@ public class PermitController {
         permit.setId(id);
         return ResponseEntity.ok(permitApplicationRepository.save(permit));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletePermit(@PathVariable String id) {
+        if (!permitApplicationRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        permitApplicationRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
 }
