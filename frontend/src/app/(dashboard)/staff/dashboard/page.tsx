@@ -12,10 +12,12 @@ export default function StaffDashboard() {
   const [showFilters, setShowFilters] = useState(false);
 
   const filteredApps = applications.filter(app => {
-    const matchesSearch = app.projectName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      app.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.applicantName.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const pName = (app.projectName || app.projectDescription || "Locational Clearance").toLowerCase();
+    const appId = (app.id || "").toLowerCase();
+    const aName = (app.applicantName || "").toLowerCase();
+    const sTerm = searchTerm.toLowerCase();
+
+    const matchesSearch = pName.includes(sTerm) || appId.includes(sTerm) || aName.includes(sTerm);
     const matchesStatus = filterStatus === "all" || app.status === filterStatus;
     
     return matchesSearch && matchesStatus;
@@ -131,13 +133,13 @@ export default function StaffDashboard() {
                         </div>
                       </td>
                       <td style={{ padding: "1.25rem 1.5rem" }}>
-                        <div style={{ fontWeight: "600", color: "#334155", marginBottom: "6px" }}>{app.projectName}</div>
+                        <div style={{ fontWeight: "600", color: "#334155", marginBottom: "6px" }}>{app.projectName || app.projectDescription || "Locational Clearance"}</div>
                         <div style={{ fontSize: "0.85rem", color: "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
-                          <MapPin size={14} color="#cbd5e1" /> {app.projectAddress}
+                          <MapPin size={14} color="#cbd5e1" /> {app.projectAddress || "Sto. Tomas, Pampanga"}
                         </div>
                       </td>
                       <td style={{ padding: "1.25rem 1.5rem", textTransform: "capitalize", fontWeight: "500", color: "#475569" }}>
-                        {app.permitType.replace("_", " ")}
+                        {app.permitType ? app.permitType.replace("_", " ") : "Locational Clearance"}
                       </td>
                       <td style={{ padding: "1.25rem 1.5rem" }}>
                         <span style={{ 
