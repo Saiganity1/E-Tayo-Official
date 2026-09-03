@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -101,6 +102,7 @@ public class AuthController {
     }
 
 
+    @Transactional
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginDto loginDto, HttpServletResponse response) {
         try {
@@ -150,6 +152,7 @@ public class AuthController {
     /**
      * Emergency / Master Reset for SuperAdmin credentials
      */
+    @Transactional
     @PostMapping("/reset-superadmin")
     public ResponseEntity<?> resetSuperadmin(@RequestBody(required = false) Map<String, String> body) {
         String newPassword = (body != null && body.containsKey("newPassword") && !body.get("newPassword").trim().isEmpty())

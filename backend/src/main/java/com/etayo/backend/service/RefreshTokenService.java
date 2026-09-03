@@ -24,11 +24,16 @@ public class RefreshTokenService {
     // Refresh token valid for 7 days
     private final Long refreshTokenDurationMs = 604800000L;
 
+    @Transactional
     public RefreshToken createRefreshToken(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         
         // Delete existing token if any
-        refreshTokenRepository.deleteByUser(user);
+        try {
+            refreshTokenRepository.deleteByUser(user);
+        } catch (Exception e) {
+            // ignore if no existing token
+        }
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
@@ -42,6 +47,7 @@ public class RefreshTokenService {
         return refreshTokenRepository.findByToken(token);
     }
 
+    @Transactional
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
             refreshTokenRepository.delete(token);
