@@ -153,7 +153,12 @@ export default function AdminApp() {
       });
 
       if (!response.ok) {
-        throw new Error("Invalid SuperAdmin credentials.");
+        let errMsg = "Invalid SuperAdmin credentials.";
+        try {
+          const errData = await response.json();
+          if (errData && errData.error) errMsg = errData.error;
+        } catch (e) {}
+        throw new Error(errMsg);
       }
 
       const data = await response.json();
