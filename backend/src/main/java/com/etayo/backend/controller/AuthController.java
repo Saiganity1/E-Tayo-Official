@@ -104,14 +104,24 @@ public class AuthController {
     public ResponseEntity<?> authenticateUser(@RequestBody LoginDto loginDto, HttpServletResponse response) {
         try {
             String rawEmail = loginDto.getEmail() != null ? loginDto.getEmail().trim() : "";
+            if (rawEmail.isEmpty() || loginDto.getPassword() == null || loginDto.getPassword().trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("error", "Email and password are required"));
+            }
 
-            // Find user case-insensitively first
+            // Find user case-insensitively
             User user = userRepository.findByEmailIgnoreCase(rawEmail)
-                    .orElseThrow(() -> new RuntimeException("User not found with email: " + rawEmail));
+                    .orElseThrow(() -> new RuntimeException("Account not found with username/email: " + rawEmail));
 
-            // Authenticate with user's stored email and provided password
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getEmail(), loginDto.getPassword()));
+            // Verify password using BCrypt
+            if (!passwordEncoder.matches(loginDto.getPassword().trim(), user.getPassword())) {
+                throw new RuntimeException("Incorrect password for account: " + rawEmail);
+            }
+
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    user.getEmail(),
+                    null,
+                    java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority(user.getRole().name()))
+            );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -132,7 +142,7 @@ public class AuthController {
             return ResponseEntity.ok(new JwtAuthResponse(jwt, user.getRole().name(), user.getName()));
         } catch (Exception e) {
             auditLoggingService.logAction("LOGIN_FAILED", loginDto.getEmail(), "Failed login attempt: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(java.util.Map.of("error", "Invalid email or password"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(java.util.Map.of("error", e.getMessage() != null ? e.getMessage() : "Invalid credentials"));
         }
     }
 
@@ -156,10 +166,13 @@ public class AuthController {
         userRepository.save(admin);
 
         User municipalAdmin = userRepository.findByEmailIgnoreCase("admin@etayo.gov.ph").orElse(null);
-        if (municipalAdmin != null) {
+        if (municipalAdmin == null) {
+            municipalAdmin = new User("admin@etayo.gov.ph", passwordEncoder.encode(newPassword), Role.ROLE_ADMIN, "Admin User");
+        } else {
             municipalAdmin.setPassword(passwordEncoder.encode(newPassword));
-            userRepository.save(municipalAdmin);
+            municipalAdmin.setRole(Role.ROLE_ADMIN);
         }
+        userRepository.save(municipalAdmin);
 
         return ResponseEntity.ok(java.util.Map.of(
                 "message", "SuperAdmin credentials successfully reset to password: " + newPassword,
