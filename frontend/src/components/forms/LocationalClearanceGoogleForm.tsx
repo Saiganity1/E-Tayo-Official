@@ -52,13 +52,40 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
   const [classification, setClassification] = useState("RESIDENTIAL");
   const [siteZoningClass, setSiteZoningClass] = useState("GENERAL RESIDENTIAL ZONE (GRZ)");
   const [rightOverLand, setRightOverLand] = useState("TRANSFER CERTIFICATE OF TITLE (TCT)");
+  const [othersProject, setOthersProject] = useState("N/A");
 
   // Section C: Site Findings State
-  const [projectStatus, setProjectStatus] = useState<"Proposed" | "Completed" | "Operational" | "Under Construction">("Proposed");
+  const [projectStatus, setProjectStatus] = useState<"Proposed" | "Completed" | "Operational" | "Under Construction" | "Others">("Proposed");
+  const [percentCompleted, setPercentCompleted] = useState("");
+  const [statusOthers, setStatusOthers] = useState("");
   const [northAbutting, setNorthAbutting] = useState("GRZ");
   const [southAbutting, setSouthAbutting] = useState("GRZ");
   const [eastAbutting, setEastAbutting] = useState("ROAD");
   const [westAbutting, setWestAbutting] = useState("GRZ");
+
+  // Section C: Existing Land Uses within Lot Boundaries
+  const [lotResidential, setLotResidential] = useState(true);
+  const [lotCommercial, setLotCommercial] = useState(false);
+  const [lotInstitutional, setLotInstitutional] = useState(false);
+  const [lotIndustrial, setLotIndustrial] = useState(false);
+  const [lotAgricultural, setLotAgricultural] = useState(false);
+  const [lotOthersRoad, setLotOthersRoad] = useState(false);
+
+  // Section C: In case of agricultural
+  const [agriculturalCrops, setAgriculturalCrops] = useState("N/A");
+  const [tenancyStatus, setTenancyStatus] = useState<"Not tenanted" | "Tenanted">("Not tenanted");
+
+  // Section C: Surrounding land uses (100m & 500m radius)
+  const [use100mRes, setUse100mRes] = useState(true);
+  const [use500mRes, setUse500mRes] = useState(true);
+  const [use100mCom, setUse100mCom] = useState(false);
+  const [use500mCom, setUse500mCom] = useState(false);
+  const [use100mInd, setUse100mInd] = useState(false);
+  const [use500mInd, setUse500mInd] = useState(false);
+  const [use100mAgri, setUse100mAgri] = useState(false);
+  const [use500mAgri, setUse500mAgri] = useState(false);
+  const [use100mInst, setUse100mInst] = useState(false);
+  const [use500mInst, setUse500mInst] = useState(false);
 
   // Section D: Sketch of Project Location Image State
   const [sketchImageBase64, setSketchImageBase64] = useState<string | null>(null);
@@ -143,11 +170,38 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
         classification,
         siteZoningClass,
         rightOverLand,
+        othersProject,
         projectStatus,
+        percentCompleted: projectStatus === "Under Construction" ? percentCompleted : undefined,
+        statusOthers: projectStatus === "Others" ? statusOthers : undefined,
         northAbutting,
         southAbutting,
         eastAbutting,
         westAbutting,
+        lotUses: {
+          residential: lotResidential,
+          commercial: lotCommercial,
+          institutional: lotInstitutional,
+          industrial: lotIndustrial,
+          agricultural: lotAgricultural,
+          othersRoad: lotOthersRoad,
+        },
+        agriculturalCrops,
+        tenancyStatus,
+        uses100m: {
+          residential: use100mRes,
+          commercial: use100mCom,
+          institutional: use100mInst,
+          industrial: use100mInd,
+          agricultural: use100mAgri,
+        },
+        uses500m: {
+          residential: use500mRes,
+          commercial: use500mCom,
+          institutional: use500mInst,
+          industrial: use500mInd,
+          agricultural: use500mAgri,
+        },
         submissionDate,
         sketchImageBase64: sketchImageBase64 || undefined,
         legalBases: legalBasis === "CLUP_4810" ? "Resolution No. 4810, Series of 2017" : otherLegalBasis,
@@ -559,9 +613,23 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
             </div>
           </div>
 
+          <div className="gf-card gf-field-card">
+            <label className="gf-field-label">
+              Other Project Details / Remarks <span className="gf-optional">(Optional)</span>
+            </label>
+            <p className="gf-field-help">Any additional structural specifications or remarks (mapped to "Others:" in Annex D).</p>
+            <input
+              type="text"
+              className="gf-input"
+              value={othersProject}
+              onChange={(e) => setOthersProject(e.target.value)}
+              placeholder="e.g. With rooftop deck, perimeter fence, or N/A"
+            />
+          </div>
+
           {/* SECTION C: SITE INSPECTION & ADJACENT USES */}
           <div className="gf-section-divider">
-            <h3>Section C: Site & Surrounding Land Uses</h3>
+            <h3>Section C: Site Inspection & Land Uses</h3>
           </div>
 
           <div className="gf-card gf-field-card">
@@ -574,6 +642,7 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
                 { val: "Under Construction", label: "Under Construction (% Ongoing)" },
                 { val: "Completed", label: "Completed (Structure built)" },
                 { val: "Operational", label: "Operational (Currently active/occupied)" },
+                { val: "Others", label: "Others (Specify)" },
               ].map((item) => (
                 <label key={item.val} className="gf-radio-item">
                   <input
@@ -587,6 +656,111 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
                 </label>
               ))}
             </div>
+
+            {projectStatus === "Under Construction" && (
+              <div style={{ marginTop: "1rem" }}>
+                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>Percentage Completed (%):</span>
+                <input
+                  type="text"
+                  className="gf-input"
+                  style={{ width: "160px", marginTop: "0.25rem" }}
+                  value={percentCompleted}
+                  onChange={(e) => setPercentCompleted(e.target.value)}
+                  placeholder="e.g. 50%"
+                />
+              </div>
+            )}
+
+            {projectStatus === "Others" && (
+              <div style={{ marginTop: "1rem" }}>
+                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>Specify Status:</span>
+                <input
+                  type="text"
+                  className="gf-input"
+                  style={{ marginTop: "0.25rem" }}
+                  value={statusOthers}
+                  onChange={(e) => setStatusOthers(e.target.value)}
+                  placeholder="e.g. Renovation / Demolition"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="gf-card gf-field-card">
+            <label className="gf-field-label">
+              Existing Land Uses Within Lot Boundaries <span className="gf-optional">(Select all that apply)</span>
+            </label>
+            <p className="gf-field-help">Indicate current land utilization inside the project lot boundaries.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: "0.5rem" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
+                <input type="checkbox" checked={lotResidential} onChange={(e) => setLotResidential(e.target.checked)} />
+                Residential
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
+                <input type="checkbox" checked={lotCommercial} onChange={(e) => setLotCommercial(e.target.checked)} />
+                Commercial
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
+                <input type="checkbox" checked={lotInstitutional} onChange={(e) => setLotInstitutional(e.target.checked)} />
+                Institutional
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
+                <input type="checkbox" checked={lotIndustrial} onChange={(e) => setLotIndustrial(e.target.checked)} />
+                Industrial
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
+                <input type="checkbox" checked={lotAgricultural} onChange={(e) => setLotAgricultural(e.target.checked)} />
+                Agricultural
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
+                <input type="checkbox" checked={lotOthersRoad} onChange={(e) => setLotOthersRoad(e.target.checked)} />
+                Others: Road / Access
+              </label>
+            </div>
+          </div>
+
+          <div className="gf-card gf-field-card">
+            <label className="gf-field-label">
+              In Case of Agricultural Use <span className="gf-optional">(Optional)</span>
+            </label>
+            <p className="gf-field-help">If the lot or abutting land is currently agricultural, provide crop and tenancy information.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "0.5rem" }}>
+              <div>
+                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>Specify Crops:</span>
+                <input
+                  type="text"
+                  className="gf-input"
+                  value={agriculturalCrops}
+                  onChange={(e) => setAgriculturalCrops(e.target.value)}
+                  placeholder="e.g. Rice / Palay, Sugar Cane, N/A"
+                />
+              </div>
+              <div>
+                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>Tenancy Status:</span>
+                <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem" }}>
+                    <input
+                      type="radio"
+                      name="tenancyStatus"
+                      value="Not tenanted"
+                      checked={tenancyStatus === "Not tenanted"}
+                      onChange={() => setTenancyStatus("Not tenanted")}
+                    />
+                    Not tenanted
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem" }}>
+                    <input
+                      type="radio"
+                      name="tenancyStatus"
+                      value="Tenanted"
+                      checked={tenancyStatus === "Tenanted"}
+                      onChange={() => setTenancyStatus("Tenanted")}
+                    />
+                    Tenanted
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="gf-card gf-field-card">
@@ -596,7 +770,7 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
             <p className="gf-field-help">Identify the structures or zoning adjacent to your lot boundaries.</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "0.5rem" }}>
               <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>North Boundary:</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>North Boundary (a):</span>
                 <input
                   type="text"
                   className="gf-input"
@@ -606,7 +780,7 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
                 />
               </div>
               <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>South Boundary:</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>South Boundary (b):</span>
                 <input
                   type="text"
                   className="gf-input"
@@ -616,7 +790,7 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
                 />
               </div>
               <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>East Boundary:</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>East Boundary (c):</span>
                 <input
                   type="text"
                   className="gf-input"
@@ -626,7 +800,7 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
                 />
               </div>
               <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>West Boundary:</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>West Boundary (d):</span>
                 <input
                   type="text"
                   className="gf-input"
@@ -635,6 +809,38 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
                   placeholder="e.g. GRZ / Residential"
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="gf-card gf-field-card">
+            <label className="gf-field-label">
+              Surrounding Land Uses in Vicinity <span className="gf-optional">(100m & 500m Radius)</span>
+            </label>
+            <p className="gf-field-help">Check land use types present within 100 meters and 500 meters of the property.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem", alignItems: "center", marginTop: "0.5rem", fontSize: "0.9rem" }}>
+              <strong>Land Use Type</strong>
+              <strong style={{ textAlign: "center" }}>Within 100m</strong>
+              <strong style={{ textAlign: "center" }}>Within 500m</strong>
+
+              <span>Residential</span>
+              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use100mRes} onChange={(e) => setUse100mRes(e.target.checked)} /></div>
+              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use500mRes} onChange={(e) => setUse500mRes(e.target.checked)} /></div>
+
+              <span>Commercial</span>
+              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use100mCom} onChange={(e) => setUse100mCom(e.target.checked)} /></div>
+              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use500mCom} onChange={(e) => setUse500mCom(e.target.checked)} /></div>
+
+              <span>Institutional</span>
+              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use100mInst} onChange={(e) => setUse100mInst(e.target.checked)} /></div>
+              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use500mInst} onChange={(e) => setUse500mInst(e.target.checked)} /></div>
+
+              <span>Industrial</span>
+              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use100mInd} onChange={(e) => setUse100mInd(e.target.checked)} /></div>
+              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use500mInd} onChange={(e) => setUse500mInd(e.target.checked)} /></div>
+
+              <span>Agricultural</span>
+              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use100mAgri} onChange={(e) => setUse100mAgri(e.target.checked)} /></div>
+              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use500mAgri} onChange={(e) => setUse500mAgri(e.target.checked)} /></div>
             </div>
           </div>
 

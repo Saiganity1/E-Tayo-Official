@@ -15,13 +15,48 @@ export interface LocationalClearanceFormData {
   classification: string;
   siteZoningClass?: string;
   rightOverLand: string;
-  projectStatus: "Proposed" | "Completed" | "Operational" | "Under Construction";
+  othersProject?: string;
+
+  // Section C: Site Inspection & Land Uses
+  projectStatus: "Proposed" | "Completed" | "Operational" | "Under Construction" | "Others";
+  percentCompleted?: string;
+  statusOthers?: string;
   northAbutting?: string;
   southAbutting?: string;
   eastAbutting?: string;
   westAbutting?: string;
   submissionDate?: string;
-  
+
+  // Land uses within lot
+  lotUses?: {
+    residential?: boolean;
+    commercial?: boolean;
+    institutional?: boolean;
+    industrial?: boolean;
+    agricultural?: boolean;
+    othersRoad?: boolean;
+  };
+
+  // Agricultural & Tenancy
+  agriculturalCrops?: string;
+  tenancyStatus?: "Tenanted" | "Not tenanted";
+
+  // Surrounding 100m / 500m radius uses
+  uses100m?: {
+    residential?: boolean;
+    commercial?: boolean;
+    institutional?: boolean;
+    industrial?: boolean;
+    agricultural?: boolean;
+  };
+  uses500m?: {
+    residential?: boolean;
+    commercial?: boolean;
+    institutional?: boolean;
+    industrial?: boolean;
+    agricultural?: boolean;
+  };
+
   // Section D: Sketch Map Attachment
   sketchImageBase64?: string;
   sketchImageBytes?: Uint8Array;
@@ -85,71 +120,142 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
     });
   };
 
+  // Helper to draw an [ X ] checkbox mark inside brackets
+  const drawCheck = (x: number, y: number) => {
+    page1.drawText("X", {
+      x,
+      y,
+      size: 9,
+      font: boldFont,
+      color: navy,
+    });
+  };
+
   // ==========================================
   // 1. SECTION A: APPLICANTS INFORMATION
   // ==========================================
-  drawField(data.applicantName || "N/A", 39, 714, 9.5, true, 40);
-  drawField(data.corporationName || "N/A", 308, 714, 9, false, 40);
+  // Row 1: Name of Applicant & Corporation
+  drawField(data.applicantName || "N/A", 39, 714, 9.5, true, 42);
+  drawField(data.corporationName || "N/A", 308, 714, 9, false, 42);
 
-  // Address & Phone of Applicant
-  drawField(data.applicantAddress, 39, 678, 8, false, 55);
-  const contactLine = `${data.applicantPhone ? `TEL / MOB: ${data.applicantPhone}` : ""}`;
-  drawField(contactLine, 39, 666, 8, true, 55);
+  // Row 2: Address & Phone of Applicant (Above dividing line y=671)
+  drawField(data.applicantAddress, 39, 684, 8, false, 55);
+  const contactLine = `TEL / MOB: ${data.applicantPhone || "N/A"}`;
+  drawField(contactLine, 39, 673, 7.5, true, 55);
 
-  // Address & Phone of Corporation
-  drawField(data.corporationAddress || "N/A", 308, 678, 8, false, 55);
+  // Row 2 Right: Address & Phone of Corporation
+  drawField(data.corporationAddress || "N/A", 308, 684, 8, false, 55);
 
   // ==========================================
   // 2. SECTION B: PROJECT INFORMATION
   // ==========================================
+  // Name/Type: starts after x=88.8
   const fullProjectType = `${data.projectName ? data.projectName + " - " : ""}${data.projectType || ""}`.trim();
-  drawField(fullProjectType, 92, 647.4, 8, true, 38);
+  drawField(fullProjectType, 94, 647.4, 8, true, 38);
 
-  drawField(data.classification || "RESIDENTIAL", 369, 647.4, 8.5, true, 25);
+  // Classification: starts after x=365.1
+  drawField(data.classification || "RESIDENTIAL", 370, 647.4, 8.5, true, 25);
 
-  const locLine = `${data.projectLocation || ""}, BRGY. ${data.barangay || ""}, STO. TOMAS, PAMPANGA`.trim();
+  // Location: starts after x=75.5
+  const locLine = `${data.projectLocation || ""}, BRGY. ${data.barangay || ""}, STO. TOMAS`.trim();
   drawField(locLine, 80, 635.9, 7.5, true, 42);
 
+  // Site Zoning Class: starts after x=384.6
   const defaultZoning = data.classification === "COMMERCIAL" ? "GENERAL COMMERCIAL ZONE (GCZ)" : "GENERAL RESIDENTIAL ZONE (GRZ)";
   drawField(data.siteZoningClass || defaultZoning, 389, 635.9, 8, true, 30);
 
-  drawField(`${data.lotArea || "0.00"} SQ.M.`, 94, 624.4, 8.5, true, 20);
+  // Area (sq.m.) : starts after x=95.5 (Clean space so no overlap with ':')
+  drawField(`${data.lotArea || "0.00"} SQ.M.`, 100, 624.4, 8.5, true, 20);
 
-  drawField(data.rightOverLand || "TRANSFER CERTIFICATE OF TITLE (TCT)", 383, 624.4, 7.5, true, 30);
+  // Right Over Land: starts after x=379.0
+  drawField(data.rightOverLand || "TRANSFER CERTIFICATE OF TITLE (TCT)", 384, 624.4, 7.5, true, 30);
 
-  drawField(`${data.bldgArea || "0.00"} SQ.M.`, 102, 612.9, 8.5, true, 20);
+  // Area of Bldg. : starts after x=98.3 (Clean space so no overlap with ':')
+  drawField(`${data.bldgArea || "0.00"} SQ.M.`, 104, 612.9, 8.5, true, 20);
+
+  // Others: starts after x=67.7
+  drawField(data.othersProject || "N/A", 72, 601.4, 8, false, 35);
 
   // ==========================================
   // 3. SECTION C: SITE INSPECTION FINDINGS
   // ==========================================
+  // Date of Inspection: starts after x=118.3
   const fileDate = data.submissionDate || new Date().toLocaleDateString("en-US", { month: "long", day: "2-digit", year: "numeric" });
-  drawField(fileDate, 121, 576.9, 8.5, true, 25);
+  drawField(fileDate, 122, 576.9, 8.5, true, 25);
 
-  // Project Status checkboxes
+  // Project Status Checkbox
   if (data.projectStatus === "Completed") {
-    drawField("X", 182, 565.4, 9, true);
+    drawCheck(154, 553.9);
   } else if (data.projectStatus === "Operational") {
-    drawField("X", 45, 553.9, 9, true);
+    drawCheck(42, 542.4);
+  } else if (data.projectStatus === "Under Construction") {
+    drawCheck(154, 542.4);
+    if (data.percentCompleted) {
+      drawField(data.percentCompleted, 175, 542.4, 8, true);
+    }
+  } else if (data.projectStatus === "Others") {
+    drawCheck(42, 530.9);
+    if (data.statusOthers) {
+      drawField(data.statusOthers, 135, 530.9, 8, true, 20);
+    }
   } else {
     // Default: Proposed
-    drawField("X", 45, 565.4, 9, true);
+    drawCheck(42, 553.9);
   }
 
-  // Abutting Lot Boundaries
-  drawField(data.northAbutting || "GRZ", 67, 484.9, 8, true, 10);
-  drawField(data.southAbutting || "GRZ", 142, 484.9, 8, true, 10);
-  drawField(data.eastAbutting || "ROAD", 62, 473.4, 8, true, 10);
-  drawField(data.westAbutting || "GRZ", 137, 473.4, 8, true, 10);
+  // Abutting Lot Boundaries (Sit clean on the line without overlapping (a), (b), (c), (d))
+  drawField(data.northAbutting || "GRZ", 78, 485.5, 8, true, 8);
+  drawField(data.southAbutting || "GRZ", 152, 485.5, 8, true, 8);
+  drawField(data.eastAbutting || "ROAD", 75, 474.5, 8, true, 8);
+  drawField(data.westAbutting || "GRZ", 148, 474.5, 8, true, 8);
 
-  // Mark land use checkbox matching classification
-  if (data.classification === "COMMERCIAL") {
-    drawField("X", 311, 553.9, 8.5, true);
+  // Existing land uses within lot boundaries
+  const uses = data.lotUses || {};
+  if (uses.residential || (!data.classification || data.classification === "RESIDENTIAL")) {
+    drawCheck(309, 565.4);
+  }
+  if (uses.institutional || data.classification === "INSTITUTIONAL") {
+    drawCheck(379, 565.4);
+  }
+  if (uses.commercial || data.classification === "COMMERCIAL") {
+    drawCheck(309, 553.9);
+  }
+  if (uses.industrial || data.classification === "INDUSTRIAL") {
+    drawCheck(385, 553.9);
+  }
+  if (uses.agricultural || data.classification === "AGRICULTURAL") {
+    drawCheck(309, 542.4);
+  }
+  if (uses.othersRoad) {
+    drawCheck(413, 542.4);
+  }
+
+  // Agricultural details
+  if (data.agriculturalCrops) {
+    drawField(data.agriculturalCrops, 340, 507.9, 8, false, 25);
+  }
+  if (data.tenancyStatus === "Tenanted") {
+    drawCheck(309, 484.9);
   } else {
-    drawField("X", 311, 565.4, 8.5, true);
+    drawCheck(420, 484.9);
   }
+
+  // Surrounding 100m and 500m radius land uses
+  const u100 = data.uses100m || {};
+  const u500 = data.uses500m || {};
+  if (u100.residential ?? true) drawCheck(149, 426.7);
+  if (u500.residential ?? true) drawCheck(211, 426.7);
+  if (u100.commercial ?? (data.classification === "COMMERCIAL")) drawCheck(150, 415.2);
+  if (u500.commercial ?? (data.classification === "COMMERCIAL")) drawCheck(212, 415.2);
+  if (u100.institutional) drawCheck(150, 403.7);
+  if (u500.institutional) drawCheck(212, 403.7);
+  if (u100.industrial) drawCheck(381, 426.7);
+  if (u500.industrial) drawCheck(439, 426.7);
+  if (u100.agricultural) drawCheck(381, 415.2);
+  if (u500.agricultural) drawCheck(439, 415.2);
 
   // ==========================================
-  // 4. SECTION D: SKETCH OF PROJECT LOCATION & SIGNIFICANT FINDINGS
+  // 4. SECTION D: SKETCH OF PROJECT LOCATION (Strictly inside table box y=100 to y=365)
   // ==========================================
   let imgBytes = data.sketchImageBytes;
   if (!imgBytes && data.sketchImageBase64) {
@@ -165,14 +271,20 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
     }
   }
 
+  // Section D inner bounds: x=34 to 570 (width=536), y=100 to 365 (height=265)
+  const boxX = 34;
+  const boxY = 100;
+  const boxW = 536;
+  const boxH = 265;
+
   if (imgBytes && imgBytes.length > 0) {
     try {
-      // Clean white cover over the placeholder map in Section D
+      // Clean white background inside Section D
       page1.drawRectangle({
-        x: 35.5,
-        y: 35.5,
-        width: 534,
-        height: 325,
+        x: boxX + 1,
+        y: boxY + 1,
+        width: boxW - 2,
+        height: boxH - 2,
         color: rgb(1, 1, 1),
       });
 
@@ -185,10 +297,10 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
       }
 
       if (embeddedImage) {
-        // Fit proportionally inside Section D bounding box
-        const scaled = embeddedImage.scaleToFit(520, 310);
-        const posX = 35.5 + (534 - scaled.width) / 2;
-        const posY = 35.5 + (325 - scaled.height) / 2;
+        // Fit proportionally inside Section D bounds with safe padding (max 520 x 250)
+        const scaled = embeddedImage.scaleToFit(520, 250);
+        const posX = boxX + (boxW - scaled.width) / 2;
+        const posY = boxY + (boxH - scaled.height) / 2;
 
         page1.drawImage(embeddedImage, {
           x: posX,
@@ -204,7 +316,7 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
           width: scaled.width,
           height: scaled.height,
           borderWidth: 1,
-          borderColor: rgb(0.8, 0.8, 0.8),
+          borderColor: rgb(0.85, 0.85, 0.85),
           color: rgb(0, 0, 0),
           opacity: 0,
         });
@@ -220,31 +332,70 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
   if (pages.length > 1) {
     const page2 = pages[1];
 
-    // Mark CLUP resolution
+    // Mark CLUP resolution inside the [ ] bracket
     page2.drawText("X", {
-      x: 45,
-      y: 735,
+      x: 77.5,
+      y: 734.7,
       size: 9,
       font: boldFont,
       color: navy,
     });
+
+    // If classification is not Residential, update zone text in findings so it matches the applicant's category
+    const zoneName = data.classification === "COMMERCIAL"
+      ? "Commercial Zone"
+      : data.classification === "INDUSTRIAL"
+      ? "Industrial Zone"
+      : data.classification === "INSTITUTIONAL"
+      ? "Institutional Zone"
+      : data.classification === "AGRICULTURAL"
+      ? "Agricultural Zone"
+      : null;
+
+    if (zoneName) {
+      // White-out "Residential Zone" in Recommended Decision
+      page2.drawRectangle({ x: 218, y: 611, width: 90, height: 13, color: rgb(1, 1, 1) });
+      page2.drawText(zoneName, { x: 218, y: 612.8, size: 9, font: boldFont, color: rgb(0, 0, 0) });
+
+      // White-out "Residential Zone" in Finding of Facts line 1
+      page2.drawRectangle({ x: 313, y: 695, width: 90, height: 13, color: rgb(1, 1, 1) });
+      page2.drawText(zoneName + ".", { x: 314, y: 696.2, size: 9, font: boldFont, color: rgb(0, 0, 0) });
+
+      // White-out "Residential Zone" in Finding of Facts line 2
+      page2.drawRectangle({ x: 378, y: 576, width: 90, height: 13, color: rgb(1, 1, 1) });
+      page2.drawText(zoneName + ".", { x: 379.5, y: 577.2, size: 9, font: boldFont, color: rgb(0, 0, 0) });
+    }
 
     // Stamp current date in Section G (Signatories Date)
     const stampDate = new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }).replace(/\//g, "-");
     
-    // Prepared by Date (Y ≈ 148, X ≈ 142)
+    // Prepared by Date (Cover old 08-12-2026 cleanly)
+    page2.drawRectangle({
+      x: 138,
+      y: 138,
+      width: 58,
+      height: 14,
+      color: rgb(1, 1, 1),
+    });
     page2.drawText(stampDate, {
-      x: 142,
-      y: 148,
+      x: 140,
+      y: 140,
       size: 9,
       font: boldFont,
       color: navy,
     });
 
-    // Noted by Date (Y ≈ 148, X ≈ 414)
+    // Noted by Date (Cover old 08-12-2026 cleanly)
+    page2.drawRectangle({
+      x: 410,
+      y: 138,
+      width: 58,
+      height: 14,
+      color: rgb(1, 1, 1),
+    });
     page2.drawText(stampDate, {
-      x: 414,
-      y: 148,
+      x: 412,
+      y: 140,
       size: 9,
       font: boldFont,
       color: navy,
