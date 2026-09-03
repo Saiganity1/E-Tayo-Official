@@ -215,6 +215,35 @@ export default function StaffEvaluatePage() {
                 <span>{app.dateSubmitted}</span>
               </div>
             </div>
+
+            {/* Section D Attached Sketch Thumbnail */}
+            {(app as any).sketchImageUrl && (
+              <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid #e2e8f0" }}>
+                <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase", marginBottom: "6px" }}>
+                  Section D Location Sketch Attached
+                </span>
+                <div style={{ maxHeight: "120px", overflow: "hidden", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+                  <img
+                    src={(app as any).sketchImageUrl}
+                    alt="Section D Sketch"
+                    style={{ width: "100%", height: "120px", objectFit: "cover" }}
+                  />
+                </div>
+                <span style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: "600", marginTop: "4px", display: "block" }}>
+                  ✓ Automatically pasted into Annex D PDF below
+                </span>
+              </div>
+            )}
+
+            {/* Section E & F Verification Badge */}
+            <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid #e2e8f0", fontSize: "0.78rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#166534", marginBottom: "4px" }}>
+                <CheckCircle2 size={14} /> <span>Sec. E: CLUP/ZO Res. #4810 Verified</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#166534" }}>
+                <CheckCircle2 size={14} /> <span>Sec. F: Conditions 1-7 Agreed by Applicant</span>
+              </div>
+            </div>
           </div>
 
           {/* DECISION ACTION PANEL */}

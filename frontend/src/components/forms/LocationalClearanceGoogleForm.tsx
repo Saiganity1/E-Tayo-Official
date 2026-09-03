@@ -3,7 +3,20 @@
 import React, { useState } from "react";
 import { usePermitContext } from "../../context/PermitContext";
 import { generateAnnexDPdf, LocationalClearanceFormData } from "../../utils/annexDPdfGenerator";
-import { CheckCircle2, Download, FileText, Send, AlertCircle, ArrowLeft, Building2 } from "lucide-react";
+import { 
+  CheckCircle2, 
+  Download, 
+  FileText, 
+  Send, 
+  AlertCircle, 
+  Building2, 
+  UploadCloud, 
+  Image as ImageIcon, 
+  X, 
+  ShieldCheck, 
+  Scale, 
+  FileCheck 
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?: () => void }) {
@@ -22,13 +35,14 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
     }
   } catch (e) {}
 
-  // Form State
+  // Section A: Applicant State
   const [applicantName, setApplicantName] = useState(initialApplicantName);
   const [corporationName, setCorporationName] = useState("");
   const [applicantAddress, setApplicantAddress] = useState("123 Rizal Street, Sto. Tomas, Pampanga");
   const [applicantPhone, setApplicantPhone] = useState("0917 000 4567");
   const [corporationAddress, setCorporationAddress] = useState("");
 
+  // Section B: Project Info State
   const [projectName, setProjectName] = useState("");
   const [projectType, setProjectType] = useState("Proposed 2-Storey Residence");
   const [streetLocation, setStreetLocation] = useState("");
@@ -38,12 +52,28 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
   const [classification, setClassification] = useState("RESIDENTIAL");
   const [siteZoningClass, setSiteZoningClass] = useState("GENERAL RESIDENTIAL ZONE (GRZ)");
   const [rightOverLand, setRightOverLand] = useState("TRANSFER CERTIFICATE OF TITLE (TCT)");
-  const [projectStatus, setProjectStatus] = useState<"Proposed" | "Completed" | "Operational" | "Under Construction">("Proposed");
 
+  // Section C: Site Findings State
+  const [projectStatus, setProjectStatus] = useState<"Proposed" | "Completed" | "Operational" | "Under Construction">("Proposed");
   const [northAbutting, setNorthAbutting] = useState("GRZ");
   const [southAbutting, setSouthAbutting] = useState("GRZ");
   const [eastAbutting, setEastAbutting] = useState("ROAD");
   const [westAbutting, setWestAbutting] = useState("GRZ");
+
+  // Section D: Sketch of Project Location Image State
+  const [sketchImageBase64, setSketchImageBase64] = useState<string | null>(null);
+  const [sketchFileName, setSketchFileName] = useState<string>("");
+  const [sketchFileSize, setSketchFileSize] = useState<string>("");
+
+  // Section E: Legal Bases State
+  const [legalBasis, setLegalBasis] = useState("CLUP_4810");
+  const [otherLegalBasis, setOtherLegalBasis] = useState("");
+  const [findingFacts, setFindingFacts] = useState(
+    "Based on the review of the Comprehensive Land Use Plan (CLUP) and the approved Zoning Ordinance of the Municipality, the subject property is classified under the designated zone. The proposed development is among the allowable uses within the said zone as provided in the zoning regulations."
+  );
+
+  // Section F: Conditions Acknowledged State
+  const [conditionsAgreed, setConditionsAgreed] = useState(false);
 
   // Submission & Generation State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -52,10 +82,42 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
   const [submittedAppId, setSubmittedAppId] = useState("");
   const [formError, setFormError] = useState("");
 
+  // Handle Image File Upload for Section D
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setFormError("Please upload a valid image file (PNG, JPG, or JPEG) for the sketch attachment.");
+      return;
+    }
+
+    setSketchFileName(file.name);
+    setSketchFileSize((file.size / 1024).toFixed(1) + " KB");
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setSketchImageBase64(event.target?.result as string);
+      setFormError("");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeSketchImage = () => {
+    setSketchImageBase64(null);
+    setSketchFileName("");
+    setSketchFileSize("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectName.trim() || !streetLocation.trim() || !applicantName.trim()) {
-      setFormError("Please fill out all required fields marked with *.");
+      setFormError("Please fill out all required fields marked with * in Sections A and B.");
+      return;
+    }
+
+    if (!conditionsAgreed) {
+      setFormError("You must agree to the Additional Conditions in Section F before submitting.");
       return;
     }
 
@@ -87,9 +149,13 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
         eastAbutting,
         westAbutting,
         submissionDate,
+        sketchImageBase64: sketchImageBase64 || undefined,
+        legalBases: legalBasis === "CLUP_4810" ? "Resolution No. 4810, Series of 2017" : otherLegalBasis,
+        findingFacts,
+        additionalConditionsAgreed: conditionsAgreed,
       };
 
-      // 1. Automatically generate/modify ANNEX D - TEMPLATE PDF
+      // 1. Automatically generate/modify ANNEX D - TEMPLATE PDF with user data and pasted Section D image
       const { dataUri, downloadUrl } = await generateAnnexDPdf(formData);
       setGeneratedPdfUrl(downloadUrl);
 
@@ -112,6 +178,7 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
         projectDescription: `${projectType} - Classification: ${classification}, Land Right: ${rightOverLand}`,
         fileUrl: dataUri,
         fileName: "ANNEX D - TEMPLATE.pdf",
+        sketchImageUrl: sketchImageBase64 || undefined,
         location: {
           lat: 15.0163,
           lng: 120.7188,
@@ -124,13 +191,19 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
             status: "pending",
             fileName: "ANNEX D - TEMPLATE.pdf",
           },
+          ...(sketchFileName ? [{
+            name: "Section D: Location Sketch & Vicinity Map Attachment",
+            required: false,
+            status: "approved",
+            fileName: sketchFileName,
+          }] : []),
         ],
         trackingSteps: [
           {
             title: "Application Submitted",
             status: "completed",
             date: submissionDate,
-            notes: "Locational Clearance Form and auto-generated Annex D submitted online.",
+            notes: "Locational Clearance Form (Sections A through F) with Annex D template submitted online.",
             actor: applicantName,
           },
           {
@@ -144,7 +217,7 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
             date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
             action: "Form Submitted",
             actor: applicantName,
-            details: "Form completed in Google Forms style. Annex D auto-populated and queued for Admin review.",
+            details: `Annex D generated with attached Section D sketch (${sketchFileName || "Default Map"}) and Section F terms agreed.`,
           },
         ],
       };
@@ -168,34 +241,40 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
           <div className="gf-card gf-success-card">
             <div className="gf-success-header">
               <div className="gf-check-icon">
-                <CheckCircle2 size={36} color="#16a34a" />
+                <CheckCircle2 size={40} color="#16a34a" />
               </div>
               <div>
                 <h2>Locational Clearance Form (Annex D)</h2>
-                <p className="gf-subtitle">Your response has been recorded and submitted to the Admin.</p>
+                <p className="gf-subtitle">Your response has been recorded and submitted to the Admin / Staff.</p>
               </div>
             </div>
 
             <div className="gf-success-body">
               <div className="gf-info-box">
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.6rem" }}>
                   <strong>Reference ID:</strong>
                   <span className="gf-id-badge">{submittedAppId}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.6rem" }}>
                   <strong>Status:</strong>
                   <span style={{ color: "#d97706", fontWeight: "700" }}>Pending Admin Approval</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.6rem" }}>
                   <strong>Generated Document:</strong>
                   <span style={{ color: "#1e3a8a", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
                     <FileText size={16} /> ANNEX D - TEMPLATE.pdf
                   </span>
                 </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <strong>Section D Sketch Attachment:</strong>
+                  <span style={{ color: "#16a34a", fontWeight: "600" }}>
+                    {sketchFileName ? `Embedded (${sketchFileName})` : "Standard Vicinity Map Included"}
+                  </span>
+                </div>
               </div>
 
-              <p style={{ fontSize: "0.9rem", color: "#475569", margin: "1.25rem 0" }}>
-                The Municipal Planning and Development Coordinator (MPDC) / Zoning Administrator has received your application with the populated Annex D report. Once evaluated and approved, you will be notified and can immediately proceed to apply for a <strong>Building Permit</strong> or <strong>Occupancy Permit</strong>.
+              <p style={{ fontSize: "0.95rem", color: "#475569", margin: "1.25rem 0", lineHeight: "1.5" }}>
+                The Municipal Planning and Development Office (MPDO) / Zoning Administrator has received your Annex D Project Evaluation Report with your populated answers, Section D sketch attachment, and legal basis agreement. Once evaluated and approved, you can immediately proceed to apply for your <strong>Building Permit</strong> or <strong>Occupancy Permit</strong>.
               </p>
 
               <div className="gf-btn-row">
@@ -242,7 +321,7 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
           <h1 className="gf-title">Locational Clearance Application Form</h1>
           <p className="gf-description">
             Official Municipal Planning & Development Office (MPDO) Zoning Compliance Form.
-            Please fill in your project details below. When submitted, the system will automatically fill out the official <strong>ANNEX D - PROJECT EVALUATION REPORT</strong> PDF and transmit it directly to the Municipal Administrator for review and approval.
+            Please complete Sections A through F below. When submitted, the system will automatically fill out the official <strong>ANNEX D - PROJECT EVALUATION REPORT</strong> PDF, paste your Section D location sketch, and transmit it directly to the Administrator for approval.
           </p>
           <div className="gf-divider"></div>
           <div className="gf-user-indicator">
@@ -512,7 +591,7 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
 
           <div className="gf-card gf-field-card">
             <label className="gf-field-label">
-              Existing Land Uses Abutting Boundaries <span className="gf-optional">(Optional / Defaults to GRZ & Road)</span>
+              Existing Land Uses Abutting Boundaries <span className="gf-optional">(Defaults to GRZ & Road)</span>
             </label>
             <p className="gf-field-help">Identify the structures or zoning adjacent to your lot boundaries.</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "0.5rem" }}>
@@ -556,6 +635,218 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
                   placeholder="e.g. GRZ / Residential"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* SECTION D: SKETCH OF PROJECT LOCATION & SIGNIFICANT FINDINGS */}
+          <div className="gf-section-divider">
+            <h3>Section D: Sketch of Project Location (Image Attachment)</h3>
+          </div>
+
+          <div className="gf-card gf-field-card">
+            <label className="gf-field-label">
+              Upload Project Site Sketch / Vicinity Map Image <span className="gf-optional">(Recommended)</span>
+            </label>
+            <p className="gf-field-help">
+              Upload an image of your location sketch, lot vicinity map, or site photo showing the project pin. This image will be automatically pasted into <strong>Section D of the official ANNEX D PDF</strong> passed to the Admin.
+            </p>
+
+            {!sketchImageBase64 ? (
+              <div 
+                style={{
+                  border: "2px dashed #b39ddb",
+                  borderRadius: "10px",
+                  padding: "2rem",
+                  textAlign: "center",
+                  background: "#faf8fd",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+                onClick={() => document.getElementById("sketch-file-input")?.click()}
+              >
+                <UploadCloud size={44} color="#673ab7" style={{ margin: "0 auto 0.75rem auto" }} />
+                <p style={{ margin: "0 0 0.5rem 0", fontWeight: "600", color: "#322153", fontSize: "0.95rem" }}>
+                  Click to select or drag & drop location sketch image
+                </p>
+                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Supports PNG, JPG, or JPEG (Max 10MB)</span>
+                <input
+                  id="sketch-file-input"
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg"
+                  style={{ display: "none" }}
+                  onChange={handleImageUpload}
+                />
+              </div>
+            ) : (
+              <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "1rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <ImageIcon size={20} color="#16a34a" />
+                    <div>
+                      <strong style={{ fontSize: "0.9rem", color: "#0f172a" }}>{sketchFileName}</strong>
+                      <span style={{ fontSize: "0.75rem", color: "#64748b", marginLeft: "8px" }}>({sketchFileSize})</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removeSketchImage}
+                    style={{
+                      background: "#fee2e2",
+                      border: "none",
+                      color: "#dc2626",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "0.8rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}
+                  >
+                    <X size={14} /> Remove
+                  </button>
+                </div>
+
+                <div style={{ maxHeight: "240px", overflow: "hidden", borderRadius: "8px", border: "1px solid #e2e8f0", background: "white", display: "flex", justifyContent: "center" }}>
+                  <img
+                    src={sketchImageBase64}
+                    alt="Section D Location Sketch Preview"
+                    style={{ maxHeight: "240px", width: "auto", objectFit: "contain" }}
+                  />
+                </div>
+                <p style={{ margin: "0.5rem 0 0 0", fontSize: "0.78rem", color: "#166534", fontWeight: "600" }}>
+                  ✓ Image verified! This image will be dynamically embedded into Section D of ANNEX D - TEMPLATE.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* SECTION E: LEGAL BASES & RECOMMENDED DECISION */}
+          <div className="gf-section-divider">
+            <h3>Section E: Legal Bases & Recommended Decision</h3>
+          </div>
+
+          <div className="gf-card gf-field-card">
+            <label className="gf-field-label">
+              Legal Bases for Zoning Evaluation <span className="gf-req">*</span>
+            </label>
+            <div className="gf-radio-group">
+              <label className="gf-radio-item">
+                <input
+                  type="radio"
+                  name="legalBasis"
+                  value="CLUP_4810"
+                  checked={legalBasis === "CLUP_4810"}
+                  onChange={() => setLegalBasis("CLUP_4810")}
+                />
+                <span>
+                  <strong>[X] CLUP/ZO approved by HLURB/SP per Res.# 4810 Series of 2017</strong>
+                  <span style={{ display: "block", fontSize: "0.8rem", color: "#64748b" }}>
+                    Standard municipal zoning ordinance of Sto. Tomas, Pampanga
+                  </span>
+                </span>
+              </label>
+
+              <label className="gf-radio-item">
+                <input
+                  type="radio"
+                  name="legalBasis"
+                  value="OTHERS"
+                  checked={legalBasis === "OTHERS"}
+                  onChange={() => setLegalBasis("OTHERS")}
+                />
+                <span>[ ] Others (specify law, Implementing Rules and Regulations or Guidelines)</span>
+              </label>
+            </div>
+
+            {legalBasis === "OTHERS" && (
+              <input
+                type="text"
+                className="gf-input"
+                style={{ marginTop: "0.75rem" }}
+                value={otherLegalBasis}
+                onChange={(e) => setOtherLegalBasis(e.target.value)}
+                placeholder="Specify law or guidelines..."
+                required
+              />
+            )}
+          </div>
+
+          <div className="gf-card gf-field-card">
+            <label className="gf-field-label">
+              Recommended Decision Formulation
+            </label>
+            <div style={{ background: "#f8fafc", padding: "1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.88rem", color: "#334155", lineHeight: "1.5" }}>
+              <Scale size={18} color="#673ab7" style={{ marginBottom: "0.25rem" }} />
+              <p style={{ margin: "0 0 0.5rem 0" }}>
+                <strong>Standard Recommendation:</strong> In view of the foregoing findings and evaluation of facts, it is hereby recommended that the application for Locational Clearance be <strong>APPROVED</strong>, considering that the proposed project is located within a designated <strong>{classification === "COMMERCIAL" ? "Commercial Zone" : "Residential Zone"}</strong> under the approved Comprehensive Land Use Plan (CLUP) and Zoning Ordinance (Resolution No. 4810, Series of 2017).
+              </p>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
+                This recommendation is subject to compliance with all other applicable laws, rules, and regulations, and securing required secondary permits.
+              </p>
+            </div>
+          </div>
+
+          <div className="gf-card gf-field-card">
+            <label className="gf-field-label">
+              Finding and Evaluation of Facts
+            </label>
+            <textarea
+              className="gf-input"
+              rows={3}
+              value={findingFacts}
+              onChange={(e) => setFindingFacts(e.target.value)}
+              style={{ lineHeight: "1.4" }}
+            />
+          </div>
+
+          {/* SECTION F: ADDITIONAL CONDITIONS */}
+          <div className="gf-section-divider">
+            <h3>Section F: Additional Conditions & Compliance</h3>
+          </div>
+
+          <div className="gf-card gf-field-card">
+            <label className="gf-field-label" style={{ marginBottom: "0.75rem" }}>
+              Municipal Conditions of Approval (Sto. Tomas, Pampanga)
+            </label>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.85rem", color: "#334155", lineHeight: "1.45" }}>
+              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
+                <strong>1.</strong> The issuance of a Locational Clearance shall <strong>not be construed as a Building Permit</strong> and shall be used solely for the purpose of securing other required permits and clearances.
+              </div>
+              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
+                <strong>2.</strong> Compliance with all applicable laws, rules, and regulations of the LGU and concerned national government agencies (National Building Code, Fire Code, and environmental laws) shall be strictly observed.
+              </div>
+              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
+                <strong>3.</strong> Any deviation or modification in the approved plans, use, or scope of the project shall require <strong>prior approval</strong> from the Office of the Zoning Administrator.
+              </div>
+              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
+                <strong>4.</strong> The proponent shall secure necessary clearances from concerned agencies: Barangay Clearance, Environmental Compliance (ECC or CNC), and Fire Safety Inspection Certificate.
+              </div>
+              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
+                <strong>5.</strong> Development controls and zoning standards, including setbacks, parking requirements, building height limits, and easements, shall be strictly complied with.
+              </div>
+              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
+                <strong>6.</strong> No obstruction to public roads, drainage, easements, and utilities shall be allowed during construction and operation.
+              </div>
+              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
+                <strong>7.</strong> The clearance may be <strong>REVOKED</strong> if found to have been issued on the basis of misrepresentation or non-compliance with any of the conditions stated herein.
+              </div>
+            </div>
+
+            <div style={{ marginTop: "1.25rem", padding: "1rem", background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: "8px" }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={conditionsAgreed}
+                  onChange={(e) => setConditionsAgreed(e.target.checked)}
+                  style={{ accentColor: "#673ab7", width: "18px", height: "18px", marginTop: "2px" }}
+                  required
+                />
+                <span style={{ fontSize: "0.9rem", color: "#4c1d95", fontWeight: "600" }}>
+                  I hereby certify that I have read, understood, and agree to strictly comply with all 7 Additional Conditions stated in Section F. <span className="gf-req">*</span>
+                </span>
+              </label>
             </div>
           </div>
 
