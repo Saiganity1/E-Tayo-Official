@@ -103,13 +103,17 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginDto loginDto, HttpServletResponse response) {
         try {
-            String email = loginDto.getEmail().trim().toLowerCase();
+            String rawEmail = loginDto.getEmail() != null ? loginDto.getEmail().trim() : "";
+
+            // Find user case-insensitively first
+            User user = userRepository.findByEmailIgnoreCase(rawEmail)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + rawEmail));
+
+            // Authenticate with user's stored email and provided password
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, loginDto.getPassword()));
+                    new UsernamePasswordAuthenticationToken(user.getEmail(), loginDto.getPassword()));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
 
             String jwt = jwtTokenProvider.generateToken(authentication);
             
@@ -123,7 +127,7 @@ public class AuthController {
             refreshCookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
             response.addCookie(refreshCookie);
             
-            auditLoggingService.logAction("USER_LOGIN", email, "User logged in successfully");
+            auditLoggingService.logAction("USER_LOGIN", user.getEmail(), "User logged in successfully");
 
             return ResponseEntity.ok(new JwtAuthResponse(jwt, user.getRole().name(), user.getName()));
         } catch (Exception e) {
@@ -141,16 +145,17 @@ public class AuthController {
                 ? body.get("newPassword").trim()
                 : "Admin";
 
-        User admin = userRepository.findByEmail("admin").orElse(null);
+        User admin = userRepository.findByEmailIgnoreCase("admin").orElse(null);
         if (admin == null) {
             admin = new User("admin", passwordEncoder.encode(newPassword), Role.ROLE_SUPERADMIN, "Super Admin");
         } else {
+            admin.setEmail("admin");
             admin.setPassword(passwordEncoder.encode(newPassword));
             admin.setRole(Role.ROLE_SUPERADMIN);
         }
         userRepository.save(admin);
 
-        User municipalAdmin = userRepository.findByEmail("admin@etayo.gov.ph").orElse(null);
+        User municipalAdmin = userRepository.findByEmailIgnoreCase("admin@etayo.gov.ph").orElse(null);
         if (municipalAdmin != null) {
             municipalAdmin.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(municipalAdmin);

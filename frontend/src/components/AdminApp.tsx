@@ -149,7 +149,7 @@ export default function AdminApp() {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+        body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword.trim() }),
       });
 
       if (!response.ok) {
