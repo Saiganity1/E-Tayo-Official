@@ -75,7 +75,9 @@ public class UserController {
         if (user == null) return ResponseEntity.notFound().build();
 
         if (payload.containsKey("name")) user.setName((String) payload.get("name"));
-        if (payload.containsKey("email")) user.setEmail((String) payload.get("email"));
+        if (payload.containsKey("email") && payload.get("email") != null) {
+            user.setEmail(((String) payload.get("email")).trim().toLowerCase());
+        }
         if (payload.containsKey("password") && payload.get("password") != null) {
             String rawPassword = (String) payload.get("password");
             if (!rawPassword.trim().isEmpty()) {
@@ -105,22 +107,29 @@ public class UserController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> createUser(@RequestBody Map<String, Object> payload) {
-        String email = (String) payload.get("email");
+        String rawEmail = (String) payload.get("email");
         String name = (String) payload.get("name");
         String roleStr = (String) payload.get("role");
+        String rawPassword = (String) payload.get("password");
         
-        if (email == null || name == null) {
+        if (rawEmail == null || name == null) {
             return ResponseEntity.badRequest().build();
         }
+
+        String email = rawEmail.trim().toLowerCase();
 
         Role role = Role.ROLE_APPLICANT;
         if (roleStr != null) {
             try { role = Role.valueOf(roleStr); } catch (Exception e) {}
         }
 
+        if (rawPassword == null || rawPassword.trim().isEmpty()) {
+            rawPassword = "password123";
+        }
+
         User user = new User(
                 email,
-                passwordEncoder.encode("password123"), // Default password for manually created users
+                passwordEncoder.encode(rawPassword.trim()),
                 role,
                 name
         );

@@ -316,6 +316,7 @@ export default function AdminApp() {
 
     setModalLoading(true);
     const token = localStorage.getItem("token");
+    const sanitizedEmail = formEmail.trim().toLowerCase();
 
     try {
       const response = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
@@ -325,8 +326,8 @@ export default function AdminApp() {
           ...(token ? { "Authorization": `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          name: formName,
-          email: formEmail,
+          name: formName.trim(),
+          email: sanitizedEmail,
           role: formRole
         })
       });
@@ -335,13 +336,13 @@ export default function AdminApp() {
         const updated = await response.json();
         setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: updated.name, email: updated.email, role: updated.role } : u));
       } else {
-        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: formName, email: formEmail, role: formRole } : u));
+        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: formName, email: sanitizedEmail, role: formRole } : u));
       }
 
       showToast(`User ${formName} updated successfully.`);
       setIsEditModalOpen(false);
     } catch (err) {
-      setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: formName, email: formEmail, role: formRole } : u));
+      setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: formName, email: sanitizedEmail, role: formRole } : u));
       showToast(`User ${formName} updated.`);
       setIsEditModalOpen(false);
     } finally {
@@ -354,6 +355,8 @@ export default function AdminApp() {
     e.preventDefault();
     setModalLoading(true);
     const token = localStorage.getItem("token");
+    const sanitizedEmail = formEmail.trim().toLowerCase();
+    const sanitizedPassword = formPassword.trim() || "password123";
 
     try {
       const response = await fetch(`${API_BASE_URL}/users`, {
@@ -363,10 +366,10 @@ export default function AdminApp() {
           ...(token ? { "Authorization": `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          name: formName,
-          email: formEmail,
+          name: formName.trim(),
+          email: sanitizedEmail,
           role: formRole,
-          password: formPassword || "password123"
+          password: sanitizedPassword
         })
       });
 
@@ -376,8 +379,8 @@ export default function AdminApp() {
       } else {
         const newRecord: UserRecord = {
           id: Date.now(),
-          name: formName,
-          email: formEmail,
+          name: formName.trim(),
+          email: sanitizedEmail,
           role: formRole
         };
         setUsers([newRecord, ...users]);
