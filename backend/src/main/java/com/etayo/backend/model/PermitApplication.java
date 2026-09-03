@@ -44,6 +44,14 @@ public class PermitApplication {
     @Column(length = 1000)
     private String remarks;
 
+    @Column(columnDefinition = "TEXT")
+    private String fileUrl;
+
+    private String fileName;
+
+    @Column(columnDefinition = "TEXT")
+    private String sketchImageUrl;
+
     // Getters and Setters
 
     public String getId() { return id; }
@@ -84,4 +92,10 @@ public class PermitApplication {
     public void setHistoryLog(List<HistoryLog> historyLog) { this.historyLog = historyLog; }
     public String getRemarks() { return remarks; }
     public void setRemarks(String remarks) { this.remarks = remarks; }
+    public String getFileUrl() { return fileUrl; }
+    public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }
+    public String getFileName() { return fileName; }
+    public void setFileName(String fileName) { this.fileName = fileName; }
+    public String getSketchImageUrl() { return sketchImageUrl; }
+    public void setSketchImageUrl(String sketchImageUrl) { this.sketchImageUrl = sketchImageUrl; }
 }

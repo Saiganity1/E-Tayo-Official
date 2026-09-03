@@ -61,6 +61,12 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll() // For development
                         .requestMatchers("/ws/**").permitAll() // For WebSocket connections
                         .requestMatchers("/api/messages/**").permitAll() // For chat history
+                        .requestMatchers("/api/permits/**").permitAll()
+                        .requestMatchers("/api/fees/**").permitAll()
+                        .requestMatchers("/api/logs/**").permitAll()
+                        .requestMatchers("/api/notifications/**").permitAll()
+                        .requestMatchers("/api/evaluations/**").permitAll()
+                        .requestMatchers("/api/upload/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
                         .anyRequest().authenticated()

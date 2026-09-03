@@ -21,6 +21,13 @@ public class PermitController {
         return ResponseEntity.ok(permitApplicationRepository.findAll());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<PermitApplication> getPermitById(@PathVariable String id) {
+        return permitApplicationRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<PermitApplication> createPermit(@RequestBody PermitApplication permit) {
         return ResponseEntity.ok(permitApplicationRepository.save(permit));

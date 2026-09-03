@@ -40,10 +40,14 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Fetch data from backend
     const fetchData = async () => {
       try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const headers: Record<string, string> = { "Accept": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
         const [appsRes, logsRes, feesRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/permits`),
-          fetch(`${API_BASE_URL}/logs`),
-          fetch(`${API_BASE_URL}/fees`)
+          fetch(`${API_BASE_URL}/permits`, { headers }),
+          fetch(`${API_BASE_URL}/logs`, { headers }),
+          fetch(`${API_BASE_URL}/fees`, { headers })
         ]);
 
         if (appsRes.ok) setApplications(await appsRes.json());
@@ -70,43 +74,32 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch(e) {}
 
     setMounted(true);
-  }, []);
+  }, [mounted]);
 
-  // Idle Logout Logic (10 minutes)
+  // Handle inactivity timeout
   useEffect(() => {
-    if (!mounted) return;
-    
-    const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 minutes in ms
+    let timeoutId: NodeJS.Timeout;
 
-    const resetIdleTimer = () => {
-      localStorage.setItem("etayo_last_activity", Date.now().toString());
+    const handleTimeout = () => {
+      if (userRole !== "public") {
+        setUserRole("public");
+      }
     };
 
-    const checkIdle = setInterval(() => {
-      if (userRole === "public") return; // Not logged in
+    const resetIdleTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleTimeout, 30 * 60 * 1000); // 30 min idle timeout
+    };
 
-      const lastActivity = parseInt(localStorage.getItem("etayo_last_activity") || Date.now().toString(), 10);
-      if (Date.now() - lastActivity > IDLE_TIMEOUT) {
-        // Log out
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("etayo_last_activity");
-        setUserRole("public");
-        window.location.href = "/login?timeout=true";
-      }
-    }, 10000); // Check every 10 seconds
+    resetIdleTimer();
 
-    // Track activity
     window.addEventListener("mousemove", resetIdleTimer);
     window.addEventListener("keydown", resetIdleTimer);
     window.addEventListener("click", resetIdleTimer);
     window.addEventListener("scroll", resetIdleTimer);
-    
-    // Initialize
-    resetIdleTimer();
 
     return () => {
-      clearInterval(checkIdle);
+      clearTimeout(timeoutId);
       window.removeEventListener("mousemove", resetIdleTimer);
       window.removeEventListener("keydown", resetIdleTimer);
       window.removeEventListener("click", resetIdleTimer);
@@ -114,18 +107,23 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [mounted, userRole]);
 
-  // We no longer sync to localStorage since we are using a real backend database.
-
   const addApplication = async (newApp: PermitApplication) => {
     // Optimistic UI update
     setApplications((prev) => [newApp, ...prev]);
 
     try {
-      await fetch(`${API_BASE_URL}/permits`, {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE_URL}/permits`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(newApp)
       });
+      if (!res.ok) {
+        console.error("Failed to save permit to backend:", res.status, await res.text());
+      }
     } catch (e) {
       console.error("Failed to save permit", e);
     }
@@ -137,11 +135,18 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
 
     try {
-      await fetch(`${API_BASE_URL}/permits/${updatedApp.id}`, {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE_URL}/permits/${updatedApp.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(updatedApp)
       });
+      if (!res.ok) {
+        console.error("Failed to update permit on backend:", res.status, await res.text());
+      }
     } catch (e) {
       console.error("Failed to update permit", e);
     }
