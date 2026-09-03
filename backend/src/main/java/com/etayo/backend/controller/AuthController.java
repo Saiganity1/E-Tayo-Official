@@ -144,7 +144,10 @@ public class AuthController {
 
             return ResponseEntity.ok(new JwtAuthResponse(jwt, user.getRole().name(), user.getName()));
         } catch (Exception e) {
-            auditLoggingService.logAction("LOGIN_FAILED", loginDto.getEmail(), "Failed login attempt: " + e.getMessage());
+            e.printStackTrace();
+            try {
+                auditLoggingService.logAction("LOGIN_FAILED", loginDto.getEmail(), "Failed login attempt: " + e.getMessage());
+            } catch (Exception ignored) {}
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(java.util.Map.of("error", e.getMessage() != null ? e.getMessage() : "Invalid credentials"));
         }
     }
@@ -155,40 +158,45 @@ public class AuthController {
     @Transactional
     @PostMapping("/reset-superadmin")
     public ResponseEntity<?> resetSuperadmin(@RequestBody(required = false) Map<String, String> body) {
-        String newPassword = (body != null && body.containsKey("newPassword") && !body.get("newPassword").trim().isEmpty())
-                ? body.get("newPassword").trim()
-                : "Admin";
+        try {
+            String newPassword = (body != null && body.containsKey("newPassword") && !body.get("newPassword").trim().isEmpty())
+                    ? body.get("newPassword").trim()
+                    : "Admin";
 
-        List<User> adminList = userRepository.findAllByEmailIgnoreCase("admin");
-        if (adminList.isEmpty()) {
-            User admin = new User("admin", passwordEncoder.encode(newPassword), Role.ROLE_ADMIN, "Super Admin");
-            userRepository.save(admin);
-        } else {
-            for (User u : adminList) {
-                u.setEmail("admin");
-                u.setPassword(passwordEncoder.encode(newPassword));
-                u.setRole(Role.ROLE_ADMIN);
-                userRepository.save(u);
+            List<User> adminList = userRepository.findAllByEmailIgnoreCase("admin");
+            if (adminList.isEmpty()) {
+                User admin = new User("admin", passwordEncoder.encode(newPassword), Role.ROLE_ADMIN, "Super Admin");
+                userRepository.save(admin);
+            } else {
+                for (User u : adminList) {
+                    u.setEmail("admin");
+                    u.setPassword(passwordEncoder.encode(newPassword));
+                    u.setRole(Role.ROLE_ADMIN);
+                    userRepository.save(u);
+                }
             }
-        }
 
-        List<User> municipalList = userRepository.findAllByEmailIgnoreCase("admin@etayo.gov.ph");
-        if (municipalList.isEmpty()) {
-            User municipalAdmin = new User("admin@etayo.gov.ph", passwordEncoder.encode(newPassword), Role.ROLE_ADMIN, "Admin User");
-            userRepository.save(municipalAdmin);
-        } else {
-            for (User u : municipalList) {
-                u.setEmail("admin@etayo.gov.ph");
-                u.setPassword(passwordEncoder.encode(newPassword));
-                u.setRole(Role.ROLE_ADMIN);
-                userRepository.save(u);
+            List<User> municipalList = userRepository.findAllByEmailIgnoreCase("admin@etayo.gov.ph");
+            if (municipalList.isEmpty()) {
+                User municipalAdmin = new User("admin@etayo.gov.ph", passwordEncoder.encode(newPassword), Role.ROLE_ADMIN, "Admin User");
+                userRepository.save(municipalAdmin);
+            } else {
+                for (User u : municipalList) {
+                    u.setEmail("admin@etayo.gov.ph");
+                    u.setPassword(passwordEncoder.encode(newPassword));
+                    u.setRole(Role.ROLE_ADMIN);
+                    userRepository.save(u);
+                }
             }
-        }
 
-        return ResponseEntity.ok(java.util.Map.of(
-                "message", "SuperAdmin credentials successfully reset to password: " + newPassword,
-                "email", "admin"
-        ));
+            return ResponseEntity.ok(java.util.Map.of(
+                    "message", "SuperAdmin credentials successfully reset to password: " + newPassword,
+                    "email", "admin"
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(java.util.Map.of("error", e.getMessage() != null ? e.getMessage() : "Reset failed"));
+        }
     }
 
     @PostMapping("/refresh")

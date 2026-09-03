@@ -12,20 +12,31 @@ public class AuditLoggingService {
     @Autowired
     private SystemAuditLogRepository auditLogRepository;
 
-    @Autowired
+    @Autowired(required = false)
     private HttpServletRequest request;
 
     public void logAction(String action, String userEmail, String details) {
-        String ipAddress = getClientIp();
-        SystemAuditLog log = new SystemAuditLog(action, userEmail, details, ipAddress);
-        auditLogRepository.save(log);
+        try {
+            String ipAddress = getClientIp();
+            SystemAuditLog log = new SystemAuditLog(action, userEmail, details, ipAddress);
+            auditLogRepository.save(log);
+        } catch (Exception e) {
+            System.err.println("AuditLoggingService error (safely ignored): " + e.getMessage());
+        }
     }
 
     private String getClientIp() {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
+        try {
+            if (request != null) {
+                String ip = request.getHeader("X-Forwarded-For");
+                if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                    ip = request.getRemoteAddr();
+                }
+                return ip;
+            }
+        } catch (Exception e) {
+            // ignore
         }
-        return ip;
+        return "127.0.0.1";
     }
 }
