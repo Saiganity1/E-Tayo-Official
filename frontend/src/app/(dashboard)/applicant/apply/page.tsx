@@ -6,6 +6,8 @@ import { FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft, Lock,
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
+import LocationalClearanceGoogleForm from "../../../../components/forms/LocationalClearanceGoogleForm";
+
 const LocationPickerMap = dynamic(() => import("../../../../components/map/LocationPickerMap"), { 
   ssr: false, 
   loading: () => <div style={{ height: "200px", background: "#f8fafc", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #cbd5e1", color: "#64748b", fontWeight: "600" }}>Loading Map...</div> 
@@ -23,7 +25,8 @@ export default function ApplyPage() {
   const { applications, selectedPermitType, setSelectedPermitType, addApplication } = usePermitContext();
   const router = useRouter();
 
-  // Locational Clearance Prerequisite State
+  // Locational Clearance Prerequisite & Form State
+  const [showGoogleForm, setShowGoogleForm] = useState(false);
   const [manualClearanceRef, setManualClearanceRef] = useState("");
   const [isManualVerified, setIsManualVerified] = useState(false);
   const [showManualVerifyInput, setShowManualVerifyInput] = useState(false);
@@ -156,6 +159,10 @@ export default function ApplyPage() {
     addApplication(newApp);
     router.push("/applicant/dashboard");
   };
+
+  if (showGoogleForm) {
+    return <LocationalClearanceGoogleForm onCancel={() => setShowGoogleForm(false)} />;
+  }
 
   return (
     <div className="wizard-page animate-fade-in-up">
@@ -410,6 +417,32 @@ export default function ApplyPage() {
                         <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: "1.4" }}>
                           Zoning clearance evaluation for land use, building location, and municipal zoning boundaries.
                         </p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowGoogleForm(true);
+                          }}
+                          style={{
+                            marginTop: "0.85rem",
+                            width: "100%",
+                            padding: "0.5rem 0.75rem",
+                            fontSize: "0.82rem",
+                            fontWeight: "600",
+                            background: "#673ab7",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "6px",
+                            boxShadow: "0 2px 4px rgba(103, 58, 183, 0.25)"
+                          }}
+                        >
+                          <FileText size={14} /> Open Google Form (Annex D)
+                        </button>
                       </div>
                     </label>
 
@@ -791,7 +824,15 @@ export default function ApplyPage() {
             
             <div className="flex-spacer"></div>
 
-            {currentStep < 4 ? (
+            {currentStep === 1 && selectedPermitType === "locational_clearance" ? (
+              <button 
+                className="btn-primary" 
+                onClick={() => setShowGoogleForm(true)} 
+                style={{ background: "#673ab7", borderColor: "#5e35b1", display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                <FileText size={18} /> Fill Locational Clearance Form <ChevronRight size={18} />
+              </button>
+            ) : currentStep < 4 ? (
               <button className="btn-primary" onClick={() => setCurrentStep(prev => prev + 1)} disabled={uploading || (currentStep === 2 && !projectName) || (currentStep === 3 && !uploadedFileUrl)}>
                 Next Step <ChevronRight size={18} />
               </button>
