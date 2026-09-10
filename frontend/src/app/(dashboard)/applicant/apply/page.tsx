@@ -747,15 +747,10 @@ export default function ApplyPage() {
                     className="project-cards-container"
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                      gap: "0.95rem",
-                      maxHeight: "440px",
-                      overflowY: "auto",
-                      padding: "8px 6px",
-                      marginBottom: "1.75rem",
-                      borderRadius: "16px",
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0"
+                      gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))",
+                      gap: "1.1rem",
+                      padding: "4px 2px",
+                      marginBottom: "1.75rem"
                     }}
                   >
                     {filteredProjectTypes.map((p) => {
@@ -768,19 +763,20 @@ export default function ApplyPage() {
                       return (
                         <div
                           key={p.id}
-                          onClick={() => setSelectedProjectType(p)}
+                          onClick={() => {
+                            setSelectedProjectType(p);
+                            setShowUnifiedForm(true);
+                          }}
                           className="project-card-item"
                           style={{
                             border: isSelected ? "2px solid #4f46e5" : "1.5px solid #e2e8f0",
-                            background: isSelected 
-                              ? "linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%)" 
-                              : "#ffffff",
-                            borderRadius: "14px",
-                            padding: "1.1rem",
+                            background: "#ffffff",
+                            borderRadius: "16px",
+                            padding: "1.2rem",
                             cursor: "pointer",
                             transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                             boxShadow: isSelected 
-                              ? "0 8px 24px rgba(79, 70, 229, 0.18), 0 0 0 1px #4f46e5" 
+                              ? "0 8px 24px rgba(79, 70, 229, 0.15), 0 0 0 1px #4f46e5" 
                               : "0 2px 6px rgba(0,0,0,0.02)",
                             position: "relative",
                             display: "flex",
@@ -789,7 +785,7 @@ export default function ApplyPage() {
                           }}
                         >
                           <div>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.65rem" }}>
                               <span style={{
                                 display: "inline-flex",
                                 alignItems: "center",
@@ -806,44 +802,28 @@ export default function ApplyPage() {
                                 {p.category}
                               </span>
 
-                              {isSelected ? (
-                                <span style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "4px",
-                                  fontSize: "0.72rem",
-                                  fontWeight: "800",
-                                  color: "#4f46e5",
-                                  background: "#ede9fe",
-                                  padding: "2px 8px",
-                                  borderRadius: "999px"
-                                }}>
-                                  <CheckCircle2 size={13} color="#4f46e5" /> Selected
-                                </span>
-                              ) : (
-                                <span style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "4px",
-                                  fontSize: "0.72rem",
-                                  color: "#64748b",
-                                  fontWeight: "500"
-                                }}>
-                                  <Clock size={12} /> {p.estimatedDays}
-                                </span>
-                              )}
+                              <span style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                fontSize: "0.72rem",
+                                color: "#64748b",
+                                fontWeight: "500"
+                              }}>
+                                <Clock size={12} /> {p.estimatedDays}
+                              </span>
                             </div>
 
-                            <h4 style={{ margin: "0 0 0.35rem 0", fontSize: "1rem", fontWeight: "800", color: "#0f172a" }}>
+                            <h4 style={{ margin: "0 0 0.35rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>
                               {p.name}
                             </h4>
-                            <p style={{ margin: "0 0 0.85rem 0", fontSize: "0.8rem", color: "#64748b", lineHeight: "1.4", minHeight: "36px" }}>
+                            <p style={{ margin: "0 0 0.85rem 0", fontSize: "0.82rem", color: "#64748b", lineHeight: "1.45", minHeight: "36px" }}>
                               {p.description}
                             </p>
                           </div>
 
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "0.72rem", fontWeight: "700", marginTop: "0.4rem" }}>
-                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                          <div>
+                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "0.85rem", fontSize: "0.72rem", fontWeight: "700" }}>
                               <span style={{ background: "#dbeafe", color: "#1e40af", padding: "3px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
                                 <Check size={12} strokeWidth={2.5} /> {reqCount} Mandatory
                               </span>
@@ -853,331 +833,69 @@ export default function ApplyPage() {
                                 </span>
                               )}
                             </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedProjectType(p);
-                                setShowRequirementsAlert(true);
-                              }}
-                              style={{
-                                background: "rgba(79, 70, 229, 0.08)",
-                                border: "1px solid rgba(79, 70, 229, 0.2)",
-                                color: "#4f46e5",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "0.72rem",
-                                fontWeight: "700",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                padding: "3px 8px",
-                                transition: "all 0.15s ease"
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = "#4f46e5"; e.currentTarget.style.color = "#ffffff"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(79, 70, 229, 0.08)"; e.currentTarget.style.color = "#4f46e5"; }}
-                              title="View Required Permits for this Project Type"
-                            >
-                              <Eye size={12} /> Required Permits
-                            </button>
+
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedProjectType(p);
+                                  setShowRequirementsAlert(true);
+                                }}
+                                style={{
+                                  background: "rgba(79, 70, 229, 0.08)",
+                                  border: "1px solid rgba(79, 70, 229, 0.2)",
+                                  color: "#4f46e5",
+                                  borderRadius: "8px",
+                                  cursor: "pointer",
+                                  fontSize: "0.75rem",
+                                  fontWeight: "700",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "5px",
+                                  padding: "6px 11px",
+                                  transition: "all 0.15s ease"
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = "#4f46e5"; e.currentTarget.style.color = "#ffffff"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(79, 70, 229, 0.08)"; e.currentTarget.style.color = "#4f46e5"; }}
+                                title="View Required Docs / Permits for this Project Type"
+                              >
+                                <Eye size={13} /> Required Docs
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedProjectType(p);
+                                  setShowUnifiedForm(true);
+                                }}
+                                style={{
+                                  background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                                  border: "none",
+                                  color: "#ffffff",
+                                  borderRadius: "8px",
+                                  cursor: "pointer",
+                                  fontSize: "0.75rem",
+                                  fontWeight: "700",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "5px",
+                                  padding: "6px 14px",
+                                  boxShadow: "0 2px 8px rgba(79, 70, 229, 0.28)",
+                                  transition: "all 0.15s ease"
+                                }}
+                                title="Open Online Application Form for this Project Type"
+                              >
+                                <span>Apply</span>
+                                <ArrowRight size={13} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-
-                  {/* ACTIVE PROJECT SELECTION & MATRIX BREAKDOWN PREVIEW */}
-                  {selectedProjectType && (
-                    <div style={{
-                      background: "linear-gradient(180deg, #ffffff 0%, #fcfaff 100%)",
-                      border: "1.5px solid #c7d2fe",
-                      borderRadius: "18px",
-                      padding: "1.75rem",
-                      boxShadow: "0 10px 30px -5px rgba(79, 70, 229, 0.1), 0 0 0 1px rgba(199, 210, 254, 0.5) inset",
-                      animation: "fadeIn 0.2s ease",
-                      marginBottom: "1.5rem"
-                    }}>
-                      {/* DOSSIER HEADER */}
-                      <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: "1.5rem",
-                        flexWrap: "wrap",
-                        gap: "1.25rem",
-                        borderBottom: "1px solid #e0e7ff",
-                        paddingBottom: "1.25rem"
-                      }}>
-                        <div style={{ flex: 1, minWidth: "280px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.45rem", flexWrap: "wrap" }}>
-                            <span style={{
-                              fontSize: "0.75rem",
-                              fontWeight: "800",
-                              background: "#e0e7ff",
-                              color: "#3730a3",
-                              padding: "3px 10px",
-                              borderRadius: "8px",
-                              letterSpacing: "0.4px"
-                            }}>
-                              {selectedProjectType.category.toUpperCase()} CLASSIFICATION
-                            </span>
-                            <span style={{
-                              fontSize: "0.8rem",
-                              color: "#475569",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "5px",
-                              background: "#f1f5f9",
-                              padding: "3px 9px",
-                              borderRadius: "6px"
-                            }}>
-                              <Clock size={13} color="#6366f1" /> Turnaround: <strong>{selectedProjectType.estimatedDays}</strong>
-                            </span>
-                          </div>
-                          <h4 style={{ margin: 0, fontSize: "1.55rem", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.015em" }}>
-                            {selectedProjectType.name}
-                          </h4>
-                          <p style={{ margin: "0.35rem 0 0 0", color: "#64748b", fontSize: "0.9rem", lineHeight: "1.45" }}>
-                            {selectedProjectType.description}
-                          </p>
-                        </div>
-
-                        {/* HIGH-IMPACT DOSSIER LAUNCH CARD */}
-                        <div style={{
-                          background: "linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%)",
-                          border: "1.5px solid #c7d2fe",
-                          borderRadius: "14px",
-                          padding: "1rem 1.25rem",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "0.6rem",
-                          minWidth: "290px",
-                          boxShadow: "0 4px 14px rgba(79, 70, 229, 0.08)"
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#4338ca", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                              Digital Application Dossier
-                            </span>
-                            <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#059669", background: "#ecfdf5", padding: "2px 8px", borderRadius: "999px", border: "1px solid #a7f3d0" }}>
-                              Ready to File
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setShowUnifiedForm(true)}
-                            className="btn-launch-unified"
-                            style={{
-                              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "10px",
-                              padding: "11px 18px",
-                              fontWeight: "700",
-                              fontSize: "0.92rem",
-                              cursor: "pointer",
-                              boxShadow: "0 4px 14px rgba(79, 70, 229, 0.35)",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "0.5rem",
-                              transition: "all 0.18s ease"
-                            }}
-                          >
-                            <FileText size={17} />
-                            <span>Open Unified Form (Google Form Style)</span>
-                            <ArrowRight size={16} />
-                          </button>
-
-                          {/* REQUESTED BUTTON: VIEW REQUIRED DOCUMENTS */}
-                          <button
-                            type="button"
-                            onClick={() => setShowRequirementsAlert(true)}
-                            style={{
-                              background: "#ffffff",
-                              color: "#3730a3",
-                              border: "1.5px solid #c7d2fe",
-                              borderRadius: "10px",
-                              padding: "9px 16px",
-                              fontWeight: "700",
-                              fontSize: "0.85rem",
-                              cursor: "pointer",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "0.5rem",
-                              transition: "all 0.15s ease",
-                              boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.borderColor = "#4f46e5";
-                              e.currentTarget.style.color = "#4f46e5";
-                              e.currentTarget.style.background = "#f5f3ff";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.borderColor = "#c7d2fe";
-                              e.currentTarget.style.color = "#3730a3";
-                              e.currentTarget.style.background = "#ffffff";
-                            }}
-                          >
-                            <Eye size={16} color="#4f46e5" />
-                            <span>View Required Permits</span>
-                          </button>
-
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "0.74rem", color: "#6366f1", fontWeight: "600" }}>
-                            <Sparkles size={13} />
-                            <span>Consolidates 9 engineering forms into one stream</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* MATRIX TABLE PREVIEW */}
-                      <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "0.75rem" }}>
-                        <div>
-                          <p style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.2rem 0" }}>
-                            Official Engineering Permit & Clearance Breakdown:
-                          </p>
-                          <span style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                            Required technical documents and engineering form compliance for {selectedProjectType.name} (PD 1096).
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                          <button
-                            type="button"
-                            onClick={() => setShowRequirementsAlert(true)}
-                            style={{
-                              background: "#ffffff",
-                              border: "1px solid #c7d2fe",
-                              color: "#4338ca",
-                              padding: "4px 12px",
-                              borderRadius: "999px",
-                              fontSize: "0.78rem",
-                              fontWeight: "700",
-                              cursor: "pointer",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "5px",
-                              boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
-                              transition: "all 0.15s ease"
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "#e0e7ff"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; }}
-                          >
-                            <Eye size={13} />
-                            View Required Permits
-                          </button>
-                          <span style={{
-                            fontSize: "0.78rem",
-                            fontWeight: "700",
-                            color: "#4338ca",
-                            background: "#e0e7ff",
-                            padding: "4px 12px",
-                            borderRadius: "999px",
-                            border: "1px solid #c7d2fe"
-                          }}>
-                            {getRequiredPermitForms(selectedProjectType).length} Mandatory • {getConditionalPermitForms(selectedProjectType).length} Conditional
-                          </span>
-                        </div>
-                      </div>
-
-                      <div style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                        gap: "0.75rem"
-                      }}>
-                        {(Object.keys(PERMIT_FORM_METADATA) as (keyof PermitFormMatrix)[]).map((key) => {
-                          const meta = PERMIT_FORM_METADATA[key];
-                          const level = selectedProjectType.matrix[key];
-                          const isReq = level === "required";
-                          const isCond = level === "conditional";
-                          const PermitIcon = PERMIT_ICONS[key] || FileText;
-
-                          return (
-                            <div
-                              key={key}
-                              style={{
-                                background: isReq 
-                                  ? "linear-gradient(135deg, #f8faff 0%, #eff6ff 100%)" 
-                                  : isCond 
-                                    ? "linear-gradient(135deg, #fffdfa 0%, #fef8eb 100%)" 
-                                    : "#f8fafc",
-                                border: isReq 
-                                  ? "1.5px solid #bfdbfe" 
-                                  : isCond 
-                                    ? "1.5px solid #fde68a" 
-                                    : "1px solid #e2e8f0",
-                                borderRadius: "12px",
-                                padding: "0.85rem 1rem",
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "space-between",
-                                gap: "0.55rem",
-                                boxShadow: isReq ? "0 2px 6px rgba(37, 99, 235, 0.04)" : "none",
-                                transition: "all 0.15s ease"
-                              }}
-                            >
-                              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                                  <div style={{
-                                    width: "32px",
-                                    height: "32px",
-                                    borderRadius: "8px",
-                                    background: isReq ? "#dbeafe" : isCond ? "#fef3c7" : "#f1f5f9",
-                                    color: isReq ? "#1d4ed8" : isCond ? "#b45309" : "#64748b",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    flexShrink: 0
-                                  }}>
-                                    <PermitIcon size={16} />
-                                  </div>
-                                  <div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                      <span style={{
-                                        fontSize: "0.68rem",
-                                        fontWeight: "800",
-                                        padding: "1px 6px",
-                                        borderRadius: "4px",
-                                        background: isReq ? "#1e40af" : isCond ? "#b45309" : "#64748b",
-                                        color: "#ffffff",
-                                        letterSpacing: "0.3px"
-                                      }}>
-                                        {meta.code}
-                                      </span>
-                                      <span style={{ fontSize: "0.86rem", fontWeight: "800", color: "#0f172a" }}>
-                                        {meta.label}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <span style={{
-                                  fontSize: "0.68rem",
-                                  fontWeight: "800",
-                                  padding: "3px 8px",
-                                  borderRadius: "999px",
-                                  background: isReq ? "#dcfce7" : isCond ? "#fef3c7" : "#f1f5f9",
-                                  color: isReq ? "#15803d" : isCond ? "#b45309" : "#64748b",
-                                  border: isReq ? "1px solid #86efac" : isCond ? "1px solid #fde68a" : "1px solid #e2e8f0",
-                                  letterSpacing: "0.3px",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "4px",
-                                  flexShrink: 0
-                                }}>
-                                  {isReq && <Check size={10} strokeWidth={3} />}
-                                  {isReq ? "MANDATORY" : isCond ? "CONDITIONAL" : "OPTIONAL"}
-                                </span>
-                              </div>
-
-                              <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b", lineHeight: "1.35" }}>
-                                {meta.desc}
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 /* STAGE 1: MUST PASS LOCATIONAL CLEARANCE FIRST */
