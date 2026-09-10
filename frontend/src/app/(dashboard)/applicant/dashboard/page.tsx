@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { Search, Plus, Filter, Bell, User, Clock, CheckCircle2, AlertTriangle, FileText } from "lucide-react";
 import Link from "next/link";
-import Skeleton from "../../../../components/Skeleton";
+import Skeleton from "@/components/ui/Skeleton";
 
 export default function ApplicantDashboard() {
   const { applications } = usePermitContext();
