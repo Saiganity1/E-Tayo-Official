@@ -58,41 +58,51 @@ const STEPS = [
   { id: 4, title: "Review", subtitle: "Final Endorsement", icon: CheckCircle }
 ];
 
-const getProjectRequirementsList = (project: ProjectTypeItem) => {
-  const reqPermits = getRequiredPermitForms(project);
-  const condPermits = getConditionalPermitForms(project);
+const getProjectPermitsBreakdown = (project: ProjectTypeItem) => {
+  const allKeys = Object.keys(PERMIT_FORM_METADATA) as (keyof PermitFormMatrix)[];
+  
+  const mandatory = allKeys
+    .filter(k => project.matrix[k] === 'required')
+    .map(k => ({
+      key: k,
+      ...PERMIT_FORM_METADATA[k],
+      status: 'required' as const,
+      icon: PERMIT_ICONS[k] || FileText
+    }));
 
-  return {
-    engineeringPlans: [
-      ...reqPermits.map(p => ({
-        code: p.code,
-        name: `${p.label} (Technical Plans & Specifications)`,
-        required: true,
-        note: `5 sets of 20" x 30" blueprint plans, duly signed and sealed by licensed professional.`
-      })),
-      ...condPermits.map(p => ({
-        code: p.code,
-        name: `${p.label} (Conditional)`,
-        required: false,
-        note: `Required if installation includes machinery, telecom, or specialized equipment.`
-      }))
-    ],
-    legalDocuments: [
-      { code: 'TCT-01', name: 'Certified True Copy of Transfer Certificate of Title (TCT)', required: true, note: 'Issued by Registry of Deeds within the last 6 months.' },
-      { code: 'TAX-02', name: 'Current Real Property Tax Declaration & Official Receipt', required: true, note: 'Tax clearance for the current fiscal year.' },
-      { code: 'BRGY-03', name: 'Barangay Construction Clearance', required: true, note: 'From the Barangay in Sto. Tomas having jurisdiction over the site.' },
-      { code: 'DEED-04', name: 'Deed of Absolute Sale / Lease Contract / Contract to Sell', required: false, note: 'Mandatory if applicant is not the registered owner in the land title.' },
-      { code: 'ID-05', name: 'Valid Government-Issued IDs of Owner & Licensed Professionals', required: true, note: 'With three (3) specimen signatures.' }
-    ],
-    technicalDocuments: [
-      { code: 'LC-00', name: 'Approved Locational Clearance (Annex D)', required: true, note: 'Mandatory Stage 1 prerequisite confirming CLUP and zoning classification.' },
-      { code: 'BOM-01', name: 'Bill of Materials & Detailed Cost Estimate (BOM)', required: true, note: 'Duly signed & sealed by Architect or Civil Engineer.' },
-      { code: 'SPEC-02', name: 'Complete Technical Specifications', required: true, note: 'Materials, workmanship, and NBCP Section compliance.' },
-      { code: 'CSHP-03', name: 'DOLE-Approved Construction Safety and Health Program', required: true, note: 'DOLE CSHP application/concurrence for construction site safety.' },
-      { code: 'FSEC-04', name: 'BFP Fire Safety Evaluation Clearance (FSEC)', required: true, note: 'Evaluated pursuant to Republic Act 9514 (Fire Code of the Philippines).' },
-      { code: 'GEO-05', name: 'Structural Design Analysis & Geotechnical Soil Boring Test', required: project.category === 'Industrial' || project.category === 'Commercial' || project.name.toLowerCase().includes('storey') || project.name.toLowerCase().includes('building'), note: 'Required for multi-storey buildings or structures with high load occupancy.' }
-    ]
-  };
+  const conditional = allKeys
+    .filter(k => project.matrix[k] === 'conditional')
+    .map(k => {
+      let condition = 'Required depending on site engineering evaluation and specialized equipment scope.';
+      if (k === 'mechanicalPermit') {
+        condition = 'Required if project includes air conditioning machinery, elevator/escalators, commercial exhaust, or standby generator sets.';
+      } else if (k === 'electronicsPermit') {
+        condition = 'Required if project includes CCTV networks, security systems, commercial sound systems, or structured data cabling.';
+      } else if (k === 'sanitaryPermit') {
+        condition = 'Required if plumbing fixtures, drainage, or septic/wastewater facilities are modified.';
+      } else if (k === 'fireBfpPermit') {
+        condition = 'Required if structure undergoes material alteration, occupancy change, or high fire-load expansion.';
+      }
+
+      return {
+        key: k,
+        ...PERMIT_FORM_METADATA[k],
+        status: 'conditional' as const,
+        condition,
+        icon: PERMIT_ICONS[k] || FileText
+      };
+    });
+
+  const notRequired = allKeys
+    .filter(k => project.matrix[k] === 'not_required')
+    .map(k => ({
+      key: k,
+      ...PERMIT_FORM_METADATA[k],
+      status: 'not_required' as const,
+      icon: PERMIT_ICONS[k] || FileText
+    }));
+
+  return { mandatory, conditional, notRequired };
 };
 
 export default function ApplyPage() {
@@ -866,9 +876,9 @@ export default function ApplyPage() {
                               }}
                               onMouseEnter={(e) => { e.currentTarget.style.background = "#4f46e5"; e.currentTarget.style.color = "#ffffff"; }}
                               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(79, 70, 229, 0.08)"; e.currentTarget.style.color = "#4f46e5"; }}
-                              title="View Required Documents for this Project Type"
+                              title="View Required Permits for this Project Type"
                             >
-                              <Eye size={12} /> Required Docs
+                              <Eye size={12} /> Required Permits
                             </button>
                           </div>
                         </div>
@@ -1010,7 +1020,7 @@ export default function ApplyPage() {
                             }}
                           >
                             <Eye size={16} color="#4f46e5" />
-                            <span>View Required Documents Checklist</span>
+                            <span>View Required Permits</span>
                           </button>
 
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "0.74rem", color: "#6366f1", fontWeight: "600" }}>
@@ -1053,7 +1063,7 @@ export default function ApplyPage() {
                             onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; }}
                           >
                             <Eye size={13} />
-                            View Required Documents
+                            View Required Permits
                           </button>
                           <span style={{
                             fontSize: "0.78rem",
@@ -1708,337 +1718,383 @@ export default function ApplyPage() {
           </div>
         </div>
       </div>
-      {/* ON-SCREEN REQUIRED DOCUMENTS ALERT MODAL */}
-      {showRequirementsAlert && (
-        <div 
-          role="alertdialog"
-          aria-modal="true"
-          className="animate-fade-in-up"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15, 23, 42, 0.65)",
-            backdropFilter: "blur(6px)",
-            zIndex: 99999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1.25rem"
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowRequirementsAlert(false);
-          }}
-        >
-          <div style={{
-            background: "#ffffff",
-            borderRadius: "20px",
-            maxWidth: "780px",
-            width: "100%",
-            maxHeight: "90vh",
-            display: "flex",
-            flexDirection: "column",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(226, 232, 240, 0.8)",
-            overflow: "hidden"
-          }}>
-            {/* ALERT HEADER */}
-            <div style={{
-              background: "linear-gradient(135deg, #1e3a8a 0%, #312e81 100%)",
-              color: "white",
-              padding: "1.25rem 1.75rem",
+      {/* ON-SCREEN REQUIRED PERMITS ALERT MODAL */}
+      {showRequirementsAlert && (() => {
+        const { mandatory, conditional, notRequired } = getProjectPermitsBreakdown(selectedProjectType);
+
+        return (
+          <div 
+            role="alertdialog"
+            aria-modal="true"
+            className="animate-fade-in-up"
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(15, 23, 42, 0.65)",
+              backdropFilter: "blur(6px)",
+              zIndex: 99999,
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              gap: "1rem"
+              justifyContent: "center",
+              padding: "1.25rem"
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowRequirementsAlert(false);
+            }}
+          >
+            <div style={{
+              background: "#ffffff",
+              borderRadius: "20px",
+              maxWidth: "760px",
+              width: "100%",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(226, 232, 240, 0.8)",
+              overflow: "hidden"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                <div style={{
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "12px",
-                  background: "rgba(255, 255, 255, 0.15)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#ffffff"
-                }}>
-                  <FileCheck size={24} />
-                </div>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
-                    <span style={{
-                      fontSize: "0.68rem",
-                      fontWeight: "800",
-                      background: "rgba(255, 255, 255, 0.2)",
-                      padding: "2px 8px",
-                      borderRadius: "6px",
-                      letterSpacing: "0.5px"
-                    }}>
-                      OFFICIAL DOCUMENT CHECKLIST
-                    </span>
-                    <span style={{ fontSize: "0.75rem", color: "#cbd5e1" }}>
-                      Sto. Tomas OBO • PD 1096
-                    </span>
+              {/* ALERT HEADER */}
+              <div style={{
+                background: "linear-gradient(135deg, #1e3a8a 0%, #312e81 100%)",
+                color: "white",
+                padding: "1.25rem 1.75rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "1rem"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                  <div style={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "12px",
+                    background: "rgba(255, 255, 255, 0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#ffffff"
+                  }}>
+                    <FileCheck size={24} />
                   </div>
-                  <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: "800", letterSpacing: "-0.01em" }}>
-                    {selectedProjectType.name}
-                  </h3>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
+                      <span style={{
+                        fontSize: "0.68rem",
+                        fontWeight: "800",
+                        background: "rgba(255, 255, 255, 0.2)",
+                        padding: "2px 8px",
+                        borderRadius: "6px",
+                        letterSpacing: "0.5px"
+                      }}>
+                        OFFICIAL PERMIT MATRIX BREAKDOWN
+                      </span>
+                      <span style={{ fontSize: "0.75rem", color: "#cbd5e1" }}>
+                        Santo Tomas OBO • PD 1096
+                      </span>
+                    </div>
+                    <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: "800", letterSpacing: "-0.01em" }}>
+                      Permits Needed for {selectedProjectType.name}
+                    </h3>
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowRequirementsAlert(false)}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.15)",
+                    border: "none",
+                    color: "white",
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.25)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"; }}
+                >
+                  <X size={18} />
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowRequirementsAlert(false)}
-                style={{
-                  background: "rgba(255, 255, 255, 0.15)",
-                  border: "none",
-                  color: "white",
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "10px",
+              {/* ALERT BODY */}
+              <div style={{ padding: "1.5rem 1.75rem", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                {/* STATUS SUMMARY BANNER */}
+                <div style={{
+                  background: "#f0f9ff",
+                  border: "1.5px solid #bae6fd",
+                  borderRadius: "12px",
+                  padding: "0.9rem 1.1rem",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease"
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.25)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"; }}
-              >
-                <X size={18} />
-              </button>
-            </div>
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "0.75rem"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Info size={18} color="#0284c7" style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: "0.86rem", color: "#0369a1", lineHeight: "1.4" }}>
+                      Under the Santo Tomas Municipal Permitting Matrix, the following engineering permits are required for this <strong>{selectedProjectType.category}</strong> project:
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#15803d", background: "#dcfce7", border: "1px solid #86efac", padding: "3px 9px", borderRadius: "999px" }}>
+                      {mandatory.length} Mandatory
+                    </span>
+                    {conditional.length > 0 && (
+                      <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#b45309", background: "#fef3c7", border: "1px solid #fde68a", padding: "3px 9px", borderRadius: "999px" }}>
+                        {conditional.length} Conditional
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-            {/* ALERT BODY */}
-            <div style={{ padding: "1.5rem 1.75rem", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-              {/* STATUS SUMMARY BANNER */}
+                {/* 1. MANDATORY PERMITS NEEDED */}
+                <div>
+                  <h4 style={{ margin: "0 0 0.65rem 0", fontSize: "0.98rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "7px" }}>
+                    <CheckCircle2 size={18} color="#16a34a" />
+                    Mandatory Permits for this Project ({mandatory.length} Required)
+                  </h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
+                    {mandatory.map((p) => {
+                      const Icon = p.icon;
+                      return (
+                        <div key={p.key} style={{
+                          background: "linear-gradient(135deg, #f8faff 0%, #eff6ff 100%)",
+                          border: "1.5px solid #bfdbfe",
+                          borderRadius: "12px",
+                          padding: "0.85rem 1rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "0.75rem",
+                          boxShadow: "0 2px 5px rgba(37, 99, 235, 0.04)"
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                            <div style={{
+                              width: "34px",
+                              height: "34px",
+                              borderRadius: "8px",
+                              background: "#dbeafe",
+                              color: "#1d4ed8",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0
+                            }}>
+                              <Icon size={18} />
+                            </div>
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: "#1e40af", color: "white" }}>
+                                  {p.code}
+                                </span>
+                                <span style={{ fontSize: "0.9rem", fontWeight: "800", color: "#0f172a" }}>
+                                  {p.label}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: "0.76rem", color: "#64748b", marginTop: "2px" }}>
+                                {p.desc}
+                              </div>
+                            </div>
+                          </div>
+                          <span style={{
+                            fontSize: "0.7rem",
+                            fontWeight: "800",
+                            padding: "3px 10px",
+                            borderRadius: "999px",
+                            background: "#dcfce7",
+                            color: "#15803d",
+                            border: "1px solid #86efac",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            flexShrink: 0
+                          }}>
+                            <Check size={11} strokeWidth={3} /> MANDATORY
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. CONDITIONAL PERMITS NEEDED */}
+                {conditional.length > 0 && (
+                  <div>
+                    <h4 style={{ margin: "0 0 0.65rem 0", fontSize: "0.98rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "7px" }}>
+                      <AlertCircle size={18} color="#d97706" />
+                      Conditional Permits ({conditional.length} Depending on Scope)
+                    </h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
+                      {conditional.map((p) => {
+                        const Icon = p.icon;
+                        return (
+                          <div key={p.key} style={{
+                            background: "linear-gradient(135deg, #fffdfa 0%, #fef8eb 100%)",
+                            border: "1.5px solid #fde68a",
+                            borderRadius: "12px",
+                            padding: "0.85rem 1rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "0.75rem"
+                          }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                              <div style={{
+                                width: "34px",
+                                height: "34px",
+                                borderRadius: "8px",
+                                background: "#fef3c7",
+                                color: "#b45309",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0
+                              }}>
+                                <Icon size={18} />
+                              </div>
+                              <div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: "#b45309", color: "white" }}>
+                                    {p.code}
+                                  </span>
+                                  <span style={{ fontSize: "0.9rem", fontWeight: "800", color: "#0f172a" }}>
+                                    {p.label}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: "0.76rem", color: "#78350f", marginTop: "2px" }}>
+                                  Condition: {p.condition}
+                                </div>
+                              </div>
+                            </div>
+                            <span style={{
+                              fontSize: "0.7rem",
+                              fontWeight: "800",
+                              padding: "3px 10px",
+                              borderRadius: "999px",
+                              background: "#fef3c7",
+                              color: "#b45309",
+                              border: "1px solid #fde68a",
+                              flexShrink: 0
+                            }}>
+                              CONDITIONAL
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. EXEMPT / NOT REQUIRED PERMITS */}
+                {notRequired.length > 0 && (
+                  <div>
+                    <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "0.88rem", fontWeight: "700", color: "#64748b" }}>
+                      Permits Exempt / Not Applicable for this Project Type ({notRequired.length}):
+                    </h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                      {notRequired.map((p) => (
+                        <span key={p.key} style={{
+                          fontSize: "0.75rem",
+                          background: "#f1f5f9",
+                          color: "#64748b",
+                          border: "1px solid #e2e8f0",
+                          padding: "4px 10px",
+                          borderRadius: "8px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px"
+                        }}>
+                          <strong>{p.code}</strong>: {p.label} (Not Required)
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ALERT FOOTER ACTIONS */}
               <div style={{
-                background: "#f0f9ff",
-                border: "1.5px solid #bae6fd",
-                borderRadius: "12px",
-                padding: "0.9rem 1.1rem",
+                background: "#f8fafc",
+                borderTop: "1px solid #e2e8f0",
+                padding: "1rem 1.75rem",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
                 flexWrap: "wrap",
                 gap: "0.75rem"
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <Info size={18} color="#0284c7" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: "0.86rem", color: "#0369a1", lineHeight: "1.4" }}>
-                    Standard documentary requirements under the <strong>National Building Code (PD 1096)</strong> for <strong>{selectedProjectType.category}</strong> construction in Sto. Tomas, Pampanga.
-                  </span>
-                </div>
-                <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#0369a1", background: "#e0f2fe", padding: "4px 10px", borderRadius: "999px" }}>
-                  Estimated Turnaround: {selectedProjectType.estimatedDays}
-                </span>
-              </div>
-
-              {/* 1. ENGINEERING PLANS & FORMS */}
-              <div>
-                <h4 style={{ margin: "0 0 0.6rem 0", fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Layers size={17} color="#4f46e5" />
-                  1. Official Engineering Forms & Blueprint Sets (Compiled Online)
-                </h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {getProjectRequirementsList(selectedProjectType).engineeringPlans.map((doc, idx) => (
-                    <div key={idx} style={{
-                      background: doc.required ? "#f8fafc" : "#fffdfa",
-                      border: doc.required ? "1px solid #e2e8f0" : "1px solid #fef3c7",
-                      borderRadius: "10px",
-                      padding: "0.65rem 0.85rem",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "0.75rem"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                        <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: doc.required ? "#3b82f6" : "#d97706", color: "white" }}>
-                          {doc.code}
-                        </span>
-                        <div>
-                          <div style={{ fontSize: "0.85rem", fontWeight: "700", color: "#1e293b" }}>{doc.name}</div>
-                          <div style={{ fontSize: "0.74rem", color: "#64748b" }}>{doc.note}</div>
-                        </div>
-                      </div>
-                      <span style={{
-                        fontSize: "0.68rem",
-                        fontWeight: "800",
-                        padding: "2px 8px",
-                        borderRadius: "999px",
-                        background: doc.required ? "#dcfce7" : "#fef3c7",
-                        color: doc.required ? "#15803d" : "#b45309",
-                        flexShrink: 0
-                      }}>
-                        {doc.required ? "MANDATORY" : "CONDITIONAL"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 2. LEGAL & PROPERTY DOCUMENTS */}
-              <div>
-                <h4 style={{ margin: "0 0 0.6rem 0", fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <ShieldCheck size={17} color="#059669" />
-                  2. Proof of Ownership & Legal Clearances
-                </h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {getProjectRequirementsList(selectedProjectType).legalDocuments.map((doc, idx) => (
-                    <div key={idx} style={{
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "10px",
-                      padding: "0.65rem 0.85rem",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "0.75rem"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                        <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: "#059669", color: "white" }}>
-                          {doc.code}
-                        </span>
-                        <div>
-                          <div style={{ fontSize: "0.85rem", fontWeight: "700", color: "#1e293b" }}>{doc.name}</div>
-                          <div style={{ fontSize: "0.74rem", color: "#64748b" }}>{doc.note}</div>
-                        </div>
-                      </div>
-                      <span style={{
-                        fontSize: "0.68rem",
-                        fontWeight: "800",
-                        padding: "2px 8px",
-                        borderRadius: "999px",
-                        background: doc.required ? "#dcfce7" : "#f1f5f9",
-                        color: doc.required ? "#15803d" : "#64748b",
-                        flexShrink: 0
-                      }}>
-                        {doc.required ? "MANDATORY" : "IF APPLICABLE"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 3. TECHNICAL & REGULATORY DOCUMENTS */}
-              <div>
-                <h4 style={{ margin: "0 0 0.6rem 0", fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <FileText size={17} color="#d97706" />
-                  3. Technical Specifications & Safety Clearances
-                </h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {getProjectRequirementsList(selectedProjectType).technicalDocuments.map((doc, idx) => (
-                    <div key={idx} style={{
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "10px",
-                      padding: "0.65rem 0.85rem",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "0.75rem"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                        <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: "#d97706", color: "white" }}>
-                          {doc.code}
-                        </span>
-                        <div>
-                          <div style={{ fontSize: "0.85rem", fontWeight: "700", color: "#1e293b" }}>{doc.name}</div>
-                          <div style={{ fontSize: "0.74rem", color: "#64748b" }}>{doc.note}</div>
-                        </div>
-                      </div>
-                      <span style={{
-                        fontSize: "0.68rem",
-                        fontWeight: "800",
-                        padding: "2px 8px",
-                        borderRadius: "999px",
-                        background: doc.required ? "#dcfce7" : "#f1f5f9",
-                        color: doc.required ? "#15803d" : "#64748b",
-                        flexShrink: 0
-                      }}>
-                        {doc.required ? "MANDATORY" : "CONDITIONAL"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* ALERT FOOTER ACTIONS */}
-            <div style={{
-              background: "#f8fafc",
-              borderTop: "1px solid #e2e8f0",
-              padding: "1rem 1.75rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "0.75rem"
-            }}>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                style={{
-                  background: "#ffffff",
-                  border: "1.5px solid #cbd5e1",
-                  color: "#475569",
-                  borderRadius: "10px",
-                  padding: "9px 16px",
-                  fontSize: "0.85rem",
-                  fontWeight: "700",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px"
-                }}
-              >
-                <Printer size={15} /> Print Checklist
-              </button>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                 <button
                   type="button"
-                  onClick={() => setShowRequirementsAlert(false)}
+                  onClick={() => window.print()}
                   style={{
-                    background: "none",
-                    border: "none",
-                    color: "#64748b",
-                    padding: "9px 14px",
-                    fontSize: "0.85rem",
-                    fontWeight: "600",
-                    cursor: "pointer"
-                  }}
-                >
-                  Close Alert
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRequirementsAlert(false);
-                    setShowUnifiedForm(true);
-                  }}
-                  style={{
-                    background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-                    color: "white",
-                    border: "none",
+                    background: "#ffffff",
+                    border: "1.5px solid #cbd5e1",
+                    color: "#475569",
                     borderRadius: "10px",
-                    padding: "9px 20px",
-                    fontSize: "0.88rem",
+                    padding: "9px 16px",
+                    fontSize: "0.85rem",
                     fontWeight: "700",
                     cursor: "pointer",
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "6px",
-                    boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)"
+                    gap: "6px"
                   }}
                 >
-                  <FileText size={16} /> Proceed to Fill Application <ChevronRight size={16} />
+                  <Printer size={15} /> Print Permit List
                 </button>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowRequirementsAlert(false)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#64748b",
+                      padding: "9px 14px",
+                      fontSize: "0.85rem",
+                      fontWeight: "600",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Close Alert
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowRequirementsAlert(false);
+                      setShowUnifiedForm(true);
+                    }}
+                    style={{
+                      background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "9px 20px",
+                      fontSize: "0.88rem",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)"
+                    }}
+                  >
+                    <FileText size={16} /> Fill These Forms Online <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes spin { 100% { transform: rotate(360deg); } }
