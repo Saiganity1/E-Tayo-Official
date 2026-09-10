@@ -241,8 +241,24 @@ export default function StaffEvaluatePage() {
                 <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase" }}>Site Location</span>
                 <span>{app.projectAddress || app.location?.address}</span>
               </div>
+              {(app as any).projectType && (
+                <div>
+                  <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase" }}>Project Type</span>
+                  <span style={{ background: "#ede9fe", color: "#6b21a8", padding: "2px 8px", borderRadius: "6px", fontSize: "0.82rem", fontWeight: "700", display: "inline-block" }}>
+                    {(app as any).projectType}
+                  </span>
+                </div>
+              )}
+              {(app as any).locationalClearanceRef && (
+                <div>
+                  <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase" }}>Zoning Clearance Ref</span>
+                  <span style={{ color: "#047857", fontWeight: "700", fontSize: "0.85rem" }}>
+                    ✓ {(app as any).locationalClearanceRef}
+                  </span>
+                </div>
+              )}
               <div>
-                <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase" }}>Permit Type</span>
+                <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase" }}>Permit Classification</span>
                 <span style={{ textTransform: "capitalize", fontWeight: "600" }}>{app.permitType.replace("_", " ")}</span>
               </div>
               <div>

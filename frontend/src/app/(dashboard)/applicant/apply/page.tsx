@@ -7,6 +7,17 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 import LocationalClearanceGoogleForm from "../../../../components/forms/LocationalClearanceGoogleForm";
+import UnifiedProjectGoogleForm from "../../../../components/forms/UnifiedProjectGoogleForm";
+import { 
+  PROJECT_TYPES_MATRIX, 
+  ProjectTypeItem, 
+  ProjectCategory, 
+  PERMIT_FORM_METADATA, 
+  PermitFormMatrix,
+  getRequiredPermitForms,
+  getConditionalPermitForms
+} from "../../../../data/projectTypeMatrix";
+import { Search, Sparkles } from "lucide-react";
 
 const LocationPickerMap = dynamic(() => import("../../../../components/map/LocationPickerMap"), { 
   ssr: false, 
@@ -31,6 +42,12 @@ export default function ApplyPage() {
   const [isManualVerified, setIsManualVerified] = useState(false);
   const [showManualVerifyInput, setShowManualVerifyInput] = useState(false);
   const [lockedNotice, setLockedNotice] = useState<string | null>(null);
+
+  // Project Type Matrix State (Stage 2)
+  const [selectedProjectType, setSelectedProjectType] = useState<ProjectTypeItem>(PROJECT_TYPES_MATRIX[0]);
+  const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | "All">("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showUnifiedForm, setShowUnifiedForm] = useState(false);
 
   // Detect if applicant has an approved Locational Clearance in the system
   const approvedLC = (applications || []).find(
@@ -162,6 +179,26 @@ export default function ApplyPage() {
 
   if (showGoogleForm) {
     return <LocationalClearanceGoogleForm onCancel={() => setShowGoogleForm(false)} />;
+  }
+
+  if (showUnifiedForm) {
+    return (
+      <UnifiedProjectGoogleForm
+        projectType={selectedProjectType}
+        locationalClearanceRef={activeClearanceRef || "LC-APPROVED"}
+        initialApplicantName="Juan Dela Cruz"
+        initialApplicantAddress={projectAddress}
+        initialProjectName={projectName}
+        initialBarangay={barangay}
+        initialLotArea={lotArea}
+        onSubmitSuccess={(newApp) => {
+          addApplication(newApp);
+          setShowUnifiedForm(false);
+          router.push("/applicant/dashboard");
+        }}
+        onCancel={() => setShowUnifiedForm(false)}
+      />
+    );
   }
 
   return (
@@ -308,79 +345,250 @@ export default function ApplyPage() {
 
               {/* PERMIT CARDS */}
               {isClearancePassed ? (
-                /* STAGE 2: CHOOSE BETWEEN BUILDING PERMIT OR OCCUPANCY PERMIT */
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                    <h3 style={{ fontSize: "1rem", fontWeight: "700", color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                      Stage 2 Options: Choose Permit
-                    </h3>
+                /* STAGE 2: PROJECT TYPE × REQUIRED PERMIT FORM MATRIX */
+                <div style={{ marginTop: "1rem" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
+                    <div>
+                      <h3 style={{ fontSize: "1.2rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.25rem 0", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <Sparkles size={20} color="#4f46e5" />
+                        Stage 2: Select Project Type (Municipal Matrix)
+                      </h3>
+                      <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>
+                        Choose your specific project type from the official Sto. Tomas matrix. The system will dynamically determine and compile the required engineering and safety permit forms.
+                      </p>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setSelectedPermitType("locational_clearance")}
                       style={{
-                        background: "none",
-                        border: "none",
-                        color: "#2563eb",
-                        fontSize: "0.85rem",
+                        background: "#f1f5f9",
+                        border: "1px solid #cbd5e1",
+                        color: "#334155",
+                        borderRadius: "8px",
+                        padding: "6px 12px",
+                        fontSize: "0.8rem",
                         cursor: "pointer",
-                        textDecoration: "underline"
+                        fontWeight: "600"
                       }}
                     >
-                      Applying for another property? Apply for new Locational Clearance
+                      Apply for new Locational Clearance
                     </button>
                   </div>
 
-                  <div className="permit-options" style={{ gridTemplateColumns: "1fr 1fr" }}>
-                    {/* Building Permit Card */}
-                    <label className={`permit-card ${selectedPermitType === "building_permit" ? "selected" : ""}`}>
-                      <input 
-                        type="radio" 
-                        name="permit_type" 
-                        value="building_permit" 
-                        checked={selectedPermitType === "building_permit"}
-                        onChange={() => setSelectedPermitType("building_permit")}
+                  {/* SEARCH & CATEGORY FILTER TABS */}
+                  <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <div style={{ position: "relative", flex: 1, minWidth: "220px" }}>
+                      <Search size={16} color="#94a3b8" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+                      <input
+                        type="text"
+                        placeholder="Search 31 official project types (e.g. House, Store, Warehouse, Hotel)..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "8px 12px 8px 36px",
+                          borderRadius: "10px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "0.88rem",
+                          background: "#ffffff"
+                        }}
                       />
-                      <div className="card-content" style={{ padding: "1.75rem", textAlign: "left" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                          <div className="card-icon" style={{ margin: 0 }}><Building2 size={30} /></div>
-                          {selectedPermitType === "building_permit" && (
-                            <span style={{ background: "#2563eb", color: "white", borderRadius: "50%", padding: "4px", display: "flex" }}>
-                              <Check size={16} />
-                            </span>
-                          )}
-                        </div>
-                        <h3 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#0f172a", marginBottom: "0.35rem" }}>Building Permit</h3>
-                        <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b", lineHeight: "1.4" }}>
-                          Required prior to starting new construction, structural alterations, addition, or repair of any building or structure.
-                        </p>
-                      </div>
-                    </label>
+                    </div>
 
-                    {/* Occupancy Permit Card */}
-                    <label className={`permit-card ${selectedPermitType === "occupancy_permit" ? "selected" : ""}`}>
-                      <input 
-                        type="radio" 
-                        name="permit_type" 
-                        value="occupancy_permit" 
-                        checked={selectedPermitType === "occupancy_permit"}
-                        onChange={() => setSelectedPermitType("occupancy_permit")}
-                      />
-                      <div className="card-content" style={{ padding: "1.75rem", textAlign: "left" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                          <div className="card-icon" style={{ margin: 0 }}><Home size={30} /></div>
-                          {selectedPermitType === "occupancy_permit" && (
-                            <span style={{ background: "#2563eb", color: "white", borderRadius: "50%", padding: "4px", display: "flex" }}>
-                              <Check size={16} />
-                            </span>
-                          )}
-                        </div>
-                        <h3 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#0f172a", marginBottom: "0.35rem" }}>Occupancy Permit</h3>
-                        <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b", lineHeight: "1.4" }}>
-                          Certificate of Occupancy required once construction is completed to verify safe standards before moving in.
-                        </p>
-                      </div>
-                    </label>
+                    {/* Category tabs */}
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                      {(["All", "Residential", "Commercial", "Industrial", "Institutional", "Ancillary & Alterations", "Utilities & Mechanical"] as const).map((cat) => {
+                        const isActive = selectedCategory === cat;
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setSelectedCategory(cat)}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "8px",
+                              fontSize: "0.8rem",
+                              fontWeight: "700",
+                              border: isActive ? "1px solid #4f46e5" : "1px solid #e2e8f0",
+                              background: isActive ? "#4f46e5" : "#ffffff",
+                              color: isActive ? "#ffffff" : "#475569",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            {cat}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
+
+                  {/* 31 PROJECT TYPES GRID */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                    gap: "0.85rem",
+                    maxHeight: "340px",
+                    overflowY: "auto",
+                    padding: "4px",
+                    marginBottom: "1.5rem"
+                  }}>
+                    {PROJECT_TYPES_MATRIX.filter((p) => {
+                      const matchesCategory = selectedCategory === "All" || p.category === selectedCategory;
+                      const matchesQuery = searchQuery.trim() === "" ||
+                        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        p.description.toLowerCase().includes(searchQuery.toLowerCase());
+                      return matchesCategory && matchesQuery;
+                    }).map((p) => {
+                      const isSelected = selectedProjectType?.id === p.id;
+                      const reqCount = getRequiredPermitForms(p).length;
+                      const condCount = getConditionalPermitForms(p).length;
+
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => setSelectedProjectType(p)}
+                          style={{
+                            border: isSelected ? "2px solid #4f46e5" : "1px solid #e2e8f0",
+                            background: isSelected ? "#f5f3ff" : "#ffffff",
+                            borderRadius: "12px",
+                            padding: "1rem",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                            boxShadow: isSelected ? "0 4px 12px rgba(79, 70, 229, 0.15)" : "0 1px 3px rgba(0,0,0,0.02)"
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.4rem" }}>
+                            <span style={{
+                              fontSize: "0.68rem",
+                              fontWeight: "700",
+                              color: isSelected ? "#4f46e5" : "#64748b",
+                              background: isSelected ? "#ede9fe" : "#f1f5f9",
+                              padding: "2px 8px",
+                              borderRadius: "999px"
+                            }}>
+                              {p.category}
+                            </span>
+                            {isSelected && (
+                              <span style={{ width: "18px", height: "18px", borderRadius: "50%", background: "#4f46e5", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px" }}>
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                          <h4 style={{ margin: "0 0 0.35rem 0", fontSize: "0.95rem", fontWeight: "700", color: "#0f172a" }}>
+                            {p.name}
+                          </h4>
+                          <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.78rem", color: "#64748b", lineHeight: "1.35", minHeight: "32px" }}>
+                            {p.description}
+                          </p>
+                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", fontSize: "0.7rem", fontWeight: "700" }}>
+                            <span style={{ background: "#dbeafe", color: "#1e40af", padding: "2px 6px", borderRadius: "4px" }}>
+                              {reqCount} Required
+                            </span>
+                            {condCount > 0 && (
+                              <span style={{ background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "4px" }}>
+                                {condCount} Conditional
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* ACTIVE PROJECT SELECTION & MATRIX BREAKDOWN PREVIEW */}
+                  {selectedProjectType && (
+                    <div style={{
+                      background: "#ffffff",
+                      border: "1.5px solid #c7d2fe",
+                      borderRadius: "16px",
+                      padding: "1.5rem",
+                      boxShadow: "0 4px 20px rgba(79, 70, 229, 0.08)",
+                      animation: "fadeIn 0.2s ease"
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem", flexWrap: "wrap", gap: "1rem" }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            <span style={{ fontSize: "0.75rem", fontWeight: "700", background: "#e0e7ff", color: "#3730a3", padding: "2px 8px", borderRadius: "6px" }}>
+                              {selectedProjectType.category}
+                            </span>
+                            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Est. Processing: {selectedProjectType.estimatedDays}</span>
+                          </div>
+                          <h4 style={{ margin: "0.35rem 0 0 0", fontSize: "1.25rem", fontWeight: "800", color: "#0f172a" }}>
+                            {selectedProjectType.name}
+                          </h4>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowUnifiedForm(true)}
+                          style={{
+                            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "10px",
+                            padding: "12px 24px",
+                            fontWeight: "700",
+                            fontSize: "0.95rem",
+                            cursor: "pointer",
+                            boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.5rem"
+                          }}
+                        >
+                          Fill Application Forms (Google Form Style)
+                          <ChevronRight size={18} />
+                        </button>
+                      </div>
+
+                      {/* MATRIX TABLE PREVIEW */}
+                      <p style={{ fontSize: "0.85rem", fontWeight: "700", color: "#334155", margin: "0 0 0.6rem 0" }}>
+                        Official Permit & Clearance Breakdown for this Project:
+                      </p>
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                        gap: "0.5rem"
+                      }}>
+                        {(Object.keys(PERMIT_FORM_METADATA) as (keyof PermitFormMatrix)[]).map((key) => {
+                          const meta = PERMIT_FORM_METADATA[key];
+                          const level = selectedProjectType.matrix[key];
+                          const isReq = level === "required";
+                          const isCond = level === "conditional";
+
+                          return (
+                            <div
+                              key={key}
+                              style={{
+                                background: isReq ? "#eff6ff" : isCond ? "#fffbeb" : "#f8fafc",
+                                border: isReq ? "1px solid #bfdbfe" : isCond ? "1px solid #fde68a" : "1px solid #e2e8f0",
+                                borderRadius: "8px",
+                                padding: "0.6rem 0.8rem",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between"
+                              }}
+                            >
+                              <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "#1e293b" }}>
+                                {meta.label}
+                              </span>
+                              <span style={{
+                                fontSize: "0.68rem",
+                                fontWeight: "800",
+                                padding: "2px 6px",
+                                borderRadius: "4px",
+                                background: isReq ? "#2563eb" : isCond ? "#d97706" : "#94a3b8",
+                                color: "#ffffff"
+                              }}>
+                                {isReq ? "REQUIRED" : isCond ? "CONDITIONAL" : "N/A"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* STAGE 1: MUST PASS LOCATIONAL CLEARANCE FIRST */

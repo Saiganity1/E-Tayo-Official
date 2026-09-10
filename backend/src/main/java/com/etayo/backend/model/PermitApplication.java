@@ -11,6 +11,8 @@ public class PermitApplication {
     private String id; // e.g., "LC-2025-0001"
 
     private String permitType;
+    private String projectType;
+    private String locationalClearanceRef;
     private String projectName;
     private String applicantName;
     private String applicantPhone;
@@ -98,4 +100,8 @@ public class PermitApplication {
     public void setFileName(String fileName) { this.fileName = fileName; }
     public String getSketchImageUrl() { return sketchImageUrl; }
     public void setSketchImageUrl(String sketchImageUrl) { this.sketchImageUrl = sketchImageUrl; }
+    public String getProjectType() { return projectType; }
+    public void setProjectType(String projectType) { this.projectType = projectType; }
+    public String getLocationalClearanceRef() { return locationalClearanceRef; }
+    public void setLocationalClearanceRef(String locationalClearanceRef) { this.locationalClearanceRef = locationalClearanceRef; }
 }
