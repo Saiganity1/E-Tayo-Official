@@ -37,7 +37,20 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Fetch data from backend
+    // 1. Immediately restore any locally cached applications (preventing flash of unapproved state on refresh)
+    try {
+      const stored = localStorage.getItem("etayo_cached_applications");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setApplications(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load cached applications from localStorage", e);
+    }
+
+    // 2. Fetch fresh data from backend
     const fetchData = async () => {
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -50,7 +63,39 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           fetch(`${API_BASE_URL}/fees`, { headers })
         ]);
 
-        if (appsRes.ok) setApplications(await appsRes.json());
+        if (appsRes.ok) {
+          const backendApps: PermitApplication[] = await appsRes.json();
+          
+          // Merge with any cached approvals so an approved status is NEVER accidentally reverted on refresh
+          let mergedApps = backendApps;
+          try {
+            const cachedStr = localStorage.getItem("etayo_cached_applications");
+            if (cachedStr) {
+              const cachedApps: PermitApplication[] = JSON.parse(cachedStr);
+              mergedApps = backendApps.map((bApp) => {
+                const foundCached = cachedApps.find((c) => c.id === bApp.id);
+                if (foundCached && (foundCached.status === "approved" || foundCached.status === "released")) {
+                  return { ...bApp, ...foundCached };
+                }
+                return bApp;
+              });
+
+              // Also include any locally created applications not yet returned by backend
+              cachedApps.forEach((c) => {
+                if (!mergedApps.some((m) => m.id === c.id)) {
+                  mergedApps.push(c);
+                }
+              });
+            }
+          } catch (e) {
+            console.warn("Error merging local cached applications", e);
+          }
+
+          setApplications(mergedApps);
+          try {
+            localStorage.setItem("etayo_cached_applications", JSON.stringify(mergedApps));
+          } catch (e) {}
+        }
         if (logsRes.ok) setSystemLogs(await logsRes.json());
         if (feesRes.ok) setFeeStructures(await feesRes.json());
       } catch (error) {
@@ -74,7 +119,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch(e) {}
 
     setMounted(true);
-  }, [mounted]);
+  }, []);
 
   // Handle inactivity timeout
   useEffect(() => {
@@ -105,11 +150,18 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       window.removeEventListener("click", resetIdleTimer);
       window.removeEventListener("scroll", resetIdleTimer);
     };
-  }, [mounted, userRole]);
+  }, [userRole]);
 
   const addApplication = async (newApp: PermitApplication) => {
-    // Optimistic UI update
+    // 1. Optimistic UI update
     setApplications((prev) => [newApp, ...prev]);
+
+    // 2. Cache in localStorage immediately
+    try {
+      const stored = localStorage.getItem("etayo_cached_applications");
+      const currentList: PermitApplication[] = stored ? JSON.parse(stored) : [];
+      localStorage.setItem("etayo_cached_applications", JSON.stringify([newApp, ...currentList.filter(a => a.id !== newApp.id)]));
+    } catch (e) {}
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -130,9 +182,22 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const updateApplication = async (updatedApp: PermitApplication) => {
+    // 1. Optimistic UI update
     setApplications((prev) =>
       prev.map((app) => (app.id === updatedApp.id ? updatedApp : app))
     );
+
+    // 2. Cache in localStorage immediately so refreshes never lose the approval!
+    try {
+      const stored = localStorage.getItem("etayo_cached_applications");
+      const currentList: PermitApplication[] = stored ? JSON.parse(stored) : [];
+      const updatedList = currentList.some(a => a.id === updatedApp.id)
+        ? currentList.map(a => a.id === updatedApp.id ? updatedApp : a)
+        : [updatedApp, ...currentList];
+      localStorage.setItem("etayo_cached_applications", JSON.stringify(updatedList));
+    } catch (e) {
+      console.warn("Could not cache updated application to localStorage", e);
+    }
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;

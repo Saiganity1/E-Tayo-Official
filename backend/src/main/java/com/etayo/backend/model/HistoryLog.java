@@ -1,5 +1,6 @@
 package com.etayo.backend.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
@@ -7,6 +8,7 @@ public class HistoryLog {
     private String date;
     private String action;
     private String actor;
+    @Column(columnDefinition = "TEXT")
     private String details;
 
     public String getDate() { return date; }

@@ -43,7 +43,7 @@ public class PermitApplication {
     @CollectionTable(name = "permit_history_logs", joinColumns = @JoinColumn(name = "permit_id"))
     private List<HistoryLog> historyLog;
 
-    @Column(length = 1000)
+    @Column(columnDefinition = "TEXT")
     private String remarks;
 
     @Column(columnDefinition = "TEXT")

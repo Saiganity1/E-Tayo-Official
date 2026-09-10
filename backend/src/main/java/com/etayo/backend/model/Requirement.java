@@ -1,5 +1,6 @@
 package com.etayo.backend.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
@@ -9,6 +10,7 @@ public class Requirement {
     private String status;
     private String fileName;
     private String fileSize;
+    @Column(columnDefinition = "TEXT")
     private String remarks;
 
     // Getters and Setters

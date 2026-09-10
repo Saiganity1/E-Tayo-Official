@@ -1,5 +1,6 @@
 package com.etayo.backend.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
@@ -7,6 +8,7 @@ public class TrackingStep {
     private String title;
     private String status;
     private String date;
+    @Column(columnDefinition = "TEXT")
     private String notes;
     private String actor;
 

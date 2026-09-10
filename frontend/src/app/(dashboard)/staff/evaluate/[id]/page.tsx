@@ -117,21 +117,41 @@ export default function StaffEvaluatePage() {
       remarks: decisionNotes,
     };
 
-    updateApplication(updatedApp);
+    await updateApplication(updatedApp);
+
+    // Also record official evaluation log in backend
+    try {
+      const userStr = localStorage.getItem("user");
+      const staffEmail = userStr ? JSON.parse(userStr).email : "staff@etayo.gov.ph";
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/evaluations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          staffEmail: staffEmail || "staff@etayo.gov.ph",
+          applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+          permitType: app.permitType || "locational_clearance",
+          action: "Approved",
+          comments: decisionNotes,
+        })
+      });
+    } catch (e) {
+      console.warn("Could not save evaluation log", e);
+    }
+
     setIsProcessing(false);
     setSuccessMessage(
-      `Locational Clearance (${app.id}) has been successfully APPROVED! The applicant now has Stage 1 completed and can proceed to choose a Building Permit or Occupancy Permit.`
+      `Locational Clearance (${app.id}) has been successfully APPROVED! Stage 1 is officially completed and Stage 2 (Project Type Matrix) is now unlocked for the applicant.`
     );
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     setIsProcessing(true);
     const updatedApp = {
       ...app,
       status: "incomplete_requirements" as const,
       remarks: decisionNotes,
     };
-    updateApplication(updatedApp);
+    await updateApplication(updatedApp);
     setIsProcessing(false);
     setSuccessMessage("Application has been tagged for requirements revision.");
   };

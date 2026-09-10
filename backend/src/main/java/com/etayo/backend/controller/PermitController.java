@@ -35,9 +35,6 @@ public class PermitController {
 
     @PutMapping("/{id}")
     public ResponseEntity<PermitApplication> updatePermit(@PathVariable String id, @RequestBody PermitApplication permit) {
-        if (!permitApplicationRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
         permit.setId(id);
         return ResponseEntity.ok(permitApplicationRepository.save(permit));
     }

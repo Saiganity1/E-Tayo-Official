@@ -23,7 +23,7 @@ public class EvaluationLog {
     @Column(nullable = false)
     private String action; // e.g., "Approved", "Rejected"
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String comments;
 
     @Column(nullable = false)
