@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
   Building2, Home, PlusCircle, Search, FileCheck, 
-  MessageSquare, ShieldAlert, Map, X, Menu, Settings, LogOut, Users
+  MessageSquare, ShieldAlert, Map, X, Menu, Settings, LogOut, Users, ClipboardList
 } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
 import NotificationBell from "./NotificationBell";
@@ -39,7 +39,7 @@ export default function Sidebar() {
         return [
           { href: "/applicant/dashboard", label: "Dashboard", icon: Home },
           { href: "/applicant/apply", label: "New Application", icon: PlusCircle },
-          { href: "/applicant/track", label: "Track Application", icon: Search },
+          { href: "/applicant/track", label: "Application Status", icon: ClipboardList },
           { href: "/applicant/map", label: "Map", icon: Map },
           { href: "/applicant/messages", label: "Messages", icon: MessageSquare, badge: 3 },
         ];

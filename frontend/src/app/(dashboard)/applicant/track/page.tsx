@@ -1,46 +1,593 @@
 "use client";
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import Link from "next/link";
+import { usePermitContext } from "../../../../context/PermitContext";
+import { 
+  Search, Plus, Clock, CheckCircle2, AlertTriangle, 
+  FileText, CheckCircle, ChevronRight, Copy, Check, 
+  MapPin, Sparkles, Layers, ShieldCheck, ArrowRight
+} from "lucide-react";
 
-export default function TrackIndexPage() {
-  const [trackId, setTrackId] = useState("");
+export default function ApplicationStatusPage() {
   const router = useRouter();
+  const { applications } = usePermitContext();
 
-  const handleTrack = (e: React.FormEvent) => {
+  const [trackId, setTrackId] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [userName, setUserName] = useState("Applicant");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        if (userObj.name) setUserName(userObj.name);
+      }
+    } catch (e) {
+      console.error("Failed to load user from localStorage");
+    }
+  }, []);
+
+  const handleTrackSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (trackId.trim()) {
       router.push(`/applicant/track/${trackId.trim()}`);
     }
   };
 
+  const handleCopyId = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Filter applications for the active logged-in applicant (with fallback if mock user names differ)
+  const userApps = (applications || []).filter(app => {
+    if (!userName || userName === "Applicant") return true;
+    return (
+      app.applicantName?.toLowerCase() === userName.toLowerCase() ||
+      app.applicantEmail?.toLowerCase().includes(userName.toLowerCase())
+    );
+  });
+  const myApplications = userApps.length > 0 ? userApps : (applications || []);
+
+  const filteredApps = myApplications.filter(app => {
+    const query = searchTerm.toLowerCase().trim();
+    const matchesSearch = !query ||
+      (app.projectName && app.projectName.toLowerCase().includes(query)) ||
+      (app.id && app.id.toLowerCase().includes(query)) ||
+      (app.projectType && app.projectType.toLowerCase().includes(query)) ||
+      (app.permitType && app.permitType.toLowerCase().includes(query)) ||
+      (app.projectAddress && app.projectAddress.toLowerCase().includes(query));
+
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "approved" ? ["approved", "released"].includes(app.status) : app.status === statusFilter);
+
+    const matchesType = typeFilter === "all" ||
+      (typeFilter === "locational_clearance" ? app.permitType === "locational_clearance" : app.permitType !== "locational_clearance");
+
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const stats = {
+    total: myApplications.length,
+    pending: myApplications.filter(a => a.status === "pending").length,
+    review: myApplications.filter(a => a.status === "under_review").length,
+    approved: myApplications.filter(a => ["approved", "released"].includes(a.status)).length,
+    action: myApplications.filter(a => a.status === "incomplete_requirements").length,
+  };
+
+  const getStatusConfig = (status: string) => {
+    switch(status) {
+      case "pending":
+        return { color: "#d97706", bg: "#fef3c7", border: "#f59e0b", icon: Clock, label: "Pending Review", step: 1 };
+      case "under_review":
+        return { color: "#2563eb", bg: "#dbeafe", border: "#3b82f6", icon: Search, label: "Under Evaluation", step: 2 };
+      case "incomplete_requirements":
+        return { color: "#dc2626", bg: "#fee2e2", border: "#ef4444", icon: AlertTriangle, label: "Action Required", step: 2 };
+      case "approved":
+        return { color: "#059669", bg: "#d1fae5", border: "#10b981", icon: CheckCircle2, label: "Approved", step: 3 };
+      case "released":
+        return { color: "#059669", bg: "#dcfce7", border: "#16a34a", icon: CheckCircle, label: "Permit Released", step: 4 };
+      default:
+        return { color: "#64748b", bg: "#f1f5f9", border: "#94a3b8", icon: FileText, label: "Processing", step: 1 };
+    }
+  };
+
   return (
     <div className="dashboard-page animate-fade-in-up">
-      <header className="page-header" style={{ marginBottom: "2rem" }}>
-        <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", color: "#0f172a" }}>Track Application</h1>
-        <p className="page-subtitle" style={{ fontSize: "1.1rem", marginTop: "0.5rem", color: "#475569" }}>Enter your tracking ID to view the status of your permit.</p>
+      {/* HEADER */}
+      <header className="page-header" style={{
+        background: "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.65))",
+        backdropFilter: "blur(12px)",
+        border: "1px solid rgba(255, 255, 255, 0.6)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.04)",
+        borderRadius: "20px",
+        padding: "2rem",
+        marginBottom: "2rem",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "1.25rem"
+      }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
+            <span style={{
+              background: "#eff6ff",
+              color: "#2563eb",
+              fontSize: "0.75rem",
+              fontWeight: "700",
+              padding: "3px 10px",
+              borderRadius: "999px"
+            }}>
+              MUNICIPAL PERMIT PORTAL
+            </span>
+            <span style={{ fontSize: "0.82rem", color: "#64748b" }}>Sto. Tomas, Pampanga</span>
+          </div>
+          <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+            Application Status
+          </h1>
+          <p className="page-subtitle" style={{ fontSize: "1rem", marginTop: "0.35rem", color: "#475569" }}>
+            Monitor real-time evaluation stages, zoning clearances, and official permits for your projects.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+          <Link href="/applicant/apply" className="btn-primary" style={{
+            background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+            boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
+            padding: "0.75rem 1.4rem",
+            borderRadius: "12px",
+            fontWeight: "700",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            fontSize: "0.95rem"
+          }}>
+            <Plus size={18} /> New Permit Application
+          </Link>
+        </div>
       </header>
-      
-      <div className="glass-panel" style={{ maxWidth: "600px", margin: "0 auto", padding: "3rem 2rem", background: "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
-        <form onSubmit={handleTrack} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+      {/* STATS OVERVIEW CARDS */}
+      <section className="stats-grid" style={{ marginBottom: "2rem" }}>
+        <div className="stat-card" style={{ background: "white", borderRadius: "16px", padding: "1.25rem", border: "1px solid #f1f5f9", boxShadow: "0 4px 16px rgba(0,0,0,0.03)" }}>
+          <div className="stat-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
+            <FileText size={24} />
+          </div>
+          <div className="stat-info">
+            <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.total}</span>
+            <span className="stat-label" style={{ fontWeight: "600", color: "#64748b" }}>Total Applications</span>
+          </div>
+        </div>
+
+        <div className="stat-card" style={{ background: "white", borderRadius: "16px", padding: "1.25rem", border: "1px solid #f1f5f9", boxShadow: "0 4px 16px rgba(0,0,0,0.03)" }}>
+          <div className="stat-icon" style={{ background: "#fef3c7", color: "#d97706" }}>
+            <Clock size={24} />
+          </div>
+          <div className="stat-info">
+            <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.pending}</span>
+            <span className="stat-label" style={{ fontWeight: "600", color: "#64748b" }}>Pending Review</span>
+          </div>
+        </div>
+
+        <div className="stat-card" style={{ background: "white", borderRadius: "16px", padding: "1.25rem", border: "1px solid #f1f5f9", boxShadow: "0 4px 16px rgba(0,0,0,0.03)" }}>
+          <div className="stat-icon" style={{ background: "#dbeafe", color: "#2563eb" }}>
+            <Search size={24} />
+          </div>
+          <div className="stat-info">
+            <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.review}</span>
+            <span className="stat-label" style={{ fontWeight: "600", color: "#64748b" }}>Under Evaluation</span>
+          </div>
+        </div>
+
+        <div className="stat-card" style={{ background: "white", borderRadius: "16px", padding: "1.25rem", border: "1px solid #f1f5f9", boxShadow: "0 4px 16px rgba(0,0,0,0.03)" }}>
+          <div className="stat-icon" style={{ background: "#d1fae5", color: "#059669" }}>
+            <CheckCircle2 size={24} />
+          </div>
+          <div className="stat-info">
+            <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.approved}</span>
+            <span className="stat-label" style={{ fontWeight: "600", color: "#64748b" }}>Approved & Released</span>
+          </div>
+        </div>
+      </section>
+
+      {/* QUICK TRACKING LOOKUP BAR */}
+      <section style={{
+        background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+        border: "1px solid #e2e8f0",
+        borderRadius: "18px",
+        padding: "1.5rem 1.75rem",
+        marginBottom: "2rem",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.03)"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div>
-            <label style={{ display: "block", color: "#1e293b", fontWeight: "600", marginBottom: "0.75rem", fontSize: "1.1rem" }}>Application Tracking ID</label>
-            <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "0.5rem 1rem", boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }}>
-              <Search size={20} color="#94a3b8" />
+            <h3 style={{ margin: "0 0 0.25rem 0", fontSize: "1.1rem", fontWeight: "700", color: "#1e293b", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Search size={18} color="#2563eb" /> Direct Tracking ID Lookup
+            </h3>
+            <p style={{ margin: 0, fontSize: "0.88rem", color: "#64748b" }}>
+              Have an official Tracking ID (e.g. <code>LC-2026-4157</code>, <code>BP-2025-0005</code>)? Enter it to open the full evaluation audit trail.
+            </p>
+          </div>
+
+          <form onSubmit={handleTrackSubmit} style={{ display: "flex", gap: "0.5rem", flex: 1, maxWidth: "440px", minWidth: "260px" }}>
+            <input 
+              type="text" 
+              placeholder="e.g. LC-2026-4157"
+              value={trackId}
+              onChange={e => setTrackId(e.target.value)}
+              style={{
+                flex: 1,
+                padding: "0.65rem 1rem",
+                borderRadius: "10px",
+                border: "1px solid #cbd5e1",
+                fontSize: "0.95rem",
+                background: "white",
+                outline: "none"
+              }}
+            />
+            <button 
+              type="submit" 
+              className="btn-primary" 
+              style={{ padding: "0.65rem 1.25rem", borderRadius: "10px", whiteSpace: "nowrap" }}
+              disabled={!trackId.trim()}
+            >
+              Track ID
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {/* RECENT APPLICATIONS SECTION */}
+      <section className="applications-section" style={{
+        background: "rgba(255,255,255,0.7)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid rgba(255,255,255,0.8)",
+        borderRadius: "24px",
+        padding: "2rem",
+        boxShadow: "0 10px 40px rgba(0,0,0,0.03)"
+      }}>
+        {/* SECTION HEADER WITH FILTERS */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.75rem" }}>
+          <div>
+            <h2 style={{ fontSize: "1.45rem", fontWeight: "800", color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              Recent Applications
+              <span style={{ fontSize: "0.8rem", background: "#f1f5f9", color: "#475569", padding: "2px 10px", borderRadius: "999px", fontWeight: "700" }}>
+                {filteredApps.length}
+              </span>
+            </h2>
+            <p style={{ margin: "0.25rem 0 0 0", color: "#64748b", fontSize: "0.88rem" }}>
+              Detailed list of your submitted permits and clearance certificates.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+            {/* Search Input */}
+            <div style={{ position: "relative", minWidth: "220px" }}>
+              <Search size={16} color="#94a3b8" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
               <input 
                 type="text" 
-                placeholder="e.g. APP-2026-1234"
-                value={trackId}
-                onChange={e => setTrackId(e.target.value)}
-                style={{ border: "none", background: "transparent", width: "100%", padding: "0.75rem", fontSize: "1.1rem", outline: "none", color: "#0f172a", fontWeight: "500" }}
+                placeholder="Search applications..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  padding: "0.6rem 1rem 0.6rem 2.25rem",
+                  borderRadius: "10px",
+                  border: "1px solid #cbd5e1",
+                  background: "white",
+                  fontSize: "0.88rem",
+                  width: "100%"
+                }}
               />
             </div>
+
+            {/* Type Filter */}
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              style={{
+                padding: "0.6rem 0.85rem",
+                borderRadius: "10px",
+                border: "1px solid #cbd5e1",
+                background: "white",
+                fontSize: "0.85rem",
+                fontWeight: "600",
+                color: "#334155"
+              }}
+            >
+              <option value="all">All Types</option>
+              <option value="locational_clearance">Locational Clearance (Annex D)</option>
+              <option value="unified_permit">Unified Project Permits</option>
+            </select>
+
+            {/* Status Filter */}
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: "0.6rem 0.85rem",
+                borderRadius: "10px",
+                border: "1px solid #cbd5e1",
+                background: "white",
+                fontSize: "0.85rem",
+                fontWeight: "600",
+                color: "#334155"
+              }}
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="under_review">Under Evaluation</option>
+              <option value="approved">Approved / Released</option>
+              <option value="incomplete_requirements">Action Required</option>
+            </select>
           </div>
-          <button type="submit" className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1.1rem", display: "flex", justifyContent: "center" }} disabled={!trackId.trim()}>
-            Track Now
-          </button>
-        </form>
-      </div>
+        </div>
+
+        {/* APPLICATIONS LIST */}
+        {filteredApps.length === 0 ? (
+          <div style={{
+            background: "rgba(255,255,255,0.6)",
+            borderRadius: "20px",
+            border: "2px dashed #cbd5e1",
+            padding: "3.5rem 2rem",
+            textAlign: "center"
+          }}>
+            <div style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "50%",
+              background: "#f1f5f9",
+              color: "#94a3b8",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 1rem auto"
+            }}>
+              <FileText size={32} />
+            </div>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "#334155", margin: "0 0 0.4rem 0" }}>
+              No applications match your criteria
+            </h3>
+            <p style={{ margin: "0 0 1.5rem 0", color: "#64748b", fontSize: "0.9rem" }}>
+              Try adjusting your search terms or apply for a new permit.
+            </p>
+            <Link href="/applicant/apply" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+              <Plus size={16} /> File New Application
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            {filteredApps.map(app => {
+              const statusConfig = getStatusConfig(app.status);
+              const StatusIcon = statusConfig.icon;
+              const isLocationalClearance = app.permitType === "locational_clearance";
+              const isApprovedLC = isLocationalClearance && (app.status === "approved" || app.status === "released");
+
+              return (
+                <div 
+                  key={app.id}
+                  style={{
+                    background: "#ffffff",
+                    borderRadius: "18px",
+                    border: "1px solid #e2e8f0",
+                    borderLeft: `5px solid ${statusConfig.border}`,
+                    padding: "1.5rem",
+                    boxShadow: "0 4px 18px rgba(0,0,0,0.03)",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  {/* TOP HEADER ROW */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                      {/* Tracking ID Badge with Copy */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopyId(app.id, e)}
+                        title="Click to copy Tracking ID"
+                        style={{
+                          background: "#f8fafc",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "8px",
+                          padding: "4px 10px",
+                          fontSize: "0.85rem",
+                          fontWeight: "700",
+                          color: "#1e293b",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease"
+                        }}
+                      >
+                        <code>{app.id}</code>
+                        {copiedId === app.id ? (
+                          <Check size={13} color="#16a34a" />
+                        ) : (
+                          <Copy size={13} color="#64748b" />
+                        )}
+                      </button>
+
+                      {/* Permit Type Tag */}
+                      {isLocationalClearance ? (
+                        <span style={{
+                          background: "#eff6ff",
+                          color: "#1e40af",
+                          fontSize: "0.75rem",
+                          fontWeight: "700",
+                          padding: "4px 10px",
+                          borderRadius: "6px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}>
+                          <ShieldCheck size={13} /> Stage 1 · Locational Clearance (Annex D)
+                        </span>
+                      ) : (
+                        <span style={{
+                          background: "#f5f3ff",
+                          color: "#5b21b6",
+                          fontSize: "0.75rem",
+                          fontWeight: "700",
+                          padding: "4px 10px",
+                          borderRadius: "6px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}>
+                          <Sparkles size={13} /> Stage 2 · {app.projectType || "Unified Permit Application"}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Status Pill */}
+                    <div style={{
+                      background: statusConfig.bg,
+                      color: statusConfig.color,
+                      border: `1px solid ${statusConfig.border}30`,
+                      borderRadius: "999px",
+                      padding: "4px 12px",
+                      fontSize: "0.82rem",
+                      fontWeight: "700",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}>
+                      <StatusIcon size={14} strokeWidth={2.5} />
+                      <span>{statusConfig.label}</span>
+                    </div>
+                  </div>
+
+                  {/* PROJECT TITLE & LOCATION */}
+                  <div style={{ marginBottom: "1.25rem" }}>
+                    <h3 style={{ margin: "0 0 0.35rem 0", fontSize: "1.25rem", fontWeight: "800", color: "#0f172a" }}>
+                      {app.projectName || (isLocationalClearance ? "Locational Clearance Application" : "Unified Permit")}
+                    </h3>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#64748b", fontSize: "0.85rem" }}>
+                      <MapPin size={14} color="#94a3b8" />
+                      <span>{app.projectAddress || "Sto. Tomas, Pampanga"}</span>
+                    </div>
+                  </div>
+
+                  {/* 4-STAGE VISUAL TIMELINE STEPPER */}
+                  <div style={{
+                    background: "#f8fafc",
+                    border: "1px solid #edf2f7",
+                    borderRadius: "12px",
+                    padding: "0.85rem 1.25rem",
+                    marginBottom: "1.25rem"
+                  }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.5rem" }}>
+                      {[
+                        { title: "Filed", desc: "Submitted", active: statusConfig.step >= 1 },
+                        { title: "Review", desc: "Evaluation", active: statusConfig.step >= 2 },
+                        { title: "Approval", desc: "Endorsed", active: statusConfig.step >= 3 },
+                        { title: "Released", desc: "Issuance", active: statusConfig.step >= 4 }
+                      ].map((step, idx) => (
+                        <div key={idx} style={{ textAlign: "center" }}>
+                          <div style={{
+                            height: "5px",
+                            borderRadius: "999px",
+                            background: step.active ? statusConfig.color : "#e2e8f0",
+                            marginBottom: "6px",
+                            transition: "all 0.3s ease"
+                          }} />
+                          <span style={{
+                            fontSize: "0.75rem",
+                            fontWeight: step.active ? "700" : "500",
+                            color: step.active ? "#1e293b" : "#94a3b8",
+                            display: "block"
+                          }}>
+                            {step.title}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* FOOTER ROW WITH ACTIONS */}
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "0.75rem",
+                    borderTop: "1px solid #f1f5f9",
+                    paddingTop: "0.85rem"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.82rem", color: "#64748b" }}>
+                      <span>Submitted: <strong>{app.dateSubmitted}</strong></span>
+                      {isApprovedLC && (
+                        <span style={{
+                          background: "#dcfce7",
+                          color: "#15803d",
+                          padding: "2px 8px",
+                          borderRadius: "6px",
+                          fontWeight: "700",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}>
+                          <Check size={12} /> Stage 1 Prerequisite Passed
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+                      {isApprovedLC && (
+                        <Link 
+                          href="/applicant/apply"
+                          style={{
+                            background: "#ede9fe",
+                            color: "#6d28d9",
+                            padding: "6px 12px",
+                            borderRadius: "8px",
+                            fontSize: "0.82rem",
+                            fontWeight: "700",
+                            textDecoration: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                        >
+                          Proceed to Stage 2 <ArrowRight size={13} />
+                        </Link>
+                      )}
+
+                      <Link
+                        href={`/applicant/track/${app.id}`}
+                        style={{
+                          background: "#2563eb",
+                          color: "#ffffff",
+                          padding: "6px 14px",
+                          borderRadius: "8px",
+                          fontSize: "0.85rem",
+                          fontWeight: "700",
+                          textDecoration: "none",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)"
+                        }}
+                      >
+                        View Full Timeline <ChevronRight size={15} />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

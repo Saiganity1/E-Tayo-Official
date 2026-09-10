@@ -45,7 +45,7 @@ export default function MangTomasBot() {
       return "Permit fees depend on your Total Floor Area and the type of building. You can find detailed estimates on the Fees section of your dashboard.";
     }
     if (lower.match(/(track|status|nasaan|where)/)) {
-      return "You can check the real-time status of your application by clicking on 'Track Application' in the sidebar menu.";
+      return "You can check the real-time status of your application by clicking on 'Application Status' in the sidebar menu.";
     }
     if (lower.match(/(hello|hi|mabuhay|hey)/)) {
       return "Hello there! I'm Mang Tomas. How can I assist you with your permits today?";

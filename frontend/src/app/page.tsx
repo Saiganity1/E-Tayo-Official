@@ -30,7 +30,7 @@ export default function Home() {
             <h1 className="logo-text">e-Tayo</h1>
           </div>
           <nav className="nav-links">
-            <Link href="/applicant/track" className="nav-link">Track Permit</Link>
+            <Link href="/applicant/track" className="nav-link">Application Status</Link>
             <Link href="/login" className="btn-secondary">Log In</Link>
             <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary">Apply Now</Link>
           </nav>
@@ -47,7 +47,7 @@ export default function Home() {
           </p>
           <div className="hero-actions">
             <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary btn-large">Start New Application</Link>
-            <Link href="/applicant/track" className="btn-secondary btn-large">Track Existing Permit</Link>
+            <Link href="/applicant/track" className="btn-secondary btn-large">Application Status</Link>
           </div>
         </div>
       </section>
