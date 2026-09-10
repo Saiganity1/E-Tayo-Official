@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { usePermitContext } from "../../../../context/PermitContext";
-import { FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft, Lock, ShieldCheck, AlertCircle, Check, Building2, Home } from "lucide-react";
+import { FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft, Lock, ShieldCheck, AlertCircle, Check, Layers } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -25,7 +25,7 @@ const LocationPickerMap = dynamic(() => import("../../../../components/map/Locat
 });
 
 const STEPS = [
-  { id: 1, title: "Permit Type", icon: FileText },
+  { id: 1, title: "Project Stage", icon: FileText },
   { id: 2, title: "Project Details", icon: MapPin },
   { id: 3, title: "Requirements", icon: Upload },
   { id: 4, title: "Review", icon: CheckCircle }
@@ -58,14 +58,18 @@ export default function ApplyPage() {
   const isClearancePassed = hasSystemApprovedLC || isManualVerified;
   const activeClearanceRef = hasSystemApprovedLC ? approvedLC.id : (isManualVerified ? manualClearanceRef : null);
 
-  // Sync selected permit type based on clearance status
+  // Stage navigation: Stage 1 = Locational Clearance, Stage 2 = Project Type Matrix
+  const [stageOverride, setStageOverride] = useState<1 | 2 | null>(null);
+  const currentStage = stageOverride !== null ? stageOverride : (isClearancePassed ? 2 : 1);
+
+  // Sync selected permit type internally based on active stage
   useEffect(() => {
-    if (!isClearancePassed) {
+    if (currentStage === 1) {
       setSelectedPermitType("locational_clearance");
-    } else if (selectedPermitType === "locational_clearance") {
+    } else {
       setSelectedPermitType("building_permit");
     }
-  }, [isClearancePassed]);
+  }, [currentStage, setSelectedPermitType]);
 
   const [projectName, setProjectName] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
@@ -128,8 +132,8 @@ export default function ApplyPage() {
     if (!manualClearanceRef.trim()) return;
     setIsManualVerified(true);
     setShowManualVerifyInput(false);
+    setStageOverride(2);
     setLockedNotice(null);
-    setSelectedPermitType("building_permit");
   };
 
   const handleSubmitApplication = () => {
@@ -233,11 +237,11 @@ export default function ApplyPage() {
         <div className="wizard-content">
           {currentStep === 1 && (
             <div className="step-pane animate-fade-in-up">
-              <h2>Select Permit Type</h2>
-              <p>Municipal ordinances require a sequential 2-stage permit process:</p>
+              <h2>Application Stage & Project Selection</h2>
+              <p>Municipal ordinances require a sequential 2-stage process: Locational Clearance first, followed by Project Type form compilation.</p>
 
               {/* STAGE STATUS BANNER */}
-              {isClearancePassed ? (
+              {currentStage === 2 ? (
                 <div style={{
                   background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
                   border: "1px solid #86efac",
@@ -280,7 +284,7 @@ export default function ApplyPage() {
                       </span>
                     </div>
                     <p style={{ margin: "0.4rem 0 0 0", color: "#166534", fontSize: "0.9rem", lineHeight: "1.4" }}>
-                      You have passed the mandatory zoning & land use clearance. Please choose between a <strong>Building Permit</strong> or <strong>Occupancy Permit</strong> for Stage 2 below.
+                      You have passed mandatory zoning & land use clearance. Please select your specific <strong>Project Type</strong> from the municipal matrix below to compile your required engineering permit forms.
                     </p>
                   </div>
                 </div>
@@ -310,10 +314,10 @@ export default function ApplyPage() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <h3 style={{ margin: 0, fontSize: "1rem", color: "#1e3a8a", fontWeight: "700" }}>
-                      Step 1: Apply for Locational Clearance First
+                      Stage 1: Apply for Locational Clearance (Annex D)
                     </h3>
                     <p style={{ margin: "0.35rem 0 0 0", color: "#334155", fontSize: "0.88rem", lineHeight: "1.4" }}>
-                      Before applying for construction or occupancy, municipal regulations require every project to pass a <strong>Locational Clearance</strong> to confirm zoning and land use compliance.
+                      Municipal regulations mandate that every project must first obtain an official <strong>Locational Clearance</strong> to confirm zoning classification and CLUP compliance before proceeding to Project Type selection.
                     </p>
                   </div>
                 </div>
@@ -344,7 +348,7 @@ export default function ApplyPage() {
               )}
 
               {/* PERMIT CARDS */}
-              {isClearancePassed ? (
+              {currentStage === 2 ? (
                 /* STAGE 2: PROJECT TYPE × REQUIRED PERMIT FORM MATRIX */
                 <div style={{ marginTop: "1rem" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
@@ -359,7 +363,7 @@ export default function ApplyPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setSelectedPermitType("locational_clearance")}
+                      onClick={() => setStageOverride(1)}
                       style={{
                         background: "#f1f5f9",
                         border: "1px solid #cbd5e1",
@@ -371,7 +375,7 @@ export default function ApplyPage() {
                         fontWeight: "600"
                       }}
                     >
-                      Apply for new Locational Clearance
+                      Back to Stage 1 (Locational Clearance)
                     </button>
                   </div>
 
@@ -593,38 +597,67 @@ export default function ApplyPage() {
               ) : (
                 /* STAGE 1: MUST PASS LOCATIONAL CLEARANCE FIRST */
                 <div>
-                  <div className="permit-options" style={{ gridTemplateColumns: "1.2fr 1fr 1fr" }}>
-                    {/* Locational Clearance (Active & Required) */}
-                    <label className={`permit-card ${selectedPermitType === "locational_clearance" ? "selected" : ""}`}>
-                      <input 
-                        type="radio" 
-                        name="permit_type" 
-                        value="locational_clearance" 
-                        checked={selectedPermitType === "locational_clearance"}
-                        onChange={() => {
-                          setSelectedPermitType("locational_clearance");
-                          setLockedNotice(null);
-                        }}
-                      />
-                      <div className="card-content" style={{ border: "2px solid #3b82f6", background: "#f8fafc", position: "relative" }}>
-                        <div style={{
-                          position: "absolute",
-                          top: "10px",
-                          right: "10px",
-                          background: "#2563eb",
-                          color: "white",
-                          fontSize: "0.7rem",
-                          fontWeight: "700",
-                          padding: "3px 8px",
-                          borderRadius: "999px"
-                        }}>
-                          STEP 1 REQUIRED
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.25rem" }}>
+                    {/* Stage 1 Card: Locational Clearance (Annex D) */}
+                    <div
+                      style={{
+                        border: "2px solid #3b82f6",
+                        background: "#ffffff",
+                        borderRadius: "16px",
+                        padding: "1.5rem",
+                        position: "relative",
+                        boxShadow: "0 4px 14px rgba(59, 130, 246, 0.1)",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between"
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                          <span style={{
+                            background: "#2563eb",
+                            color: "white",
+                            fontSize: "0.72rem",
+                            fontWeight: "800",
+                            padding: "4px 10px",
+                            borderRadius: "999px",
+                            letterSpacing: "0.5px"
+                          }}>
+                            STAGE 1 · MANDATORY PREREQUISITE
+                          </span>
+                          <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: "600" }}>
+                            Annex D
+                          </span>
                         </div>
-                        <div className="card-icon"><FileText size={28} color="#2563eb" /></div>
-                        <h3 style={{ fontWeight: "700", color: "#1e3a8a", marginBottom: "0.5rem" }}>Locational Clearance</h3>
-                        <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: "1.4" }}>
-                          Zoning clearance evaluation for land use, building location, and municipal zoning boundaries.
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div style={{
+                            width: "46px",
+                            height: "46px",
+                            borderRadius: "12px",
+                            background: "#eff6ff",
+                            color: "#2563eb",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0
+                          }}>
+                            <FileText size={24} />
+                          </div>
+                          <div>
+                            <h3 style={{ margin: 0, fontWeight: "800", color: "#1e3a8a", fontSize: "1.15rem" }}>
+                              Locational Clearance
+                            </h3>
+                            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Zoning & Land Use Verification</span>
+                          </div>
+                        </div>
+
+                        <p style={{ margin: "0 0 1.25rem 0", fontSize: "0.85rem", color: "#475569", lineHeight: "1.5" }}>
+                          Every proposed project in Sto. Tomas must first obtain an approved Locational Clearance to ensure adherence to the Comprehensive Land Use Plan (CLUP), zoning classifications, and boundary setbacks.
                         </p>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -632,85 +665,113 @@ export default function ApplyPage() {
                             setShowGoogleForm(true);
                           }}
                           style={{
-                            marginTop: "0.85rem",
                             width: "100%",
-                            padding: "0.5rem 0.75rem",
-                            fontSize: "0.82rem",
-                            fontWeight: "600",
-                            background: "#673ab7",
+                            padding: "0.8rem 1rem",
+                            fontSize: "0.9rem",
+                            fontWeight: "700",
+                            background: "linear-gradient(135deg, #673ab7 0%, #512da8 100%)",
                             color: "white",
                             border: "none",
-                            borderRadius: "6px",
+                            borderRadius: "10px",
                             cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            gap: "6px",
-                            boxShadow: "0 2px 4px rgba(103, 58, 183, 0.25)"
+                            gap: "8px",
+                            boxShadow: "0 4px 12px rgba(103, 58, 183, 0.25)",
+                            transition: "all 0.15s ease"
                           }}
                         >
-                          <FileText size={14} /> Open Google Form (Annex D)
+                          <FileText size={18} /> Open Google Form (Annex D)
                         </button>
-                      </div>
-                    </label>
-
-                    {/* Building Permit (Locked) */}
-                    <div 
-                      onClick={() => setLockedNotice("Building Permit is locked. You must first pass and obtain an approved Locational Clearance before applying.")}
-                      style={{ cursor: "not-allowed", opacity: 0.65, position: "relative" }}
-                    >
-                      <div className="card-content" style={{ background: "#f1f5f9", border: "1px dashed #cbd5e1" }}>
-                        <div style={{
-                          position: "absolute",
-                          top: "10px",
-                          right: "10px",
-                          background: "#64748b",
-                          color: "white",
-                          fontSize: "0.68rem",
-                          fontWeight: "700",
-                          padding: "3px 8px",
-                          borderRadius: "999px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px"
-                        }}>
-                          <Lock size={10} /> LOCKED
-                        </div>
-                        <div className="card-icon"><Building2 size={28} color="#94a3b8" /></div>
-                        <h3 style={{ color: "#475569" }}>Building Permit</h3>
-                        <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>
-                          Requires approved Locational Clearance first.
-                        </p>
                       </div>
                     </div>
 
-                    {/* Occupancy Permit (Locked) */}
+                    {/* Stage 2 Locked Preview: 31 Project Types Matrix */}
                     <div 
-                      onClick={() => setLockedNotice("Occupancy Permit is locked. You must first pass and obtain an approved Locational Clearance before applying.")}
-                      style={{ cursor: "not-allowed", opacity: 0.65, position: "relative" }}
+                      onClick={() => setLockedNotice("Stage 2 is locked. Municipal ordinance requires your Locational Clearance (Annex D) to be approved by zoning staff before selecting your Project Type.")}
+                      style={{
+                        border: "1px dashed #cbd5e1",
+                        background: "#f8fafc",
+                        borderRadius: "16px",
+                        padding: "1.5rem",
+                        position: "relative",
+                        cursor: "not-allowed",
+                        opacity: 0.9,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between"
+                      }}
                     >
-                      <div className="card-content" style={{ background: "#f1f5f9", border: "1px dashed #cbd5e1" }}>
-                        <div style={{
-                          position: "absolute",
-                          top: "10px",
-                          right: "10px",
-                          background: "#64748b",
-                          color: "white",
-                          fontSize: "0.68rem",
-                          fontWeight: "700",
-                          padding: "3px 8px",
-                          borderRadius: "999px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px"
-                        }}>
-                          <Lock size={10} /> LOCKED
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                          <span style={{
+                            background: "#64748b",
+                            color: "white",
+                            fontSize: "0.72rem",
+                            fontWeight: "700",
+                            padding: "4px 10px",
+                            borderRadius: "999px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}>
+                            <Lock size={12} /> LOCKED · STAGE 2
+                          </span>
+                          <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "600" }}>
+                            31 Project Types
+                          </span>
                         </div>
-                        <div className="card-icon"><Home size={28} color="#94a3b8" /></div>
-                        <h3 style={{ color: "#475569" }}>Occupancy Permit</h3>
-                        <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>
-                          Requires approved Locational Clearance first.
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div style={{
+                            width: "46px",
+                            height: "46px",
+                            borderRadius: "12px",
+                            background: "#e2e8f0",
+                            color: "#64748b",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0
+                          }}>
+                            <Layers size={24} />
+                          </div>
+                          <div>
+                            <h3 style={{ margin: 0, fontWeight: "800", color: "#334155", fontSize: "1.15rem" }}>
+                              Project Type Selection
+                            </h3>
+                            <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Dynamic Unified Permit Dossier</span>
+                          </div>
+                        </div>
+
+                        <p style={{ margin: "0 0 1rem 0", fontSize: "0.85rem", color: "#64748b", lineHeight: "1.5" }}>
+                          Select your exact project type from the official Sto. Tomas matrix. The system automatically loads and compiles the required engineering forms (Architectural, Structural, Electrical, Sanitary, etc.).
                         </p>
+
+                        {/* Category preview pills */}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "0.5rem" }}>
+                          {["Residential (7)", "Commercial (7)", "Industrial (4)", "Institutional (5)", "Ancillary (4)", "Utilities (4)"].map((cat) => (
+                            <span key={cat} style={{ fontSize: "0.72rem", background: "#e2e8f0", color: "#64748b", padding: "3px 8px", borderRadius: "6px", fontWeight: "600" }}>
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{
+                        marginTop: "1rem",
+                        padding: "10px 12px",
+                        background: "#f1f5f9",
+                        borderRadius: "8px",
+                        fontSize: "0.78rem",
+                        color: "#64748b",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px"
+                      }}>
+                        <Lock size={14} color="#94a3b8" />
+                        <span>Unlocks automatically when Locational Clearance is approved</span>
                       </div>
                     </div>
                   </div>
@@ -994,8 +1055,12 @@ export default function ApplyPage() {
               <h2>Review Your Application</h2>
               <div className="review-summary" style={{ background: "#f8fafc", padding: "2rem", borderRadius: "16px", marginTop: "1.5rem", border: "1px solid #e2e8f0" }}>
                 <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #e2e8f0", paddingBottom: "1rem" }}>
-                  <span style={{ color: "#64748b", fontWeight: "600" }}>Permit Type:</span>
-                  <span style={{ color: "#0f172a", fontWeight: "700", textTransform: "capitalize" }}>{selectedPermitType.replace("_", " ")}</span>
+                  <span style={{ color: "#64748b", fontWeight: "600" }}>Application Type:</span>
+                  <span style={{ color: "#0f172a", fontWeight: "700" }}>
+                    {currentStage === 1
+                      ? "Locational Clearance (Annex D)" 
+                      : `Unified Permit (${selectedProjectType?.name || "Project Type Matrix"})`}
+                  </span>
                 </div>
                 {activeClearanceRef && (
                   <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #e2e8f0", paddingBottom: "1rem" }}>
@@ -1032,13 +1097,21 @@ export default function ApplyPage() {
             
             <div className="flex-spacer"></div>
 
-            {currentStep === 1 && selectedPermitType === "locational_clearance" ? (
+            {currentStep === 1 && currentStage === 1 ? (
               <button 
                 className="btn-primary" 
                 onClick={() => setShowGoogleForm(true)} 
                 style={{ background: "#673ab7", borderColor: "#5e35b1", display: "flex", alignItems: "center", gap: "8px" }}
               >
-                <FileText size={18} /> Fill Locational Clearance Form <ChevronRight size={18} />
+                <FileText size={18} /> Fill Locational Clearance Form (Annex D) <ChevronRight size={18} />
+              </button>
+            ) : currentStep === 1 && currentStage === 2 ? (
+              <button 
+                className="btn-primary" 
+                onClick={() => setShowUnifiedForm(true)} 
+                style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", borderColor: "#4f46e5", display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                <FileText size={18} /> Fill Unified Form for {selectedProjectType?.name} <ChevronRight size={18} />
               </button>
             ) : currentStep < 4 ? (
               <button className="btn-primary" onClick={() => setCurrentStep(prev => prev + 1)} disabled={uploading || (currentStep === 2 && !projectName) || (currentStep === 3 && !uploadedFileUrl)}>
