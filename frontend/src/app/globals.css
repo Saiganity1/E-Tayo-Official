@@ -1155,9 +1155,47 @@ button {
 .wizard-page {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  max-width: 1000px;
+  gap: 1.75rem;
+  max-width: 1180px;
   margin: 0 auto;
+}
+
+.project-cards-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+.project-cards-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.project-cards-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.project-cards-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+
+.project-cards-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.project-card-item {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.project-card-item:hover {
+  transform: translateY(-3px);
+  border-color: #818cf8 !important;
+  box-shadow: 0 10px 24px -4px rgba(99, 102, 241, 0.16) !important;
+}
+
+.btn-launch-unified:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.42) !important;
 }
 
 .wizard-container {

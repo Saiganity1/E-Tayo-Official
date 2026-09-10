@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { usePermitContext } from "../../../../context/PermitContext";
-import { FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft, Lock, ShieldCheck, AlertCircle, Check, Layers } from "lucide-react";
+import { 
+  FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft, 
+  Lock, ShieldCheck, AlertCircle, Check, Layers, Search, Sparkles, 
+  Home, Building2, Factory, Landmark, Wrench, Zap, Clock, Copy, 
+  ArrowRight, CheckCircle2, Shield, Droplets, Flame, Radio, FileCheck, X,
+  BadgeCheck, Info, Compass
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -17,7 +23,28 @@ import {
   getRequiredPermitForms,
   getConditionalPermitForms
 } from "../../../../data/projectTypeMatrix";
-import { Search, Sparkles } from "lucide-react";
+
+const CATEGORY_THEMES: Record<string, { icon: any; color: string; bg: string; border: string; glow: string }> = {
+  All: { icon: Layers, color: "#4f46e5", bg: "#eef2ff", border: "#c7d2fe", glow: "rgba(79, 70, 229, 0.25)" },
+  Residential: { icon: Home, color: "#059669", bg: "#ecfdf5", border: "#a7f3d0", glow: "rgba(5, 150, 105, 0.25)" },
+  Commercial: { icon: Building2, color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", glow: "rgba(37, 99, 235, 0.25)" },
+  Industrial: { icon: Factory, color: "#d97706", bg: "#fffbeb", border: "#fde68a", glow: "rgba(217, 119, 6, 0.25)" },
+  Institutional: { icon: Landmark, color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe", glow: "rgba(124, 58, 237, 0.25)" },
+  "Ancillary & Alterations": { icon: Wrench, color: "#0284c7", bg: "#f0f9ff", border: "#bae6fd", glow: "rgba(2, 132, 199, 0.25)" },
+  "Utilities & Mechanical": { icon: Zap, color: "#e11d48", bg: "#fff1f2", border: "#fecdd3", glow: "rgba(225, 29, 72, 0.25)" },
+};
+
+const PERMIT_ICONS: Record<keyof PermitFormMatrix, any> = {
+  buildingPermit: FileCheck,
+  architecturalPermit: Layers,
+  civilStructuralPermit: Shield,
+  electricalPermit: Zap,
+  sanitaryPermit: Droplets,
+  mechanicalPermit: Wrench,
+  electronicsPermit: Radio,
+  fireBfpPermit: Flame,
+  zoningPermit: MapPin,
+};
 
 const LocationPickerMap = dynamic(() => import("../../../../components/map/LocationPickerMap"), { 
   ssr: false, 
@@ -25,10 +52,10 @@ const LocationPickerMap = dynamic(() => import("../../../../components/map/Locat
 });
 
 const STEPS = [
-  { id: 1, title: "Project Stage", icon: FileText },
-  { id: 2, title: "Project Details", icon: MapPin },
-  { id: 3, title: "Requirements", icon: Upload },
-  { id: 4, title: "Review", icon: CheckCircle }
+  { id: 1, title: "Project Stage", subtitle: "Clearance & Matrix", icon: FileText },
+  { id: 2, title: "Project Details", subtitle: "Site & Zoning Data", icon: MapPin },
+  { id: 3, title: "Requirements", subtitle: "Plans & Affidavits", icon: Upload },
+  { id: 4, title: "Review", subtitle: "Final Endorsement", icon: CheckCircle }
 ];
 
 export default function ApplyPage() {
@@ -48,6 +75,23 @@ export default function ApplyPage() {
   const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | "All">("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [showUnifiedForm, setShowUnifiedForm] = useState(false);
+  const [copiedRef, setCopiedRef] = useState(false);
+
+  const handleCopyRef = (text: string) => {
+    try {
+      navigator.clipboard.writeText(text);
+      setCopiedRef(true);
+      setTimeout(() => setCopiedRef(false), 2000);
+    } catch (e) {}
+  };
+
+  const filteredProjectTypes = PROJECT_TYPES_MATRIX.filter((p) => {
+    const matchesCategory = selectedCategory === "All" || p.category === selectedCategory;
+    const matchesQuery = searchQuery.trim() === "" ||
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesQuery;
+  });
 
   // Detect if applicant has an approved Locational Clearance in the system
   const approvedLC = (applications || []).find(
@@ -207,13 +251,79 @@ export default function ApplyPage() {
 
   return (
     <div className="wizard-page animate-fade-in-up">
-      <header className="page-header">
-        <h1 className="page-title">New Permit Application</h1>
-        <p className="page-subtitle">Follow the steps below to securely file your application online.</p>
+      <header className="page-header" style={{ marginBottom: "1.25rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.4rem" }}>
+              <span style={{
+                background: "linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)",
+                color: "white",
+                padding: "3px 10px",
+                borderRadius: "6px",
+                fontSize: "0.72rem",
+                fontWeight: "800",
+                letterSpacing: "0.5px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px"
+              }}>
+                <Landmark size={12} />
+                LGU SANTO TOMAS, PAMPANGA
+              </span>
+              <span style={{
+                fontSize: "0.75rem",
+                color: "#64748b",
+                fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px"
+              }}>
+                • Office of the Local Building Official (OBO)
+              </span>
+            </div>
+            <h1 className="page-title" style={{ fontSize: "1.85rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0", letterSpacing: "-0.02em" }}>
+              New Permit Application
+            </h1>
+            <p className="page-subtitle" style={{ margin: 0, color: "#64748b", fontSize: "0.92rem" }}>
+              Official unified digital permitting workflow compliant with National Building Code of the Philippines (PD 1096).
+            </p>
+          </div>
+
+          <div style={{
+            background: "#ffffff",
+            border: "1px solid #e2e8f0",
+            borderRadius: "14px",
+            padding: "8px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
+          }}>
+            <div style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
+              background: "#eff6ff",
+              color: "#2563eb",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}>
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>System Status</div>
+              <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#16a34a", display: "flex", alignItems: "center", gap: "5px" }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }}></span>
+                Online Permitting Active
+              </div>
+            </div>
+          </div>
+        </div>
       </header>
 
       <div className="wizard-container glass-panel">
-        <div className="wizard-sidebar">
+        <div className="wizard-sidebar" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <ul className="step-list">
             {STEPS.map((step) => {
               const Icon = step.icon;
@@ -221,102 +331,182 @@ export default function ApplyPage() {
               const isPassed = currentStep > step.id;
               return (
                 <li key={step.id} className={`step-item ${isActive ? "active" : ""} ${isPassed ? "passed" : ""}`}>
-                  <div className="step-indicator">
+                  <div className="step-indicator" style={{
+                    transition: "all 0.2s ease",
+                    boxShadow: isActive ? "0 0 0 4px rgba(79, 70, 229, 0.15)" : "none"
+                  }}>
                     {isPassed ? <CheckCircle size={16} /> : <span>{step.id}</span>}
                   </div>
                   <div className="step-content">
                     <span className="step-title">{step.title}</span>
-                    {isActive && <span className="step-desc">In Progress</span>}
+                    <span className="step-desc" style={{ fontSize: "0.74rem", color: isActive ? "#4f46e5" : "#94a3b8", fontWeight: isActive ? "700" : "500" }}>
+                      {isActive ? "In Progress" : step.subtitle}
+                    </span>
                   </div>
                 </li>
               );
             })}
           </ul>
+
+          <div style={{
+            marginTop: "2rem",
+            paddingTop: "1.25rem",
+            borderTop: "1px solid #e2e8f0",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "0.72rem",
+            color: "#94a3b8"
+          }}>
+            <Shield size={14} color="#94a3b8" />
+            <span>256-Bit SSL Encrypted Portal</span>
+          </div>
         </div>
 
         <div className="wizard-content">
           {currentStep === 1 && (
             <div className="step-pane animate-fade-in-up">
-              <h2>Application Stage & Project Selection</h2>
-              <p>Municipal ordinances require a sequential 2-stage process: Locational Clearance first, followed by Project Type form compilation.</p>
+              <div style={{ marginBottom: "1.75rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+                  <span style={{
+                    fontSize: "0.72rem",
+                    fontWeight: "800",
+                    color: "#4338ca",
+                    background: "#e0e7ff",
+                    padding: "2px 8px",
+                    borderRadius: "6px",
+                    letterSpacing: "0.5px"
+                  }}>
+                    STEP 1 OF 4
+                  </span>
+                  <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
+                    Municipal Permitting Architecture
+                  </span>
+                </div>
+                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
+                  Application Stage & Project Selection
+                </h2>
+                <p style={{ margin: 0, color: "#475569", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                  Under Sto. Tomas Municipal Ordinance, construction permitting follows an official sequential workflow: <strong>Locational Clearance (Annex D)</strong> must be accomplished and approved before proceeding to <strong>Project Classification & Engineering Matrix</strong> compilation.
+                </p>
+              </div>
 
               {/* STAGE STATUS BANNER */}
               {currentStage === 2 ? (
                 <div style={{
-                  background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
-                  border: "1px solid #86efac",
-                  borderRadius: "14px",
-                  padding: "1.25rem 1.5rem",
+                  background: "linear-gradient(135deg, rgba(236, 253, 245, 0.95) 0%, rgba(240, 253, 244, 0.9) 100%)",
+                  border: "1.5px solid #86efac",
+                  borderRadius: "18px",
+                  padding: "1.5rem 1.75rem",
                   marginBottom: "1.75rem",
                   display: "flex",
-                  alignItems: "flex-start",
-                  gap: "1rem",
-                  boxShadow: "0 4px 15px rgba(34, 197, 94, 0.08)"
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "1.25rem",
+                  boxShadow: "0 10px 30px -5px rgba(34, 197, 94, 0.12), 0 0 0 1px rgba(134, 239, 172, 0.3) inset",
+                  flexWrap: "wrap",
+                  position: "relative",
+                  overflow: "hidden"
                 }}>
-                  <div style={{
-                    width: "42px",
-                    height: "42px",
-                    borderRadius: "50%",
-                    background: "#22c55e",
-                    color: "white",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    boxShadow: "0 4px 10px rgba(34, 197, 94, 0.3)"
-                  }}>
-                    <ShieldCheck size={24} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: "700", color: "#14532d", fontSize: "1.05rem" }}>
-                        Stage 1 Complete: Locational Clearance Passed
-                      </span>
-                      <span style={{
-                        background: "#bbf7d0",
-                        color: "#166534",
-                        padding: "2px 10px",
-                        borderRadius: "999px",
-                        fontSize: "0.75rem",
-                        fontWeight: "700"
-                      }}>
-                        Ref: {activeClearanceRef || "Verified"}
-                      </span>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "1.25rem", flex: 1, minWidth: "280px" }}>
+                    <div style={{
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "14px",
+                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      boxShadow: "0 6px 16px rgba(16, 185, 129, 0.35)"
+                    }}>
+                      <ShieldCheck size={26} strokeWidth={2.2} />
                     </div>
-                    <p style={{ margin: "0.4rem 0 0 0", color: "#166534", fontSize: "0.9rem", lineHeight: "1.4" }}>
-                      You have passed mandatory zoning & land use clearance. Please select your specific <strong>Project Type</strong> from the municipal matrix below to compile your required engineering permit forms.
-                    </p>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", marginBottom: "0.3rem" }}>
+                        <span style={{ fontWeight: "800", color: "#065f46", fontSize: "1.1rem", letterSpacing: "-0.01em" }}>
+                          Stage 1 Complete: Locational Clearance Passed
+                        </span>
+                        <div style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          background: "#ffffff",
+                          border: "1px solid #a7f3d0",
+                          color: "#047857",
+                          padding: "3px 10px",
+                          borderRadius: "999px",
+                          fontSize: "0.8rem",
+                          fontWeight: "700",
+                          boxShadow: "0 2px 5px rgba(0,0,0,0.03)"
+                        }}>
+                          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981" }}></span>
+                          Ref: {activeClearanceRef || "Verified"}
+                          <button
+                            type="button"
+                            onClick={() => handleCopyRef(activeClearanceRef || "LC-APPROVED")}
+                            title="Copy Clearance Reference ID"
+                            style={{ display: "flex", alignItems: "center", color: "#059669", marginLeft: "2px", cursor: "pointer", background: "none", border: "none", padding: 0 }}
+                          >
+                            {copiedRef ? <Check size={13} color="#059669" /> : <Copy size={13} />}
+                          </button>
+                        </div>
+                      </div>
+                      <p style={{ margin: 0, color: "#166534", fontSize: "0.9rem", lineHeight: "1.45" }}>
+                        You have passed mandatory zoning & land use clearance. Please select your specific <strong>Project Type</strong> from the municipal matrix below to compile your required engineering permit forms.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
+                    <span style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      background: "rgba(16, 185, 129, 0.15)",
+                      color: "#065f46",
+                      padding: "6px 14px",
+                      borderRadius: "10px",
+                      fontSize: "0.82rem",
+                      fontWeight: "700"
+                    }}>
+                      <BadgeCheck size={16} color="#059669" />
+                      Stage 2 Unlocked
+                    </span>
                   </div>
                 </div>
               ) : (
                 <div style={{
                   background: "linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)",
                   border: "1px solid #bfdbfe",
-                  borderRadius: "14px",
+                  borderRadius: "16px",
                   padding: "1.25rem 1.5rem",
                   marginBottom: "1.75rem",
                   display: "flex",
                   alignItems: "flex-start",
-                  gap: "1rem"
+                  gap: "1rem",
+                  boxShadow: "0 4px 15px rgba(59, 130, 246, 0.06)"
                 }}>
                   <div style={{
-                    width: "42px",
-                    height: "42px",
-                    borderRadius: "50%",
-                    background: "#3b82f6",
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "12px",
+                    background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
                     color: "white",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    flexShrink: 0
+                    flexShrink: 0,
+                    boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)"
                   }}>
                     <FileText size={22} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: 0, fontSize: "1rem", color: "#1e3a8a", fontWeight: "700" }}>
+                    <h3 style={{ margin: 0, fontSize: "1.05rem", color: "#1e3a8a", fontWeight: "800" }}>
                       Stage 1: Apply for Locational Clearance (Annex D)
                     </h3>
-                    <p style={{ margin: "0.35rem 0 0 0", color: "#334155", fontSize: "0.88rem", lineHeight: "1.4" }}>
+                    <p style={{ margin: "0.35rem 0 0 0", color: "#334155", fontSize: "0.88rem", lineHeight: "1.45" }}>
                       Municipal regulations mandate that every project must first obtain an official <strong>Locational Clearance</strong> to confirm zoning classification and CLUP compliance before proceeding to Project Type selection.
                     </p>
                   </div>
@@ -327,20 +517,21 @@ export default function ApplyPage() {
               {lockedNotice && (
                 <div className="animate-fade-in-up" style={{
                   background: "#fffbeb",
-                  border: "1px solid #fde68a",
-                  borderRadius: "12px",
+                  border: "1.5px solid #fde68a",
+                  borderRadius: "14px",
                   padding: "1rem 1.25rem",
                   marginBottom: "1.5rem",
                   display: "flex",
                   alignItems: "center",
                   gap: "0.75rem",
-                  color: "#92400e"
+                  color: "#92400e",
+                  boxShadow: "0 4px 12px rgba(217, 119, 6, 0.08)"
                 }}>
                   <AlertCircle size={20} color="#d97706" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: "0.9rem", fontWeight: "500" }}>{lockedNotice}</span>
+                  <span style={{ fontSize: "0.9rem", fontWeight: "600" }}>{lockedNotice}</span>
                   <button 
                     onClick={() => setLockedNotice(null)}
-                    style={{ marginLeft: "auto", background: "none", border: "none", color: "#92400e", cursor: "pointer", fontWeight: "700" }}
+                    style={{ marginLeft: "auto", background: "none", border: "none", color: "#92400e", cursor: "pointer", fontWeight: "700", fontSize: "1.1rem" }}
                   >
                     &times;
                   </button>
@@ -350,77 +541,153 @@ export default function ApplyPage() {
               {/* PERMIT CARDS */}
               {currentStage === 2 ? (
                 /* STAGE 2: PROJECT TYPE × REQUIRED PERMIT FORM MATRIX */
-                <div style={{ marginTop: "1rem" }}>
+                <div style={{ marginTop: "0.5rem" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
                     <div>
-                      <h3 style={{ fontSize: "1.2rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.25rem 0", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <Sparkles size={20} color="#4f46e5" />
-                        Stage 2: Select Project Type (Municipal Matrix)
-                      </h3>
-                      <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>
-                        Choose your specific project type from the official Sto. Tomas matrix. The system will dynamically determine and compile the required engineering and safety permit forms.
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+                        <span style={{
+                          background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                          color: "white",
+                          padding: "2px 8px",
+                          borderRadius: "6px",
+                          fontSize: "0.72rem",
+                          fontWeight: "800",
+                          letterSpacing: "0.5px"
+                        }}>
+                          STAGE 2
+                        </span>
+                        <h3 style={{ fontSize: "1.25rem", fontWeight: "800", color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          Select Project Type (Municipal Matrix)
+                        </h3>
+                      </div>
+                      <p style={{ margin: 0, color: "#64748b", fontSize: "0.9rem", lineHeight: "1.4" }}>
+                        Choose your project classification from the official Sto. Tomas 31-Project Type Matrix. The system automatically cross-references National Building Code (PD 1096) requirements to compile the required architectural, structural, and MEPFS engineering forms.
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setStageOverride(1)}
                       style={{
-                        background: "#f1f5f9",
+                        background: "#ffffff",
                         border: "1px solid #cbd5e1",
-                        color: "#334155",
-                        borderRadius: "8px",
-                        padding: "6px 12px",
-                        fontSize: "0.8rem",
+                        color: "#475569",
+                        borderRadius: "10px",
+                        padding: "7px 14px",
+                        fontSize: "0.82rem",
                         cursor: "pointer",
-                        fontWeight: "600"
+                        fontWeight: "600",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        transition: "all 0.15s ease",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#94a3b8"; e.currentTarget.style.color = "#1e293b"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#475569"; }}
                     >
-                      Back to Stage 1 (Locational Clearance)
+                      <ChevronLeft size={15} /> Back to Stage 1
                     </button>
                   </div>
 
                   {/* SEARCH & CATEGORY FILTER TABS */}
-                  <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap", alignItems: "center" }}>
-                    <div style={{ position: "relative", flex: 1, minWidth: "220px" }}>
-                      <Search size={16} color="#94a3b8" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
-                      <input
-                        type="text"
-                        placeholder="Search 31 official project types (e.g. House, Store, Warehouse, Hotel)..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{
-                          width: "100%",
-                          padding: "8px 12px 8px 36px",
-                          borderRadius: "10px",
-                          border: "1px solid #cbd5e1",
-                          fontSize: "0.88rem",
-                          background: "#ffffff"
-                        }}
-                      />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", marginBottom: "1.25rem" }}>
+                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+                      <div style={{ position: "relative", flex: 1, minWidth: "260px" }}>
+                        <Search size={17} color="#64748b" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
+                        <input
+                          type="text"
+                          placeholder="Search 31 official project types (e.g. House, Store, Warehouse, Hotel, School)..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "10px 38px 10px 40px",
+                            borderRadius: "12px",
+                            border: "1.5px solid #cbd5e1",
+                            fontSize: "0.9rem",
+                            background: "#ffffff",
+                            outline: "none",
+                            transition: "all 0.2s ease",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.02)"
+                          }}
+                          onFocus={(e) => { e.target.style.borderColor = "#4f46e5"; e.target.style.boxShadow = "0 0 0 3px rgba(79, 70, 229, 0.12)"; }}
+                          onBlur={(e) => { e.target.style.borderColor = "#cbd5e1"; e.target.style.boxShadow = "0 2px 6px rgba(0,0,0,0.02)"; }}
+                        />
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery("")}
+                            style={{
+                              position: "absolute",
+                              right: "12px",
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              background: "#f1f5f9",
+                              border: "none",
+                              borderRadius: "50%",
+                              width: "20px",
+                              height: "20px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#64748b",
+                              cursor: "pointer"
+                            }}
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                      <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600", whiteSpace: "nowrap" }}>
+                        Showing {filteredProjectTypes.length} of 31 Project Types
+                      </span>
                     </div>
 
                     {/* Category tabs */}
-                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
                       {(["All", "Residential", "Commercial", "Industrial", "Institutional", "Ancillary & Alterations", "Utilities & Mechanical"] as const).map((cat) => {
                         const isActive = selectedCategory === cat;
+                        const theme = CATEGORY_THEMES[cat] || CATEGORY_THEMES.All;
+                        const CategoryIcon = theme.icon;
+                        const count = cat === "All" 
+                          ? PROJECT_TYPES_MATRIX.length 
+                          : PROJECT_TYPES_MATRIX.filter(p => p.category === cat).length;
+
                         return (
                           <button
                             key={cat}
                             type="button"
                             onClick={() => setSelectedCategory(cat)}
                             style={{
-                              padding: "6px 12px",
-                              borderRadius: "8px",
-                              fontSize: "0.8rem",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "7px",
+                              padding: "7px 14px",
+                              borderRadius: "999px",
+                              fontSize: "0.82rem",
                               fontWeight: "700",
-                              border: isActive ? "1px solid #4f46e5" : "1px solid #e2e8f0",
-                              background: isActive ? "#4f46e5" : "#ffffff",
+                              border: isActive ? "1.5px solid #4f46e5" : "1px solid #e2e8f0",
+                              background: isActive 
+                                ? "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)" 
+                                : "#ffffff",
                               color: isActive ? "#ffffff" : "#475569",
                               cursor: "pointer",
-                              transition: "all 0.15s ease"
+                              transition: "all 0.18s ease",
+                              boxShadow: isActive ? "0 4px 12px rgba(79, 70, 229, 0.28)" : "0 1px 3px rgba(0,0,0,0.02)"
                             }}
                           >
-                            {cat}
+                            <CategoryIcon size={15} color={isActive ? "#ffffff" : theme.color} />
+                            <span>{cat}</span>
+                            <span style={{
+                              fontSize: "0.72rem",
+                              fontWeight: "800",
+                              background: isActive ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                              color: isActive ? "#ffffff" : "#64748b",
+                              padding: "1px 6px",
+                              borderRadius: "999px"
+                            }}>
+                              {count}
+                            </span>
                           </button>
                         );
                       })}
@@ -428,69 +695,111 @@ export default function ApplyPage() {
                   </div>
 
                   {/* 31 PROJECT TYPES GRID */}
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-                    gap: "0.85rem",
-                    maxHeight: "340px",
-                    overflowY: "auto",
-                    padding: "4px",
-                    marginBottom: "1.5rem"
-                  }}>
-                    {PROJECT_TYPES_MATRIX.filter((p) => {
-                      const matchesCategory = selectedCategory === "All" || p.category === selectedCategory;
-                      const matchesQuery = searchQuery.trim() === "" ||
-                        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        p.description.toLowerCase().includes(searchQuery.toLowerCase());
-                      return matchesCategory && matchesQuery;
-                    }).map((p) => {
+                  <div 
+                    className="project-cards-container"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                      gap: "0.95rem",
+                      maxHeight: "440px",
+                      overflowY: "auto",
+                      padding: "8px 6px",
+                      marginBottom: "1.75rem",
+                      borderRadius: "16px",
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0"
+                    }}
+                  >
+                    {filteredProjectTypes.map((p) => {
                       const isSelected = selectedProjectType?.id === p.id;
                       const reqCount = getRequiredPermitForms(p).length;
                       const condCount = getConditionalPermitForms(p).length;
+                      const theme = CATEGORY_THEMES[p.category] || CATEGORY_THEMES.Commercial;
+                      const CatIcon = theme.icon;
 
                       return (
                         <div
                           key={p.id}
                           onClick={() => setSelectedProjectType(p)}
+                          className="project-card-item"
                           style={{
-                            border: isSelected ? "2px solid #4f46e5" : "1px solid #e2e8f0",
-                            background: isSelected ? "#f5f3ff" : "#ffffff",
-                            borderRadius: "12px",
-                            padding: "1rem",
+                            border: isSelected ? "2px solid #4f46e5" : "1.5px solid #e2e8f0",
+                            background: isSelected 
+                              ? "linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%)" 
+                              : "#ffffff",
+                            borderRadius: "14px",
+                            padding: "1.1rem",
                             cursor: "pointer",
-                            transition: "all 0.15s ease",
-                            boxShadow: isSelected ? "0 4px 12px rgba(79, 70, 229, 0.15)" : "0 1px 3px rgba(0,0,0,0.02)"
+                            transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                            boxShadow: isSelected 
+                              ? "0 8px 24px rgba(79, 70, 229, 0.18), 0 0 0 1px #4f46e5" 
+                              : "0 2px 6px rgba(0,0,0,0.02)",
+                            position: "relative",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between"
                           }}
                         >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.4rem" }}>
-                            <span style={{
-                              fontSize: "0.68rem",
-                              fontWeight: "700",
-                              color: isSelected ? "#4f46e5" : "#64748b",
-                              background: isSelected ? "#ede9fe" : "#f1f5f9",
-                              padding: "2px 8px",
-                              borderRadius: "999px"
-                            }}>
-                              {p.category}
-                            </span>
-                            {isSelected && (
-                              <span style={{ width: "18px", height: "18px", borderRadius: "50%", background: "#4f46e5", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px" }}>
-                                ✓
+                          <div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem" }}>
+                              <span style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "5px",
+                                fontSize: "0.72rem",
+                                fontWeight: "700",
+                                color: theme.color,
+                                background: theme.bg,
+                                border: `1px solid ${theme.border}`,
+                                padding: "2px 8px",
+                                borderRadius: "999px"
+                              }}>
+                                <CatIcon size={12} />
+                                {p.category}
                               </span>
-                            )}
+
+                              {isSelected ? (
+                                <span style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  fontSize: "0.72rem",
+                                  fontWeight: "800",
+                                  color: "#4f46e5",
+                                  background: "#ede9fe",
+                                  padding: "2px 8px",
+                                  borderRadius: "999px"
+                                }}>
+                                  <CheckCircle2 size={13} color="#4f46e5" /> Selected
+                                </span>
+                              ) : (
+                                <span style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  fontSize: "0.72rem",
+                                  color: "#64748b",
+                                  fontWeight: "500"
+                                }}>
+                                  <Clock size={12} /> {p.estimatedDays}
+                                </span>
+                              )}
+                            </div>
+
+                            <h4 style={{ margin: "0 0 0.35rem 0", fontSize: "1rem", fontWeight: "800", color: "#0f172a" }}>
+                              {p.name}
+                            </h4>
+                            <p style={{ margin: "0 0 0.85rem 0", fontSize: "0.8rem", color: "#64748b", lineHeight: "1.4", minHeight: "36px" }}>
+                              {p.description}
+                            </p>
                           </div>
-                          <h4 style={{ margin: "0 0 0.35rem 0", fontSize: "0.95rem", fontWeight: "700", color: "#0f172a" }}>
-                            {p.name}
-                          </h4>
-                          <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.78rem", color: "#64748b", lineHeight: "1.35", minHeight: "32px" }}>
-                            {p.description}
-                          </p>
-                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", fontSize: "0.7rem", fontWeight: "700" }}>
-                            <span style={{ background: "#dbeafe", color: "#1e40af", padding: "2px 6px", borderRadius: "4px" }}>
-                              {reqCount} Required
+
+                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", fontSize: "0.72rem", fontWeight: "700" }}>
+                            <span style={{ background: "#dbeafe", color: "#1e40af", padding: "3px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <Check size={12} strokeWidth={2.5} /> {reqCount} Mandatory
                             </span>
                             {condCount > 0 && (
-                              <span style={{ background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "4px" }}>
+                              <span style={{ background: "#fef3c7", color: "#92400e", padding: "3px 8px", borderRadius: "6px" }}>
                                 {condCount} Conditional
                               </span>
                             )}
@@ -503,90 +812,227 @@ export default function ApplyPage() {
                   {/* ACTIVE PROJECT SELECTION & MATRIX BREAKDOWN PREVIEW */}
                   {selectedProjectType && (
                     <div style={{
-                      background: "#ffffff",
+                      background: "linear-gradient(180deg, #ffffff 0%, #fcfaff 100%)",
                       border: "1.5px solid #c7d2fe",
-                      borderRadius: "16px",
-                      padding: "1.5rem",
-                      boxShadow: "0 4px 20px rgba(79, 70, 229, 0.08)",
-                      animation: "fadeIn 0.2s ease"
+                      borderRadius: "18px",
+                      padding: "1.75rem",
+                      boxShadow: "0 10px 30px -5px rgba(79, 70, 229, 0.1), 0 0 0 1px rgba(199, 210, 254, 0.5) inset",
+                      animation: "fadeIn 0.2s ease",
+                      marginBottom: "1.5rem"
                     }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem", flexWrap: "wrap", gap: "1rem" }}>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                            <span style={{ fontSize: "0.75rem", fontWeight: "700", background: "#e0e7ff", color: "#3730a3", padding: "2px 8px", borderRadius: "6px" }}>
-                              {selectedProjectType.category}
+                      {/* DOSSIER HEADER */}
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "1.5rem",
+                        flexWrap: "wrap",
+                        gap: "1.25rem",
+                        borderBottom: "1px solid #e0e7ff",
+                        paddingBottom: "1.25rem"
+                      }}>
+                        <div style={{ flex: 1, minWidth: "280px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.45rem", flexWrap: "wrap" }}>
+                            <span style={{
+                              fontSize: "0.75rem",
+                              fontWeight: "800",
+                              background: "#e0e7ff",
+                              color: "#3730a3",
+                              padding: "3px 10px",
+                              borderRadius: "8px",
+                              letterSpacing: "0.4px"
+                            }}>
+                              {selectedProjectType.category.toUpperCase()} CLASSIFICATION
                             </span>
-                            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Est. Processing: {selectedProjectType.estimatedDays}</span>
+                            <span style={{
+                              fontSize: "0.8rem",
+                              color: "#475569",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              background: "#f1f5f9",
+                              padding: "3px 9px",
+                              borderRadius: "6px"
+                            }}>
+                              <Clock size={13} color="#6366f1" /> Turnaround: <strong>{selectedProjectType.estimatedDays}</strong>
+                            </span>
                           </div>
-                          <h4 style={{ margin: "0.35rem 0 0 0", fontSize: "1.25rem", fontWeight: "800", color: "#0f172a" }}>
+                          <h4 style={{ margin: 0, fontSize: "1.55rem", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.015em" }}>
                             {selectedProjectType.name}
                           </h4>
+                          <p style={{ margin: "0.35rem 0 0 0", color: "#64748b", fontSize: "0.9rem", lineHeight: "1.45" }}>
+                            {selectedProjectType.description}
+                          </p>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setShowUnifiedForm(true)}
-                          style={{
-                            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "10px",
-                            padding: "12px 24px",
-                            fontWeight: "700",
-                            fontSize: "0.95rem",
-                            cursor: "pointer",
-                            boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.5rem"
-                          }}
-                        >
-                          Fill Application Forms (Google Form Style)
-                          <ChevronRight size={18} />
-                        </button>
+                        {/* HIGH-IMPACT DOSSIER LAUNCH CARD */}
+                        <div style={{
+                          background: "linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%)",
+                          border: "1.5px solid #c7d2fe",
+                          borderRadius: "14px",
+                          padding: "1rem 1.25rem",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "0.6rem",
+                          minWidth: "290px",
+                          boxShadow: "0 4px 14px rgba(79, 70, 229, 0.08)"
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#4338ca", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                              Digital Application Dossier
+                            </span>
+                            <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#059669", background: "#ecfdf5", padding: "2px 8px", borderRadius: "999px", border: "1px solid #a7f3d0" }}>
+                              Ready to File
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowUnifiedForm(true)}
+                            className="btn-launch-unified"
+                            style={{
+                              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "10px",
+                              padding: "11px 18px",
+                              fontWeight: "700",
+                              fontSize: "0.92rem",
+                              cursor: "pointer",
+                              boxShadow: "0 4px 14px rgba(79, 70, 229, 0.35)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "0.5rem",
+                              transition: "all 0.18s ease"
+                            }}
+                          >
+                            <FileText size={17} />
+                            <span>Open Unified Form (Google Form Style)</span>
+                            <ArrowRight size={16} />
+                          </button>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "0.74rem", color: "#6366f1", fontWeight: "600" }}>
+                            <Sparkles size={13} />
+                            <span>Consolidates 9 engineering forms into one stream</span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* MATRIX TABLE PREVIEW */}
-                      <p style={{ fontSize: "0.85rem", fontWeight: "700", color: "#334155", margin: "0 0 0.6rem 0" }}>
-                        Official Permit & Clearance Breakdown for this Project:
-                      </p>
+                      <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "0.75rem" }}>
+                        <div>
+                          <p style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.2rem 0" }}>
+                            Official Engineering Permit & Clearance Breakdown:
+                          </p>
+                          <span style={{ fontSize: "0.82rem", color: "#64748b" }}>
+                            Required technical documents and engineering form compliance for {selectedProjectType.name} (PD 1096).
+                          </span>
+                        </div>
+                        <span style={{
+                          fontSize: "0.78rem",
+                          fontWeight: "700",
+                          color: "#4338ca",
+                          background: "#e0e7ff",
+                          padding: "4px 12px",
+                          borderRadius: "999px",
+                          border: "1px solid #c7d2fe"
+                        }}>
+                          {getRequiredPermitForms(selectedProjectType).length} Mandatory • {getConditionalPermitForms(selectedProjectType).length} Conditional
+                        </span>
+                      </div>
+
                       <div style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-                        gap: "0.5rem"
+                        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                        gap: "0.75rem"
                       }}>
                         {(Object.keys(PERMIT_FORM_METADATA) as (keyof PermitFormMatrix)[]).map((key) => {
                           const meta = PERMIT_FORM_METADATA[key];
                           const level = selectedProjectType.matrix[key];
                           const isReq = level === "required";
                           const isCond = level === "conditional";
+                          const PermitIcon = PERMIT_ICONS[key] || FileText;
 
                           return (
                             <div
                               key={key}
                               style={{
-                                background: isReq ? "#eff6ff" : isCond ? "#fffbeb" : "#f8fafc",
-                                border: isReq ? "1px solid #bfdbfe" : isCond ? "1px solid #fde68a" : "1px solid #e2e8f0",
-                                borderRadius: "8px",
-                                padding: "0.6rem 0.8rem",
+                                background: isReq 
+                                  ? "linear-gradient(135deg, #f8faff 0%, #eff6ff 100%)" 
+                                  : isCond 
+                                    ? "linear-gradient(135deg, #fffdfa 0%, #fef8eb 100%)" 
+                                    : "#f8fafc",
+                                border: isReq 
+                                  ? "1.5px solid #bfdbfe" 
+                                  : isCond 
+                                    ? "1.5px solid #fde68a" 
+                                    : "1px solid #e2e8f0",
+                                borderRadius: "12px",
+                                padding: "0.85rem 1rem",
                                 display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between"
+                                flexDirection: "column",
+                                justifyContent: "space-between",
+                                gap: "0.55rem",
+                                boxShadow: isReq ? "0 2px 6px rgba(37, 99, 235, 0.04)" : "none",
+                                transition: "all 0.15s ease"
                               }}
                             >
-                              <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "#1e293b" }}>
-                                {meta.label}
-                              </span>
-                              <span style={{
-                                fontSize: "0.68rem",
-                                fontWeight: "800",
-                                padding: "2px 6px",
-                                borderRadius: "4px",
-                                background: isReq ? "#2563eb" : isCond ? "#d97706" : "#94a3b8",
-                                color: "#ffffff"
-                              }}>
-                                {isReq ? "REQUIRED" : isCond ? "CONDITIONAL" : "N/A"}
-                              </span>
+                              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                                  <div style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "8px",
+                                    background: isReq ? "#dbeafe" : isCond ? "#fef3c7" : "#f1f5f9",
+                                    color: isReq ? "#1d4ed8" : isCond ? "#b45309" : "#64748b",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0
+                                  }}>
+                                    <PermitIcon size={16} />
+                                  </div>
+                                  <div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                      <span style={{
+                                        fontSize: "0.68rem",
+                                        fontWeight: "800",
+                                        padding: "1px 6px",
+                                        borderRadius: "4px",
+                                        background: isReq ? "#1e40af" : isCond ? "#b45309" : "#64748b",
+                                        color: "#ffffff",
+                                        letterSpacing: "0.3px"
+                                      }}>
+                                        {meta.code}
+                                      </span>
+                                      <span style={{ fontSize: "0.86rem", fontWeight: "800", color: "#0f172a" }}>
+                                        {meta.label}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <span style={{
+                                  fontSize: "0.68rem",
+                                  fontWeight: "800",
+                                  padding: "3px 8px",
+                                  borderRadius: "999px",
+                                  background: isReq ? "#dcfce7" : isCond ? "#fef3c7" : "#f1f5f9",
+                                  color: isReq ? "#15803d" : isCond ? "#b45309" : "#64748b",
+                                  border: isReq ? "1px solid #86efac" : isCond ? "1px solid #fde68a" : "1px solid #e2e8f0",
+                                  letterSpacing: "0.3px",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  flexShrink: 0
+                                }}>
+                                  {isReq && <Check size={10} strokeWidth={3} />}
+                                  {isReq ? "MANDATORY" : isCond ? "CONDITIONAL" : "OPTIONAL"}
+                                </span>
+                              </div>
+
+                              <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b", lineHeight: "1.35" }}>
+                                {meta.desc}
+                              </p>
                             </div>
                           );
                         })}
@@ -1106,13 +1552,21 @@ export default function ApplyPage() {
                 <FileText size={18} /> Fill Locational Clearance Form (Annex D) <ChevronRight size={18} />
               </button>
             ) : currentStep === 1 && currentStage === 2 ? (
-              <button 
-                className="btn-primary" 
-                onClick={() => setShowUnifiedForm(true)} 
-                style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", borderColor: "#4f46e5", display: "flex", alignItems: "center", gap: "8px" }}
-              >
-                <FileText size={18} /> Fill Unified Form for {selectedProjectType?.name} <ChevronRight size={18} />
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", width: "100%", justifyContent: "space-between", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.86rem", color: "#475569" }}>
+                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981", display: "inline-block" }}></span>
+                  <span>Active Classification: <strong style={{ color: "#0f172a" }}>{selectedProjectType?.name}</strong></span>
+                  <span style={{ color: "#cbd5e1" }}>•</span>
+                  <span style={{ color: "#4338ca", fontWeight: "700" }}>{getRequiredPermitForms(selectedProjectType).length} Mandatory Forms Ready</span>
+                </div>
+                <button 
+                  className="btn-primary" 
+                  onClick={() => setShowUnifiedForm(true)} 
+                  style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", borderColor: "#4f46e5", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px", boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)" }}
+                >
+                  <FileText size={17} /> Proceed to Unified Form <ChevronRight size={17} />
+                </button>
+              </div>
             ) : currentStep < 4 ? (
               <button className="btn-primary" onClick={() => setCurrentStep(prev => prev + 1)} disabled={uploading || (currentStep === 2 && !projectName) || (currentStep === 3 && !uploadedFileUrl)}>
                 Next Step <ChevronRight size={18} />
@@ -1127,6 +1581,7 @@ export default function ApplyPage() {
       </div>
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
       `}} />
 
     </div>
