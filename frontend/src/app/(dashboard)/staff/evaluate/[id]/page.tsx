@@ -88,13 +88,20 @@ export default function StaffEvaluatePage() {
   const handleApprove = async () => {
     setIsProcessing(true);
 
+    const shortSummary = "Locational Clearance Approved. Compliant with CLUP and Zoning Ordinance (Resolution No. 4810).";
+
     const updatedTracking = [
-      ...(app.trackingSteps || []),
+      ...(app.trackingSteps || []).map((step) => {
+        if (step.title.toLowerCase().includes("zoning") || step.title.toLowerCase().includes("evaluation")) {
+          return { ...step, status: "completed" };
+        }
+        return step;
+      }),
       {
         title: "Locational Clearance Approved",
         status: "completed" as const,
         date: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
-        notes: decisionNotes,
+        notes: shortSummary,
         actor: "Zoning Administrator / MPDC",
       },
     ];
@@ -105,7 +112,7 @@ export default function StaffEvaluatePage() {
         date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
         action: "Locational Clearance Approved",
         actor: "Zoning Administrator",
-        details: decisionNotes,
+        details: shortSummary,
       },
     ];
 
@@ -121,17 +128,21 @@ export default function StaffEvaluatePage() {
 
     // Also record official evaluation log in backend
     try {
-      const userStr = localStorage.getItem("user");
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
       const staffEmail = userStr ? JSON.parse(userStr).email : "staff@etayo.gov.ph";
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/evaluations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           staffEmail: staffEmail || "staff@etayo.gov.ph",
           applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
           permitType: app.permitType || "locational_clearance",
           action: "Approved",
-          comments: decisionNotes,
+          comments: shortSummary,
         })
       });
     } catch (e) {

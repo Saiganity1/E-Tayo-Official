@@ -34,9 +34,84 @@ public class PermitController {
     }
 
     @PutMapping("/{id}")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<PermitApplication> updatePermit(@PathVariable String id, @RequestBody PermitApplication permit) {
         permit.setId(id);
-        return ResponseEntity.ok(permitApplicationRepository.save(permit));
+        return permitApplicationRepository.findById(id).map(existing -> {
+            existing.setStatus(permit.getStatus());
+            if (permit.getRemarks() != null) existing.setRemarks(permit.getRemarks());
+            
+            if (permit.getTrackingSteps() != null) {
+                if (existing.getTrackingSteps() == null) {
+                    existing.setTrackingSteps(new java.util.ArrayList<>(permit.getTrackingSteps()));
+                } else {
+                    existing.getTrackingSteps().clear();
+                    existing.getTrackingSteps().addAll(permit.getTrackingSteps());
+                }
+            }
+            if (permit.getHistoryLog() != null) {
+                if (existing.getHistoryLog() == null) {
+                    existing.setHistoryLog(new java.util.ArrayList<>(permit.getHistoryLog()));
+                } else {
+                    existing.getHistoryLog().clear();
+                    existing.getHistoryLog().addAll(permit.getHistoryLog());
+                }
+            }
+            if (permit.getRequirements() != null) {
+                if (existing.getRequirements() == null) {
+                    existing.setRequirements(new java.util.ArrayList<>(permit.getRequirements()));
+                } else {
+                    existing.getRequirements().clear();
+                    existing.getRequirements().addAll(permit.getRequirements());
+                }
+            }
+            
+            if (permit.getApplicantName() != null) existing.setApplicantName(permit.getApplicantName());
+            if (permit.getProjectName() != null) existing.setProjectName(permit.getProjectName());
+            if (permit.getApplicantEmail() != null) existing.setApplicantEmail(permit.getApplicantEmail());
+            if (permit.getApplicantPhone() != null) existing.setApplicantPhone(permit.getApplicantPhone());
+            if (permit.getApplicantAddress() != null) existing.setApplicantAddress(permit.getApplicantAddress());
+            if (permit.getProjectAddress() != null) existing.setProjectAddress(permit.getProjectAddress());
+            if (permit.getProjectDescription() != null) existing.setProjectDescription(permit.getProjectDescription());
+            if (permit.getPermitType() != null) existing.setPermitType(permit.getPermitType());
+            if (permit.getLocation() != null) existing.setLocation(permit.getLocation());
+            if (permit.getAssignedStaff() != null) existing.setAssignedStaff(permit.getAssignedStaff());
+            if (permit.getPaymentStatus() != null) existing.setPaymentStatus(permit.getPaymentStatus());
+            if (permit.getEstimatedFees() > 0) existing.setEstimatedFees(permit.getEstimatedFees());
+            if (permit.getFileUrl() != null && !permit.getFileUrl().isEmpty()) existing.setFileUrl(permit.getFileUrl());
+            if (permit.getFileName() != null && !permit.getFileName().isEmpty()) existing.setFileName(permit.getFileName());
+            if (permit.getSketchImageUrl() != null && !permit.getSketchImageUrl().isEmpty()) existing.setSketchImageUrl(permit.getSketchImageUrl());
+            if (permit.getProjectType() != null) existing.setProjectType(permit.getProjectType());
+            if (permit.getDateSubmitted() != null) existing.setDateSubmitted(permit.getDateSubmitted());
+            
+            return ResponseEntity.ok(permitApplicationRepository.save(existing));
+        }).orElseGet(() -> {
+            return ResponseEntity.ok(permitApplicationRepository.save(permit));
+        });
+    }
+
+    @PatchMapping("/{id}/status")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<PermitApplication> updatePermitStatus(@PathVariable String id, @RequestBody java.util.Map<String, Object> payload) {
+        return permitApplicationRepository.findById(id).map(existing -> {
+            if (payload.containsKey("status") && payload.get("status") != null) {
+                existing.setStatus(String.valueOf(payload.get("status")));
+            }
+            if (payload.containsKey("remarks") && payload.get("remarks") != null) {
+                existing.setRemarks(String.valueOf(payload.get("remarks")));
+            }
+            return ResponseEntity.ok(permitApplicationRepository.save(existing));
+        }).orElseGet(() -> {
+            PermitApplication app = new PermitApplication();
+            app.setId(id);
+            if (payload.containsKey("status") && payload.get("status") != null) {
+                app.setStatus(String.valueOf(payload.get("status")));
+            }
+            if (payload.containsKey("remarks") && payload.get("remarks") != null) {
+                app.setRemarks(String.valueOf(payload.get("remarks")));
+            }
+            return ResponseEntity.ok(permitApplicationRepository.save(app));
+        });
     }
 
     @DeleteMapping("/{id}")

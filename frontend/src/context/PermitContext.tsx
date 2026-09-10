@@ -19,6 +19,7 @@ interface PermitContextProps {
   setSelectedPermitType: (type: PermitType) => void;
   addApplication: (app: PermitApplication) => void;
   updateApplication: (app: PermitApplication) => void;
+  refreshApplications: () => Promise<void>;
   updateFeeMultiplier: (id: string, value: number) => void;
   clearLogs: () => void;
 }
@@ -36,6 +37,61 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Client-side hydration
   const [mounted, setMounted] = useState(false);
 
+  // Reusable fetch function for initial load and polling
+  const fetchData = async () => {
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = { "Accept": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const [appsRes, logsRes, feesRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/permits`, { headers }),
+        fetch(`${API_BASE_URL}/logs`, { headers }),
+        fetch(`${API_BASE_URL}/fees`, { headers })
+      ]);
+
+      if (appsRes.ok) {
+        const backendApps: PermitApplication[] = await appsRes.json();
+        
+        let mergedApps = backendApps;
+        try {
+          const cachedStr = localStorage.getItem("etayo_cached_applications");
+          if (cachedStr) {
+            const cachedApps: PermitApplication[] = JSON.parse(cachedStr);
+            mergedApps = backendApps.map((bApp) => {
+              if (bApp.status === "approved" || bApp.status === "released") {
+                return bApp;
+              }
+              const foundCached = cachedApps.find((c) => c.id === bApp.id);
+              if (foundCached && (foundCached.status === "approved" || foundCached.status === "released")) {
+                return { ...bApp, ...foundCached };
+              }
+              return bApp;
+            });
+
+            // Include any locally created applications not yet in backend
+            cachedApps.forEach((c) => {
+              if (!mergedApps.some((m) => m.id === c.id)) {
+                mergedApps.push(c);
+              }
+            });
+          }
+        } catch (e) {
+          console.warn("Error merging local cached applications", e);
+        }
+
+        setApplications(mergedApps);
+        try {
+          localStorage.setItem("etayo_cached_applications", JSON.stringify(mergedApps));
+        } catch (e) {}
+      }
+      if (logsRes.ok) setSystemLogs(await logsRes.json());
+      if (feesRes.ok) setFeeStructures(await feesRes.json());
+    } catch (error) {
+      console.error("Error fetching data from backend:", error);
+    }
+  };
+
   useEffect(() => {
     // 1. Immediately restore any locally cached applications (preventing flash of unapproved state on refresh)
     try {
@@ -50,60 +106,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.warn("Could not load cached applications from localStorage", e);
     }
 
-    // 2. Fetch fresh data from backend
-    const fetchData = async () => {
-      try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-        const headers: Record<string, string> = { "Accept": "application/json" };
-        if (token) headers["Authorization"] = `Bearer ${token}`;
-
-        const [appsRes, logsRes, feesRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/permits`, { headers }),
-          fetch(`${API_BASE_URL}/logs`, { headers }),
-          fetch(`${API_BASE_URL}/fees`, { headers })
-        ]);
-
-        if (appsRes.ok) {
-          const backendApps: PermitApplication[] = await appsRes.json();
-          
-          // Merge with any cached approvals so an approved status is NEVER accidentally reverted on refresh
-          let mergedApps = backendApps;
-          try {
-            const cachedStr = localStorage.getItem("etayo_cached_applications");
-            if (cachedStr) {
-              const cachedApps: PermitApplication[] = JSON.parse(cachedStr);
-              mergedApps = backendApps.map((bApp) => {
-                const foundCached = cachedApps.find((c) => c.id === bApp.id);
-                if (foundCached && (foundCached.status === "approved" || foundCached.status === "released")) {
-                  return { ...bApp, ...foundCached };
-                }
-                return bApp;
-              });
-
-              // Also include any locally created applications not yet returned by backend
-              cachedApps.forEach((c) => {
-                if (!mergedApps.some((m) => m.id === c.id)) {
-                  mergedApps.push(c);
-                }
-              });
-            }
-          } catch (e) {
-            console.warn("Error merging local cached applications", e);
-          }
-
-          setApplications(mergedApps);
-          try {
-            localStorage.setItem("etayo_cached_applications", JSON.stringify(mergedApps));
-          } catch (e) {}
-        }
-        if (logsRes.ok) setSystemLogs(await logsRes.json());
-        if (feesRes.ok) setFeeStructures(await feesRes.json());
-      } catch (error) {
-        console.error("Error fetching data from backend:", error);
-      }
-    };
-
+    // 2. Fetch fresh data from backend immediately
     fetchData();
+
+    // 3. Set up periodic polling every 4 seconds for real-time multi-tab & multi-user sync
+    const pollInterval = setInterval(() => {
+      fetchData();
+    }, 4000);
 
     // Restore user role from login session
     try {
@@ -119,6 +128,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch(e) {}
 
     setMounted(true);
+
+    return () => {
+      clearInterval(pollInterval);
+    };
   }, []);
 
   // Handle inactivity timeout
@@ -204,6 +217,21 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
+      // 3. Fast PATCH status endpoint to guarantee DB update
+      try {
+        await fetch(`${API_BASE_URL}/permits/${updatedApp.id}/status`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            status: updatedApp.status,
+            remarks: updatedApp.remarks || ""
+          })
+        });
+      } catch (e) {
+        console.warn("PATCH status fallback notice", e);
+      }
+
+      // 4. Full PUT update for tracking steps, logs, requirements
       const res = await fetch(`${API_BASE_URL}/permits/${updatedApp.id}`, {
         method: "PUT",
         headers,
@@ -211,10 +239,19 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
       if (!res.ok) {
         console.error("Failed to update permit on backend:", res.status, await res.text());
+      } else {
+        const saved: PermitApplication = await res.json();
+        setApplications((prev) =>
+          prev.map((app) => (app.id === saved.id ? saved : app))
+        );
       }
     } catch (e) {
       console.error("Failed to update permit", e);
     }
+  };
+
+  const refreshApplications = async () => {
+    await fetchData();
   };
 
   const updateFeeMultiplier = (id: string, newValue: number) => {
@@ -253,6 +290,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSelectedPermitType,
         addApplication,
         updateApplication,
+        refreshApplications,
         updateFeeMultiplier,
         clearLogs,
       }}

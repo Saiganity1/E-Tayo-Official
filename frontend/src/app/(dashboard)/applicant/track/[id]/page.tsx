@@ -11,13 +11,54 @@ export default function ApplicationTrackDetail() {
   const { applications } = usePermitContext();
   const [appData, setAppData] = useState<any>(null);
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
+    ? `${process.env.NEXT_PUBLIC_API_URL}/api` 
+    : "http://localhost:8080/api";
+
   useEffect(() => {
-    if (params.id && applications) {
-      const foundApp = applications.find(a => a.id === params.id);
-      if (foundApp) {
-        setAppData(foundApp);
+    // 1. Initial check from context or local cache
+    if (params.id) {
+      if (applications && applications.length > 0) {
+        const found = applications.find(a => a.id === params.id);
+        if (found) setAppData(found);
+      } else {
+        try {
+          const cachedStr = localStorage.getItem("etayo_cached_applications");
+          if (cachedStr) {
+            const cachedList = JSON.parse(cachedStr);
+            const found = cachedList.find((a: any) => a.id === params.id);
+            if (found) setAppData(found);
+          }
+        } catch (e) {}
       }
     }
+
+    // 2. Fetch fresh live data directly from server
+    const fetchFreshStatus = async () => {
+      if (!params.id) return;
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const headers: Record<string, string> = { "Accept": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const res = await fetch(`${API_BASE_URL}/permits/${params.id}`, { headers });
+        if (res.ok) {
+          const serverApp = await res.json();
+          if (serverApp && serverApp.id) {
+            setAppData(serverApp);
+          }
+        }
+      } catch (e) {
+        // network error or offline fallback
+      }
+    };
+
+    fetchFreshStatus();
+
+    // 3. Live polling every 3 seconds to auto-detect admin approval without manual refresh
+    const pollTimer = setInterval(fetchFreshStatus, 3000);
+
+    return () => clearInterval(pollTimer);
   }, [params.id, applications]);
 
   if (!appData) {

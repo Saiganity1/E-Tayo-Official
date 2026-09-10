@@ -42,6 +42,32 @@ public class DataSeeder implements CommandLineRunner {
             System.out.println("Could not drop constraint (might not exist or using H2): " + e.getMessage());
         }
 
+        // Ensure all notes, details, and remarks columns in PostgreSQL are TEXT
+        try {
+            jdbcTemplate.execute("ALTER TABLE permit_tracking_steps ALTER COLUMN notes TYPE TEXT;");
+        } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.execute("ALTER TABLE permit_history_logs ALTER COLUMN details TYPE TEXT;");
+        } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.execute("ALTER TABLE permit_requirements ALTER COLUMN remarks TYPE TEXT;");
+        } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.execute("ALTER TABLE evaluation_logs ALTER COLUMN comments TYPE TEXT;");
+        } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN remarks TYPE TEXT;");
+        } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN file_url TYPE TEXT;");
+        } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN sketch_image_url TYPE TEXT;");
+        } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN project_description TYPE TEXT;");
+        } catch (Exception ignored) {}
+
         // Ensure SuperAdmin account always exists and password is set to Admin
         User admin = userRepository.findByEmailIgnoreCase("admin").orElse(null);
         if (admin == null) {
