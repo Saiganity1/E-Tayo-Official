@@ -1870,3 +1870,29 @@ button {
   color: #94a3b8;
   gap: 16px;
 }
+
+/* Project Cards Scrollable Container */
+.project-cards-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  scroll-behavior: smooth;
+}
+
+.project-cards-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.project-cards-container::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.6);
+  border-radius: 999px;
+}
+
+.project-cards-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.project-cards-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

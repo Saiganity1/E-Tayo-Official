@@ -970,15 +970,38 @@ export default function ApplyPage() {
                 </div>
               </div>
 
-              {/* 31 PROJECT TYPES GRID */}
+              {/* STATUS BAR / COUNTER & SCROLL HINT */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "0.75rem",
+                padding: "0 4px",
+                fontSize: "0.82rem",
+                color: "#64748b"
+              }}>
+                <span style={{ fontWeight: "600" }}>
+                  Showing <strong style={{ color: "#0f172a" }}>{filteredProjectTypes.length}</strong> project types
+                  {selectedCategory !== "All" && ` · ${selectedCategory}`}
+                </span>
+                <span style={{ fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "5px", color: "#6366f1", fontWeight: "600", background: "#eef2ff", padding: "3px 10px", borderRadius: "999px" }}>
+                  <span>Scroll to browse</span>
+                  <span style={{ fontSize: "0.85rem" }}>↕</span>
+                </span>
+              </div>
+
+              {/* 31 PROJECT TYPES GRID (SCROLLABLE) */}
               <div 
                 className="project-cards-container"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))",
                   gap: "1.1rem",
-                  padding: "4px 2px",
-                  marginBottom: "1.75rem"
+                  padding: "6px 8px 16px 2px",
+                  marginBottom: "1.5rem",
+                  maxHeight: "clamp(380px, 58vh, 600px)",
+                  overflowY: "auto",
+                  overscrollBehavior: "contain"
                 }}
               >
                 {filteredProjectTypes.map((p) => {
