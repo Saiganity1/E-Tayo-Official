@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { 
   FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft, 
@@ -124,6 +125,22 @@ export default function ApplyPage() {
   const [showUnifiedForm, setShowUnifiedForm] = useState(false);
   const [showRequirementsAlert, setShowRequirementsAlert] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (showRequirementsAlert) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showRequirementsAlert]);
 
   const handleCopyRef = (text: string) => {
     try {
@@ -1436,25 +1453,31 @@ export default function ApplyPage() {
           </div>
         </div>
       </div>
-      {/* ON-SCREEN REQUIRED PERMITS ALERT MODAL */}
-      {showRequirementsAlert && (() => {
+      {/* ON-SCREEN REQUIRED PERMITS ALERT MODAL (PORTALED TO DOCUMENT.BODY) */}
+      {mounted && showRequirementsAlert && typeof document !== "undefined" && (() => {
         const { mandatory, conditional, notRequired } = getProjectPermitsBreakdown(selectedProjectType);
 
-        return (
+        return createPortal(
           <div 
             role="alertdialog"
             aria-modal="true"
-            className="animate-fade-in-up"
             style={{
               position: "fixed",
-              inset: 0,
-              background: "rgba(15, 23, 42, 0.65)",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(15, 23, 42, 0.72)",
               backdropFilter: "blur(6px)",
-              zIndex: 99999,
+              WebkitBackdropFilter: "blur(6px)",
+              zIndex: 999999,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "1.25rem"
+              padding: "1rem",
+              margin: 0
             }}
             onClick={(e) => {
               if (e.target === e.currentTarget) setShowRequirementsAlert(false);
@@ -1465,11 +1488,13 @@ export default function ApplyPage() {
               borderRadius: "20px",
               maxWidth: "760px",
               width: "100%",
-              maxHeight: "90vh",
+              maxHeight: "88vh",
               display: "flex",
               flexDirection: "column",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(226, 232, 240, 0.8)",
-              overflow: "hidden"
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(226, 232, 240, 0.8)",
+              overflow: "hidden",
+              position: "relative",
+              animation: "fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
             }}>
               {/* ALERT HEADER */}
               <div style={{
@@ -1810,7 +1835,8 @@ export default function ApplyPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
