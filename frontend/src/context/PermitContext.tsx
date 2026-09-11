@@ -105,8 +105,29 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const fetchData = async () => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const headers: Record<string, string> = { "Accept": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
+      // If user is unauthenticated (e.g. Incognito or guest), never fetch or store private permit data
+      if (!token) {
+        setApplications([]);
+        try {
+          localStorage.removeItem("etayo_cached_applications");
+        } catch (e) {}
+        
+        // Only public fees are fetched for public users
+        const feesRes = await fetch(`${API_BASE_URL}/fees`, { headers: { "Accept": "application/json" } }).catch(e => ({ ok: false, json: async () => [] }));
+        if (feesRes.ok) {
+          const feesData = await feesRes.json();
+          if (Array.isArray(feesData) && feesData.length > 0) {
+            setFeeStructures(feesData);
+          }
+        }
+        return;
+      }
+
+      const headers: Record<string, string> = { 
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`
+      };
 
       const [appsRes, logsRes, feesRes] = await Promise.all([
         fetch(`${API_BASE_URL}/permits`, { headers }).catch(e => ({ ok: false, json: async () => [] })),
@@ -184,25 +205,34 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   useEffect(() => {
-    // 1. Immediately restore locally cached applications (preventing flash of empty state on refresh)
-    try {
-      const stored = localStorage.getItem("etayo_cached_applications");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const clean = parsed.filter(a => !isDummyApp(a));
-          setApplications(clean);
-          localStorage.setItem("etayo_cached_applications", JSON.stringify(clean));
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+    if (!token) {
+      // 1. If unauthenticated, ensure no private permits are in state or cache
+      setApplications([]);
+      try {
+        localStorage.removeItem("etayo_cached_applications");
+      } catch (e) {}
+    } else {
+      // 1. Immediately restore locally cached applications for authenticated session
+      try {
+        const stored = localStorage.getItem("etayo_cached_applications");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const clean = parsed.filter(a => !isDummyApp(a));
+            setApplications(clean);
+          }
         }
+      } catch (e) {
+        console.warn("Could not load cached applications from localStorage", e);
       }
-    } catch (e) {
-      console.warn("Could not load cached applications from localStorage", e);
     }
 
-    // 2. Immediately restore locally cached system logs
+    // 2. Immediately restore locally cached system logs (only if admin/staff)
     try {
       const storedLogs = localStorage.getItem("etayo_cached_logs");
-      if (storedLogs) {
+      if (storedLogs && token) {
         const parsedLogs = JSON.parse(storedLogs);
         if (Array.isArray(parsedLogs) && parsedLogs.length > 0) {
           setSystemLogs(parsedLogs);
@@ -232,13 +262,15 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Restore user role from login session
     try {
       const userStr = localStorage.getItem("user");
-      if (userStr) {
+      if (userStr && token) {
         const userObj = JSON.parse(userStr);
         let role = "public";
         if (userObj.role === "ROLE_APPLICANT") role = "applicant";
         if (userObj.role === "ROLE_STAFF") role = "staff";
         if (userObj.role === "ROLE_ADMIN" || userObj.role === "ROLE_SUPERADMIN") role = "admin";
         setUserRole(role as UserRole);
+      } else {
+        setUserRole("public");
       }
     } catch(e) {}
 
@@ -256,6 +288,12 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const handleTimeout = () => {
       if (userRole !== "public") {
         setUserRole("public");
+        setApplications([]);
+        try {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("etayo_cached_applications");
+        } catch (e) {}
       }
     };
 

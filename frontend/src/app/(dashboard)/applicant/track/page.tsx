@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { 
   Search, Plus, Clock, CheckCircle2, AlertTriangle, 
   FileText, CheckCircle, ChevronRight, Copy, Check, 
-  MapPin, Sparkles, Layers, ShieldCheck, ArrowRight, MessageSquare
+  MapPin, Sparkles, Layers, ShieldCheck, ArrowRight, MessageSquare, Lock
 } from "lucide-react";
 
 export default function ApplicationStatusPage() {
@@ -18,18 +18,28 @@ export default function ApplicationStatusPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [userName, setUserName] = useState("Applicant");
+  const [userName, setUserName] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+      if (token && userStr) {
         const userObj = JSON.parse(userStr);
+        setIsLoggedIn(true);
+        setCurrentUser(userObj);
         if (userObj.name) setUserName(userObj.name);
+      } else {
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+        setUserName("");
       }
     } catch (e) {
-      console.error("Failed to load user from localStorage");
+      setIsLoggedIn(false);
+      setCurrentUser(null);
     }
   }, []);
 
@@ -48,15 +58,26 @@ export default function ApplicationStatusPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Filter applications for the active logged-in applicant (with fallback if mock user names differ)
-  const userApps = (applications || []).filter(app => {
-    if (!userName || userName === "Applicant") return true;
-    return (
-      app.applicantName?.toLowerCase() === userName.toLowerCase() ||
-      app.applicantEmail?.toLowerCase().includes(userName.toLowerCase())
-    );
-  });
-  const myApplications = userApps.length > 0 ? userApps : (applications || []);
+  // Strictly filter applications for the active logged-in applicant (NO leak for guests or incognito)
+  const myApplications = useMemo(() => {
+    if (!isLoggedIn || !currentUser) {
+      // Unauthenticated guests must NEVER see private applications
+      return [];
+    }
+
+    const email = (currentUser.email || "").toLowerCase().trim();
+    const name = (currentUser.name || "").toLowerCase().trim();
+
+    return (applications || []).filter(app => {
+      const appEmail = (app.applicantEmail || "").toLowerCase().trim();
+      const appName = (app.applicantName || "").toLowerCase().trim();
+
+      const matchEmail = Boolean(email && appEmail && (appEmail === email || appEmail.includes(email)));
+      const matchName = Boolean(name && appName && (appName === name || appName.includes(name)));
+
+      return matchEmail || matchName;
+    });
+  }, [applications, isLoggedIn, currentUser]);
 
   const filteredApps = myApplications.filter(app => {
     const query = searchTerm.toLowerCase().trim();
@@ -141,7 +162,7 @@ export default function ApplicationStatusPage() {
         </div>
 
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-          <Link href="/applicant/apply" className="btn-primary" style={{
+          <Link href={isLoggedIn ? "/applicant/apply" : "/login?redirect=/applicant/apply"} className="btn-primary" style={{
             background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
             boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
             padding: "0.75rem 1.4rem",
@@ -157,108 +178,141 @@ export default function ApplicationStatusPage() {
         </div>
       </header>
 
-      {/* STATS OVERVIEW CARDS (INTERACTIVE FILTERS) */}
-      <section className="stats-grid" style={{ marginBottom: "2rem" }}>
-        <div 
-          onClick={() => setStatusFilter("all")}
-          className="stat-card" 
-          style={{ 
-            background: statusFilter === "all" ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "white", 
-            borderRadius: "16px", 
-            padding: "1.25rem", 
-            border: statusFilter === "all" ? "2px solid #2563eb" : "1px solid #f1f5f9", 
-            boxShadow: statusFilter === "all" ? "0 8px 24px rgba(37, 99, 235, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
-            cursor: "pointer",
-            transition: "all 0.2s ease"
-          }}
-          title="Click to show all applications"
-        >
-          <div className="stat-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
-            <FileText size={24} />
+      {/* GUEST BANNER OR STATS OVERVIEW CARDS */}
+      {!isLoggedIn ? (
+        <section style={{
+          background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+          color: "white",
+          borderRadius: "20px",
+          padding: "2rem 2.25rem",
+          marginBottom: "2rem",
+          boxShadow: "0 10px 30px rgba(15, 23, 42, 0.15)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "1.5rem"
+        }}>
+          <div style={{ maxWidth: "650px" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,0.12)", padding: "4px 12px", borderRadius: "999px", fontSize: "0.8rem", fontWeight: "600", color: "#93c5fd", marginBottom: "0.75rem" }}>
+              <ShieldCheck size={14} /> Official Municipal Permit Tracking Portal
+            </div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: "800", margin: "0 0 0.5rem 0", color: "#ffffff" }}>
+              Track Application Progress & Evaluation Status
+            </h2>
+            <p style={{ margin: 0, color: "#cbd5e1", fontSize: "0.95rem", lineHeight: "1.5" }}>
+              Have an official Tracking ID receipt? Enter it into the Direct Tracking Lookup below to inspect evaluation milestones. Sign in to your account to view your private application history.
+            </p>
           </div>
-          <div className="stat-info">
-            <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.total}</span>
-            <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "all" ? "#2563eb" : "#64748b" }}>
-              Total Applications {statusFilter === "all" && "• Active"}
-            </span>
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <Link href="/login?redirect=/applicant/track" className="btn-primary" style={{ background: "#2563eb", color: "white", padding: "0.75rem 1.4rem", borderRadius: "12px", fontWeight: "700", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+              Sign In to View Applications <ArrowRight size={16} />
+            </Link>
           </div>
-        </div>
+        </section>
+      ) : (
+        <section className="stats-grid" style={{ marginBottom: "2rem" }}>
+          <div 
+            onClick={() => setStatusFilter("all")}
+            className="stat-card" 
+            style={{ 
+              background: statusFilter === "all" ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "white", 
+              borderRadius: "16px", 
+              padding: "1.25rem", 
+              border: statusFilter === "all" ? "2px solid #2563eb" : "1px solid #f1f5f9", 
+              boxShadow: statusFilter === "all" ? "0 8px 24px rgba(37, 99, 235, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
+              cursor: "pointer",
+              transition: "all 0.2s ease"
+            }}
+            title="Click to show all applications"
+          >
+            <div className="stat-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
+              <FileText size={24} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.total}</span>
+              <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "all" ? "#2563eb" : "#64748b" }}>
+                Total Applications {statusFilter === "all" && "• Active"}
+              </span>
+            </div>
+          </div>
 
-        <div 
-          onClick={() => setStatusFilter("pending")}
-          className="stat-card" 
-          style={{ 
-            background: statusFilter === "pending" ? "linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)" : "white", 
-            borderRadius: "16px", 
-            padding: "1.25rem", 
-            border: statusFilter === "pending" ? "2px solid #d97706" : "1px solid #f1f5f9", 
-            boxShadow: statusFilter === "pending" ? "0 8px 24px rgba(217, 119, 6, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
-            cursor: "pointer",
-            transition: "all 0.2s ease"
-          }}
-          title="Click to filter by Pending Review"
-        >
-          <div className="stat-icon" style={{ background: "#fef3c7", color: "#d97706" }}>
-            <Clock size={24} />
+          <div 
+            onClick={() => setStatusFilter("pending")}
+            className="stat-card" 
+            style={{ 
+              background: statusFilter === "pending" ? "linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)" : "white", 
+              borderRadius: "16px", 
+              padding: "1.25rem", 
+              border: statusFilter === "pending" ? "2px solid #d97706" : "1px solid #f1f5f9", 
+              boxShadow: statusFilter === "pending" ? "0 8px 24px rgba(217, 119, 6, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
+              cursor: "pointer",
+              transition: "all 0.2s ease"
+            }}
+            title="Click to filter by Pending Review"
+          >
+            <div className="stat-icon" style={{ background: "#fef3c7", color: "#d97706" }}>
+              <Clock size={24} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.pending}</span>
+              <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "pending" ? "#d97706" : "#64748b" }}>
+                Pending Review {statusFilter === "pending" && "• Active"}
+              </span>
+            </div>
           </div>
-          <div className="stat-info">
-            <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.pending}</span>
-            <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "pending" ? "#d97706" : "#64748b" }}>
-              Pending Review {statusFilter === "pending" && "• Active"}
-            </span>
-          </div>
-        </div>
 
-        <div 
-          onClick={() => setStatusFilter("under_review")}
-          className="stat-card" 
-          style={{ 
-            background: statusFilter === "under_review" ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "white", 
-            borderRadius: "16px", 
-            padding: "1.25rem", 
-            border: statusFilter === "under_review" ? "2px solid #2563eb" : "1px solid #f1f5f9", 
-            boxShadow: statusFilter === "under_review" ? "0 8px 24px rgba(37, 99, 235, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
-            cursor: "pointer",
-            transition: "all 0.2s ease"
-          }}
-          title="Click to filter by Under Evaluation"
-        >
-          <div className="stat-icon" style={{ background: "#dbeafe", color: "#2563eb" }}>
-            <Search size={24} />
+          <div 
+            onClick={() => setStatusFilter("under_review")}
+            className="stat-card" 
+            style={{ 
+              background: statusFilter === "under_review" ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "white", 
+              borderRadius: "16px", 
+              padding: "1.25rem", 
+              border: statusFilter === "under_review" ? "2px solid #2563eb" : "1px solid #f1f5f9", 
+              boxShadow: statusFilter === "under_review" ? "0 8px 24px rgba(37, 99, 235, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
+              cursor: "pointer",
+              transition: "all 0.2s ease"
+            }}
+            title="Click to filter by Under Evaluation"
+          >
+            <div className="stat-icon" style={{ background: "#dbeafe", color: "#2563eb" }}>
+              <Search size={24} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.review}</span>
+              <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "under_review" ? "#2563eb" : "#64748b" }}>
+                Under Evaluation {statusFilter === "under_review" && "• Active"}
+              </span>
+            </div>
           </div>
-          <div className="stat-info">
-            <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.review}</span>
-            <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "under_review" ? "#2563eb" : "#64748b" }}>
-              Under Evaluation {statusFilter === "under_review" && "• Active"}
-            </span>
-          </div>
-        </div>
 
-        <div 
-          onClick={() => setStatusFilter("approved")}
-          className="stat-card" 
-          style={{ 
-            background: statusFilter === "approved" ? "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)" : "white", 
-            borderRadius: "16px", 
-            padding: "1.25rem", 
-            border: statusFilter === "approved" ? "2px solid #059669" : "1px solid #f1f5f9", 
-            boxShadow: statusFilter === "approved" ? "0 8px 24px rgba(5, 150, 105, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
-            cursor: "pointer",
-            transition: "all 0.2s ease"
-          }}
-          title="Click to filter by Approved & Released"
-        >
-          <div className="stat-icon" style={{ background: "#d1fae5", color: "#059669" }}>
-            <CheckCircle2 size={24} />
+          <div 
+            onClick={() => setStatusFilter("approved")}
+            className="stat-card" 
+            style={{ 
+              background: statusFilter === "approved" ? "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)" : "white", 
+              borderRadius: "16px", 
+              padding: "1.25rem", 
+              border: statusFilter === "approved" ? "2px solid #059669" : "1px solid #f1f5f9", 
+              boxShadow: statusFilter === "approved" ? "0 8px 24px rgba(5, 150, 105, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
+              cursor: "pointer",
+              transition: "all 0.2s ease"
+            }}
+            title="Click to filter by Approved & Released"
+          >
+            <div className="stat-icon" style={{ background: "#d1fae5", color: "#059669" }}>
+              <CheckCircle2 size={24} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.approved}</span>
+              <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "approved" ? "#059669" : "#64748b" }}>
+                Approved & Released {statusFilter === "approved" && "• Active"}
+              </span>
+            </div>
           </div>
-          <div className="stat-info">
-            <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.approved}</span>
-            <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "approved" ? "#059669" : "#64748b" }}>
-              Approved & Released {statusFilter === "approved" && "• Active"}
-            </span>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* QUICK TRACKING LOOKUP BAR */}
       <section style={{
@@ -307,7 +361,7 @@ export default function ApplicationStatusPage() {
         </div>
 
         {/* QUICK CLICK CHIPS OF CURRENT USER'S APPLICATIONS */}
-        {myApplications && myApplications.length > 0 && (
+        {isLoggedIn && myApplications && myApplications.length > 0 && (
           <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #e2e8f0", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
             <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
               Your Applications:
@@ -367,70 +421,110 @@ export default function ApplicationStatusPage() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
-            {/* Search Input */}
-            <div style={{ position: "relative", minWidth: "220px" }}>
-              <Search size={16} color="#94a3b8" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
-              <input 
-                type="text" 
-                placeholder="Search applications..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+          {isLoggedIn && (
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+              {/* Search Input */}
+              <div style={{ position: "relative", minWidth: "220px" }}>
+                <Search size={16} color="#94a3b8" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+                <input 
+                  type="text" 
+                  placeholder="Search applications..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    padding: "0.6rem 1rem 0.6rem 2.25rem",
+                    borderRadius: "10px",
+                    border: "1px solid #cbd5e1",
+                    background: "white",
+                    fontSize: "0.88rem",
+                    width: "100%"
+                  }}
+                />
+              </div>
+
+              {/* Type Filter */}
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
                 style={{
-                  padding: "0.6rem 1rem 0.6rem 2.25rem",
+                  padding: "0.6rem 0.85rem",
                   borderRadius: "10px",
                   border: "1px solid #cbd5e1",
                   background: "white",
-                  fontSize: "0.88rem",
-                  width: "100%"
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  color: "#334155"
                 }}
-              />
+              >
+                <option value="all">All Types</option>
+                <option value="locational_clearance">Locational Clearance (Annex D)</option>
+                <option value="unified_permit">Unified Project Permits</option>
+              </select>
+
+              {/* Status Filter */}
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  padding: "0.6rem 0.85rem",
+                  borderRadius: "10px",
+                  border: "1px solid #cbd5e1",
+                  background: "white",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  color: "#334155"
+                }}
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="under_review">Under Evaluation</option>
+                <option value="approved">Approved / Released</option>
+                <option value="incomplete_requirements">Action Required</option>
+              </select>
             </div>
-
-            {/* Type Filter */}
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              style={{
-                padding: "0.6rem 0.85rem",
-                borderRadius: "10px",
-                border: "1px solid #cbd5e1",
-                background: "white",
-                fontSize: "0.85rem",
-                fontWeight: "600",
-                color: "#334155"
-              }}
-            >
-              <option value="all">All Types</option>
-              <option value="locational_clearance">Locational Clearance (Annex D)</option>
-              <option value="unified_permit">Unified Project Permits</option>
-            </select>
-
-            {/* Status Filter */}
-            <select 
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                padding: "0.6rem 0.85rem",
-                borderRadius: "10px",
-                border: "1px solid #cbd5e1",
-                background: "white",
-                fontSize: "0.85rem",
-                fontWeight: "600",
-                color: "#334155"
-              }}
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="under_review">Under Evaluation</option>
-              <option value="approved">Approved / Released</option>
-              <option value="incomplete_requirements">Action Required</option>
-            </select>
-          </div>
+          )}
         </div>
 
         {/* APPLICATIONS LIST */}
-        {filteredApps.length === 0 ? (
+        {!isLoggedIn ? (
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "20px",
+            border: "1px solid #e2e8f0",
+            padding: "3.5rem 2rem",
+            textAlign: "center",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.02)"
+          }}>
+            <div style={{
+              width: "68px",
+              height: "68px",
+              borderRadius: "50%",
+              background: "#eff6ff",
+              color: "#2563eb",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 1.25rem auto",
+              boxShadow: "0 4px 12px rgba(37, 99, 235, 0.15)"
+            }}>
+              <Lock size={32} />
+            </div>
+            <h3 style={{ fontSize: "1.35rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.5rem 0" }}>
+              Sign In to View Your Application History
+            </h3>
+            <p style={{ margin: "0 auto 1.75rem auto", color: "#64748b", fontSize: "0.95rem", maxWidth: "520px", lineHeight: "1.5" }}>
+              Personal applications and clearance certificates are strictly protected. Sign in with your registered e-Tayo account to securely view your permits, review notes, and approved documents.
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
+              <Link href="/login?redirect=/applicant/track" className="btn-primary" style={{ padding: "0.75rem 1.6rem", borderRadius: "12px", fontWeight: "700" }}>
+                Sign In to Account
+              </Link>
+              <Link href="/register" className="btn-secondary" style={{ padding: "0.75rem 1.6rem", borderRadius: "12px", fontWeight: "600", background: "#f8fafc", border: "1px solid #cbd5e1", color: "#334155" }}>
+                Register New Account
+              </Link>
+            </div>
+          </div>
+        ) : filteredApps.length === 0 ? (
           <div style={{
             background: "rgba(255,255,255,0.6)",
             borderRadius: "20px",
@@ -452,10 +546,12 @@ export default function ApplicationStatusPage() {
               <FileText size={32} />
             </div>
             <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "#334155", margin: "0 0 0.4rem 0" }}>
-              No applications match your criteria
+              No applications found
             </h3>
             <p style={{ margin: "0 0 1.5rem 0", color: "#64748b", fontSize: "0.9rem" }}>
-              Try adjusting your search terms or apply for a new permit.
+              {searchTerm || statusFilter !== "all" || typeFilter !== "all" 
+                ? "No permits match your search filters. Try resetting your filters."
+                : "You have not submitted any permit applications under this account yet."}
             </p>
             <Link href="/applicant/apply" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
               <Plus size={16} /> File New Application

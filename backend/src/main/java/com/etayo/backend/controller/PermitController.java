@@ -20,8 +20,30 @@ public class PermitController {
     private com.etayo.backend.service.AuditLoggingService auditLoggingService;
 
     @GetMapping
-    public ResponseEntity<List<PermitApplication>> getAllPermits() {
-        return ResponseEntity.ok(permitApplicationRepository.findAll());
+    public ResponseEntity<List<PermitApplication>> getAllPermits(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            // Unauthenticated / public callers cannot dump municipal permit records
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+
+        boolean isStaffOrAdmin = authentication.getAuthorities().stream().anyMatch(a ->
+            a.getAuthority().equals("ROLE_STAFF") ||
+            a.getAuthority().equals("ROLE_ADMIN") ||
+            a.getAuthority().equals("ROLE_SUPERADMIN")
+        );
+
+        if (isStaffOrAdmin) {
+            return ResponseEntity.ok(permitApplicationRepository.findAll());
+        }
+
+        // Authenticated applicants can only access applications matching their email or name
+        String principal = authentication.getName();
+        List<PermitApplication> applicantPermits = permitApplicationRepository.findAll().stream()
+            .filter(p -> (p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(principal))
+                      || (p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(principal)))
+            .toList();
+
+        return ResponseEntity.ok(applicantPermits);
     }
 
     @GetMapping("/{id}")

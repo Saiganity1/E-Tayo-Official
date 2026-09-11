@@ -145,6 +145,8 @@ export default function Sidebar() {
                 onClick={() => {
                   localStorage.removeItem("token");
                   localStorage.removeItem("user");
+                  localStorage.removeItem("etayo_cached_applications");
+                  localStorage.removeItem("etayo_cached_logs");
                   setUserRole("public");
                   setIsOpen(false);
                 }}

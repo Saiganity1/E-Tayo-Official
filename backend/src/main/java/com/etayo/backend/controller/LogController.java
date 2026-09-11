@@ -17,7 +17,18 @@ public class LogController {
     private SystemAuditLogRepository systemAuditLogRepository;
 
     @GetMapping
-    public ResponseEntity<List<SystemAuditLog>> getAllLogs() {
+    public ResponseEntity<List<SystemAuditLog>> getAllLogs(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+        boolean isAdminOrStaff = authentication.getAuthorities().stream().anyMatch(a ->
+            a.getAuthority().equals("ROLE_ADMIN") ||
+            a.getAuthority().equals("ROLE_SUPERADMIN") ||
+            a.getAuthority().equals("ROLE_STAFF")
+        );
+        if (!isAdminOrStaff) {
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
         return ResponseEntity.ok(systemAuditLogRepository.findAllByOrderByTimestampDesc());
     }
 
@@ -42,7 +53,17 @@ public class LogController {
     }
 
     @DeleteMapping
-    public ResponseEntity<?> clearAllLogs() {
+    public ResponseEntity<?> clearAllLogs(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(401).build();
+        }
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a ->
+            a.getAuthority().equals("ROLE_ADMIN") ||
+            a.getAuthority().equals("ROLE_SUPERADMIN")
+        );
+        if (!isAdmin) {
+            return ResponseEntity.status(403).build();
+        }
         systemAuditLogRepository.deleteAll();
         return ResponseEntity.ok().build();
     }

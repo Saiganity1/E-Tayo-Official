@@ -95,8 +95,8 @@ export default function ApplicationTrackDetail() {
   return (
     <div className="dashboard-page animate-fade-in-up">
       <header className="page-header" style={{ marginBottom: "2rem" }}>
-        <button onClick={() => router.push("/applicant/dashboard")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b", fontWeight: "600", marginBottom: "1rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem" }}>
-          <ChevronLeft size={16} /> Back to Dashboard
+        <button onClick={() => router.push("/applicant/track")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b", fontWeight: "600", marginBottom: "1rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem" }}>
+          <ChevronLeft size={16} /> Back to Tracker
         </button>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
