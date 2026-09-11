@@ -12,6 +12,11 @@ import { useSearchParams } from "next/navigation";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
 import { usePermitContext } from "../../../../context/PermitContext";
+import { 
+  MessageBubbleContent, 
+  AttachmentPreviewModal, 
+  ParsedAttachment 
+} from "../../../../components/chat/ChatAttachmentRenderer";
 
 const MANG_TOMAS = {
   name: "Mang Tomas",
@@ -60,7 +65,8 @@ export default function ApplicantMessagesPage() {
   const [connected, setConnected] = useState(false);
   const [selectedAppRef, setSelectedAppRef] = useState<any | null>(null);
   const [showAppPicker, setShowAppPicker] = useState(false);
-  const [attachedFile, setAttachedFile] = useState<string | null>(null);
+  const [attachedFile, setAttachedFile] = useState<{ name: string; url: string } | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<ParsedAttachment | null>(null);
   const [isSending, setIsSending] = useState(false);
 
   const stompClient = useRef<Client | null>(null);
@@ -160,7 +166,7 @@ export default function ApplicantMessagesPage() {
 
     // Add Attachment tag if selected
     if (attachedFile) {
-      finalContent = `${finalContent}\n📎 [Attachment: ${attachedFile}]`;
+      finalContent = `${finalContent}\n[Attachment: ${attachedFile.name}|${attachedFile.url}]`;
     }
 
     if (stompClient.current && connected) {
@@ -211,9 +217,34 @@ export default function ApplicantMessagesPage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setAttachedFile(file.name);
-    }
+    if (!file) return;
+
+    // Cache locally as base64 so anyone on this browser can view it
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      try {
+        localStorage.setItem(`att_${file.name}`, dataUrl);
+      } catch (err) {}
+      setAttachedFile({ name: file.name, url: "" });
+    };
+    reader.readAsDataURL(file);
+
+    // Also attempt server upload
+    const formData = new FormData();
+    formData.append("files", file);
+    formData.append("permitType", "Applicant Attachment");
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/upload`, {
+      method: "POST",
+      body: formData
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.urls && data.urls[0]) {
+          setAttachedFile({ name: file.name, url: data.urls[0] });
+        }
+      })
+      .catch(err => console.error("Upload error", err));
   };
 
   const renderMessageContent = (text: string) => {
@@ -662,7 +693,11 @@ export default function ApplicantMessagesPage() {
                       fontSize: "0.92rem",
                       lineHeight: "1.45"
                     }}>
-                      {renderMessageContent(msg.content)}
+                      <MessageBubbleContent
+                        content={msg.content}
+                        isMe={isMe}
+                        onOpenAttachment={(att) => setPreviewAttachment(att)}
+                      />
                     </div>
 
                     <div style={{
@@ -729,7 +764,7 @@ export default function ApplicantMessagesPage() {
                 gap: "5px"
               }}>
                 <Paperclip size={11} />
-                <span>{attachedFile}</span>
+                <span>{attachedFile.name}</span>
                 <X size={11} style={{ cursor: "pointer" }} onClick={() => setAttachedFile(null)} />
               </span>
             )}
@@ -826,6 +861,12 @@ export default function ApplicantMessagesPage() {
           </div>
         </div>
       </div>
+
+      {/* ATTACHMENT PREVIEW MODAL */}
+      <AttachmentPreviewModal
+        attachment={previewAttachment}
+        onClose={() => setPreviewAttachment(null)}
+      />
     </div>
   );
 }

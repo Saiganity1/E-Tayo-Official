@@ -1,9 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Send, User, Clock, Inbox, MessageSquare } from "lucide-react";
+import { Send, User, Clock, Inbox, MessageSquare, Paperclip, X } from "lucide-react";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
+import { 
+  MessageBubbleContent, 
+  AttachmentPreviewModal, 
+  ParsedAttachment 
+} from "../../../../components/chat/ChatAttachmentRenderer";
 
 export default function AdminMessagesPage() {
   const [messages, setMessages] = useState<any[]>([]);
@@ -12,6 +17,9 @@ export default function AdminMessagesPage() {
   const [connected, setConnected] = useState(false);
   const [applicantEmail, setApplicantEmail] = useState<string | null>(null);
   const [contacts, setContacts] = useState<string[]>([]);
+  const [previewAttachment, setPreviewAttachment] = useState<ParsedAttachment | null>(null);
+  const [adminAttachedFile, setAdminAttachedFile] = useState<{ name: string; url: string } | null>(null);
+  const adminFileInputRef = useRef<HTMLInputElement>(null);
   
   const stompClient = useRef<Client | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -114,20 +122,73 @@ export default function AdminMessagesPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleAdminFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Cache locally as base64 so anyone in this browser can view it
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      try {
+        localStorage.setItem(`att_${file.name}`, dataUrl);
+      } catch (err) {}
+      setAdminAttachedFile({ name: file.name, url: "" });
+    };
+    reader.readAsDataURL(file);
+
+    // Also attempt server upload
+    const formData = new FormData();
+    formData.append("files", file);
+    formData.append("permitType", "Admin Attachment");
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/upload`, {
+      method: "POST",
+      body: formData
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.urls && data.urls[0]) {
+          setAdminAttachedFile({ name: file.name, url: data.urls[0] });
+        }
+      })
+      .catch(err => console.error("Upload error", err));
+  };
+
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputMessage.trim() && stompClient.current && connected && applicantEmail) {
+    let finalContent = inputMessage.trim();
+    if (!finalContent && !adminAttachedFile) return;
+
+    if (adminAttachedFile) {
+      finalContent = finalContent 
+        ? `${finalContent} [Attachment: ${adminAttachedFile.name}|${adminAttachedFile.url}]`
+        : `[Attachment: ${adminAttachedFile.name}|${adminAttachedFile.url}]`;
+    }
+
+    if (stompClient.current && connected && applicantEmail) {
       const chatMessage = {
         senderEmail: "staff@etayo.gov.ph",
         actualSender: currentUserEmail,
         recipientEmail: applicantEmail,
-        content: inputMessage.trim(),
+        content: finalContent,
       };
       stompClient.current.publish({
         destination: "/app/chat.sendMessage",
         body: JSON.stringify(chatMessage),
       });
+
+      // Optimistically append message
+      setMessages(prev => [...prev, {
+        id: `admin-${Date.now()}`,
+        senderEmail: "staff@etayo.gov.ph",
+        actualSender: currentUserEmail,
+        recipientEmail: applicantEmail,
+        content: finalContent,
+        timestamp: new Date().toISOString()
+      }]);
+
       setInputMessage("");
+      setAdminAttachedFile(null);
     }
   };
 
@@ -216,7 +277,11 @@ export default function AdminMessagesPage() {
                         className={`message-bubble ${isMe ? 'me' : 'them'}`}
                         title={isMe && msg.actualSender ? `Sent by ${msg.actualSender}` : undefined}
                       >
-                        <p>{msg.content}</p>
+                        <MessageBubbleContent
+                          content={msg.content}
+                          isMe={isMe}
+                          onOpenAttachment={(att) => setPreviewAttachment(att)}
+                        />
                         <span className="timestamp">
                           {format(getValidDate(msg.timestamp), "h:mm a")}
                           {isMe && msg.actualSender && (
@@ -233,9 +298,63 @@ export default function AdminMessagesPage() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Attachment preview pill if admin selected a file to send */}
+            {adminAttachedFile && (
+              <div style={{
+                padding: "6px 1rem",
+                background: "#eff6ff",
+                borderTop: "1px solid #bfdbfe",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontSize: "0.8rem",
+                color: "#1e40af"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Paperclip size={14} />
+                  <span>Ready to attach: <strong>{adminAttachedFile.name}</strong></span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAdminAttachedFile(null)}
+                  style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             {/* Input Area */}
             <div className="chat-input-area">
-              <form onSubmit={sendMessage} className="chat-form">
+              <form onSubmit={sendMessage} className="chat-form" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <input
+                  type="file"
+                  ref={adminFileInputRef}
+                  style={{ display: "none" }}
+                  onChange={handleAdminFileSelect}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                />
+                <button
+                  type="button"
+                  onClick={() => adminFileInputRef.current?.click()}
+                  title="Attach file (PDF/Image)"
+                  style={{
+                    background: "#f1f5f9",
+                    border: "1px solid #cbd5e1",
+                    color: "#64748b",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    flexShrink: 0
+                  }}
+                >
+                  <Paperclip size={18} />
+                </button>
+
                 <input
                   type="text"
                   value={inputMessage}
@@ -246,7 +365,7 @@ export default function AdminMessagesPage() {
                 />
                 <button
                   type="submit"
-                  disabled={!connected || !inputMessage.trim()}
+                  disabled={!connected || (!inputMessage.trim() && !adminAttachedFile)}
                   className="chat-send-btn staff-btn"
                 >
                   <Send size={18} />
@@ -256,6 +375,12 @@ export default function AdminMessagesPage() {
           </>
         )}
       </div>
+
+      {/* ATTACHMENT PREVIEW MODAL */}
+      <AttachmentPreviewModal 
+        attachment={previewAttachment} 
+        onClose={() => setPreviewAttachment(null)} 
+      />
     </div>
   );
 }
