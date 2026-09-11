@@ -7,7 +7,7 @@ import { usePermitContext } from "../../../../context/PermitContext";
 import { 
   Search, Plus, Clock, CheckCircle2, AlertTriangle, 
   FileText, CheckCircle, ChevronRight, Copy, Check, 
-  MapPin, Sparkles, Layers, ShieldCheck, ArrowRight
+  MapPin, Sparkles, Layers, ShieldCheck, ArrowRight, MessageSquare
 } from "lucide-react";
 
 export default function ApplicationStatusPage() {
@@ -157,45 +157,105 @@ export default function ApplicationStatusPage() {
         </div>
       </header>
 
-      {/* STATS OVERVIEW CARDS */}
+      {/* STATS OVERVIEW CARDS (INTERACTIVE FILTERS) */}
       <section className="stats-grid" style={{ marginBottom: "2rem" }}>
-        <div className="stat-card" style={{ background: "white", borderRadius: "16px", padding: "1.25rem", border: "1px solid #f1f5f9", boxShadow: "0 4px 16px rgba(0,0,0,0.03)" }}>
+        <div 
+          onClick={() => setStatusFilter("all")}
+          className="stat-card" 
+          style={{ 
+            background: statusFilter === "all" ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "white", 
+            borderRadius: "16px", 
+            padding: "1.25rem", 
+            border: statusFilter === "all" ? "2px solid #2563eb" : "1px solid #f1f5f9", 
+            boxShadow: statusFilter === "all" ? "0 8px 24px rgba(37, 99, 235, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
+            cursor: "pointer",
+            transition: "all 0.2s ease"
+          }}
+          title="Click to show all applications"
+        >
           <div className="stat-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
             <FileText size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.total}</span>
-            <span className="stat-label" style={{ fontWeight: "600", color: "#64748b" }}>Total Applications</span>
+            <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "all" ? "#2563eb" : "#64748b" }}>
+              Total Applications {statusFilter === "all" && "• Active"}
+            </span>
           </div>
         </div>
 
-        <div className="stat-card" style={{ background: "white", borderRadius: "16px", padding: "1.25rem", border: "1px solid #f1f5f9", boxShadow: "0 4px 16px rgba(0,0,0,0.03)" }}>
+        <div 
+          onClick={() => setStatusFilter("pending")}
+          className="stat-card" 
+          style={{ 
+            background: statusFilter === "pending" ? "linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)" : "white", 
+            borderRadius: "16px", 
+            padding: "1.25rem", 
+            border: statusFilter === "pending" ? "2px solid #d97706" : "1px solid #f1f5f9", 
+            boxShadow: statusFilter === "pending" ? "0 8px 24px rgba(217, 119, 6, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
+            cursor: "pointer",
+            transition: "all 0.2s ease"
+          }}
+          title="Click to filter by Pending Review"
+        >
           <div className="stat-icon" style={{ background: "#fef3c7", color: "#d97706" }}>
             <Clock size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.pending}</span>
-            <span className="stat-label" style={{ fontWeight: "600", color: "#64748b" }}>Pending Review</span>
+            <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "pending" ? "#d97706" : "#64748b" }}>
+              Pending Review {statusFilter === "pending" && "• Active"}
+            </span>
           </div>
         </div>
 
-        <div className="stat-card" style={{ background: "white", borderRadius: "16px", padding: "1.25rem", border: "1px solid #f1f5f9", boxShadow: "0 4px 16px rgba(0,0,0,0.03)" }}>
+        <div 
+          onClick={() => setStatusFilter("under_review")}
+          className="stat-card" 
+          style={{ 
+            background: statusFilter === "under_review" ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "white", 
+            borderRadius: "16px", 
+            padding: "1.25rem", 
+            border: statusFilter === "under_review" ? "2px solid #2563eb" : "1px solid #f1f5f9", 
+            boxShadow: statusFilter === "under_review" ? "0 8px 24px rgba(37, 99, 235, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
+            cursor: "pointer",
+            transition: "all 0.2s ease"
+          }}
+          title="Click to filter by Under Evaluation"
+        >
           <div className="stat-icon" style={{ background: "#dbeafe", color: "#2563eb" }}>
             <Search size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.review}</span>
-            <span className="stat-label" style={{ fontWeight: "600", color: "#64748b" }}>Under Evaluation</span>
+            <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "under_review" ? "#2563eb" : "#64748b" }}>
+              Under Evaluation {statusFilter === "under_review" && "• Active"}
+            </span>
           </div>
         </div>
 
-        <div className="stat-card" style={{ background: "white", borderRadius: "16px", padding: "1.25rem", border: "1px solid #f1f5f9", boxShadow: "0 4px 16px rgba(0,0,0,0.03)" }}>
+        <div 
+          onClick={() => setStatusFilter("approved")}
+          className="stat-card" 
+          style={{ 
+            background: statusFilter === "approved" ? "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)" : "white", 
+            borderRadius: "16px", 
+            padding: "1.25rem", 
+            border: statusFilter === "approved" ? "2px solid #059669" : "1px solid #f1f5f9", 
+            boxShadow: statusFilter === "approved" ? "0 8px 24px rgba(5, 150, 105, 0.15)" : "0 4px 16px rgba(0,0,0,0.03)",
+            cursor: "pointer",
+            transition: "all 0.2s ease"
+          }}
+          title="Click to filter by Approved & Released"
+        >
           <div className="stat-icon" style={{ background: "#d1fae5", color: "#059669" }}>
             <CheckCircle2 size={24} />
           </div>
           <div className="stat-info">
             <span className="stat-value" style={{ fontSize: "1.8rem", fontWeight: "800", color: "#0f172a" }}>{stats.approved}</span>
-            <span className="stat-label" style={{ fontWeight: "600", color: "#64748b" }}>Approved & Released</span>
+            <span className="stat-label" style={{ fontWeight: "600", color: statusFilter === "approved" ? "#059669" : "#64748b" }}>
+              Approved & Released {statusFilter === "approved" && "• Active"}
+            </span>
           </div>
         </div>
       </section>
@@ -245,6 +305,43 @@ export default function ApplicationStatusPage() {
             </button>
           </form>
         </div>
+
+        {/* QUICK CLICK CHIPS OF CURRENT USER'S APPLICATIONS */}
+        {myApplications && myApplications.length > 0 && (
+          <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #e2e8f0", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
+              Your Applications:
+            </span>
+            {myApplications.slice(0, 4).map(app => (
+              <button
+                key={app.id}
+                type="button"
+                onClick={() => router.push(`/applicant/track/${app.id}`)}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  padding: "3px 10px",
+                  fontSize: "0.76rem",
+                  fontWeight: "700",
+                  color: "#1e40af",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  transition: "all 0.15s ease"
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.background = "#eff6ff"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.background = "#ffffff"; }}
+                title={`Open audit trail for ${app.projectName || app.id}`}
+              >
+                <span>{app.id}</span>
+                <span style={{ color: "#64748b", fontWeight: "500" }}>({app.projectName ? app.projectName.slice(0, 18) : "Application"})</span>
+                <ChevronRight size={11} />
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* RECENT APPLICATIONS SECTION */}
@@ -481,33 +578,36 @@ export default function ApplicationStatusPage() {
                   <div style={{
                     background: "#f8fafc",
                     border: "1px solid #edf2f7",
-                    borderRadius: "12px",
-                    padding: "0.85rem 1.25rem",
+                    borderRadius: "14px",
+                    padding: "0.9rem 1.25rem",
                     marginBottom: "1.25rem"
                   }}>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.5rem" }}>
                       {[
-                        { title: "Filed", desc: "Submitted", active: statusConfig.step >= 1 },
-                        { title: "Review", desc: "Evaluation", active: statusConfig.step >= 2 },
-                        { title: "Approval", desc: "Endorsed", active: statusConfig.step >= 3 },
-                        { title: "Released", desc: "Issuance", active: statusConfig.step >= 4 }
-                      ].map((step, idx) => (
-                        <div key={idx} style={{ textAlign: "center" }}>
+                        { num: 1, title: "1. Filed", desc: "Submitted", active: statusConfig.step >= 1, current: statusConfig.step === 1 },
+                        { num: 2, title: "2. Evaluation", desc: "Technical Review", active: statusConfig.step >= 2, current: statusConfig.step === 2 },
+                        { num: 3, title: "3. Endorsement", desc: "Chief OBO Approval", active: statusConfig.step >= 3, current: statusConfig.step === 3 },
+                        { num: 4, title: "4. Released", desc: "Order of Payment", active: statusConfig.step >= 4, current: statusConfig.step === 4 }
+                      ].map((step) => (
+                        <div key={step.num} style={{ textAlign: "center", position: "relative" }}>
                           <div style={{
-                            height: "5px",
+                            height: "6px",
                             borderRadius: "999px",
                             background: step.active ? statusConfig.color : "#e2e8f0",
                             marginBottom: "6px",
+                            boxShadow: step.current ? `0 0 8px ${statusConfig.color}80` : "none",
                             transition: "all 0.3s ease"
                           }} />
-                          <span style={{
-                            fontSize: "0.75rem",
-                            fontWeight: step.active ? "700" : "500",
-                            color: step.active ? "#1e293b" : "#94a3b8",
-                            display: "block"
+                          <div style={{
+                            fontSize: "0.76rem",
+                            fontWeight: step.active ? "800" : "600",
+                            color: step.active ? "#0f172a" : "#94a3b8"
                           }}>
                             {step.title}
-                          </span>
+                          </div>
+                          <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: "1px" }}>
+                            {step.desc}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -541,7 +641,30 @@ export default function ApplicationStatusPage() {
                       )}
                     </div>
 
-                    <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
+                      {/* Direct Message Officer Button */}
+                      <Link
+                        href={`/applicant/messages?ref=${app.id}`}
+                        style={{
+                          background: "#ffffff",
+                          border: "1.5px solid #c7d2fe",
+                          color: "#4338ca",
+                          padding: "6px 12px",
+                          borderRadius: "8px",
+                          fontSize: "0.82rem",
+                          fontWeight: "700",
+                          textDecoration: "none",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          transition: "all 0.15s ease"
+                        }}
+                        title="Inquire or message municipal staff regarding this application"
+                      >
+                        <MessageSquare size={13} color="#4f46e5" />
+                        <span>Message Desk</span>
+                      </Link>
+
                       {isApprovedLC && (
                         <Link 
                           href="/applicant/apply"
@@ -565,7 +688,7 @@ export default function ApplicationStatusPage() {
                       <Link
                         href={`/applicant/track/${app.id}`}
                         style={{
-                          background: "#2563eb",
+                          background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                           color: "#ffffff",
                           padding: "6px 14px",
                           borderRadius: "8px",
