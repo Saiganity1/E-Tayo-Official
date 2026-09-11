@@ -191,13 +191,28 @@ public class DataSeeder implements CommandLineRunner {
     }
     
     private void seedLogs() {
+        String staffEmail = "staff@etayo.gov.ph";
         com.etayo.backend.model.SystemAuditLog log1 = new com.etayo.backend.model.SystemAuditLog(
+            "EVALUATION_APPROVED",
+            staffEmail,
+            "Staff (staff@etayo.gov.ph) evaluated Locational Clearance LC-2025-0001 (Juan Dela Cruz) - Status: Approved. Compliant with CLUP & Resolution No. 4810.",
+            "127.0.0.1"
+        );
+        com.etayo.backend.model.SystemAuditLog log2 = new com.etayo.backend.model.SystemAuditLog(
             "USER_LOGIN",
             "juan.delacruz@email.com",
-            "Logged in",
+            "Applicant Juan Dela Cruz logged in successfully",
+            "127.0.0.1"
+        );
+        com.etayo.backend.model.SystemAuditLog log3 = new com.etayo.backend.model.SystemAuditLog(
+            "USER_LOGIN",
+            "admin@etayo.gov.ph",
+            "Administrator logged in to Admin Portal",
             "127.0.0.1"
         );
         systemAuditLogRepository.save(log1);
-        System.out.println("Seeded SystemAuditLog");
+        systemAuditLogRepository.save(log2);
+        systemAuditLogRepository.save(log3);
+        System.out.println("Seeded SystemAuditLogs with Staff Evaluations");
     }
 }

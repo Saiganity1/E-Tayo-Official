@@ -21,10 +21,70 @@ interface PermitContextProps {
   updateApplication: (app: PermitApplication) => void;
   refreshApplications: () => Promise<void>;
   updateFeeMultiplier: (id: string, value: number) => void;
-  clearLogs: () => void;
+  addSystemLog: (log: Partial<SystemLog>) => Promise<void>;
+  clearLogs: () => Promise<void>;
 }
 
 const PermitContext = createContext<PermitContextProps | undefined>(undefined);
+
+const normalizeLog = (raw: any): SystemLog => {
+  const action = raw.action || "";
+  const details = raw.details || "";
+  const user = raw.user || raw.userEmail || raw.staffEmail || raw.actor || "Staff / System";
+
+  let category: SystemLog["category"] = "system";
+  if (raw.category) {
+    category = raw.category;
+  } else {
+    const actUpper = action.toUpperCase();
+    const detLower = details.toLowerCase();
+    if (actUpper.includes("EVALUAT") || actUpper.includes("PERMIT") || detLower.includes("evaluated") || detLower.includes("permit")) {
+      category = "application";
+    } else if (actUpper.includes("LOGIN") || actUpper.includes("AUTH") || actUpper.includes("OTP") || actUpper.includes("TOKEN") || actUpper.includes("SECURITY")) {
+      category = "security";
+    } else if (actUpper.includes("FEE") || actUpper.includes("SETTING")) {
+      category = "setting";
+    }
+  }
+
+  let status: SystemLog["status"] = "info";
+  if (raw.status) {
+    status = raw.status;
+  } else {
+    const combined = (action + " " + details).toUpperCase();
+    if (combined.includes("APPROV") || combined.includes("SUCCESS") || combined.includes("PASSED")) {
+      status = "success";
+    } else if (combined.includes("REVISE") || combined.includes("INCOMPLETE") || combined.includes("WARNING")) {
+      status = "warning";
+    } else if (combined.includes("REJECT") || combined.includes("FAIL") || combined.includes("ERROR") || combined.includes("DENIED")) {
+      status = "error";
+    }
+  }
+
+  let message = raw.message;
+  if (!message || message.trim() === "") {
+    if (details && details.trim() !== "") {
+      message = details;
+    } else if (action && action.trim() !== "") {
+      message = action.replace(/_/g, " ");
+    } else {
+      message = "System operation executed";
+    }
+  }
+
+  return {
+    id: String(raw.id || `LOG-${Date.now()}-${Math.floor(Math.random() * 1000)}`),
+    timestamp: raw.timestamp || new Date().toISOString(),
+    category,
+    message,
+    user,
+    status,
+    action: raw.action,
+    details: raw.details,
+    userEmail: raw.userEmail,
+    ipAddress: raw.ipAddress
+  };
+};
 
 export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userRole, setUserRole] = useState<UserRole>("public");
@@ -85,7 +145,12 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           localStorage.setItem("etayo_cached_applications", JSON.stringify(mergedApps));
         } catch (e) {}
       }
-      if (logsRes.ok) setSystemLogs(await logsRes.json());
+      if (logsRes.ok) {
+        const rawLogs = await logsRes.json();
+        if (Array.isArray(rawLogs)) {
+          setSystemLogs(rawLogs.map(normalizeLog));
+        }
+      }
       if (feesRes.ok) setFeeStructures(await feesRes.json());
     } catch (error) {
       console.error("Error fetching data from backend:", error);
@@ -254,24 +319,76 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await fetchData();
   };
 
-  const updateFeeMultiplier = (id: string, newValue: number) => {
+  const updateFeeMultiplier = async (id: string, newValue: number) => {
     setFeeStructures((prev) =>
       prev.map((fee) => (fee.id === id ? { ...fee, multiplierValue: newValue } : fee))
     );
 
-    const newLog: SystemLog = {
-      id: `LOG-${Math.floor(100 + Math.random() * 900)}`,
-      timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
+    await addSystemLog({
       category: "setting",
-      message: `Modified ordinance assessment factor for fee ID ${id} to ${newValue}`,
-      user: "Super Admin",
       status: "warning",
-    };
-    setSystemLogs((prev) => [newLog, ...prev]);
+      action: "FEE_MULTIPLIER_UPDATED",
+      user: "Super Admin",
+      message: `Modified ordinance assessment factor for fee ID ${id} to ${newValue}`,
+      details: `Assessment factor updated to ${newValue} for fee schedule item ${id}`
+    });
   };
 
-  const clearLogs = () => {
+  const addSystemLog = async (logData: Partial<SystemLog>) => {
+    const rawAction = logData.action || "SYSTEM_LOG";
+    const rawDetails = logData.details || logData.message || "System action performed";
+    const rawUser = logData.user || logData.userEmail || "Staff / System";
+
+    const newLog = normalizeLog({
+      id: `LOG-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+      timestamp: logData.timestamp || new Date().toISOString(),
+      category: logData.category,
+      message: logData.message || rawDetails,
+      user: rawUser,
+      status: logData.status,
+      action: rawAction,
+      details: rawDetails,
+      userEmail: rawUser,
+    });
+
+    // 1. Optimistic update
+    setSystemLogs((prev) => [newLog, ...prev]);
+
+    // 2. Persist to backend database
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      await fetch(`${API_BASE_URL}/logs`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          action: rawAction,
+          userEmail: rawUser,
+          details: rawDetails,
+          ipAddress: "127.0.0.1",
+        })
+      });
+    } catch (e) {
+      console.warn("Could not sync log to backend:", e);
+    }
+  };
+
+  const clearLogs = async () => {
     setSystemLogs([]);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      await fetch(`${API_BASE_URL}/logs`, {
+        method: "DELETE",
+        headers
+      });
+    } catch (e) {
+      console.warn("Could not clear logs on backend:", e);
+    }
   };
 
   if (!mounted) {
@@ -292,6 +409,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateApplication,
         refreshApplications,
         updateFeeMultiplier,
+        addSystemLog,
         clearLogs,
       }}
     >

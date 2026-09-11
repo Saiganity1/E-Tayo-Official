@@ -70,6 +70,10 @@ export interface SystemLog {
   message: string;
   user: string;
   status: 'success' | 'warning' | 'info' | 'error';
+  action?: string;
+  details?: string;
+  userEmail?: string;
+  ipAddress?: string;
 }
 
 export interface FeeStructure {

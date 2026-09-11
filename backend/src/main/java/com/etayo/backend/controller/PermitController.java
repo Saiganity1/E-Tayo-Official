@@ -16,6 +16,9 @@ public class PermitController {
     @Autowired
     private PermitApplicationRepository permitApplicationRepository;
 
+    @Autowired
+    private com.etayo.backend.service.AuditLoggingService auditLoggingService;
+
     @GetMapping
     public ResponseEntity<List<PermitApplication>> getAllPermits() {
         return ResponseEntity.ok(permitApplicationRepository.findAll());
@@ -30,7 +33,18 @@ public class PermitController {
 
     @PostMapping
     public ResponseEntity<PermitApplication> createPermit(@RequestBody PermitApplication permit) {
-        return ResponseEntity.ok(permitApplicationRepository.save(permit));
+        PermitApplication saved = permitApplicationRepository.save(permit);
+        try {
+            auditLoggingService.logAction(
+                "PERMIT_CREATED",
+                saved.getApplicantEmail() != null ? saved.getApplicantEmail() : "Applicant",
+                String.format("New application submitted: %s (%s) for %s",
+                    saved.getId(),
+                    saved.getPermitType() != null ? saved.getPermitType().replace("_", " ") : "Permit",
+                    saved.getApplicantName() != null ? saved.getApplicantName() : "Applicant")
+            );
+        } catch (Exception ignored) {}
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/{id}")
@@ -38,8 +52,27 @@ public class PermitController {
     public ResponseEntity<PermitApplication> updatePermit(@PathVariable String id, @RequestBody PermitApplication permit) {
         permit.setId(id);
         return permitApplicationRepository.findById(id).map(existing -> {
+            String oldStatus = existing.getStatus();
             existing.setStatus(permit.getStatus());
             if (permit.getRemarks() != null) existing.setRemarks(permit.getRemarks());
+
+            if (oldStatus != null && !oldStatus.equalsIgnoreCase(permit.getStatus())) {
+                try {
+                    String staff = permit.getAssignedStaff() != null ? permit.getAssignedStaff() : "Staff Evaluator";
+                    String applicant = existing.getApplicantName() != null ? existing.getApplicantName() : existing.getApplicantEmail();
+                    auditLoggingService.logAction(
+                        "PERMIT_EVALUATED_" + permit.getStatus().toUpperCase(),
+                        staff,
+                        String.format("Application %s (%s) status changed from '%s' to '%s' for applicant %s. Remarks: %s",
+                            id,
+                            existing.getProjectName() != null ? existing.getProjectName() : "Permit",
+                            oldStatus,
+                            permit.getStatus(),
+                            applicant,
+                            permit.getRemarks() != null ? permit.getRemarks() : "None")
+                    );
+                } catch (Exception ignored) {}
+            }
             
             if (permit.getTrackingSteps() != null) {
                 if (existing.getTrackingSteps() == null) {
@@ -94,11 +127,27 @@ public class PermitController {
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<PermitApplication> updatePermitStatus(@PathVariable String id, @RequestBody java.util.Map<String, Object> payload) {
         return permitApplicationRepository.findById(id).map(existing -> {
+            String oldStatus = existing.getStatus();
             if (payload.containsKey("status") && payload.get("status") != null) {
                 existing.setStatus(String.valueOf(payload.get("status")));
             }
             if (payload.containsKey("remarks") && payload.get("remarks") != null) {
                 existing.setRemarks(String.valueOf(payload.get("remarks")));
+            }
+            if (oldStatus != null && !oldStatus.equalsIgnoreCase(existing.getStatus())) {
+                try {
+                    auditLoggingService.logAction(
+                        "PERMIT_EVALUATED_" + existing.getStatus().toUpperCase(),
+                        existing.getAssignedStaff() != null ? existing.getAssignedStaff() : "Staff Evaluator",
+                        String.format("Application %s (%s) status changed from '%s' to '%s' for applicant %s. Remarks: %s",
+                            id,
+                            existing.getProjectName() != null ? existing.getProjectName() : "Permit",
+                            oldStatus,
+                            existing.getStatus(),
+                            existing.getApplicantName() != null ? existing.getApplicantName() : existing.getApplicantEmail(),
+                            existing.getRemarks() != null ? existing.getRemarks() : "None")
+                    );
+                } catch (Exception ignored) {}
             }
             return ResponseEntity.ok(permitApplicationRepository.save(existing));
         }).orElseGet(() -> {

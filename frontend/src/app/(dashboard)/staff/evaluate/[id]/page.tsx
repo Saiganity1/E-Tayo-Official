@@ -22,7 +22,7 @@ export default function StaffEvaluatePage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
-  const { applications, updateApplication } = usePermitContext();
+  const { applications, updateApplication, addSystemLog } = usePermitContext();
 
   const app = applications.find((a) => a.id === id);
 
@@ -90,6 +90,22 @@ export default function StaffEvaluatePage() {
 
     const shortSummary = "Locational Clearance Approved. Compliant with CLUP and Zoning Ordinance (Resolution No. 4810).";
 
+    const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+    let staffName = "Staff Evaluator";
+    let staffEmail = "staff@etayo.gov.ph";
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u.name) staffName = u.name;
+        if (u.email) staffEmail = u.email;
+      } catch (e) {}
+    }
+
+    const applicantLabel = app.applicantName ? `${app.applicantName}` : (app.applicantEmail || "Applicant");
+    const permitTitle = app.permitType ? app.permitType.replace(/_/g, " ") : "Locational Clearance";
+    const logSummary = `Staff ${staffName} (${staffEmail}) evaluated application ${app.id} (${applicantLabel}) - Status: APPROVED`;
+    const logDetails = `Locational Clearance Approved for ${applicantLabel}. Compliant with CLUP & Zoning Ordinance. Remarks: ${decisionNotes || shortSummary}`;
+
     const updatedTracking = [
       ...(app.trackingSteps || []).map((step) => {
         if (step.title.toLowerCase().includes("zoning") || step.title.toLowerCase().includes("evaluation")) {
@@ -102,7 +118,7 @@ export default function StaffEvaluatePage() {
         status: "completed" as const,
         date: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
         notes: shortSummary,
-        actor: "Zoning Administrator / MPDC",
+        actor: `${staffName} / Zoning Administrator`,
       },
     ];
 
@@ -111,7 +127,7 @@ export default function StaffEvaluatePage() {
       {
         date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
         action: "Locational Clearance Approved",
-        actor: "Zoning Administrator",
+        actor: staffName,
         details: shortSummary,
       },
     ];
@@ -126,11 +142,23 @@ export default function StaffEvaluatePage() {
 
     await updateApplication(updatedApp);
 
-    // Also record official evaluation log in backend
+    // 1. Immediately record in Admin System Audit Logs
+    try {
+      await addSystemLog({
+        action: "EVALUATION_APPROVED",
+        category: "application",
+        status: "success",
+        user: staffEmail,
+        message: logSummary,
+        details: logDetails,
+      });
+    } catch (e) {
+      console.warn("Could not save system log", e);
+    }
+
+    // 2. Also record official evaluation log in backend
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-      const staffEmail = userStr ? JSON.parse(userStr).email : "staff@etayo.gov.ph";
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -142,7 +170,7 @@ export default function StaffEvaluatePage() {
           applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
           permitType: app.permitType || "locational_clearance",
           action: "Approved",
-          comments: shortSummary,
+          comments: decisionNotes || shortSummary,
         })
       });
     } catch (e) {
@@ -151,20 +179,73 @@ export default function StaffEvaluatePage() {
 
     setIsProcessing(false);
     setSuccessMessage(
-      `Locational Clearance (${app.id}) has been successfully APPROVED! Stage 1 is officially completed and Stage 2 (Project Type Matrix) is now unlocked for the applicant.`
+      `Locational Clearance (${app.id}) has been successfully APPROVED! Stage 1 is officially completed and Stage 2 (Project Type Matrix) is now unlocked for applicant ${applicantLabel}.`
     );
   };
 
   const handleReject = async () => {
     setIsProcessing(true);
+
+    const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+    let staffName = "Staff Evaluator";
+    let staffEmail = "staff@etayo.gov.ph";
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u.name) staffName = u.name;
+        if (u.email) staffEmail = u.email;
+      } catch (e) {}
+    }
+
+    const applicantLabel = app.applicantName ? `${app.applicantName}` : (app.applicantEmail || "Applicant");
+    const permitTitle = app.permitType ? app.permitType.replace(/_/g, " ") : "Locational Clearance";
+    const logSummary = `Staff ${staffName} (${staffEmail}) evaluated application ${app.id} (${applicantLabel}) - Status: REVISION REQUESTED`;
+    const logDetails = `Requirements revision requested for ${applicantLabel} (${permitTitle}). Remarks: ${decisionNotes || "Incomplete requirements."}`;
+
     const updatedApp = {
       ...app,
       status: "incomplete_requirements" as const,
       remarks: decisionNotes,
     };
     await updateApplication(updatedApp);
+
+    // 1. Immediately record in Admin System Audit Logs
+    try {
+      await addSystemLog({
+        action: "EVALUATION_REVISION_REQUESTED",
+        category: "application",
+        status: "warning",
+        user: staffEmail,
+        message: logSummary,
+        details: logDetails,
+      });
+    } catch (e) {
+      console.warn("Could not save system log", e);
+    }
+
+    // 2. Also record official evaluation log in backend
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/evaluations`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          staffEmail: staffEmail || "staff@etayo.gov.ph",
+          applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+          permitType: app.permitType || "locational_clearance",
+          action: "Incomplete Requirements",
+          comments: decisionNotes,
+        })
+      });
+    } catch (e) {
+      console.warn("Could not save evaluation log", e);
+    }
+
     setIsProcessing(false);
-    setSuccessMessage("Application has been tagged for requirements revision.");
+    setSuccessMessage(`Application (${app.id}) has been tagged for requirements revision. Notification sent to ${applicantLabel}.`);
   };
 
   return (
