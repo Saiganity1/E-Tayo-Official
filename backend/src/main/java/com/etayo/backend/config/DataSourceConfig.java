@@ -111,13 +111,28 @@ public class DataSourceConfig {
         }
 
         // 2. Fallback to Local H2 Database (for local dev and testing)
-        log.info("No remote PostgreSQL DATABASE_URL configured. Initializing local H2 file database.");
-        File dataDir = new File("./data");
+        log.info("No remote PostgreSQL DATABASE_URL configured. Initializing local persistent H2 file database.");
+        String userDir = System.getProperty("user.dir", ".");
+        File baseDir = new File(userDir);
+        File dataDir;
+        if (new File(baseDir, "backend/data").exists() || new File(baseDir, "backend").isDirectory()) {
+            dataDir = new File(baseDir, "backend/data");
+        } else if (new File(baseDir, "data").exists()) {
+            dataDir = new File(baseDir, "data");
+        } else if (baseDir.getName().equals("backend")) {
+            dataDir = new File(baseDir, "data");
+        } else {
+            dataDir = new File(baseDir, "backend/data");
+        }
+
         if (!dataDir.exists()) {
             dataDir.mkdirs();
         }
 
-        config.setJdbcUrl("jdbc:h2:file:./data/etayodb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=USER");
+        String dbFilePath = new File(dataDir, "etayodb").getAbsolutePath().replace("\\", "/");
+        log.info("Connecting to canonical persistent database at: {}", dbFilePath);
+
+        config.setJdbcUrl("jdbc:h2:file:" + dbFilePath + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=USER;AUTO_SERVER=TRUE");
         config.setUsername("sa");
         config.setPassword("password");
         config.setDriverClassName("org.h2.Driver");

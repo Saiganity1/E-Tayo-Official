@@ -23,10 +23,12 @@ public class BackendApplication {
 	@Bean
 	public CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder, @Value("${jwt.secret}") String jwtSecret) {
 		return args -> {
+			// Clean up default dummy applicant if it exists so it never clutters the accounts list
+			userRepository.findByEmail("applicant@etayo.gov.ph").ifPresent(user -> {
+				userRepository.delete(user);
+				System.out.println("Cleaned up default dummy applicant: applicant@etayo.gov.ph");
+			});
 
-			if (!userRepository.existsByEmail("applicant@etayo.gov.ph")) {
-				userRepository.save(new User("applicant@etayo.gov.ph", passwordEncoder.encode("password123"), Role.ROLE_APPLICANT, "Juan Dela Cruz"));
-			}
 			if (!userRepository.existsByEmail("staff@etayo.gov.ph")) {
 				userRepository.save(new User("staff@etayo.gov.ph", passwordEncoder.encode("password123"), Role.ROLE_STAFF, "Staff User"));
 			}

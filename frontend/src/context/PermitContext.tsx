@@ -86,6 +86,10 @@ const normalizeLog = (raw: any): SystemLog => {
   };
 };
 
+const isDummyApp = (app: PermitApplication) => {
+  return app.id === "LC-2025-0001" && (app.applicantName === "Juan Dela Cruz" || app.applicantEmail === "juan.delacruz@email.com");
+};
+
 export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userRole, setUserRole] = useState<UserRole>("public");
   const [selectedPermitType, setSelectedPermitType] = useState<PermitType>("building_permit");
@@ -105,34 +109,42 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const [appsRes, logsRes, feesRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/permits`, { headers }),
-        fetch(`${API_BASE_URL}/logs`, { headers }),
-        fetch(`${API_BASE_URL}/fees`, { headers })
+        fetch(`${API_BASE_URL}/permits`, { headers }).catch(e => ({ ok: false, json: async () => [] })),
+        fetch(`${API_BASE_URL}/logs`, { headers }).catch(e => ({ ok: false, json: async () => [] })),
+        fetch(`${API_BASE_URL}/fees`, { headers }).catch(e => ({ ok: false, json: async () => [] }))
       ]);
 
       if (appsRes.ok) {
         const backendApps: PermitApplication[] = await appsRes.json();
+        const cleanBackendApps = (backendApps || []).filter(a => !isDummyApp(a));
         
-        let mergedApps = backendApps;
+        let mergedApps = cleanBackendApps;
         try {
           const cachedStr = localStorage.getItem("etayo_cached_applications");
           if (cachedStr) {
             const cachedApps: PermitApplication[] = JSON.parse(cachedStr);
-            mergedApps = backendApps.map((bApp) => {
+            const cleanCached = (cachedApps || []).filter(c => !isDummyApp(c));
+
+            mergedApps = cleanBackendApps.map((bApp) => {
               if (bApp.status === "approved" || bApp.status === "released") {
                 return bApp;
               }
-              const foundCached = cachedApps.find((c) => c.id === bApp.id);
+              const foundCached = cleanCached.find((c) => c.id === bApp.id);
               if (foundCached && (foundCached.status === "approved" || foundCached.status === "released")) {
                 return { ...bApp, ...foundCached };
               }
               return bApp;
             });
 
-            // Include any locally created applications not yet in backend
-            cachedApps.forEach((c) => {
+            // Include any locally created applications not yet in backend, and sync them back to backend
+            cleanCached.forEach((c) => {
               if (!mergedApps.some((m) => m.id === c.id)) {
                 mergedApps.push(c);
+                fetch(`${API_BASE_URL}/permits`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", ...(token ? { "Authorization": `Bearer ${token}` } : {}) },
+                  body: JSON.stringify(c)
+                }).catch(() => {});
               }
             });
           }
@@ -145,36 +157,74 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           localStorage.setItem("etayo_cached_applications", JSON.stringify(mergedApps));
         } catch (e) {}
       }
+
       if (logsRes.ok) {
         const rawLogs = await logsRes.json();
         if (Array.isArray(rawLogs)) {
-          setSystemLogs(rawLogs.map(normalizeLog));
+          const formatted = rawLogs.map(normalizeLog);
+          setSystemLogs(formatted);
+          try {
+            localStorage.setItem("etayo_cached_logs", JSON.stringify(formatted));
+          } catch (e) {}
         }
       }
-      if (feesRes.ok) setFeeStructures(await feesRes.json());
+
+      if (feesRes.ok) {
+        const feesData = await feesRes.json();
+        if (Array.isArray(feesData) && feesData.length > 0) {
+          setFeeStructures(feesData);
+          try {
+            localStorage.setItem("etayo_cached_fees", JSON.stringify(feesData));
+          } catch (e) {}
+        }
+      }
     } catch (error) {
-      console.error("Error fetching data from backend:", error);
+      console.warn("Notice: Backend connecting or polling...", error);
     }
   };
 
   useEffect(() => {
-    // 1. Immediately restore any locally cached applications (preventing flash of unapproved state on refresh)
+    // 1. Immediately restore locally cached applications (preventing flash of empty state on refresh)
     try {
       const stored = localStorage.getItem("etayo_cached_applications");
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setApplications(parsed);
+          const clean = parsed.filter(a => !isDummyApp(a));
+          setApplications(clean);
+          localStorage.setItem("etayo_cached_applications", JSON.stringify(clean));
         }
       }
     } catch (e) {
       console.warn("Could not load cached applications from localStorage", e);
     }
 
-    // 2. Fetch fresh data from backend immediately
+    // 2. Immediately restore locally cached system logs
+    try {
+      const storedLogs = localStorage.getItem("etayo_cached_logs");
+      if (storedLogs) {
+        const parsedLogs = JSON.parse(storedLogs);
+        if (Array.isArray(parsedLogs) && parsedLogs.length > 0) {
+          setSystemLogs(parsedLogs);
+        }
+      }
+    } catch (e) {}
+
+    // 3. Immediately restore locally cached fee structures
+    try {
+      const storedFees = localStorage.getItem("etayo_cached_fees");
+      if (storedFees) {
+        const parsedFees = JSON.parse(storedFees);
+        if (Array.isArray(parsedFees) && parsedFees.length > 0) {
+          setFeeStructures(parsedFees);
+        }
+      }
+    } catch (e) {}
+
+    // 4. Fetch fresh data from backend immediately
     fetchData();
 
-    // 3. Set up periodic polling every 4 seconds for real-time multi-tab & multi-user sync
+    // 5. Set up periodic polling every 4 seconds for real-time multi-tab & multi-user sync
     const pollInterval = setInterval(() => {
       fetchData();
     }, 4000);
@@ -351,8 +401,14 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       userEmail: rawUser,
     });
 
-    // 1. Optimistic update
-    setSystemLogs((prev) => [newLog, ...prev]);
+    // 1. Optimistic update and cache
+    setSystemLogs((prev) => {
+      const updated = [newLog, ...prev];
+      try {
+        localStorage.setItem("etayo_cached_logs", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
     // 2. Persist to backend database
     try {
@@ -377,6 +433,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const clearLogs = async () => {
     setSystemLogs([]);
+    try {
+      localStorage.removeItem("etayo_cached_logs");
+    } catch (e) {}
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = {};

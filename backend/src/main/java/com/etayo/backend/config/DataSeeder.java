@@ -112,72 +112,31 @@ public class DataSeeder implements CommandLineRunner {
             userRepository.save(staff);
             System.out.println("Created dummy STAFF user");
             
-            // Generate Dummy Evaluations
-            evaluationLogRepository.save(new EvaluationLog(staffEmail, "applicant1@gmail.com", "Building Permit", "Approved", "All documents verified.", LocalDateTime.now().minusDays(2)));
-            evaluationLogRepository.save(new EvaluationLog(staffEmail, "juan.delacruz@yahoo.com", "Business Permit", "Rejected", "Missing DTI Registration.", LocalDateTime.now().minusDays(1)));
-            evaluationLogRepository.save(new EvaluationLog(staffEmail, "maria.clara@gmail.com", "Sanitary Permit", "Approved", "Passed inspection.", LocalDateTime.now().minusHours(5)));
+            // Generate Initial Staff Evaluation Logs
+            evaluationLogRepository.save(new EvaluationLog(staffEmail, "citizen@example.com", "Building Permit", "Approved", "All documents verified.", LocalDateTime.now().minusDays(2)));
+            evaluationLogRepository.save(new EvaluationLog(staffEmail, "business@example.com", "Business Permit", "Rejected", "Missing DTI Registration.", LocalDateTime.now().minusDays(1)));
         }
 
-        if (permitApplicationRepository.count() == 0) {
-            seedPermits();
-        }
+        // Ensure default dummy applicant account is removed if present
+        userRepository.findByEmail("applicant@etayo.gov.ph").ifPresent(user -> {
+            userRepository.delete(user);
+            System.out.println("Cleaned up default dummy applicant: applicant@etayo.gov.ph");
+        });
+
+        // Ensure default dummy permit LC-2025-0001 (Juan Dela Cruz) is cleaned up if present
+        permitApplicationRepository.findById("LC-2025-0001").ifPresent(legacyApp -> {
+            if ("Juan Dela Cruz".equalsIgnoreCase(legacyApp.getApplicantName()) || "juan.delacruz@email.com".equalsIgnoreCase(legacyApp.getApplicantEmail())) {
+                permitApplicationRepository.delete(legacyApp);
+                System.out.println("Cleaned up default dummy permit: LC-2025-0001");
+            }
+        });
+
         if (feeStructureRepository.count() == 0) {
             seedFees();
         }
         if (systemAuditLogRepository.count() == 0) {
             seedLogs();
         }
-    }
-
-    private void seedPermits() {
-        com.etayo.backend.model.PermitApplication app1 = new com.etayo.backend.model.PermitApplication();
-        app1.setId("LC-2025-0001");
-        app1.setPermitType("locational_clearance");
-        app1.setProjectName("Dela Cruz Warehouse");
-        app1.setApplicantName("Juan Dela Cruz");
-        app1.setApplicantPhone("0917 000 4567");
-        app1.setApplicantEmail("juan.delacruz@email.com");
-        app1.setApplicantAddress("123 Rizal Street, Sto. Tomas, Pampanga");
-        app1.setProjectAddress("Lot 8, Block 3, Brgy. San Bartolome, Sto. Tomas, Pampanga");
-        app1.setProjectDescription("Proposed construction of a warehouse building for logistics and storage purposes.");
-        app1.setStatus("under_review");
-        app1.setDateSubmitted("May 13, 2025");
-        
-        com.etayo.backend.model.Requirement r1 = new com.etayo.backend.model.Requirement();
-        r1.setName("Zoning Clearance Application Form");
-        r1.setRequired(true);
-        r1.setStatus("approved");
-        
-        app1.setRequirements(java.util.Arrays.asList(r1));
-        
-        com.etayo.backend.model.LocationCoordinates loc1 = new com.etayo.backend.model.LocationCoordinates();
-        loc1.setLat(15.0163);
-        loc1.setLng(120.7188);
-        loc1.setAddress("Brgy. San Bartolome, Sto. Tomas, Pampanga");
-        loc1.setLotNo("8");
-        loc1.setBlockNo("3");
-        app1.setLocation(loc1);
-        
-        com.etayo.backend.model.TrackingStep ts1 = new com.etayo.backend.model.TrackingStep();
-        ts1.setTitle("Application Submitted");
-        ts1.setStatus("completed");
-        ts1.setDate("May 13, 2025");
-        
-        app1.setTrackingSteps(java.util.Arrays.asList(ts1));
-        app1.setEstimatedFees(4500);
-        app1.setPaymentStatus("paid");
-        app1.setAssignedStaff("Zoning Officer Amara Santos");
-        
-        com.etayo.backend.model.HistoryLog h1 = new com.etayo.backend.model.HistoryLog();
-        h1.setDate("May 13, 2025, 09:30 AM");
-        h1.setAction("Application Submitted");
-        h1.setActor("Juan Dela Cruz");
-        h1.setDetails("Application package uploaded online.");
-        
-        app1.setHistoryLog(java.util.Arrays.asList(h1));
-
-        permitApplicationRepository.save(app1);
-        System.out.println("Seeded PermitApplication LC-2025-0001");
     }
 
     private void seedFees() {
@@ -193,18 +152,12 @@ public class DataSeeder implements CommandLineRunner {
     private void seedLogs() {
         String staffEmail = "staff@etayo.gov.ph";
         com.etayo.backend.model.SystemAuditLog log1 = new com.etayo.backend.model.SystemAuditLog(
-            "EVALUATION_APPROVED",
+            "SYSTEM_STARTUP",
             staffEmail,
-            "Staff (staff@etayo.gov.ph) evaluated Locational Clearance LC-2025-0001 (Juan Dela Cruz) - Status: Approved. Compliant with CLUP & Resolution No. 4810.",
+            "e-Tayo Municipal Online System initialized and operational.",
             "127.0.0.1"
         );
         com.etayo.backend.model.SystemAuditLog log2 = new com.etayo.backend.model.SystemAuditLog(
-            "USER_LOGIN",
-            "juan.delacruz@email.com",
-            "Applicant Juan Dela Cruz logged in successfully",
-            "127.0.0.1"
-        );
-        com.etayo.backend.model.SystemAuditLog log3 = new com.etayo.backend.model.SystemAuditLog(
             "USER_LOGIN",
             "admin@etayo.gov.ph",
             "Administrator logged in to Admin Portal",
@@ -212,7 +165,6 @@ public class DataSeeder implements CommandLineRunner {
         );
         systemAuditLogRepository.save(log1);
         systemAuditLogRepository.save(log2);
-        systemAuditLogRepository.save(log3);
-        System.out.println("Seeded SystemAuditLogs with Staff Evaluations");
+        System.out.println("Seeded SystemAuditLogs");
     }
 }
