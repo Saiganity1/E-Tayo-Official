@@ -740,7 +740,7 @@ export default function ApplicationStatusPage() {
                     <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
                       {/* Direct Message Officer Button */}
                       <Link
-                        href={`/applicant/messages?ref=${app.id}`}
+                        href={`/applicant/messages?ref=${encodeURIComponent(app.id)}`}
                         style={{
                           background: "#ffffff",
                           border: "1.5px solid #c7d2fe",

@@ -23,6 +23,9 @@ public class ChatMessage {
     @Column(nullable = true)
     private String actualSender;
 
+    @Column(nullable = true)
+    private String applicationId;
+
     @Column(nullable = false)
     private Instant timestamp;
 
@@ -51,6 +54,9 @@ public class ChatMessage {
 
     public String getActualSender() { return actualSender; }
     public void setActualSender(String actualSender) { this.actualSender = actualSender; }
+
+    public String getApplicationId() { return applicationId; }
+    public void setApplicationId(String applicationId) { this.applicationId = applicationId; }
 
     public Instant getTimestamp() { return timestamp; }
     public void setTimestamp(Instant timestamp) { this.timestamp = timestamp; }

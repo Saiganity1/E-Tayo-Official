@@ -72,7 +72,14 @@ public class ChatController {
     }
 
     @GetMapping("/api/messages/history")
-    public ResponseEntity<List<ChatMessage>> getChatHistory(@RequestParam String user1, @RequestParam String user2) {
+    public ResponseEntity<List<ChatMessage>> getChatHistory(
+            @RequestParam String user1, 
+            @RequestParam String user2,
+            @RequestParam(required = false) String applicationId) {
+        if (applicationId != null && !applicationId.trim().isEmpty() && !applicationId.equalsIgnoreCase("all")) {
+            List<ChatMessage> history = chatMessageRepository.findChatHistoryByApplication(user1, user2, applicationId.trim());
+            return ResponseEntity.ok(history);
+        }
         List<ChatMessage> history = chatMessageRepository.findChatHistory(user1, user2);
         return ResponseEntity.ok(history);
     }
