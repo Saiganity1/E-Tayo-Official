@@ -1,14 +1,15 @@
 package com.etayo.backend.security;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.Map;
 
 @Component
 public class JwtTokenProvider {
@@ -20,16 +21,26 @@ public class JwtTokenProvider {
     private long jwtExpirationDate;
 
     public String generateToken(Authentication authentication) {
-        return generateTokenFromUsername(authentication.getName());
+        String role = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElse("ROLE_APPLICANT");
+        return generateToken(authentication.getName(), role, authentication.getName());
     }
 
     public String generateTokenFromUsername(String username) {
+        return generateToken(username, "ROLE_APPLICANT", username);
+    }
+
+    public String generateToken(String username, String role, String name) {
         Date currentDate = new Date();
         Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate);
 
         return Jwts.builder()
                 .setSubject(username)
-                .setIssuedAt(new Date())
+                .claim("role", role)
+                .claim("name", name)
+                .setIssuedAt(currentDate)
                 .setExpiration(expireDate)
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
@@ -37,8 +48,10 @@ public class JwtTokenProvider {
 
     private Key key() {
         try {
+            if (jwtSecret == null || jwtSecret.trim().isEmpty()) {
+                throw new IllegalStateException("JWT Secret is not configured. Please set JWT_SECRET environment variable.");
+            }
             // Hash the secret using SHA-256 to guarantee it's exactly 256 bits (32 bytes)
-            // This prevents WeakKeyException regardless of what the user sets in JWT_SECRET
             java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
             byte[] keyBytes = digest.digest(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             return Keys.hmacShaKeyFor(keyBytes);
@@ -47,13 +60,26 @@ public class JwtTokenProvider {
         }
     }
 
-    public String getUsername(String token) {
+    public Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key())
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
+    }
+
+    public String getUsername(String token) {
+        return getClaims(token).getSubject();
+    }
+
+    public String getRole(String token) {
+        Object role = getClaims(token).get("role");
+        return role != null ? role.toString() : null;
+    }
+
+    public String getName(String token) {
+        Object name = getClaims(token).get("name");
+        return name != null ? name.toString() : null;
     }
 
     public boolean validateToken(String token) {

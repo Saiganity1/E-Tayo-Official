@@ -24,18 +24,32 @@ import com.etayo.backend.model.RefreshToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Random;
 import java.util.Optional;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.transaction.annotation.Transactional;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(origins = {"https://e-tayo-official.vercel.app", "http://localhost:3000", "http://localhost:3001"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    // In-memory sliding-window rate limiters
+    // Max 3 OTP requests per 10 minutes per email
+    private final ConcurrentHashMap<String, List<Long>> otpRequestHistory = new ConcurrentHashMap<>();
+    
+    // Max 5 failed login attempts per 5 minutes per email
+    private static class LoginTracker {
+        int failedAttempts = 0;
+        long lockedUntil = 0;
+    }
+    private final ConcurrentHashMap<String, LoginTracker> loginAttemptHistory = new ConcurrentHashMap<>();
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
@@ -65,19 +79,31 @@ public class AuthController {
     }
 
     @PostMapping("/send-otp")
-    public ResponseEntity<?> sendOtp(@RequestBody java.util.Map<String, String> payload) {
+    public ResponseEntity<?> sendOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         if (email == null || email.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("error", "Email is required"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
         }
         email = email.trim().toLowerCase();
 
+        // Rate limiting check: Max 3 requests in 10 minutes
+        long now = System.currentTimeMillis();
+        long window = 10 * 60 * 1000L;
+        List<Long> timestamps = otpRequestHistory.computeIfAbsent(email, k -> new java.util.concurrent.CopyOnWriteArrayList<>());
+        timestamps.removeIf(t -> now - t > window);
+
+        if (timestamps.size() >= 3) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("error", "Too many OTP requests. Please wait a few minutes before trying again."));
+        }
+        timestamps.add(now);
+
         if (userRepository.existsByEmail(email)) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("error", "Email is already taken!"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Email is already taken!"));
         }
 
-        // Generate 6 digit OTP
-        String otp = String.format("%06d", new Random().nextInt(999999));
+        // Cryptographically secure 6 digit OTP
+        String otp = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
         
         Optional<OtpVerification> existingOpt = otpVerificationRepository.findByEmail(email);
         OtpVerification otpVer;
@@ -96,29 +122,55 @@ public class AuthController {
                           "<p>This code will expire in 10 minutes.</p>";
         emailService.sendEmail(email, "e-Tayo Verification Code", htmlBody);
         
-        auditLoggingService.logAction("OTP_REQUESTED", email, "OTP requested for registration");
+        auditLoggingService.logAction("OTP_REQUESTED", email, "Secure OTP requested for registration");
 
-        return ResponseEntity.ok(java.util.Map.of("message", "OTP sent to email"));
+        return ResponseEntity.ok(Map.of("message", "OTP sent to email"));
     }
-
 
     @Transactional
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginDto loginDto, HttpServletResponse response) {
+        String rawEmail = loginDto.getEmail() != null ? loginDto.getEmail().trim().toLowerCase() : "";
+        if (rawEmail.isEmpty() || loginDto.getPassword() == null || loginDto.getPassword().trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Email and password are required"));
+        }
+
+        // Check Rate Limiter for brute force protection
+        long now = System.currentTimeMillis();
+        LoginTracker tracker = loginAttemptHistory.computeIfAbsent(rawEmail, k -> new LoginTracker());
+        if (tracker.lockedUntil > now) {
+            long remainingSeconds = (tracker.lockedUntil - now) / 1000;
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("error", "Account temporarily locked due to multiple failed login attempts. Please try again in " + remainingSeconds + " seconds."));
+        }
+
         try {
-            String rawEmail = loginDto.getEmail() != null ? loginDto.getEmail().trim() : "";
-            if (rawEmail.isEmpty() || loginDto.getPassword() == null || loginDto.getPassword().trim().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("error", "Email and password are required"));
-            }
-
             // Find user case-insensitively
-            User user = userRepository.findByEmailIgnoreCase(rawEmail)
-                    .orElseThrow(() -> new RuntimeException("Account not found with username/email: " + rawEmail));
+            Optional<User> userOpt = userRepository.findByEmailIgnoreCase(rawEmail);
 
-            // Verify password using BCrypt
-            if (!passwordEncoder.matches(loginDto.getPassword().trim(), user.getPassword())) {
-                throw new RuntimeException("Incorrect password for account: " + rawEmail);
+            // Verify existence and password without revealing whether email or password was wrong
+            if (userOpt.isEmpty() || !passwordEncoder.matches(loginDto.getPassword().trim(), userOpt.get().getPassword())) {
+                tracker.failedAttempts++;
+                if (tracker.failedAttempts >= 5) {
+                    tracker.lockedUntil = now + (5 * 60 * 1000L); // Lock for 5 minutes
+                    tracker.failedAttempts = 0;
+                    try {
+                        auditLoggingService.logAction("ACCOUNT_LOCKOUT", rawEmail, "Account temporarily locked after 5 failed login attempts.");
+                    } catch (Exception ignored) {}
+                    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                            .body(Map.of("error", "Too many failed attempts. Account temporarily locked for 5 minutes."));
+                }
+                try {
+                    auditLoggingService.logAction("LOGIN_FAILED", rawEmail, "Failed login attempt (attempt " + tracker.failedAttempts + " of 5).");
+                } catch (Exception ignored) {}
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid email or password"));
             }
+
+            User user = userOpt.get();
+
+            // Successful login: reset failed attempts
+            tracker.failedAttempts = 0;
+            tracker.lockedUntil = 0;
 
             Authentication authentication = new UsernamePasswordAuthenticationToken(
                     user.getEmail(),
@@ -128,7 +180,8 @@ public class AuthController {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            String jwt = jwtTokenProvider.generateToken(authentication);
+            // Generate JWT containing signed claims (email, role, name)
+            String jwt = jwtTokenProvider.generateToken(user.getEmail(), user.getRole().name(), user.getName());
             
             // Create Refresh Token
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
@@ -145,75 +198,25 @@ public class AuthController {
             return ResponseEntity.ok(new JwtAuthResponse(jwt, user.getRole().name(), user.getName()));
         } catch (Exception e) {
             e.printStackTrace();
-            try {
-                auditLoggingService.logAction("LOGIN_FAILED", loginDto.getEmail(), "Failed login attempt: " + e.getMessage());
-            } catch (Exception ignored) {}
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(java.util.Map.of("error", e.getMessage() != null ? e.getMessage() : "Invalid credentials"));
-        }
-    }
-
-    /**
-     * Emergency / Master Reset for SuperAdmin credentials
-     */
-    @Transactional
-    @PostMapping("/reset-superadmin")
-    public ResponseEntity<?> resetSuperadmin(@RequestBody(required = false) Map<String, String> body) {
-        try {
-            String newPassword = (body != null && body.containsKey("newPassword") && !body.get("newPassword").trim().isEmpty())
-                    ? body.get("newPassword").trim()
-                    : "Admin";
-
-            List<User> adminList = userRepository.findAllByEmailIgnoreCase("admin");
-            if (adminList.isEmpty()) {
-                User admin = new User("admin", passwordEncoder.encode(newPassword), Role.ROLE_ADMIN, "Super Admin");
-                userRepository.save(admin);
-            } else {
-                for (User u : adminList) {
-                    u.setEmail("admin");
-                    u.setPassword(passwordEncoder.encode(newPassword));
-                    u.setRole(Role.ROLE_ADMIN);
-                    userRepository.save(u);
-                }
-            }
-
-            List<User> municipalList = userRepository.findAllByEmailIgnoreCase("admin@etayo.gov.ph");
-            if (municipalList.isEmpty()) {
-                User municipalAdmin = new User("admin@etayo.gov.ph", passwordEncoder.encode(newPassword), Role.ROLE_ADMIN, "Admin User");
-                userRepository.save(municipalAdmin);
-            } else {
-                for (User u : municipalList) {
-                    u.setEmail("admin@etayo.gov.ph");
-                    u.setPassword(passwordEncoder.encode(newPassword));
-                    u.setRole(Role.ROLE_ADMIN);
-                    userRepository.save(u);
-                }
-            }
-
-            return ResponseEntity.ok(java.util.Map.of(
-                    "message", "SuperAdmin credentials successfully reset to password: " + newPassword,
-                    "email", "admin"
-            ));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(java.util.Map.of("error", e.getMessage() != null ? e.getMessage() : "Reset failed"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid email or password"));
         }
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@CookieValue(name = "refreshToken", required = false) String requestRefreshToken) {
         if (requestRefreshToken == null || requestRefreshToken.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("error", "Refresh Token is missing!"));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Refresh Token is missing!"));
         }
 
         return refreshTokenService.findByToken(requestRefreshToken)
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
-                    String token = jwtTokenProvider.generateTokenFromUsername(user.getEmail());
+                    String token = jwtTokenProvider.generateToken(user.getEmail(), user.getRole().name(), user.getName());
                     auditLoggingService.logAction("TOKEN_REFRESHED", user.getEmail(), "JWT successfully refreshed");
-                    return ResponseEntity.ok(java.util.Map.of("accessToken", token));
+                    return ResponseEntity.ok(Map.of("accessToken", token));
                 })
-                .orElse(ResponseEntity.status(HttpStatus.FORBIDDEN).body(java.util.Map.of("error", "Refresh token is not in database!")));
+                .orElse(ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Refresh token is invalid or expired!")));
     }
 
     @PostMapping("/register")
@@ -223,25 +226,25 @@ public class AuthController {
             String providedOtp = registerDto.getOtp();
 
             if (providedOtp == null || providedOtp.trim().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("error", "OTP is required"));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "OTP is required"));
             }
 
             if (userRepository.existsByEmail(email)) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("error", "Email is already taken!"));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Email is already taken!"));
             }
 
             Optional<OtpVerification> otpOpt = otpVerificationRepository.findByEmail(email);
             if (otpOpt.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("error", "No OTP generated for this email"));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "No OTP generated for this email"));
             }
 
             OtpVerification otpVer = otpOpt.get();
             if (!otpVer.getOtp().equals(providedOtp)) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("error", "Invalid Verification Code"));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Invalid Verification Code"));
             }
 
             if (LocalDateTime.now().isAfter(otpVer.getExpiryTime())) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("error", "Verification Code has expired"));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Verification Code has expired"));
             }
 
             User user = new User(
@@ -256,9 +259,9 @@ public class AuthController {
             // Delete the OTP as it is single use
             otpVerificationRepository.delete(otpVer);
 
-            return ResponseEntity.ok(java.util.Map.of("message", "User registered successfully"));
+            return ResponseEntity.ok(Map.of("message", "User registered successfully"));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(java.util.Map.of("error", "Registration error: " + e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Registration error: " + e.getMessage()));
         }
     }
 }

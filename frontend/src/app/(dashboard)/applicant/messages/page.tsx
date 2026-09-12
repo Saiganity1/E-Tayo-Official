@@ -451,8 +451,13 @@ export default function ApplicantMessagesPage() {
     const formData = new FormData();
     formData.append("files", file);
     formData.append("permitType", "Applicant Attachment");
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const uploadHeaders: Record<string, string> = {};
+    if (token) uploadHeaders["Authorization"] = `Bearer ${token}`;
+
     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/upload`, {
       method: "POST",
+      headers: uploadHeaders,
       body: formData
     })
       .then(res => res.json())

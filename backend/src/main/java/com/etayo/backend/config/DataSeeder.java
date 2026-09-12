@@ -68,36 +68,28 @@ public class DataSeeder implements CommandLineRunner {
             jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN project_description TYPE TEXT;");
         } catch (Exception ignored) {}
 
-        // Ensure SuperAdmin account always exists and password is set to Admin
-        User admin = userRepository.findByEmailIgnoreCase("admin").orElse(null);
-        if (admin == null) {
-            admin = new User(
+        // Ensure SuperAdmin account exists if not already present
+        if (!userRepository.existsByEmail("admin")) {
+            User admin = new User(
                     "admin",
                     passwordEncoder.encode("Admin"),
                     Role.ROLE_ADMIN,
                     "Super Admin"
             );
             userRepository.save(admin);
-            System.out.println("Created SUPERADMIN user with email: admin");
-        } else {
-            admin.setPassword(passwordEncoder.encode("Admin"));
-            admin.setRole(Role.ROLE_ADMIN);
-            userRepository.save(admin);
+            System.out.println("Created initial SUPERADMIN user with email: admin");
         }
 
-        // Also ensure admin@etayo.gov.ph has password Admin
-        User municipalAdmin = userRepository.findByEmail("admin@etayo.gov.ph").orElse(null);
-        if (municipalAdmin == null) {
-            municipalAdmin = new User(
+        // Ensure municipal admin account exists if not already present
+        if (!userRepository.existsByEmail("admin@etayo.gov.ph")) {
+            User municipalAdmin = new User(
                     "admin@etayo.gov.ph",
                     passwordEncoder.encode("Admin"),
                     Role.ROLE_ADMIN,
                     "Admin User"
             );
             userRepository.save(municipalAdmin);
-        } else {
-            municipalAdmin.setPassword(passwordEncoder.encode("Admin"));
-            userRepository.save(municipalAdmin);
+            System.out.println("Created initial municipal admin: admin@etayo.gov.ph");
         }
 
         // Dummy Staff User for Audit Logging Demo
