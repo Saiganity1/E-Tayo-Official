@@ -113,9 +113,6 @@ export default function ApplyPage() {
 
   // Locational Clearance Prerequisite & Form State
   const [showGoogleForm, setShowGoogleForm] = useState(false);
-  const [manualClearanceRef, setManualClearanceRef] = useState("");
-  const [isManualVerified, setIsManualVerified] = useState(false);
-  const [showManualVerifyInput, setShowManualVerifyInput] = useState(false);
   const [lockedNotice, setLockedNotice] = useState<string | null>(null);
   const [selectedClearanceRef, setSelectedClearanceRef] = useState<string | null>(null);
   const [applicantName, setApplicantName] = useState("Applicant");
@@ -145,7 +142,6 @@ export default function ApplyPage() {
       const ref = params.get("clearanceRef");
       if (ref) {
         setSelectedClearanceRef(ref);
-        setIsManualVerified(true);
         setCurrentStep(2);
       }
     }
@@ -178,9 +174,9 @@ export default function ApplyPage() {
     return matchesCategory && matchesQuery;
   });
 
-  // An application only passes Stage 1 if the user actively chooses to link an approved clearance or verifies a reference
-  const isClearancePassed = Boolean(selectedClearanceRef || (isManualVerified && manualClearanceRef));
-  const activeClearanceRef = selectedClearanceRef || (isManualVerified ? manualClearanceRef : null);
+  // An application only passes Stage 1 if the user actively linked an approved clearance (e.g. via Stage 2 button in track page)
+  const isClearancePassed = Boolean(selectedClearanceRef);
+  const activeClearanceRef = selectedClearanceRef || null;
 
   // Stage navigation: Stage 1 = Locational Clearance, Stage 2 = Project Type Matrix
   const [stageOverride, setStageOverride] = useState<1 | 2 | null>(null);
@@ -249,17 +245,6 @@ export default function ApplyPage() {
     } finally {
       setUploading(false);
     }
-  };
-
-  const handleVerifyManualClearance = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualClearanceRef.trim()) return;
-    setIsManualVerified(true);
-    setSelectedClearanceRef(manualClearanceRef.trim());
-    setShowManualVerifyInput(false);
-    setStageOverride(2);
-    setCurrentStep(2);
-    setLockedNotice(null);
   };
 
   const handleSubmitApplication = () => {
@@ -572,8 +557,6 @@ export default function ApplyPage() {
                         type="button"
                         onClick={() => {
                           setSelectedClearanceRef(null);
-                          setIsManualVerified(false);
-                          setManualClearanceRef("");
                         }}
                         style={{
                           background: "#ffffff",
@@ -671,96 +654,6 @@ export default function ApplyPage() {
                         </p>
                       </div>
                     </div>
-
-                    <div style={{
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "12px",
-                      padding: "1rem 1.25rem",
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "1rem",
-                      alignItems: "center",
-                      justifyContent: "space-between"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", color: "#64748b" }}>
-                        <Info size={16} color="#3b82f6" />
-                        <span>Interactive Google Forms-styled filing with real-time zoning coordinate verification.</span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setShowGoogleForm(true);
-                        }}
-                        style={{
-                          padding: "0.85rem 1.75rem",
-                          fontSize: "0.95rem",
-                          fontWeight: "700",
-                          background: "linear-gradient(135deg, #673ab7 0%, #512da8 100%)",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "10px",
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          boxShadow: "0 4px 14px rgba(103, 58, 183, 0.3)",
-                          transition: "all 0.15s ease"
-                        }}
-                      >
-                        <FileText size={18} /> Open Google Form (Annex D)
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* LINK EXISTING CLEARANCE HELPER */}
-                  <div style={{ marginTop: "1.75rem", padding: "1.25rem", background: "white", border: "1px solid #e2e8f0", borderRadius: "14px" }}>
-                    {!showManualVerifyInput ? (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "#475569" }}>
-                          <ShieldCheck size={18} color="#2563eb" />
-                          <span>Hold a clearance certificate from an offline application or another reference?</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowManualVerifyInput(true)}
-                          className="btn-outline"
-                          style={{ fontSize: "0.85rem", padding: "0.45rem 1rem", borderRadius: "8px", fontWeight: "600" }}
-                        >
-                          Enter Reference No.
-                        </button>
-                      </div>
-                    ) : (
-                      <form onSubmit={handleVerifyManualClearance} style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ flex: 1, minWidth: "240px" }}>
-                          <input 
-                            type="text"
-                            placeholder="Enter Locational Clearance Reference (e.g. LC-2026-4157)"
-                            value={manualClearanceRef}
-                            onChange={(e) => setManualClearanceRef(e.target.value)}
-                            style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
-                            autoFocus
-                          />
-                        </div>
-                        <button 
-                          type="submit" 
-                          className="btn-primary" 
-                          style={{ padding: "0.65rem 1.25rem", fontSize: "0.88rem" }}
-                          disabled={!manualClearanceRef.trim()}
-                        >
-                          Verify & Proceed to Step 2
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowManualVerifyInput(false)}
-                          style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", color: "#64748b", borderRadius: "8px", padding: "0.65rem 1rem", cursor: "pointer", fontSize: "0.88rem" }}
-                        >
-                          Cancel
-                        </button>
-                      </form>
-                    )}
                   </div>
                 </div>
               )}
