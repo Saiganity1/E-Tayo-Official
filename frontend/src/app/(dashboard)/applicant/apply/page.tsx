@@ -178,13 +178,6 @@ export default function ApplyPage() {
     return matchesCategory && matchesQuery;
   });
 
-  // Detect if applicant has any approved Locational Clearance in their account history
-  const approvedLC = (applications || []).find(
-    app => (app.permitType === "locational_clearance") &&
-           (app.status === "approved" || app.status === "released")
-  );
-  const hasSystemApprovedLC = !!approvedLC;
-  
   // An application only passes Stage 1 if the user actively chooses to link an approved clearance or verifies a reference
   const isClearancePassed = Boolean(selectedClearanceRef || (isManualVerified && manualClearanceRef));
   const activeClearanceRef = selectedClearanceRef || (isManualVerified ? manualClearanceRef : null);
@@ -623,272 +616,102 @@ export default function ApplyPage() {
                 </div>
               ) : (
                 <div>
-                  <div style={{
-                    background: "linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)",
-                    border: "1px solid #bfdbfe",
-                    borderRadius: "16px",
-                    padding: "1.25rem 1.5rem",
-                    marginBottom: "1.75rem",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "1rem",
-                    boxShadow: "0 4px 15px rgba(59, 130, 246, 0.06)"
-                  }}>
-                    <div style={{
-                      width: "44px",
-                      height: "44px",
-                      borderRadius: "12px",
-                      background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
-                      color: "white",
+                  {/* LOCATIONAL CLEARANCE APPLICATION CARD */}
+                  <div
+                    style={{
+                      border: "2px solid #3b82f6",
+                      background: "#ffffff",
+                      borderRadius: "18px",
+                      padding: "2rem",
+                      position: "relative",
+                      boxShadow: "0 4px 20px rgba(59, 130, 246, 0.08)",
                       display: "flex",
+                      flexDirection: "column",
+                      gap: "1.25rem"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{
+                        background: "#2563eb",
+                        color: "white",
+                        fontSize: "0.74rem",
+                        fontWeight: "800",
+                        padding: "4px 12px",
+                        borderRadius: "999px",
+                        letterSpacing: "0.5px"
+                      }}>
+                        STAGE 1 · MANDATORY PREREQUISITE
+                      </span>
+                      <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: "700", background: "#f1f5f9", padding: "3px 10px", borderRadius: "6px" }}>
+                        Annex D • MPDO / Zoning Division
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
+                      <div style={{
+                        width: "52px",
+                        height: "52px",
+                        borderRadius: "14px",
+                        background: "#eff6ff",
+                        color: "#2563eb",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        boxShadow: "0 4px 12px rgba(37, 99, 235, 0.15)"
+                      }}>
+                        <FileText size={28} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ margin: "0 0 0.35rem 0", fontWeight: "800", color: "#1e3a8a", fontSize: "1.25rem" }}>
+                          Apply for Locational Clearance
+                        </h3>
+                        <p style={{ margin: 0, fontSize: "0.92rem", color: "#475569", lineHeight: "1.55" }}>
+                          Submit your application for <strong>Locational Clearance (Annex D)</strong> to certify land zoning compliance, Comprehensive Land Use Plan (CLUP) alignment, and municipal boundary setbacks with the Sto. Tomas Zoning Administration.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      padding: "1rem 1.25rem",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "1rem",
                       alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)"
+                      justifyContent: "space-between"
                     }}>
-                      <FileText size={22} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ margin: 0, fontSize: "1.05rem", color: "#1e3a8a", fontWeight: "800" }}>
-                        Choose Your Permitting Pathway
-                      </h3>
-                      <p style={{ margin: "0.35rem 0 0 0", color: "#334155", fontSize: "0.88rem", lineHeight: "1.45" }}>
-                        Select whether you are applying for a new <strong>Locational Clearance (Annex D)</strong> from scratch, or already hold an approved clearance and wish to file for <strong>Building & Engineering Permits</strong>.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem" }}>
-                    {/* PATHWAY 1: Apply for Locational Clearance (Annex D) */}
-                    <div
-                      style={{
-                        border: "2px solid #3b82f6",
-                        background: "#ffffff",
-                        borderRadius: "18px",
-                        padding: "1.75rem",
-                        position: "relative",
-                        boxShadow: "0 4px 16px rgba(59, 130, 246, 0.08)",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between"
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                          <span style={{
-                            background: "#2563eb",
-                            color: "white",
-                            fontSize: "0.72rem",
-                            fontWeight: "800",
-                            padding: "4px 10px",
-                            borderRadius: "999px",
-                            letterSpacing: "0.5px"
-                          }}>
-                            STAGE 1 · MANDATORY PREREQUISITE
-                          </span>
-                          <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: "600" }}>
-                            Annex D
-                          </span>
-                        </div>
-
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                          <div style={{
-                            width: "48px",
-                            height: "48px",
-                            borderRadius: "12px",
-                            background: "#eff6ff",
-                            color: "#2563eb",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0
-                          }}>
-                            <FileText size={24} />
-                          </div>
-                          <div>
-                            <h3 style={{ margin: 0, fontWeight: "800", color: "#1e3a8a", fontSize: "1.15rem" }}>
-                              Apply for Locational Clearance
-                            </h3>
-                            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Zoning & Land Use Verification</span>
-                          </div>
-                        </div>
-
-                        <p style={{ margin: "0 0 1.5rem 0", fontSize: "0.88rem", color: "#475569", lineHeight: "1.5" }}>
-                          Start a new application for Locational Clearance (Annex D) to certify municipal land zoning, Comprehensive Land Use Plan (CLUP) compliance, and boundary setbacks.
-                        </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", color: "#64748b" }}>
+                        <Info size={16} color="#3b82f6" />
+                        <span>Interactive Google Forms-styled filing with real-time zoning coordinate verification.</span>
                       </div>
 
-                      <div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setShowGoogleForm(true);
-                          }}
-                          style={{
-                            width: "100%",
-                            padding: "0.85rem 1rem",
-                            fontSize: "0.92rem",
-                            fontWeight: "700",
-                            background: "linear-gradient(135deg, #673ab7 0%, #512da8 100%)",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "10px",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "8px",
-                            boxShadow: "0 4px 12px rgba(103, 58, 183, 0.25)",
-                            transition: "all 0.15s ease"
-                          }}
-                        >
-                          <FileText size={18} /> Open Google Form (Annex D)
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* PATHWAY 2: Have an approved clearance -> Proceed to Step 2 */}
-                    <div 
-                      style={{
-                        border: hasSystemApprovedLC ? "2px solid #10b981" : "1.5px solid #e2e8f0",
-                        background: hasSystemApprovedLC ? "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)" : "#f8fafc",
-                        borderRadius: "18px",
-                        padding: "1.75rem",
-                        position: "relative",
-                        boxShadow: hasSystemApprovedLC ? "0 4px 16px rgba(16, 185, 129, 0.1)" : "0 2px 8px rgba(0,0,0,0.02)",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between"
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                          <span style={{
-                            background: hasSystemApprovedLC ? "#059669" : "#64748b",
-                            color: "white",
-                            fontSize: "0.72rem",
-                            fontWeight: "700",
-                            padding: "4px 10px",
-                            borderRadius: "999px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px"
-                          }}>
-                            {hasSystemApprovedLC ? <CheckCircle2 size={12} /> : <Lock size={12} />}
-                            STAGE 2 · BUILDING PERMITS
-                          </span>
-                          <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: "600" }}>
-                            31 Project Types
-                          </span>
-                        </div>
-
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                          <div style={{
-                            width: "48px",
-                            height: "48px",
-                            borderRadius: "12px",
-                            background: hasSystemApprovedLC ? "#dcfce7" : "#e2e8f0",
-                            color: hasSystemApprovedLC ? "#16a34a" : "#64748b",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0
-                          }}>
-                            <Building2 size={24} />
-                          </div>
-                          <div>
-                            <h3 style={{ margin: 0, fontWeight: "800", color: "#0f172a", fontSize: "1.15rem" }}>
-                              Already Have Approved Clearance?
-                            </h3>
-                            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Proceed to Project Type Matrix</span>
-                          </div>
-                        </div>
-
-                        <p style={{ margin: "0 0 1rem 0", fontSize: "0.88rem", color: "#475569", lineHeight: "1.5" }}>
-                          If your Locational Clearance has already been verified and released by Sto. Tomas zoning officers, link it here to immediately configure your project type and building plans.
-                        </p>
-
-                        {hasSystemApprovedLC && approvedLC && (
-                          <div style={{
-                            background: "#ffffff",
-                            border: "1.5px solid #86efac",
-                            borderRadius: "12px",
-                            padding: "10px 14px",
-                            marginBottom: "1.25rem",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: "8px"
-                          }}>
-                            <div>
-                              <span style={{ fontSize: "0.72rem", color: "#166534", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                                Detected in your account:
-                              </span>
-                              <div style={{ fontWeight: "800", color: "#0f172a", fontSize: "0.95rem" }}>
-                                {approvedLC.id} <span style={{ fontWeight: "500", color: "#64748b" }}>({approvedLC.projectName || "Locational Clearance"})</span>
-                              </div>
-                            </div>
-                            <span style={{ fontSize: "0.75rem", background: "#dcfce7", color: "#166534", padding: "3px 8px", borderRadius: "999px", fontWeight: "700", whiteSpace: "nowrap" }}>
-                              Approved
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        {hasSystemApprovedLC && approvedLC ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedClearanceRef(approvedLC.id);
-                              setCurrentStep(2);
-                            }}
-                            style={{
-                              width: "100%",
-                              padding: "0.85rem 1rem",
-                              fontSize: "0.92rem",
-                              fontWeight: "700",
-                              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "10px",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "8px",
-                              boxShadow: "0 4px 12px rgba(16, 185, 129, 0.25)"
-                            }}
-                          >
-                            <span>Use {approvedLC.id} & Proceed to Step 2</span>
-                            <ChevronRight size={18} />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setShowManualVerifyInput(true)}
-                            style={{
-                              width: "100%",
-                              padding: "0.85rem 1rem",
-                              fontSize: "0.92rem",
-                              fontWeight: "700",
-                              background: "#2563eb",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "10px",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "8px"
-                            }}
-                          >
-                            <span>Link Existing Clearance Ref</span>
-                            <ChevronRight size={18} />
-                          </button>
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowGoogleForm(true);
+                        }}
+                        style={{
+                          padding: "0.85rem 1.75rem",
+                          fontSize: "0.95rem",
+                          fontWeight: "700",
+                          background: "linear-gradient(135deg, #673ab7 0%, #512da8 100%)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "10px",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          boxShadow: "0 4px 14px rgba(103, 58, 183, 0.3)",
+                          transition: "all 0.15s ease"
+                        }}
+                      >
+                        <FileText size={18} /> Open Google Form (Annex D)
+                      </button>
                     </div>
                   </div>
 
