@@ -763,7 +763,7 @@ export default function ApplicationStatusPage() {
 
                       {isApprovedLC && (
                         <Link 
-                          href="/applicant/apply"
+                          href={`/applicant/apply?clearanceRef=${encodeURIComponent(app.id)}`}
                           style={{
                             background: "#ede9fe",
                             color: "#6d28d9",

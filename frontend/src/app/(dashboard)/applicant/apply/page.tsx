@@ -117,6 +117,8 @@ export default function ApplyPage() {
   const [isManualVerified, setIsManualVerified] = useState(false);
   const [showManualVerifyInput, setShowManualVerifyInput] = useState(false);
   const [lockedNotice, setLockedNotice] = useState<string | null>(null);
+  const [selectedClearanceRef, setSelectedClearanceRef] = useState<string | null>(null);
+  const [applicantName, setApplicantName] = useState("Applicant");
 
   // Project Type Matrix State (Stage 2)
   const [selectedProjectType, setSelectedProjectType] = useState<ProjectTypeItem>(PROJECT_TYPES_MATRIX[0]);
@@ -129,6 +131,24 @@ export default function ApplyPage() {
 
   useEffect(() => {
     setMounted(true);
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        if (userObj.name) setApplicantName(userObj.name);
+      }
+    } catch (e) {}
+
+    // Check if arriving from a specific clearance "Proceed to Stage 2" link (e.g. ?clearanceRef=LC-2026-4157)
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("clearanceRef");
+      if (ref) {
+        setSelectedClearanceRef(ref);
+        setIsManualVerified(true);
+        setCurrentStep(2);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -158,14 +178,16 @@ export default function ApplyPage() {
     return matchesCategory && matchesQuery;
   });
 
-  // Detect if applicant has an approved Locational Clearance in the system
+  // Detect if applicant has any approved Locational Clearance in their account history
   const approvedLC = (applications || []).find(
     app => (app.permitType === "locational_clearance") &&
            (app.status === "approved" || app.status === "released")
   );
   const hasSystemApprovedLC = !!approvedLC;
-  const isClearancePassed = hasSystemApprovedLC || isManualVerified;
-  const activeClearanceRef = hasSystemApprovedLC ? approvedLC.id : (isManualVerified ? manualClearanceRef : null);
+  
+  // An application only passes Stage 1 if the user actively chooses to link an approved clearance or verifies a reference
+  const isClearancePassed = Boolean(selectedClearanceRef || (isManualVerified && manualClearanceRef));
+  const activeClearanceRef = selectedClearanceRef || (isManualVerified ? manualClearanceRef : null);
 
   // Stage navigation: Stage 1 = Locational Clearance, Stage 2 = Project Type Matrix
   const [stageOverride, setStageOverride] = useState<1 | 2 | null>(null);
@@ -240,21 +262,14 @@ export default function ApplyPage() {
     e.preventDefault();
     if (!manualClearanceRef.trim()) return;
     setIsManualVerified(true);
+    setSelectedClearanceRef(manualClearanceRef.trim());
     setShowManualVerifyInput(false);
     setStageOverride(2);
+    setCurrentStep(2);
     setLockedNotice(null);
   };
 
   const handleSubmitApplication = () => {
-    let applicantName = "Juan Dela Cruz";
-    try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const userObj = JSON.parse(userStr);
-        if (userObj.name) applicantName = userObj.name;
-      }
-    } catch (e) {}
-
     const newApp: any = {
       id: `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
       projectName,
@@ -299,7 +314,7 @@ export default function ApplyPage() {
       <UnifiedProjectGoogleForm
         projectType={selectedProjectType}
         locationalClearanceRef={activeClearanceRef || "LC-APPROVED"}
-        initialApplicantName="Juan Dela Cruz"
+        initialApplicantName={applicantName}
         initialApplicantAddress={projectAddress}
         initialProjectName={projectName}
         initialBarangay={barangay}
@@ -493,7 +508,7 @@ export default function ApplyPage() {
                 </div>
               )}
 
-              {/* STAGE STATUS */}
+              {/* STAGE STATUS / PATHWAY SELECTION */}
               {isClearancePassed ? (
                 <div>
                   <div style={{
@@ -527,7 +542,7 @@ export default function ApplyPage() {
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", marginBottom: "0.3rem" }}>
                           <span style={{ fontWeight: "800", color: "#065f46", fontSize: "1.1rem", letterSpacing: "-0.01em" }}>
-                            Stage 1 Complete: Locational Clearance Passed
+                            Locational Clearance Linked
                           </span>
                           <div style={{
                             display: "inline-flex",
@@ -554,32 +569,56 @@ export default function ApplyPage() {
                           </div>
                         </div>
                         <p style={{ margin: 0, color: "#166534", fontSize: "0.9rem", lineHeight: "1.45" }}>
-                          You have passed mandatory zoning & land use clearance. You are cleared to proceed to <strong>Step 2: Project Type</strong> to select your project classification from the municipal matrix.
+                          This application is linked to approved clearance <strong>{activeClearanceRef}</strong>. You are cleared to proceed to <strong>Step 2: Project Type</strong>.
                         </p>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep(2)}
-                      style={{
-                        background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "10px",
-                        padding: "11px 20px",
-                        fontSize: "0.9rem",
-                        fontWeight: "700",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)"
-                      }}
-                    >
-                      <span>Proceed to Step 2: Project Type</span>
-                      <ChevronRight size={18} />
-                    </button>
+                    <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedClearanceRef(null);
+                          setIsManualVerified(false);
+                          setManualClearanceRef("");
+                        }}
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid #cbd5e1",
+                          color: "#475569",
+                          borderRadius: "10px",
+                          padding: "10px 16px",
+                          fontSize: "0.85rem",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease"
+                        }}
+                      >
+                        Change / Apply for New Clearance
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(2)}
+                        style={{
+                          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "10px",
+                          padding: "11px 20px",
+                          fontSize: "0.9rem",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)"
+                        }}
+                      >
+                        <span>Proceed to Step 2: Project Type</span>
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -611,23 +650,24 @@ export default function ApplyPage() {
                     </div>
                     <div style={{ flex: 1 }}>
                       <h3 style={{ margin: 0, fontSize: "1.05rem", color: "#1e3a8a", fontWeight: "800" }}>
-                        Stage 1: Apply for Locational Clearance (Annex D)
+                        Choose Your Permitting Pathway
                       </h3>
                       <p style={{ margin: "0.35rem 0 0 0", color: "#334155", fontSize: "0.88rem", lineHeight: "1.45" }}>
-                        Municipal regulations mandate that every project must first obtain an official <strong>Locational Clearance</strong> to confirm zoning classification and CLUP compliance before proceeding to Project Type selection.
+                        Select whether you are applying for a new <strong>Locational Clearance (Annex D)</strong> from scratch, or already hold an approved clearance and wish to file for <strong>Building & Engineering Permits</strong>.
                       </p>
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.25rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem" }}>
+                    {/* PATHWAY 1: Apply for Locational Clearance (Annex D) */}
                     <div
                       style={{
                         border: "2px solid #3b82f6",
                         background: "#ffffff",
-                        borderRadius: "16px",
-                        padding: "1.5rem",
+                        borderRadius: "18px",
+                        padding: "1.75rem",
                         position: "relative",
-                        boxShadow: "0 4px 14px rgba(59, 130, 246, 0.1)",
+                        boxShadow: "0 4px 16px rgba(59, 130, 246, 0.08)",
                         display: "flex",
                         flexDirection: "column",
                         justifyContent: "space-between"
@@ -653,8 +693,8 @@ export default function ApplyPage() {
 
                         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
                           <div style={{
-                            width: "46px",
-                            height: "46px",
+                            width: "48px",
+                            height: "48px",
                             borderRadius: "12px",
                             background: "#eff6ff",
                             color: "#2563eb",
@@ -667,18 +707,18 @@ export default function ApplyPage() {
                           </div>
                           <div>
                             <h3 style={{ margin: 0, fontWeight: "800", color: "#1e3a8a", fontSize: "1.15rem" }}>
-                              Locational Clearance
+                              Apply for Locational Clearance
                             </h3>
                             <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Zoning & Land Use Verification</span>
                           </div>
                         </div>
 
-                        <p style={{ margin: "0 0 1.25rem 0", fontSize: "0.85rem", color: "#475569", lineHeight: "1.5" }}>
-                          Every proposed project in Sto. Tomas must first obtain an approved Locational Clearance to ensure adherence to the Comprehensive Land Use Plan (CLUP), zoning classifications, and boundary setbacks.
+                        <p style={{ margin: "0 0 1.5rem 0", fontSize: "0.88rem", color: "#475569", lineHeight: "1.5" }}>
+                          Start a new application for Locational Clearance (Annex D) to certify municipal land zoning, Comprehensive Land Use Plan (CLUP) compliance, and boundary setbacks.
                         </p>
                       </div>
 
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <div>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -687,8 +727,8 @@ export default function ApplyPage() {
                           }}
                           style={{
                             width: "100%",
-                            padding: "0.8rem 1rem",
-                            fontSize: "0.9rem",
+                            padding: "0.85rem 1rem",
+                            fontSize: "0.92rem",
                             fontWeight: "700",
                             background: "linear-gradient(135deg, #673ab7 0%, #512da8 100%)",
                             color: "white",
@@ -708,16 +748,15 @@ export default function ApplyPage() {
                       </div>
                     </div>
 
+                    {/* PATHWAY 2: Have an approved clearance -> Proceed to Step 2 */}
                     <div 
-                      onClick={() => setLockedNotice("Step 2 is locked. Municipal ordinance requires your Locational Clearance (Annex D) to be approved by zoning staff before selecting your Project Type.")}
                       style={{
-                        border: "1px dashed #cbd5e1",
-                        background: "#f8fafc",
-                        borderRadius: "16px",
-                        padding: "1.5rem",
+                        border: hasSystemApprovedLC ? "2px solid #10b981" : "1.5px solid #e2e8f0",
+                        background: hasSystemApprovedLC ? "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)" : "#f8fafc",
+                        borderRadius: "18px",
+                        padding: "1.75rem",
                         position: "relative",
-                        cursor: "not-allowed",
-                        opacity: 0.9,
+                        boxShadow: hasSystemApprovedLC ? "0 4px 16px rgba(16, 185, 129, 0.1)" : "0 2px 8px rgba(0,0,0,0.02)",
                         display: "flex",
                         flexDirection: "column",
                         justifyContent: "space-between"
@@ -726,7 +765,7 @@ export default function ApplyPage() {
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                           <span style={{
-                            background: "#64748b",
+                            background: hasSystemApprovedLC ? "#059669" : "#64748b",
                             color: "white",
                             fontSize: "0.72rem",
                             fontWeight: "700",
@@ -736,20 +775,21 @@ export default function ApplyPage() {
                             alignItems: "center",
                             gap: "4px"
                           }}>
-                            <Lock size={12} /> LOCKED · STEP 2
+                            {hasSystemApprovedLC ? <CheckCircle2 size={12} /> : <Lock size={12} />}
+                            STAGE 2 · BUILDING PERMITS
                           </span>
-                          <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "600" }}>
+                          <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: "600" }}>
                             31 Project Types
                           </span>
                         </div>
 
                         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
                           <div style={{
-                            width: "46px",
-                            height: "46px",
+                            width: "48px",
+                            height: "48px",
                             borderRadius: "12px",
-                            background: "#e2e8f0",
-                            color: "#64748b",
+                            background: hasSystemApprovedLC ? "#dcfce7" : "#e2e8f0",
+                            color: hasSystemApprovedLC ? "#16a34a" : "#64748b",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -758,76 +798,141 @@ export default function ApplyPage() {
                             <Building2 size={24} />
                           </div>
                           <div>
-                            <h3 style={{ margin: 0, fontWeight: "800", color: "#334155", fontSize: "1.15rem" }}>
-                              Project Type Selection
+                            <h3 style={{ margin: 0, fontWeight: "800", color: "#0f172a", fontSize: "1.15rem" }}>
+                              Already Have Approved Clearance?
                             </h3>
-                            <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Dynamic Unified Permit Dossier</span>
+                            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Proceed to Project Type Matrix</span>
                           </div>
                         </div>
 
-                        <p style={{ margin: "0 0 1rem 0", fontSize: "0.85rem", color: "#64748b", lineHeight: "1.5" }}>
-                          Select your exact project type from the official Sto. Tomas matrix. The system automatically loads and compiles the required engineering forms (Architectural, Structural, Electrical, Sanitary, etc.).
+                        <p style={{ margin: "0 0 1rem 0", fontSize: "0.88rem", color: "#475569", lineHeight: "1.5" }}>
+                          If your Locational Clearance has already been verified and released by Sto. Tomas zoning officers, link it here to immediately configure your project type and building plans.
                         </p>
+
+                        {hasSystemApprovedLC && approvedLC && (
+                          <div style={{
+                            background: "#ffffff",
+                            border: "1.5px solid #86efac",
+                            borderRadius: "12px",
+                            padding: "10px 14px",
+                            marginBottom: "1.25rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "8px"
+                          }}>
+                            <div>
+                              <span style={{ fontSize: "0.72rem", color: "#166534", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                Detected in your account:
+                              </span>
+                              <div style={{ fontWeight: "800", color: "#0f172a", fontSize: "0.95rem" }}>
+                                {approvedLC.id} <span style={{ fontWeight: "500", color: "#64748b" }}>({approvedLC.projectName || "Locational Clearance"})</span>
+                              </div>
+                            </div>
+                            <span style={{ fontSize: "0.75rem", background: "#dcfce7", color: "#166534", padding: "3px 8px", borderRadius: "999px", fontWeight: "700", whiteSpace: "nowrap" }}>
+                              Approved
+                            </span>
+                          </div>
+                        )}
                       </div>
 
-                      <div style={{
-                        marginTop: "1rem",
-                        padding: "10px 12px",
-                        background: "#f1f5f9",
-                        borderRadius: "8px",
-                        fontSize: "0.78rem",
-                        color: "#64748b",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px"
-                      }}>
-                        <Lock size={14} color="#94a3b8" />
-                        <span>Unlocks automatically when Locational Clearance is approved</span>
+                      <div>
+                        {hasSystemApprovedLC && approvedLC ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedClearanceRef(approvedLC.id);
+                              setCurrentStep(2);
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "0.85rem 1rem",
+                              fontSize: "0.92rem",
+                              fontWeight: "700",
+                              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "10px",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "8px",
+                              boxShadow: "0 4px 12px rgba(16, 185, 129, 0.25)"
+                            }}
+                          >
+                            <span>Use {approvedLC.id} & Proceed to Step 2</span>
+                            <ChevronRight size={18} />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setShowManualVerifyInput(true)}
+                            style={{
+                              width: "100%",
+                              padding: "0.85rem 1rem",
+                              fontSize: "0.92rem",
+                              fontWeight: "700",
+                              background: "#2563eb",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "10px",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "8px"
+                            }}
+                          >
+                            <span>Link Existing Clearance Ref</span>
+                            <ChevronRight size={18} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   {/* LINK EXISTING CLEARANCE HELPER */}
-                  <div style={{ marginTop: "1.75rem", padding: "1rem 1.25rem", background: "white", border: "1px solid #e2e8f0", borderRadius: "12px" }}>
+                  <div style={{ marginTop: "1.75rem", padding: "1.25rem", background: "white", border: "1px solid #e2e8f0", borderRadius: "14px" }}>
                     {!showManualVerifyInput ? (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "#475569" }}>
                           <ShieldCheck size={18} color="#2563eb" />
-                          <span>Already passed and received an official Locational Clearance Certificate?</span>
+                          <span>Hold a clearance certificate from an offline application or another reference?</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => setShowManualVerifyInput(true)}
                           className="btn-outline"
-                          style={{ fontSize: "0.85rem", padding: "0.4rem 0.9rem", borderRadius: "8px" }}
+                          style={{ fontSize: "0.85rem", padding: "0.45rem 1rem", borderRadius: "8px", fontWeight: "600" }}
                         >
-                          Link Reference No.
+                          Enter Reference No.
                         </button>
                       </div>
                     ) : (
                       <form onSubmit={handleVerifyManualClearance} style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ flex: 1, minWidth: "220px" }}>
+                        <div style={{ flex: 1, minWidth: "240px" }}>
                           <input 
                             type="text"
-                            placeholder="Enter Locational Clearance Reference (e.g. LC-2025-0001)"
+                            placeholder="Enter Locational Clearance Reference (e.g. LC-2026-4157)"
                             value={manualClearanceRef}
                             onChange={(e) => setManualClearanceRef(e.target.value)}
-                            style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
+                            style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
                             autoFocus
                           />
                         </div>
                         <button 
                           type="submit" 
                           className="btn-primary" 
-                          style={{ padding: "0.6rem 1.2rem", fontSize: "0.85rem" }}
+                          style={{ padding: "0.65rem 1.25rem", fontSize: "0.88rem" }}
                           disabled={!manualClearanceRef.trim()}
                         >
-                          Verify & Unlock Step 2
+                          Verify & Proceed to Step 2
                         </button>
                         <button
                           type="button"
                           onClick={() => setShowManualVerifyInput(false)}
-                          style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "0.85rem" }}
+                          style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", color: "#64748b", borderRadius: "8px", padding: "0.65rem 1rem", cursor: "pointer", fontSize: "0.88rem" }}
                         >
                           Cancel
                         </button>
