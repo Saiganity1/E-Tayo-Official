@@ -18,7 +18,8 @@ import {
   FileCheck,
   ChevronRight,
   ArrowLeft,
-  Printer
+  Printer,
+  Clock
 } from "lucide-react";
 
 export interface LocationalClearanceFormProps {
@@ -283,22 +284,43 @@ export default function LocationalClearanceGoogleForm({
                 </div>
               </div>
               <span style={{
-                background: "#dcfce7",
-                color: "#15803d",
+                background: "#fef3c7",
+                color: "#b45309",
                 fontWeight: "800",
                 fontSize: "0.8rem",
                 padding: "4px 12px",
                 borderRadius: "999px",
-                border: "1px solid #86efac"
+                border: "1px solid #fde68a",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px"
               }}>
-                Pending MPDO Verification
+                <Clock size={14} /> Pending Admin Approval
               </span>
             </div>
 
-            <p style={{ color: "#334155", fontSize: "0.95rem", lineHeight: "1.6", margin: "0 0 1.5rem 0" }}>
-              Your <strong>Application for Locational Clearance</strong> for <strong>{projectType}</strong> in <strong>Brgy. {barangay}, Sto. Tomas</strong> has been officially logged in the system. 
-              Because this clearance reference is now linked to your permit profile, you can immediately proceed to <strong>Step 3: Site & Cadastral Mapping</strong> and subsequent engineering requirements.
-            </p>
+            <div style={{
+              background: "#fffbeb",
+              border: "1px solid #fde68a",
+              borderRadius: "12px",
+              padding: "1.1rem 1.25rem",
+              marginBottom: "1.5rem",
+              display: "flex",
+              gap: "12px",
+              alignItems: "flex-start"
+            }}>
+              <AlertCircle size={22} color="#d97706" style={{ flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ color: "#92400e", fontSize: "0.92rem", display: "block", marginBottom: "4px" }}>
+                  Locational Clearance Must Be Approved Before Other Forms
+                </strong>
+                <p style={{ color: "#78350f", fontSize: "0.88rem", lineHeight: "1.5", margin: 0 }}>
+                  Your <strong>Application for Locational Clearance</strong> for <strong>{projectType}</strong> has been successfully lodged with Reference ID <strong>{submittedAppId}</strong>.
+                  <br /><br />
+                  Under Sto. Tomas municipal permitting regulations, you must <strong>wait for the Municipal Zoning Administrator / Admin to evaluate and approve your clearance</strong> before you can proceed to fill up the subsequent technical permit forms (Building, Electrical, Mechanical, Sanitary, etc.).
+                </p>
+              </div>
+            </div>
 
             <div style={{
               display: "flex",
@@ -360,7 +382,7 @@ export default function LocationalClearanceGoogleForm({
                     }
                   }}
                   style={{
-                    background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                    background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
                     color: "white",
                     border: "none",
                     padding: "11px 22px",
@@ -371,10 +393,10 @@ export default function LocationalClearanceGoogleForm({
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "8px",
-                    boxShadow: "0 4px 14px rgba(5, 150, 105, 0.3)"
+                    boxShadow: "0 4px 14px rgba(15, 23, 42, 0.3)"
                   }}
                 >
-                  <span>Continue Permit Application with this Clearance</span>
+                  <span>Return to Application (Wait for Admin Approval)</span>
                   <ChevronRight size={18} />
                 </button>
               </div>

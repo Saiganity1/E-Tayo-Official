@@ -8,7 +8,8 @@ import {
   Lock, ShieldCheck, AlertCircle, Check, Layers, Search, Sparkles, 
   Home, Building2, Factory, Landmark, Wrench, Zap, Clock, Copy, 
   ArrowRight, CheckCircle2, Shield, Droplets, Flame, Radio, FileCheck, X,
-  BadgeCheck, Info, Compass, Eye, Printer, Download, FileUp, Trash2, Paperclip, AlertTriangle
+  BadgeCheck, Info, Compass, Eye, Printer, Download, FileUp, Trash2, Paperclip, AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -113,7 +114,7 @@ const getProjectPermitsBreakdown = (project: ProjectTypeItem) => {
 
 export default function ApplyPage() {
   const [currentStep, setCurrentStep] = useState(1);
-  const { applications, selectedPermitType, setSelectedPermitType, addApplication } = usePermitContext();
+  const { applications, selectedPermitType, setSelectedPermitType, addApplication, refreshApplications } = usePermitContext();
   const router = useRouter();
 
   // Locational Clearance Prerequisite & Form State
@@ -123,6 +124,7 @@ export default function ApplyPage() {
   const [manualClearanceInput, setManualClearanceInput] = useState("");
   const [manualClearanceError, setManualClearanceError] = useState("");
   const [applicantName, setApplicantName] = useState("Applicant");
+  const [isCheckingClearance, setIsCheckingClearance] = useState(false);
 
   // Project Type Matrix State (Step 1)
   const [selectedProjectType, setSelectedProjectType] = useState<ProjectTypeItem>(PROJECT_TYPES_MATRIX[0]);
@@ -133,6 +135,16 @@ export default function ApplyPage() {
   const [showAllTemplatesModal, setShowAllTemplatesModal] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const handleCheckClearanceStatus = async () => {
+    setIsCheckingClearance(true);
+    try {
+      if (refreshApplications) {
+        await refreshApplications();
+      }
+    } catch (e) {}
+    setTimeout(() => setIsCheckingClearance(false), 600);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -150,11 +162,16 @@ export default function ApplyPage() {
       const ref = params.get("clearanceRef");
       if (ref) {
         setSelectedClearanceRef(ref);
-        // Start on Step 1 with clearance already linked
-        setCurrentStep(1);
+        setCurrentStep(2);
       }
     }
-  }, []);
+
+    const onFocus = () => {
+      refreshApplications?.();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refreshApplications]);
 
   useEffect(() => {
     if (showRequirementsAlert || showAllTemplatesModal) {
@@ -185,14 +202,51 @@ export default function ApplyPage() {
 
   // Check whether the currently selected project type requires / conditionally requires Locational Clearance
   const isClearanceRequired = selectedProjectType ? selectedProjectType.matrix.zoningPermit !== 'not_required' : true;
-  // Clearance is considered passed if not required by the project type, or if the user actively linked an approved clearance
-  const isClearancePassed = !isClearanceRequired || Boolean(selectedClearanceRef);
-  const activeClearanceRef = selectedClearanceRef || (isClearanceRequired ? null : "EXEMPT");
+
+  // Find any locational clearance application matching this project type or the selected reference
+  const matchedClearanceApp = (selectedClearanceRef && applications.find(a => a.id === selectedClearanceRef)) ||
+    applications.find(a => 
+      (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
+      (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name))) &&
+      (a.status === "approved" || a.status === "released")
+    ) ||
+    applications.find(a => 
+      (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
+      (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name)))
+    );
+
+  const isClearanceApproved = Boolean(
+    matchedClearanceApp && (matchedClearanceApp.status === "approved" || matchedClearanceApp.status === "released")
+  );
+
+  const isClearancePending = Boolean(
+    matchedClearanceApp && (matchedClearanceApp.status === "pending" || matchedClearanceApp.status === "under_review")
+  );
+
+  const isClearanceRejected = Boolean(
+    matchedClearanceApp && matchedClearanceApp.status === "rejected"
+  );
+
+  // Clearance is ONLY considered passed if not required by the project type, OR if officially APPROVED by the admin/MPDO
+  const isClearancePassed = !isClearanceRequired || isClearanceApproved;
+  const activeClearanceRef = matchedClearanceApp?.id || selectedClearanceRef || (isClearanceRequired ? null : "EXEMPT");
 
   // Filter available clearances the user might already have submitted in the system
   const userClearances = applications.filter(
     (app) => app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))
   );
+
+  // Guard: if user tries to advance to Step 3, 4, or 5 without approved locational clearance, bounce back to Step 2
+  useEffect(() => {
+    if (currentStep > 2 && isClearanceRequired && !isClearancePassed) {
+      setCurrentStep(2);
+      if (isClearancePending) {
+        setLockedNotice(`Your Locational Clearance (${matchedClearanceApp?.id}) is awaiting Admin approval. The municipal zoning administrator must approve your clearance before you can proceed to other forms.`);
+      } else {
+        setLockedNotice(`Locational Clearance is mandatory for ${selectedProjectType.name} and must be approved by the Admin before proceeding.`);
+      }
+    }
+  }, [currentStep, isClearanceRequired, isClearancePassed, isClearancePending, matchedClearanceApp, selectedProjectType]);
 
   // Sync selected permit type internally
   useEffect(() => {
@@ -461,7 +515,7 @@ export default function ApplyPage() {
         onSuccessWithRef={(newRef) => {
           setSelectedClearanceRef(newRef);
           setShowGoogleForm(false);
-          setCurrentStep(3);
+          setCurrentStep(2);
         }}
         initialProjectType={selectedProjectType?.name}
         initialProjectName={projectName}
@@ -573,6 +627,7 @@ export default function ApplyPage() {
               const isPassed = currentStep > step.id;
               const isExempt = step.id === 2 && !isClearanceRequired;
               const isClearanceVerified = step.id === 2 && isClearancePassed && isClearanceRequired;
+              const isClearanceAwaitingAdmin = step.id === 2 && isClearancePending && isClearanceRequired;
               
               return (
                 <li 
@@ -584,26 +639,45 @@ export default function ApplyPage() {
                     } else if (isClearancePassed) {
                       setCurrentStep(step.id);
                     } else {
-                      setLockedNotice(`Mandatory Locational Clearance must be verified for ${selectedProjectType.name} before proceeding to ${step.title}.`);
+                      if (isClearancePending) {
+                        setLockedNotice(`Your Locational Clearance (${matchedClearanceApp?.id}) is awaiting Admin approval. The municipal zoning administrator must approve your clearance before you can proceed to ${step.title}.`);
+                      } else {
+                        setLockedNotice(`Mandatory Locational Clearance must be approved by the Admin for ${selectedProjectType.name} before proceeding to ${step.title}.`);
+                      }
                     }
                   }}
                   style={{ cursor: "pointer" }}
                 >
                   <div className="step-indicator" style={{
                     transition: "all 0.2s ease",
-                    boxShadow: isActive ? "0 0 0 4px rgba(79, 70, 229, 0.15)" : "none"
+                    boxShadow: isActive ? "0 0 0 4px rgba(79, 70, 229, 0.15)" : "none",
+                    background: isClearanceAwaitingAdmin && !isActive ? "#fef3c7" : undefined,
+                    borderColor: isClearanceAwaitingAdmin && !isActive ? "#f59e0b" : undefined,
+                    color: isClearanceAwaitingAdmin && !isActive ? "#b45309" : undefined
                   }}>
-                    {isPassed ? <CheckCircle size={16} /> : <span>{step.id}</span>}
+                    {isPassed ? (
+                      <CheckCircle size={16} />
+                    ) : isClearanceAwaitingAdmin ? (
+                      <Clock size={16} color="#d97706" />
+                    ) : (
+                      <span>{step.id}</span>
+                    )}
                   </div>
                   <div className="step-content">
                     <span className="step-title">{step.title}</span>
-                    <span className="step-desc" style={{ fontSize: "0.74rem", color: isActive ? "#4f46e5" : "#94a3b8", fontWeight: isActive ? "700" : "500" }}>
+                    <span className="step-desc" style={{ 
+                      fontSize: "0.74rem", 
+                      color: isClearanceAwaitingAdmin && !isActive ? "#d97706" : (isActive ? "#4f46e5" : "#94a3b8"), 
+                      fontWeight: isActive || isClearanceAwaitingAdmin ? "700" : "500" 
+                    }}>
                       {isActive 
                         ? "In Progress" 
                         : isExempt 
                         ? "Exempt" 
                         : isClearanceVerified 
-                        ? "Verified" 
+                        ? "Approved" 
+                        : isClearanceAwaitingAdmin
+                        ? "Pending Approval"
                         : step.subtitle}
                     </span>
                   </div>
@@ -952,7 +1026,13 @@ export default function ApplyPage() {
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedProjectType(p);
-                              if (requiresClearance && !selectedClearanceRef) {
+                              const pRequiresClearance = p.matrix.zoningPermit !== 'not_required';
+                              const hasApproved = applications.some(a => 
+                                (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
+                                (a.projectType === p.name || (a.projectName && a.projectName.includes(p.name))) &&
+                                (a.status === "approved" || a.status === "released")
+                              );
+                              if (pRequiresClearance && !hasApproved) {
                                 setCurrentStep(2);
                               } else {
                                 setCurrentStep(3);
@@ -1121,8 +1201,8 @@ export default function ApplyPage() {
                     <ChevronRight size={18} />
                   </button>
                 </div>
-              ) : isClearancePassed ? (
-                /* CASE 2: CLEARANCE PASSED / LINKED */
+              ) : isClearanceApproved ? (
+                /* CASE 2: CLEARANCE APPROVED BY ADMIN */
                 <div style={{
                   background: "linear-gradient(135deg, rgba(236, 253, 245, 0.95) 0%, rgba(240, 253, 244, 0.9) 100%)",
                   border: "1.5px solid #86efac",
@@ -1154,7 +1234,7 @@ export default function ApplyPage() {
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", marginBottom: "0.3rem" }}>
                         <span style={{ fontWeight: "800", color: "#065f46", fontSize: "1.1rem", letterSpacing: "-0.01em" }}>
-                          Locational Clearance Verified & Passed
+                          Locational Clearance Approved by Admin
                         </span>
                         <div style={{
                           display: "inline-flex",
@@ -1169,7 +1249,7 @@ export default function ApplyPage() {
                           fontWeight: "700"
                         }}>
                           <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981" }}></span>
-                          Ref: {activeClearanceRef || "Verified"}
+                          Ref: {activeClearanceRef || "Approved"}
                           <button
                             type="button"
                             onClick={() => handleCopyRef(activeClearanceRef || "LC-APPROVED")}
@@ -1181,7 +1261,7 @@ export default function ApplyPage() {
                         </div>
                       </div>
                       <p style={{ margin: 0, color: "#166534", fontSize: "0.9rem", lineHeight: "1.45" }}>
-                        Your project <strong>{selectedProjectType.name}</strong> is linked to approved clearance <strong>{activeClearanceRef}</strong>. You are cleared to proceed to <strong>Step 3: Mapping</strong>.
+                        Your Locational Clearance for <strong>{selectedProjectType.name}</strong> has been officially approved by the Sto. Tomas Zoning Administrator / MPDO. You are cleared to proceed to <strong>Step 3: Required Permit Forms</strong>.
                       </p>
                     </div>
                   </div>
@@ -1204,7 +1284,7 @@ export default function ApplyPage() {
                         transition: "all 0.15s ease"
                       }}
                     >
-                      Change / Unlink Clearance
+                      Change Clearance
                     </button>
 
                     <button
@@ -1227,6 +1307,210 @@ export default function ApplyPage() {
                     >
                       <span>Proceed to Step 3: Required Permit Forms</span>
                       <ChevronRight size={18} />
+                    </button>
+                  </div>
+                </div>
+              ) : isClearancePending ? (
+                /* CASE 3: CLEARANCE FILED BUT PENDING ADMIN APPROVAL */
+                <div style={{
+                  background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+                  border: "2px solid #f59e0b",
+                  borderRadius: "20px",
+                  padding: "2rem",
+                  marginBottom: "1.75rem",
+                  boxShadow: "0 10px 25px -5px rgba(245, 158, 11, 0.15)"
+                }}>
+                  {/* Status Banner */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", marginBottom: "1.25rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                      <div style={{
+                        width: "52px",
+                        height: "52px",
+                        borderRadius: "16px",
+                        background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0 8px 18px rgba(217, 119, 6, 0.35)",
+                        flexShrink: 0
+                      }}>
+                        <Clock size={28} />
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                          <span style={{
+                            background: "#d97706",
+                            color: "white",
+                            fontSize: "0.72rem",
+                            fontWeight: "800",
+                            padding: "3px 10px",
+                            borderRadius: "6px",
+                            letterSpacing: "0.5px"
+                          }}>
+                            AWAITING ADMIN APPROVAL
+                          </span>
+                          <span style={{ fontSize: "0.82rem", color: "#92400e", fontWeight: "700" }}>
+                            Ref: {matchedClearanceApp?.id}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyRef(matchedClearanceApp?.id || "")}
+                            title="Copy Reference"
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#b45309", padding: 0 }}
+                          >
+                            {copiedRef ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
+                          </button>
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: "1.4rem", fontWeight: "900", color: "#78350f" }}>
+                          Locational Clearance Under Review
+                        </h3>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <button
+                        type="button"
+                        onClick={handleCheckClearanceStatus}
+                        disabled={isCheckingClearance}
+                        style={{
+                          background: "#ffffff",
+                          border: "1.5px solid #fde68a",
+                          color: "#92400e",
+                          padding: "8px 16px",
+                          borderRadius: "10px",
+                          fontWeight: "700",
+                          fontSize: "0.85rem",
+                          cursor: isCheckingClearance ? "wait" : "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          boxShadow: "0 2px 6px rgba(217, 119, 6, 0.1)"
+                        }}
+                      >
+                        <RefreshCw size={14} className={isCheckingClearance ? "animate-spin" : ""} />
+                        <span>{isCheckingClearance ? "Checking..." : "Check Status"}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Explanation Callout */}
+                  <div style={{
+                    background: "rgba(255, 255, 255, 0.75)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid #fde68a",
+                    borderRadius: "14px",
+                    padding: "1.25rem 1.5rem",
+                    marginBottom: "1.5rem"
+                  }}>
+                    <p style={{ margin: "0 0 0.75rem 0", color: "#78350f", fontSize: "0.95rem", lineHeight: "1.6", fontWeight: "600" }}>
+                      Your <strong>Application for Locational Clearance</strong> for <strong>{selectedProjectType.name}</strong> was submitted on <strong>{matchedClearanceApp?.dateSubmitted || "recently"}</strong> and is currently being evaluated by the <strong>Sto. Tomas MPDO & Zoning Administrator</strong>.
+                    </p>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", background: "#fef3c7", padding: "12px 14px", borderRadius: "10px", border: "1px solid #fde68a" }}>
+                      <AlertTriangle size={20} color="#d97706" style={{ flexShrink: 0, marginTop: "2px" }} />
+                      <div style={{ fontSize: "0.85rem", color: "#92400e", lineHeight: "1.5" }}>
+                        <strong>Zoning Approval is Mandatory Prior to Other Forms:</strong> Under the National Building Code (PD 1096) and Sto. Tomas Municipal Permitting Code, the building official cannot process subsequent technical permit forms without an approved Locational Clearance. <strong>Step 3: Required Permit Forms</strong> will unlock automatically once the administrator approves your clearance.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3-Stage Progress Indicator */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "1rem",
+                    marginBottom: "1.5rem"
+                  }}>
+                    <div style={{ background: "#ffffff", padding: "1rem", borderRadius: "12px", border: "1px solid #bbf7d0", display: "flex", alignItems: "center", gap: "10px" }}>
+                      <CheckCircle2 size={22} color="#16a34a" />
+                      <div>
+                        <div style={{ fontSize: "0.75rem", color: "#166534", fontWeight: "800", textTransform: "uppercase" }}>Stage 1</div>
+                        <div style={{ fontSize: "0.88rem", fontWeight: "700", color: "#0f172a" }}>Clearance Filed</div>
+                      </div>
+                    </div>
+
+                    <div style={{ background: "#ffffff", padding: "1rem", borderRadius: "12px", border: "2px solid #f59e0b", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 4px 12px rgba(245, 158, 11, 0.15)" }}>
+                      <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "#fef3c7", border: "2px solid #f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#d97706" }} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "0.75rem", color: "#b45309", fontWeight: "800", textTransform: "uppercase" }}>Stage 2 (Current)</div>
+                        <div style={{ fontSize: "0.88rem", fontWeight: "800", color: "#b45309" }}>Admin Review & Approval</div>
+                      </div>
+                    </div>
+
+                    <div style={{ background: "#f8fafc", padding: "1rem", borderRadius: "12px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: "10px", opacity: 0.7 }}>
+                      <Lock size={20} color="#94a3b8" />
+                      <div>
+                        <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: "800", textTransform: "uppercase" }}>Stage 3</div>
+                        <div style={{ fontSize: "0.88rem", fontWeight: "700", color: "#64748b" }}>Permit Forms Unlocked</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", borderTop: "1px solid #fde68a", paddingTop: "1.25rem" }}>
+                    <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                      <a
+                        href={`/applicant/track/${matchedClearanceApp?.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid #fde68a",
+                          color: "#92400e",
+                          padding: "9px 16px",
+                          borderRadius: "10px",
+                          fontSize: "0.85rem",
+                          fontWeight: "700",
+                          textDecoration: "none",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        <Eye size={15} /> Track Application
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowGoogleForm(true)}
+                        style={{
+                          background: "transparent",
+                          border: "1px solid #cbd5e1",
+                          color: "#64748b",
+                          padding: "9px 16px",
+                          borderRadius: "10px",
+                          fontSize: "0.85rem",
+                          fontWeight: "700",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Re-file / Submit Revision
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled
+                      style={{
+                        background: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "10px",
+                        padding: "11px 22px",
+                        fontSize: "0.9rem",
+                        fontWeight: "700",
+                        cursor: "not-allowed",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        opacity: 0.8
+                      }}
+                      title="You must wait for the admin to approve this Locational Clearance before proceeding to the other forms"
+                    >
+                      <Lock size={16} />
+                      <span>Locked: Awaiting Admin Approval</span>
                     </button>
                   </div>
                 </div>
@@ -2237,6 +2521,26 @@ export default function ApplyPage() {
                 >
                   <span>Next: Required Permit Forms</span>
                   <ChevronRight size={18} />
+                </button>
+              ) : isClearancePending ? (
+                <button 
+                  type="button"
+                  disabled
+                  style={{ 
+                    background: "#f1f5f9", 
+                    border: "1.5px solid #cbd5e1", 
+                    color: "#64748b", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    padding: "10px 22px", 
+                    borderRadius: "10px", 
+                    cursor: "not-allowed",
+                    fontWeight: 700
+                  }}
+                >
+                  <Lock size={16} />
+                  <span>Awaiting Admin Approval (Clearance Required)</span>
                 </button>
               ) : (
                 <button 
