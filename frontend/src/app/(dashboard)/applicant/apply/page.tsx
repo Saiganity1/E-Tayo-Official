@@ -18,6 +18,7 @@ import dynamic from "next/dynamic";
 import LocationalClearanceGoogleForm from "../../../../components/forms/LocationalClearanceGoogleForm";
 import UnifiedProjectGoogleForm from "../../../../components/forms/UnifiedProjectGoogleForm";
 import TechnicalPermitFormsStep from "../../../../components/forms/TechnicalPermitFormsStep";
+import { generateUnifiedPermitPdf } from "../../../../utils/unifiedPermitPdfGenerator";
 import { 
   PROJECT_TYPES_MATRIX, 
   ProjectTypeItem, 
@@ -330,6 +331,7 @@ export default function ApplyPage() {
       const formData = new FormData();
       formData.append("files", file);
       formData.append("permitType", PERMIT_FORM_METADATA[key]?.label || "Technical Permit");
+      formData.append("projectType", selectedProjectType?.name || "General Application");
 
       let fileUrl = "";
       try {
@@ -393,6 +395,7 @@ export default function ApplyPage() {
     
     const formattedPermitType = selectedPermitType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     formData.append("permitType", formattedPermitType);
+    formData.append("projectType", selectedProjectType?.name || "General Application");
 
     try {
       const token = localStorage.getItem("token");
@@ -417,7 +420,7 @@ export default function ApplyPage() {
     }
   };
 
-  const handleSubmitApplication = () => {
+  const handleSubmitApplication = async () => {
     // STRICT VALIDATION: Block submission if any mandatory technical permit is missing
     if (!isAllMandatoryAttached) {
       const missingLabels = missingMandatoryPermits.map(k => PERMIT_FORM_METADATA[k]?.label || k).join(", ");
@@ -492,16 +495,52 @@ export default function ApplyPage() {
     const attachedUrls = Object.values(uploadedPermitDocs).map(d => d.fileUrl).filter(Boolean);
     const combinedFileUrls = attachedUrls.join(',') || uploadedFileUrl || '';
 
+    const newId = `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const submissionDate = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+    const formattedFileName = `${selectedProjectType.name.replace(/\s+/g, '_')}_Permit_Package.pdf`;
+
+    // Generate official unified PDF dossier package for this application
+    let finalFileUrl = combinedFileUrls;
+    if (!finalFileUrl.startsWith("data:application/pdf;base64,")) {
+      try {
+        const generatedBase64 = await generateUnifiedPermitPdf({
+          applicationNo: newId,
+          locationalClearanceRef: activeClearanceRef || (isClearanceRequired ? "LC-APPROVED" : "EXEMPT"),
+          projectType: selectedProjectType,
+          applicantName,
+          applicantPhone: "0917-123-4567",
+          applicantEmail: "applicant@etayo.gov.ph",
+          applicantAddress: projectAddress,
+          projectName: projectName || `${selectedProjectType.name} Construction`,
+          projectAddress,
+          barangay,
+          lotArea: lotArea || "200",
+          floorArea: floorArea || "120",
+          projectCost: projectCost || "1,500,000.00",
+          scopeOfWork: "New Construction",
+          occupancyClass: "Group A - Residential",
+          proposedStoreys: "2",
+          activePermitForms: mandatoryPermitsToSubmit,
+          submissionDate
+        });
+        if (generatedBase64) {
+          finalFileUrl = `data:application/pdf;base64,${generatedBase64}`;
+        }
+      } catch (err) {
+        console.warn("Notice: Client PDF generation skipped or fallback:", err);
+      }
+    }
+
     const newApp: any = {
-      id: `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: newId,
       projectName: projectName || `${selectedProjectType.name} Installation & Construction`,
       projectType: selectedProjectType.name,
       permitType: selectedPermitType,
       status: "pending",
-      dateSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+      dateSubmitted: submissionDate,
       applicantName,
-      fileUrl: combinedFileUrls,
-      fileName: `${selectedProjectType.name.replace(/\s+/g, '_')}_Permit_Package.pdf`,
+      fileUrl: finalFileUrl,
+      fileName: formattedFileName,
       locationalClearanceRef: activeClearanceRef || undefined,
       location: {
         lat: parseFloat(latitude) || 15.0050,
@@ -510,7 +549,7 @@ export default function ApplyPage() {
       },
       requirements: requirementsList,
       trackingSteps: [
-        { title: 'Application Submitted', status: 'completed', date: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }), notes: `Application dossier filed online with ${requirementsList.length} verified engineering attachments.` },
+        { title: 'Application Submitted', status: 'completed', date: submissionDate, notes: `Application dossier filed online with ${requirementsList.length} verified engineering attachments.` },
         { title: 'Initial Document Verification', status: 'upcoming', notes: 'Reviewing all technical engineering attachments for completeness and licensed PRC sign-offs.' }
       ],
       historyLog: [

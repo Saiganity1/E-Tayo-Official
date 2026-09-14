@@ -22,6 +22,8 @@ import {
   Clock
 } from "lucide-react";
 
+import { generateLocationalClearancePdf } from "../../utils/locationalClearancePdfGenerator";
+
 export interface LocationalClearanceFormProps {
   onCancel?: () => void;
   onSuccessWithRef?: (ref: string) => void;
@@ -133,7 +135,7 @@ export default function LocationalClearanceGoogleForm({
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!applicantName.trim()) {
@@ -157,9 +159,49 @@ export default function LocationalClearanceGoogleForm({
       const submissionDate = new Date().toLocaleDateString("en-US", { month: "long", day: "2-digit", year: "numeric" });
       const newId = `LC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+      // Generate the official Sto. Tomas Locational Clearance PDF
+      let base64Pdf = "";
+      try {
+        base64Pdf = await generateLocationalClearancePdf({
+          applicationNo: newId,
+          submissionDate,
+          applicantName,
+          applicantAddress,
+          applicantPhone,
+          applicantEmail: initialApplicantEmail,
+          corporationName: corporationName || undefined,
+          representativeName: representativeName || undefined,
+          representativeAddress: representativeAddress || undefined,
+          representativePhone: representativePhone || undefined,
+          projectName: projectName.trim() || `${projectType} - Locational Clearance`,
+          projectType,
+          projectNature,
+          projectAddress: fullProjectLocation,
+          barangay,
+          lotArea,
+          bldgArea,
+          improvementArea,
+          rightOverLand,
+          projectTenure,
+          existingLandUse,
+          isTenanted,
+          projectCost,
+          projectCostWords,
+          preferredMode,
+          ctcNumber,
+          ctcIssuedAt,
+          ctcIssuedOn
+        });
+      } catch (pdfErr) {
+        console.warn("Notice: Client PDF generation skipped or fallback:", pdfErr);
+      }
+
+      const generatedFileName = `${newId}_${projectType.replace(/\s+/g, '_')}_Locational_Clearance.pdf`;
+
       const newApp: any = {
         id: newId,
         projectName: projectName.trim() || `${projectType} - Locational Clearance`,
+        projectType: projectType.trim(),
         permitType: "locational_clearance",
         status: "pending",
         dateSubmitted: submissionDate,
@@ -171,8 +213,8 @@ export default function LocationalClearanceGoogleForm({
         representativeName: representativeName || undefined,
         projectAddress: fullProjectLocation,
         projectDescription: `${projectType} (${projectNature}) - Lot: ${lotArea} sq.m, Bldg: ${bldgArea} sq.m. Land Tenure: ${rightOverLand} (${projectTenure}). Land Use: ${existingLandUse}. Cost: Php ${projectCost}`,
-        fileUrl: "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
-        fileName: "LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
+        fileUrl: base64Pdf ? `data:application/pdf;base64,${base64Pdf}` : "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
+        fileName: generatedFileName,
         sketchImageUrl: sketchImageBase64 || undefined,
         location: {
           lat: 15.0163,
@@ -184,7 +226,7 @@ export default function LocationalClearanceGoogleForm({
             name: "Application for Locational Clearance (Sto. Tomas)",
             required: true,
             status: "approved",
-            fileName: "LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
+            fileName: generatedFileName
           }
         ],
         trackingSteps: [

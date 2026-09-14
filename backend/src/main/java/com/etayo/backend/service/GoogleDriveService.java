@@ -55,6 +55,16 @@ public class GoogleDriveService {
     }
 
     /**
+     * Checks if Google Drive credentials and folder ID are configured in environment variables.
+     */
+    public boolean isConfigured() {
+        return clientId != null && !clientId.trim().isEmpty() && !clientId.contains("sample") && !"dummy".equalsIgnoreCase(clientId)
+                && clientSecret != null && !clientSecret.trim().isEmpty() && !clientSecret.contains("sample") && !"dummy".equalsIgnoreCase(clientSecret)
+                && refreshToken != null && !refreshToken.trim().isEmpty() && !refreshToken.contains("sample") && !"dummy".equalsIgnoreCase(refreshToken)
+                && folderId != null && !folderId.trim().isEmpty() && !folderId.contains("sample") && !"dummy".equalsIgnoreCase(folderId);
+    }
+
+    /**
      * Uploads a file to Google Drive and returns the webViewLink (shareable link).
      */
     public String uploadFile(MultipartFile multipartFile) throws Exception {
@@ -92,54 +102,118 @@ public class GoogleDriveService {
     }
 
     /**
-     * Uploads a file for an applicant into Applications / <Applicant Name> / <Permit Type> / <Timestamp> / file.pdf
+     * Resolves or creates the 3-tier folder structure:
+     * 1. Level 1: First Name and Last Name of User (e.g. "Juan Dela Cruz") directly inside Root folder
+     * 2. Level 2: Project Type application (e.g. "Escalator") inside User folder
+     * 3. Level 3: Date and Time created (e.g. "2026-09-14_22-30-00") inside Project Type folder
+     * Returns the Date/Time folder ID where forms and attachments reside.
      */
-    public String uploadApplicantFile(MultipartFile multipartFile, String applicantName, String permitType, String timestamp) throws Exception {
+    public String getOrCreateApplicationFolder(Drive driveService, String applicantName, String projectType, String timestamp) throws Exception {
+        if (folderId == null || folderId.isEmpty()) return null;
+
+        String cleanApplicant = (applicantName != null && !applicantName.trim().isEmpty())
+                ? applicantName.trim()
+                : "Applicant";
+        String cleanProjectType = (projectType != null && !projectType.trim().isEmpty())
+                ? projectType.trim()
+                : "General Application";
+        String cleanTimestamp = (timestamp != null && !timestamp.trim().isEmpty())
+                ? timestamp.trim()
+                : java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+
+        // Level 1: First Name and Last Name of User directly inside root folder
+        String userFolderId = getOrCreateSubFolderId(driveService, folderId, cleanApplicant);
+
+        // Level 2: Project Type application (e.g. Escalator) inside User folder
+        String projectTypeFolderId = getOrCreateSubFolderId(driveService, userFolderId, cleanProjectType);
+
+        // Level 3: Date and Time created folder inside Project Type folder
+        String dateTimeFolderId = getOrCreateSubFolderId(driveService, projectTypeFolderId, cleanTimestamp);
+
+        return dateTimeFolderId;
+    }
+
+    /**
+     * Uploads in-memory file bytes (e.g. base64 generated PDFs or images)
+     * into: <Applicant Name> / <Project Type> / <Date and Time created> / <fileName>
+     */
+    public String uploadApplicantBytes(byte[] data, String fileName, String contentType, String applicantName, String projectType, String timestamp) throws Exception {
         Drive driveService = getDriveService();
-
-        String parentFolderId = folderId;
-
-        if (parentFolderId != null && !parentFolderId.isEmpty()) {
-            // 1. Applications folder
-            String applicationsFolderId = getOrCreateSubFolderId(driveService, parentFolderId, "Applications");
-            // 2. Applicant Name folder
-            String applicantFolderId = getOrCreateSubFolderId(driveService, applicationsFolderId, applicantName);
-            // 3. Permit Type folder
-            String permitFolderId = getOrCreateSubFolderId(driveService, applicantFolderId, permitType);
-            // 4. Timestamp folder
-            parentFolderId = getOrCreateSubFolderId(driveService, permitFolderId, timestamp);
-        }
+        String targetFolderId = getOrCreateApplicationFolder(driveService, applicantName, projectType, timestamp);
 
         File fileMetadata = new File();
-        fileMetadata.setName(multipartFile.getOriginalFilename());
-        
-        if (parentFolderId != null && !parentFolderId.isEmpty()) {
-            fileMetadata.setParents(Collections.singletonList(parentFolderId));
+        fileMetadata.setName(fileName);
+        if (targetFolderId != null && !targetFolderId.isEmpty()) {
+            fileMetadata.setParents(Collections.singletonList(targetFolderId));
         }
 
-        java.io.File tempFile = java.io.File.createTempFile("etayo-upload-", multipartFile.getOriginalFilename());
-        multipartFile.transferTo(tempFile);
-        
-        FileContent mediaContent = new FileContent(multipartFile.getContentType(), tempFile);
+        java.io.File tempFile = createTempFileFromBytes(fileName, data);
+        FileContent mediaContent = new FileContent(contentType != null ? contentType : "application/pdf", tempFile);
 
         File uploadedFile = driveService.files().create(fileMetadata, mediaContent)
-                .setFields("id, webViewLink")
+                .setFields("id, webViewLink, webContentLink")
                 .execute();
 
         tempFile.delete();
 
-        com.google.api.services.drive.model.Permission permission = new com.google.api.services.drive.model.Permission()
-                .setType("anyone")
-                .setRole("reader");
-        driveService.permissions().create(uploadedFile.getId(), permission).execute();
+        try {
+            com.google.api.services.drive.model.Permission permission = new com.google.api.services.drive.model.Permission()
+                    .setType("anyone")
+                    .setRole("reader");
+            driveService.permissions().create(uploadedFile.getId(), permission).execute();
+        } catch (Exception ignored) {}
 
-        return uploadedFile.getWebViewLink();
+        return uploadedFile.getWebViewLink() != null 
+                ? uploadedFile.getWebViewLink() 
+                : ("https://drive.google.com/file/d/" + uploadedFile.getId() + "/view");
+    }
+
+    /**
+     * Uploads an applicant MultipartFile into: <Applicant Name> / <Project Type> / <Date and Time created> / <fileName>
+     */
+    public String uploadApplicantFile(MultipartFile multipartFile, String applicantName, String projectType, String timestamp) throws Exception {
+        Drive driveService = getDriveService();
+        String targetFolderId = getOrCreateApplicationFolder(driveService, applicantName, projectType, timestamp);
+
+        File fileMetadata = new File();
+        fileMetadata.setName(multipartFile.getOriginalFilename());
+        if (targetFolderId != null && !targetFolderId.isEmpty()) {
+            fileMetadata.setParents(Collections.singletonList(targetFolderId));
+        }
+
+        java.io.File tempFile = java.io.File.createTempFile("etayo-upload-", multipartFile.getOriginalFilename());
+        multipartFile.transferTo(tempFile);
+
+        FileContent mediaContent = new FileContent(multipartFile.getContentType(), tempFile);
+
+        File uploadedFile = driveService.files().create(fileMetadata, mediaContent)
+                .setFields("id, webViewLink, webContentLink")
+                .execute();
+
+        tempFile.delete();
+
+        try {
+            com.google.api.services.drive.model.Permission permission = new com.google.api.services.drive.model.Permission()
+                    .setType("anyone")
+                    .setRole("reader");
+            driveService.permissions().create(uploadedFile.getId(), permission).execute();
+        } catch (Exception ignored) {}
+
+        return uploadedFile.getWebViewLink() != null 
+                ? uploadedFile.getWebViewLink() 
+                : ("https://drive.google.com/file/d/" + uploadedFile.getId() + "/view");
     }
 
     private String getOrCreateSubFolderId(Drive driveService, String parentId, String folderName) throws Exception {
         if (parentId == null || parentId.isEmpty()) return null;
 
-        String query = "name='" + folderName + "' and mimeType='application/vnd.google-apps.folder' and '" + parentId + "' in parents and trashed=false";
+        String safeFolderName = folderName != null && !folderName.trim().isEmpty() 
+                ? folderName.trim() 
+                : "General";
+        // Escape single quotes and backslashes for Google Drive search query syntax
+        String escapedName = safeFolderName.replace("\\", "\\\\").replace("'", "\\'");
+
+        String query = "name='" + escapedName + "' and mimeType='application/vnd.google-apps.folder' and '" + parentId + "' in parents and trashed=false";
         com.google.api.services.drive.model.FileList result = driveService.files().list()
                 .setQ(query)
                 .setSpaces("drive")
@@ -151,7 +225,7 @@ public class GoogleDriveService {
         }
 
         File folderMetadata = new File();
-        folderMetadata.setName(folderName);
+        folderMetadata.setName(safeFolderName);
         folderMetadata.setMimeType("application/vnd.google-apps.folder");
         folderMetadata.setParents(Collections.singletonList(parentId));
 

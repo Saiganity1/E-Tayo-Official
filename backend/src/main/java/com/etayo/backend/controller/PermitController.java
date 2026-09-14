@@ -19,6 +19,12 @@ public class PermitController {
     @Autowired
     private com.etayo.backend.service.AuditLoggingService auditLoggingService;
 
+    @Autowired
+    private com.etayo.backend.service.GoogleDriveService googleDriveService;
+
+    @Autowired
+    private com.etayo.backend.repository.UserRepository userRepository;
+
     @GetMapping
     public ResponseEntity<List<PermitApplication>> getAllPermits(org.springframework.security.core.Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
@@ -54,19 +60,155 @@ public class PermitController {
     }
 
     @PostMapping
-    public ResponseEntity<PermitApplication> createPermit(@RequestBody PermitApplication permit) {
+    public ResponseEntity<PermitApplication> createPermit(
+            @RequestBody PermitApplication permit,
+            org.springframework.security.core.Authentication authentication) {
+
+        // 1. Resolve applicant full name
+        String applicantName = permit.getApplicantName();
+        if ((applicantName == null || applicantName.trim().isEmpty() || "Applicant".equalsIgnoreCase(applicantName)) && authentication != null) {
+            String principalName = authentication.getName();
+            com.etayo.backend.model.User user = userRepository.findByEmail(principalName).orElse(null);
+            if (user != null && user.getName() != null && !user.getName().trim().isEmpty()) {
+                applicantName = user.getName().trim();
+                permit.setApplicantName(applicantName);
+            } else if (principalName != null && !principalName.trim().isEmpty()) {
+                applicantName = principalName.trim();
+                permit.setApplicantName(applicantName);
+            }
+        }
+        if (applicantName == null || applicantName.trim().isEmpty()) {
+            applicantName = "Applicant";
+        }
+
+        // 2. Resolve project type (e.g. "Escalator")
+        String projectType = permit.getProjectType();
+        if (projectType == null || projectType.trim().isEmpty()) {
+            if (permit.getProjectName() != null && !permit.getProjectName().trim().isEmpty()) {
+                projectType = permit.getProjectName().trim();
+            } else if (permit.getPermitType() != null && !permit.getPermitType().trim().isEmpty()) {
+                projectType = permit.getPermitType().trim().replace("_", " ");
+            } else {
+                projectType = "General Application";
+            }
+            permit.setProjectType(projectType);
+        }
+
+        // 3. Generate timestamp for Date and Time created folder
+        String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+
+        // 4. Automatic Google Drive Upload
+        try {
+            if (googleDriveService != null && googleDriveService.isConfigured()) {
+                // A. Check if application form PDF is provided as base64 in fileUrl
+                if (permit.getFileUrl() != null && permit.getFileUrl().contains("base64,")) {
+                    String base64Data = permit.getFileUrl().substring(permit.getFileUrl().indexOf("base64,") + 7);
+                    byte[] pdfBytes = java.util.Base64.getDecoder().decode(base64Data.trim());
+                    String fileName = permit.getFileName() != null && !permit.getFileName().trim().isEmpty()
+                            ? permit.getFileName().trim()
+                            : (permit.getId() + "_" + projectType.replaceAll("[^a-zA-Z0-9.-]", "_") + "_Application.pdf");
+
+                    String drivePdfUrl = googleDriveService.uploadApplicantBytes(
+                            pdfBytes, fileName, "application/pdf", applicantName, projectType, timestamp
+                    );
+                    if (drivePdfUrl != null) {
+                        permit.setFileUrl(drivePdfUrl);
+                    }
+                }
+
+                // B. Check if vicinity sketch image is provided as base64 in sketchImageUrl
+                if (permit.getSketchImageUrl() != null && permit.getSketchImageUrl().contains("base64,")) {
+                    int commaIdx = permit.getSketchImageUrl().indexOf("base64,");
+                    String imgMeta = permit.getSketchImageUrl().substring(0, commaIdx);
+                    String imgBase64 = permit.getSketchImageUrl().substring(commaIdx + 7);
+                    String contentType = "image/png";
+                    if (imgMeta.contains("image/jpeg") || imgMeta.contains("image/jpg")) {
+                        contentType = "image/jpeg";
+                    } else if (imgMeta.contains("application/pdf")) {
+                        contentType = "application/pdf";
+                    }
+                    String ext = contentType.contains("jpeg") ? ".jpg" : (contentType.contains("pdf") ? ".pdf" : ".png");
+                    byte[] imgBytes = java.util.Base64.getDecoder().decode(imgBase64.trim());
+                    String sketchDriveUrl = googleDriveService.uploadApplicantBytes(
+                            imgBytes, "Vicinity_Sketch_Map" + ext, contentType, applicantName, projectType, timestamp
+                    );
+                    if (sketchDriveUrl != null) {
+                        permit.setSketchImageUrl(sketchDriveUrl);
+                    }
+                }
+
+                // C. If no base64 PDF was attached (e.g. template path or empty), generate an official summary document so the folder contains the filled forms
+                if (permit.getFileUrl() == null || permit.getFileUrl().trim().isEmpty() || permit.getFileUrl().startsWith("/templates/")) {
+                    byte[] summaryDoc = generateApplicationSummaryDoc(permit);
+                    String summaryFileName = permit.getId() + "_Application_Details.txt";
+                    String driveSummaryUrl = googleDriveService.uploadApplicantBytes(
+                            summaryDoc, summaryFileName, "text/plain", applicantName, projectType, timestamp
+                    );
+                    if (driveSummaryUrl != null) {
+                        permit.setFileUrl(driveSummaryUrl);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Notice: Google Drive auto-upload skipped or encountered an issue: " + e.getMessage());
+        }
+
         PermitApplication saved = permitApplicationRepository.save(permit);
         try {
             auditLoggingService.logAction(
                 "PERMIT_CREATED",
                 saved.getApplicantEmail() != null ? saved.getApplicantEmail() : "Applicant",
-                String.format("New application submitted: %s (%s) for %s",
+                String.format("New application submitted: %s (%s) for %s [Drive Synced: %s]",
                     saved.getId(),
                     saved.getPermitType() != null ? saved.getPermitType().replace("_", " ") : "Permit",
-                    saved.getApplicantName() != null ? saved.getApplicantName() : "Applicant")
+                    saved.getApplicantName() != null ? saved.getApplicantName() : "Applicant",
+                    (saved.getFileUrl() != null && saved.getFileUrl().contains("drive.google.com")) ? "YES" : "LOCAL")
             );
         } catch (Exception ignored) {}
         return ResponseEntity.ok(saved);
+    }
+
+    private byte[] generateApplicationSummaryDoc(PermitApplication permit) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("========================================================================\n");
+        sb.append("      REPUBLIC OF THE PHILIPPINES - MUNICIPALITY OF STO. TOMAS\n");
+        sb.append("              OFFICIAL APPLICATION DOSSIER & SUMMARY\n");
+        sb.append("========================================================================\n\n");
+        sb.append("APPLICATION REFERENCE: ").append(permit.getId()).append("\n");
+        sb.append("DATE SUBMITTED:        ").append(permit.getDateSubmitted()).append("\n");
+        sb.append("CURRENT STATUS:        ").append(permit.getStatus() != null ? permit.getStatus().toUpperCase() : "PENDING").append("\n");
+        sb.append("PROJECT TYPE:          ").append(permit.getProjectType()).append("\n");
+        sb.append("PERMIT CLASSIFICATION: ").append(permit.getPermitType()).append("\n");
+        if (permit.getLocationalClearanceRef() != null) {
+            sb.append("LOCATIONAL CLEARANCE:  ").append(permit.getLocationalClearanceRef()).append("\n");
+        }
+        sb.append("\n--- APPLICANT INFORMATION ---\n");
+        sb.append("APPLICANT NAME:        ").append(permit.getApplicantName()).append("\n");
+        sb.append("APPLICANT EMAIL:       ").append(permit.getApplicantEmail()).append("\n");
+        sb.append("APPLICANT PHONE:       ").append(permit.getApplicantPhone()).append("\n");
+        sb.append("APPLICANT ADDRESS:     ").append(permit.getApplicantAddress()).append("\n");
+        sb.append("\n--- PROJECT SPECIFICATIONS ---\n");
+        sb.append("PROJECT NAME:          ").append(permit.getProjectName()).append("\n");
+        sb.append("PROJECT ADDRESS:       ").append(permit.getProjectAddress()).append("\n");
+        sb.append("PROJECT DESCRIPTION:   ").append(permit.getProjectDescription()).append("\n");
+        if (permit.getLocation() != null) {
+            sb.append("COORDINATES:           Lat ").append(permit.getLocation().getLat())
+              .append(", Lng ").append(permit.getLocation().getLng()).append("\n");
+        }
+        if (permit.getEstimatedFees() > 0) {
+            sb.append("ESTIMATED FEES:        PHP ").append(String.format("%.2f", permit.getEstimatedFees())).append("\n");
+        }
+        if (permit.getRequirements() != null && !permit.getRequirements().isEmpty()) {
+            sb.append("\n--- SUBMITTED DOCUMENTS & PERMITS ---\n");
+            for (com.etayo.backend.model.Requirement req : permit.getRequirements()) {
+                sb.append(" - ").append(req.getName()).append(" [Status: ").append(req.getStatus()).append("] (File: ").append(req.getFileName()).append(")\n");
+            }
+        }
+        sb.append("\n========================================================================\n");
+        sb.append("e-Tayo Sto. Tomas Municipal e-Governance and Permitting Platform\n");
+        sb.append("Official Record Automatically Synced with Google Drive Storage\n");
+        sb.append("========================================================================\n");
+        return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 
     @PutMapping("/{id}")

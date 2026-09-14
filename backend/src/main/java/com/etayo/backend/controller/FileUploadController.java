@@ -46,6 +46,8 @@ public class FileUploadController {
     public ResponseEntity<Map<String, Object>> uploadFiles(
             @RequestParam("files") List<MultipartFile> files, 
             @RequestParam(value = "permitType", required = false, defaultValue = "General Application") String permitType,
+            @RequestParam(value = "projectType", required = false) String projectType,
+            @RequestParam(value = "timestamp", required = false) String customTimestamp,
             Principal principal) {
         Map<String, Object> response = new HashMap<>();
 
@@ -96,16 +98,24 @@ public class FileUploadController {
                 }
             }
 
+            // Determine effective project type (e.g. "Escalator")
+            String effectiveProjectType = (projectType != null && !projectType.trim().isEmpty())
+                    ? projectType.trim()
+                    : permitType;
+
             // Generate ONE timestamp for the entire batch of files
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            String timestamp = (customTimestamp != null && !customTimestamp.trim().isEmpty())
+                    ? customTimestamp.trim()
+                    : LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
 
             List<String> fileUrls = new ArrayList<>();
             for (MultipartFile file : files) {
-                String fileUrl = googleDriveService.uploadApplicantFile(file, applicantName, permitType, timestamp);
+                String fileUrl = googleDriveService.uploadApplicantFile(file, applicantName, effectiveProjectType, timestamp);
                 fileUrls.add(fileUrl);
             }
             
             response.put("urls", fileUrls);
+            response.put("timestamp", timestamp);
             response.put("message", files.size() + " files verified and uploaded successfully");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
