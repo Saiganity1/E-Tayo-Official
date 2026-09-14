@@ -9,9 +9,10 @@ import {
   Home, Building2, Factory, Landmark, Wrench, Zap, Clock, Copy, 
   ArrowRight, CheckCircle2, Shield, Droplets, Flame, Radio, FileCheck, X,
   BadgeCheck, Info, Compass, Eye, Printer, Download, FileUp, Trash2, Paperclip, AlertTriangle,
-  RefreshCw
+  RefreshCw, Plus
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 
 import LocationalClearanceGoogleForm from "../../../../components/forms/LocationalClearanceGoogleForm";
@@ -133,6 +134,9 @@ export default function ApplyPage() {
   const [showUnifiedForm, setShowUnifiedForm] = useState(false);
   const [showRequirementsAlert, setShowRequirementsAlert] = useState(false);
   const [showAllTemplatesModal, setShowAllTemplatesModal] = useState(false);
+  const [showNewAppModal, setShowNewAppModal] = useState(false);
+  const [isNewApplicationMode, setIsNewApplicationMode] = useState(false);
+  const [newAppAlert, setNewAppAlert] = useState<string | null>(null);
   const [copiedRef, setCopiedRef] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -204,7 +208,8 @@ export default function ApplyPage() {
   const isClearanceRequired = selectedProjectType ? selectedProjectType.matrix.zoningPermit !== 'not_required' : true;
 
   // Find any locational clearance application matching this project type or the selected reference
-  const matchedClearanceApp = (selectedClearanceRef && applications.find(a => a.id === selectedClearanceRef)) ||
+  const matchedClearanceApp = !isNewApplicationMode ? (
+    (selectedClearanceRef && applications.find(a => a.id === selectedClearanceRef)) ||
     applications.find(a => 
       (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
       (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name))) &&
@@ -213,7 +218,8 @@ export default function ApplyPage() {
     applications.find(a => 
       (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
       (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name)))
-    );
+    )
+  ) : (selectedClearanceRef ? applications.find(a => a.id === selectedClearanceRef) : null);
 
   const isClearanceApproved = Boolean(
     matchedClearanceApp && (matchedClearanceApp.status === "approved" || matchedClearanceApp.status === "released")
@@ -236,7 +242,7 @@ export default function ApplyPage() {
     (app) => app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))
   );
 
-  // Guard: if user tries to advance to Step 3, 4, or 5 without approved locational clearance, bounce back to Step 2
+  // Guard 1: if user tries to advance to Step 3, 4, or 5 without approved locational clearance, bounce back to Step 2
   useEffect(() => {
     if (currentStep > 2 && isClearanceRequired && !isClearancePassed) {
       setCurrentStep(2);
@@ -247,6 +253,14 @@ export default function ApplyPage() {
       }
     }
   }, [currentStep, isClearanceRequired, isClearancePassed, isClearancePending, matchedClearanceApp, selectedProjectType]);
+
+  // Guard 2: if locational clearance is approved, user cannot revert back to Step 1 (Project Type is locked to approved clearance)
+  useEffect(() => {
+    if (currentStep === 1 && isClearanceApproved && !isNewApplicationMode) {
+      setCurrentStep(3);
+      setLockedNotice(`Project Type is locked because Locational Clearance has already been approved for "${selectedProjectType.name}". To apply for a different project, click "Create New Application".`);
+    }
+  }, [currentStep, isClearanceApproved, isNewApplicationMode, selectedProjectType]);
 
   // Sync selected permit type internally
   useEffect(() => {
@@ -585,38 +599,90 @@ export default function ApplyPage() {
             </p>
           </div>
 
-          <div style={{
-            background: "#ffffff",
-            border: "1px solid #e2e8f0",
-            borderRadius: "14px",
-            padding: "8px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
-          }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => setShowNewAppModal(true)}
+              style={{
+                background: "#ffffff",
+                border: "1.5px solid #cbd5e1",
+                color: "#1e293b",
+                padding: "8px 16px",
+                borderRadius: "14px",
+                fontWeight: "700",
+                fontSize: "0.85rem",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+                transition: "all 0.15s ease"
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.color = "#2563eb"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#1e293b"; }}
+            >
+              <Plus size={16} color="#2563eb" />
+              <span>Create New Application</span>
+            </button>
+
             <div style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "10px",
-              background: "#eff6ff",
-              color: "#2563eb",
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
+              borderRadius: "14px",
+              padding: "8px 16px",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center"
+              gap: "12px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
             }}>
-              <ShieldCheck size={20} />
-            </div>
-            <div>
-              <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>System Status</div>
-              <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#16a34a", display: "flex", alignItems: "center", gap: "5px" }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }}></span>
-                Online Permitting Active
+              <div style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                background: "#eff6ff",
+                color: "#2563eb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>System Status</div>
+                <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#16a34a", display: "flex", alignItems: "center", gap: "5px" }}>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }}></span>
+                  Online Permitting Active
+                </div>
               </div>
             </div>
           </div>
         </div>
       </header>
+
+      {/* NEW APPLICATION ALERT TOAST */}
+      {newAppAlert && (
+        <div className="animate-fade-in-up" style={{
+          background: "#ecfdf5",
+          border: "1.5px solid #a7f3d0",
+          borderRadius: "14px",
+          padding: "12px 18px",
+          marginBottom: "1.25rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          color: "#065f46"
+        }}>
+          <CheckCircle2 size={18} color="#059669" />
+          <span style={{ fontSize: "0.88rem", fontWeight: "700" }}>{newAppAlert}</span>
+          <button 
+            type="button" 
+            onClick={() => setNewAppAlert(null)}
+            style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#059669", fontWeight: "800" }}
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       <div className="wizard-container glass-panel">
         <div className="wizard-sidebar" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
@@ -628,15 +694,26 @@ export default function ApplyPage() {
               const isExempt = step.id === 2 && !isClearanceRequired;
               const isClearanceVerified = step.id === 2 && isClearancePassed && isClearanceRequired;
               const isClearanceAwaitingAdmin = step.id === 2 && isClearancePending && isClearanceRequired;
+              const isStep1LockedByApprovedClearance = step.id === 1 && isClearanceApproved && !isNewApplicationMode;
               
               return (
                 <li 
                   key={step.id} 
                   className={`step-item ${isActive ? "active" : ""} ${isPassed ? "passed" : ""}`}
                   onClick={() => {
-                    if (step.id === 1 || step.id === 2) {
-                      setCurrentStep(step.id);
-                    } else if (isClearancePassed) {
+                    if (step.id === 1) {
+                      if (isClearanceApproved && !isNewApplicationMode) {
+                        setLockedNotice(`Project Type cannot be modified because Locational Clearance has already been approved for "${selectedProjectType.name}". If you want to apply for a different project, click "Create New Application" above.`);
+                        return;
+                      }
+                      setCurrentStep(1);
+                      return;
+                    }
+                    if (step.id === 2) {
+                      setCurrentStep(2);
+                      return;
+                    }
+                    if (isClearancePassed) {
                       setCurrentStep(step.id);
                     } else {
                       if (isClearancePending) {
@@ -646,7 +723,9 @@ export default function ApplyPage() {
                       }
                     }
                   }}
-                  style={{ cursor: "pointer" }}
+                  style={{ 
+                    cursor: isStep1LockedByApprovedClearance || (!isClearancePassed && step.id > 2) ? "not-allowed" : "pointer" 
+                  }}
                 >
                   <div className="step-indicator" style={{
                     transition: "all 0.2s ease",
@@ -655,7 +734,9 @@ export default function ApplyPage() {
                     borderColor: isClearanceAwaitingAdmin && !isActive ? "#f59e0b" : undefined,
                     color: isClearanceAwaitingAdmin && !isActive ? "#b45309" : undefined
                   }}>
-                    {isPassed ? (
+                    {isStep1LockedByApprovedClearance ? (
+                      <Lock size={15} color="#059669" />
+                    ) : isPassed ? (
                       <CheckCircle size={16} />
                     ) : isClearanceAwaitingAdmin ? (
                       <Clock size={16} color="#d97706" />
@@ -670,7 +751,9 @@ export default function ApplyPage() {
                       color: isClearanceAwaitingAdmin && !isActive ? "#d97706" : (isActive ? "#4f46e5" : "#94a3b8"), 
                       fontWeight: isActive || isClearanceAwaitingAdmin ? "700" : "500" 
                     }}>
-                      {isActive 
+                      {isStep1LockedByApprovedClearance
+                        ? "Locked (Approved)"
+                        : isActive 
                         ? "In Progress" 
                         : isExempt 
                         ? "Exempt" 
@@ -702,6 +785,63 @@ export default function ApplyPage() {
         </div>
 
         <div className="wizard-content">
+          {/* APPROVED CLEARANCE LOCKED PROJECT BANNER */}
+          {isClearanceApproved && !isNewApplicationMode && (
+            <div className="animate-fade-in-up" style={{
+              background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
+              border: "1.5px solid #a7f3d0",
+              borderRadius: "16px",
+              padding: "1rem 1.25rem",
+              marginBottom: "1.5rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "12px",
+              boxShadow: "0 2px 10px rgba(5, 150, 105, 0.06)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#dcfce7", color: "#15803d", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <strong style={{ color: "#065f46", fontSize: "0.92rem" }}>
+                      Active Approved Project: {selectedProjectType.name}
+                    </strong>
+                    <span style={{ fontSize: "0.76rem", fontWeight: "700", background: "#ffffff", color: "#047857", padding: "2px 8px", borderRadius: "999px", border: "1px solid #a7f3d0" }}>
+                      Clearance: {activeClearanceRef || "Approved"}
+                    </span>
+                  </div>
+                  <span style={{ color: "#047857", fontSize: "0.82rem" }}>
+                    Project Type is locked to this approved clearance. Need to file for another project? Start a new application below.
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowNewAppModal(true)}
+                style={{
+                  background: "#ffffff",
+                  border: "1.5px solid #059669",
+                  color: "#059669",
+                  fontWeight: "700",
+                  fontSize: "0.82rem",
+                  padding: "7px 14px",
+                  borderRadius: "8px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 6px rgba(5, 150, 105, 0.1)"
+                }}
+              >
+                <Plus size={14} /> Create New Application
+              </button>
+            </div>
+          )}
+
           {/* STEP 1: PROJECT TYPE */}
           {currentStep === 1 && (
             <div className="step-pane animate-fade-in-up">
@@ -1269,22 +1409,24 @@ export default function ApplyPage() {
                   <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
                     <button
                       type="button"
-                      onClick={() => {
-                        setSelectedClearanceRef(null);
-                      }}
+                      onClick={() => setShowNewAppModal(true)}
                       style={{
                         background: "#ffffff",
-                        border: "1px solid #cbd5e1",
-                        color: "#475569",
+                        border: "1.5px solid #cbd5e1",
+                        color: "#334155",
                         borderRadius: "10px",
                         padding: "10px 16px",
                         fontSize: "0.85rem",
                         fontWeight: "700",
                         cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
                         transition: "all 0.15s ease"
                       }}
                     >
-                      Change Clearance
+                      <Plus size={15} color="#2563eb" />
+                      <span>Start New Application (Different Project)</span>
                     </button>
 
                     <button
@@ -1295,7 +1437,7 @@ export default function ApplyPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "10px",
-                        padding: "11px 20px",
+                        padding: "11px 22px",
                         fontSize: "0.9rem",
                         fontWeight: "700",
                         cursor: "pointer",
@@ -2485,7 +2627,22 @@ export default function ApplyPage() {
           {/* WIZARD ACTIONS BAR */}
           <div className="wizard-actions">
             {currentStep > 1 && (
-              <button className="btn-outline" onClick={() => setCurrentStep(prev => prev - 1)} disabled={uploading}>
+              <button 
+                className="btn-outline" 
+                onClick={() => {
+                  if (currentStep === 2 && isClearanceApproved && !isNewApplicationMode) {
+                    setLockedNotice(`Project Type is locked because Locational Clearance has already been approved for "${selectedProjectType.name}". If you want to apply for another project, click "Create New Application".`);
+                    return;
+                  }
+                  setCurrentStep(prev => prev - 1);
+                }} 
+                disabled={uploading || (currentStep === 2 && isClearanceApproved && !isNewApplicationMode)}
+                style={{
+                  opacity: currentStep === 2 && isClearanceApproved && !isNewApplicationMode ? 0.4 : 1,
+                  cursor: currentStep === 2 && isClearanceApproved && !isNewApplicationMode ? "not-allowed" : "pointer"
+                }}
+                title={currentStep === 2 && isClearanceApproved && !isNewApplicationMode ? "Project Type locked to approved clearance" : "Previous Step"}
+              >
                 <ChevronLeft size={18} /> Back
               </button>
             )}
@@ -3263,6 +3420,125 @@ export default function ApplyPage() {
                 }}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* CONFIRMATION MODAL: CREATE NEW APPLICATION */}
+      {showNewAppModal && typeof document !== "undefined" && createPortal(
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(15, 23, 42, 0.65)",
+          backdropFilter: "blur(6px)",
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "1rem"
+        }}>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "20px",
+            maxWidth: "540px",
+            width: "100%",
+            padding: "2rem",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
+            border: "1px solid #e2e8f0"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.25rem" }}>
+              <div style={{ width: "46px", height: "46px", borderRadius: "14px", background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Plus size={24} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: "800", color: "#0f172a" }}>
+                  Start a New Permit Application?
+                </h3>
+                <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+                  Office of the Building Official (OBO) • Sto. Tomas
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              background: "#f0fdf4",
+              border: "1px solid #bbf7d0",
+              borderRadius: "12px",
+              padding: "1rem 1.25rem",
+              marginBottom: "1.25rem"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                <CheckCircle2 size={16} color="#16a34a" />
+                <strong style={{ color: "#166534", fontSize: "0.88rem" }}>
+                  Existing Application is Safely Preserved
+                </strong>
+              </div>
+              <p style={{ margin: 0, color: "#15803d", fontSize: "0.84rem", lineHeight: "1.5" }}>
+                Your current application for <strong>{selectedProjectType?.name}</strong> {activeClearanceRef ? `(Clearance: ${activeClearanceRef})` : ""} is saved and remains fully accessible in your <Link href="/applicant/track" style={{ color: "#166534", textDecoration: "underline", fontWeight: "700" }}>Application Status</Link> tracker, where you can monitor or cancel it anytime.
+              </p>
+            </div>
+
+            <p style={{ fontSize: "0.92rem", color: "#475569", lineHeight: "1.6", margin: "0 0 1.5rem 0" }}>
+              Creating a new application will start a brand new filing from <strong>Step 1: Project Type</strong>, allowing you to select a different project category and upload fresh municipal requirements.
+            </p>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => setShowNewAppModal(false)}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: "10px",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#475569",
+                  fontWeight: "700",
+                  fontSize: "0.88rem",
+                  cursor: "pointer"
+                }}
+              >
+                Stay on Current Application
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNewApplicationMode(true);
+                  setSelectedClearanceRef(null);
+                  setSelectedProjectType(PROJECT_TYPES_MATRIX[0]);
+                  setProjectName("");
+                  setStreetAddress("");
+                  setBarangay("San Bartolome");
+                  setLotArea("");
+                  setFloorArea("");
+                  setProjectCost("");
+                  setUploadedPermitDocs({});
+                  setLockedNotice(null);
+                  setCurrentStep(1);
+                  setShowNewAppModal(false);
+                  setNewAppAlert("Started new application draft. Your previous application remains saved in Application Status.");
+                  setTimeout(() => setNewAppAlert(null), 5000);
+                }}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                  color: "#ffffff",
+                  fontWeight: "800",
+                  fontSize: "0.88rem",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)"
+                }}
+              >
+                <Plus size={16} />
+                <span>Confirm & Start New Application</span>
               </button>
             </div>
           </div>

@@ -3,13 +3,16 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePermitContext } from "../../../../../context/PermitContext";
-import { ChevronLeft, CheckCircle2, Clock, Search, AlertTriangle, FileText, CheckCircle } from "lucide-react";
+import { ChevronLeft, CheckCircle2, Clock, Search, AlertTriangle, FileText, CheckCircle, XCircle } from "lucide-react";
 
 export default function ApplicationTrackDetail() {
   const params = useParams();
   const router = useRouter();
-  const { applications } = usePermitContext();
+  const { applications, cancelApplication } = usePermitContext();
   const [appData, setAppData] = useState<any>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("Change of project plans");
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
     ? `${process.env.NEXT_PUBLIC_API_URL}/api` 
@@ -78,6 +81,7 @@ export default function ApplicationTrackDetail() {
       case "incomplete_requirements": return { color: "#ef4444", bg: "rgba(239, 68, 68, 0.15)", icon: AlertTriangle, label: "Action Required", step: 2 };
       case "approved": return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved (Awaiting Payment)", step: 3 };
       case "released": return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle, label: "Permit Released", step: 4 };
+      case "cancelled": return { color: "#dc2626", bg: "rgba(220, 38, 38, 0.15)", icon: XCircle, label: "Cancelled by Applicant", step: 0 };
       default: return { color: "#64748b", bg: "rgba(100, 116, 139, 0.15)", icon: FileText, label: "Unknown", step: 0 };
     }
   };
@@ -105,9 +109,33 @@ export default function ApplicationTrackDetail() {
               Tracking ID: <strong style={{color: "#1e293b"}}>{appData.id}</strong> • {appData.permitType.replace("_", " ")}
             </p>
           </div>
-          <span style={{ backgroundColor: statusConfig.bg, color: statusConfig.color, fontWeight: "700", padding: "10px 20px", borderRadius: "30px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1.1rem" }}>
-            <StatusIcon size={20} strokeWidth={2.5} /> {statusConfig.label}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {appData.status !== "cancelled" && appData.status !== "released" && (
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(true)}
+                style={{
+                  background: "#ffffff",
+                  border: "1.5px solid #fca5a5",
+                  color: "#b91c1c",
+                  padding: "8px 16px",
+                  borderRadius: "12px",
+                  fontWeight: "700",
+                  fontSize: "0.88rem",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 2px 6px rgba(220, 38, 38, 0.1)"
+                }}
+              >
+                <XCircle size={15} color="#dc2626" /> Cancel Application
+              </button>
+            )}
+            <span style={{ backgroundColor: statusConfig.bg, color: statusConfig.color, fontWeight: "700", padding: "10px 20px", borderRadius: "30px", display: "flex", alignItems: "center", gap: "8px", fontSize: "1.1rem" }}>
+              <StatusIcon size={20} strokeWidth={2.5} /> {statusConfig.label}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -194,6 +222,129 @@ export default function ApplicationTrackDetail() {
           </div>
         </div>
       </div>
+
+      {/* CANCEL CONFIRMATION MODAL */}
+      {showCancelModal && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(15, 23, 42, 0.65)",
+          backdropFilter: "blur(6px)",
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "1rem"
+        }}>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "20px",
+            maxWidth: "520px",
+            width: "100%",
+            padding: "2rem",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
+            border: "1px solid #e2e8f0"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.25rem" }}>
+              <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: "800", color: "#0f172a" }}>
+                  Cancel Permit Application?
+                </h3>
+                <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+                  Ref ID: <strong style={{ color: "#1e293b" }}>{appData.id}</strong> • {appData.projectName || "Permit Application"}
+                </p>
+              </div>
+            </div>
+
+            <p style={{ fontSize: "0.92rem", color: "#475569", lineHeight: "1.6", margin: "0 0 1.25rem 0" }}>
+              Are you sure you want to cancel this application? Once cancelled, municipal evaluation will be stopped. The record will remain archived in your Application Status as <strong>Cancelled</strong>.
+            </p>
+
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>
+                Reason for Cancellation:
+              </label>
+              <select
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "9px 12px",
+                  borderRadius: "10px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "0.88rem",
+                  color: "#1e293b",
+                  background: "#f8fafc",
+                  outline: "none"
+                }}
+              >
+                <option value="Change of project plans">Change of project plans / design modifications</option>
+                <option value="Duplicate submission">Accidental duplicate submission</option>
+                <option value="Project postponed / cancelled">Project postponed or delayed indefinitely</option>
+                <option value="Incorrect information provided">Incorrect project details entered</option>
+                <option value="Other municipal requirements">Other reasons</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: "10px",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#475569",
+                  fontWeight: "700",
+                  fontSize: "0.88rem",
+                  cursor: "pointer"
+                }}
+              >
+                Keep Application
+              </button>
+
+              <button
+                type="button"
+                disabled={isCancelling}
+                onClick={async () => {
+                  setIsCancelling(true);
+                  try {
+                    await cancelApplication(appData.id, cancelReason);
+                    setAppData((prev: any) => prev ? { ...prev, status: "cancelled", remarks: cancelReason } : null);
+                    setShowCancelModal(false);
+                  } catch (err) {
+                    console.error(err);
+                  } finally {
+                    setIsCancelling(false);
+                  }
+                }}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                  color: "#ffffff",
+                  fontWeight: "800",
+                  fontSize: "0.88rem",
+                  cursor: isCancelling ? "wait" : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 4px 12px rgba(220, 38, 38, 0.3)"
+                }}
+              >
+                <XCircle size={16} />
+                <span>{isCancelling ? "Cancelling..." : "Confirm Cancellation"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

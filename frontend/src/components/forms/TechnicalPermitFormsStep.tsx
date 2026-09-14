@@ -421,11 +421,11 @@ export default function TechnicalPermitFormsStep({
           {/* TABS FOR EACH MANDATORY FORM */}
           <div style={{
             display: "flex",
+            flexWrap: "wrap",
             gap: "8px",
             borderBottom: "1.5px solid #e2e8f0",
             paddingBottom: "1rem",
-            marginBottom: "1.5rem",
-            overflowX: "auto"
+            marginBottom: "1.5rem"
           }}>
             {mandatoryKeys.map((key) => {
               const meta = PERMIT_FORM_METADATA[key];
@@ -438,17 +438,17 @@ export default function TechnicalPermitFormsStep({
                   type="button"
                   onClick={() => setActiveTab(key)}
                   style={{
-                    padding: "9px 16px",
+                    padding: "8px 14px",
                     borderRadius: "10px",
                     border: isSelected ? "1.5px solid #4f46e5" : "1px solid #e2e8f0",
                     background: isSelected ? "#eef2ff" : "#f8fafc",
                     color: isSelected ? "#4338ca" : "#475569",
                     fontWeight: isSelected ? "800" : "600",
-                    fontSize: "0.85rem",
+                    fontSize: "0.84rem",
                     cursor: "pointer",
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "7px",
                     whiteSpace: "nowrap",
                     transition: "all 0.15s ease"
                   }}
@@ -475,33 +475,33 @@ export default function TechnicalPermitFormsStep({
             <div style={{
               background: "#f8fafc",
               border: "1px solid #e2e8f0",
-              borderRadius: "12px",
-              padding: "1rem 1.25rem",
+              borderRadius: "14px",
+              padding: "1.1rem 1.25rem",
               marginBottom: "1.5rem",
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "1rem"
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "1.1rem"
             }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
+                <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
                   Project Title / Name
                 </label>
                 <input
                   type="text"
                   value={projectName || `${projectType.name} Installation`}
                   onChange={(e) => setProjectName(e.target.value)}
-                  style={{ width: "100%", padding: "7px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", marginTop: "4px", background: "white" }}
+                  style={{ width: "100%", padding: "8px 11px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", marginTop: "4px", background: "white" }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
+                <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
                   Project Barangay
                 </label>
                 <select
                   value={barangay}
                   onChange={(e) => setBarangay(e.target.value)}
-                  style={{ width: "100%", padding: "7px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", marginTop: "4px", background: "white" }}
+                  style={{ width: "100%", padding: "8px 11px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", marginTop: "4px", background: "white" }}
                 >
                   {["San Bartolome", "San Matias", "San Vicente", "Santa Ana", "Santo Rosario", "Poblacion", "San Nicolas"].map(b => (
                     <option key={b} value={b}>{b}</option>
@@ -510,23 +510,41 @@ export default function TechnicalPermitFormsStep({
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
+                <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
                   Estimated Project Cost (PHP)
                 </label>
                 <input
                   type="text"
                   value={projectCost || "1,200,000"}
                   onChange={(e) => setProjectCost(e.target.value)}
-                  style={{ width: "100%", padding: "7px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", marginTop: "4px", background: "white" }}
+                  style={{ width: "100%", padding: "8px 11px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", marginTop: "4px", background: "white" }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
+                <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
                   Zoning Prerequisite
                 </label>
-                <div style={{ marginTop: "6px", fontSize: "0.85rem", fontWeight: "700", color: "#166534" }}>
-                  ✓ {locationalClearanceRef || (isClearanceRequired ? "Stage 1 Passed" : "Zoning Exempt (PD 1096)")}
+                <div style={{
+                  marginTop: "4px",
+                  padding: "7px 11px",
+                  borderRadius: "8px",
+                  background: "#ecfdf5",
+                  border: "1px solid #a7f3d0",
+                  fontSize: "0.82rem",
+                  fontWeight: "700",
+                  color: "#065f46",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis"
+                }}>
+                  <ShieldCheck size={16} color="#059669" style={{ flexShrink: 0 }} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {locationalClearanceRef ? `Approved: ${locationalClearanceRef}` : (isClearanceRequired ? "Stage 1 Approved" : "Zoning Exempt (PD 1096)")}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1039,7 +1057,7 @@ export default function TechnicalPermitFormsStep({
                   }}
                 >
                   <Sparkles size={16} />
-                  <span>{isGenerating ? "Compiling Official Forms..." : "Save & Generate Completed Official Forms"}</span>
+                  <span>{isGenerating ? "Compiling Forms..." : "Save & Generate Official Forms"}</span>
                 </button>
               </div>
             </div>

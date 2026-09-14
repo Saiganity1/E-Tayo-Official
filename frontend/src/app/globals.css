@@ -1285,7 +1285,8 @@ button {
 
 .wizard-content {
   flex: 1;
-  padding: 2.5rem;
+  min-width: 0;
+  padding: 2.25rem 2rem;
   display: flex;
   flex-direction: column;
 }

@@ -19,6 +19,7 @@ interface PermitContextProps {
   setSelectedPermitType: (type: PermitType) => void;
   addApplication: (app: PermitApplication) => void;
   updateApplication: (app: PermitApplication) => void;
+  cancelApplication: (id: string, reason?: string) => Promise<void>;
   refreshApplications: () => Promise<void>;
   updateFeeMultiplier: (id: string, value: number) => void;
   addSystemLog: (log: Partial<SystemLog>) => Promise<void>;
@@ -403,6 +404,28 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  const cancelApplication = async (id: string, reason: string = "Cancelled by applicant") => {
+    const existing = applications.find(a => a.id === id);
+    if (!existing) return;
+
+    const updatedApp: PermitApplication = {
+      ...existing,
+      status: "cancelled",
+      remarks: reason
+    };
+
+    await updateApplication(updatedApp);
+
+    await addSystemLog({
+      category: "application",
+      status: "warning",
+      action: "APPLICATION_CANCELLED",
+      user: existing.applicantName || "Applicant",
+      message: `Application ${id} (${existing.projectName || "Permit"}) was cancelled by applicant`,
+      details: `Reason: ${reason}`
+    });
+  };
+
   const refreshApplications = async () => {
     await fetchData();
   };
@@ -504,6 +527,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSelectedPermitType,
         addApplication,
         updateApplication,
+        cancelApplication,
         refreshApplications,
         updateFeeMultiplier,
         addSystemLog,
