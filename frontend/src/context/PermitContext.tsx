@@ -130,9 +130,12 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         "Authorization": `Bearer ${token}`
       };
 
+      const isStaffOrAdmin = userRole === "admin" || userRole === "staff";
       const [appsRes, logsRes, feesRes] = await Promise.all([
         fetch(`${API_BASE_URL}/permits`, { headers }).catch(e => ({ ok: false, json: async () => [] })),
-        fetch(`${API_BASE_URL}/logs`, { headers }).catch(e => ({ ok: false, json: async () => [] })),
+        isStaffOrAdmin 
+          ? fetch(`${API_BASE_URL}/logs`, { headers }).catch(e => ({ ok: false, json: async () => [] }))
+          : Promise.resolve({ ok: false, json: async () => [] } as any),
         fetch(`${API_BASE_URL}/fees`, { headers }).catch(e => ({ ok: false, json: async () => [] }))
       ]);
 

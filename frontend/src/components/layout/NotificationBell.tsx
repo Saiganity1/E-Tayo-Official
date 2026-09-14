@@ -39,7 +39,13 @@ export default function NotificationBell() {
 
   const fetchNotifications = async (email: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/notifications/${email}`);
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/notifications/${email}`, {
+        headers
+      });
       if (res.ok) {
         const data = await res.json();
         setNotifications(data);
@@ -51,8 +57,13 @@ export default function NotificationBell() {
 
   const markAsRead = async (id: number) => {
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/notifications/${id}/read`, {
-        method: "PUT"
+        method: "PUT",
+        headers
       });
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     } catch (err) {
@@ -63,8 +74,13 @@ export default function NotificationBell() {
   const markAllAsRead = async () => {
     if (!userEmail) return;
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/notifications/read-all/${userEmail}`, {
-        method: "PUT"
+        method: "PUT",
+        headers
       });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch (err) {
