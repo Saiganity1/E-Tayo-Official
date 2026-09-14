@@ -161,15 +161,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               return bApp;
             });
 
-            // Include any locally created applications not yet in backend, and sync them back to backend
+            // Include any locally created applications not yet in backend into state without resubmitting
             cleanCached.forEach((c) => {
               if (!mergedApps.some((m) => m.id === c.id)) {
                 mergedApps.push(c);
-                fetch(`${API_BASE_URL}/permits`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", ...(token ? { "Authorization": `Bearer ${token}` } : {}) },
-                  body: JSON.stringify(c)
-                }).catch(() => {});
               }
             });
           }

@@ -94,12 +94,25 @@ public class PermitController {
             permit.setProjectType(projectType);
         }
 
+        // Guard: If application already exists and is already uploaded to Google Drive, do not recreate or re-upload
+        if (permit.getId() != null) {
+            java.util.Optional<PermitApplication> existingOpt = permitApplicationRepository.findById(permit.getId());
+            if (existingOpt.isPresent()) {
+                PermitApplication existing = existingOpt.get();
+                if (existing.getFileUrl() != null && existing.getFileUrl().contains("drive.google.com")) {
+                    return ResponseEntity.ok(existing);
+                }
+            }
+        }
+
         // 3. Generate timestamp for Date and Time created folder
         String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
 
-        // 4. Automatic Google Drive Upload
-        try {
-            if (googleDriveService != null && googleDriveService.isConfigured()) {
+        // 4. Automatic Google Drive Upload (only if not already uploaded)
+        boolean alreadyUploaded = permit.getFileUrl() != null && permit.getFileUrl().contains("drive.google.com");
+        if (!alreadyUploaded) {
+            try {
+                if (googleDriveService != null && googleDriveService.isConfigured()) {
                 // A. Check if application form PDF(s) are provided in fileUrl
                 if (permit.getFileUrl() != null && !permit.getFileUrl().trim().isEmpty()) {
                     String rawUrls = permit.getFileUrl().trim();
@@ -178,6 +191,7 @@ public class PermitController {
         } catch (Exception e) {
             System.err.println("Notice: Google Drive auto-upload skipped or encountered an issue: " + e.getMessage());
             e.printStackTrace();
+        }
         }
 
         PermitApplication saved = permitApplicationRepository.save(permit);
