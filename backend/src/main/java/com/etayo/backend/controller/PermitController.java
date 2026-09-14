@@ -44,9 +44,13 @@ public class PermitController {
 
         // Authenticated applicants can only access applications matching their email or name
         String principal = authentication.getName();
+        com.etayo.backend.model.User currentUser = userRepository.findByEmail(principal).orElse(null);
+        String currentUserName = (currentUser != null && currentUser.getName() != null) ? currentUser.getName() : null;
+
         List<PermitApplication> applicantPermits = permitApplicationRepository.findAll().stream()
             .filter(p -> (p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(principal))
-                      || (p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(principal)))
+                      || (p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(principal))
+                      || (currentUserName != null && currentUserName.equalsIgnoreCase(p.getApplicantName())))
             .toList();
 
         return ResponseEntity.ok(applicantPermits);
@@ -64,24 +68,43 @@ public class PermitController {
             @RequestBody PermitApplication permit,
             org.springframework.security.core.Authentication authentication) {
 
-        // 1. Resolve applicant full name
+        // Strict Guard 1: If application with this ID already exists in the database, return it immediately without touching Drive!
+        if (permit.getId() != null && permitApplicationRepository.existsById(permit.getId())) {
+            return ResponseEntity.ok(permitApplicationRepository.findById(permit.getId()).get());
+        }
+
+        // Strict Guard 2: If the payload itself already has a Google Drive link, it was already uploaded!
+        if (permit.getFileUrl() != null && permit.getFileUrl().contains("drive.google.com")) {
+            PermitApplication saved = permitApplicationRepository.save(permit);
+            return ResponseEntity.ok(saved);
+        }
+
+        // 1. Resolve applicant full name and email
         String applicantName = permit.getApplicantName();
-        if ((applicantName == null || applicantName.trim().isEmpty() || "Applicant".equalsIgnoreCase(applicantName)) && authentication != null) {
+        if (authentication != null) {
             String principalName = authentication.getName();
             com.etayo.backend.model.User user = userRepository.findByEmail(principalName).orElse(null);
-            if (user != null && user.getName() != null && !user.getName().trim().isEmpty()) {
-                applicantName = user.getName().trim();
-                permit.setApplicantName(applicantName);
+            if (user != null) {
+                if (user.getName() != null && !user.getName().trim().isEmpty()) {
+                    applicantName = user.getName().trim();
+                    permit.setApplicantName(applicantName);
+                }
+                if (user.getEmail() != null && !user.getEmail().trim().isEmpty()) {
+                    permit.setApplicantEmail(user.getEmail().trim());
+                }
             } else if (principalName != null && !principalName.trim().isEmpty()) {
                 applicantName = principalName.trim();
                 permit.setApplicantName(applicantName);
+                if (principalName.contains("@")) {
+                    permit.setApplicantEmail(principalName);
+                }
             }
         }
         if (applicantName == null || applicantName.trim().isEmpty()) {
             applicantName = "Applicant";
         }
 
-        // 2. Resolve project type (e.g. "Escalator")
+        // 2. Resolve project type (e.g. "Escalator") and sanitize slashes
         String projectType = permit.getProjectType();
         if (projectType == null || projectType.trim().isEmpty()) {
             if (permit.getProjectName() != null && !permit.getProjectName().trim().isEmpty()) {
@@ -91,28 +114,21 @@ public class PermitController {
             } else {
                 projectType = "General Application";
             }
-            permit.setProjectType(projectType);
         }
-
-        // Guard: If application already exists and is already uploaded to Google Drive, do not recreate or re-upload
-        if (permit.getId() != null) {
-            java.util.Optional<PermitApplication> existingOpt = permitApplicationRepository.findById(permit.getId());
-            if (existingOpt.isPresent()) {
-                PermitApplication existing = existingOpt.get();
-                if (existing.getFileUrl() != null && existing.getFileUrl().contains("drive.google.com")) {
-                    return ResponseEntity.ok(existing);
-                }
-            }
-        }
+        projectType = projectType.replace("/", " - ").trim();
+        permit.setProjectType(projectType);
 
         // 3. Generate timestamp for Date and Time created folder
         String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
 
-        // 4. Automatic Google Drive Upload (only if not already uploaded)
-        boolean alreadyUploaded = permit.getFileUrl() != null && permit.getFileUrl().contains("drive.google.com");
-        if (!alreadyUploaded) {
-            try {
-                if (googleDriveService != null && googleDriveService.isConfigured()) {
+        // 4. Automatic Google Drive Upload
+        try {
+            if (googleDriveService != null && googleDriveService.isConfigured()) {
+                // Resolve or create the application's unique timestamp folder EXACTLY ONCE
+                String targetFolderId = googleDriveService.getOrCreateApplicationFolder(
+                    applicantName, projectType, timestamp
+                );
+
                 // A. Check if application form PDF(s) are provided in fileUrl
                 if (permit.getFileUrl() != null && !permit.getFileUrl().trim().isEmpty()) {
                     String rawUrls = permit.getFileUrl().trim();
@@ -130,17 +146,14 @@ public class PermitController {
                         if (docUrl.contains("base64,")) {
                             byte[] pdfBytes = decodeBase64Safely(docUrl);
                             if (pdfBytes != null && pdfBytes.length > 0) {
-                                String docFileName;
-                                if (i == 0) {
-                                    docFileName = permit.getFileName() != null && !permit.getFileName().trim().isEmpty()
-                                            ? permit.getFileName().trim()
-                                            : (permit.getId() + "_" + projectType.replaceAll("[^a-zA-Z0-9.-]", "_") + "_Application.pdf");
-                                } else {
-                                    docFileName = permit.getId() + "_Attachment_" + i + ".pdf";
-                                }
+                                String docFileName = (i == 0)
+                                        ? (permit.getFileName() != null && !permit.getFileName().trim().isEmpty()
+                                                ? permit.getFileName().trim()
+                                                : (permit.getId() + "_" + projectType.replaceAll("[^a-zA-Z0-9.-]", "_") + "_Application.pdf"))
+                                        : (permit.getId() + "_Attachment_" + i + ".pdf");
 
-                                String uploadedUrl = googleDriveService.uploadApplicantBytes(
-                                        pdfBytes, docFileName, "application/pdf", applicantName, projectType, timestamp
+                                String uploadedUrl = googleDriveService.uploadBytesToFolderId(
+                                        pdfBytes, docFileName, "application/pdf", targetFolderId
                                 );
                                 if (i == 0 && uploadedUrl != null) {
                                     primaryDriveUrl = uploadedUrl;
@@ -167,8 +180,8 @@ public class PermitController {
                     String ext = contentType.contains("jpeg") ? ".jpg" : (contentType.contains("pdf") ? ".pdf" : ".png");
                     byte[] imgBytes = decodeBase64Safely(permit.getSketchImageUrl());
                     if (imgBytes != null && imgBytes.length > 0) {
-                        String sketchDriveUrl = googleDriveService.uploadApplicantBytes(
-                                imgBytes, "Vicinity_Sketch_Map" + ext, contentType, applicantName, projectType, timestamp
+                        String sketchDriveUrl = googleDriveService.uploadBytesToFolderId(
+                                imgBytes, "Vicinity_Sketch_Map" + ext, contentType, targetFolderId
                         );
                         if (sketchDriveUrl != null) {
                             permit.setSketchImageUrl(sketchDriveUrl);
@@ -180,8 +193,8 @@ public class PermitController {
                 if (permit.getFileUrl() == null || permit.getFileUrl().trim().isEmpty() || permit.getFileUrl().startsWith("/templates/")) {
                     byte[] summaryDoc = generateApplicationSummaryDoc(permit);
                     String summaryFileName = permit.getId() + "_Application_Details.txt";
-                    String driveSummaryUrl = googleDriveService.uploadApplicantBytes(
-                            summaryDoc, summaryFileName, "text/plain", applicantName, projectType, timestamp
+                    String driveSummaryUrl = googleDriveService.uploadBytesToFolderId(
+                            summaryDoc, summaryFileName, "text/plain", targetFolderId
                     );
                     if (driveSummaryUrl != null) {
                         permit.setFileUrl(driveSummaryUrl);
@@ -191,7 +204,6 @@ public class PermitController {
         } catch (Exception e) {
             System.err.println("Notice: Google Drive auto-upload skipped or encountered an issue: " + e.getMessage());
             e.printStackTrace();
-        }
         }
 
         PermitApplication saved = permitApplicationRepository.save(permit);

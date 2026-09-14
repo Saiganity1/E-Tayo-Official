@@ -108,6 +108,11 @@ public class GoogleDriveService {
      * 3. Level 3: Date and Time created (e.g. "2026-09-14_22-30-00") inside Project Type folder
      * Returns the Date/Time folder ID where forms and attachments reside.
      */
+    public String getOrCreateApplicationFolder(String applicantName, String projectType, String timestamp) throws Exception {
+        Drive driveService = getDriveService();
+        return getOrCreateApplicationFolder(driveService, applicantName, projectType, timestamp);
+    }
+
     public String getOrCreateApplicationFolder(Drive driveService, String applicantName, String projectType, String timestamp) throws Exception {
         if (folderId == null || folderId.isEmpty()) return null;
 
@@ -115,7 +120,7 @@ public class GoogleDriveService {
                 ? applicantName.trim()
                 : "Applicant";
         String cleanProjectType = (projectType != null && !projectType.trim().isEmpty())
-                ? projectType.trim()
+                ? projectType.replace("/", " - ").trim()
                 : "General Application";
         String cleanTimestamp = (timestamp != null && !timestamp.trim().isEmpty())
                 ? timestamp.trim()
@@ -150,17 +155,15 @@ public class GoogleDriveService {
     }
 
     /**
-     * Uploads in-memory file bytes (e.g. base64 generated PDFs or images)
-     * into: <Applicant Name> / <Project Type> / <Date and Time created> / <fileName>
+     * Uploads in-memory file bytes directly into a specified Google Drive folder ID.
      */
-    public String uploadApplicantBytes(byte[] data, String fileName, String contentType, String applicantName, String projectType, String timestamp) throws Exception {
+    public String uploadBytesToFolderId(byte[] data, String fileName, String contentType, String folderId) throws Exception {
         Drive driveService = getDriveService();
-        String targetFolderId = getOrCreateApplicationFolder(driveService, applicantName, projectType, timestamp);
 
         File fileMetadata = new File();
         fileMetadata.setName(fileName);
-        if (targetFolderId != null && !targetFolderId.isEmpty()) {
-            fileMetadata.setParents(Collections.singletonList(targetFolderId));
+        if (folderId != null && !folderId.isEmpty()) {
+            fileMetadata.setParents(Collections.singletonList(folderId));
         }
 
         java.io.File tempFile = createTempFileFromBytes(fileName, data);
@@ -182,6 +185,16 @@ public class GoogleDriveService {
         return uploadedFile.getWebViewLink() != null 
                 ? uploadedFile.getWebViewLink() 
                 : ("https://drive.google.com/file/d/" + uploadedFile.getId() + "/view");
+    }
+
+    /**
+     * Uploads in-memory file bytes (e.g. base64 generated PDFs or images)
+     * into: <Applicant Name> / <Project Type> / <Date and Time created> / <fileName>
+     */
+    public String uploadApplicantBytes(byte[] data, String fileName, String contentType, String applicantName, String projectType, String timestamp) throws Exception {
+        Drive driveService = getDriveService();
+        String targetFolderId = getOrCreateApplicationFolder(driveService, applicantName, projectType, timestamp);
+        return uploadBytesToFolderId(data, fileName, contentType, targetFolderId);
     }
 
     /**
