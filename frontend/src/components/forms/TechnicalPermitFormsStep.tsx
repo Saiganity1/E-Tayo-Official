@@ -239,21 +239,29 @@ export default function TechnicalPermitFormsStep({
 
     setActiveUploadingKey(key);
     try {
-      const url = URL.createObjectURL(file);
       const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
       const sizeStr = file.size > 1024 * 1024 ? `${sizeInMb} MB` : `${Math.round(file.size / 1024)} KB`;
 
-      setUploadedPermitDocs((prev) => ({
-        ...prev,
-        [key]: {
-          fileName: file.name,
-          fileSize: sizeStr,
-          fileUrl: url,
-          uploadedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          isDigitallyGenerated: false
-        }
-      }));
-    } finally {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Data = (reader.result as string) || "";
+        setUploadedPermitDocs((prev) => ({
+          ...prev,
+          [key]: {
+            fileName: file.name,
+            fileSize: sizeStr,
+            fileUrl: base64Data,
+            uploadedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            isDigitallyGenerated: false
+          }
+        }));
+        setActiveUploadingKey(null);
+      };
+      reader.onerror = () => {
+        setActiveUploadingKey(null);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
       setActiveUploadingKey(null);
     }
   };

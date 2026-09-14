@@ -129,6 +129,9 @@ public class PermitController {
                     applicantName, projectType, timestamp
                 );
 
+                int uploadedDocCount = 0;
+                String primaryDriveUrl = null;
+
                 // A. Check if application form PDF(s) are provided in fileUrl
                 if (permit.getFileUrl() != null && !permit.getFileUrl().trim().isEmpty()) {
                     String rawUrls = permit.getFileUrl().trim();
@@ -138,7 +141,6 @@ public class PermitController {
                         parts = rawUrls.split(",(?=data:)");
                     }
 
-                    String primaryDriveUrl = null;
                     for (int i = 0; i < parts.length; i++) {
                         String docUrl = parts[i].trim();
                         if (docUrl.isEmpty()) continue;
@@ -149,14 +151,17 @@ public class PermitController {
                                 String docFileName = (i == 0)
                                         ? (permit.getFileName() != null && !permit.getFileName().trim().isEmpty()
                                                 ? permit.getFileName().trim()
-                                                : (permit.getId() + "_" + projectType.replaceAll("[^a-zA-Z0-9.-]", "_") + "_Application.pdf"))
+                                                : (permit.getId() + "_" + projectType.replaceAll("[^a-zA-Z0-9.-]", "_") + "_Permit_Package.pdf"))
                                         : (permit.getId() + "_Attachment_" + i + ".pdf");
 
                                 String uploadedUrl = googleDriveService.uploadBytesToFolderId(
                                         pdfBytes, docFileName, "application/pdf", targetFolderId
                                 );
-                                if (i == 0 && uploadedUrl != null) {
-                                    primaryDriveUrl = uploadedUrl;
+                                if (uploadedUrl != null) {
+                                    uploadedDocCount++;
+                                    if (primaryDriveUrl == null) {
+                                        primaryDriveUrl = uploadedUrl;
+                                    }
                                 }
                             }
                         }
@@ -185,18 +190,21 @@ public class PermitController {
                         );
                         if (sketchDriveUrl != null) {
                             permit.setSketchImageUrl(sketchDriveUrl);
+                            uploadedDocCount++;
                         }
                     }
                 }
 
-                // C. If no base64 PDF was attached (e.g. template path or empty), generate an official summary document so the folder contains the filled forms
-                if (permit.getFileUrl() == null || permit.getFileUrl().trim().isEmpty() || permit.getFileUrl().startsWith("/templates/")) {
-                    byte[] summaryDoc = generateApplicationSummaryDoc(permit);
-                    String summaryFileName = permit.getId() + "_Application_Details.txt";
-                    String driveSummaryUrl = googleDriveService.uploadBytesToFolderId(
-                            summaryDoc, summaryFileName, "text/plain", targetFolderId
-                    );
-                    if (driveSummaryUrl != null) {
+                // C. ALWAYS upload the official Application Details & Specifications document into the folder!
+                // This guarantees the timestamp folder is NEVER empty and contains the complete filled-up forms and specifications.
+                byte[] summaryDoc = generateApplicationSummaryDoc(permit);
+                String summaryFileName = permit.getId() + "_Application_Details.txt";
+                String driveSummaryUrl = googleDriveService.uploadBytesToFolderId(
+                        summaryDoc, summaryFileName, "text/plain", targetFolderId
+                );
+                if (driveSummaryUrl != null) {
+                    uploadedDocCount++;
+                    if (primaryDriveUrl == null) {
                         permit.setFileUrl(driveSummaryUrl);
                     }
                 }

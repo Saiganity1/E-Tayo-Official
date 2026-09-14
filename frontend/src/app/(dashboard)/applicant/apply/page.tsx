@@ -351,7 +351,12 @@ export default function ApplyPage() {
       }
 
       if (!fileUrl && typeof window !== "undefined") {
-        fileUrl = URL.createObjectURL(file);
+        fileUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string) || "");
+          reader.onerror = () => resolve("");
+          reader.readAsDataURL(file);
+        });
       }
 
       const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
@@ -527,11 +532,19 @@ export default function ApplyPage() {
     } catch (err) {
       console.warn("Notice: Client PDF generation skipped or fallback:", err);
     }
-
-    if (!finalFileUrl) {
-      const firstValidBase64 = attachedUrls.find(u => typeof u === "string" && u.startsWith("data:application/pdf;base64,"));
-      finalFileUrl = firstValidBase64 || uploadedFileUrl || "";
+    // Collect all valid document base64 data URIs so all filled forms and attachments reach Google Drive
+    const docList: string[] = [];
+    if (finalFileUrl && finalFileUrl.startsWith("data:")) {
+      docList.push(finalFileUrl);
     }
+    for (const url of attachedUrls) {
+      if (typeof url === "string" && url.startsWith("data:") && !docList.includes(url)) {
+        docList.push(url);
+      }
+    }
+    const combinedFileUrl = docList.length > 0 
+      ? docList.join(",") 
+      : (finalFileUrl || attachedUrls[0] || uploadedFileUrl || "");
 
     const newApp: any = {
       id: newId,
@@ -540,8 +553,8 @@ export default function ApplyPage() {
       permitType: selectedPermitType,
       status: "pending",
       dateSubmitted: submissionDate,
-      applicantName,
-      fileUrl: finalFileUrl,
+      applicantName: applicantName || "Applicant",
+      fileUrl: combinedFileUrl,
       fileName: formattedFileName,
       locationalClearanceRef: activeClearanceRef || undefined,
       location: {

@@ -2,6 +2,7 @@ package com.etayo.backend.service;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.FileContent;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -166,14 +167,13 @@ public class GoogleDriveService {
             fileMetadata.setParents(Collections.singletonList(folderId));
         }
 
-        java.io.File tempFile = createTempFileFromBytes(fileName, data);
-        FileContent mediaContent = new FileContent(contentType != null ? contentType : "application/pdf", tempFile);
+        ByteArrayContent mediaContent = new ByteArrayContent(
+                contentType != null ? contentType : "application/pdf", data
+        );
 
         File uploadedFile = driveService.files().create(fileMetadata, mediaContent)
                 .setFields("id, webViewLink, webContentLink")
                 .execute();
-
-        tempFile.delete();
 
         try {
             com.google.api.services.drive.model.Permission permission = new com.google.api.services.drive.model.Permission()

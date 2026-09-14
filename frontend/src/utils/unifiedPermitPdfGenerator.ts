@@ -217,21 +217,21 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     color: primaryColor
   });
 
-  drawText(`Project Type: ${data.projectType.name} (${data.projectType.category})`, {
+  drawText(`Project Type: ${data.projectType?.name || "Permit Application"} (${data.projectType?.category || "General"})`, {
     x: 60,
     y: curY - 25,
     size: 8.5,
     font: fontBold,
     color: textDark
   });
-  drawText(`Project Name: ${data.projectName}`, {
+  drawText(`Project Name: ${data.projectName || "New Installation"}`, {
     x: 60,
     y: curY - 37,
     size: 8,
     font: fontRegular,
     color: textDark
   });
-  drawText(`Location: ${data.projectAddress || `Brgy. ${data.barangay}, Sto. Tomas, Pampanga`}`, {
+  drawText(`Location: ${data.projectAddress || `Brgy. ${data.barangay || "San Bartolome"}, Sto. Tomas, Pampanga`}`, {
     x: 60,
     y: curY - 49,
     size: 8,
@@ -289,11 +289,12 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
 
   const permitKeys = Object.keys(PERMIT_FORM_METADATA) as (keyof PermitFormMatrix)[];
   let rowY = curY - 46;
+  const activeForms = Array.isArray(data.activePermitForms) ? data.activePermitForms : [];
 
   for (const key of permitKeys) {
     const meta = PERMIT_FORM_METADATA[key];
-    const matrixLevel = data.projectType.matrix[key];
-    const isChecked = data.activePermitForms.includes(key);
+    const matrixLevel = (data.projectType && data.projectType.matrix) ? data.projectType.matrix[key] : "not_required";
+    const isChecked = activeForms.includes(key);
 
     drawText(meta.code, { x: 62, y: rowY, size: 7.5, font: fontBold, color: textDark });
     drawText(meta.label, { x: 105, y: rowY, size: 7.5, font: fontRegular, color: textDark });
@@ -419,7 +420,7 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     thickness: 1,
     color: borderLight
   });
-  drawText(data.applicantName.toUpperCase(), {
+  drawText((data.applicantName || "APPLICANT").toUpperCase(), {
     x: 60,
     y: curY - 55,
     size: 8,
