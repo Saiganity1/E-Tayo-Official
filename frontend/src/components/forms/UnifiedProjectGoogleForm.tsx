@@ -67,6 +67,10 @@ export default function UnifiedProjectGoogleForm({
   const [electricalEngineerPRC, setElectricalEngineerPRC] = useState("PRC-0033421");
   const [masterPlumberName, setMasterPlumberName] = useState("Engr. Jose Mendoza");
   const [masterPlumberPRC, setMasterPlumberPRC] = useState("PRC-0012984");
+  const [mechanicalEngineerName, setMechanicalEngineerName] = useState("Engr. Antonio Gomez, PME");
+  const [mechanicalEngineerPRC, setMechanicalEngineerPRC] = useState("PRC-PME-0021489");
+  const [electronicsEngineerName, setElectronicsEngineerName] = useState("Engr. Carlos Lim, PECE");
+  const [electronicsEngineerPRC, setElectronicsEngineerPRC] = useState("PRC-PECE-0038912");
 
   // State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,6 +124,10 @@ export default function UnifiedProjectGoogleForm({
         electricalEngineerPRC,
         masterPlumberName,
         masterPlumberPRC,
+        mechanicalEngineerName,
+        mechanicalEngineerPRC,
+        electronicsEngineerName,
+        electronicsEngineerPRC,
         activePermitForms: selectedForms,
         submissionDate
       });
@@ -596,7 +604,7 @@ export default function UnifiedProjectGoogleForm({
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
             <div>
               <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
                 Professional Electrical Engineer
@@ -616,6 +624,81 @@ export default function UnifiedProjectGoogleForm({
                 type="text"
                 value={electricalEngineerPRC}
                 onChange={(e) => setElectricalEngineerPRC(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                Professional Mechanical Engineer (PME)
+              </label>
+              <input
+                type="text"
+                value={mechanicalEngineerName}
+                onChange={(e) => setMechanicalEngineerName(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                Mechanical Engineer PRC No.
+              </label>
+              <input
+                type="text"
+                value={mechanicalEngineerPRC}
+                onChange={(e) => setMechanicalEngineerPRC(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                Master Plumber / Sanitary Engineer
+              </label>
+              <input
+                type="text"
+                value={masterPlumberName}
+                onChange={(e) => setMasterPlumberName(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                Master Plumber PRC No.
+              </label>
+              <input
+                type="text"
+                value={masterPlumberPRC}
+                onChange={(e) => setMasterPlumberPRC(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                Professional Electronics Engineer (PECE)
+              </label>
+              <input
+                type="text"
+                value={electronicsEngineerName}
+                onChange={(e) => setElectronicsEngineerName(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                Electronics Engineer PRC No.
+              </label>
+              <input
+                type="text"
+                value={electronicsEngineerPRC}
+                onChange={(e) => setElectronicsEngineerPRC(e.target.value)}
                 style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.9rem" }}
               />
             </div>

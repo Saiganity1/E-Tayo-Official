@@ -8,7 +8,7 @@ import {
   Lock, ShieldCheck, AlertCircle, Check, Layers, Search, Sparkles, 
   Home, Building2, Factory, Landmark, Wrench, Zap, Clock, Copy, 
   ArrowRight, CheckCircle2, Shield, Droplets, Flame, Radio, FileCheck, X,
-  BadgeCheck, Info, Compass, Eye, Printer, Download
+  BadgeCheck, Info, Compass, Eye, Printer, Download, FileUp, Trash2, Paperclip, AlertTriangle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -24,7 +24,8 @@ import {
   ALL_OFFICIAL_TEMPLATES,
   OfficialTemplateFile,
   getRequiredPermitForms,
-  getConditionalPermitForms
+  getConditionalPermitForms,
+  getPermitFormTemplate
 } from "../../../../data/projectTypeMatrix";
 
 const CATEGORY_THEMES: Record<string, { icon: any; color: string; bg: string; border: string; glow: string }> = {
@@ -214,7 +215,98 @@ export default function ApplyPage() {
   const [uploadError, setUploadError] = useState("");
   const [uploadedFileUrl, setUploadedFileUrl] = useState("");
 
+  // Technical engineering permit documents attached per permit key (e.g. electricalPermit, mechanicalPermit)
+  interface AttachedPermitDoc {
+    fileName: string;
+    fileSize: string;
+    fileUrl: string;
+    uploadedAt: string;
+  }
+  const [uploadedPermitDocs, setUploadedPermitDocs] = useState<Record<string, AttachedPermitDoc>>({});
+  const [activeUploadingKey, setActiveUploadingKey] = useState<string | null>(null);
+  const [submissionErrorAlert, setSubmissionErrorAlert] = useState<string | null>(null);
+  const [showConditionalSection, setShowConditionalSection] = useState(false);
+
   const projectAddress = `${streetAddress}, Brgy. ${barangay}, Sto. Tomas, Pampanga`;
+
+  // Mandatory technical permits required for the selected project type (excluding zoningPermit which is Stage 1 / Step 2)
+  const mandatoryPermitsToSubmit = selectedProjectType ? (Object.keys(selectedProjectType.matrix) as (keyof PermitFormMatrix)[]).filter(
+    (k) => selectedProjectType.matrix[k] === 'required' && k !== 'zoningPermit'
+  ) : [];
+
+  // Conditional permits for the selected project type
+  const conditionalPermitsToSubmit = selectedProjectType ? (Object.keys(selectedProjectType.matrix) as (keyof PermitFormMatrix)[]).filter(
+    (k) => selectedProjectType.matrix[k] === 'conditional' && k !== 'zoningPermit'
+  ) : [];
+
+  // Mandatory permits that have not yet been attached
+  const missingMandatoryPermits = mandatoryPermitsToSubmit.filter(
+    (k) => !uploadedPermitDocs[k]
+  );
+
+  const isAllMandatoryAttached = missingMandatoryPermits.length === 0;
+
+  const handlePermitDocUpload = async (key: keyof PermitFormMatrix, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+
+    setActiveUploadingKey(key);
+    setUploadError("");
+    setSubmissionErrorAlert(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("files", file);
+      formData.append("permitType", PERMIT_FORM_METADATA[key]?.label || "Technical Permit");
+
+      let fileUrl = "";
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/upload`, {
+          method: "POST",
+          headers: token ? { "Authorization": `Bearer ${token}` } : {},
+          body: formData,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          fileUrl = data.urls?.[0] || "";
+        }
+      } catch (err) {
+        console.warn("Backend upload offline, using client session object", err);
+      }
+
+      if (!fileUrl && typeof window !== "undefined") {
+        fileUrl = URL.createObjectURL(file);
+      }
+
+      const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
+      const sizeStr = file.size > 1024 * 1024 ? `${sizeInMb} MB` : `${Math.round(file.size / 1024)} KB`;
+
+      setUploadedPermitDocs(prev => ({
+        ...prev,
+        [key]: {
+          fileName: file.name,
+          fileSize: sizeStr,
+          fileUrl: fileUrl || "submitted_permit_document.pdf",
+          uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      }));
+    } catch (err: any) {
+      setUploadError(err.message || "An error occurred during upload");
+    } finally {
+      setActiveUploadingKey(null);
+    }
+  };
+
+  const handleRemovePermitDoc = (key: string) => {
+    setUploadedPermitDocs(prev => {
+      const copy = { ...prev };
+      delete copy[key];
+      return copy;
+    });
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -228,13 +320,11 @@ export default function ApplyPage() {
       formData.append("files", files[i]);
     }
     
-    // Format "building_permit" to "Building Permit"
     const formattedPermitType = selectedPermitType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     formData.append("permitType", formattedPermitType);
 
     try {
       const token = localStorage.getItem("token");
-      
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/upload`, {
         method: "POST",
         headers: {
@@ -257,34 +347,103 @@ export default function ApplyPage() {
   };
 
   const handleSubmitApplication = () => {
+    // STRICT VALIDATION: Block submission if any mandatory technical permit is missing
+    if (!isAllMandatoryAttached) {
+      const missingLabels = missingMandatoryPermits.map(k => PERMIT_FORM_METADATA[k]?.label || k).join(", ");
+      setSubmissionErrorAlert(
+        `Submission Incomplete: Sto. Tomas Permitting Regulations require attaching all mandatory engineering permits for ${selectedProjectType.name}. Missing: ${missingLabels}. Please upload the documents below or complete them online.`
+      );
+      if (typeof document !== "undefined") {
+        const elem = document.getElementById("mandatory-requirements-section");
+        if (elem) {
+          elem.scrollIntoView({ behavior: "smooth" });
+        }
+      }
+      return;
+    }
+
+    // Build the dynamic requirements list
+    const requirementsList: any[] = [];
+
+    // 1. Locational Clearance entry
+    if (isClearanceRequired && activeClearanceRef) {
+      requirementsList.push({
+        name: "Locational Clearance (LC)",
+        required: true,
+        status: "approved",
+        fileName: `Locational_Clearance_${activeClearanceRef}.pdf`,
+        fileSize: "840 KB",
+        remarks: `Zoning clearance reference: ${activeClearanceRef}`
+      });
+    } else if (!isClearanceRequired) {
+      requirementsList.push({
+        name: "Locational Clearance (LC)",
+        required: false,
+        status: "approved",
+        fileName: "ZONING_EXEMPTION_PD1096.pdf",
+        fileSize: "120 KB",
+        remarks: `Exempt from zoning clearance under Sto. Tomas municipal ordinance for ${selectedProjectType.name}`
+      });
+    }
+
+    // 2. Mandatory Technical Engineering Permits
+    mandatoryPermitsToSubmit.forEach(key => {
+      const meta = PERMIT_FORM_METADATA[key];
+      const doc = uploadedPermitDocs[key];
+      requirementsList.push({
+        name: `${meta.label} (${meta.code})`,
+        required: true,
+        status: "approved",
+        fileName: doc?.fileName || `${meta.code}_submission.pdf`,
+        fileSize: doc?.fileSize || "1.2 MB",
+        remarks: `Official ${meta.label} document submitted`
+      });
+    });
+
+    // 3. Any attached conditional permits
+    Object.keys(uploadedPermitDocs).forEach(key => {
+      if (!mandatoryPermitsToSubmit.includes(key as keyof PermitFormMatrix) && key !== "zoningPermit") {
+        const meta = PERMIT_FORM_METADATA[key as keyof PermitFormMatrix];
+        const doc = uploadedPermitDocs[key];
+        if (meta && doc) {
+          requirementsList.push({
+            name: `${meta.label} (${meta.code}) [Conditional]`,
+            required: false,
+            status: "approved",
+            fileName: doc.fileName,
+            fileSize: doc.fileSize,
+            remarks: "Voluntarily attached conditional engineering document"
+          });
+        }
+      }
+    });
+
+    const attachedUrls = Object.values(uploadedPermitDocs).map(d => d.fileUrl).filter(Boolean);
+    const combinedFileUrls = attachedUrls.join(',') || uploadedFileUrl || '';
+
     const newApp: any = {
       id: `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      projectName,
+      projectName: projectName || `${selectedProjectType.name} Installation & Construction`,
+      projectType: selectedProjectType.name,
       permitType: selectedPermitType,
       status: "pending",
       dateSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
       applicantName,
-      fileUrl: uploadedFileUrl,
+      fileUrl: combinedFileUrls,
+      fileName: `${selectedProjectType.name.replace(/\s+/g, '_')}_Permit_Package.pdf`,
       locationalClearanceRef: activeClearanceRef || undefined,
       location: {
         lat: parseFloat(latitude) || 15.0050,
         lng: parseFloat(longitude) || 120.7100,
         address: projectAddress || 'Sto. Tomas, Pampanga',
       },
-      requirements: [
-        {
-          name: 'Uploaded Document',
-          required: true,
-          status: 'approved',
-          fileName: 'submitted_document.pdf'
-        }
-      ],
+      requirements: requirementsList,
       trackingSteps: [
-        { title: 'Application Submitted', status: 'completed', date: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }), notes: 'Online application file successfully received.' },
-        { title: 'Initial Document Verification', status: 'upcoming', notes: 'Reviewing all required attachments for completeness.' }
+        { title: 'Application Submitted', status: 'completed', date: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }), notes: `Application dossier filed online with ${requirementsList.length} verified engineering attachments.` },
+        { title: 'Initial Document Verification', status: 'upcoming', notes: 'Reviewing all technical engineering attachments for completeness and licensed PRC sign-offs.' }
       ],
       historyLog: [
-        { date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute:"2-digit" }), action: 'Application Submitted', actor: applicantName, details: 'Application package uploaded online.' }
+        { date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute:"2-digit" }), action: 'Application Submitted', actor: applicantName, details: `Applied for ${selectedProjectType.name} with ${mandatoryPermitsToSubmit.length} mandatory engineering permits.` }
       ]
     };
 
@@ -1400,6 +1559,522 @@ export default function ApplyPage() {
                   </div>
                 </div>
               </div>
+
+              {/* SECTION: MANDATORY TECHNICAL ENGINEERING PERMITS & DOCUMENT UPLOADS */}
+              <div 
+                id="mandatory-requirements-section"
+                style={{
+                  marginTop: "1.75rem",
+                  background: "#ffffff",
+                  padding: "2rem",
+                  borderRadius: "18px",
+                  border: isAllMandatoryAttached ? "1.5px solid #86efac" : "1.5px solid #cbd5e1",
+                  boxShadow: isAllMandatoryAttached 
+                    ? "0 10px 30px -5px rgba(34, 197, 94, 0.12), 0 0 0 1px rgba(134, 239, 172, 0.3) inset" 
+                    : "0 4px 20px rgba(0,0,0,0.04)",
+                  transition: "all 0.3s ease"
+                }}
+              >
+                {/* Section Header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", marginBottom: "1.25rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{
+                      width: "46px",
+                      height: "46px",
+                      borderRadius: "14px",
+                      background: isAllMandatoryAttached ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" : "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)",
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: isAllMandatoryAttached ? "0 4px 12px rgba(16, 185, 129, 0.3)" : "0 4px 12px rgba(79, 70, 229, 0.25)"
+                    }}>
+                      <FileCheck size={24} />
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
+                        <span style={{
+                          background: isAllMandatoryAttached ? "#dcfce7" : "#e0e7ff",
+                          color: isAllMandatoryAttached ? "#166534" : "#4338ca",
+                          fontSize: "0.72rem",
+                          fontWeight: "800",
+                          padding: "2px 8px",
+                          borderRadius: "4px",
+                          letterSpacing: "0.5px"
+                        }}>
+                          STAGE 2 TECHNICAL PERMIT REQUIREMENTS
+                        </span>
+                        <span style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: "600" }}>
+                          Sto. Tomas Permitting Code (PD 1096)
+                        </span>
+                      </div>
+                      <h3 style={{ margin: 0, fontSize: "1.3rem", fontWeight: "800", color: "#0f172a" }}>
+                        Mandatory Technical Permits for {selectedProjectType.name}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{
+                      fontSize: "0.8rem",
+                      fontWeight: "800",
+                      padding: "5px 12px",
+                      borderRadius: "999px",
+                      background: isAllMandatoryAttached ? "#dcfce7" : "#fef3c7",
+                      color: isAllMandatoryAttached ? "#15803d" : "#b45309",
+                      border: isAllMandatoryAttached ? "1px solid #86efac" : "1px solid #fde68a",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}>
+                      {isAllMandatoryAttached ? (
+                        <>
+                          <Check size={14} strokeWidth={3} />
+                          All Mandatory Attached ({mandatoryPermitsToSubmit.length}/{mandatoryPermitsToSubmit.length})
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle size={14} />
+                          {missingMandatoryPermits.length} Mandatory Pending Upload
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <p style={{ margin: "0 0 1.25rem 0", color: "#475569", fontSize: "0.9rem", lineHeight: "1.5" }}>
+                  Under the Santo Tomas Municipal Permitting Matrix and the National Building Code of the Philippines (PD 1096), projects under <strong>{selectedProjectType.name}</strong> require submitting the technical engineering permits below before an official permit can be issued.
+                </p>
+
+                {/* Submission Error Banner */}
+                {submissionErrorAlert && (
+                  <div className="animate-fade-in-up" style={{
+                    background: "#fef2f2",
+                    border: "1.5px solid #f87171",
+                    borderRadius: "12px",
+                    padding: "1rem 1.25rem",
+                    marginBottom: "1.25rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    color: "#991b1b"
+                  }}>
+                    <AlertTriangle size={22} color="#dc2626" style={{ flexShrink: 0 }} />
+                    <div style={{ fontSize: "0.88rem", fontWeight: "600", lineHeight: "1.4" }}>
+                      {submissionErrorAlert}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSubmissionErrorAlert(null)}
+                      style={{ marginLeft: "auto", background: "none", border: "none", color: "#991b1b", cursor: "pointer", fontSize: "1.1rem" }}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                )}
+
+                {/* Status Callout Banner */}
+                {!isAllMandatoryAttached ? (
+                  <div style={{
+                    background: "#fffbeb",
+                    border: "1px solid #fde68a",
+                    borderRadius: "12px",
+                    padding: "0.9rem 1.1rem",
+                    marginBottom: "1.25rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: "0.75rem"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <AlertCircle size={18} color="#d97706" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: "0.86rem", color: "#92400e", fontWeight: "600" }}>
+                        Submission locked: You must attach the <strong>{missingMandatoryPermits.map(k => PERMIT_FORM_METADATA[k]?.label || k).join(", ")}</strong> below before your application can be filed.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowUnifiedForm(true)}
+                      style={{
+                        background: "#4f46e5",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        padding: "6px 12px",
+                        fontSize: "0.78rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        boxShadow: "0 2px 6px rgba(79, 70, 229, 0.2)"
+                      }}
+                    >
+                      <Sparkles size={13} /> Or Auto-Fill Online
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{
+                    background: "#f0fdf4",
+                    border: "1px solid #86efac",
+                    borderRadius: "12px",
+                    padding: "0.9rem 1.1rem",
+                    marginBottom: "1.25rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px"
+                  }}>
+                    <CheckCircle2 size={18} color="#16a34a" style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: "0.86rem", color: "#166534", fontWeight: "700" }}>
+                      All mandatory engineering attachments verified! You may now submit your application package to the Building Official.
+                    </span>
+                  </div>
+                )}
+
+                {/* MANDATORY PERMITS LIST */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+                  {mandatoryPermitsToSubmit.map((key) => {
+                    const meta = PERMIT_FORM_METADATA[key];
+                    const doc = uploadedPermitDocs[key];
+                    const templatePath = getPermitFormTemplate(key, selectedProjectType);
+                    const Icon = PERMIT_ICONS[key] || FileText;
+                    const isUploading = activeUploadingKey === key;
+
+                    // Specialized engineering requirement notice
+                    let signeeNotice = "Must be prepared, signed, and sealed by a registered PRC professional.";
+                    if (key === "electricalPermit") {
+                      signeeNotice = "Requires sign-off by a licensed Professional Electrical Engineer (PEE) with electrical layout & load computations.";
+                    } else if (key === "mechanicalPermit") {
+                      signeeNotice = "Requires sign-off by a licensed Professional Mechanical Engineer (PME) with machinery plans & equipment details.";
+                    } else if (key === "civilStructuralPermit") {
+                      signeeNotice = "Requires sign-off by a licensed Civil/Structural Engineer with structural design calculations.";
+                    } else if (key === "architecturalPermit") {
+                      signeeNotice = "Requires sign-off by a licensed Registered Architect with complete architectural plans.";
+                    } else if (key === "sanitaryPermit") {
+                      signeeNotice = "Requires sign-off by a licensed Master Plumber or Sanitary Engineer with plumbing layout.";
+                    } else if (key === "electronicsPermit") {
+                      signeeNotice = "Requires sign-off by a licensed Professional Electronics Engineer (PECE).";
+                    } else if (key === "fireBfpPermit") {
+                      signeeNotice = "Requires Fire Safety Evaluation Clearance (FSEC) application compliant with RA 9514.";
+                    }
+
+                    return (
+                      <div 
+                        key={key} 
+                        style={{
+                          background: doc ? "#f0fdf4" : "#f8fafc",
+                          border: doc ? "1.5px solid #86efac" : "1.5px solid #e2e8f0",
+                          borderRadius: "14px",
+                          padding: "1.1rem 1.25rem",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: "1rem",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem", flex: 1, minWidth: "280px" }}>
+                          <div style={{
+                            width: "42px",
+                            height: "42px",
+                            borderRadius: "10px",
+                            background: doc ? "#dcfce7" : "#eff6ff",
+                            color: doc ? "#15803d" : "#2563eb",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            marginTop: "2px"
+                          }}>
+                            <Icon size={22} />
+                          </div>
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "3px" }}>
+                              <span style={{
+                                background: "#1e3a8a",
+                                color: "white",
+                                fontSize: "0.68rem",
+                                fontWeight: "800",
+                                padding: "2px 7px",
+                                borderRadius: "4px"
+                              }}>
+                                {meta.code}
+                              </span>
+                              <strong style={{ fontSize: "1rem", color: "#0f172a" }}>
+                                {meta.label}
+                              </strong>
+                              <span style={{
+                                fontSize: "0.68rem",
+                                fontWeight: "800",
+                                padding: "2px 8px",
+                                borderRadius: "999px",
+                                background: doc ? "#dcfce7" : "#fee2e2",
+                                color: doc ? "#166534" : "#991b1b",
+                                border: doc ? "1px solid #bbf7d0" : "1px solid #fecaca"
+                              }}>
+                                {doc ? "ATTACHED" : "MANDATORY"}
+                              </span>
+                            </div>
+                            <p style={{ margin: "0 0 4px 0", fontSize: "0.82rem", color: "#475569" }}>
+                              {meta.desc}
+                            </p>
+                            <p style={{ margin: 0, fontSize: "0.76rem", color: "#64748b", fontStyle: "italic" }}>
+                              {signeeNotice}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right: Upload controls and template */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                          {templatePath && (
+                            <a
+                              href={templatePath}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "5px",
+                                padding: "7px 12px",
+                                borderRadius: "8px",
+                                background: "#ffffff",
+                                border: "1px solid #cbd5e1",
+                                color: "#334155",
+                                fontSize: "0.78rem",
+                                fontWeight: "700",
+                                textDecoration: "none",
+                                transition: "all 0.15s ease"
+                              }}
+                              title={`Download official ${meta.label} municipal PDF`}
+                            >
+                              <Download size={13} color="#4f46e5" />
+                              <span>Template (PDF)</span>
+                            </a>
+                          )}
+
+                          {doc ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <div style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                background: "#ffffff",
+                                border: "1px solid #86efac",
+                                color: "#166534",
+                                padding: "6px 12px",
+                                borderRadius: "8px",
+                                fontSize: "0.8rem",
+                                fontWeight: "600",
+                                maxWidth: "220px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap"
+                              }}>
+                                <CheckCircle2 size={15} color="#16a34a" />
+                                <span title={doc.fileName} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {doc.fileName}
+                                </span>
+                                <span style={{ color: "#64748b", fontSize: "0.72rem" }}>
+                                  ({doc.fileSize})
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePermitDoc(key)}
+                                style={{
+                                  background: "#fee2e2",
+                                  border: "1px solid #fca5a5",
+                                  color: "#dc2626",
+                                  borderRadius: "8px",
+                                  padding: "7px 10px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  fontSize: "0.75rem",
+                                  fontWeight: "700"
+                                }}
+                                title="Remove this attachment"
+                              >
+                                <Trash2 size={13} /> Remove
+                              </button>
+                            </div>
+                          ) : (
+                            <label style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: "8px 14px",
+                              borderRadius: "8px",
+                              background: isUploading ? "#94a3b8" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                              color: "white",
+                              fontSize: "0.8rem",
+                              fontWeight: "700",
+                              cursor: isUploading ? "wait" : "pointer",
+                              boxShadow: "0 2px 6px rgba(37, 99, 235, 0.25)",
+                              transition: "all 0.15s ease"
+                            }}>
+                              <Upload size={14} />
+                              <span>{isUploading ? "Uploading..." : `Attach ${meta.code} File`}</span>
+                              <input
+                                type="file"
+                                accept=".pdf,.png,.jpg,.jpeg"
+                                disabled={isUploading}
+                                onChange={(e) => handlePermitDocUpload(key, e)}
+                                style={{ display: "none" }}
+                              />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* CONDITIONAL PERMITS ACCORDION */}
+                {conditionalPermitsToSubmit.length > 0 && (
+                  <div style={{ marginTop: "1.25rem", borderTop: "1px solid #e2e8f0", paddingTop: "1rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: "600" }}>
+                        Specialized / Scope-Dependent Permits ({conditionalPermitsToSubmit.length} Conditional for {selectedProjectType.name})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowConditionalSection(!showConditionalSection)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#4f46e5",
+                          fontWeight: "700",
+                          fontSize: "0.8rem",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}
+                      >
+                        {showConditionalSection ? "Hide Conditional Permits ▲" : "Show Conditional Permits ▼"}
+                      </button>
+                    </div>
+
+                    {showConditionalSection && (
+                      <div className="animate-fade-in-up" style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "0.85rem" }}>
+                        {conditionalPermitsToSubmit.map((key) => {
+                          const meta = PERMIT_FORM_METADATA[key];
+                          const doc = uploadedPermitDocs[key];
+                          const templatePath = getPermitFormTemplate(key, selectedProjectType);
+                          const Icon = PERMIT_ICONS[key] || FileText;
+                          const isUploading = activeUploadingKey === key;
+
+                          return (
+                            <div
+                              key={key}
+                              style={{
+                                background: doc ? "#f0fdf4" : "#fffdfa",
+                                border: doc ? "1px solid #86efac" : "1px dashed #cbd5e1",
+                                borderRadius: "12px",
+                                padding: "0.85rem 1rem",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                flexWrap: "wrap",
+                                gap: "0.75rem"
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: "#fef3c7", color: "#b45309", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  <Icon size={18} />
+                                </div>
+                                <div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                    <span style={{ fontSize: "0.65rem", fontWeight: "800", background: "#b45309", color: "white", padding: "1px 5px", borderRadius: "4px" }}>
+                                      {meta.code}
+                                    </span>
+                                    <strong style={{ fontSize: "0.9rem", color: "#0f172a" }}>{meta.label}</strong>
+                                    <span style={{ fontSize: "0.68rem", color: "#b45309", background: "#fef3c7", padding: "1px 6px", borderRadius: "999px", fontWeight: "700" }}>
+                                      CONDITIONAL
+                                    </span>
+                                  </div>
+                                  <p style={{ margin: "2px 0 0 0", fontSize: "0.78rem", color: "#64748b" }}>
+                                    {meta.desc}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                {templatePath && (
+                                  <a
+                                    href={templatePath}
+                                    download
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      fontSize: "0.75rem",
+                                      fontWeight: "700",
+                                      padding: "5px 10px",
+                                      borderRadius: "6px",
+                                      background: "#f8fafc",
+                                      border: "1px solid #cbd5e1",
+                                      color: "#475569",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      textDecoration: "none"
+                                    }}
+                                  >
+                                    <Download size={12} /> Template
+                                  </a>
+                                )}
+
+                                {doc ? (
+                                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                    <span style={{ fontSize: "0.75rem", color: "#166534", fontWeight: "700" }}>✓ Attached</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemovePermitDoc(key)}
+                                      style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: "0.75rem", fontWeight: "700" }}
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "5px",
+                                    padding: "6px 12px",
+                                    borderRadius: "6px",
+                                    background: "#f1f5f9",
+                                    border: "1px solid #cbd5e1",
+                                    color: "#334155",
+                                    fontSize: "0.75rem",
+                                    fontWeight: "700",
+                                    cursor: "pointer"
+                                  }}>
+                                    <Upload size={12} />
+                                    <span>Attach (Optional)</span>
+                                    <input
+                                      type="file"
+                                      accept=".pdf,.png,.jpg,.jpeg"
+                                      disabled={isUploading}
+                                      onChange={(e) => handlePermitDocUpload(key, e)}
+                                      style={{ display: "none" }}
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -1458,7 +2133,7 @@ export default function ApplyPage() {
                 onClick={() => setCurrentStep(4)}
                 style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
               >
-                <span>Next: Review</span>
+                <span>Next: Review & Documents</span>
                 <ChevronRight size={18} />
               </button>
             ) : (
@@ -1485,10 +2160,32 @@ export default function ApplyPage() {
                 <button 
                   className="btn-primary" 
                   onClick={handleSubmitApplication}
-                  style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                  style={{
+                    background: isAllMandatoryAttached 
+                      ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" 
+                      : "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)",
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    padding: "10px 22px", 
+                    borderRadius: "10px",
+                    cursor: isAllMandatoryAttached ? "pointer" : "not-allowed",
+                    opacity: isAllMandatoryAttached ? 1 : 0.9,
+                    boxShadow: isAllMandatoryAttached ? "0 4px 14px rgba(16, 185, 129, 0.35)" : "none",
+                    border: "none",
+                    color: "white",
+                    fontWeight: "700",
+                    fontSize: "0.92rem",
+                    transition: "all 0.2s ease"
+                  }}
+                  title={isAllMandatoryAttached ? "Submit complete application" : `Please attach all mandatory permits (${missingMandatoryPermits.map(k => PERMIT_FORM_METADATA[k]?.code).join(', ')})`}
                 >
-                  <span>Submit Application</span>
-                  <CheckCircle size={18} />
+                  <span>
+                    {isAllMandatoryAttached 
+                      ? "Submit Complete Application" 
+                      : `Submit Application (${missingMandatoryPermits.length} Required Docs Pending)`}
+                  </span>
+                  {isAllMandatoryAttached ? <CheckCircle size={18} /> : <Lock size={16} />}
                 </button>
               </div>
             )}

@@ -585,7 +585,7 @@ export const PROJECT_TYPES_MATRIX: ProjectTypeItem[] = [
     id: 'swimming_pool',
     name: 'Swimming Pool',
     category: 'Ancillary & Alterations',
-    description: 'Private or commercial aquatic pool, water retention vessel, and piping system.',
+    description: 'Private or commercial aquatic pool, water retention vessel, filtration pumps, and piping system.',
     estimatedDays: '5 - 7 days',
     matrix: {
       buildingPermit: 'required',
@@ -593,7 +593,7 @@ export const PROJECT_TYPES_MATRIX: ProjectTypeItem[] = [
       civilStructuralPermit: 'required',
       electricalPermit: 'required',
       sanitaryPermit: 'required',
-      mechanicalPermit: 'conditional',
+      mechanicalPermit: 'required',
       electronicsPermit: 'not_required',
       fireBfpPermit: 'conditional',
       zoningPermit: 'required'
@@ -667,6 +667,25 @@ export function getConditionalPermitForms(projectType: ProjectTypeItem): (keyof 
   return (Object.keys(projectType.matrix) as (keyof PermitFormMatrix)[]).filter(
     (key) => projectType.matrix[key] === 'conditional'
   );
+}
+
+/**
+ * Returns the exact official municipal PDF template path for a given permit form,
+ * taking into account project-specific specialized permits (e.g. Demolition, Fencing, Signage).
+ */
+export function getPermitFormTemplate(formKey: keyof PermitFormMatrix, projectType?: ProjectTypeItem): string | undefined {
+  if (projectType) {
+    if (projectType.id === 'demolition' && (formKey === 'civilStructuralPermit' || formKey === 'buildingPermit')) {
+      return '/templates/DEMOLITION-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf';
+    }
+    if (projectType.id === 'fence' && (formKey === 'architecturalPermit' || formKey === 'buildingPermit')) {
+      return '/templates/FENCING-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf';
+    }
+    if (projectType.id === 'signage_billboard' && (formKey === 'architecturalPermit' || formKey === 'buildingPermit')) {
+      return '/templates/SIGN-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf';
+    }
+  }
+  return PERMIT_FORM_METADATA[formKey]?.templateFile;
 }
 
 export interface OfficialTemplateFile {
