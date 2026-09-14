@@ -688,12 +688,12 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     description: "Official unified application form for building permit (NBCP Form 1)"
   },
   {
-    name: "Locational Clearance (Annex D)",
+    name: "Application for Locational Clearance",
     category: "Zoning & Land Use",
     code: "LC",
     filename: "LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
     path: "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
-    description: "Official Annex D Locational Clearance application form"
+    description: "Official Sto. Tomas Locational Clearance application form"
   },
   {
     name: "Architectural Permit",

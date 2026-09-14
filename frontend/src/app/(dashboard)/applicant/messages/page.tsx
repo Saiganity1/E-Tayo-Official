@@ -33,8 +33,8 @@ const MANG_TOMAS = {
 const QUICK_INQUIRIES = [
   {
     icon: "📋",
-    label: "Locational Clearance (Annex D)",
-    text: "Good day! May I clarify the required documents and processing timeline for Stage 1 Locational Clearance (Annex D)?"
+    label: "Locational Clearance",
+    text: "Good day! May I clarify the required documents and processing timeline for Stage 1 Locational Clearance?"
   },
   {
     icon: "🏗️",
@@ -245,7 +245,7 @@ export default function ApplicantMessagesPage() {
         id: app.id,
         title: app.projectName || "Locational Clearance",
         subtitle: app.id,
-        permitType: app.permitType === "locational_clearance" ? "Locational Clearance (Annex D)" : "Building Permit (PD 1096)",
+        permitType: app.permitType === "locational_clearance" ? "Locational Clearance" : "Building Permit (PD 1096)",
         status: app.status,
         isGeneral: false
       };
@@ -1023,7 +1023,7 @@ export default function ApplicantMessagesPage() {
                         {activeApp.projectName || "Permit Application"}
                       </h4>
                       <span style={{ fontSize: "0.74rem", color: "#166534", fontWeight: "700", fontFamily: "monospace" }}>
-                        Ref: {activeApp.id} • {activeApp.permitType === "locational_clearance" ? "Locational Clearance (Annex D)" : "Building Permit"}
+                        Ref: {activeApp.id} • {activeApp.permitType === "locational_clearance" ? "Locational Clearance" : "Building Permit"}
                       </span>
                     </div>
                   </div>

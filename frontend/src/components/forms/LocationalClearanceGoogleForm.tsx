@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { usePermitContext } from "../../context/PermitContext";
-import { generateAnnexDPdf, LocationalClearanceFormData } from "../../utils/annexDPdfGenerator";
 import { 
   CheckCircle2, 
   Download, 
@@ -14,19 +13,31 @@ import {
   Image as ImageIcon, 
   X, 
   ShieldCheck, 
-  Scale, 
-  FileCheck 
+  Landmark, 
+  MapPin, 
+  FileCheck,
+  ChevronRight,
+  ArrowLeft,
+  Printer
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+
+export interface LocationalClearanceFormProps {
+  onCancel?: () => void;
+  onSuccessWithRef?: (ref: string) => void;
+  initialProjectType?: string;
+  initialProjectName?: string;
+  initialBarangay?: string;
+  initialLotArea?: string;
+}
 
 export default function LocationalClearanceGoogleForm({ 
   onCancel,
-  onSuccessWithRef 
-}: { 
-  onCancel?: () => void;
-  onSuccessWithRef?: (ref: string) => void;
-}) {
-  const router = useRouter();
+  onSuccessWithRef,
+  initialProjectType = "Single-Detached House",
+  initialProjectName = "",
+  initialBarangay = "San Bartolome",
+  initialLotArea = "150"
+}: LocationalClearanceFormProps) {
   const { addApplication } = usePermitContext();
 
   // Get current user if stored
@@ -41,93 +52,78 @@ export default function LocationalClearanceGoogleForm({
     }
   } catch (e) {}
 
-  // Section A: Applicant State
+  // --- BOXES 1-6: APPLICANT & CORPORATION INFORMATION ---
   const [applicantName, setApplicantName] = useState(initialApplicantName);
   const [corporationName, setCorporationName] = useState("");
-  const [applicantAddress, setApplicantAddress] = useState("123 Rizal Street, Sto. Tomas, Pampanga");
-  const [applicantPhone, setApplicantPhone] = useState("0917 000 4567");
+  const [applicantAddress, setApplicantAddress] = useState("Poblacion, Sto. Tomas, Pampanga");
+  const [applicantPhone, setApplicantPhone] = useState("0917 123 4567");
   const [corporationAddress, setCorporationAddress] = useState("");
+  const [corporationPhone, setCorporationPhone] = useState("");
+  const [representativeName, setRepresentativeName] = useState("");
+  const [representativeAddress, setRepresentativeAddress] = useState("");
+  const [representativePhone, setRepresentativePhone] = useState("");
 
-  // Section B: Project Info State
-  const [projectName, setProjectName] = useState("");
-  const [projectType, setProjectType] = useState("Proposed 2-Storey Residence");
-  const [streetLocation, setStreetLocation] = useState("");
-  const [barangay, setBarangay] = useState("San Matias");
-  const [lotArea, setLotArea] = useState("155.00");
-  const [bldgArea, setBldgArea] = useState("107.00");
-  const [classification, setClassification] = useState("RESIDENTIAL");
-  const [siteZoningClass, setSiteZoningClass] = useState("GENERAL RESIDENTIAL ZONE (GRZ)");
-  const [rightOverLand, setRightOverLand] = useState("TRANSFER CERTIFICATE OF TITLE (TCT)");
-  const [othersProject, setOthersProject] = useState("N/A");
+  // --- BOXES 7-12: PROJECT INFORMATION & LAND TENURE ---
+  const [projectName, setProjectName] = useState(initialProjectName);
+  const [projectType, setProjectType] = useState(initialProjectType);
+  const [projectNature, setProjectNature] = useState<"New Development" | "Renovation / Alteration" | "Change of Use" | "Others">("New Development");
+  const [natureOthers, setNatureOthers] = useState("");
+  const [streetLocation, setStreetLocation] = useState("Purok 3");
+  const [barangay, setBarangay] = useState(initialBarangay);
+  const [lotArea, setLotArea] = useState(initialLotArea);
+  const [bldgArea, setBldgArea] = useState("95");
+  const [improvementArea, setImprovementArea] = useState("0");
+  const [rightOverLand, setRightOverLand] = useState<"Owner" | "Lease" | "Others">("Owner");
+  const [rightOverLandOthers, setRightOverLandOthers] = useState("");
+  const [projectTenure, setProjectTenure] = useState<"Permanent" | "Temporary">("Permanent");
 
-  // Section C: Site Findings State
-  const [projectStatus, setProjectStatus] = useState<"Proposed" | "Completed" | "Operational" | "Under Construction" | "Others">("Proposed");
-  const [percentCompleted, setPercentCompleted] = useState("");
-  const [statusOthers, setStatusOthers] = useState("");
-  const [northAbutting, setNorthAbutting] = useState("GRZ");
-  const [southAbutting, setSouthAbutting] = useState("GRZ");
-  const [eastAbutting, setEastAbutting] = useState("ROAD");
-  const [westAbutting, setWestAbutting] = useState("GRZ");
+  // --- BOXES 13-14: SITE LAND USE & PROJECT COST ---
+  const [existingLandUse, setExistingLandUse] = useState<"Residential" | "Commercial" | "Industrial" | "Institutional" | "Agricultural" | "Vacant / Idle" | "Others">("Residential");
+  const [landUseOthers, setLandUseOthers] = useState("");
+  const [agriculturalCrop, setAgriculturalCrop] = useState("");
+  const [isTenanted, setIsTenanted] = useState<"Not tenanted" | "Tenanted">("Not tenanted");
+  const [projectCost, setProjectCost] = useState("1,500,000.00");
+  const [projectCostWords, setProjectCostWords] = useState("One Million Five Hundred Thousand Pesos Only");
 
-  // Section C: Existing Land Uses within Lot Boundaries
-  const [lotResidential, setLotResidential] = useState(true);
-  const [lotCommercial, setLotCommercial] = useState(false);
-  const [lotInstitutional, setLotInstitutional] = useState(false);
-  const [lotIndustrial, setLotIndustrial] = useState(false);
-  const [lotAgricultural, setLotAgricultural] = useState(false);
-  const [lotOthersRoad, setLotOthersRoad] = useState(false);
+  // --- BOXES 15-17: NOTICES, ACTIONS & MODE OF RELEASE ---
+  const [hasWrittenNotice, setHasWrittenNotice] = useState<"No" | "Yes">("No");
+  const [noticeOfficer, setNoticeOfficer] = useState("");
+  const [noticeOrder, setNoticeOrder] = useState("");
+  const [noticeDate, setNoticeDate] = useState("");
 
-  // Section C: In case of agricultural
-  const [agriculturalCrops, setAgriculturalCrops] = useState("N/A");
-  const [tenancyStatus, setTenancyStatus] = useState<"Not tenanted" | "Tenanted">("Not tenanted");
+  const [hasRelatedAction, setHasRelatedAction] = useState<"No" | "Yes">("No");
+  const [relatedOffice, setRelatedOffice] = useState("");
+  const [relatedDate, setRelatedDate] = useState("");
+  const [relatedActionTaken, setRelatedActionTaken] = useState("");
 
-  // Section C: Surrounding land uses (100m & 500m radius)
-  const [use100mRes, setUse100mRes] = useState(true);
-  const [use500mRes, setUse500mRes] = useState(true);
-  const [use100mCom, setUse100mCom] = useState(false);
-  const [use500mCom, setUse500mCom] = useState(false);
-  const [use100mInd, setUse100mInd] = useState(false);
-  const [use500mInd, setUse500mInd] = useState(false);
-  const [use100mAgri, setUse100mAgri] = useState(false);
-  const [use500mAgri, setUse500mAgri] = useState(false);
-  const [use100mInst, setUse100mInst] = useState(false);
-  const [use500mInst, setUse500mInst] = useState(false);
+  const [preferredMode, setPreferredMode] = useState<"Pick-up" | "Mail to Applicant" | "Mail to Representative">("Pick-up");
 
-  // Section D: Sketch of Project Location Image State
+  // --- BOXES 18-19: CERTIFICATION & SKETCH ATTACHMENT ---
+  const [ctcNumber, setCtcNumber] = useState("CTC-2026-0891234");
+  const [ctcIssuedAt, setCtcIssuedAt] = useState("Sto. Tomas, Pampanga");
+  const [ctcIssuedOn, setCtcIssuedOn] = useState("Jan 15, 2026");
+  const [certifiedTruth, setCertifiedTruth] = useState(false);
+
+  // Vicinity map / Sketch file
   const [sketchImageBase64, setSketchImageBase64] = useState<string | null>(null);
   const [sketchFileName, setSketchFileName] = useState<string>("");
-  const [sketchFileSize, setSketchFileSize] = useState<string>("");
 
-  // Section E: Legal Bases State
-  const [legalBasis, setLegalBasis] = useState("CLUP_4810");
-  const [otherLegalBasis, setOtherLegalBasis] = useState("");
-  const [findingFacts, setFindingFacts] = useState(
-    "Based on the review of the Comprehensive Land Use Plan (CLUP) and the approved Zoning Ordinance of the Municipality, the subject property is classified under the designated zone. The proposed development is among the allowable uses within the said zone as provided in the zoning regulations."
-  );
-
-  // Section F: Conditions Acknowledged State
-  const [conditionsAgreed, setConditionsAgreed] = useState(false);
-
-  // Submission & Generation State
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
+  // Form Status
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedAppId, setSubmittedAppId] = useState("");
   const [formError, setFormError] = useState("");
 
-  // Handle Image File Upload for Section D
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setFormError("Please upload a valid image file (PNG, JPG, or JPEG) for the sketch attachment.");
+    if (!file.type.startsWith("image/") && !file.type.includes("pdf")) {
+      setFormError("Please upload a valid image file (PNG, JPG) or PDF for the vicinity sketch.");
       return;
     }
 
     setSketchFileName(file.name);
-    setSketchFileSize((file.size / 1024).toFixed(1) + " KB");
-
     const reader = new FileReader();
     reader.onload = (event) => {
       setSketchImageBase64(event.target?.result as string);
@@ -136,97 +132,33 @@ export default function LocationalClearanceGoogleForm({
     reader.readAsDataURL(file);
   };
 
-  const removeSketchImage = () => {
-    setSketchImageBase64(null);
-    setSketchFileName("");
-    setSketchFileSize("");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!projectName.trim() || !streetLocation.trim() || !applicantName.trim()) {
-      setFormError("Please fill out all required fields marked with * in Sections A and B.");
+
+    if (!applicantName.trim()) {
+      setFormError("Applicant Name is required.");
       return;
     }
-
-    if (!conditionsAgreed) {
-      setFormError("You must agree to the Additional Conditions in Section F before submitting.");
+    if (!projectType.trim()) {
+      setFormError("Project Type is required.");
+      return;
+    }
+    if (!certifiedTruth) {
+      setFormError("You must verify and certify the truthfulness of all statements under oath before submitting.");
       return;
     }
 
     setFormError("");
-    setIsGenerating(true);
+    setIsSubmitting(true);
 
     try {
       const fullProjectLocation = `${streetLocation}, Brgy. ${barangay}, Sto. Tomas, Pampanga`;
       const submissionDate = new Date().toLocaleDateString("en-US", { month: "long", day: "2-digit", year: "numeric" });
-
-      const formData: LocationalClearanceFormData = {
-        applicantName,
-        corporationName,
-        applicantAddress,
-        applicantPhone,
-        corporationAddress,
-        projectName,
-        projectType,
-        projectLocation: streetLocation,
-        barangay,
-        lotArea,
-        bldgArea,
-        classification,
-        siteZoningClass,
-        rightOverLand,
-        othersProject,
-        projectStatus,
-        percentCompleted: projectStatus === "Under Construction" ? percentCompleted : undefined,
-        statusOthers: projectStatus === "Others" ? statusOthers : undefined,
-        northAbutting,
-        southAbutting,
-        eastAbutting,
-        westAbutting,
-        lotUses: {
-          residential: lotResidential,
-          commercial: lotCommercial,
-          institutional: lotInstitutional,
-          industrial: lotIndustrial,
-          agricultural: lotAgricultural,
-          othersRoad: lotOthersRoad,
-        },
-        agriculturalCrops,
-        tenancyStatus,
-        uses100m: {
-          residential: use100mRes,
-          commercial: use100mCom,
-          institutional: use100mInst,
-          industrial: use100mInd,
-          agricultural: use100mAgri,
-        },
-        uses500m: {
-          residential: use500mRes,
-          commercial: use500mCom,
-          institutional: use500mInst,
-          industrial: use500mInd,
-          agricultural: use500mAgri,
-        },
-        submissionDate,
-        sketchImageBase64: sketchImageBase64 || undefined,
-        legalBases: legalBasis === "CLUP_4810" ? "Resolution No. 4810, Series of 2017" : otherLegalBasis,
-        findingFacts,
-        additionalConditionsAgreed: conditionsAgreed,
-      };
-
-      // 1. Automatically generate/modify ANNEX D - TEMPLATE PDF with user data and pasted Section D image
-      const { dataUri, downloadUrl } = await generateAnnexDPdf(formData);
-      setGeneratedPdfUrl(downloadUrl);
-
-      // 2. Generate unique Application ID
       const newId = `LC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-      setSubmittedAppId(newId);
 
-      // 3. Register application with attached modified ANNEX D PDF in the system
       const newApp: any = {
         id: newId,
-        projectName: projectName || "Locational Clearance Application",
+        projectName: projectName.trim() || `${projectType} - Locational Clearance`,
         permitType: "locational_clearance",
         status: "pending",
         dateSubmitted: submissionDate,
@@ -234,10 +166,12 @@ export default function LocationalClearanceGoogleForm({
         applicantEmail: initialApplicantEmail,
         applicantPhone,
         applicantAddress,
+        corporationName: corporationName || undefined,
+        representativeName: representativeName || undefined,
         projectAddress: fullProjectLocation,
-        projectDescription: `${projectType} - Classification: ${classification}, Land Right: ${rightOverLand}`,
-        fileUrl: dataUri,
-        fileName: "ANNEX D - TEMPLATE.pdf",
+        projectDescription: `${projectType} (${projectNature}) - Lot: ${lotArea} sq.m, Bldg: ${bldgArea} sq.m. Land Tenure: ${rightOverLand} (${projectTenure}). Land Use: ${existingLandUse}. Cost: Php ${projectCost}`,
+        fileUrl: "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
+        fileName: "LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
         sketchImageUrl: sketchImageBase64 || undefined,
         location: {
           lat: 15.0163,
@@ -246,131 +180,202 @@ export default function LocationalClearanceGoogleForm({
         },
         requirements: [
           {
-            name: "ANNEX D - Project Evaluation Report",
+            name: "Application for Locational Clearance (Sto. Tomas)",
             required: true,
-            status: "pending",
-            fileName: "ANNEX D - TEMPLATE.pdf",
-          },
-          ...(sketchFileName ? [{
-            name: "Section D: Location Sketch & Vicinity Map Attachment",
-            required: false,
             status: "approved",
-            fileName: sketchFileName,
-          }] : []),
+            fileName: "LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
+          }
         ],
         trackingSteps: [
-          {
-            title: "Application Submitted",
-            status: "completed",
-            date: submissionDate,
-            notes: "Locational Clearance Form (Sections A through F) with Annex D template submitted online.",
-            actor: applicantName,
+          { 
+            title: "Locational Clearance Submitted", 
+            status: "completed", 
+            date: submissionDate, 
+            notes: "Official Sto. Tomas Application for Locational Clearance received online." 
           },
-          {
-            title: "Zoning Administration Evaluation",
-            status: "current",
-            notes: "Pending review and endorsement by MPDC / Zoning Administrator.",
-          },
+          { 
+            title: "Zoning & MPDO Evaluation", 
+            status: "in-progress", 
+            notes: "Zoning Administrator verifying compliance with Municipal Land Use Plan (CLUP)." 
+          }
         ],
         historyLog: [
-          {
-            date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
-            action: "Form Submitted",
-            actor: applicantName,
-            details: `Annex D generated with attached Section D sketch (${sketchFileName || "Default Map"}) and Section F terms agreed.`,
-          },
-        ],
+          { 
+            date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute:"2-digit" }), 
+            action: "Locational Clearance Filed", 
+            actor: applicantName, 
+            details: `Official application submitted for ${projectType}. Generated reference: ${newId}` 
+          }
+        ]
       };
 
       addApplication(newApp);
+      setSubmittedAppId(newId);
       setIsSubmitted(true);
     } catch (err: any) {
-      console.error("PDF Generation error:", err);
-      setFormError(err.message || "Failed to generate Annex D template PDF. Please try again.");
+      setFormError(err.message || "Failed to submit Locational Clearance. Please try again.");
     } finally {
-      setIsGenerating(false);
+      setIsSubmitting(false);
     }
   };
 
-  // SUCCESS / SUBMISSION SCREEN (Google Forms Style)
+  // --- SUBMISSION CONFIRMATION VIEW ---
   if (isSubmitted) {
     return (
-      <div className="gf-wrapper animate-fade-in-up">
-        <div className="gf-container">
-          <div className="gf-header-banner"></div>
-          <div className="gf-card gf-success-card">
-            <div className="gf-success-header">
-              <div className="gf-check-icon">
-                <CheckCircle2 size={40} color="#16a34a" />
+      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "2rem 1rem" }}>
+        <div style={{
+          background: "#ffffff",
+          borderRadius: "20px",
+          border: "1.5px solid #a7f3d0",
+          boxShadow: "0 20px 40px -15px rgba(5, 150, 105, 0.15)",
+          overflow: "hidden"
+        }}>
+          {/* Header Banner */}
+          <div style={{
+            background: "linear-gradient(135deg, #065f46 0%, #047857 100%)",
+            color: "white",
+            padding: "2rem 2.5rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "1.25rem"
+          }}>
+            <div style={{
+              width: "56px",
+              height: "56px",
+              borderRadius: "16px",
+              background: "rgba(255, 255, 255, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}>
+              <CheckCircle2 size={32} />
+            </div>
+            <div>
+              <div style={{ fontSize: "0.78rem", fontWeight: "800", letterSpacing: "1px", textTransform: "uppercase", opacity: 0.9 }}>
+                MUNICIPALITY OF STO. TOMAS, PAMPANGA · MPDO / ZONING DIVISION
               </div>
+              <h2 style={{ margin: "0.25rem 0 0 0", fontSize: "1.5rem", fontWeight: "800" }}>
+                Locational Clearance Application Received!
+              </h2>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div style={{ padding: "2rem 2.5rem" }}>
+            <div style={{
+              background: "#f0fdf4",
+              border: "1.5px solid #bbf7d0",
+              borderRadius: "14px",
+              padding: "1.25rem 1.5rem",
+              marginBottom: "1.75rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "1rem"
+            }}>
               <div>
-                <h2>Locational Clearance Form (Annex D)</h2>
-                <p className="gf-subtitle">Your response has been recorded and submitted to the Admin / Staff.</p>
+                <span style={{ fontSize: "0.8rem", color: "#166534", fontWeight: "600" }}>
+                  Your Official Clearance Reference Number:
+                </span>
+                <div style={{ fontSize: "1.5rem", fontWeight: "900", color: "#065f46", letterSpacing: "0.5px" }}>
+                  {submittedAppId}
+                </div>
               </div>
+              <span style={{
+                background: "#dcfce7",
+                color: "#15803d",
+                fontWeight: "800",
+                fontSize: "0.8rem",
+                padding: "4px 12px",
+                borderRadius: "999px",
+                border: "1px solid #86efac"
+              }}>
+                Pending MPDO Verification
+              </span>
             </div>
 
-            <div className="gf-success-body">
-              <div className="gf-info-box">
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.6rem" }}>
-                  <strong>Reference ID:</strong>
-                  <span className="gf-id-badge">{submittedAppId}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.6rem" }}>
-                  <strong>Status:</strong>
-                  <span style={{ color: "#d97706", fontWeight: "700" }}>Pending Admin Approval</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.6rem" }}>
-                  <strong>Generated Document:</strong>
-                  <span style={{ color: "#1e3a8a", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <FileText size={16} /> ANNEX D - TEMPLATE.pdf
-                  </span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <strong>Section D Sketch Attachment:</strong>
-                  <span style={{ color: "#16a34a", fontWeight: "600" }}>
-                    {sketchFileName ? `Embedded (${sketchFileName})` : "Standard Vicinity Map Included"}
-                  </span>
-                </div>
-              </div>
+            <p style={{ color: "#334155", fontSize: "0.95rem", lineHeight: "1.6", margin: "0 0 1.5rem 0" }}>
+              Your <strong>Application for Locational Clearance</strong> for <strong>{projectType}</strong> in <strong>Brgy. {barangay}, Sto. Tomas</strong> has been officially logged in the system. 
+              Because this clearance reference is now linked to your permit profile, you can immediately proceed to <strong>Step 3: Site & Cadastral Mapping</strong> and subsequent engineering requirements.
+            </p>
 
-              <p style={{ fontSize: "0.95rem", color: "#475569", margin: "1.25rem 0", lineHeight: "1.5" }}>
-                The Municipal Planning and Development Office (MPDO) / Zoning Administrator has received your Annex D Project Evaluation Report with your populated answers, Section D sketch attachment, and legal basis agreement. Once evaluated and approved, you can immediately proceed to apply for your <strong>Building Permit</strong> or <strong>Occupancy Permit</strong>.
-              </p>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "1rem",
+              borderTop: "1px solid #e2e8f0",
+              paddingTop: "1.5rem"
+            }}>
+              <a
+                href="/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  padding: "10px 18px",
+                  borderRadius: "10px",
+                  background: "#f8fafc",
+                  border: "1.5px solid #cbd5e1",
+                  color: "#334155",
+                  fontSize: "0.88rem",
+                  fontWeight: "700",
+                  textDecoration: "none"
+                }}
+              >
+                <Download size={16} /> Download Official Municipal PDF Form
+              </a>
 
-              <div className="gf-btn-row">
-                {onSuccessWithRef && (
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                {onCancel && (
                   <button
                     type="button"
-                    onClick={() => onSuccessWithRef(submittedAppId)}
-                    className="gf-btn-primary"
+                    onClick={onCancel}
                     style={{
-                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                      color: "white",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)"
+                      background: "#f1f5f9",
+                      border: "none",
+                      color: "#475569",
+                      padding: "11px 18px",
+                      borderRadius: "10px",
+                      fontSize: "0.9rem",
+                      fontWeight: "700",
+                      cursor: "pointer"
                     }}
                   >
-                    <CheckCircle2 size={18} /> Continue Permit Application with this Clearance
+                    Close
                   </button>
-                )}
-                {generatedPdfUrl && (
-                  <a
-                    href={generatedPdfUrl}
-                    download={`ANNEX_D_TEMPLATE_${applicantName.replace(/\s+/g, "_")}.pdf`}
-                    className="gf-btn-secondary"
-                    style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "8px" }}
-                  >
-                    <Download size={18} /> Download Annex D PDF
-                  </a>
                 )}
                 <button
                   type="button"
-                  onClick={() => router.push("/applicant/dashboard")}
-                  className="gf-btn-secondary"
+                  onClick={() => {
+                    if (onSuccessWithRef) {
+                      onSuccessWithRef(submittedAppId);
+                    } else if (onCancel) {
+                      onCancel();
+                    }
+                  }}
+                  style={{
+                    background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                    color: "white",
+                    border: "none",
+                    padding: "11px 22px",
+                    borderRadius: "10px",
+                    fontSize: "0.92rem",
+                    fontWeight: "800",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    boxShadow: "0 4px 14px rgba(5, 150, 105, 0.3)"
+                  }}
                 >
-                  Return to Dashboard
+                  <span>Continue Permit Application with this Clearance</span>
+                  <ChevronRight size={18} />
                 </button>
               </div>
             </div>
@@ -380,1004 +385,829 @@ export default function LocationalClearanceGoogleForm({
     );
   }
 
-  // GOOGLE FORM STYLE QUESTIONNAIRE
+  // --- OFFICIAL FORM VIEW ---
   return (
-    <div className="gf-wrapper animate-fade-in-up">
-      <div className="gf-container">
-        {/* Top Google Forms Purple Banner */}
-        <div className="gf-header-banner"></div>
+    <div style={{ maxWidth: "880px", margin: "0 auto", padding: "1.5rem 1rem" }}>
+      {/* Back Button / Navigation */}
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            background: "none",
+            border: "none",
+            color: "#64748b",
+            fontSize: "0.85rem",
+            fontWeight: "700",
+            cursor: "pointer",
+            marginBottom: "1rem"
+          }}
+        >
+          <ArrowLeft size={16} /> Back to Permit Flow
+        </button>
+      )}
 
-        {/* Title Header Card */}
-        <div className="gf-card gf-title-card">
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "0.5rem" }}>
-            <Building2 size={24} color="#673ab7" />
-            <span style={{ fontSize: "0.85rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#673ab7" }}>
-              Municipality of Sto. Tomas, Pampanga
-            </span>
-          </div>
-          <h1 className="gf-title">Locational Clearance Application Form</h1>
-          <p className="gf-description">
-            Official Municipal Planning & Development Office (MPDO) Zoning Compliance Form.
-            Please complete Sections A through F below. When submitted, the system will automatically fill out the official <strong>ANNEX D - PROJECT EVALUATION REPORT</strong> PDF, paste your Section D location sketch, and transmit it directly to the Administrator for approval.
-          </p>
-          <div className="gf-divider"></div>
-          <div className="gf-user-indicator">
-            <span>Filing as: <strong>{applicantName}</strong> ({initialApplicantEmail})</span>
-            <span className="gf-required-note">* Indicates required question</span>
+      {/* FORM CARD */}
+      <form onSubmit={handleSubmit} style={{
+        background: "#ffffff",
+        borderRadius: "20px",
+        border: "1.5px solid #e2e8f0",
+        boxShadow: "0 10px 30px -10px rgba(0, 0, 0, 0.08)",
+        overflow: "hidden"
+      }}>
+        {/* OFFICIAL MUNICIPAL HEADER */}
+        <div style={{
+          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+          color: "white",
+          padding: "2rem 2.25rem",
+          position: "relative"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.35rem" }}>
+                <span style={{
+                  background: "rgba(255, 255, 255, 0.18)",
+                  padding: "3px 9px",
+                  borderRadius: "6px",
+                  fontSize: "0.72rem",
+                  fontWeight: "800",
+                  letterSpacing: "0.5px"
+                }}>
+                  REPUBLIC OF THE PHILIPPINES
+                </span>
+                <span style={{ fontSize: "0.78rem", color: "#94a3b8", fontWeight: "600" }}>
+                  MUNICIPALITY OF STO. TOMAS, PAMPANGA
+                </span>
+              </div>
+              <h1 style={{ margin: "0.25rem 0 0.35rem 0", fontSize: "1.55rem", fontWeight: "900", letterSpacing: "-0.01em" }}>
+                APPLICATION FOR LOCATIONAL CLEARANCE
+              </h1>
+              <p style={{ margin: 0, fontSize: "0.86rem", color: "#cbd5e1" }}>
+                Office of the Local Zoning Administrator · Municipal Planning and Development Office (MPDO)
+              </p>
+            </div>
+
+            <a
+              href="/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 14px",
+                borderRadius: "8px",
+                background: "rgba(255, 255, 255, 0.12)",
+                border: "1px solid rgba(255, 255, 255, 0.25)",
+                color: "white",
+                fontSize: "0.8rem",
+                fontWeight: "700",
+                textDecoration: "none"
+              }}
+            >
+              <Download size={14} /> Official PDF Form
+            </a>
           </div>
         </div>
 
+        {/* ERROR NOTICE */}
         {formError && (
-          <div className="gf-card gf-error-card">
-            <AlertCircle size={20} color="#dc2626" />
+          <div style={{
+            background: "#fef2f2",
+            borderLeft: "4px solid #ef4444",
+            padding: "1rem 1.5rem",
+            color: "#b91c1c",
+            fontSize: "0.88rem",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem"
+          }}>
+            <AlertCircle size={20} color="#ef4444" style={{ flexShrink: 0 }} />
             <span>{formError}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          {/* SECTION A: APPLICANT INFORMATION */}
-          <div className="gf-section-divider">
-            <h3>Section A: Applicant Information</h3>
-          </div>
+        <div style={{ padding: "2rem 2.25rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
+          
+          {/* --- SECTION 1: APPLICANT & CORPORATION (BOXES 1-6) --- */}
+          <div>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              paddingBottom: "0.65rem",
+              borderBottom: "2px solid #e2e8f0",
+              marginBottom: "1.25rem"
+            }}>
+              <span style={{ background: "#4f46e5", color: "white", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "800" }}>
+                1
+              </span>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#0f172a" }}>
+                Applicant & Corporation Information (Boxes 1–6)
+              </h3>
+            </div>
 
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Name of Applicant (Last, First, Middle) <span className="gf-req">*</span>
-            </label>
-            <input
-              type="text"
-              className="gf-input"
-              value={applicantName}
-              onChange={(e) => setApplicantName(e.target.value)}
-              placeholder="e.g. Dela Cruz, Juan M."
-              required
-            />
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Name of Corporation / Business Entity <span className="gf-optional">(Optional)</span>
-            </label>
-            <p className="gf-field-help">If applying on behalf of a company or registered corporate developer.</p>
-            <input
-              type="text"
-              className="gf-input"
-              value={corporationName}
-              onChange={(e) => setCorporationName(e.target.value)}
-              placeholder="e.g. Dela Cruz Development Corp."
-            />
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Complete Residential / Office Address of Applicant <span className="gf-req">*</span>
-            </label>
-            <input
-              type="text"
-              className="gf-input"
-              value={applicantAddress}
-              onChange={(e) => setApplicantAddress(e.target.value)}
-              placeholder="e.g. 123 Rizal Street, Sto. Tomas, Pampanga"
-              required
-            />
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Telephone / Mobile Contact Number <span className="gf-req">*</span>
-            </label>
-            <input
-              type="text"
-              className="gf-input"
-              value={applicantPhone}
-              onChange={(e) => setApplicantPhone(e.target.value)}
-              placeholder="e.g. 0917 123 4567"
-              required
-            />
-          </div>
-
-          {/* SECTION B: PROJECT INFORMATION */}
-          <div className="gf-section-divider">
-            <h3>Section B: Project Information</h3>
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Project Title / Name <span className="gf-req">*</span>
-            </label>
-            <input
-              type="text"
-              className="gf-input"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder="e.g. Dela Cruz Family Residence"
-              required
-            />
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Type of Proposed Construction / Structure <span className="gf-req">*</span>
-            </label>
-            <input
-              type="text"
-              className="gf-input"
-              value={projectType}
-              onChange={(e) => setProjectType(e.target.value)}
-              placeholder="e.g. A Proposed Two-Storey, Three (3) Bedroom Residence"
-              required
-            />
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Project Site Location (Street, Subdivision, Lot & Block) <span className="gf-req">*</span>
-            </label>
-            <input
-              type="text"
-              className="gf-input"
-              value={streetLocation}
-              onChange={(e) => setStreetLocation(e.target.value)}
-              placeholder="e.g. Lot 12 Block 4, La Corona Residence"
-              required
-            />
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Barangay in Sto. Tomas, Pampanga <span className="gf-req">*</span>
-            </label>
-            <select
-              className="gf-select"
-              value={barangay}
-              onChange={(e) => setBarangay(e.target.value)}
-              required
-            >
-              <option value="San Matias">San Matias</option>
-              <option value="San Bartolome">San Bartolome</option>
-              <option value="Poblacion">Poblacion</option>
-              <option value="San Vicente">San Vicente</option>
-              <option value="Moras De La Paz">Moras De La Paz</option>
-              <option value="Santo Rosario">Santo Rosario (Pau)</option>
-              <option value="Santo Niño">Santo Niño (Sapa)</option>
-            </select>
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div>
-                <label className="gf-field-label">
-                  Total Lot Area (sq.m.) <span className="gf-req">*</span>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  1. Name of Applicant (Last, First, Middle) *
                 </label>
                 <input
-                  type="number"
-                  step="0.01"
-                  className="gf-input"
-                  value={lotArea}
-                  onChange={(e) => setLotArea(e.target.value)}
-                  placeholder="e.g. 155.00"
+                  type="text"
                   required
+                  value={applicantName}
+                  onChange={(e) => setApplicantName(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem" }}
                 />
               </div>
+
               <div>
-                <label className="gf-field-label">
-                  Building Footprint / Area (sq.m.) <span className="gf-req">*</span>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  2. Name of Corporation (if applicable)
                 </label>
                 <input
-                  type="number"
-                  step="0.01"
-                  className="gf-input"
-                  value={bldgArea}
-                  onChange={(e) => setBldgArea(e.target.value)}
-                  placeholder="e.g. 107.00"
+                  type="text"
+                  placeholder="e.g. Sto. Tomas Realty Corp."
+                  value={corporationName}
+                  onChange={(e) => setCorporationName(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem" }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  3. Address & Telephone of Applicant *
+                </label>
+                <input
+                  type="text"
                   required
+                  value={applicantAddress}
+                  onChange={(e) => setApplicantAddress(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem", marginBottom: "6px" }}
+                />
+                <input
+                  type="text"
+                  placeholder="Applicant Contact Number"
+                  value={applicantPhone}
+                  onChange={(e) => setApplicantPhone(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.85rem" }}
                 />
               </div>
-            </div>
-          </div>
 
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Project Classification <span className="gf-req">*</span>
-            </label>
-            <div className="gf-radio-group">
-              {[
-                { val: "RESIDENTIAL", label: "Residential (Single/Multi-family home, apartment)" },
-                { val: "COMMERCIAL", label: "Commercial (Store, office, restaurant, service shop)" },
-                { val: "INDUSTRIAL", label: "Industrial (Warehouse, fabrication, logistics)" },
-                { val: "INSTITUTIONAL", label: "Institutional (School, clinic, church, community center)" },
-                { val: "AGRICULTURAL", label: "Agricultural" },
-              ].map((item) => (
-                <label key={item.val} className="gf-radio-item">
-                  <input
-                    type="radio"
-                    name="classification"
-                    value={item.val}
-                    checked={classification === item.val}
-                    onChange={() => {
-                      setClassification(item.val);
-                      setSiteZoningClass(
-                        item.val === "COMMERCIAL"
-                          ? "GENERAL COMMERCIAL ZONE (GCZ)"
-                          : item.val === "INDUSTRIAL"
-                          ? "LIGHT INDUSTRIAL ZONE (LIZ)"
-                          : "GENERAL RESIDENTIAL ZONE (GRZ)"
-                      );
-                    }}
-                  />
-                  <span>{item.label}</span>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  4. Address & Telephone of Corporation
                 </label>
-              ))}
-            </div>
-          </div>
+                <input
+                  type="text"
+                  placeholder="Corporate Office Address"
+                  value={corporationAddress}
+                  onChange={(e) => setCorporationAddress(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem", marginBottom: "6px" }}
+                />
+                <input
+                  type="text"
+                  placeholder="Corporate Telephone / Landline"
+                  value={corporationPhone}
+                  onChange={(e) => setCorporationPhone(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.85rem" }}
+                />
+              </div>
 
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Right Over Land / Proof of Ownership <span className="gf-req">*</span>
-            </label>
-            <div className="gf-radio-group">
-              {[
-                { val: "TRANSFER CERTIFICATE OF TITLE (TCT)", label: "Transfer Certificate of Title (TCT)" },
-                { val: "DEED OF ABSOLUTE SALE", label: "Deed of Absolute Sale" },
-                { val: "CONTRACT OF LEASE", label: "Contract of Lease / Tenancy Agreement" },
-                { val: "TAX DECLARATION", label: "Tax Declaration with Barangay Certification" },
-              ].map((item) => (
-                <label key={item.val} className="gf-radio-item">
-                  <input
-                    type="radio"
-                    name="rightOverLand"
-                    value={item.val}
-                    checked={rightOverLand === item.val}
-                    onChange={() => setRightOverLand(item.val)}
-                  />
-                  <span>{item.label}</span>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  5. Name of Authorized Representative
                 </label>
-              ))}
-            </div>
-          </div>
+                <input
+                  type="text"
+                  placeholder="Full name of representative"
+                  value={representativeName}
+                  onChange={(e) => setRepresentativeName(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem" }}
+                />
+              </div>
 
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Other Project Details / Remarks <span className="gf-optional">(Optional)</span>
-            </label>
-            <p className="gf-field-help">Any additional structural specifications or remarks (mapped to "Others:" in Annex D).</p>
-            <input
-              type="text"
-              className="gf-input"
-              value={othersProject}
-              onChange={(e) => setOthersProject(e.target.value)}
-              placeholder="e.g. With rooftop deck, perimeter fence, or N/A"
-            />
-          </div>
-
-          {/* SECTION C: SITE INSPECTION & ADJACENT USES */}
-          <div className="gf-section-divider">
-            <h3>Section C: Site Inspection & Land Uses</h3>
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Project Status as of Application Date <span className="gf-req">*</span>
-            </label>
-            <div className="gf-radio-group">
-              {[
-                { val: "Proposed", label: "Proposed (Construction has not started)" },
-                { val: "Under Construction", label: "Under Construction (% Ongoing)" },
-                { val: "Completed", label: "Completed (Structure built)" },
-                { val: "Operational", label: "Operational (Currently active/occupied)" },
-                { val: "Others", label: "Others (Specify)" },
-              ].map((item) => (
-                <label key={item.val} className="gf-radio-item">
-                  <input
-                    type="radio"
-                    name="projectStatus"
-                    value={item.val}
-                    checked={projectStatus === item.val}
-                    onChange={() => setProjectStatus(item.val as any)}
-                  />
-                  <span>{item.label}</span>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  6. Address & Telephone of Representative
                 </label>
-              ))}
-            </div>
-
-            {projectStatus === "Under Construction" && (
-              <div style={{ marginTop: "1rem" }}>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>Percentage Completed (%):</span>
                 <input
                   type="text"
-                  className="gf-input"
-                  style={{ width: "160px", marginTop: "0.25rem" }}
-                  value={percentCompleted}
-                  onChange={(e) => setPercentCompleted(e.target.value)}
-                  placeholder="e.g. 50%"
+                  placeholder="Representative Address"
+                  value={representativeAddress}
+                  onChange={(e) => setRepresentativeAddress(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem", marginBottom: "6px" }}
                 />
-              </div>
-            )}
-
-            {projectStatus === "Others" && (
-              <div style={{ marginTop: "1rem" }}>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>Specify Status:</span>
                 <input
                   type="text"
-                  className="gf-input"
-                  style={{ marginTop: "0.25rem" }}
-                  value={statusOthers}
-                  onChange={(e) => setStatusOthers(e.target.value)}
-                  placeholder="e.g. Renovation / Demolition"
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Existing Land Uses Within Lot Boundaries <span className="gf-optional">(Select all that apply)</span>
-            </label>
-            <p className="gf-field-help">Indicate current land utilization inside the project lot boundaries.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: "0.5rem" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
-                <input type="checkbox" checked={lotResidential} onChange={(e) => setLotResidential(e.target.checked)} />
-                Residential
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
-                <input type="checkbox" checked={lotCommercial} onChange={(e) => setLotCommercial(e.target.checked)} />
-                Commercial
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
-                <input type="checkbox" checked={lotInstitutional} onChange={(e) => setLotInstitutional(e.target.checked)} />
-                Institutional
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
-                <input type="checkbox" checked={lotIndustrial} onChange={(e) => setLotIndustrial(e.target.checked)} />
-                Industrial
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
-                <input type="checkbox" checked={lotAgricultural} onChange={(e) => setLotAgricultural(e.target.checked)} />
-                Agricultural
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", color: "#334155" }}>
-                <input type="checkbox" checked={lotOthersRoad} onChange={(e) => setLotOthersRoad(e.target.checked)} />
-                Others: Road / Access
-              </label>
-            </div>
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              In Case of Agricultural Use <span className="gf-optional">(Optional)</span>
-            </label>
-            <p className="gf-field-help">If the lot or abutting land is currently agricultural, provide crop and tenancy information.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "0.5rem" }}>
-              <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>Specify Crops:</span>
-                <input
-                  type="text"
-                  className="gf-input"
-                  value={agriculturalCrops}
-                  onChange={(e) => setAgriculturalCrops(e.target.value)}
-                  placeholder="e.g. Rice / Palay, Sugar Cane, N/A"
-                />
-              </div>
-              <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>Tenancy Status:</span>
-                <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem" }}>
-                    <input
-                      type="radio"
-                      name="tenancyStatus"
-                      value="Not tenanted"
-                      checked={tenancyStatus === "Not tenanted"}
-                      onChange={() => setTenancyStatus("Not tenanted")}
-                    />
-                    Not tenanted
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem" }}>
-                    <input
-                      type="radio"
-                      name="tenancyStatus"
-                      value="Tenanted"
-                      checked={tenancyStatus === "Tenanted"}
-                      onChange={() => setTenancyStatus("Tenanted")}
-                    />
-                    Tenanted
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Existing Land Uses Abutting Boundaries <span className="gf-optional">(Defaults to GRZ & Road)</span>
-            </label>
-            <p className="gf-field-help">Identify the structures or zoning adjacent to your lot boundaries.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "0.5rem" }}>
-              <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>North Boundary (a):</span>
-                <input
-                  type="text"
-                  className="gf-input"
-                  value={northAbutting}
-                  onChange={(e) => setNorthAbutting(e.target.value)}
-                  placeholder="e.g. GRZ / Residential"
-                />
-              </div>
-              <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>South Boundary (b):</span>
-                <input
-                  type="text"
-                  className="gf-input"
-                  value={southAbutting}
-                  onChange={(e) => setSouthAbutting(e.target.value)}
-                  placeholder="e.g. GRZ / Residential"
-                />
-              </div>
-              <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>East Boundary (c):</span>
-                <input
-                  type="text"
-                  className="gf-input"
-                  value={eastAbutting}
-                  onChange={(e) => setEastAbutting(e.target.value)}
-                  placeholder="e.g. Road / Alley"
-                />
-              </div>
-              <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#64748b" }}>West Boundary (d):</span>
-                <input
-                  type="text"
-                  className="gf-input"
-                  value={westAbutting}
-                  onChange={(e) => setWestAbutting(e.target.value)}
-                  placeholder="e.g. GRZ / Residential"
+                  placeholder="Representative Contact Number"
+                  value={representativePhone}
+                  onChange={(e) => setRepresentativePhone(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.85rem" }}
                 />
               </div>
             </div>
           </div>
 
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Surrounding Land Uses in Vicinity <span className="gf-optional">(100m & 500m Radius)</span>
-            </label>
-            <p className="gf-field-help">Check land use types present within 100 meters and 500 meters of the property.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem", alignItems: "center", marginTop: "0.5rem", fontSize: "0.9rem" }}>
-              <strong>Land Use Type</strong>
-              <strong style={{ textAlign: "center" }}>Within 100m</strong>
-              <strong style={{ textAlign: "center" }}>Within 500m</strong>
-
-              <span>Residential</span>
-              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use100mRes} onChange={(e) => setUse100mRes(e.target.checked)} /></div>
-              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use500mRes} onChange={(e) => setUse500mRes(e.target.checked)} /></div>
-
-              <span>Commercial</span>
-              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use100mCom} onChange={(e) => setUse100mCom(e.target.checked)} /></div>
-              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use500mCom} onChange={(e) => setUse500mCom(e.target.checked)} /></div>
-
-              <span>Institutional</span>
-              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use100mInst} onChange={(e) => setUse100mInst(e.target.checked)} /></div>
-              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use500mInst} onChange={(e) => setUse500mInst(e.target.checked)} /></div>
-
-              <span>Industrial</span>
-              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use100mInd} onChange={(e) => setUse100mInd(e.target.checked)} /></div>
-              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use500mInd} onChange={(e) => setUse500mInd(e.target.checked)} /></div>
-
-              <span>Agricultural</span>
-              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use100mAgri} onChange={(e) => setUse100mAgri(e.target.checked)} /></div>
-              <div style={{ textAlign: "center" }}><input type="checkbox" checked={use500mAgri} onChange={(e) => setUse500mAgri(e.target.checked)} /></div>
+          {/* --- SECTION 2: PROJECT INFO & LAND TENURE (BOXES 7-12) --- */}
+          <div>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              paddingBottom: "0.65rem",
+              borderBottom: "2px solid #e2e8f0",
+              marginBottom: "1.25rem"
+            }}>
+              <span style={{ background: "#4f46e5", color: "white", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "800" }}>
+                2
+              </span>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#0f172a" }}>
+                Project Classification & Tenure (Boxes 7–12)
+              </h3>
             </div>
-          </div>
 
-          {/* SECTION D: SKETCH OF PROJECT LOCATION & SIGNIFICANT FINDINGS */}
-          <div className="gf-section-divider">
-            <h3>Section D: Sketch of Project Location (Image Attachment)</h3>
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Upload Project Site Sketch / Vicinity Map Image <span className="gf-optional">(Recommended)</span>
-            </label>
-            <p className="gf-field-help">
-              Upload an image of your location sketch, lot vicinity map, or site photo showing the project pin. This image will be automatically pasted into <strong>Section D of the official ANNEX D PDF</strong> passed to the Admin.
-            </p>
-
-            {!sketchImageBase64 ? (
-              <div 
-                style={{
-                  border: "2px dashed #b39ddb",
-                  borderRadius: "10px",
-                  padding: "2rem",
-                  textAlign: "center",
-                  background: "#faf8fd",
-                  cursor: "pointer",
-                  transition: "all 0.2s"
-                }}
-                onClick={() => document.getElementById("sketch-file-input")?.click()}
-              >
-                <UploadCloud size={44} color="#673ab7" style={{ margin: "0 auto 0.75rem auto" }} />
-                <p style={{ margin: "0 0 0.5rem 0", fontWeight: "600", color: "#322153", fontSize: "0.95rem" }}>
-                  Click to select or drag & drop location sketch image
-                </p>
-                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Supports PNG, JPG, or JPEG (Max 10MB)</span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  7. Project Type *
+                </label>
                 <input
-                  id="sketch-file-input"
-                  type="file"
-                  accept="image/png, image/jpeg, image/jpg"
-                  style={{ display: "none" }}
-                  onChange={handleImageUpload}
+                  type="text"
+                  required
+                  value={projectType}
+                  onChange={(e) => setProjectType(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem", fontWeight: "600" }}
                 />
               </div>
-            ) : (
-              <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "1rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <ImageIcon size={20} color="#16a34a" />
-                    <div>
-                      <strong style={{ fontSize: "0.9rem", color: "#0f172a" }}>{sketchFileName}</strong>
-                      <span style={{ fontSize: "0.75rem", color: "#64748b", marginLeft: "8px" }}>({sketchFileSize})</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={removeSketchImage}
-                    style={{
-                      background: "#fee2e2",
-                      border: "none",
-                      color: "#dc2626",
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      fontSize: "0.8rem",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px"
-                    }}
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  8. Project Nature *
+                </label>
+                <select
+                  value={projectNature}
+                  onChange={(e: any) => setProjectNature(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem" }}
+                >
+                  <option value="New Development">New Development</option>
+                  <option value="Renovation / Alteration">Renovation / Alteration</option>
+                  <option value="Change of Use">Change of Use</option>
+                  <option value="Others">Others (specify)</option>
+                </select>
+                {projectNature === "Others" && (
+                  <input
+                    type="text"
+                    placeholder="Specify project nature"
+                    value={natureOthers}
+                    onChange={(e) => setNatureOthers(e.target.value)}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.85rem", marginTop: "6px" }}
+                  />
+                )}
+              </div>
+
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  9. Project Location (No., Street, Barangay, City/Municipality, Province) *
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr", gap: "0.5rem" }}>
+                  <input
+                    type="text"
+                    placeholder="Purok / Street / Subd."
+                    value={streetLocation}
+                    onChange={(e) => setStreetLocation(e.target.value)}
+                    style={{ padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem" }}
+                  />
+                  <select
+                    value={barangay}
+                    onChange={(e) => setBarangay(e.target.value)}
+                    style={{ padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem" }}
                   >
-                    <X size={14} /> Remove
-                  </button>
-                </div>
-
-                <div style={{ maxHeight: "240px", overflow: "hidden", borderRadius: "8px", border: "1px solid #e2e8f0", background: "white", display: "flex", justifyContent: "center" }}>
-                  <img
-                    src={sketchImageBase64}
-                    alt="Section D Location Sketch Preview"
-                    style={{ maxHeight: "240px", width: "auto", objectFit: "contain" }}
+                    {[
+                      "Moras Dela Paz",
+                      "Poblacion",
+                      "San Bartolome",
+                      "San Matias",
+                      "San Vicente",
+                      "Santo Rosario (Pau)",
+                      "Sapa (Santo Niño)"
+                    ].map(b => <option key={b} value={b}>Brgy. {b}</option>)}
+                  </select>
+                  <input
+                    type="text"
+                    disabled
+                    value="Sto. Tomas"
+                    style={{ padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #e2e8f0", background: "#f8fafc", fontSize: "0.88rem" }}
+                  />
+                  <input
+                    type="text"
+                    disabled
+                    value="Pampanga"
+                    style={{ padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #e2e8f0", background: "#f8fafc", fontSize: "0.88rem" }}
                   />
                 </div>
-                <p style={{ margin: "0.5rem 0 0 0", fontSize: "0.78rem", color: "#166534", fontWeight: "600" }}>
-                  ✓ Image verified! This image will be dynamically embedded into Section D of ANNEX D - TEMPLATE.
-                </p>
               </div>
-            )}
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  10. Project Area (in square meters) *
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
+                  <div>
+                    <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600" }}>Lot Area</span>
+                    <input
+                      type="number"
+                      placeholder="Lot Area"
+                      value={lotArea}
+                      onChange={(e) => setLotArea(e.target.value)}
+                      style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.85rem" }}
+                    />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600" }}>Building</span>
+                    <input
+                      type="number"
+                      placeholder="Bldg Area"
+                      value={bldgArea}
+                      onChange={(e) => setBldgArea(e.target.value)}
+                      style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.85rem" }}
+                    />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600" }}>Improvement</span>
+                    <input
+                      type="number"
+                      placeholder="Improvement"
+                      value={improvementArea}
+                      onChange={(e) => setImprovementArea(e.target.value)}
+                      style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.85rem" }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  11. Right Over Land *
+                </label>
+                <div style={{ display: "flex", gap: "1rem", marginTop: "8px" }}>
+                  {(["Owner", "Lease", "Others"] as const).map(right => (
+                    <label key={right} style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="rightOverLand"
+                        checked={rightOverLand === right}
+                        onChange={() => setRightOverLand(right)}
+                      />
+                      <span>{right}</span>
+                    </label>
+                  ))}
+                </div>
+                {rightOverLand === "Others" && (
+                  <input
+                    type="text"
+                    placeholder="Specify land rights (e.g. Usufruct, Special Power of Attorney)"
+                    value={rightOverLandOthers}
+                    onChange={(e) => setRightOverLandOthers(e.target.value)}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.85rem", marginTop: "6px" }}
+                  />
+                )}
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  12. Project Tenure *
+                </label>
+                <div style={{ display: "flex", gap: "1.5rem", marginTop: "8px" }}>
+                  {(["Permanent", "Temporary"] as const).map(tenure => (
+                    <label key={tenure} style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="projectTenure"
+                        checked={projectTenure === tenure}
+                        onChange={() => setProjectTenure(tenure)}
+                      />
+                      <span>{tenure}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* SECTION E: LEGAL BASES & RECOMMENDED DECISION */}
-          <div className="gf-section-divider">
-            <h3>Section E: Legal Bases & Recommended Decision</h3>
-          </div>
+          {/* --- SECTION 3: EXISTING LAND USE & VALUATION (BOXES 13-14) --- */}
+          <div>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              paddingBottom: "0.65rem",
+              borderBottom: "2px solid #e2e8f0",
+              marginBottom: "1.25rem"
+            }}>
+              <span style={{ background: "#4f46e5", color: "white", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "800" }}>
+                3
+              </span>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#0f172a" }}>
+                Existing Land Use & Project Valuation (Boxes 13–14)
+              </h3>
+            </div>
 
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Legal Bases for Zoning Evaluation <span className="gf-req">*</span>
-            </label>
-            <div className="gf-radio-group">
-              <label className="gf-radio-item">
-                <input
-                  type="radio"
-                  name="legalBasis"
-                  value="CLUP_4810"
-                  checked={legalBasis === "CLUP_4810"}
-                  onChange={() => setLegalBasis("CLUP_4810")}
-                />
-                <span>
-                  <strong>[X] CLUP/ZO approved by HLURB/SP per Res.# 4810 Series of 2017</strong>
-                  <span style={{ display: "block", fontSize: "0.8rem", color: "#64748b" }}>
-                    Standard municipal zoning ordinance of Sto. Tomas, Pampanga
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  13. Existing Land Use of the Project Site *
+                </label>
+                <select
+                  value={existingLandUse}
+                  onChange={(e: any) => setExistingLandUse(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem" }}
+                >
+                  <option value="Residential">Residential</option>
+                  <option value="Commercial">Commercial</option>
+                  <option value="Industrial">Industrial</option>
+                  <option value="Institutional">Institutional</option>
+                  <option value="Agricultural">Agricultural (specify crop)</option>
+                  <option value="Vacant / Idle">Vacant / Idle</option>
+                  <option value="Others">Others</option>
+                </select>
+
+                {existingLandUse === "Agricultural" && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "8px" }}>
+                    <input
+                      type="text"
+                      placeholder="Specify Crop (e.g. Rice, Corn)"
+                      value={agriculturalCrop}
+                      onChange={(e) => setAgriculturalCrop(e.target.value)}
+                      style={{ padding: "8px 10px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.85rem" }}
+                    />
+                    <select
+                      value={isTenanted}
+                      onChange={(e: any) => setIsTenanted(e.target.value)}
+                      style={{ padding: "8px 10px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.85rem" }}
+                    >
+                      <option value="Not tenanted">Not Tenanted</option>
+                      <option value="Tenanted">Tenanted</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  14. Project Cost (in Pesos) *
+                </label>
+                <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
+                  <span style={{ padding: "9px 12px", background: "#f1f5f9", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontWeight: "700", fontSize: "0.88rem", color: "#475569" }}>
+                    Php
                   </span>
-                </span>
-              </label>
-
-              <label className="gf-radio-item">
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 1,500,000.00"
+                    value={projectCost}
+                    onChange={(e) => setProjectCost(e.target.value)}
+                    style={{ flex: 1, padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #cbd5e1", fontSize: "0.88rem", fontWeight: "700" }}
+                  />
+                </div>
                 <input
-                  type="radio"
-                  name="legalBasis"
-                  value="OTHERS"
-                  checked={legalBasis === "OTHERS"}
-                  onChange={() => setLegalBasis("OTHERS")}
+                  type="text"
+                  placeholder="Cost in words (e.g. One Million Five Hundred Thousand Pesos)"
+                  value={projectCostWords}
+                  onChange={(e) => setProjectCostWords(e.target.value)}
+                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
                 />
-                <span>[ ] Others (specify law, Implementing Rules and Regulations or Guidelines)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* --- SECTION 4: NOTICES & RELEASE (BOXES 15-17) --- */}
+          <div>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              paddingBottom: "0.65rem",
+              borderBottom: "2px solid #e2e8f0",
+              marginBottom: "1.25rem"
+            }}>
+              <span style={{ background: "#4f46e5", color: "white", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "800" }}>
+                4
+              </span>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#0f172a" }}>
+                Regulatory Notices & Mode of Release (Boxes 15–17)
+              </h3>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              {/* Box 15 */}
+              <div style={{ background: "#f8fafc", padding: "1rem", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#1e293b", marginBottom: "6px" }}>
+                  15. Is the project applied for the subject of written notice(s) from this Board or the Local Govt. Unit (LGU) to present or apply for Locational Clearance (LC)?
+                </label>
+                <div style={{ display: "flex", gap: "1.5rem", marginBottom: "8px" }}>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", cursor: "pointer" }}>
+                    <input type="radio" name="writtenNotice" checked={hasWrittenNotice === "No"} onChange={() => setHasWrittenNotice("No")} />
+                    <span>No</span>
+                  </label>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", cursor: "pointer" }}>
+                    <input type="radio" name="writtenNotice" checked={hasWrittenNotice === "Yes"} onChange={() => setHasWrittenNotice("Yes")} />
+                    <span>Yes (specify details below)</span>
+                  </label>
+                </div>
+                {hasWrittenNotice === "Yes" && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 2fr 1fr", gap: "6px", marginTop: "6px" }}>
+                    <input
+                      type="text"
+                      placeholder="Issuing Officer"
+                      value={noticeOfficer}
+                      onChange={(e) => setNoticeOfficer(e.target.value)}
+                      style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Order in Notice"
+                      value={noticeOrder}
+                      onChange={(e) => setNoticeOrder(e.target.value)}
+                      style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Date of Notice"
+                      value={noticeDate}
+                      onChange={(e) => setNoticeDate(e.target.value)}
+                      style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Box 16 */}
+              <div style={{ background: "#f8fafc", padding: "1rem", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#1e293b", marginBottom: "6px" }}>
+                  16. Is the project applied for the subject of related action(s) with other offices of the Board and/or Local Government Unit?
+                </label>
+                <div style={{ display: "flex", gap: "1.5rem", marginBottom: "8px" }}>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", cursor: "pointer" }}>
+                    <input type="radio" name="relatedAction" checked={hasRelatedAction === "No"} onChange={() => setHasRelatedAction("No")} />
+                    <span>No</span>
+                  </label>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", cursor: "pointer" }}>
+                    <input type="radio" name="relatedAction" checked={hasRelatedAction === "Yes"} onChange={() => setHasRelatedAction("Yes")} />
+                    <span>Yes (specify details below)</span>
+                  </label>
+                </div>
+                {hasRelatedAction === "Yes" && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 2fr", gap: "6px", marginTop: "6px" }}>
+                    <input
+                      type="text"
+                      placeholder="Office where filed"
+                      value={relatedOffice}
+                      onChange={(e) => setRelatedOffice(e.target.value)}
+                      style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Date filed"
+                      value={relatedDate}
+                      onChange={(e) => setRelatedDate(e.target.value)}
+                      style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Actions taken"
+                      value={relatedActionTaken}
+                      onChange={(e) => setRelatedActionTaken(e.target.value)}
+                      style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Box 17 */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                  17. Preferred Mode of Release of Decision *
+                </label>
+                <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+                  {(["Pick-up", "Mail to Applicant", "Mail to Representative"] as const).map(mode => (
+                    <label key={mode} style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="preferredMode"
+                        checked={preferredMode === mode}
+                        onChange={() => setPreferredMode(mode)}
+                      />
+                      <span>{mode === "Pick-up" ? "Personal Pick-up at MPDO" : mode}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* --- SECTION 5: SKETCH & CERTIFICATION (BOXES 18-19) --- */}
+          <div>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              paddingBottom: "0.65rem",
+              borderBottom: "2px solid #e2e8f0",
+              marginBottom: "1.25rem"
+            }}>
+              <span style={{ background: "#4f46e5", color: "white", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "800" }}>
+                5
+              </span>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#0f172a" }}>
+                Vicinity Sketch & Applicant Oath (Boxes 18–19)
+              </h3>
+            </div>
+
+            {/* Vicinity Sketch Upload */}
+            <div style={{ marginBottom: "1.25rem" }}>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                Location Sketch / Vicinity Plan (Optional Attachment)
               </label>
-            </div>
-
-            {legalBasis === "OTHERS" && (
-              <input
-                type="text"
-                className="gf-input"
-                style={{ marginTop: "0.75rem" }}
-                value={otherLegalBasis}
-                onChange={(e) => setOtherLegalBasis(e.target.value)}
-                placeholder="Specify law or guidelines..."
-                required
-              />
-            )}
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Recommended Decision Formulation
-            </label>
-            <div style={{ background: "#f8fafc", padding: "1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.88rem", color: "#334155", lineHeight: "1.5" }}>
-              <Scale size={18} color="#673ab7" style={{ marginBottom: "0.25rem" }} />
-              <p style={{ margin: "0 0 0.5rem 0" }}>
-                <strong>Standard Recommendation:</strong> In view of the foregoing findings and evaluation of facts, it is hereby recommended that the application for Locational Clearance be <strong>APPROVED</strong>, considering that the proposed project is located within a designated <strong>{classification === "COMMERCIAL" ? "Commercial Zone" : "Residential Zone"}</strong> under the approved Comprehensive Land Use Plan (CLUP) and Zoning Ordinance (Resolution No. 4810, Series of 2017).
-              </p>
-              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                This recommendation is subject to compliance with all other applicable laws, rules, and regulations, and securing required secondary permits.
-              </p>
-            </div>
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label">
-              Finding and Evaluation of Facts
-            </label>
-            <textarea
-              className="gf-input"
-              rows={3}
-              value={findingFacts}
-              onChange={(e) => setFindingFacts(e.target.value)}
-              style={{ lineHeight: "1.4" }}
-            />
-          </div>
-
-          {/* SECTION F: ADDITIONAL CONDITIONS */}
-          <div className="gf-section-divider">
-            <h3>Section F: Additional Conditions & Compliance</h3>
-          </div>
-
-          <div className="gf-card gf-field-card">
-            <label className="gf-field-label" style={{ marginBottom: "0.75rem" }}>
-              Municipal Conditions of Approval (Sto. Tomas, Pampanga)
-            </label>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.85rem", color: "#334155", lineHeight: "1.45" }}>
-              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
-                <strong>1.</strong> The issuance of a Locational Clearance shall <strong>not be construed as a Building Permit</strong> and shall be used solely for the purpose of securing other required permits and clearances.
-              </div>
-              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
-                <strong>2.</strong> Compliance with all applicable laws, rules, and regulations of the LGU and concerned national government agencies (National Building Code, Fire Code, and environmental laws) shall be strictly observed.
-              </div>
-              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
-                <strong>3.</strong> Any deviation or modification in the approved plans, use, or scope of the project shall require <strong>prior approval</strong> from the Office of the Zoning Administrator.
-              </div>
-              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
-                <strong>4.</strong> The proponent shall secure necessary clearances from concerned agencies: Barangay Clearance, Environmental Compliance (ECC or CNC), and Fire Safety Inspection Certificate.
-              </div>
-              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
-                <strong>5.</strong> Development controls and zoning standards, including setbacks, parking requirements, building height limits, and easements, shall be strictly complied with.
-              </div>
-              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
-                <strong>6.</strong> No obstruction to public roads, drainage, easements, and utilities shall be allowed during construction and operation.
-              </div>
-              <div style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", borderLeft: "3px solid #673ab7" }}>
-                <strong>7.</strong> The clearance may be <strong>REVOKED</strong> if found to have been issued on the basis of misrepresentation or non-compliance with any of the conditions stated herein.
+              <div style={{
+                border: "2px dashed #cbd5e1",
+                borderRadius: "12px",
+                padding: "1.25rem",
+                textAlign: "center",
+                background: "#f8fafc"
+              }}>
+                {sketchFileName ? (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "#059669", fontWeight: "700", fontSize: "0.85rem" }}>
+                    <CheckCircle2 size={18} />
+                    <span>Attached: {sketchFileName}</span>
+                    <button
+                      type="button"
+                      onClick={() => { setSketchFileName(""); setSketchImageBase64(null); }}
+                      style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.8rem" }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <UploadCloud size={28} color="#94a3b8" style={{ marginBottom: "6px" }} />
+                    <div style={{ fontSize: "0.85rem", color: "#475569", marginBottom: "6px" }}>
+                      Upload site sketch, google map screenshot, or lot plan
+                    </div>
+                    <label style={{
+                      display: "inline-block",
+                      padding: "6px 14px",
+                      background: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "6px",
+                      fontSize: "0.8rem",
+                      fontWeight: "700",
+                      color: "#334155",
+                      cursor: "pointer"
+                    }}>
+                      Choose File
+                      <input type="file" accept="image/*,.pdf" onChange={handleImageUpload} style={{ display: "none" }} />
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div style={{ marginTop: "1.25rem", padding: "1rem", background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: "8px" }}>
+            {/* Oath and Legal Verification */}
+            <div style={{
+              background: "#eff6ff",
+              border: "1.5px solid #bfdbfe",
+              borderRadius: "14px",
+              padding: "1.25rem 1.5rem"
+            }}>
               <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer" }}>
                 <input
                   type="checkbox"
-                  checked={conditionsAgreed}
-                  onChange={(e) => setConditionsAgreed(e.target.checked)}
-                  style={{ accentColor: "#673ab7", width: "18px", height: "18px", marginTop: "2px" }}
                   required
+                  checked={certifiedTruth}
+                  onChange={(e) => setCertifiedTruth(e.target.checked)}
+                  style={{ marginTop: "4px" }}
                 />
-                <span style={{ fontSize: "0.9rem", color: "#4c1d95", fontWeight: "600" }}>
-                  I hereby certify that I have read, understood, and agree to strictly comply with all 7 Additional Conditions stated in Section F. <span className="gf-req">*</span>
-                </span>
+                <div style={{ fontSize: "0.85rem", color: "#1e3a8a", lineHeight: "1.5" }}>
+                  <strong>Affidavit of Undertaking & Certification:</strong> I hereby certify that the above statements and information provided in this Application for Locational Clearance are true and correct to the best of my knowledge, and that any misrepresentation shall be sufficient ground for the denial or revocation of this clearance pursuant to municipal zoning laws of Sto. Tomas, Pampanga.
+                </div>
               </label>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginTop: "1rem" }}>
+                <input
+                  type="text"
+                  placeholder="CTC / Valid ID Number"
+                  value={ctcNumber}
+                  onChange={(e) => setCtcNumber(e.target.value)}
+                  style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.8rem", background: "white" }}
+                />
+                <input
+                  type="text"
+                  placeholder="Issued at"
+                  value={ctcIssuedAt}
+                  onChange={(e) => setCtcIssuedAt(e.target.value)}
+                  style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.8rem", background: "white" }}
+                />
+                <input
+                  type="text"
+                  placeholder="Date issued"
+                  value={ctcIssuedOn}
+                  onChange={(e) => setCtcIssuedOn(e.target.value)}
+                  style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.8rem", background: "white" }}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Action Bar */}
-          <div className="gf-action-bar">
-            <button
-              type="submit"
-              className="gf-submit-btn"
-              disabled={isGenerating}
+          {/* FORM ACTION BUTTONS */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "1rem",
+            borderTop: "1.5px solid #e2e8f0",
+            paddingTop: "1.5rem"
+          }}>
+            <a
+              href="/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "10px 16px",
+                borderRadius: "10px",
+                background: "#f8fafc",
+                border: "1.5px solid #cbd5e1",
+                color: "#475569",
+                fontSize: "0.86rem",
+                fontWeight: "700",
+                textDecoration: "none"
+              }}
             >
-              {isGenerating ? (
-                <>
-                  <span className="gf-spinner"></span> Generating Official Annex D PDF...
-                </>
-              ) : (
-                <>
-                  <Send size={18} /> Submit Application & Send to Admin
-                </>
+              <Download size={15} /> Download Blank Form (PDF)
+            </a>
+
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              {onCancel && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  style={{
+                    background: "#f1f5f9",
+                    border: "none",
+                    color: "#475569",
+                    padding: "10px 18px",
+                    borderRadius: "10px",
+                    fontSize: "0.88rem",
+                    fontWeight: "700",
+                    cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
               )}
-            </button>
 
-            {onCancel && (
               <button
-                type="button"
-                className="gf-cancel-btn"
-                onClick={onCancel}
-                disabled={isGenerating}
+                type="submit"
+                disabled={isSubmitting}
+                style={{
+                  background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+                  color: "white",
+                  border: "none",
+                  padding: "11px 24px",
+                  borderRadius: "10px",
+                  fontSize: "0.92rem",
+                  fontWeight: "800",
+                  cursor: isSubmitting ? "not-allowed" : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)"
+                }}
               >
-                Cancel
+                {isSubmitting ? (
+                  <span>Submitting Application...</span>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    <span>Submit Locational Clearance</span>
+                    <ChevronRight size={16} />
+                  </>
+                )}
               </button>
-            )}
+            </div>
           </div>
-        </form>
-      </div>
-
-      <style jsx>{`
-        .gf-wrapper {
-          background-color: #f0ebf8;
-          min-height: 100vh;
-          padding: 2rem 1rem 5rem 1rem;
-          font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
-        .gf-container {
-          max-width: 680px;
-          margin: 0 auto;
-        }
-        .gf-header-banner {
-          height: 12px;
-          background: linear-gradient(90deg, #673ab7, #7c4dff);
-          border-top-left-radius: 10px;
-          border-top-right-radius: 10px;
-        }
-        .gf-card {
-          background: #ffffff;
-          border: 1px solid #dadce0;
-          border-radius: 8px;
-          padding: 1.5rem 1.75rem;
-          margin-bottom: 1rem;
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-          transition: box-shadow 0.2s;
-        }
-        .gf-card:hover {
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-        }
-        .gf-title-card {
-          border-top-left-radius: 0;
-          border-top-right-radius: 0;
-          border-top: none;
-          margin-bottom: 1.25rem;
-        }
-        .gf-title {
-          font-size: 1.85rem;
-          font-weight: 700;
-          color: #202124;
-          margin: 0 0 0.75rem 0;
-          line-height: 1.25;
-        }
-        .gf-description {
-          font-size: 0.95rem;
-          color: #5f6368;
-          line-height: 1.5;
-          margin: 0 0 1rem 0;
-        }
-        .gf-divider {
-          height: 1px;
-          background: #dadce0;
-          margin: 1rem 0;
-        }
-        .gf-user-indicator {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 0.85rem;
-          color: #5f6368;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-        }
-        .gf-required-note {
-          color: #d93025;
-          font-weight: 500;
-        }
-        .gf-section-divider {
-          margin: 2rem 0 1rem 0;
-          padding-left: 0.5rem;
-        }
-        .gf-section-divider h3 {
-          font-size: 1.15rem;
-          font-weight: 700;
-          color: #673ab7;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin: 0;
-        }
-        .gf-field-card {
-          margin-bottom: 1rem;
-        }
-        .gf-field-label {
-          display: block;
-          font-size: 1rem;
-          font-weight: 600;
-          color: #202124;
-          margin-bottom: 0.5rem;
-        }
-        .gf-req {
-          color: #d93025;
-          margin-left: 3px;
-        }
-        .gf-optional {
-          color: #5f6368;
-          font-size: 0.85rem;
-          font-weight: 400;
-          margin-left: 4px;
-        }
-        .gf-field-help {
-          font-size: 0.82rem;
-          color: #70757a;
-          margin: -0.25rem 0 0.75rem 0;
-        }
-        .gf-input, .gf-select {
-          width: 100%;
-          padding: 0.75rem 0.5rem;
-          border: none;
-          border-bottom: 1px solid #dadce0;
-          font-size: 0.95rem;
-          color: #202124;
-          outline: none;
-          background: transparent;
-          transition: border-color 0.2s, background 0.2s;
-        }
-        .gf-input:focus, .gf-select:focus {
-          border-bottom: 2px solid #673ab7;
-          background: #faf8fd;
-        }
-        .gf-radio-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          margin-top: 0.5rem;
-        }
-        .gf-radio-item {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          font-size: 0.95rem;
-          color: #3c4043;
-          cursor: pointer;
-          padding: 0.25rem 0;
-        }
-        .gf-radio-item input[type="radio"] {
-          accent-color: #673ab7;
-          width: 18px;
-          height: 18px;
-        }
-        .gf-action-bar {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          margin-top: 1.5rem;
-        }
-        .gf-submit-btn {
-          background: #673ab7;
-          color: #ffffff;
-          border: none;
-          padding: 0.75rem 1.75rem;
-          border-radius: 4px;
-          font-size: 0.95rem;
-          font-weight: 600;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-          transition: background 0.2s, transform 0.1s;
-        }
-        .gf-submit-btn:hover:not(:disabled) {
-          background: #5e35b1;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-        }
-        .gf-submit-btn:disabled {
-          background: #b39ddb;
-          cursor: not-allowed;
-        }
-        .gf-cancel-btn {
-          background: transparent;
-          color: #5f6368;
-          border: 1px solid #dadce0;
-          padding: 0.75rem 1.25rem;
-          border-radius: 4px;
-          font-size: 0.9rem;
-          font-weight: 500;
-          cursor: pointer;
-        }
-        .gf-cancel-btn:hover {
-          background: #f1f3f4;
-        }
-        .gf-spinner {
-          width: 16px;
-          height: 16px;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-top-color: white;
-          border-radius: 50%;
-          animation: gf-spin 0.8s linear infinite;
-        }
-        @keyframes gf-spin {
-          100% { transform: rotate(360deg); }
-        }
-        .gf-error-card {
-          background: #fef2f2;
-          border-color: #fca5a5;
-          color: #991b1b;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          font-size: 0.9rem;
-        }
-        .gf-success-card {
-          padding: 2.5rem 2rem;
-        }
-        .gf-success-header {
-          display: flex;
-          align-items: flex-start;
-          gap: 1.25rem;
-          margin-bottom: 1.5rem;
-        }
-        .gf-success-header h2 {
-          margin: 0 0 0.5rem 0;
-          font-size: 1.5rem;
-          color: #202124;
-        }
-        .gf-subtitle {
-          margin: 0;
-          color: #5f6368;
-          font-size: 0.95rem;
-        }
-        .gf-info-box {
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 1.25rem;
-          font-size: 0.9rem;
-        }
-        .gf-id-badge {
-          background: #dbeafe;
-          color: #1e40af;
-          padding: 2px 10px;
-          border-radius: 999px;
-          font-weight: 700;
-          font-size: 0.85rem;
-        }
-        .gf-btn-row {
-          display: flex;
-          gap: 1rem;
-          margin-top: 1.5rem;
-          flex-wrap: wrap;
-        }
-        .gf-btn-primary {
-          background: #16a34a;
-          color: white;
-          border: none;
-          padding: 0.75rem 1.5rem;
-          border-radius: 6px;
-          font-weight: 600;
-          font-size: 0.95rem;
-          cursor: pointer;
-        }
-        .gf-btn-primary:hover {
-          background: #15803d;
-        }
-        .gf-btn-secondary {
-          background: white;
-          color: #475569;
-          border: 1px solid #cbd5e1;
-          padding: 0.75rem 1.5rem;
-          border-radius: 6px;
-          font-weight: 600;
-          font-size: 0.95rem;
-          cursor: pointer;
-        }
-        .gf-btn-secondary:hover {
-          background: #f8fafc;
-        }
-      `}</style>
+        </div>
+      </form>
     </div>
   );
 }

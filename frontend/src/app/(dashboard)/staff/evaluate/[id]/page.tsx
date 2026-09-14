@@ -263,7 +263,7 @@ export default function StaffEvaluatePage() {
             Project Evaluation & Approval
           </h1>
           <p style={{ color: "#64748b", margin: "0.25rem 0 0 0", fontSize: "0.95rem" }}>
-            Review submitted Annex D evaluation report and zoning compliance.
+            Review submitted Locational Clearance application and zoning compliance.
           </p>
         </div>
 
@@ -393,7 +393,7 @@ export default function StaffEvaluatePage() {
                   />
                 </div>
                 <span style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: "600", marginTop: "4px", display: "block" }}>
-                  ✓ Automatically pasted into Annex D PDF below
+                  ✓ Attached to official Locational Clearance dossier
                 </span>
               </div>
             )}
@@ -484,7 +484,7 @@ export default function StaffEvaluatePage() {
           </div>
         </div>
 
-        {/* RIGHT / MAIN COLUMN: EMBEDDED ANNEX D PDF VIEWER */}
+        {/* RIGHT / MAIN COLUMN: EMBEDDED LOCATIONAL CLEARANCE PDF VIEWER */}
         <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", display: "flex", flexDirection: "column", minHeight: "750px", boxShadow: "0 2px 10px rgba(0,0,0,0.04)" }}>
           {/* Document Viewer Header Bar */}
           <div style={{ padding: "1rem 1.5rem", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
@@ -494,25 +494,25 @@ export default function StaffEvaluatePage() {
               </div>
               <div>
                 <strong style={{ fontSize: "1rem", color: "#0f172a", display: "block" }}>
-                  ANNEX D - PROJECT EVALUATION REPORT
+                  APPLICATION FOR LOCATIONAL CLEARANCE
                 </strong>
                 <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
-                  Auto-populated official clearance document
+                  Official Sto. Tomas Municipal Zoning & Land Use Document
                 </span>
               </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <a
-                href={blobUrl}
-                download={`ANNEX_D_${(app.applicantName || "Applicant").replace(/\s+/g, "_")}.pdf`}
+                href={blobUrl || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"}
+                download={`LOCATIONAL_CLEARANCE_${(app.applicantName || "Applicant").replace(/\s+/g, "_")}.pdf`}
                 className="btn-outline"
                 style={{ padding: "0.45rem 0.85rem", fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none" }}
               >
                 <Download size={15} /> Download PDF
               </a>
               <a
-                href={blobUrl}
+                href={blobUrl || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary"
@@ -526,8 +526,8 @@ export default function StaffEvaluatePage() {
           {/* Embedded PDF iframe */}
           <div style={{ flex: 1, position: "relative", background: "#525659", minHeight: "680px" }}>
             <iframe
-              src={`${blobUrl}#toolbar=1&navpanes=0`}
-              title="ANNEX D - Project Evaluation Report Preview"
+              src={`${blobUrl || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"}#toolbar=1&navpanes=0`}
+              title="Locational Clearance Form Preview"
               style={{ width: "100%", height: "100%", border: "none", minHeight: "720px" }}
             />
           </div>

@@ -457,7 +457,7 @@ export default function ApplicationStatusPage() {
                 }}
               >
                 <option value="all">All Types</option>
-                <option value="locational_clearance">Locational Clearance (Annex D)</option>
+                <option value="locational_clearance">Locational Clearance</option>
                 <option value="unified_permit">Unified Project Permits</option>
               </select>
 
@@ -622,7 +622,7 @@ export default function ApplicationStatusPage() {
                           alignItems: "center",
                           gap: "4px"
                         }}>
-                          <ShieldCheck size={13} /> Stage 1 · Locational Clearance (Annex D)
+                          <ShieldCheck size={13} /> Stage 1 · Locational Clearance
                         </span>
                       ) : (
                         <span style={{
