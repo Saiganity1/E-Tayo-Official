@@ -34,6 +34,18 @@ export interface LocationalClearancePdfData {
   ctcIssuedOn?: string;
 }
 
+function safeText(str: string | undefined | null): string {
+  if (!str) return "";
+  return String(str)
+    .replace(/[✓✔]/g, "[X]")
+    .replace(/[—–]/g, "-")
+    .replace(/[•●]/g, "*")
+    .replace(/[₱]/g, "PHP ")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[^\x20-\x7E\t\n\r]/g, "");
+}
+
 export async function generateLocationalClearancePdf(data: LocationalClearancePdfData): Promise<string> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4 Size
@@ -48,22 +60,26 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   const borderLight = rgb(0.8, 0.84, 0.9);
   const fillLight = rgb(0.95, 0.98, 0.96);
 
+  const drawText = (text: string, options: any) => {
+    page.drawText(safeText(text), options);
+  };
+
   // --- 1. OFFICIAL MUNICIPAL HEADER ---
-  page.drawText("REPUBLIC OF THE PHILIPPINES", {
+  drawText("REPUBLIC OF THE PHILIPPINES", {
     x: 50,
     y: height - 40,
     size: 8.5,
     font: fontRegular,
     color: textMuted
   });
-  page.drawText("PROVINCE OF PAMPANGA | MUNICIPALITY OF STO. TOMAS", {
+  drawText("PROVINCE OF PAMPANGA | MUNICIPALITY OF STO. TOMAS", {
     x: 50,
     y: height - 51,
     size: 9.5,
     font: fontBold,
     color: textDark
   });
-  page.drawText("OFFICE OF THE ZONING ADMINISTRATOR / MPDO", {
+  drawText("OFFICE OF THE ZONING ADMINISTRATOR / MPDO", {
     x: 50,
     y: height - 63,
     size: 11,
@@ -81,21 +97,21 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     borderColor: rgb(0.65, 0.85, 0.75),
     borderWidth: 1
   });
-  page.drawText("CLEARANCE REF NO.", {
+  drawText("CLEARANCE REF NO.", {
     x: width - 202,
     y: height - 42,
     size: 7,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText(data.applicationNo || "LC-2026-0001", {
+  drawText(data.applicationNo || "LC-2026-0001", {
     x: width - 202,
     y: height - 53,
     size: 9,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText(`FILED: ${data.submissionDate}`, {
+  drawText(`FILED: ${data.submissionDate}`, {
     x: width - 202,
     y: height - 64,
     size: 7,
@@ -111,7 +127,7 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     height: 22,
     color: primaryColor
   });
-  page.drawText("OFFICIAL APPLICATION FOR LOCATIONAL CLEARANCE / ZONING COMPLIANCE", {
+  drawText("OFFICIAL APPLICATION FOR LOCATIONAL CLEARANCE / ZONING COMPLIANCE", {
     x: 65,
     y: height - 92,
     size: 9.5,
@@ -131,42 +147,42 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     borderColor: borderLight,
     borderWidth: 1
   });
-  page.drawText("1. APPLICANT & ENTERPRISE INFORMATION", {
+  drawText("1. APPLICANT & ENTERPRISE INFORMATION", {
     x: 60,
     y: curY - 14,
     size: 8,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText(`Applicant Full Name: ${data.applicantName}`, {
+  drawText(`Applicant Full Name: ${data.applicantName}`, {
     x: 60,
     y: curY - 26,
     size: 8,
     font: fontBold,
     color: textDark
   });
-  page.drawText(`Postal Address: ${data.applicantAddress}`, {
+  drawText(`Postal Address: ${data.applicantAddress}`, {
     x: 60,
     y: curY - 38,
     size: 8,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Contact Phone: ${data.applicantPhone || "N/A"} | Email: ${data.applicantEmail || "N/A"}`, {
+  drawText(`Contact Phone: ${data.applicantPhone || "N/A"} | Email: ${data.applicantEmail || "N/A"}`, {
     x: 60,
     y: curY - 50,
     size: 8,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Corporation/Trade Name: ${data.corporationName || "None (Individual Applicant)"}`, {
+  drawText(`Corporation/Trade Name: ${data.corporationName || "None (Individual Applicant)"}`, {
     x: 60,
     y: curY - 62,
     size: 8,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Authorized Representative: ${data.representativeName || "None (Self-Represented)"}`, {
+  drawText(`Authorized Representative: ${data.representativeName || "None (Self-Represented)"}`, {
     x: 60,
     y: curY - 74,
     size: 7.5,
@@ -186,56 +202,56 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     borderColor: borderLight,
     borderWidth: 1
   });
-  page.drawText("2. PROJECT DETAILS & MUNICIPAL SITE LOCATION", {
+  drawText("2. PROJECT DETAILS & MUNICIPAL SITE LOCATION", {
     x: 60,
     y: curY - 14,
     size: 8,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText(`Project Name: ${data.projectName}`, {
+  drawText(`Project Name: ${data.projectName}`, {
     x: 60,
     y: curY - 28,
     size: 8.5,
     font: fontBold,
     color: textDark
   });
-  page.drawText(`Project Type / Classification: ${data.projectType}`, {
+  drawText(`Project Type / Classification: ${data.projectType}`, {
     x: 60,
     y: curY - 40,
     size: 8,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText(`Nature of Project: ${data.projectNature} | Tenure: ${data.projectTenure}`, {
+  drawText(`Nature of Project: ${data.projectNature} | Tenure: ${data.projectTenure}`, {
     x: 60,
     y: curY - 52,
     size: 8,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Project Address: ${data.projectAddress}`, {
+  drawText(`Project Address: ${data.projectAddress}`, {
     x: 60,
     y: curY - 64,
     size: 8,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Barangay: Brgy. ${data.barangay}, Sto. Tomas, Pampanga`, {
+  drawText(`Barangay: Brgy. ${data.barangay}, Sto. Tomas, Pampanga`, {
     x: 60,
     y: curY - 76,
     size: 8,
     font: fontBold,
     color: textDark
   });
-  page.drawText(`Right over Land: ${data.rightOverLand} | Lot Area: ${data.lotArea} sq.m | Building Area: ${data.bldgArea} sq.m`, {
+  drawText(`Right over Land: ${data.rightOverLand} | Lot Area: ${data.lotArea} sq.m | Building Area: ${data.bldgArea} sq.m`, {
     x: 60,
     y: curY - 88,
     size: 8,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Existing Land Use: ${data.existingLandUse} | Tenancy Status: ${data.isTenanted}`, {
+  drawText(`Existing Land Use: ${data.existingLandUse} | Tenancy Status: ${data.isTenanted}`, {
     x: 60,
     y: curY - 100,
     size: 8,
@@ -255,14 +271,14 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     borderColor: borderLight,
     borderWidth: 1
   });
-  page.drawText("3. ESTIMATED PROJECT COST & ASSESSMENT BASIS", {
+  drawText("3. ESTIMATED PROJECT COST & ASSESSMENT BASIS", {
     x: 60,
     y: curY - 14,
     size: 8,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText(`Project Cost (PHP): Php ${data.projectCost}`, {
+  drawText(`Project Cost (PHP): Php ${data.projectCost}`, {
     x: 60,
     y: curY - 28,
     size: 9,
@@ -270,7 +286,7 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     color: textDark
   });
   if (data.projectCostWords) {
-    page.drawText(`In Words: ${data.projectCostWords}`, {
+    drawText(`In Words: ${data.projectCostWords}`, {
       x: 60,
       y: curY - 40,
       size: 7.5,
@@ -278,7 +294,7 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
       color: textMuted
     });
   }
-  page.drawText(`Preferred Release Mode: ${data.preferredMode || "Pick-up at Municipal Hall"}`, {
+  drawText(`Preferred Release Mode: ${data.preferredMode || "Pick-up at Municipal Hall"}`, {
     x: 60,
     y: curY - 50,
     size: 7.5,
@@ -298,35 +314,35 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     borderColor: borderLight,
     borderWidth: 1
   });
-  page.drawText("4. APPLICANT'S SWORN OATH & VERIFICATION", {
+  drawText("4. APPLICANT'S SWORN OATH & VERIFICATION", {
     x: 60,
     y: curY - 14,
     size: 8,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText("I hereby certify that all information contained herein is true, correct, and complete to the best", {
+  drawText("I hereby certify that all information contained herein is true, correct, and complete to the best", {
     x: 60,
     y: curY - 26,
     size: 7.5,
     font: fontRegular,
     color: textMuted
   });
-  page.drawText("of my knowledge and belief under the penalties of perjury and Sto. Tomas Municipal Zoning Ordinances.", {
+  drawText("of my knowledge and belief under the penalties of perjury and Sto. Tomas Municipal Zoning Ordinances.", {
     x: 60,
     y: curY - 36,
     size: 7.5,
     font: fontRegular,
     color: textMuted
   });
-  page.drawText(`Community Tax Certificate (CTC): ${data.ctcNumber || "CTC-VERIFIED"}`, {
+  drawText(`Community Tax Certificate (CTC): ${data.ctcNumber || "CTC-VERIFIED"}`, {
     x: 60,
     y: curY - 50,
     size: 8,
     font: fontBold,
     color: textDark
   });
-  page.drawText(`Issued At: ${data.ctcIssuedAt || "Sto. Tomas, Pampanga"} | Issued On: ${data.ctcIssuedOn || data.submissionDate}`, {
+  drawText(`Issued At: ${data.ctcIssuedAt || "Sto. Tomas, Pampanga"} | Issued On: ${data.ctcIssuedOn || data.submissionDate}`, {
     x: 60,
     y: curY - 62,
     size: 8,
@@ -346,14 +362,14 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     borderColor: rgb(0.65, 0.85, 0.75),
     borderWidth: 1
   });
-  page.drawText("e-Tayo Sto. Tomas Municipal e-Governance & Permitting System", {
+  drawText("e-Tayo Sto. Tomas Municipal e-Governance & Permitting System", {
     x: width / 2 - 130,
     y: 52,
     size: 7.5,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText("Official Digital Copy Automatically Synced to Municipal Google Drive Records", {
+  drawText("Official Digital Copy Automatically Synced to Municipal Google Drive Records", {
     x: width / 2 - 145,
     y: 42,
     size: 7,

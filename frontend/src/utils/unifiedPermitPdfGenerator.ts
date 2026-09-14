@@ -53,6 +53,18 @@ export interface UnifiedPermitFormData {
   submissionDate?: string;
 }
 
+function safeText(str: string | undefined | null): string {
+  if (!str) return "";
+  return String(str)
+    .replace(/[✓✔]/g, "[X]")
+    .replace(/[—–]/g, "-")
+    .replace(/[•●]/g, "*")
+    .replace(/[₱]/g, "PHP ")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[^\x20-\x7E\t\n\r]/g, ""); // Restrict strictly to standard printable ASCII characters
+}
+
 export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Promise<string> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4 Size: 595 x 842 pt
@@ -68,22 +80,26 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
   const fillLight = rgb(0.96, 0.97, 0.99);
   const accentGreen = rgb(0.08, 0.6, 0.32);
 
+  const drawText = (text: string, options: any) => {
+    page.drawText(safeText(text), options);
+  };
+
   // --- 1. OFFICIAL MUNICIPAL HEADER ---
-  page.drawText("REPUBLIC OF THE PHILIPPINES", {
+  drawText("REPUBLIC OF THE PHILIPPINES", {
     x: 50,
     y: height - 40,
     size: 8.5,
     font: fontRegular,
     color: textMuted
   });
-  page.drawText("PROVINCE OF PAMPANGA | MUNICIPALITY OF STO. TOMAS", {
+  drawText("PROVINCE OF PAMPANGA | MUNICIPALITY OF STO. TOMAS", {
     x: 50,
     y: height - 51,
     size: 9.5,
     font: fontBold,
     color: textDark
   });
-  page.drawText("OFFICE OF THE LOCAL BUILDING OFFICIAL", {
+  drawText("OFFICE OF THE LOCAL BUILDING OFFICIAL", {
     x: 50,
     y: height - 63,
     size: 11,
@@ -102,21 +118,21 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     borderColor: borderLight,
     borderWidth: 1
   });
-  page.drawText("APPLICATION NO.", {
+  drawText("APPLICATION NO.", {
     x: width - 202,
     y: height - 42,
     size: 7,
     font: fontBold,
     color: textMuted
   });
-  page.drawText(data.applicationNo || "APP-2026-UNIFIED", {
+  drawText(data.applicationNo || "APP-2026-UNIFIED", {
     x: width - 202,
     y: height - 53,
     size: 9,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText(`DATE: ${appDate}`, {
+  drawText(`DATE: ${appDate}`, {
     x: width - 202,
     y: height - 64,
     size: 7,
@@ -132,7 +148,7 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     height: 24,
     color: primaryColor
   });
-  page.drawText("UNIFIED APPLICATION FOR BUILDING PERMIT & ANCILLARY CLEARANCES", {
+  drawText("UNIFIED APPLICATION FOR BUILDING PERMIT & ANCILLARY CLEARANCES", {
     x: 65,
     y: height - 93,
     size: 9.5,
@@ -152,28 +168,28 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     borderWidth: 1
   });
 
-  page.drawText("STAGE 1 PREREQUISITE CLEARANCE VERIFIED:", {
+  drawText("STAGE 1 PREREQUISITE CLEARANCE VERIFIED:", {
     x: 60,
     y: curY - 14,
     size: 7.5,
     font: fontBold,
     color: accentGreen
   });
-  page.drawText(`✓ Locational Clearance Ref No: ${data.locationalClearanceRef || "LC-APPROVED"}`, {
+  drawText(`[PASSED] Locational Clearance Ref No: ${data.locationalClearanceRef || "LC-APPROVED"}`, {
     x: 60,
     y: curY - 26,
     size: 8.5,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText(`Applicant Name: ${data.applicantName} | Contact: ${data.applicantPhone}`, {
+  drawText(`Applicant Name: ${data.applicantName} | Contact: ${data.applicantPhone}`, {
     x: 60,
     y: curY - 37,
     size: 8,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Address: ${data.applicantAddress}`, {
+  drawText(`Address: ${data.applicantAddress}`, {
     x: 60,
     y: curY - 47,
     size: 7.5,
@@ -193,7 +209,7 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     borderWidth: 1
   });
 
-  page.drawText("PROJECT DESCRIPTION & SITE SPECIFICATIONS", {
+  drawText("PROJECT DESCRIPTION & SITE SPECIFICATIONS", {
     x: 60,
     y: curY - 12,
     size: 8,
@@ -201,21 +217,21 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     color: primaryColor
   });
 
-  page.drawText(`Project Type: ${data.projectType.name} (${data.projectType.category})`, {
+  drawText(`Project Type: ${data.projectType.name} (${data.projectType.category})`, {
     x: 60,
     y: curY - 25,
     size: 8.5,
     font: fontBold,
     color: textDark
   });
-  page.drawText(`Project Name: ${data.projectName}`, {
+  drawText(`Project Name: ${data.projectName}`, {
     x: 60,
     y: curY - 37,
     size: 8,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Location: ${data.projectAddress || `Brgy. ${data.barangay}, Sto. Tomas, Pampanga`}`, {
+  drawText(`Location: ${data.projectAddress || `Brgy. ${data.barangay}, Sto. Tomas, Pampanga`}`, {
     x: 60,
     y: curY - 49,
     size: 8,
@@ -223,14 +239,14 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     color: textDark
   });
 
-  page.drawText(`Lot Area: ${data.lotArea || "N/A"} sq.m | Floor Area: ${data.floorArea || "N/A"} sq.m | Storeys: ${data.proposedStoreys || "1"}`, {
+  drawText(`Lot Area: ${data.lotArea || "N/A"} sq.m | Floor Area: ${data.floorArea || "N/A"} sq.m | Storeys: ${data.proposedStoreys || "1"}`, {
     x: 60,
     y: curY - 61,
     size: 7.5,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Est. Project Cost: PHP ${data.projectCost || "0.00"} | Scope of Work: ${data.scopeOfWork || "New Construction"}`, {
+  drawText(`Est. Project Cost: PHP ${data.projectCost || "0.00"} | Scope of Work: ${data.scopeOfWork || "New Construction"}`, {
     x: 60,
     y: curY - 71,
     size: 7.5,
@@ -250,7 +266,7 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     borderWidth: 1
   });
 
-  page.drawText("PROJECT TYPE × REQUIRED PERMIT FORM EVALUATION MATRIX", {
+  drawText("PROJECT TYPE x REQUIRED PERMIT FORM EVALUATION MATRIX", {
     x: 60,
     y: curY - 14,
     size: 8,
@@ -266,10 +282,10 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     height: 16,
     color: rgb(0.92, 0.94, 0.98)
   });
-  page.drawText("CODE", { x: 62, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
-  page.drawText("PERMIT / CLEARANCE FORM", { x: 105, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
-  page.drawText("MATRIX STATUS", { x: 330, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
-  page.drawText("APPLICATION STATUS", { x: 440, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
+  drawText("CODE", { x: 62, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
+  drawText("PERMIT / CLEARANCE FORM", { x: 105, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
+  drawText("MATRIX STATUS", { x: 330, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
+  drawText("APPLICATION STATUS", { x: 440, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
 
   const permitKeys = Object.keys(PERMIT_FORM_METADATA) as (keyof PermitFormMatrix)[];
   let rowY = curY - 46;
@@ -279,28 +295,28 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     const matrixLevel = data.projectType.matrix[key];
     const isChecked = data.activePermitForms.includes(key);
 
-    page.drawText(meta.code, { x: 62, y: rowY, size: 7.5, font: fontBold, color: textDark });
-    page.drawText(meta.label, { x: 105, y: rowY, size: 7.5, font: fontRegular, color: textDark });
+    drawText(meta.code, { x: 62, y: rowY, size: 7.5, font: fontBold, color: textDark });
+    drawText(meta.label, { x: 105, y: rowY, size: 7.5, font: fontRegular, color: textDark });
 
     // Matrix status pill
-    let matrixText = "Generally Not Required (—)";
+    let matrixText = "Generally Not Required (-)";
     let matrixColor = textMuted;
     if (matrixLevel === "required") {
-      matrixText = "MANDATORY (✓)";
+      matrixText = "MANDATORY [REQUIRED]";
       matrixColor = primaryColor;
     } else if (matrixLevel === "conditional") {
       matrixText = "CONDITIONAL (C)";
       matrixColor = rgb(0.8, 0.45, 0.05);
     }
-    page.drawText(matrixText, { x: 330, y: rowY, size: 7, font: fontBold, color: matrixColor });
+    drawText(matrixText, { x: 330, y: rowY, size: 7, font: fontBold, color: matrixColor });
 
     // Application checkbox status
     if (key === "zoningPermit") {
-      page.drawText("PASSED & LINKED", { x: 440, y: rowY, size: 7, font: fontBold, color: accentGreen });
+      drawText("PASSED & LINKED", { x: 440, y: rowY, size: 7, font: fontBold, color: accentGreen });
     } else if (isChecked) {
-      page.drawText("[✓] INCLUDED IN DOSSIER", { x: 440, y: rowY, size: 7, font: fontBold, color: primaryColor });
+      drawText("[X] INCLUDED IN DOSSIER", { x: 440, y: rowY, size: 7, font: fontBold, color: primaryColor });
     } else {
-      page.drawText("[  ] Not Selected", { x: 440, y: rowY, size: 7, font: fontRegular, color: textMuted });
+      drawText("[  ] Not Selected", { x: 440, y: rowY, size: 7, font: fontRegular, color: textMuted });
     }
 
     rowY -= 14;
@@ -318,7 +334,7 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     borderWidth: 1
   });
 
-  page.drawText("DESIGN PROFESSIONALS IN CHARGE & ACCREDITATION", {
+  drawText("DESIGN PROFESSIONALS IN CHARGE & ACCREDITATION", {
     x: 60,
     y: curY - 13,
     size: 8,
@@ -326,35 +342,35 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     color: primaryColor
   });
 
-  page.drawText(`Architect: ${data.architectName || "Pending Appointment"} (PRC Reg: ${data.architectPRC || "N/A"})`, {
+  drawText(`Architect: ${data.architectName || "Pending Appointment"} (PRC Reg: ${data.architectPRC || "N/A"})`, {
     x: 60,
     y: curY - 28,
     size: 7.5,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Civil/Structural Engineer: ${data.civilEngineerName || "Pending Appointment"} (PRC Reg: ${data.civilEngineerPRC || "N/A"})`, {
+  drawText(`Civil/Structural Engineer: ${data.civilEngineerName || "Pending Appointment"} (PRC Reg: ${data.civilEngineerPRC || "N/A"})`, {
     x: 60,
     y: curY - 42,
     size: 7.5,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Professional Electrical Engineer: ${data.electricalEngineerName || "Pending Appointment"} (PRC Reg: ${data.electricalEngineerPRC || "N/A"})`, {
+  drawText(`Professional Electrical Engineer: ${data.electricalEngineerName || "Pending Appointment"} (PRC Reg: ${data.electricalEngineerPRC || "N/A"})`, {
     x: 60,
     y: curY - 56,
     size: 7.5,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Master Plumber / Sanitary Engineer: ${data.masterPlumberName || "Pending Appointment"} (PRC Reg: ${data.masterPlumberPRC || "N/A"})`, {
+  drawText(`Master Plumber / Sanitary Engineer: ${data.masterPlumberName || "Pending Appointment"} (PRC Reg: ${data.masterPlumberPRC || "N/A"})`, {
     x: 60,
     y: curY - 70,
     size: 7.5,
     font: fontRegular,
     color: textDark
   });
-  page.drawText(`Mechanical / Electronics Engineer: ${data.mechanicalEngineerName || data.electronicsEngineerName || "N/A"}`, {
+  drawText(`Mechanical / Electronics Engineer: ${data.mechanicalEngineerName || data.electronicsEngineerName || "N/A"}`, {
     x: 60,
     y: curY - 84,
     size: 7.5,
@@ -374,7 +390,7 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     borderWidth: 1
   });
 
-  page.drawText("APPLICANT ATTESTATION & DIGITAL VERIFICATION", {
+  drawText("APPLICANT ATTESTATION & DIGITAL VERIFICATION", {
     x: 60,
     y: curY - 12,
     size: 8,
@@ -382,14 +398,14 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     color: primaryColor
   });
 
-  page.drawText("I hereby certify that all statements made herein are true and correct to the best of my knowledge and belief.", {
+  drawText("I hereby certify that all statements made herein are true and correct to the best of my knowledge and belief.", {
     x: 60,
     y: curY - 24,
     size: 7,
     font: fontRegular,
     color: textDark
   });
-  page.drawText("All construction will conform to the National Building Code of the Philippines (PD 1096) and local ordinances.", {
+  drawText("All construction will conform to the National Building Code of the Philippines (PD 1096) and local ordinances.", {
     x: 60,
     y: curY - 34,
     size: 7,
@@ -403,14 +419,14 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     thickness: 1,
     color: borderLight
   });
-  page.drawText(data.applicantName.toUpperCase(), {
+  drawText(data.applicantName.toUpperCase(), {
     x: 60,
     y: curY - 55,
     size: 8,
     font: fontBold,
     color: textDark
   });
-  page.drawText("Signature of Applicant / Owner", {
+  drawText("Signature of Applicant / Owner", {
     x: 60,
     y: curY - 68,
     size: 6.5,
@@ -428,28 +444,28 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     borderWidth: 1,
     color: fillLight
   });
-  page.drawText("OFFICIAL EVALUATION DESK", {
+  drawText("OFFICIAL EVALUATION DESK", {
     x: width - 215,
     y: curY - 24,
     size: 7.5,
     font: fontBold,
     color: primaryColor
   });
-  page.drawText("Status: RECEIVED FOR EVALUATION", {
+  drawText("Status: RECEIVED FOR EVALUATION", {
     x: width - 215,
     y: curY - 36,
     size: 7,
     font: fontBold,
     color: accentGreen
   });
-  page.drawText(`Date Received: ${appDate}`, {
+  drawText(`Date Received: ${appDate}`, {
     x: width - 215,
     y: curY - 48,
     size: 7,
     font: fontRegular,
     color: textDark
   });
-  page.drawText("Municipal Building Official / Staff", {
+  drawText("Municipal Building Official / Staff", {
     x: width - 215,
     y: curY - 60,
     size: 6.5,
@@ -458,7 +474,7 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
   });
 
   // Footer
-  page.drawText("E-Tayo Unified Permit Portal | Municipality of Sto. Tomas, Pampanga | Generated automatically via NBCP Form 1 Engine", {
+  drawText("E-Tayo Unified Permit Portal | Municipality of Sto. Tomas, Pampanga | Generated automatically via NBCP Form 1 Engine", {
     x: 50,
     y: 20,
     size: 6.5,
