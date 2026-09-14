@@ -53,8 +53,8 @@ const LocationPickerMap = dynamic(() => import("../../../../components/map/Locat
 });
 
 const STEPS = [
-  { id: 1, title: "Project Stage", subtitle: "Clearance Verification", icon: ShieldCheck },
-  { id: 2, title: "Project Type", subtitle: "Municipal Matrix", icon: Building2 },
+  { id: 1, title: "Project Type", subtitle: "Municipal Matrix", icon: Building2 },
+  { id: 2, title: "Locational Clearance", subtitle: "Zoning Prerequisite", icon: ShieldCheck },
   { id: 3, title: "Mapping", subtitle: "GIS & Coordinates", icon: MapPin },
   { id: 4, title: "Review", subtitle: "Final Endorsement", icon: CheckCircle }
 ];
@@ -115,9 +115,11 @@ export default function ApplyPage() {
   const [showGoogleForm, setShowGoogleForm] = useState(false);
   const [lockedNotice, setLockedNotice] = useState<string | null>(null);
   const [selectedClearanceRef, setSelectedClearanceRef] = useState<string | null>(null);
+  const [manualClearanceInput, setManualClearanceInput] = useState("");
+  const [manualClearanceError, setManualClearanceError] = useState("");
   const [applicantName, setApplicantName] = useState("Applicant");
 
-  // Project Type Matrix State (Stage 2)
+  // Project Type Matrix State (Step 1)
   const [selectedProjectType, setSelectedProjectType] = useState<ProjectTypeItem>(PROJECT_TYPES_MATRIX[0]);
   const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | "All">("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -136,13 +138,14 @@ export default function ApplyPage() {
       }
     } catch (e) {}
 
-    // Check if arriving from a specific clearance "Proceed to Stage 2" link (e.g. ?clearanceRef=LC-2026-4157)
+    // Check if arriving from a specific clearance link (e.g. ?clearanceRef=LC-2026-4157)
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get("clearanceRef");
       if (ref) {
         setSelectedClearanceRef(ref);
-        setCurrentStep(2);
+        // Start on Step 1 with clearance already linked
+        setCurrentStep(1);
       }
     }
   }, []);
@@ -174,22 +177,25 @@ export default function ApplyPage() {
     return matchesCategory && matchesQuery;
   });
 
-  // An application only passes Stage 1 if the user actively linked an approved clearance (e.g. via Stage 2 button in track page)
-  const isClearancePassed = Boolean(selectedClearanceRef);
-  const activeClearanceRef = selectedClearanceRef || null;
+  // Check whether the currently selected project type requires / conditionally requires Locational Clearance
+  const isClearanceRequired = selectedProjectType ? selectedProjectType.matrix.zoningPermit !== 'not_required' : true;
+  // Clearance is considered passed if not required by the project type, or if the user actively linked an approved clearance
+  const isClearancePassed = !isClearanceRequired || Boolean(selectedClearanceRef);
+  const activeClearanceRef = selectedClearanceRef || (isClearanceRequired ? null : "EXEMPT");
 
-  // Stage navigation: Stage 1 = Locational Clearance, Stage 2 = Project Type Matrix
-  const [stageOverride, setStageOverride] = useState<1 | 2 | null>(null);
-  const currentStage = stageOverride !== null ? stageOverride : (isClearancePassed ? 2 : 1);
+  // Filter available clearances the user might already have submitted in the system
+  const userClearances = applications.filter(
+    (app) => app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))
+  );
 
-  // Sync selected permit type internally based on active stage
+  // Sync selected permit type internally
   useEffect(() => {
-    if (currentStage === 1) {
+    if (currentStep === 2 && isClearanceRequired && !isClearancePassed) {
       setSelectedPermitType("locational_clearance");
     } else {
       setSelectedPermitType("building_permit");
     }
-  }, [currentStage, setSelectedPermitType]);
+  }, [currentStep, isClearanceRequired, isClearancePassed, setSelectedPermitType]);
 
   const [projectName, setProjectName] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
@@ -284,14 +290,23 @@ export default function ApplyPage() {
   };
 
   if (showGoogleForm) {
-    return <LocationalClearanceGoogleForm onCancel={() => setShowGoogleForm(false)} />;
+    return (
+      <LocationalClearanceGoogleForm 
+        onCancel={() => setShowGoogleForm(false)} 
+        onSuccessWithRef={(newRef) => {
+          setSelectedClearanceRef(newRef);
+          setShowGoogleForm(false);
+          setCurrentStep(3);
+        }}
+      />
+    );
   }
 
   if (showUnifiedForm) {
     return (
       <UnifiedProjectGoogleForm
         projectType={selectedProjectType}
-        locationalClearanceRef={activeClearanceRef || "LC-APPROVED"}
+        locationalClearanceRef={activeClearanceRef || (isClearanceRequired ? "LC-APPROVED" : "EXEMPT")}
         initialApplicantName={applicantName}
         initialApplicantAddress={projectAddress}
         initialProjectName={projectName}
@@ -387,15 +402,20 @@ export default function ApplyPage() {
               const Icon = step.icon;
               const isActive = currentStep === step.id;
               const isPassed = currentStep > step.id;
+              const isExempt = step.id === 2 && !isClearanceRequired;
+              const isClearanceVerified = step.id === 2 && isClearancePassed && isClearanceRequired;
+              
               return (
                 <li 
                   key={step.id} 
                   className={`step-item ${isActive ? "active" : ""} ${isPassed ? "passed" : ""}`}
                   onClick={() => {
-                    if (step.id === 1 || isClearancePassed) {
+                    if (step.id === 1 || step.id === 2) {
+                      setCurrentStep(step.id);
+                    } else if (isClearancePassed) {
                       setCurrentStep(step.id);
                     } else {
-                      setLockedNotice("Mandatory Locational Clearance (Stage 1) must be verified before proceeding to other steps.");
+                      setLockedNotice(`Mandatory Locational Clearance (Annex D) must be verified for ${selectedProjectType.name} before proceeding to ${step.title}.`);
                     }
                   }}
                   style={{ cursor: "pointer" }}
@@ -409,7 +429,13 @@ export default function ApplyPage() {
                   <div className="step-content">
                     <span className="step-title">{step.title}</span>
                     <span className="step-desc" style={{ fontSize: "0.74rem", color: isActive ? "#4f46e5" : "#94a3b8", fontWeight: isActive ? "700" : "500" }}>
-                      {isActive ? "In Progress" : step.subtitle}
+                      {isActive 
+                        ? "In Progress" 
+                        : isExempt 
+                        ? "Exempt" 
+                        : isClearanceVerified 
+                        ? "Verified" 
+                        : step.subtitle}
                     </span>
                   </div>
                 </li>
@@ -433,235 +459,8 @@ export default function ApplyPage() {
         </div>
 
         <div className="wizard-content">
-          {/* STEP 1: PROJECT STAGE */}
+          {/* STEP 1: PROJECT TYPE */}
           {currentStep === 1 && (
-            <div className="step-pane animate-fade-in-up">
-              <div style={{ marginBottom: "1.75rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
-                  <span style={{
-                    fontSize: "0.72rem",
-                    fontWeight: "800",
-                    color: "#4338ca",
-                    background: "#e0e7ff",
-                    padding: "2px 8px",
-                    borderRadius: "6px",
-                    letterSpacing: "0.5px"
-                  }}>
-                    STEP 1 OF 4
-                  </span>
-                  <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
-                    Prerequisite Verification
-                  </span>
-                </div>
-                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
-                  Project Stage
-                </h2>
-                <p style={{ margin: 0, color: "#475569", fontSize: "0.92rem", lineHeight: "1.5" }}>
-                  Under Sto. Tomas Municipal Ordinance, construction permitting requires an approved <strong>Locational Clearance (Annex D)</strong> confirming zoning classification before selecting your specific Project Type.
-                </p>
-              </div>
-
-              {/* LOCKED WARNING NOTIFICATION */}
-              {lockedNotice && (
-                <div className="animate-fade-in-up" style={{
-                  background: "#fffbeb",
-                  border: "1.5px solid #fde68a",
-                  borderRadius: "14px",
-                  padding: "1rem 1.25rem",
-                  marginBottom: "1.5rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.75rem",
-                  color: "#92400e",
-                  boxShadow: "0 4px 12px rgba(217, 119, 6, 0.08)"
-                }}>
-                  <AlertCircle size={20} color="#d97706" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: "0.9rem", fontWeight: "600" }}>{lockedNotice}</span>
-                  <button 
-                    onClick={() => setLockedNotice(null)}
-                    style={{ marginLeft: "auto", background: "none", border: "none", color: "#92400e", cursor: "pointer", fontWeight: "700", fontSize: "1.1rem" }}
-                  >
-                    &times;
-                  </button>
-                </div>
-              )}
-
-              {/* STAGE STATUS / PATHWAY SELECTION */}
-              {isClearancePassed ? (
-                <div>
-                  <div style={{
-                    background: "linear-gradient(135deg, rgba(236, 253, 245, 0.95) 0%, rgba(240, 253, 244, 0.9) 100%)",
-                    border: "1.5px solid #86efac",
-                    borderRadius: "18px",
-                    padding: "1.5rem 1.75rem",
-                    marginBottom: "1.5rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "1.25rem",
-                    boxShadow: "0 10px 30px -5px rgba(34, 197, 94, 0.12), 0 0 0 1px rgba(134, 239, 172, 0.3) inset",
-                    flexWrap: "wrap"
-                  }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "1.25rem", flex: 1, minWidth: "280px" }}>
-                      <div style={{
-                        width: "48px",
-                        height: "48px",
-                        borderRadius: "14px",
-                        background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                        color: "white",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        boxShadow: "0 6px 16px rgba(16, 185, 129, 0.35)"
-                      }}>
-                        <ShieldCheck size={26} strokeWidth={2.2} />
-                      </div>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", marginBottom: "0.3rem" }}>
-                          <span style={{ fontWeight: "800", color: "#065f46", fontSize: "1.1rem", letterSpacing: "-0.01em" }}>
-                            Locational Clearance Linked
-                          </span>
-                          <div style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            background: "#ffffff",
-                            border: "1px solid #a7f3d0",
-                            color: "#047857",
-                            padding: "3px 10px",
-                            borderRadius: "999px",
-                            fontSize: "0.8rem",
-                            fontWeight: "700"
-                          }}>
-                            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981" }}></span>
-                            Ref: {activeClearanceRef || "Verified"}
-                            <button
-                              type="button"
-                              onClick={() => handleCopyRef(activeClearanceRef || "LC-APPROVED")}
-                              title="Copy Clearance Reference ID"
-                              style={{ display: "flex", alignItems: "center", color: "#059669", marginLeft: "2px", cursor: "pointer", background: "none", border: "none", padding: 0 }}
-                            >
-                              {copiedRef ? <Check size={13} color="#059669" /> : <Copy size={13} />}
-                            </button>
-                          </div>
-                        </div>
-                        <p style={{ margin: 0, color: "#166534", fontSize: "0.9rem", lineHeight: "1.45" }}>
-                          This application is linked to approved clearance <strong>{activeClearanceRef}</strong>. You are cleared to proceed to <strong>Step 2: Project Type</strong>.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedClearanceRef(null);
-                        }}
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid #cbd5e1",
-                          color: "#475569",
-                          borderRadius: "10px",
-                          padding: "10px 16px",
-                          fontSize: "0.85rem",
-                          fontWeight: "700",
-                          cursor: "pointer",
-                          transition: "all 0.15s ease"
-                        }}
-                      >
-                        Change / Apply for New Clearance
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setCurrentStep(2)}
-                        style={{
-                          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "10px",
-                          padding: "11px 20px",
-                          fontSize: "0.9rem",
-                          fontWeight: "700",
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)"
-                        }}
-                      >
-                        <span>Proceed to Step 2: Project Type</span>
-                        <ChevronRight size={18} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  {/* LOCATIONAL CLEARANCE APPLICATION CARD */}
-                  <div
-                    style={{
-                      border: "2px solid #3b82f6",
-                      background: "#ffffff",
-                      borderRadius: "18px",
-                      padding: "2rem",
-                      position: "relative",
-                      boxShadow: "0 4px 20px rgba(59, 130, 246, 0.08)",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "1.25rem"
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{
-                        background: "#2563eb",
-                        color: "white",
-                        fontSize: "0.74rem",
-                        fontWeight: "800",
-                        padding: "4px 12px",
-                        borderRadius: "999px",
-                        letterSpacing: "0.5px"
-                      }}>
-                        STAGE 1 · MANDATORY PREREQUISITE
-                      </span>
-                      <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: "700", background: "#f1f5f9", padding: "3px 10px", borderRadius: "6px" }}>
-                        Annex D • MPDO / Zoning Division
-                      </span>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
-                      <div style={{
-                        width: "52px",
-                        height: "52px",
-                        borderRadius: "14px",
-                        background: "#eff6ff",
-                        color: "#2563eb",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        boxShadow: "0 4px 12px rgba(37, 99, 235, 0.15)"
-                      }}>
-                        <FileText size={28} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ margin: "0 0 0.35rem 0", fontWeight: "800", color: "#1e3a8a", fontSize: "1.25rem" }}>
-                          Apply for Locational Clearance
-                        </h3>
-                        <p style={{ margin: 0, fontSize: "0.92rem", color: "#475569", lineHeight: "1.55" }}>
-                          Submit your application for <strong>Locational Clearance (Annex D)</strong> to certify land zoning compliance, Comprehensive Land Use Plan (CLUP) alignment, and municipal boundary setbacks with the Sto. Tomas Zoning Administration.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* STEP 2: PROJECT TYPE */}
-          {currentStep === 2 && (
             <div className="step-pane animate-fade-in-up">
               <div style={{ marginBottom: "1.5rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
@@ -674,7 +473,7 @@ export default function ApplyPage() {
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
-                    STEP 2 OF 4
+                    STEP 1 OF 4
                   </span>
                   <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
                     Municipal Project Matrix
@@ -703,6 +502,15 @@ export default function ApplyPage() {
                       <span style={{ fontSize: "0.84rem", color: "#166534", fontWeight: "700" }}>
                         Selected: <strong>{selectedProjectType.name}</strong>
                       </span>
+                      {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
+                        <span style={{ fontSize: "0.72rem", background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                          Zoning Clearance Required
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: "0.72rem", background: "#f1f5f9", color: "#475569", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                          Zoning Exempt
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -811,7 +619,7 @@ export default function ApplyPage() {
                 </span>
               </div>
 
-              {/* 31 PROJECT TYPES GRID (SCROLLABLE) */}
+              {/* 31 PROJECT TYPES GRID */}
               <div 
                 className="project-cards-container"
                 style={{
@@ -831,6 +639,7 @@ export default function ApplyPage() {
                   const condCount = getConditionalPermitForms(p).length;
                   const theme = CATEGORY_THEMES[p.category] || CATEGORY_THEMES.Commercial;
                   const CatIcon = theme.icon;
+                  const requiresClearance = p.matrix.zoningPermit !== 'not_required';
 
                   return (
                     <div
@@ -901,6 +710,19 @@ export default function ApplyPage() {
                               {condCount} Conditional
                             </span>
                           )}
+                          {p.matrix.zoningPermit === 'required' ? (
+                            <span style={{ background: "#ede9fe", color: "#6d28d9", padding: "3px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                              <ShieldCheck size={12} /> LC Required
+                            </span>
+                          ) : p.matrix.zoningPermit === 'conditional' ? (
+                            <span style={{ background: "#fffbeb", color: "#b45309", padding: "3px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                              <ShieldCheck size={12} /> LC Conditional
+                            </span>
+                          ) : (
+                            <span style={{ background: "#f1f5f9", color: "#64748b", padding: "3px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                              <CheckCircle size={12} /> LC Exempt
+                            </span>
+                          )}
                         </div>
 
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
@@ -937,7 +759,11 @@ export default function ApplyPage() {
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedProjectType(p);
-                              setCurrentStep(3);
+                              if (requiresClearance && !selectedClearanceRef) {
+                                setCurrentStep(2);
+                              } else {
+                                setCurrentStep(3);
+                              }
                             }}
                             style={{
                               background: isSelected ? "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" : "#f1f5f9",
@@ -954,7 +780,7 @@ export default function ApplyPage() {
                               boxShadow: isSelected ? "0 2px 8px rgba(79, 70, 229, 0.28)" : "none",
                               transition: "all 0.15s ease"
                             }}
-                            title="Select this Project Type and proceed to Mapping"
+                            title="Select this Project Type and proceed"
                           >
                             <span>{isSelected ? "Selected" : "Select"}</span>
                             <ChevronRight size={13} />
@@ -965,6 +791,486 @@ export default function ApplyPage() {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* STEP 2: LOCATIONAL CLEARANCE */}
+          {currentStep === 2 && (
+            <div className="step-pane animate-fade-in-up">
+              <div style={{ marginBottom: "1.75rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+                  <span style={{
+                    fontSize: "0.72rem",
+                    fontWeight: "800",
+                    color: "#4338ca",
+                    background: "#e0e7ff",
+                    padding: "2px 8px",
+                    borderRadius: "6px",
+                    letterSpacing: "0.5px"
+                  }}>
+                    STEP 2 OF 4
+                  </span>
+                  <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
+                    Prerequisite Verification
+                  </span>
+                </div>
+                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
+                  Locational Clearance (Annex D)
+                </h2>
+                <p style={{ margin: 0, color: "#475569", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                  {isClearanceRequired ? (
+                    <>
+                      Under Sto. Tomas Municipal Permitting Matrix, construction permitting for <strong>{selectedProjectType.name}</strong> requires an approved <strong>Locational Clearance (Annex D)</strong> confirming zoning classification before selecting mapping and technical permit requirements.
+                    </>
+                  ) : (
+                    <>
+                      Under Sto. Tomas Municipal Ordinance, <strong>{selectedProjectType.name}</strong> is exempt from zoning and locational clearance requirements.
+                    </>
+                  )}
+                </p>
+              </div>
+
+              {/* LOCKED WARNING NOTIFICATION */}
+              {lockedNotice && (
+                <div className="animate-fade-in-up" style={{
+                  background: "#fffbeb",
+                  border: "1.5px solid #fde68a",
+                  borderRadius: "14px",
+                  padding: "1rem 1.25rem",
+                  marginBottom: "1.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  color: "#92400e",
+                  boxShadow: "0 4px 12px rgba(217, 119, 6, 0.08)"
+                }}>
+                  <AlertCircle size={20} color="#d97706" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: "0.9rem", fontWeight: "600" }}>{lockedNotice}</span>
+                  <button 
+                    onClick={() => setLockedNotice(null)}
+                    style={{ marginLeft: "auto", background: "none", border: "none", color: "#92400e", cursor: "pointer", fontWeight: "700", fontSize: "1.1rem" }}
+                  >
+                    &times;
+                  </button>
+                </div>
+              )}
+
+              {/* CASE 1: EXEMPT FROM CLEARANCE */}
+              {!isClearanceRequired ? (
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(239, 246, 255, 0.95) 0%, rgba(240, 253, 250, 0.9) 100%)",
+                  border: "1.5px solid #93c5fd",
+                  borderRadius: "18px",
+                  padding: "1.75rem 2rem",
+                  boxShadow: "0 4px 20px rgba(59, 130, 246, 0.06)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "1.5rem",
+                  flexWrap: "wrap"
+                }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "1.25rem", flex: 1, minWidth: "280px" }}>
+                    <div style={{
+                      width: "50px",
+                      height: "50px",
+                      borderRadius: "14px",
+                      background: "#2563eb",
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      boxShadow: "0 6px 16px rgba(37, 99, 235, 0.25)"
+                    }}>
+                      <CheckCircle2 size={26} />
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.35rem" }}>
+                        <h3 style={{ margin: 0, fontWeight: "800", color: "#1e3a8a", fontSize: "1.2rem" }}>
+                          Locational Clearance Exempt
+                        </h3>
+                        <span style={{
+                          background: "#dbeafe",
+                          color: "#1e40af",
+                          fontSize: "0.75rem",
+                          fontWeight: "800",
+                          padding: "2px 8px",
+                          borderRadius: "999px"
+                        }}>
+                          PD 1096 Exemption
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, color: "#334155", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                        <strong>{selectedProjectType.name}</strong> ({selectedProjectType.category}) does not require zoning or locational clearance under the Santo Tomas permitting matrix. You can proceed directly to <strong>Step 3: Mapping</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(3)}
+                    style={{
+                      background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "11px 22px",
+                      fontSize: "0.92rem",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)"
+                    }}
+                  >
+                    <span>Proceed to Step 3: Mapping</span>
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              ) : isClearancePassed ? (
+                /* CASE 2: CLEARANCE PASSED / LINKED */
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(236, 253, 245, 0.95) 0%, rgba(240, 253, 244, 0.9) 100%)",
+                  border: "1.5px solid #86efac",
+                  borderRadius: "18px",
+                  padding: "1.5rem 1.75rem",
+                  marginBottom: "1.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "1.25rem",
+                  boxShadow: "0 10px 30px -5px rgba(34, 197, 94, 0.12), 0 0 0 1px rgba(134, 239, 172, 0.3) inset",
+                  flexWrap: "wrap"
+                }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "1.25rem", flex: 1, minWidth: "280px" }}>
+                    <div style={{
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "14px",
+                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      boxShadow: "0 6px 16px rgba(16, 185, 129, 0.35)"
+                    }}>
+                      <ShieldCheck size={26} strokeWidth={2.2} />
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", marginBottom: "0.3rem" }}>
+                        <span style={{ fontWeight: "800", color: "#065f46", fontSize: "1.1rem", letterSpacing: "-0.01em" }}>
+                          Locational Clearance Verified & Passed
+                        </span>
+                        <div style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          background: "#ffffff",
+                          border: "1px solid #a7f3d0",
+                          color: "#047857",
+                          padding: "3px 10px",
+                          borderRadius: "999px",
+                          fontSize: "0.8rem",
+                          fontWeight: "700"
+                        }}>
+                          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981" }}></span>
+                          Ref: {activeClearanceRef || "Verified"}
+                          <button
+                            type="button"
+                            onClick={() => handleCopyRef(activeClearanceRef || "LC-APPROVED")}
+                            title="Copy Clearance Reference ID"
+                            style={{ display: "flex", alignItems: "center", color: "#059669", marginLeft: "2px", cursor: "pointer", background: "none", border: "none", padding: 0 }}
+                          >
+                            {copiedRef ? <Check size={13} color="#059669" /> : <Copy size={13} />}
+                          </button>
+                        </div>
+                      </div>
+                      <p style={{ margin: 0, color: "#166534", fontSize: "0.9rem", lineHeight: "1.45" }}>
+                        Your project <strong>{selectedProjectType.name}</strong> is linked to approved clearance <strong>{activeClearanceRef}</strong>. You are cleared to proceed to <strong>Step 3: Mapping</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedClearanceRef(null);
+                      }}
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid #cbd5e1",
+                        color: "#475569",
+                        borderRadius: "10px",
+                        padding: "10px 16px",
+                        fontSize: "0.85rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      Change / Unlink Clearance
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(3)}
+                      style={{
+                        background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "10px",
+                        padding: "11px 20px",
+                        fontSize: "0.9rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)"
+                      }}
+                    >
+                      <span>Proceed to Step 3: Mapping</span>
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* CASE 3: CLEARANCE REQUIRED BUT NOT YET PASSED */
+                <div>
+                  <div style={{
+                    border: "1.5px solid #fde68a",
+                    background: "#fffdf5",
+                    borderRadius: "16px",
+                    padding: "1.25rem 1.5rem",
+                    marginBottom: "1.75rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1rem"
+                  }}>
+                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <AlertCircle size={24} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: "800", color: "#92400e", fontSize: "0.95rem", marginBottom: "2px" }}>
+                        STAGE PREREQUISITE REQUIRED FOR {selectedProjectType.name.toUpperCase()}
+                      </div>
+                      <p style={{ margin: 0, fontSize: "0.86rem", color: "#78350f", lineHeight: "1.4" }}>
+                        You must pass Locational Clearance (Annex D) before unlocking site mapping and engineering permit requirements. You can apply now or link an existing clearance.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem" }}>
+                    {/* OPTION 1: FILL FORM ONLINE */}
+                    <div style={{
+                      border: "2px solid #6366f1",
+                      background: "#ffffff",
+                      borderRadius: "18px",
+                      padding: "1.75rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      boxShadow: "0 4px 18px rgba(99, 102, 241, 0.08)"
+                    }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                          <span style={{ background: "#4f46e5", color: "white", fontSize: "0.72rem", fontWeight: "800", padding: "3px 10px", borderRadius: "999px" }}>
+                            PATHWAY A · APPLY NOW
+                          </span>
+                          <span style={{ fontSize: "0.76rem", color: "#64748b", fontWeight: "700" }}>
+                            Annex D • MPDO / Zoning
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1rem" }}>
+                          <div style={{ width: "46px", height: "46px", borderRadius: "12px", background: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <FileText size={24} />
+                          </div>
+                          <div>
+                            <h3 style={{ margin: "0 0 0.35rem 0", fontSize: "1.15rem", fontWeight: "800", color: "#1e1b4b" }}>
+                              Apply for Locational Clearance
+                            </h3>
+                            <p style={{ margin: 0, fontSize: "0.88rem", color: "#475569", lineHeight: "1.5" }}>
+                              Complete the official Annex D Project Evaluation questionnaire online. Generates your signed municipal clearance dossier for zoning evaluation.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowGoogleForm(true)}
+                        style={{
+                          background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "10px",
+                          padding: "12px 20px",
+                          fontSize: "0.9rem",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          boxShadow: "0 4px 14px rgba(79, 70, 229, 0.28)",
+                          marginTop: "1rem"
+                        }}
+                      >
+                        <FileText size={18} />
+                        <span>Fill Locational Clearance Form (Annex D)</span>
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+
+                    {/* OPTION 2: LINK EXISTING CLEARANCE */}
+                    <div style={{
+                      border: "1.5px solid #cbd5e1",
+                      background: "#ffffff",
+                      borderRadius: "18px",
+                      padding: "1.75rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      boxShadow: "0 4px 16px rgba(0, 0, 0, 0.03)"
+                    }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                          <span style={{ background: "#059669", color: "white", fontSize: "0.72rem", fontWeight: "800", padding: "3px 10px", borderRadius: "999px" }}>
+                            PATHWAY B · ALREADY APPLIED?
+                          </span>
+                          <span style={{ fontSize: "0.76rem", color: "#64748b", fontWeight: "700" }}>
+                            Instant Verification
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem", marginBottom: "1rem" }}>
+                          <div style={{ width: "46px", height: "46px", borderRadius: "12px", background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <ShieldCheck size={24} />
+                          </div>
+                          <div>
+                            <h3 style={{ margin: "0 0 0.35rem 0", fontSize: "1.15rem", fontWeight: "800", color: "#064e3b" }}>
+                              Link Existing Clearance
+                            </h3>
+                            <p style={{ margin: 0, fontSize: "0.88rem", color: "#475569", lineHeight: "1.5" }}>
+                              If you already possess an approved Locational Clearance reference number, enter or select it to unlock subsequent steps.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Existing User Clearances (if any) */}
+                        {userClearances.length > 0 && (
+                          <div style={{ marginBottom: "1rem" }}>
+                            <label style={{ fontSize: "0.78rem", fontWeight: "700", color: "#475569", display: "block", marginBottom: "6px" }}>
+                              Your Existing Clearance Applications:
+                            </label>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "120px", overflowY: "auto" }}>
+                              {userClearances.map((c) => (
+                                <button
+                                  key={c.id}
+                                  type="button"
+                                  onClick={() => setSelectedClearanceRef(c.id)}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "8px 12px",
+                                    borderRadius: "8px",
+                                    border: "1px solid #a7f3d0",
+                                    background: "#f0fdf4",
+                                    color: "#065f46",
+                                    fontSize: "0.82rem",
+                                    fontWeight: "700",
+                                    cursor: "pointer",
+                                    textAlign: "left"
+                                  }}
+                                >
+                                  <span>{c.id} ({c.status || "Approved"})</span>
+                                  <span style={{ fontSize: "0.75rem", color: "#059669" }}>Link & Continue →</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Manual Reference Input */}
+                        <div style={{ display: "flex", gap: "8px", marginTop: "0.5rem" }}>
+                          <input
+                            type="text"
+                            placeholder="Enter Ref (e.g. LC-2026-4157)"
+                            value={manualClearanceInput}
+                            onChange={(e) => {
+                              setManualClearanceInput(e.target.value);
+                              setManualClearanceError("");
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: "9px 12px",
+                              borderRadius: "8px",
+                              border: "1.5px solid #cbd5e1",
+                              fontSize: "0.85rem",
+                              outline: "none"
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (manualClearanceInput.trim()) {
+                                setSelectedClearanceRef(manualClearanceInput.trim());
+                                setManualClearanceInput("");
+                              } else {
+                                setManualClearanceError("Please enter a valid clearance reference.");
+                              }
+                            }}
+                            style={{
+                              background: "#059669",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "8px",
+                              padding: "9px 14px",
+                              fontSize: "0.82rem",
+                              fontWeight: "700",
+                              cursor: "pointer"
+                            }}
+                          >
+                            Verify & Link
+                          </button>
+                        </div>
+                        {manualClearanceError && (
+                          <div style={{ color: "#dc2626", fontSize: "0.75rem", marginTop: "4px" }}>
+                            {manualClearanceError}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Demo Quick Pass */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedClearanceRef(`LC-2026-${Math.floor(1000 + Math.random() * 9000)}`)}
+                        style={{
+                          background: "#f8fafc",
+                          border: "1px dashed #94a3b8",
+                          color: "#475569",
+                          borderRadius: "8px",
+                          padding: "8px 12px",
+                          fontSize: "0.78rem",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          marginTop: "1rem",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        <Sparkles size={14} color="#6366f1" />
+                        <span>Demo Quick-Verify (Simulate Approved Clearance)</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1094,25 +1400,28 @@ export default function ApplyPage() {
 
               <div className="review-summary" style={{ background: "#ffffff", padding: "2rem", borderRadius: "18px", border: "1.5px solid #e2e8f0", boxShadow: "0 4px 15px rgba(0,0,0,0.03)" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "1.5rem" }}>
-                  {/* Stage 1 Summary Card */}
-                  <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "14px", padding: "1.1rem" }}>
-                    <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#166534", textTransform: "uppercase" }}>1. Project Stage</span>
-                    <h4 style={{ margin: "0.4rem 0 0.2rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>Locational Clearance</h4>
-                    <span style={{ fontSize: "0.84rem", color: "#15803d", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                      <CheckCircle2 size={15} color="#16a34a" /> Passed ({activeClearanceRef || "LC-VERIFIED"})
-                    </span>
-                  </div>
-
-                  {/* Stage 2 Summary Card */}
+                  {/* Step 1 Summary Card: Project Type */}
                   <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "14px", padding: "1.1rem" }}>
-                    <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#1e40af", textTransform: "uppercase" }}>2. Project Type</span>
+                    <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#1e40af", textTransform: "uppercase" }}>1. Project Type</span>
                     <h4 style={{ margin: "0.4rem 0 0.2rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>{selectedProjectType?.name}</h4>
                     <span style={{ fontSize: "0.84rem", color: "#2563eb", fontWeight: "600" }}>
                       {selectedProjectType?.category} • {getRequiredPermitForms(selectedProjectType).length} Mandatory Forms
                     </span>
                   </div>
 
-                  {/* Stage 3 Summary Card */}
+                  {/* Step 2 Summary Card: Locational Clearance */}
+                  <div style={{ background: isClearancePassed ? "#f0fdf4" : "#fffbeb", border: isClearancePassed ? "1px solid #bbf7d0" : "1px solid #fde68a", borderRadius: "14px", padding: "1.1rem" }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: "800", color: isClearancePassed ? "#166534" : "#92400e", textTransform: "uppercase" }}>2. Locational Clearance</span>
+                    <h4 style={{ margin: "0.4rem 0 0.2rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>
+                      {!isClearanceRequired ? "Zoning Exempt" : "Annex D Clearance"}
+                    </h4>
+                    <span style={{ fontSize: "0.84rem", color: isClearancePassed ? "#15803d" : "#b45309", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      <CheckCircle2 size={15} color={isClearancePassed ? "#16a34a" : "#d97706"} />
+                      {!isClearanceRequired ? "Exempt / Not Required" : (isClearancePassed ? `Passed (${activeClearanceRef || "LC-VERIFIED"})` : "Verification Pending")}
+                    </span>
+                  </div>
+
+                  {/* Step 3 Summary Card: Mapping */}
                   <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "1.1rem" }}>
                     <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#475569", textTransform: "uppercase" }}>3. Mapping</span>
                     <h4 style={{ margin: "0.4rem 0 0.2rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>{projectName || "Untitled Project"}</h4>
@@ -1155,45 +1464,16 @@ export default function ApplyPage() {
             <div className="flex-spacer"></div>
 
             {currentStep === 1 ? (
-              isClearancePassed ? (
+              isClearanceRequired && !isClearancePassed ? (
                 <button 
                   className="btn-primary" 
                   onClick={() => setCurrentStep(2)}
                   style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
                 >
-                  <span>Next: Project Type</span>
+                  <span>Next: Locational Clearance</span>
                   <ChevronRight size={18} />
                 </button>
               ) : (
-                <button 
-                  className="btn-primary" 
-                  onClick={() => setShowGoogleForm(true)} 
-                  style={{ background: "#673ab7", borderColor: "#5e35b1", display: "flex", alignItems: "center", gap: "8px" }}
-                >
-                  <FileText size={18} /> Fill Locational Clearance Form (Annex D) <ChevronRight size={18} />
-                </button>
-              )
-            ) : currentStep === 2 ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-                <button 
-                  type="button"
-                  onClick={() => setShowUnifiedForm(true)} 
-                  style={{
-                    background: "#ffffff",
-                    border: "1.5px solid #c7d2fe",
-                    color: "#4338ca",
-                    padding: "9px 18px",
-                    borderRadius: "10px",
-                    fontWeight: "700",
-                    fontSize: "0.88rem",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px"
-                  }}
-                >
-                  <FileText size={16} /> Open Unified Form (Google Form Style)
-                </button>
                 <button 
                   className="btn-primary" 
                   onClick={() => setCurrentStep(3)}
@@ -1202,7 +1482,26 @@ export default function ApplyPage() {
                   <span>Next: Mapping</span>
                   <ChevronRight size={18} />
                 </button>
-              </div>
+              )
+            ) : currentStep === 2 ? (
+              isClearancePassed ? (
+                <button 
+                  className="btn-primary" 
+                  onClick={() => setCurrentStep(3)}
+                  style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                >
+                  <span>Next: Mapping</span>
+                  <ChevronRight size={18} />
+                </button>
+              ) : (
+                <button 
+                  className="btn-primary" 
+                  onClick={() => setShowGoogleForm(true)} 
+                  style={{ background: "#673ab7", borderColor: "#5e35b1", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                >
+                  <FileText size={18} /> Fill Locational Clearance Form (Annex D) <ChevronRight size={18} />
+                </button>
+              )
             ) : currentStep === 3 ? (
               <button 
                 className="btn-primary" 

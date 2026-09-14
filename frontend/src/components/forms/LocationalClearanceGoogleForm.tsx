@@ -19,7 +19,13 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?: () => void }) {
+export default function LocationalClearanceGoogleForm({ 
+  onCancel,
+  onSuccessWithRef 
+}: { 
+  onCancel?: () => void;
+  onSuccessWithRef?: (ref: string) => void;
+}) {
   const router = useRouter();
   const { addApplication } = usePermitContext();
 
@@ -332,14 +338,31 @@ export default function LocationalClearanceGoogleForm({ onCancel }: { onCancel?:
               </p>
 
               <div className="gf-btn-row">
+                {onSuccessWithRef && (
+                  <button
+                    type="button"
+                    onClick={() => onSuccessWithRef(submittedAppId)}
+                    className="gf-btn-primary"
+                    style={{
+                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      color: "white",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)"
+                    }}
+                  >
+                    <CheckCircle2 size={18} /> Continue Permit Application with this Clearance
+                  </button>
+                )}
                 {generatedPdfUrl && (
                   <a
                     href={generatedPdfUrl}
                     download={`ANNEX_D_TEMPLATE_${applicantName.replace(/\s+/g, "_")}.pdf`}
-                    className="gf-btn-primary"
+                    className="gf-btn-secondary"
                     style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "8px" }}
                   >
-                    <Download size={18} /> Download Generated Annex D PDF
+                    <Download size={18} /> Download Annex D PDF
                   </a>
                 )}
                 <button

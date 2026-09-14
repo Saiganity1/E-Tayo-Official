@@ -777,7 +777,7 @@ export default function ApplicationStatusPage() {
                             gap: "4px"
                           }}
                         >
-                          Proceed to Stage 2 <ArrowRight size={13} />
+                          Apply with Clearance <ArrowRight size={13} />
                         </Link>
                       )}
 

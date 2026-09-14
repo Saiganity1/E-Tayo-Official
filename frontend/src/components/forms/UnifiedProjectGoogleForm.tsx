@@ -158,7 +158,14 @@ export default function UnifiedProjectGoogleForm({
         })),
         trackingSteps: [
           { title: "Unified Application Filed", status: "completed", date: submissionDate, notes: "Automated NBCP Form 1 dossier compiled and sent to Building Official." },
-          { title: "Zoning Prerequisite Checked", status: "completed", date: submissionDate, notes: `Approved under Locational Clearance ${locationalClearanceRef}.` },
+          { 
+            title: "Zoning Prerequisite Checked", 
+            status: "completed", 
+            date: submissionDate, 
+            notes: locationalClearanceRef === "EXEMPT" || locationalClearanceRef === "NOT_REQUIRED"
+              ? "Project type is exempt from zoning/locational clearance under municipal code."
+              : `Approved under Locational Clearance ${locationalClearanceRef}.` 
+          },
           { title: "Engineering & Safety Evaluation", status: "upcoming", notes: "Review by Municipal Building Official, Mechanical, Electrical, and BFP teams." }
         ],
         historyLog: [
@@ -168,28 +175,22 @@ export default function UnifiedProjectGoogleForm({
 
       onSubmitSuccess(newApplication);
     } catch (err: any) {
-      console.error("Submission failed:", err);
-      setSubmitError(err.message || "An unexpected error occurred while generating the permit form.");
+      setSubmitError(err?.message || "An error occurred while generating official permits. Please try again.");
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: "880px", margin: "0 auto", paddingBottom: "4rem" }}>
-      {/* GOOGLE FORM TOP BANNER */}
-      <div style={{
-        background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-        borderRadius: "16px 16px 0 0",
-        height: "12px",
-        width: "100%"
-      }} />
-
+    <div className="unified-form-wrapper animate-fade-in-up" style={{ maxWidth: "860px", margin: "0 auto", padding: "1.5rem 1rem 4rem" }}>
       {/* HEADER CARD */}
       <div style={{
         background: "#ffffff",
+        borderTop: "10px solid #4f46e5",
         border: "1px solid #e2e8f0",
-        borderTop: "none",
-        borderRadius: "0 0 16px 16px",
+        borderTopWidth: "10px",
+        borderTopColor: "#4f46e5",
+        borderRadius: "16px",
         padding: "2rem",
         marginBottom: "1.5rem",
         boxShadow: "0 4px 20px rgba(0,0,0,0.04)"
@@ -198,7 +199,9 @@ export default function UnifiedProjectGoogleForm({
           <div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", padding: "4px 12px", borderRadius: "999px", fontSize: "0.8rem", fontWeight: "700", marginBottom: "0.75rem" }}>
               <ShieldCheck size={16} color="#059669" />
-              Stage 1 Passed: {locationalClearanceRef}
+              {locationalClearanceRef === "EXEMPT" || locationalClearanceRef === "NOT_REQUIRED"
+                ? "Locational Clearance: Exempt / Not Required"
+                : `Locational Clearance Passed: ${locationalClearanceRef}`}
             </div>
             <h1 style={{ fontSize: "1.6rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.5rem 0" }}>
               Unified Permit Application: {projectType.name}
