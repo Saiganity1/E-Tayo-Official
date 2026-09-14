@@ -29,16 +29,60 @@ export interface ProjectTypeItem {
   estimatedDays: string;
 }
 
-export const PERMIT_FORM_METADATA: Record<keyof PermitFormMatrix, { label: string; code: string; desc: string }> = {
-  buildingPermit: { label: 'Building Permit', code: 'BP', desc: 'Unified NBCP Form 1 - General construction permit' },
-  architecturalPermit: { label: 'Architectural Permit', code: 'AP', desc: 'Architectural plans, elevations, and spatial layout' },
-  civilStructuralPermit: { label: 'Civil/Structural Permit', code: 'SP', desc: 'Structural calculations, foundation, and framing' },
-  electricalPermit: { label: 'Electrical Permit', code: 'EP', desc: 'Wiring diagrams, load computations, single-line diagram' },
-  sanitaryPermit: { label: 'Sanitary Permit', code: 'PL', desc: 'Plumbing layouts, septic tank design, wastewater system' },
-  mechanicalPermit: { label: 'Mechanical Permit', code: 'MP', desc: 'HVAC, machinery, ventilation, and pressure vessels' },
-  electronicsPermit: { label: 'Electronics Permit', code: 'EL', desc: 'Telecom, CCTV, fire alarms, network infrastructure' },
-  fireBfpPermit: { label: 'Fire / BFP Clearance', code: 'FSEC', desc: 'Fire safety evaluation clearance & egress standards' },
-  zoningPermit: { label: 'Zoning (Locational Clearance)', code: 'LC', desc: 'Zoning & land use compliance (Stage 1 prerequisite)' }
+export const PERMIT_FORM_METADATA: Record<keyof PermitFormMatrix, { label: string; code: string; desc: string; templateFile?: string }> = {
+  buildingPermit: { 
+    label: 'Building Permit', 
+    code: 'BP', 
+    desc: 'Unified NBCP Form 1 - General construction permit',
+    templateFile: '/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf'
+  },
+  architecturalPermit: { 
+    label: 'Architectural Permit', 
+    code: 'AP', 
+    desc: 'Architectural plans, elevations, and spatial layout',
+    templateFile: '/templates/ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf'
+  },
+  civilStructuralPermit: { 
+    label: 'Civil/Structural Permit', 
+    code: 'SP', 
+    desc: 'Structural calculations, foundation, and framing',
+    templateFile: '/templates/Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf'
+  },
+  electricalPermit: { 
+    label: 'Electrical Permit', 
+    code: 'EP', 
+    desc: 'Wiring diagrams, load computations, single-line diagram',
+    templateFile: '/templates/ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf'
+  },
+  sanitaryPermit: { 
+    label: 'Sanitary Permit', 
+    code: 'PL', 
+    desc: 'Plumbing layouts, septic tank design, wastewater system',
+    templateFile: '/templates/SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf'
+  },
+  mechanicalPermit: { 
+    label: 'Mechanical Permit', 
+    code: 'MP', 
+    desc: 'HVAC, machinery, ventilation, and pressure vessels',
+    templateFile: '/templates/MECHANICAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf'
+  },
+  electronicsPermit: { 
+    label: 'Electronics Permit', 
+    code: 'EL', 
+    desc: 'Telecom, CCTV, fire alarms, network infrastructure',
+    templateFile: '/templates/ELECTRONICS-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf'
+  },
+  fireBfpPermit: { 
+    label: 'Fire / BFP Clearance', 
+    code: 'FSEC', 
+    desc: 'Fire safety evaluation clearance & egress standards' 
+  },
+  zoningPermit: { 
+    label: 'Zoning (Locational Clearance)', 
+    code: 'LC', 
+    desc: 'Zoning & land use compliance (Stage 1 prerequisite)',
+    templateFile: '/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf'
+  }
 };
 
 export const PROJECT_TYPES_MATRIX: ProjectTypeItem[] = [
@@ -624,3 +668,143 @@ export function getConditionalPermitForms(projectType: ProjectTypeItem): (keyof 
     (key) => projectType.matrix[key] === 'conditional'
   );
 }
+
+export interface OfficialTemplateFile {
+  name: string;
+  category: string;
+  code: string;
+  filename: string;
+  path: string;
+  description: string;
+}
+
+export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
+  {
+    name: "Unified Application Form for Building Permit",
+    category: "Primary Permit",
+    code: "BP",
+    filename: "UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
+    path: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
+    description: "Official unified application form for building permit (NBCP Form 1)"
+  },
+  {
+    name: "Locational Clearance (Annex D)",
+    category: "Zoning & Land Use",
+    code: "LC",
+    filename: "LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
+    path: "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
+    description: "Official Annex D Locational Clearance application form"
+  },
+  {
+    name: "Architectural Permit",
+    category: "Ancillary Permit",
+    code: "AP",
+    filename: "ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    path: "/templates/ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    description: "Official Architectural Permit application form"
+  },
+  {
+    name: "Civil / Structural Permit",
+    category: "Ancillary Permit",
+    code: "SP",
+    filename: "Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf",
+    path: "/templates/Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf",
+    description: "Official Civil and Structural Permit application form"
+  },
+  {
+    name: "Electrical Permit",
+    category: "Ancillary Permit",
+    code: "EP",
+    filename: "ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf",
+    path: "/templates/ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf",
+    description: "Official Electrical Permit application form"
+  },
+  {
+    name: "Sanitary / Plumbing Permit",
+    category: "Ancillary Permit",
+    code: "PL",
+    filename: "SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf",
+    path: "/templates/SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf",
+    description: "Official Sanitary and Plumbing Permit application form"
+  },
+  {
+    name: "Mechanical Permit",
+    category: "Ancillary Permit",
+    code: "MP",
+    filename: "MECHANICAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    path: "/templates/MECHANICAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    description: "Official Mechanical Permit application form"
+  },
+  {
+    name: "Electronics Permit",
+    category: "Ancillary Permit",
+    code: "EL",
+    filename: "ELECTRONICS-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    path: "/templates/ELECTRONICS-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    description: "Official Electronics Permit application form"
+  },
+  {
+    name: "Demolition Permit",
+    category: "Special Permit",
+    code: "DP",
+    filename: "DEMOLITION-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    path: "/templates/DEMOLITION-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    description: "Official Demolition Permit application form"
+  },
+  {
+    name: "Fencing Permit",
+    category: "Special Permit",
+    code: "FP",
+    filename: "FENCING-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    path: "/templates/FENCING-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    description: "Official Fencing Permit application form"
+  },
+  {
+    name: "Excavation and Ground Preparation Permit",
+    category: "Special Permit",
+    code: "EXP",
+    filename: "EXCAVATION-AND-GROUND-PREPARATION-PERMIT-Gilbert-Cruz.pdf",
+    path: "/templates/EXCAVATION-AND-GROUND-PREPARATION-PERMIT-Gilbert-Cruz.pdf",
+    description: "Official Excavation and Ground Preparation Permit form"
+  },
+  {
+    name: "Sign Permit",
+    category: "Special Permit",
+    code: "SGP",
+    filename: "SIGN-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    path: "/templates/SIGN-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+    description: "Official Sign and Billboard Permit application form"
+  },
+  {
+    name: "Permit for Temporary Service Connection",
+    category: "Utilities & Services",
+    code: "TSC",
+    filename: "PERMIT-FOR-TEMPORARY-SERVICE-CONNECTION-Gilbert-Cruz.pdf",
+    path: "/templates/PERMIT-FOR-TEMPORARY-SERVICE-CONNECTION-Gilbert-Cruz.pdf",
+    description: "Official Temporary Service Connection permit form"
+  },
+  {
+    name: "Certificate of Occupancy Unified Form",
+    category: "Completion & Occupancy",
+    code: "CO",
+    filename: "UNIFIED-APPLICATION-FORM-FOR-CERTIFICATE-OF-OCCUPANCY-Sto-Tomas.pdf",
+    path: "/templates/UNIFIED-APPLICATION-FORM-FOR-CERTIFICATE-OF-OCCUPANCY-Sto-Tomas.pdf",
+    description: "Unified application form for Certificate of Occupancy"
+  },
+  {
+    name: "Certificate of Completion",
+    category: "Completion & Occupancy",
+    code: "CC",
+    filename: "CERTIFICATE-OF-COMPLETION-Sto-Tomas-Header-Bold.pdf",
+    path: "/templates/CERTIFICATE-OF-COMPLETION-Sto-Tomas-Header-Bold.pdf",
+    description: "Official Certificate of Completion form"
+  },
+  {
+    name: "Certificate of Final Electrical Inspection (CFEI)",
+    category: "Completion & Occupancy",
+    code: "CFEI",
+    filename: "CERTIFICATE-OF-FINAL-ELECTRICAL-INSPECTION-Gilbert-Cruz.pdf",
+    path: "/templates/CERTIFICATE-OF-FINAL-ELECTRICAL-INSPECTION-Gilbert-Cruz.pdf",
+    description: "Official Certificate of Final Electrical Inspection form"
+  }
+];

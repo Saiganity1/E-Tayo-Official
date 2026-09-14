@@ -8,7 +8,7 @@ import {
   Lock, ShieldCheck, AlertCircle, Check, Layers, Search, Sparkles, 
   Home, Building2, Factory, Landmark, Wrench, Zap, Clock, Copy, 
   ArrowRight, CheckCircle2, Shield, Droplets, Flame, Radio, FileCheck, X,
-  BadgeCheck, Info, Compass, Eye, Printer
+  BadgeCheck, Info, Compass, Eye, Printer, Download
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -21,6 +21,8 @@ import {
   ProjectCategory, 
   PERMIT_FORM_METADATA, 
   PermitFormMatrix,
+  ALL_OFFICIAL_TEMPLATES,
+  OfficialTemplateFile,
   getRequiredPermitForms,
   getConditionalPermitForms
 } from "../../../../data/projectTypeMatrix";
@@ -125,6 +127,7 @@ export default function ApplyPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showUnifiedForm, setShowUnifiedForm] = useState(false);
   const [showRequirementsAlert, setShowRequirementsAlert] = useState(false);
+  const [showAllTemplatesModal, setShowAllTemplatesModal] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -151,7 +154,7 @@ export default function ApplyPage() {
   }, []);
 
   useEffect(() => {
-    if (showRequirementsAlert) {
+    if (showRequirementsAlert || showAllTemplatesModal) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -159,7 +162,7 @@ export default function ApplyPage() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showRequirementsAlert]);
+  }, [showRequirementsAlert, showAllTemplatesModal]);
 
   const handleCopyRef = (text: string) => {
     try {
@@ -488,31 +491,55 @@ export default function ApplyPage() {
                       Select your specific project classification from the official Sto. Tomas 31-Project Type Matrix to determine required permits.
                     </p>
                   </div>
-                  {selectedProjectType && (
-                    <div style={{
-                      background: "#f0fdf4",
-                      border: "1.5px solid #86efac",
-                      borderRadius: "12px",
-                      padding: "8px 14px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px"
-                    }}>
-                      <CheckCircle2 size={18} color="#16a34a" />
-                      <span style={{ fontSize: "0.84rem", color: "#166534", fontWeight: "700" }}>
-                        Selected: <strong>{selectedProjectType.name}</strong>
-                      </span>
-                      {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
-                        <span style={{ fontSize: "0.72rem", background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
-                          Zoning Clearance Required
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowAllTemplatesModal(true)}
+                      style={{
+                        background: "#f8fafc",
+                        border: "1.5px solid #cbd5e1",
+                        color: "#334155",
+                        padding: "8px 14px",
+                        borderRadius: "10px",
+                        fontSize: "0.82rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
+                      }}
+                    >
+                      <Download size={14} color="#4f46e5" />
+                      Official Templates (16 PDFs)
+                    </button>
+
+                    {selectedProjectType && (
+                      <div style={{
+                        background: "#f0fdf4",
+                        border: "1.5px solid #86efac",
+                        borderRadius: "12px",
+                        padding: "8px 14px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px"
+                      }}>
+                        <CheckCircle2 size={18} color="#16a34a" />
+                        <span style={{ fontSize: "0.84rem", color: "#166534", fontWeight: "700" }}>
+                          Selected: <strong>{selectedProjectType.name}</strong>
                         </span>
-                      ) : (
-                        <span style={{ fontSize: "0.72rem", background: "#f1f5f9", color: "#475569", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
-                          Zoning Exempt
-                        </span>
-                      )}
-                    </div>
-                  )}
+                        {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
+                          <span style={{ fontSize: "0.72rem", background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                            Zoning Clearance Required
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: "0.72rem", background: "#f1f5f9", color: "#475569", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                            Zoning Exempt
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1737,21 +1764,46 @@ export default function ApplyPage() {
                               </div>
                             </div>
                           </div>
-                          <span style={{
-                            fontSize: "0.7rem",
-                            fontWeight: "800",
-                            padding: "3px 10px",
-                            borderRadius: "999px",
-                            background: "#dcfce7",
-                            color: "#15803d",
-                            border: "1px solid #86efac",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            flexShrink: 0
-                          }}>
-                            <Check size={11} strokeWidth={3} /> MANDATORY
-                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                            {p.templateFile && (
+                              <a
+                                href={p.templateFile}
+                                download
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  fontSize: "0.72rem",
+                                  fontWeight: "700",
+                                  padding: "4px 10px",
+                                  borderRadius: "6px",
+                                  background: "#eff6ff",
+                                  color: "#2563eb",
+                                  border: "1px solid #bfdbfe",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  textDecoration: "none"
+                                }}
+                                title={`Download official ${p.label} PDF`}
+                              >
+                                <Download size={12} /> Official PDF
+                              </a>
+                            )}
+                            <span style={{
+                              fontSize: "0.7rem",
+                              fontWeight: "800",
+                              padding: "3px 10px",
+                              borderRadius: "999px",
+                              background: "#dcfce7",
+                              color: "#15803d",
+                              border: "1px solid #86efac",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px"
+                            }}>
+                              <Check size={11} strokeWidth={3} /> MANDATORY
+                            </span>
+                          </div>
                         </div>
                       );
                     })}
@@ -1807,18 +1859,43 @@ export default function ApplyPage() {
                                 </div>
                               </div>
                             </div>
-                            <span style={{
-                              fontSize: "0.7rem",
-                              fontWeight: "800",
-                              padding: "3px 10px",
-                              borderRadius: "999px",
-                              background: "#fef3c7",
-                              color: "#b45309",
-                              border: "1px solid #fde68a",
-                              flexShrink: 0
-                            }}>
-                              CONDITIONAL
-                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                              {p.templateFile && (
+                                <a
+                                  href={p.templateFile}
+                                  download
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    fontSize: "0.72rem",
+                                    fontWeight: "700",
+                                    padding: "4px 10px",
+                                    borderRadius: "6px",
+                                    background: "#fffbeb",
+                                    color: "#b45309",
+                                    border: "1px solid #fde68a",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    textDecoration: "none"
+                                  }}
+                                  title={`Download official ${p.label} PDF`}
+                                >
+                                  <Download size={12} /> Official PDF
+                                </a>
+                              )}
+                              <span style={{
+                                fontSize: "0.7rem",
+                                fontWeight: "800",
+                                padding: "3px 10px",
+                                borderRadius: "999px",
+                                background: "#fef3c7",
+                                color: "#b45309",
+                                border: "1px solid #fde68a"
+                              }}>
+                                CONDITIONAL
+                              </span>
+                            </div>
                           </div>
                         );
                       })}
@@ -1864,25 +1941,46 @@ export default function ApplyPage() {
                 flexWrap: "wrap",
                 gap: "0.75rem"
               }}>
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  style={{
-                    background: "#ffffff",
-                    border: "1.5px solid #cbd5e1",
-                    color: "#475569",
-                    borderRadius: "10px",
-                    padding: "9px 16px",
-                    fontSize: "0.85rem",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px"
-                  }}
-                >
-                  <Printer size={15} /> Print Permit List
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTemplatesModal(true)}
+                    style={{
+                      background: "#f1f5f9",
+                      border: "1.5px solid #cbd5e1",
+                      color: "#334155",
+                      borderRadius: "10px",
+                      padding: "9px 14px",
+                      fontSize: "0.85rem",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}
+                  >
+                    <Download size={14} /> All 16 Templates
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    style={{
+                      background: "#ffffff",
+                      border: "1.5px solid #cbd5e1",
+                      color: "#475569",
+                      borderRadius: "10px",
+                      padding: "9px 14px",
+                      fontSize: "0.85rem",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}
+                  >
+                    <Printer size={15} /> Print Permit List
+                  </button>
+                </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                   <button
@@ -1931,6 +2029,193 @@ export default function ApplyPage() {
           document.body
         );
       })()}
+
+      {/* ALL 16 OFFICIAL TEMPLATES MODAL */}
+      {showAllTemplatesModal && mounted && createPortal(
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(15, 23, 42, 0.75)",
+          backdropFilter: "blur(6px)",
+          zIndex: 99999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "1rem"
+        }}>
+          <div className="animate-fade-in-up" style={{
+            background: "#ffffff",
+            borderRadius: "20px",
+            width: "100%",
+            maxWidth: "850px",
+            maxHeight: "90vh",
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.35)",
+            overflow: "hidden"
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              color: "white",
+              padding: "1.5rem 1.75rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "12px",
+                  background: "rgba(79, 70, 229, 0.3)",
+                  border: "1px solid rgba(129, 140, 248, 0.4)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#a5b4fc"
+                }}>
+                  <Download size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: "0 0 0.2rem 0", fontSize: "1.25rem", fontWeight: "800" }}>
+                    Official Municipal Permit Templates (16 Forms)
+                  </h3>
+                  <p style={{ margin: 0, fontSize: "0.82rem", color: "#94a3b8" }}>
+                    Municipality of Sto. Tomas, Pampanga · Engineering & Zoning Division
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAllTemplatesModal(false)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.1)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "36px",
+                  height: "36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease"
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body / Templates Grid */}
+            <div style={{
+              padding: "1.5rem 1.75rem",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.75rem"
+            }}>
+              <p style={{ margin: "0 0 0.5rem 0", fontSize: "0.85rem", color: "#64748b" }}>
+                Download official, standardized PDF forms approved by the Office of the Building Official (OBO). These forms can be filled out, signed by PRC-licensed professionals, and uploaded with your permit application.
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "0.85rem" }}>
+                {ALL_OFFICIAL_TEMPLATES.map((tmpl) => (
+                  <div key={tmpl.filename} style={{
+                    background: "#f8fafc",
+                    border: "1.5px solid #e2e8f0",
+                    borderRadius: "12px",
+                    padding: "1rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    gap: "0.75rem",
+                    transition: "all 0.15s ease"
+                  }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.35rem" }}>
+                        <span style={{
+                          fontSize: "0.68rem",
+                          fontWeight: "800",
+                          padding: "2px 7px",
+                          borderRadius: "4px",
+                          background: "#e0e7ff",
+                          color: "#4338ca"
+                        }}>
+                          {tmpl.code}
+                        </span>
+                        <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600" }}>
+                          {tmpl.category}
+                        </span>
+                      </div>
+                      <h4 style={{ margin: "0 0 0.3rem 0", fontSize: "0.95rem", fontWeight: "800", color: "#0f172a" }}>
+                        {tmpl.name}
+                      </h4>
+                      <p style={{ margin: 0, fontSize: "0.78rem", color: "#64748b", lineHeight: "1.4" }}>
+                        {tmpl.description}
+                      </p>
+                    </div>
+
+                    <a
+                      href={tmpl.path}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        alignSelf: "flex-start",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+                        color: "white",
+                        fontSize: "0.78rem",
+                        fontWeight: "700",
+                        textDecoration: "none",
+                        boxShadow: "0 2px 6px rgba(79, 70, 229, 0.25)"
+                      }}
+                    >
+                      <Download size={13} /> Download PDF
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              background: "#f1f5f9",
+              borderTop: "1px solid #e2e8f0",
+              padding: "1rem 1.75rem",
+              display: "flex",
+              justifyContent: "flex-end"
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowAllTemplatesModal(false)}
+                style={{
+                  background: "#0f172a",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "8px 20px",
+                  fontSize: "0.85rem",
+                  fontWeight: "700",
+                  cursor: "pointer"
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes spin { 100% { transform: rotate(360deg); } }
