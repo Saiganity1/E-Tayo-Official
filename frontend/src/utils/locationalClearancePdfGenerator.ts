@@ -377,6 +377,5 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     color: textMuted
   });
 
-  const pdfBytes = await pdfDoc.save();
-  return Buffer.from(pdfBytes).toString("base64");
+  return await pdfDoc.saveAsBase64({ dataUri: false });
 }

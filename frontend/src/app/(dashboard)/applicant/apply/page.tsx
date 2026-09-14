@@ -493,42 +493,44 @@ export default function ApplyPage() {
     });
 
     const attachedUrls = Object.values(uploadedPermitDocs).map(d => d.fileUrl).filter(Boolean);
-    const combinedFileUrls = attachedUrls.join(',') || uploadedFileUrl || '';
 
     const newId = `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const submissionDate = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-    const formattedFileName = `${selectedProjectType.name.replace(/\s+/g, '_')}_Permit_Package.pdf`;
+    const formattedFileName = `${newId}_${selectedProjectType.name.replace(/\s+/g, '_')}_Permit_Package.pdf`;
 
     // Generate official unified PDF dossier package for this application
-    let finalFileUrl = combinedFileUrls;
-    if (!finalFileUrl.startsWith("data:application/pdf;base64,")) {
-      try {
-        const generatedBase64 = await generateUnifiedPermitPdf({
-          applicationNo: newId,
-          locationalClearanceRef: activeClearanceRef || (isClearanceRequired ? "LC-APPROVED" : "EXEMPT"),
-          projectType: selectedProjectType,
-          applicantName,
-          applicantPhone: "0917-123-4567",
-          applicantEmail: "applicant@etayo.gov.ph",
-          applicantAddress: projectAddress,
-          projectName: projectName || `${selectedProjectType.name} Construction`,
-          projectAddress,
-          barangay,
-          lotArea: lotArea || "200",
-          floorArea: floorArea || "120",
-          projectCost: projectCost || "1,500,000.00",
-          scopeOfWork: "New Construction",
-          occupancyClass: "Group A - Residential",
-          proposedStoreys: "2",
-          activePermitForms: mandatoryPermitsToSubmit,
-          submissionDate
-        });
-        if (generatedBase64) {
-          finalFileUrl = `data:application/pdf;base64,${generatedBase64}`;
-        }
-      } catch (err) {
-        console.warn("Notice: Client PDF generation skipped or fallback:", err);
+    let finalFileUrl = "";
+    try {
+      const generatedBase64 = await generateUnifiedPermitPdf({
+        applicationNo: newId,
+        locationalClearanceRef: activeClearanceRef || (isClearanceRequired ? "LC-APPROVED" : "EXEMPT"),
+        projectType: selectedProjectType,
+        applicantName,
+        applicantPhone: "0917-123-4567",
+        applicantEmail: "applicant@etayo.gov.ph",
+        applicantAddress: projectAddress,
+        projectName: projectName || `${selectedProjectType.name} Construction`,
+        projectAddress,
+        barangay,
+        lotArea: lotArea || "200",
+        floorArea: floorArea || "120",
+        projectCost: projectCost || "1,500,000.00",
+        scopeOfWork: "New Construction",
+        occupancyClass: "Group A - Residential",
+        proposedStoreys: "2",
+        activePermitForms: mandatoryPermitsToSubmit,
+        submissionDate
+      });
+      if (generatedBase64) {
+        finalFileUrl = `data:application/pdf;base64,${generatedBase64}`;
       }
+    } catch (err) {
+      console.warn("Notice: Client PDF generation skipped or fallback:", err);
+    }
+
+    if (!finalFileUrl) {
+      const firstValidBase64 = attachedUrls.find(u => typeof u === "string" && u.startsWith("data:application/pdf;base64,"));
+      finalFileUrl = firstValidBase64 || uploadedFileUrl || "";
     }
 
     const newApp: any = {

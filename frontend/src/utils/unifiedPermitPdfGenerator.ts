@@ -482,16 +482,5 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     color: textMuted
   });
 
-  const pdfBytes = await pdfDoc.save();
-
-  // Convert to Base64 in safe chunks
-  let binary = "";
-  const len = pdfBytes.byteLength;
-  const CHUNK_SIZE = 8192;
-  for (let i = 0; i < len; i += CHUNK_SIZE) {
-    const chunk = pdfBytes.subarray(i, Math.min(i + CHUNK_SIZE, len));
-    binary += String.fromCharCode.apply(null, chunk as any);
-  }
-
-  return btoa(binary);
+  return await pdfDoc.saveAsBase64({ dataUri: false });
 }

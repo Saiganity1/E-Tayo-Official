@@ -100,19 +100,44 @@ public class PermitController {
         // 4. Automatic Google Drive Upload
         try {
             if (googleDriveService != null && googleDriveService.isConfigured()) {
-                // A. Check if application form PDF is provided as base64 in fileUrl
-                if (permit.getFileUrl() != null && permit.getFileUrl().contains("base64,")) {
-                    String base64Data = permit.getFileUrl().substring(permit.getFileUrl().indexOf("base64,") + 7);
-                    byte[] pdfBytes = java.util.Base64.getDecoder().decode(base64Data.trim());
-                    String fileName = permit.getFileName() != null && !permit.getFileName().trim().isEmpty()
-                            ? permit.getFileName().trim()
-                            : (permit.getId() + "_" + projectType.replaceAll("[^a-zA-Z0-9.-]", "_") + "_Application.pdf");
+                // A. Check if application form PDF(s) are provided in fileUrl
+                if (permit.getFileUrl() != null && !permit.getFileUrl().trim().isEmpty()) {
+                    String rawUrls = permit.getFileUrl().trim();
+                    // Split if multiple documents or data URIs were concatenated
+                    String[] parts = rawUrls.split(",(?=data:|http:|https:|/|APP-)");
+                    if (parts.length <= 1 && rawUrls.contains(",data:")) {
+                        parts = rawUrls.split(",(?=data:)");
+                    }
 
-                    String drivePdfUrl = googleDriveService.uploadApplicantBytes(
-                            pdfBytes, fileName, "application/pdf", applicantName, projectType, timestamp
-                    );
-                    if (drivePdfUrl != null) {
-                        permit.setFileUrl(drivePdfUrl);
+                    String primaryDriveUrl = null;
+                    for (int i = 0; i < parts.length; i++) {
+                        String docUrl = parts[i].trim();
+                        if (docUrl.isEmpty()) continue;
+
+                        if (docUrl.contains("base64,")) {
+                            byte[] pdfBytes = decodeBase64Safely(docUrl);
+                            if (pdfBytes != null && pdfBytes.length > 0) {
+                                String docFileName;
+                                if (i == 0) {
+                                    docFileName = permit.getFileName() != null && !permit.getFileName().trim().isEmpty()
+                                            ? permit.getFileName().trim()
+                                            : (permit.getId() + "_" + projectType.replaceAll("[^a-zA-Z0-9.-]", "_") + "_Application.pdf");
+                                } else {
+                                    docFileName = permit.getId() + "_Attachment_" + i + ".pdf";
+                                }
+
+                                String uploadedUrl = googleDriveService.uploadApplicantBytes(
+                                        pdfBytes, docFileName, "application/pdf", applicantName, projectType, timestamp
+                                );
+                                if (i == 0 && uploadedUrl != null) {
+                                    primaryDriveUrl = uploadedUrl;
+                                }
+                            }
+                        }
+                    }
+
+                    if (primaryDriveUrl != null) {
+                        permit.setFileUrl(primaryDriveUrl);
                     }
                 }
 
@@ -120,7 +145,6 @@ public class PermitController {
                 if (permit.getSketchImageUrl() != null && permit.getSketchImageUrl().contains("base64,")) {
                     int commaIdx = permit.getSketchImageUrl().indexOf("base64,");
                     String imgMeta = permit.getSketchImageUrl().substring(0, commaIdx);
-                    String imgBase64 = permit.getSketchImageUrl().substring(commaIdx + 7);
                     String contentType = "image/png";
                     if (imgMeta.contains("image/jpeg") || imgMeta.contains("image/jpg")) {
                         contentType = "image/jpeg";
@@ -128,12 +152,14 @@ public class PermitController {
                         contentType = "application/pdf";
                     }
                     String ext = contentType.contains("jpeg") ? ".jpg" : (contentType.contains("pdf") ? ".pdf" : ".png");
-                    byte[] imgBytes = java.util.Base64.getDecoder().decode(imgBase64.trim());
-                    String sketchDriveUrl = googleDriveService.uploadApplicantBytes(
-                            imgBytes, "Vicinity_Sketch_Map" + ext, contentType, applicantName, projectType, timestamp
-                    );
-                    if (sketchDriveUrl != null) {
-                        permit.setSketchImageUrl(sketchDriveUrl);
+                    byte[] imgBytes = decodeBase64Safely(permit.getSketchImageUrl());
+                    if (imgBytes != null && imgBytes.length > 0) {
+                        String sketchDriveUrl = googleDriveService.uploadApplicantBytes(
+                                imgBytes, "Vicinity_Sketch_Map" + ext, contentType, applicantName, projectType, timestamp
+                        );
+                        if (sketchDriveUrl != null) {
+                            permit.setSketchImageUrl(sketchDriveUrl);
+                        }
                     }
                 }
 
@@ -151,6 +177,7 @@ public class PermitController {
             }
         } catch (Exception e) {
             System.err.println("Notice: Google Drive auto-upload skipped or encountered an issue: " + e.getMessage());
+            e.printStackTrace();
         }
 
         PermitApplication saved = permitApplicationRepository.save(permit);
@@ -166,6 +193,47 @@ public class PermitController {
             );
         } catch (Exception ignored) {}
         return ResponseEntity.ok(saved);
+    }
+
+    /**
+     * Safely sanitizes and decodes a raw Base64 string into bytes.
+     * Prevents IllegalArgumentException caused by whitespace, invalid padding, or concatenated URIs.
+     */
+    private byte[] decodeBase64Safely(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return null;
+        String clean = raw.trim();
+        if (clean.contains("base64,")) {
+            clean = clean.substring(clean.indexOf("base64,") + 7);
+        }
+        int endIdx = clean.indexOf(',');
+        if (endIdx != -1) {
+            clean = clean.substring(0, endIdx);
+        }
+        // Remove all characters outside the Base64 alphabet
+        clean = clean.replaceAll("[^A-Za-z0-9+/=_-]", "");
+        if (clean.isEmpty()) return null;
+
+        clean = clean.replace('-', '+').replace('_', '/');
+
+        int mod = clean.length() % 4;
+        if (mod == 2) clean += "==";
+        else if (mod == 3) clean += "=";
+        else if (mod == 1) clean = clean.substring(0, clean.length() - 1);
+
+        try {
+            return java.util.Base64.getMimeDecoder().decode(clean);
+        } catch (Exception e1) {
+            try {
+                return java.util.Base64.getDecoder().decode(clean);
+            } catch (Exception e2) {
+                try {
+                    return java.util.Base64.getUrlDecoder().decode(clean);
+                } catch (Exception e3) {
+                    System.err.println("Notice: Could not decode base64 data: " + e3.getMessage());
+                    return null;
+                }
+            }
+        }
     }
 
     private byte[] generateApplicationSummaryDoc(PermitApplication permit) {

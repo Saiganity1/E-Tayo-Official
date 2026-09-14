@@ -121,10 +121,26 @@ public class GoogleDriveService {
                 ? timestamp.trim()
                 : java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
 
-        // Level 1: First Name and Last Name of User directly inside root folder
-        String userFolderId = getOrCreateSubFolderId(driveService, folderId, cleanApplicant);
+        // Determine the root for applicant dossiers:
+        // If an "Applications" folder exists inside folderId, use it as the base.
+        // Otherwise, use folderId directly.
+        String applicationsRootId = folderId;
+        try {
+            String query = "name='Applications' and mimeType='application/vnd.google-apps.folder' and '" + folderId + "' in parents and trashed=false";
+            com.google.api.services.drive.model.FileList result = driveService.files().list()
+                    .setQ(query)
+                    .setSpaces("drive")
+                    .setFields("files(id)")
+                    .execute();
+            if (result.getFiles() != null && !result.getFiles().isEmpty()) {
+                applicationsRootId = result.getFiles().get(0).getId();
+            }
+        } catch (Exception ignored) {}
 
-        // Level 2: Project Type application (e.g. Escalator) inside User folder
+        // Level 1: First Name and Last Name of User (e.g. "Dave Sicat") inside Applications
+        String userFolderId = getOrCreateSubFolderId(driveService, applicationsRootId, cleanApplicant);
+
+        // Level 2: Project Type application (e.g. "Escalator") inside User folder
         String projectTypeFolderId = getOrCreateSubFolderId(driveService, userFolderId, cleanProjectType);
 
         // Level 3: Date and Time created folder inside Project Type folder
