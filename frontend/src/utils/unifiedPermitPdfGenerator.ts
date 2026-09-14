@@ -41,6 +41,13 @@ export interface UnifiedPermitFormData {
   electronicsEngineerName?: string;
   electronicsEngineerPRC?: string;
 
+  // Equipment & specialized machinery details (for Elevator/Escalator, Mechanical, Generator)
+  machineryType?: string;
+  machineryCapacity?: string;
+  machineryPower?: string;
+  electricalLoadKva?: string;
+  serviceVoltage?: string;
+
   // Active form checkboxes selected
   activePermitForms: (keyof PermitFormMatrix)[];
   submissionDate?: string;

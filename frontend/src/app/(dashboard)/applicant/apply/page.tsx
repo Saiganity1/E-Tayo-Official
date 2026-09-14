@@ -15,6 +15,7 @@ import dynamic from "next/dynamic";
 
 import LocationalClearanceGoogleForm from "../../../../components/forms/LocationalClearanceGoogleForm";
 import UnifiedProjectGoogleForm from "../../../../components/forms/UnifiedProjectGoogleForm";
+import TechnicalPermitFormsStep from "../../../../components/forms/TechnicalPermitFormsStep";
 import { 
   PROJECT_TYPES_MATRIX, 
   ProjectTypeItem, 
@@ -58,8 +59,9 @@ const LocationPickerMap = dynamic(() => import("../../../../components/map/Locat
 const STEPS = [
   { id: 1, title: "Project Type", subtitle: "Municipal Matrix", icon: Building2 },
   { id: 2, title: "Locational Clearance", subtitle: "Zoning Prerequisite", icon: ShieldCheck },
-  { id: 3, title: "Mapping", subtitle: "GIS & Coordinates", icon: MapPin },
-  { id: 4, title: "Review", subtitle: "Final Endorsement", icon: CheckCircle }
+  { id: 3, title: "Permit Forms", subtitle: "Required Forms", icon: FileText },
+  { id: 4, title: "Mapping", subtitle: "GIS & Coordinates", icon: MapPin },
+  { id: 5, title: "Review", subtitle: "Final Endorsement", icon: CheckCircle }
 ];
 
 const getProjectPermitsBreakdown = (project: ProjectTypeItem) => {
@@ -221,8 +223,9 @@ export default function ApplyPage() {
     fileSize: string;
     fileUrl: string;
     uploadedAt: string;
+    isCompiled?: boolean;
   }
-  const [uploadedPermitDocs, setUploadedPermitDocs] = useState<Record<string, AttachedPermitDoc>>({});
+  const [uploadedPermitDocs, setUploadedPermitDocs] = useState<Record<string, any>>({});
   const [activeUploadingKey, setActiveUploadingKey] = useState<string | null>(null);
   const [submissionErrorAlert, setSubmissionErrorAlert] = useState<string | null>(null);
   const [showConditionalSection, setShowConditionalSection] = useState(false);
@@ -639,7 +642,7 @@ export default function ApplyPage() {
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
-                    STEP 1 OF 4
+                    STEP 1 OF 5
                   </span>
                   <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
                     Municipal Project Matrix
@@ -998,7 +1001,7 @@ export default function ApplyPage() {
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
-                    STEP 2 OF 4
+                    STEP 2 OF 5
                   </span>
                   <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
                     Prerequisite Verification
@@ -1010,7 +1013,7 @@ export default function ApplyPage() {
                 <p style={{ margin: 0, color: "#475569", fontSize: "0.92rem", lineHeight: "1.5" }}>
                   {isClearanceRequired ? (
                     <>
-                      Under Sto. Tomas Municipal Permitting Matrix, construction permitting for <strong>{selectedProjectType.name}</strong> requires an approved <strong>Locational Clearance</strong> confirming zoning classification before selecting mapping and technical permit requirements.
+                      Under Sto. Tomas Municipal Permitting Matrix, permitting for <strong>{selectedProjectType.name}</strong> requires an approved <strong>Locational Clearance</strong> confirming zoning classification before completing the required technical permit forms.
                     </>
                   ) : (
                     <>
@@ -1091,7 +1094,7 @@ export default function ApplyPage() {
                         </span>
                       </div>
                       <p style={{ margin: 0, color: "#334155", fontSize: "0.92rem", lineHeight: "1.5" }}>
-                        <strong>{selectedProjectType.name}</strong> ({selectedProjectType.category}) does not require zoning or locational clearance under the Santo Tomas permitting matrix. You can proceed directly to <strong>Step 3: Mapping</strong>.
+                        <strong>{selectedProjectType.name}</strong> ({selectedProjectType.category}) does not require zoning or locational clearance under the Santo Tomas permitting matrix. You can proceed directly to <strong>Step 3: Required Permit Forms</strong>.
                       </p>
                     </div>
                   </div>
@@ -1114,7 +1117,7 @@ export default function ApplyPage() {
                       boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)"
                     }}
                   >
-                    <span>Proceed to Step 3: Mapping</span>
+                    <span>Proceed to Step 3: Required Permit Forms</span>
                     <ChevronRight size={18} />
                   </button>
                 </div>
@@ -1222,7 +1225,7 @@ export default function ApplyPage() {
                         boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)"
                       }}
                     >
-                      <span>Proceed to Step 3: Mapping</span>
+                      <span>Proceed to Step 3: Required Permit Forms</span>
                       <ChevronRight size={18} />
                     </button>
                   </div>
@@ -1383,8 +1386,36 @@ export default function ApplyPage() {
             </div>
           )}
 
-          {/* STEP 3: MAPPING */}
+          {/* STEP 3: REQUIRED PERMIT FORMS */}
           {currentStep === 3 && (
+            <div className="step-pane animate-fade-in-up">
+              <TechnicalPermitFormsStep
+                projectType={selectedProjectType}
+                locationalClearanceRef={activeClearanceRef}
+                isClearanceRequired={isClearanceRequired}
+                applicantName={applicantName}
+                projectName={projectName}
+                setProjectName={setProjectName}
+                streetAddress={streetAddress}
+                setStreetAddress={setStreetAddress}
+                barangay={barangay}
+                setBarangay={setBarangay}
+                lotArea={lotArea}
+                setLotArea={setLotArea}
+                floorArea={floorArea}
+                setFloorArea={setFloorArea}
+                projectCost={projectCost}
+                setProjectCost={setProjectCost}
+                uploadedPermitDocs={uploadedPermitDocs}
+                setUploadedPermitDocs={setUploadedPermitDocs}
+                onProceedToMapping={() => setCurrentStep(4)}
+                onBack={() => setCurrentStep(2)}
+              />
+            </div>
+          )}
+
+          {/* STEP 4: MAPPING */}
+          {currentStep === 4 && (
             <div className="step-pane animate-fade-in-up">
               <div style={{ marginBottom: "1.5rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
@@ -1397,7 +1428,7 @@ export default function ApplyPage() {
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
-                    STEP 3 OF 4
+                    STEP 4 OF 5
                   </span>
                   <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
                     Site & Cadastral Mapping
@@ -1411,9 +1442,9 @@ export default function ApplyPage() {
                 </p>
               </div>
               
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", marginTop: "1rem" }}>
-                {/* Left Column: Basic Details & Location */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "2rem", marginTop: "1rem" }}>
+                {/* Left Column: Basic Details & Location Picker Map */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                   <div className="form-group">
                     <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block" }}>Project Name</label>
                     <input 
@@ -1457,7 +1488,7 @@ export default function ApplyPage() {
                   </div>
 
                   {detectedZone && (
-                    <div className="animate-fade-in-up" style={{ marginTop: "1rem", padding: "1rem", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", display: "flex", gap: "1rem", alignItems: "center" }}>
+                    <div className="animate-fade-in-up" style={{ padding: "1rem", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", display: "flex", gap: "1rem", alignItems: "center" }}>
                       <ShieldCheck size={28} color="#16a34a" style={{ flexShrink: 0 }} />
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -1475,12 +1506,89 @@ export default function ApplyPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Right Column: Site & Project Parameters */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", background: "#f8fafc", padding: "1.5rem", borderRadius: "14px", border: "1px solid #e2e8f0" }}>
+                  <h4 style={{ margin: "0 0 0.25rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>
+                    Site & Dimension Details
+                  </h4>
+                  
+                  <div className="form-group">
+                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Street Address / Sitio</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Purok 3, Poblacion Road" 
+                      className="form-input" 
+                      value={streetAddress}
+                      onChange={e => setStreetAddress(e.target.value)}
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Barangay (Santo Tomas)</label>
+                    <select
+                      className="form-input"
+                      value={barangay}
+                      onChange={e => setBarangay(e.target.value)}
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
+                    >
+                      {["San Bartolome", "Moras Dela Paz", "Poblacion", "San Matias", "San Vicente", "Santa Cruz", "Santa Ines", "Santo Nino"].map(b => (
+                        <option key={b} value={b}>Brgy. {b}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                    <div className="form-group">
+                      <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Lot Area (sq.m)</label>
+                      <input 
+                        type="number" 
+                        placeholder="e.g. 150" 
+                        className="form-input" 
+                        value={lotArea}
+                        onChange={e => setLotArea(e.target.value)}
+                        style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Floor Area (sq.m)</label>
+                      <input 
+                        type="number" 
+                        placeholder="e.g. 120" 
+                        className="form-input" 
+                        value={floorArea}
+                        onChange={e => setFloorArea(e.target.value)}
+                        style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Estimated Project Cost (₱ PHP)</label>
+                    <input 
+                      type="number" 
+                      placeholder="e.g. 1500000" 
+                      className="form-input" 
+                      value={projectCost}
+                      onChange={e => setProjectCost(e.target.value)}
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
+                    />
+                  </div>
+
+                  <div style={{ marginTop: "0.5rem", padding: "0.85rem", background: "#eef2ff", borderRadius: "10px", border: "1px solid #c7d2fe", display: "flex", gap: "8px", alignItems: "center" }}>
+                    <Sparkles size={16} color="#4f46e5" />
+                    <span style={{ fontSize: "0.8rem", color: "#3730a3" }}>
+                      Data synced automatically with your technical permit documents and municipal records.
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
-          {/* STEP 4: REVIEW */}
-          {currentStep === 4 && (
+          {/* STEP 5: REVIEW */}
+          {currentStep === 5 && (
             <div className="step-pane animate-fade-in-up">
               <div style={{ marginBottom: "1.5rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
@@ -1493,7 +1601,7 @@ export default function ApplyPage() {
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
-                    STEP 4 OF 4
+                    STEP 5 OF 5
                   </span>
                   <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
                     Final Verification & Filing
@@ -1503,12 +1611,12 @@ export default function ApplyPage() {
                   Review
                 </h2>
                 <p style={{ margin: 0, color: "#475569", fontSize: "0.92rem", lineHeight: "1.5" }}>
-                  Review your application details, selected municipal project type, and site mapping before filing endorsement.
+                  Review your application details, selected municipal project type, required permit forms, and site mapping before filing endorsement.
                 </p>
               </div>
 
               <div className="review-summary" style={{ background: "#ffffff", padding: "2rem", borderRadius: "18px", border: "1.5px solid #e2e8f0", boxShadow: "0 4px 15px rgba(0,0,0,0.03)" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "1.5rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.25rem", marginBottom: "1.5rem" }}>
                   {/* Step 1 Summary Card: Project Type */}
                   <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "14px", padding: "1.1rem" }}>
                     <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#1e40af", textTransform: "uppercase" }}>1. Project Type</span>
@@ -1530,9 +1638,21 @@ export default function ApplyPage() {
                     </span>
                   </div>
 
-                  {/* Step 3 Summary Card: Mapping */}
+                  {/* Step 3 Summary Card: Required Permit Forms */}
+                  <div style={{ background: isAllMandatoryAttached ? "#f0fdf4" : "#fef2f2", border: isAllMandatoryAttached ? "1px solid #bbf7d0" : "1px solid #fecaca", borderRadius: "14px", padding: "1.1rem" }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: "800", color: isAllMandatoryAttached ? "#166534" : "#991b1b", textTransform: "uppercase" }}>3. Permit Forms</span>
+                    <h4 style={{ margin: "0.4rem 0 0.2rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>
+                      {mandatoryPermitsToSubmit.length} Required Forms
+                    </h4>
+                    <span style={{ fontSize: "0.84rem", color: isAllMandatoryAttached ? "#15803d" : "#dc2626", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      <CheckCircle2 size={15} color={isAllMandatoryAttached ? "#16a34a" : "#dc2626"} />
+                      {isAllMandatoryAttached ? "All Forms Compiled & Signed" : `${missingMandatoryPermits.length} Form(s) Pending`}
+                    </span>
+                  </div>
+
+                  {/* Step 4 Summary Card: Mapping */}
                   <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "1.1rem" }}>
-                    <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#475569", textTransform: "uppercase" }}>3. Mapping</span>
+                    <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#475569", textTransform: "uppercase" }}>4. Mapping</span>
                     <h4 style={{ margin: "0.4rem 0 0.2rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>{projectName || "Untitled Project"}</h4>
                     <span style={{ fontSize: "0.84rem", color: "#64748b" }}>
                       {streetAddress || "Sto. Tomas"}, Brgy. {barangay}
@@ -2104,7 +2224,7 @@ export default function ApplyPage() {
                   onClick={() => setCurrentStep(3)}
                   style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
                 >
-                  <span>Next: Mapping</span>
+                  <span>Next: Required Permit Forms</span>
                   <ChevronRight size={18} />
                 </button>
               )
@@ -2115,7 +2235,7 @@ export default function ApplyPage() {
                   onClick={() => setCurrentStep(3)}
                   style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
                 >
-                  <span>Next: Mapping</span>
+                  <span>Next: Required Permit Forms</span>
                   <ChevronRight size={18} />
                 </button>
               ) : (
@@ -2133,7 +2253,16 @@ export default function ApplyPage() {
                 onClick={() => setCurrentStep(4)}
                 style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
               >
-                <span>Next: Review & Documents</span>
+                <span>Next: Mapping</span>
+                <ChevronRight size={18} />
+              </button>
+            ) : currentStep === 4 ? (
+              <button 
+                className="btn-primary" 
+                onClick={() => setCurrentStep(5)}
+                style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+              >
+                <span>Next: Review & Submit</span>
                 <ChevronRight size={18} />
               </button>
             ) : (
