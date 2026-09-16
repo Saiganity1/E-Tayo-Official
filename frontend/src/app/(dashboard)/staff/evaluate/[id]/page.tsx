@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePermitContext } from "../../../../../context/PermitContext";
 import { generateLocationalClearancePdf } from "../../../../../utils/locationalClearancePdfGenerator";
+import { generateUnifiedPermitPdf } from "../../../../../utils/unifiedPermitPdfGenerator";
+import { PROJECT_TYPES_MATRIX, ProjectTypeItem, PermitFormMatrix } from "../../../../../data/projectTypeMatrix";
 import { 
   ShieldCheck, 
   FileText, 
@@ -112,18 +114,126 @@ export default function StaffEvaluatePage() {
         }
       }
 
+      const isBuildingPermit = app.permitType === "building_permit" || (!app.permitType?.includes("locational") && app.projectType && app.projectType !== "Locational Clearance");
+
       // If no valid local file or if it was solely a Google Drive link / template, dynamically generate the official filled PDF
       if (!primaryUrl || primaryUrl.includes("drive.google.com")) {
         try {
-          const generatedBase64 = await generateLocationalClearancePdf({
-            applicationNo: app.id,
+          if (isBuildingPermit) {
+            // Match project type in matrix
+            const matchedProj = PROJECT_TYPES_MATRIX.find(
+              (p) => p.name.toLowerCase() === (app.projectType || "").toLowerCase() ||
+                     p.id.toLowerCase() === (app.projectType || "").toLowerCase()
+            ) || PROJECT_TYPES_MATRIX[0];
+
+            const mandatoryKeys = (Object.keys(matchedProj.matrix) as (keyof PermitFormMatrix)[]).filter(
+              (k) => matchedProj.matrix[k] === "required"
+            );
+
+            const generatedBase64 = await generateUnifiedPermitPdf({
+              applicationNo: app.id,
+              locationalClearanceRef: app.locationalClearanceRef || "LC-VERIFIED",
+              projectType: matchedProj,
+              applicantName: app.applicantName || "Applicant",
+              applicantPhone: app.applicantPhone || "0917-000-0000",
+              applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+              applicantAddress: app.applicantAddress || app.projectAddress || "Sto. Tomas, Pampanga",
+              projectName: app.projectName || `${app.projectType || "Unified Building"} Construction`,
+              projectAddress: app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga",
+              barangay: "Sto. Tomas",
+              lotArea: "200",
+              floorArea: "150",
+              projectCost: app.estimatedFees ? `${app.estimatedFees * 500}` : "1,500,000.00",
+              scopeOfWork: "New Construction",
+              occupancyClass: matchedProj.category,
+              proposedStoreys: "2",
+              activePermitForms: mandatoryKeys,
+              submissionDate: app.dateSubmitted || new Date().toLocaleDateString(),
+            });
+
+            if (generatedBase64) {
+              const byteCharacters = atob(generatedBase64);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: "application/pdf" });
+              const blobUrl = URL.createObjectURL(blob);
+              createdBlobUrls.push(blobUrl);
+              primaryUrl = blobUrl;
+              isGenerated = true;
+            }
+          } else {
+            const generatedBase64 = await generateLocationalClearancePdf({
+              applicationNo: app.id,
+              submissionDate: app.dateSubmitted || new Date().toLocaleDateString(),
+              applicantName: app.applicantName || "Applicant",
+              applicantAddress: app.applicantAddress || app.projectAddress || "Sto. Tomas, Pampanga",
+              applicantPhone: app.applicantPhone || "0917-000-0000",
+              applicantEmail: app.applicantEmail || "",
+              projectName: app.projectName || `${app.projectType || "Locational Clearance"} Project`,
+              projectType: app.projectType || "Locational Clearance",
+              projectNature: "New Construction",
+              projectAddress: app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga",
+              barangay: "Sto. Tomas",
+              lotArea: "200",
+              bldgArea: "120",
+              rightOverLand: "Owner",
+              projectTenure: "Permanent",
+              existingLandUse: "Residential",
+              isTenanted: "No",
+              projectCost: app.estimatedFees ? `${app.estimatedFees * 500}` : "1,500,000.00",
+            });
+
+            if (generatedBase64) {
+              const byteCharacters = atob(generatedBase64);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: "application/pdf" });
+              const blobUrl = URL.createObjectURL(blob);
+              createdBlobUrls.push(blobUrl);
+              primaryUrl = blobUrl;
+              isGenerated = true;
+            }
+          }
+        } catch (genErr) {
+          console.error("Failed to generate in-system official PDF, using official template:", genErr);
+          primaryUrl = isBuildingPermit
+            ? "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf"
+            : "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf";
+        }
+      }
+
+      docs.push({
+        id: "primary-form",
+        title: isBuildingPermit
+          ? "Official Unified Building Permit & Ancillary Forms"
+          : "Official Locational Clearance Form",
+        tabLabel: isBuildingPermit ? "Official Building Permit" : "Official Clearance Form",
+        type: "pdf",
+        url: primaryUrl || (isBuildingPermit ? "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf" : "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"),
+        fileName: app.fileName || (isBuildingPermit ? `${app.id}_Unified_Permit.pdf` : `${app.id}_Locational_Clearance.pdf`),
+        isOfficialForm: true,
+        hasDriveBackup: Boolean(driveBackupUrl),
+        driveBackupUrl: driveBackupUrl,
+      });
+
+      // If this is a building permit with an associated locational clearance reference, add the Locational Clearance tab!
+      if (isBuildingPermit && app.locationalClearanceRef && app.locationalClearanceRef !== "EXEMPT") {
+        try {
+          const lcBase64 = await generateLocationalClearancePdf({
+            applicationNo: app.locationalClearanceRef,
             submissionDate: app.dateSubmitted || new Date().toLocaleDateString(),
             applicantName: app.applicantName || "Applicant",
             applicantAddress: app.applicantAddress || app.projectAddress || "Sto. Tomas, Pampanga",
             applicantPhone: app.applicantPhone || "0917-000-0000",
             applicantEmail: app.applicantEmail || "",
-            projectName: app.projectName || `${app.projectType || "Locational Clearance"} Project`,
-            projectType: app.projectType || "Locational Clearance",
+            projectName: app.projectName || `${app.projectType || "Building"} Project`,
+            projectType: app.projectType || "Building Construction",
             projectNature: "New Construction",
             projectAddress: app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga",
             barangay: "Sto. Tomas",
@@ -135,9 +245,8 @@ export default function StaffEvaluatePage() {
             isTenanted: "No",
             projectCost: app.estimatedFees ? `${app.estimatedFees * 500}` : "1,500,000.00",
           });
-
-          if (generatedBase64) {
-            const byteCharacters = atob(generatedBase64);
+          if (lcBase64) {
+            const byteCharacters = atob(lcBase64);
             const byteNumbers = new Array(byteCharacters.length);
             for (let i = 0; i < byteCharacters.length; i++) {
               byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -146,26 +255,21 @@ export default function StaffEvaluatePage() {
             const blob = new Blob([byteArray], { type: "application/pdf" });
             const blobUrl = URL.createObjectURL(blob);
             createdBlobUrls.push(blobUrl);
-            primaryUrl = blobUrl;
-            isGenerated = true;
+
+            docs.push({
+              id: "locational-clearance-tab",
+              title: "Official Locational Clearance Form (Zoning Clearance)",
+              tabLabel: "Locational Clearance",
+              type: "pdf",
+              url: blobUrl,
+              fileName: `${app.locationalClearanceRef}_Locational_Clearance.pdf`,
+              isOfficialForm: true,
+            });
           }
-        } catch (genErr) {
-          console.error("Failed to generate in-system clearance PDF, using official template:", genErr);
-          primaryUrl = "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf";
+        } catch (lcErr) {
+          console.warn("Could not generate linked locational clearance tab:", lcErr);
         }
       }
-
-      docs.push({
-        id: "primary-form",
-        title: "Official Locational Clearance Form",
-        tabLabel: "Official Clearance Form",
-        type: "pdf",
-        url: primaryUrl || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
-        fileName: app.fileName || `${app.id}_Locational_Clearance.pdf`,
-        isOfficialForm: true,
-        hasDriveBackup: Boolean(driveBackupUrl),
-        driveBackupUrl: driveBackupUrl,
-      });
 
       // 2. VICINITY SKETCH MAP (if available)
       if (app.sketchImageUrl) {

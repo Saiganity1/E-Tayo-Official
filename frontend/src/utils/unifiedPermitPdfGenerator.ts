@@ -5,13 +5,14 @@ export interface UnifiedPermitFormData {
   applicationNo: string;
   locationalClearanceRef: string;
   projectType: ProjectTypeItem;
-  
+
   // Applicant details
   applicantName: string;
   applicantPhone: string;
   applicantEmail: string;
   applicantAddress: string;
   applicantTIN?: string;
+  formOfOwnership?: string;
 
   // Project details
   projectName: string;
@@ -20,26 +21,35 @@ export interface UnifiedPermitFormData {
   lotNo?: string;
   blockNo?: string;
   tctNo?: string;
+  taxDecNo?: string;
   lotArea: string;
   floorArea: string;
   projectCost: string;
   scopeOfWork: string;
+  scopeOthers?: string;
   occupancyClass: string;
   proposedStoreys: string;
+  numberOfUnits?: string;
 
   // Professional details
   architectName?: string;
   architectPRC?: string;
+  architectPTR?: string;
   civilEngineerName?: string;
   civilEngineerPRC?: string;
+  civilEngineerPTR?: string;
   electricalEngineerName?: string;
   electricalEngineerPRC?: string;
+  electricalEngineerPTR?: string;
   masterPlumberName?: string;
   masterPlumberPRC?: string;
+  masterPlumberPTR?: string;
   mechanicalEngineerName?: string;
   mechanicalEngineerPRC?: string;
+  mechanicalEngineerPTR?: string;
   electronicsEngineerName?: string;
   electronicsEngineerPRC?: string;
+  electronicsEngineerPTR?: string;
 
   // Equipment & specialized machinery details (for Elevator/Escalator, Mechanical, Generator)
   machineryType?: string;
@@ -62,426 +72,341 @@ function safeText(str: string | undefined | null): string {
     .replace(/[₱]/g, "PHP ")
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
-    .replace(/[^\x20-\x7E\t\n\r]/g, ""); // Restrict strictly to standard printable ASCII characters
+    .replace(/[^\x20-\x7E\t\n\r]/g, "");
 }
 
-export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Promise<string> {
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([595.28, 841.89]); // A4 Size: 595 x 842 pt
-  const { width, height } = page.getSize();
-
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-  const primaryColor = rgb(0.08, 0.22, 0.54); // Deep official navy
-  const textDark = rgb(0.09, 0.13, 0.24);
-  const textMuted = rgb(0.35, 0.42, 0.53);
-  const borderLight = rgb(0.8, 0.84, 0.9);
-  const fillLight = rgb(0.96, 0.97, 0.99);
-  const accentGreen = rgb(0.08, 0.6, 0.32);
-
-  const drawText = (text: string, options: any) => {
-    page.drawText(safeText(text), options);
-  };
-
-  // --- 1. OFFICIAL MUNICIPAL HEADER ---
-  drawText("REPUBLIC OF THE PHILIPPINES", {
-    x: 50,
-    y: height - 40,
-    size: 8.5,
-    font: fontRegular,
-    color: textMuted
-  });
-  drawText("PROVINCE OF PAMPANGA | MUNICIPALITY OF STO. TOMAS", {
-    x: 50,
-    y: height - 51,
-    size: 9.5,
-    font: fontBold,
-    color: textDark
-  });
-  drawText("OFFICE OF THE LOCAL BUILDING OFFICIAL", {
-    x: 50,
-    y: height - 63,
-    size: 11,
-    font: fontBold,
-    color: primaryColor
-  });
-
-  // Header badges (Application No & Locational Clearance Ref)
-  const appDate = data.submissionDate || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-  page.drawRectangle({
-    x: width - 210,
-    y: height - 68,
-    width: 160,
-    height: 38,
-    color: fillLight,
-    borderColor: borderLight,
-    borderWidth: 1
-  });
-  drawText("APPLICATION NO.", {
-    x: width - 202,
-    y: height - 42,
-    size: 7,
-    font: fontBold,
-    color: textMuted
-  });
-  drawText(data.applicationNo || "APP-2026-UNIFIED", {
-    x: width - 202,
-    y: height - 53,
-    size: 9,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText(`DATE: ${appDate}`, {
-    x: width - 202,
-    y: height - 64,
-    size: 7,
-    font: fontRegular,
-    color: textDark
-  });
-
-  // Title Banner
-  page.drawRectangle({
-    x: 50,
-    y: height - 100,
-    width: width - 100,
-    height: 24,
-    color: primaryColor
-  });
-  drawText("UNIFIED APPLICATION FOR BUILDING PERMIT & ANCILLARY CLEARANCES", {
-    x: 65,
-    y: height - 93,
-    size: 9.5,
-    font: fontBold,
-    color: rgb(1, 1, 1)
-  });
-
-  // --- 2. SECTION 1: APPLICANT & PREREQUISITE ZONING CLEARANCE ---
-  let curY = height - 115;
-  page.drawRectangle({
-    x: 50,
-    y: curY - 50,
-    width: width - 100,
-    height: 50,
-    color: rgb(1, 1, 1),
-    borderColor: borderLight,
-    borderWidth: 1
-  });
-
-  drawText("STAGE 1 PREREQUISITE CLEARANCE VERIFIED:", {
-    x: 60,
-    y: curY - 14,
-    size: 7.5,
-    font: fontBold,
-    color: accentGreen
-  });
-  drawText(`[PASSED] Locational Clearance Ref No: ${data.locationalClearanceRef || "LC-APPROVED"}`, {
-    x: 60,
-    y: curY - 26,
-    size: 8.5,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText(`Applicant Name: ${data.applicantName} | Contact: ${data.applicantPhone}`, {
-    x: 60,
-    y: curY - 37,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Address: ${data.applicantAddress}`, {
-    x: 60,
-    y: curY - 47,
-    size: 7.5,
-    font: fontRegular,
-    color: textDark
-  });
-
-  // --- 3. SECTION 2: PROJECT CLASSIFICATION & DETAILS ---
-  curY -= 65;
-  page.drawRectangle({
-    x: 50,
-    y: curY - 75,
-    width: width - 100,
-    height: 75,
-    color: fillLight,
-    borderColor: borderLight,
-    borderWidth: 1
-  });
-
-  drawText("PROJECT DESCRIPTION & SITE SPECIFICATIONS", {
-    x: 60,
-    y: curY - 12,
-    size: 8,
-    font: fontBold,
-    color: primaryColor
-  });
-
-  drawText(`Project Type: ${data.projectType?.name || "Permit Application"} (${data.projectType?.category || "General"})`, {
-    x: 60,
-    y: curY - 25,
-    size: 8.5,
-    font: fontBold,
-    color: textDark
-  });
-  drawText(`Project Name: ${data.projectName || "New Installation"}`, {
-    x: 60,
-    y: curY - 37,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Location: ${data.projectAddress || `Brgy. ${data.barangay || "San Bartolome"}, Sto. Tomas, Pampanga`}`, {
-    x: 60,
-    y: curY - 49,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
-
-  drawText(`Lot Area: ${data.lotArea || "N/A"} sq.m | Floor Area: ${data.floorArea || "N/A"} sq.m | Storeys: ${data.proposedStoreys || "1"}`, {
-    x: 60,
-    y: curY - 61,
-    size: 7.5,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Est. Project Cost: PHP ${data.projectCost || "0.00"} | Scope of Work: ${data.scopeOfWork || "New Construction"}`, {
-    x: 60,
-    y: curY - 71,
-    size: 7.5,
-    font: fontBold,
-    color: textDark
-  });
-
-  // --- 4. SECTION 3: MUNICIPAL PERMIT FORM CHECKLIST MATRIX ---
-  curY -= 90;
-  page.drawRectangle({
-    x: 50,
-    y: curY - 170,
-    width: width - 100,
-    height: 170,
-    color: rgb(1, 1, 1),
-    borderColor: borderLight,
-    borderWidth: 1
-  });
-
-  drawText("PROJECT TYPE x REQUIRED PERMIT FORM EVALUATION MATRIX", {
-    x: 60,
-    y: curY - 14,
-    size: 8,
-    font: fontBold,
-    color: primaryColor
-  });
-
-  // Table header
-  page.drawRectangle({
-    x: 55,
-    y: curY - 32,
-    width: width - 110,
-    height: 16,
-    color: rgb(0.92, 0.94, 0.98)
-  });
-  drawText("CODE", { x: 62, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
-  drawText("PERMIT / CLEARANCE FORM", { x: 105, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
-  drawText("MATRIX STATUS", { x: 330, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
-  drawText("APPLICATION STATUS", { x: 440, y: curY - 27, size: 7, font: fontBold, color: primaryColor });
-
-  const permitKeys = Object.keys(PERMIT_FORM_METADATA) as (keyof PermitFormMatrix)[];
-  let rowY = curY - 46;
-  const activeForms = Array.isArray(data.activePermitForms) ? data.activePermitForms : [];
-
-  for (const key of permitKeys) {
-    const meta = PERMIT_FORM_METADATA[key];
-    const matrixLevel = (data.projectType && data.projectType.matrix) ? data.projectType.matrix[key] : "not_required";
-    const isChecked = activeForms.includes(key);
-
-    drawText(meta.code, { x: 62, y: rowY, size: 7.5, font: fontBold, color: textDark });
-    drawText(meta.label, { x: 105, y: rowY, size: 7.5, font: fontRegular, color: textDark });
-
-    // Matrix status pill
-    let matrixText = "Generally Not Required (-)";
-    let matrixColor = textMuted;
-    if (matrixLevel === "required") {
-      matrixText = "MANDATORY [REQUIRED]";
-      matrixColor = primaryColor;
-    } else if (matrixLevel === "conditional") {
-      matrixText = "CONDITIONAL (C)";
-      matrixColor = rgb(0.8, 0.45, 0.05);
+async function fetchTemplateBytes(templatePath: string): Promise<ArrayBuffer> {
+  // In Browser environment
+  if (typeof window !== "undefined") {
+    const res = await fetch(templatePath);
+    if (!res.ok) {
+      throw new Error(`Failed to load template ${templatePath}: ${res.statusText}`);
     }
-    drawText(matrixText, { x: 330, y: rowY, size: 7, font: fontBold, color: matrixColor });
-
-    // Application checkbox status
-    if (key === "zoningPermit") {
-      drawText("PASSED & LINKED", { x: 440, y: rowY, size: 7, font: fontBold, color: accentGreen });
-    } else if (isChecked) {
-      drawText("[X] INCLUDED IN DOSSIER", { x: 440, y: rowY, size: 7, font: fontBold, color: primaryColor });
-    } else {
-      drawText("[  ] Not Selected", { x: 440, y: rowY, size: 7, font: fontRegular, color: textMuted });
-    }
-
-    rowY -= 14;
+    return await res.arrayBuffer();
   }
 
-  // --- 5. SECTION 4: DESIGN PROFESSIONALS & SIGN-OFFS ---
-  curY -= 185;
-  page.drawRectangle({
-    x: 50,
-    y: curY - 105,
-    width: width - 100,
-    height: 105,
-    color: fillLight,
-    borderColor: borderLight,
-    borderWidth: 1
-  });
+  // In Node / Server environment
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const cleanRelPath = templatePath.startsWith("/") ? templatePath.slice(1) : templatePath;
+    const candidates = [
+      path.join(process.cwd(), "frontend", "public", cleanRelPath),
+      path.join(process.cwd(), "public", cleanRelPath),
+      path.join(process.cwd(), "frontend", "public", "templates", path.basename(templatePath)),
+      path.join(process.cwd(), "Forms (Modified and Fixed)", path.basename(templatePath)),
+      path.join(process.cwd(), "..", "Forms (Modified and Fixed)", path.basename(templatePath)),
+    ];
+    for (const cand of candidates) {
+      if (fs.existsSync(cand)) {
+        const buf = fs.readFileSync(cand);
+        return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+      }
+    }
+    if (typeof fetch === "function") {
+      const res = await fetch(templatePath);
+      if (res.ok) return await res.arrayBuffer();
+    }
+  } catch {
+    if (typeof fetch === "function") {
+      const res = await fetch(templatePath);
+      if (res.ok) return await res.arrayBuffer();
+    }
+  }
+  throw new Error(`Could not load template file: ${templatePath}`);
+}
 
-  drawText("DESIGN PROFESSIONALS IN CHARGE & ACCREDITATION", {
-    x: 60,
-    y: curY - 13,
-    size: 8,
-    font: fontBold,
-    color: primaryColor
-  });
+/**
+ * Loads the official UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf
+ * and all required ancillary technical permit templates from the folder,
+ * overlays applicant responses into their respective boxes, and combines
+ * them into a single official PDF application dossier.
+ */
+export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Promise<string> {
+  // 1. Load the official Unified Building Permit Template
+  const unifiedTemplateBytes = await fetchTemplateBytes("/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf");
+  const mainDoc = await PDFDocument.load(unifiedTemplateBytes);
 
-  drawText(`Architect: ${data.architectName || "Pending Appointment"} (PRC Reg: ${data.architectPRC || "N/A"})`, {
-    x: 60,
-    y: curY - 28,
-    size: 7.5,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Civil/Structural Engineer: ${data.civilEngineerName || "Pending Appointment"} (PRC Reg: ${data.civilEngineerPRC || "N/A"})`, {
-    x: 60,
-    y: curY - 42,
-    size: 7.5,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Professional Electrical Engineer: ${data.electricalEngineerName || "Pending Appointment"} (PRC Reg: ${data.electricalEngineerPRC || "N/A"})`, {
-    x: 60,
-    y: curY - 56,
-    size: 7.5,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Master Plumber / Sanitary Engineer: ${data.masterPlumberName || "Pending Appointment"} (PRC Reg: ${data.masterPlumberPRC || "N/A"})`, {
-    x: 60,
-    y: curY - 70,
-    size: 7.5,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Mechanical / Electronics Engineer: ${data.mechanicalEngineerName || data.electronicsEngineerName || "N/A"}`, {
-    x: 60,
-    y: curY - 84,
-    size: 7.5,
-    font: fontRegular,
-    color: textDark
-  });
+  const fontBold = await mainDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await mainDoc.embedFont(StandardFonts.Helvetica);
 
-  // --- 6. SECTION 5: APPLICANT ATTESTATION & OFFICIAL MUNICIPAL SEAL ---
-  curY -= 120;
-  page.drawRectangle({
-    x: 50,
-    y: curY - 75,
-    width: width - 100,
-    height: 75,
-    color: rgb(1, 1, 1),
-    borderColor: borderLight,
-    borderWidth: 1
-  });
+  const darkNavy = rgb(0.05, 0.12, 0.35); // Official document ink color
 
-  drawText("APPLICANT ATTESTATION & DIGITAL VERIFICATION", {
-    x: 60,
-    y: curY - 12,
-    size: 8,
-    font: fontBold,
-    color: primaryColor
-  });
+  const p1 = mainDoc.getPage(0);
 
-  drawText("I hereby certify that all statements made herein are true and correct to the best of my knowledge and belief.", {
-    x: 60,
-    y: curY - 24,
-    size: 7,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText("All construction will conform to the National Building Code of the Philippines (PD 1096) and local ordinances.", {
-    x: 60,
-    y: curY - 34,
-    size: 7,
-    font: fontRegular,
-    color: textDark
-  });
+  const drawP1Text = (
+    text: string | undefined | null,
+    x: number,
+    y: number,
+    fontSize: number = 8,
+    isBold: boolean = false,
+    maxWidth?: number
+  ) => {
+    if (!text) return;
+    let clean = safeText(text).trim();
+    if (maxWidth && clean.length > maxWidth) {
+      clean = clean.slice(0, maxWidth);
+    }
+    p1.drawText(clean, {
+      x,
+      y,
+      size: fontSize,
+      font: isBold ? fontBold : fontRegular,
+      color: darkNavy,
+    });
+  };
 
-  page.drawLine({
-    start: { x: 60, y: curY - 60 },
-    end: { x: 240, y: curY - 60 },
-    thickness: 1,
-    color: borderLight
-  });
-  drawText((data.applicantName || "APPLICANT").toUpperCase(), {
-    x: 60,
-    y: curY - 55,
-    size: 8,
-    font: fontBold,
-    color: textDark
-  });
-  drawText("Signature of Applicant / Owner", {
-    x: 60,
-    y: curY - 68,
-    size: 6.5,
-    font: fontRegular,
-    color: textMuted
-  });
+  const drawP1Check = (x: number, y: number) => {
+    p1.drawText("X", {
+      x,
+      y,
+      size: 8.5,
+      font: fontBold,
+      color: darkNavy,
+    });
+  };
 
-  // Municipal evaluation stamp box
-  page.drawRectangle({
-    x: width - 230,
-    y: curY - 70,
-    width: 170,
-    height: 55,
-    borderColor: primaryColor,
-    borderWidth: 1,
-    color: fillLight
-  });
-  drawText("OFFICIAL EVALUATION DESK", {
-    x: width - 215,
-    y: curY - 24,
-    size: 7.5,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText("Status: RECEIVED FOR EVALUATION", {
-    x: width - 215,
-    y: curY - 36,
-    size: 7,
-    font: fontBold,
-    color: accentGreen
-  });
-  drawText(`Date Received: ${appDate}`, {
-    x: width - 215,
-    y: curY - 48,
-    size: 7,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText("Municipal Building Official / Staff", {
-    x: width - 215,
-    y: curY - 60,
-    size: 6.5,
-    font: fontRegular,
-    color: textMuted
-  });
+  // --- HEADER: Application No & Prerequisites ---
+  drawP1Text(data.applicationNo || "APP-2026-UNIFIED", 115, 788, 9, true);
 
-  // Footer
-  drawText("E-Tayo Unified Permit Portal | Municipality of Sto. Tomas, Pampanga | Generated automatically via NBCP Form 1 Engine", {
-    x: 50,
-    y: 20,
-    size: 6.5,
-    font: fontRegular,
-    color: textMuted
-  });
+  // Mark Locational Clearance prerequisite
+  if (data.locationalClearanceRef) {
+    drawP1Check(235, 802);
+  }
 
-  return await pdfDoc.saveAsBase64({ dataUri: false });
+  // Parse applicant name (Last, First, Middle)
+  const nameParts = (data.applicantName || "").trim().split(" ");
+  let lastName = "";
+  let firstName = "";
+  let mi = "";
+  if (nameParts.length === 1) {
+    lastName = nameParts[0];
+  } else if (nameParts.length === 2) {
+    firstName = nameParts[0];
+    lastName = nameParts[1];
+  } else {
+    firstName = nameParts.slice(0, -1).join(" ");
+    lastName = nameParts[nameParts.length - 1];
+    mi = nameParts[1] ? nameParts[1][0].toUpperCase() + "." : "";
+  }
+
+  // --- BOX 1: OWNER / APPLICANT ---
+  drawP1Text(lastName.toUpperCase(), 42, 735, 8.5, true, 30);
+  drawP1Text(firstName.toUpperCase(), 240, 735, 8.5, true, 20);
+  drawP1Text(mi || "N/A", 360, 735, 8, true);
+  drawP1Text(data.applicantTIN || "000-123-456-000", 395, 735, 8, false);
+
+  drawP1Text(data.formOfOwnership || "INDIVIDUAL", 200, 712, 8, false, 25);
+
+  // Address line
+  drawP1Text(data.projectAddress || data.applicantAddress || "Poblacion", 42, 692, 7.5, false, 25);
+  drawP1Text(data.barangay || "Sto. Tomas", 173, 692, 7.5, false, 15);
+  drawP1Text("Sto. Tomas, Pampanga", 242, 692, 7.5, false, 20);
+  drawP1Text("2020", 342, 692, 7.5, false);
+  drawP1Text(data.applicantPhone || "0917-123-4567", 426, 692, 7.5, true);
+
+  // --- BOX 2: LOCATION OF CONSTRUCTION ---
+  drawP1Text(data.lotNo || "Lot 12", 168, 680, 7.5, true);
+  drawP1Text(data.blockNo || "Blk 4", 226, 680, 7.5, true);
+  drawP1Text(data.tctNo || "TCT-123456", 285, 680, 7.5, true);
+  drawP1Text(data.taxDecNo || "TD-2026-0012", 420, 680, 7.5, false);
+
+  drawP1Text(data.projectAddress || "Main Street", 65, 666, 7.5, false, 25);
+  drawP1Text(data.barangay || "San Bartolome", 185, 666, 7.5, true);
+  drawP1Text("Sto. Tomas, Pampanga", 350, 666, 7.5, true);
+
+  // --- BOX 3: SCOPE OF WORK ---
+  const scopeNorm = (data.scopeOfWork || "new construction").toLowerCase();
+  if (scopeNorm.includes("erect")) {
+    drawP1Check(37, 629);
+  } else if (scopeNorm.includes("add")) {
+    drawP1Check(37, 617);
+  } else if (scopeNorm.includes("alter")) {
+    drawP1Check(37, 604);
+  } else if (scopeNorm.includes("renov")) {
+    drawP1Check(168, 642);
+  } else if (scopeNorm.includes("convert") || scopeNorm.includes("conversion")) {
+    drawP1Check(168, 629);
+  } else if (scopeNorm.includes("repair")) {
+    drawP1Check(168, 617);
+  } else if (scopeNorm.includes("accessory")) {
+    drawP1Check(303, 629);
+  } else if (scopeNorm.includes("other")) {
+    drawP1Check(303, 604);
+    drawP1Text(data.scopeOthers || data.scopeOfWork, 350, 604, 7.5, false);
+  } else {
+    // Default: New Construction
+    drawP1Check(37, 642);
+  }
+
+  // --- BOX 4: USE OR CHARACTER OF OCCUPANCY ---
+  const cat = data.projectType?.category || "Residential";
+  if (cat === "Commercial") {
+    drawP1Check(228, 569); // Commercial Store / Bank
+  } else if (cat === "Industrial") {
+    drawP1Check(226, 513); // Light Industrial
+  } else if (cat === "Institutional") {
+    drawP1Check(56, 463); // Institutional
+  } else {
+    // Default: Group A - Residential Dwellings
+    drawP1Check(56, 569); // Single / Duplex
+  }
+
+  // --- BOX 5: BUILDING DETAILS & ESTIMATED COSTS ---
+  drawP1Text((data.projectType?.name || "Residential").toUpperCase(), 135, 423, 8, true, 20);
+  drawP1Text(`PHP ${data.projectCost || "1,500,000.00"}`, 310, 423, 8, true);
+
+  drawP1Text(data.numberOfUnits || "1", 135, 413, 8, false);
+  drawP1Text(data.projectCost || "1,000,000.00", 265, 413, 7.5, false);
+
+  drawP1Text(data.proposedStoreys || "1", 135, 404, 8, false);
+  drawP1Text("150,000.00", 265, 404, 7.5, false); // Electrical cost
+
+  drawP1Text(data.floorArea ? `${data.floorArea}` : "150", 120, 395, 8, true);
+  drawP1Text("100,000.00", 265, 395, 7.5, false); // Mechanical cost
+
+  drawP1Text(data.lotArea ? `${data.lotArea}` : "200", 120, 386, 8, true);
+  drawP1Text("50,000.00", 265, 386, 7.5, false); // Electronics cost
+
+  drawP1Text("100,000.00", 265, 377, 7.5, false); // Plumbing cost
+
+  const constDate = data.submissionDate || new Date().toLocaleDateString();
+  drawP1Text(constDate, 145, 368, 7.5, false);
+  drawP1Text("WITHIN 180 DAYS", 330, 368, 7.5, false);
+
+  // --- DESIGN PROFESSIONALS & SIGNATURES ---
+  const leadEngr = data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE";
+  drawP1Text(leadEngr.toUpperCase(), 120, 295, 8, true);
+  drawP1Text(data.civilEngineerPRC || data.architectPRC || "PRC-0078923", 350, 306, 7.5, false);
+  drawP1Text(data.civilEngineerPTR || "PTR-ST-2026-001", 350, 294, 7.5, false);
+  drawP1Text("Sto. Tomas, Pampanga", 350, 335, 7.5, false);
+
+  // Owner signature Box 4
+  drawP1Text((data.applicantName || "APPLICANT").toUpperCase(), 80, 230, 8, true);
+  drawP1Text(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 80, 210, 7.5, false);
+
+  // 2. Load & Append Active Technical / Ancillary Permit Forms
+  const activeForms = Array.isArray(data.activePermitForms) ? data.activePermitForms : [];
+
+  for (const formKey of activeForms) {
+    if (formKey === "buildingPermit" || formKey === "zoningPermit" || formKey === "fireBfpPermit") {
+      continue;
+    }
+
+    const meta = PERMIT_FORM_METADATA[formKey];
+    if (!meta || !meta.templateFile) continue;
+
+    try {
+      const techBytes = await fetchTemplateBytes(meta.templateFile);
+      const techDoc = await PDFDocument.load(techBytes);
+      const techFontBold = await techDoc.embedFont(StandardFonts.HelveticaBold);
+      const techFontRegular = await techDoc.embedFont(StandardFonts.Helvetica);
+      const tp1 = techDoc.getPage(0);
+
+      const drawTech = (
+        text: string | undefined | null,
+        x: number,
+        y: number,
+        fontSize: number = 8,
+        isBold: boolean = false,
+        maxWidth?: number
+      ) => {
+        if (!text) return;
+        let clean = safeText(text).trim();
+        if (maxWidth && clean.length > maxWidth) {
+          clean = clean.slice(0, maxWidth);
+        }
+        tp1.drawText(clean, {
+          x,
+          y,
+          size: fontSize,
+          font: isBold ? techFontBold : techFontRegular,
+          color: darkNavy,
+        });
+      };
+
+      // Stamp common fields on Box 1 of each technical permit
+      if (formKey === "electricalPermit") {
+        drawTech(data.applicationNo, 115, 785, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 705, 8.5, true);
+        drawTech(data.applicantAddress, 100, 677, 7.5, false);
+        drawTech(data.projectAddress, 140, 650, 7.5, true);
+        // [X] New Installation
+        tp1.drawText("X", { x: 45, y: 627, size: 8.5, font: techFontBold, color: darkNavy });
+        // Professional Electrical Engineer
+        if (data.electricalEngineerName) {
+          drawTech(data.electricalEngineerName.toUpperCase(), 65, 490, 8, true);
+          drawTech(data.electricalEngineerPRC || "PRC-PEE-0033421", 420, 503, 7.5, false);
+          drawTech(data.electricalEngineerPTR || "PTR-ST-2026-4412", 85, 447, 7.5, false);
+          drawTech("Sto. Tomas, Pampanga", 85, 462, 7.5, false);
+        }
+      } else if (formKey === "mechanicalPermit") {
+        drawTech(data.applicationNo, 115, 740, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 665, 8.5, true);
+        drawTech(data.projectAddress, 100, 580, 7.5, true);
+        // Equipment / Machinery Scope checkbox
+        if (data.projectType?.id === "elevator_escalator") {
+          // Escalator: x = 213.8, y = 460.8; Passenger Elevator: x = 213.8, y = 433.1
+          tp1.drawText("X", { x: 215, y: 461, size: 8.5, font: techFontBold, color: darkNavy });
+          tp1.drawText("X", { x: 215, y: 433, size: 8.5, font: techFontBold, color: darkNavy });
+        } else if (data.projectType?.id === "generator_set") {
+          // Internal Combustion Engine: x = 33.4, y = 460.8
+          tp1.drawText("X", { x: 35, y: 461, size: 8.5, font: techFontBold, color: darkNavy });
+        } else {
+          // Ventilation / AC: x = 213.8, y = 470
+          tp1.drawText("X", { x: 215, y: 470, size: 8.5, font: techFontBold, color: darkNavy });
+        }
+        // Professional Mechanical Engineer
+        if (data.mechanicalEngineerName) {
+          drawTech(data.mechanicalEngineerName.toUpperCase(), 80, 303, 8, true);
+          drawTech(data.mechanicalEngineerPRC || "PRC-PME-0021489", 65, 265, 7.5, false);
+          drawTech("Sto. Tomas, Pampanga", 30, 284, 7.5, false);
+        }
+        drawTech(data.applicantName?.toUpperCase(), 80, 160, 8, true);
+      } else if (formKey === "sanitaryPermit") {
+        drawTech(data.applicationNo, 115, 785, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 715, 8.5, true);
+        drawTech(data.projectAddress, 100, 690, 7.5, true);
+        tp1.drawText("X", { x: 40, y: 666, size: 8.5, font: techFontBold, color: darkNavy }); // New installation
+        if (data.masterPlumberName) {
+          drawTech(data.masterPlumberName.toUpperCase(), 120, 210, 8, true);
+          drawTech(data.masterPlumberPRC || "PRC-MP-0012984", 420, 210, 7.5, false);
+        }
+      } else if (formKey === "architecturalPermit") {
+        drawTech(data.applicationNo, 115, 785, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 715, 8.5, true);
+        drawTech(data.projectAddress, 100, 680, 7.5, true);
+        if (data.architectName) {
+          drawTech(data.architectName.toUpperCase(), 120, 295, 8, true);
+          drawTech(data.architectPRC || "PRC-ARC-0045211", 350, 295, 7.5, false);
+        }
+      } else if (formKey === "civilStructuralPermit") {
+        drawTech(data.applicationNo, 115, 750, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 690, 8.5, true);
+        drawTech(data.projectAddress, 100, 660, 7.5, true);
+        if (data.civilEngineerName) {
+          drawTech(data.civilEngineerName.toUpperCase(), 120, 280, 8, true);
+          drawTech(data.civilEngineerPRC || "PRC-CE-0078923", 350, 280, 7.5, false);
+        }
+      } else if (formKey === "electronicsPermit") {
+        drawTech(data.applicationNo, 115, 785, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 715, 8.5, true);
+        drawTech(data.projectAddress, 100, 680, 7.5, true);
+        if (data.electronicsEngineerName) {
+          drawTech(data.electronicsEngineerName.toUpperCase(), 120, 295, 8, true);
+          drawTech(data.electronicsEngineerPRC || "PRC-PECE-0038912", 350, 295, 7.5, false);
+        }
+      }
+
+      // Copy pages of this official filled technical permit into the unified main document
+      const copiedPages = await mainDoc.copyPages(techDoc, techDoc.getPageIndices());
+      for (const cp of copiedPages) {
+        mainDoc.addPage(cp);
+      }
+    } catch (techErr) {
+      console.warn(`Could not attach technical permit form ${formKey}:`, techErr);
+    }
+  }
+
+  return await mainDoc.saveAsBase64({ dataUri: false });
 }

@@ -190,7 +190,8 @@ export default function LocationalClearanceGoogleForm({
           preferredMode,
           ctcNumber,
           ctcIssuedAt,
-          ctcIssuedOn
+          ctcIssuedOn,
+          sketchImageBase64: sketchImageBase64 || undefined
         });
       } catch (pdfErr) {
         console.warn("Notice: Client PDF generation skipped or fallback:", pdfErr);

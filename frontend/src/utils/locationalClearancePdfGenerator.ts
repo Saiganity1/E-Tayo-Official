@@ -15,23 +15,40 @@ export interface LocationalClearancePdfData {
   projectName: string;
   projectType: string;
   projectNature: string;
+  natureOthers?: string;
   projectAddress: string;
   barangay: string;
   lotArea: string;
   bldgArea: string;
   improvementArea?: string;
   rightOverLand: string;
+  rightOverLandOthers?: string;
   projectTenure: string;
 
   existingLandUse: string;
+  landUseOthers?: string;
+  agriculturalCrop?: string;
   isTenanted: string;
   projectCost: string;
   projectCostWords?: string;
+
+  hasWrittenNotice?: string;
+  noticeOfficer?: string;
+  noticeOrder?: string;
+  noticeDate?: string;
+
+  hasRelatedAction?: string;
+  relatedOffice?: string;
+  relatedDate?: string;
+  relatedActionTaken?: string;
 
   preferredMode?: string;
   ctcNumber?: string;
   ctcIssuedAt?: string;
   ctcIssuedOn?: string;
+
+  sketchImageBase64?: string;
+  sketchImageBytes?: Uint8Array;
 }
 
 function safeText(str: string | undefined | null): string {
@@ -46,336 +63,358 @@ function safeText(str: string | undefined | null): string {
     .replace(/[^\x20-\x7E\t\n\r]/g, "");
 }
 
+async function fetchTemplateBytes(templatePath: string): Promise<ArrayBuffer> {
+  // In Browser environment
+  if (typeof window !== "undefined") {
+    const res = await fetch(templatePath);
+    if (!res.ok) {
+      throw new Error(`Failed to load template ${templatePath}: ${res.statusText}`);
+    }
+    return await res.arrayBuffer();
+  }
+
+  // In Node / Server environment
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const cleanRelPath = templatePath.startsWith("/") ? templatePath.slice(1) : templatePath;
+    const candidates = [
+      path.join(process.cwd(), "frontend", "public", cleanRelPath),
+      path.join(process.cwd(), "public", cleanRelPath),
+      path.join(process.cwd(), "frontend", "public", "templates", path.basename(templatePath)),
+      path.join(process.cwd(), "Forms (Modified and Fixed)", path.basename(templatePath)),
+      path.join(process.cwd(), "..", "Forms (Modified and Fixed)", path.basename(templatePath)),
+    ];
+    for (const cand of candidates) {
+      if (fs.existsSync(cand)) {
+        const buf = fs.readFileSync(cand);
+        return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+      }
+    }
+    if (typeof fetch === "function") {
+      const res = await fetch(templatePath);
+      if (res.ok) return await res.arrayBuffer();
+    }
+  } catch {
+    if (typeof fetch === "function") {
+      const res = await fetch(templatePath);
+      if (res.ok) return await res.arrayBuffer();
+    }
+  }
+  throw new Error(`Could not load template file: ${templatePath}`);
+}
+
+/**
+ * Loads the official Sto. Tomas Locational Clearance PDF template
+ * (LOCATIONAL-CLEARANCE-Sto-Tomas.pdf) and stamps all applicant responses
+ * directly into Boxes 1 through 19 at exact pixel-mapped coordinates.
+ */
 export async function generateLocationalClearancePdf(data: LocationalClearancePdfData): Promise<string> {
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([595.28, 841.89]); // A4 Size
-  const { width, height } = page.getSize();
+  const templateBytes = await fetchTemplateBytes("/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf");
+  const pdfDoc = await PDFDocument.load(templateBytes);
 
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  const primaryColor = rgb(0.02, 0.37, 0.27); // Sto. Tomas Zoning Green
-  const textDark = rgb(0.09, 0.13, 0.24);
-  const textMuted = rgb(0.35, 0.42, 0.53);
-  const borderLight = rgb(0.8, 0.84, 0.9);
-  const fillLight = rgb(0.95, 0.98, 0.96);
+  const page = pdfDoc.getPage(0);
+  const darkNavy = rgb(0.05, 0.12, 0.35); // Official document ink color
 
-  const drawText = (text: string, options: any) => {
-    page.drawText(safeText(text), options);
+  const drawText = (
+    text: string | undefined | null,
+    x: number,
+    y: number,
+    fontSize: number = 8,
+    isBold: boolean = false,
+    maxWidth?: number
+  ) => {
+    if (!text) return;
+    let clean = safeText(text).trim();
+    if (maxWidth && clean.length > maxWidth) {
+      clean = clean.slice(0, maxWidth);
+    }
+    page.drawText(clean, {
+      x,
+      y,
+      size: fontSize,
+      font: isBold ? fontBold : fontRegular,
+      color: darkNavy,
+    });
   };
 
-  // --- 1. OFFICIAL MUNICIPAL HEADER ---
-  drawText("REPUBLIC OF THE PHILIPPINES", {
-    x: 50,
-    y: height - 40,
-    size: 8.5,
-    font: fontRegular,
-    color: textMuted
-  });
-  drawText("PROVINCE OF PAMPANGA | MUNICIPALITY OF STO. TOMAS", {
-    x: 50,
-    y: height - 51,
-    size: 9.5,
-    font: fontBold,
-    color: textDark
-  });
-  drawText("OFFICE OF THE ZONING ADMINISTRATOR / MPDO", {
-    x: 50,
-    y: height - 63,
-    size: 11,
-    font: fontBold,
-    color: primaryColor
-  });
-
-  // Application Reference Badge
-  page.drawRectangle({
-    x: width - 210,
-    y: height - 68,
-    width: 160,
-    height: 38,
-    color: fillLight,
-    borderColor: rgb(0.65, 0.85, 0.75),
-    borderWidth: 1
-  });
-  drawText("CLEARANCE REF NO.", {
-    x: width - 202,
-    y: height - 42,
-    size: 7,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText(data.applicationNo || "LC-2026-0001", {
-    x: width - 202,
-    y: height - 53,
-    size: 9,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText(`FILED: ${data.submissionDate}`, {
-    x: width - 202,
-    y: height - 64,
-    size: 7,
-    font: fontRegular,
-    color: textDark
-  });
-
-  // Title Banner
-  page.drawRectangle({
-    x: 50,
-    y: height - 98,
-    width: width - 100,
-    height: 22,
-    color: primaryColor
-  });
-  drawText("OFFICIAL APPLICATION FOR LOCATIONAL CLEARANCE / ZONING COMPLIANCE", {
-    x: 65,
-    y: height - 92,
-    size: 9.5,
-    font: fontBold,
-    color: rgb(1, 1, 1)
-  });
-
-  let curY = height - 110;
-
-  // --- SECTION 1: APPLICANT & OWNER INFORMATION ---
-  page.drawRectangle({
-    x: 50,
-    y: curY - 78,
-    width: width - 100,
-    height: 78,
-    color: rgb(1, 1, 1),
-    borderColor: borderLight,
-    borderWidth: 1
-  });
-  drawText("1. APPLICANT & ENTERPRISE INFORMATION", {
-    x: 60,
-    y: curY - 14,
-    size: 8,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText(`Applicant Full Name: ${data.applicantName}`, {
-    x: 60,
-    y: curY - 26,
-    size: 8,
-    font: fontBold,
-    color: textDark
-  });
-  drawText(`Postal Address: ${data.applicantAddress}`, {
-    x: 60,
-    y: curY - 38,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Contact Phone: ${data.applicantPhone || "N/A"} | Email: ${data.applicantEmail || "N/A"}`, {
-    x: 60,
-    y: curY - 50,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Corporation/Trade Name: ${data.corporationName || "None (Individual Applicant)"}`, {
-    x: 60,
-    y: curY - 62,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Authorized Representative: ${data.representativeName || "None (Self-Represented)"}`, {
-    x: 60,
-    y: curY - 74,
-    size: 7.5,
-    font: fontRegular,
-    color: textMuted
-  });
-
-  curY -= 88;
-
-  // --- SECTION 2: PROJECT NATURE & LOCATION ---
-  page.drawRectangle({
-    x: 50,
-    y: curY - 115,
-    width: width - 100,
-    height: 115,
-    color: rgb(1, 1, 1),
-    borderColor: borderLight,
-    borderWidth: 1
-  });
-  drawText("2. PROJECT DETAILS & MUNICIPAL SITE LOCATION", {
-    x: 60,
-    y: curY - 14,
-    size: 8,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText(`Project Name: ${data.projectName}`, {
-    x: 60,
-    y: curY - 28,
-    size: 8.5,
-    font: fontBold,
-    color: textDark
-  });
-  drawText(`Project Type / Classification: ${data.projectType}`, {
-    x: 60,
-    y: curY - 40,
-    size: 8,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText(`Nature of Project: ${data.projectNature} | Tenure: ${data.projectTenure}`, {
-    x: 60,
-    y: curY - 52,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Project Address: ${data.projectAddress}`, {
-    x: 60,
-    y: curY - 64,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Barangay: Brgy. ${data.barangay}, Sto. Tomas, Pampanga`, {
-    x: 60,
-    y: curY - 76,
-    size: 8,
-    font: fontBold,
-    color: textDark
-  });
-  drawText(`Right over Land: ${data.rightOverLand} | Lot Area: ${data.lotArea} sq.m | Building Area: ${data.bldgArea} sq.m`, {
-    x: 60,
-    y: curY - 88,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
-  drawText(`Existing Land Use: ${data.existingLandUse} | Tenancy Status: ${data.isTenanted}`, {
-    x: 60,
-    y: curY - 100,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
-
-  curY -= 125;
-
-  // --- SECTION 3: PROJECT COST & ORDINANCE FEES ---
-  page.drawRectangle({
-    x: 50,
-    y: curY - 55,
-    width: width - 100,
-    height: 55,
-    color: fillLight,
-    borderColor: borderLight,
-    borderWidth: 1
-  });
-  drawText("3. ESTIMATED PROJECT COST & ASSESSMENT BASIS", {
-    x: 60,
-    y: curY - 14,
-    size: 8,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText(`Project Cost (PHP): Php ${data.projectCost}`, {
-    x: 60,
-    y: curY - 28,
-    size: 9,
-    font: fontBold,
-    color: textDark
-  });
-  if (data.projectCostWords) {
-    drawText(`In Words: ${data.projectCostWords}`, {
-      x: 60,
-      y: curY - 40,
-      size: 7.5,
-      font: fontRegular,
-      color: textMuted
+  const drawCheck = (x: number, y: number) => {
+    page.drawText("X", {
+      x,
+      y,
+      size: 8.5,
+      font: fontBold,
+      color: darkNavy,
     });
+  };
+
+  // --- HEADER: Application Details ---
+  drawText(data.applicationNo || "LC-2026-PENDING", 115, 698, 8.5, true);
+  drawText(data.submissionDate || new Date().toLocaleDateString(), 115, 686, 8, false);
+  drawText("ONLINE-PORTAL", 115, 674, 8, false);
+
+  // --- BOX 1: Name of Applicant ---
+  drawText(data.applicantName?.toUpperCase(), 46, 642, 8.5, true, 45);
+
+  // --- BOX 2: Name of Corporation ---
+  if (data.corporationName && data.corporationName.trim()) {
+    drawText(data.corporationName.toUpperCase(), 314, 642, 8, true, 45);
+  } else {
+    drawText("N/A (INDIVIDUAL APPLICANT)", 314, 642, 8, false);
   }
-  drawText(`Preferred Release Mode: ${data.preferredMode || "Pick-up at Municipal Hall"}`, {
-    x: 60,
-    y: curY - 50,
-    size: 7.5,
-    font: fontRegular,
-    color: textDark
-  });
 
-  curY -= 65;
+  // --- BOX 3: Address / Telephone of Applicant ---
+  const addrTel = `${data.applicantAddress || ""}${data.applicantPhone ? ` | Tel: ${data.applicantPhone}` : ""}`;
+  drawText(addrTel, 46, 616, 7.5, false, 55);
 
-  // --- SECTION 4: OATH & CERTIFICATION ---
-  page.drawRectangle({
-    x: 50,
-    y: curY - 75,
-    width: width - 100,
-    height: 75,
-    color: rgb(1, 1, 1),
-    borderColor: borderLight,
-    borderWidth: 1
-  });
-  drawText("4. APPLICANT'S SWORN OATH & VERIFICATION", {
-    x: 60,
-    y: curY - 14,
-    size: 8,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText("I hereby certify that all information contained herein is true, correct, and complete to the best", {
-    x: 60,
-    y: curY - 26,
-    size: 7.5,
-    font: fontRegular,
-    color: textMuted
-  });
-  drawText("of my knowledge and belief under the penalties of perjury and Sto. Tomas Municipal Zoning Ordinances.", {
-    x: 60,
-    y: curY - 36,
-    size: 7.5,
-    font: fontRegular,
-    color: textMuted
-  });
-  drawText(`Community Tax Certificate (CTC): ${data.ctcNumber || "CTC-VERIFIED"}`, {
-    x: 60,
-    y: curY - 50,
-    size: 8,
-    font: fontBold,
-    color: textDark
-  });
-  drawText(`Issued At: ${data.ctcIssuedAt || "Sto. Tomas, Pampanga"} | Issued On: ${data.ctcIssuedOn || data.submissionDate}`, {
-    x: 60,
-    y: curY - 62,
-    size: 8,
-    font: fontRegular,
-    color: textDark
-  });
+  // --- BOX 4: Address / Telephone of Corporation ---
+  drawText(data.corporationName ? (data.applicantAddress || "N/A") : "N/A", 314, 616, 7.5, false, 55);
 
-  curY -= 85;
+  // --- BOX 5: Authorized Representative ---
+  if (data.representativeName && data.representativeName.trim()) {
+    drawText(data.representativeName.toUpperCase(), 46, 590, 8, true, 45);
+  } else {
+    drawText("N/A (SELF-REPRESENTED)", 46, 590, 8, false);
+  }
 
-  // --- FOOTER NOTICE ---
-  page.drawRectangle({
-    x: 50,
-    y: 35,
-    width: width - 100,
-    height: 30,
-    color: fillLight,
-    borderColor: rgb(0.65, 0.85, 0.75),
-    borderWidth: 1
-  });
-  drawText("e-Tayo Sto. Tomas Municipal e-Governance & Permitting System", {
-    x: width / 2 - 130,
-    y: 52,
-    size: 7.5,
-    font: fontBold,
-    color: primaryColor
-  });
-  drawText("Official Digital Copy Automatically Synced to Municipal Google Drive Records", {
-    x: width / 2 - 145,
-    y: 42,
-    size: 7,
-    font: fontRegular,
-    color: textMuted
-  });
+  // --- BOX 6: Address / Tel of Authorized Representative ---
+  if (data.representativeName && data.representativeName.trim()) {
+    const repContact = `${data.representativeAddress || data.applicantAddress || ""}${data.representativePhone ? ` | Tel: ${data.representativePhone}` : ""}`;
+    drawText(repContact, 314, 590, 7.5, false, 55);
+  } else {
+    drawText("N/A", 314, 590, 7.5, false);
+  }
+
+  // --- BOX 7: Project Type ---
+  drawText(data.projectType?.toUpperCase() || data.projectName?.toUpperCase(), 46, 565, 8, true, 48);
+
+  // --- BOX 8: Project Nature ---
+  const natureNorm = (data.projectNature || "").toLowerCase();
+  if (natureNorm.includes("others") || natureNorm.includes("renov") || natureNorm.includes("alter") || natureNorm.includes("change")) {
+    drawCheck(443.5, 567);
+    const othersText = data.natureOthers || data.projectNature || "Renovation / Alteration";
+    drawText(othersText, 478, 567, 7.5, true, 22);
+  } else {
+    // Default: New Development
+    drawCheck(323.5, 567);
+  }
+
+  // --- BOX 9: Project Location ---
+  const fullLoc = data.projectAddress || `Sto. Tomas, Pampanga`;
+  drawText(fullLoc, 46, 530, 8, true, 60);
+
+  // --- BOX 10: Project Area (in square meters) ---
+  drawText(data.lotArea ? `${data.lotArea} sq.m.` : "", 340, 542, 8, true);
+  drawText(data.bldgArea ? `${data.bldgArea} sq.m.` : "", 445, 542, 8, true);
+  if (data.improvementArea && data.improvementArea !== "0") {
+    drawText(`${data.improvementArea} sq.m.`, 545, 542, 7.5, true);
+  }
+
+  // --- BOX 11: Right Over Land ---
+  const rightNorm = (data.rightOverLand || "").toLowerCase();
+  if (rightNorm.includes("lease")) {
+    drawCheck(58.5, 506);
+  } else if (rightNorm.includes("other")) {
+    drawCheck(135.5, 514);
+    if (data.rightOverLandOthers) {
+      drawText(data.rightOverLandOthers, 175, 514, 7.5, false, 25);
+    }
+  } else {
+    // Default: Owner
+    drawCheck(58.5, 514);
+  }
+
+  // --- BOX 12: Project Tenure ---
+  const tenureNorm = (data.projectTenure || "").toLowerCase();
+  if (tenureNorm.includes("temp")) {
+    drawCheck(326.5, 506);
+  } else {
+    drawCheck(326.5, 514);
+  }
+
+  // --- BOX 13: Existing Land Use of Project Site ---
+  const landUseNorm = (data.existingLandUse || "").toLowerCase();
+  if (landUseNorm.includes("comm")) {
+    drawCheck(125.5, 485);
+  } else if (landUseNorm.includes("indus")) {
+    drawCheck(125.5, 475);
+  } else if (landUseNorm.includes("instit")) {
+    drawCheck(58.5, 475);
+  } else if (landUseNorm.includes("agri")) {
+    drawCheck(305.5, 485);
+    if (data.agriculturalCrop) {
+      drawText(data.agriculturalCrop, 415, 485, 7.5, false, 20);
+    }
+  } else if (landUseNorm.includes("vacant") || landUseNorm.includes("idle")) {
+    drawCheck(240.5, 485);
+  } else if (landUseNorm.includes("other")) {
+    drawCheck(195.5, 485);
+    if (data.landUseOthers) {
+      drawText(data.landUseOthers, 215, 485, 7.5, false, 15);
+    }
+  } else {
+    // Default: Residential
+    drawCheck(58.5, 485);
+  }
+
+  // Tenancy
+  const isTenNorm = (data.isTenanted || "").toLowerCase();
+  if (isTenNorm === "yes" || isTenNorm.includes("tenanted") && !isTenNorm.includes("not")) {
+    drawCheck(305.5, 475);
+  } else {
+    drawCheck(375.5, 475);
+  }
+
+  // --- BOX 14: Project Cost (in pesos, write in words and figures) ---
+  if (data.projectCostWords) {
+    drawText(data.projectCostWords, 46, 450, 7.5, false, 65);
+  } else {
+    drawText(`Estimated Total Cost: PHP ${data.projectCost}`, 46, 450, 7.5, false, 65);
+  }
+  drawText(data.projectCost || "1,500,000.00", 420, 455, 8.5, true);
+
+  // --- BOX 15: Written Notice from LGU ---
+  const noticeNorm = (data.hasWrittenNotice || "no").toLowerCase();
+  if (noticeNorm === "yes") {
+    drawCheck(58.5, 422);
+    if (data.noticeOfficer) drawText(data.noticeOfficer, 125, 414, 7, false);
+    if (data.noticeOrder) drawText(data.noticeOrder, 125, 406, 7, false);
+    if (data.noticeDate) drawText(data.noticeDate, 280, 406, 7, false);
+  } else {
+    drawCheck(275.5, 422);
+  }
+
+  // --- BOX 16: Related Action with LGU ---
+  const actionNorm = (data.hasRelatedAction || "no").toLowerCase();
+  if (actionNorm === "yes") {
+    drawCheck(58.5, 378);
+    if (data.relatedOffice) drawText(data.relatedOffice, 175, 370, 7, false);
+    if (data.relatedDate) drawText(data.relatedDate, 100, 363, 7, false);
+    if (data.relatedActionTaken) drawText(data.relatedActionTaken, 230, 363, 7, false);
+  } else {
+    drawCheck(275.5, 378);
+  }
+
+  // --- BOX 17: Preferred Mode of Release ---
+  const modeNorm = (data.preferredMode || "").toLowerCase();
+  if (modeNorm.includes("mail") && modeNorm.includes("rep")) {
+    drawCheck(370.5, 347);
+  } else if (modeNorm.includes("mail")) {
+    drawCheck(235.5, 347);
+  } else {
+    // Default: Pick-up at Municipal Hall
+    drawCheck(58.5, 347);
+  }
+
+  // --- BOX 18 & 19: Signatures ---
+  drawText(data.applicantName?.toUpperCase(), 70, 318, 8, true);
+  if (data.representativeName && data.representativeName.trim()) {
+    drawText(data.representativeName.toUpperCase(), 330, 318, 8, true);
+  }
+
+  // --- NOTARY / JURAT ---
+  const dateObj = new Date();
+  const dayStr = dateObj.getDate().toString();
+  const monthYearStr = dateObj.toLocaleString("en-US", { month: "long", year: "numeric" });
+  drawText(dayStr, 345, 282, 7.5, false);
+  drawText(monthYearStr, 440, 282, 7.5, false);
+
+  drawText(data.ctcNumber || "CTC-VERIFIED-ONLINE", 480, 270, 8, true);
+  drawText(data.ctcIssuedAt || "Sto. Tomas, Pampanga", 135, 258, 7.5, false);
+  drawText(data.ctcIssuedOn || data.submissionDate || dateObj.toLocaleDateString(), 240, 258, 7.5, false);
+
+  // --- OPTIONAL PAGE 2: VICINITY SKETCH MAP ATTACHMENT ---
+  let imgBytes = data.sketchImageBytes;
+  if (!imgBytes && data.sketchImageBase64) {
+    try {
+      const b64Data = data.sketchImageBase64.includes(",")
+        ? data.sketchImageBase64.split(",")[1]
+        : data.sketchImageBase64;
+      const binaryString = atob(b64Data);
+      imgBytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        imgBytes[i] = binaryString.charCodeAt(i);
+      }
+    } catch (e) {
+      console.warn("Could not decode sketch map base64:", e);
+    }
+  }
+
+  if (imgBytes && imgBytes.length > 0) {
+    try {
+      let embeddedImage;
+      try {
+        embeddedImage = await pdfDoc.embedPng(imgBytes);
+      } catch {
+        embeddedImage = await pdfDoc.embedJpg(imgBytes);
+      }
+
+      if (embeddedImage) {
+        const page2 = pdfDoc.addPage([612, 792]);
+        const { width: p2W, height: p2H } = page2.getSize();
+
+        // Header banner
+        page2.drawRectangle({
+          x: 40,
+          y: p2H - 70,
+          width: p2W - 80,
+          height: 35,
+          color: rgb(0.02, 0.37, 0.27),
+        });
+        page2.drawText("OFFICIAL VICINITY MAP & LOCATION SKETCH ATTACHMENT", {
+          x: 55,
+          y: p2H - 52,
+          size: 11,
+          font: fontBold,
+          color: rgb(1, 1, 1),
+        });
+        page2.drawText(`Application Ref: ${data.applicationNo} | Project: ${data.projectName || data.projectType} | Applicant: ${data.applicantName}`, {
+          x: 55,
+          y: p2H - 63,
+          size: 7.5,
+          font: fontRegular,
+          color: rgb(0.9, 0.95, 0.92),
+        });
+
+        // Frame
+        const maxW = p2W - 100;
+        const maxH = p2H - 140;
+        const scaled = embeddedImage.scaleToFit(maxW, maxH);
+        const imgX = 40 + (p2W - 80 - scaled.width) / 2;
+        const imgY = 50 + (p2H - 120 - scaled.height) / 2;
+
+        page2.drawRectangle({
+          x: imgX - 4,
+          y: imgY - 4,
+          width: scaled.width + 8,
+          height: scaled.height + 8,
+          color: rgb(1, 1, 1),
+          borderColor: rgb(0.7, 0.75, 0.8),
+          borderWidth: 1,
+        });
+
+        page2.drawImage(embeddedImage, {
+          x: imgX,
+          y: imgY,
+          width: scaled.width,
+          height: scaled.height,
+        });
+
+        page2.drawText("e-Tayo Sto. Tomas Digital Permitting System • Official Vicinity Verification Annex", {
+          x: 50,
+          y: 25,
+          size: 7,
+          font: fontRegular,
+          color: rgb(0.4, 0.45, 0.5),
+        });
+      }
+    } catch (imgErr) {
+      console.warn("Notice: Vicinity sketch could not be embedded:", imgErr);
+    }
+  }
 
   return await pdfDoc.saveAsBase64({ dataUri: false });
 }
