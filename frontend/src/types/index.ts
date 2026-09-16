@@ -61,6 +61,10 @@ export interface PermitApplication {
   historyLog: HistoryLog[];
   remarks?: string;
   locationalClearanceRef?: string;
+  fileUrl?: string;
+  fileName?: string;
+  sketchImageUrl?: string;
+  projectType?: string;
 }
 
 export interface SystemLog {

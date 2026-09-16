@@ -25,6 +25,9 @@ public class PermitController {
     @Autowired
     private com.etayo.backend.repository.UserRepository userRepository;
 
+    @Autowired
+    private com.etayo.backend.service.FileStorageService fileStorageService;
+
     @GetMapping
     public ResponseEntity<List<PermitApplication>> getAllPermits(org.springframework.security.core.Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
@@ -73,8 +76,10 @@ public class PermitController {
             return ResponseEntity.ok(permitApplicationRepository.findById(permit.getId()).get());
         }
 
-        // Strict Guard 2: If the payload itself already has a Google Drive link, it was already uploaded!
-        if (permit.getFileUrl() != null && permit.getFileUrl().contains("drive.google.com")) {
+        // Strict Guard 2: If the payload has a Google Drive link and no base64 files to extract locally
+        if (permit.getFileUrl() != null && permit.getFileUrl().contains("drive.google.com")
+                && !permit.getFileUrl().contains("base64,")
+                && (permit.getSketchImageUrl() == null || !permit.getSketchImageUrl().contains("base64,"))) {
             PermitApplication saved = permitApplicationRepository.save(permit);
             return ResponseEntity.ok(saved);
         }
@@ -121,97 +126,110 @@ public class PermitController {
         // 3. Generate timestamp for Date and Time created folder
         String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
 
-        // 4. Automatic Google Drive Upload
+        // 4. Primary: Save application documents and attachments to local in-system storage
+        List<String> localFileUrls = new ArrayList<>();
+        List<byte[]> savedDocBytes = new ArrayList<>();
+        List<String> savedDocNames = new ArrayList<>();
+
+        if (permit.getFileUrl() != null && !permit.getFileUrl().trim().isEmpty()) {
+            String rawUrls = permit.getFileUrl().trim();
+            String[] parts = rawUrls.split(",(?=data:|http:|https:|/|APP-)");
+            if (parts.length <= 1 && rawUrls.contains(",data:")) {
+                parts = rawUrls.split(",(?=data:)");
+            }
+
+            for (int i = 0; i < parts.length; i++) {
+                String docUrl = parts[i].trim();
+                if (docUrl.isEmpty()) continue;
+
+                if (docUrl.contains("base64,")) {
+                    byte[] pdfBytes = decodeBase64Safely(docUrl);
+                    if (pdfBytes != null && pdfBytes.length > 0) {
+                        String docFileName = (i == 0)
+                                ? (permit.getFileName() != null && !permit.getFileName().trim().isEmpty()
+                                        ? permit.getFileName().trim()
+                                        : (permit.getId() + "_" + projectType.replaceAll("[^a-zA-Z0-9.-]", "_") + "_Permit_Package.pdf"))
+                                : (permit.getId() + "_Attachment_" + i + ".pdf");
+
+                        try {
+                            String localName = fileStorageService.saveBytes(pdfBytes, docFileName);
+                            localFileUrls.add("/api/files/" + localName);
+                            savedDocBytes.add(pdfBytes);
+                            savedDocNames.add(docFileName);
+                        } catch (Exception ioEx) {
+                            System.err.println("Failed to save doc locally: " + ioEx.getMessage());
+                        }
+                    }
+                } else if (docUrl.startsWith("/api/files/") || docUrl.startsWith("http")) {
+                    localFileUrls.add(docUrl);
+                }
+            }
+
+            if (!localFileUrls.isEmpty()) {
+                permit.setFileUrl(String.join(",", localFileUrls));
+            }
+        }
+
+        // 5. Primary: Save vicinity sketch map locally
+        byte[] sketchBytes = null;
+        String sketchFileName = null;
+        String sketchContentType = "image/png";
+        if (permit.getSketchImageUrl() != null && permit.getSketchImageUrl().contains("base64,")) {
+            int commaIdx = permit.getSketchImageUrl().indexOf("base64,");
+            String imgMeta = permit.getSketchImageUrl().substring(0, commaIdx);
+            if (imgMeta.contains("image/jpeg") || imgMeta.contains("image/jpg")) {
+                sketchContentType = "image/jpeg";
+            } else if (imgMeta.contains("application/pdf")) {
+                sketchContentType = "application/pdf";
+            }
+            String ext = sketchContentType.contains("jpeg") ? ".jpg" : (sketchContentType.contains("pdf") ? ".pdf" : ".png");
+            sketchBytes = decodeBase64Safely(permit.getSketchImageUrl());
+            if (sketchBytes != null && sketchBytes.length > 0) {
+                sketchFileName = permit.getId() + "_Vicinity_Sketch" + ext;
+                try {
+                    String localSketchName = fileStorageService.saveBytes(sketchBytes, sketchFileName);
+                    permit.setSketchImageUrl("/api/files/" + localSketchName);
+                } catch (Exception ioEx) {
+                    System.err.println("Failed to save sketch locally: " + ioEx.getMessage());
+                }
+            }
+        }
+
+        // 6. Secondary / Archival: Background backup to Google Drive (if configured)
+        // Note: Primary fileUrl is kept pointing to in-system storage; Drive is for backups only.
         try {
             if (googleDriveService != null && googleDriveService.isConfigured()) {
-                // Resolve or create the application's unique timestamp folder EXACTLY ONCE
                 String targetFolderId = googleDriveService.getOrCreateApplicationFolder(
                     applicantName, projectType, timestamp
                 );
 
-                int uploadedDocCount = 0;
-                String primaryDriveUrl = null;
-
-                // A. Check if application form PDF(s) are provided in fileUrl
-                if (permit.getFileUrl() != null && !permit.getFileUrl().trim().isEmpty()) {
-                    String rawUrls = permit.getFileUrl().trim();
-                    // Split if multiple documents or data URIs were concatenated
-                    String[] parts = rawUrls.split(",(?=data:|http:|https:|/|APP-)");
-                    if (parts.length <= 1 && rawUrls.contains(",data:")) {
-                        parts = rawUrls.split(",(?=data:)");
+                if (targetFolderId != null) {
+                    for (int i = 0; i < savedDocBytes.size(); i++) {
+                        try {
+                            googleDriveService.uploadBytesToFolderId(
+                                savedDocBytes.get(i), savedDocNames.get(i), "application/pdf", targetFolderId
+                            );
+                        } catch (Exception ignored) {}
                     }
 
-                    for (int i = 0; i < parts.length; i++) {
-                        String docUrl = parts[i].trim();
-                        if (docUrl.isEmpty()) continue;
-
-                        if (docUrl.contains("base64,")) {
-                            byte[] pdfBytes = decodeBase64Safely(docUrl);
-                            if (pdfBytes != null && pdfBytes.length > 0) {
-                                String docFileName = (i == 0)
-                                        ? (permit.getFileName() != null && !permit.getFileName().trim().isEmpty()
-                                                ? permit.getFileName().trim()
-                                                : (permit.getId() + "_" + projectType.replaceAll("[^a-zA-Z0-9.-]", "_") + "_Permit_Package.pdf"))
-                                        : (permit.getId() + "_Attachment_" + i + ".pdf");
-
-                                String uploadedUrl = googleDriveService.uploadBytesToFolderId(
-                                        pdfBytes, docFileName, "application/pdf", targetFolderId
-                                );
-                                if (uploadedUrl != null) {
-                                    uploadedDocCount++;
-                                    if (primaryDriveUrl == null) {
-                                        primaryDriveUrl = uploadedUrl;
-                                    }
-                                }
-                            }
-                        }
+                    if (sketchBytes != null && sketchFileName != null) {
+                        try {
+                            googleDriveService.uploadBytesToFolderId(
+                                sketchBytes, sketchFileName, sketchContentType, targetFolderId
+                            );
+                        } catch (Exception ignored) {}
                     }
 
-                    if (primaryDriveUrl != null) {
-                        permit.setFileUrl(primaryDriveUrl);
-                    }
-                }
-
-                // B. Check if vicinity sketch image is provided as base64 in sketchImageUrl
-                if (permit.getSketchImageUrl() != null && permit.getSketchImageUrl().contains("base64,")) {
-                    int commaIdx = permit.getSketchImageUrl().indexOf("base64,");
-                    String imgMeta = permit.getSketchImageUrl().substring(0, commaIdx);
-                    String contentType = "image/png";
-                    if (imgMeta.contains("image/jpeg") || imgMeta.contains("image/jpg")) {
-                        contentType = "image/jpeg";
-                    } else if (imgMeta.contains("application/pdf")) {
-                        contentType = "application/pdf";
-                    }
-                    String ext = contentType.contains("jpeg") ? ".jpg" : (contentType.contains("pdf") ? ".pdf" : ".png");
-                    byte[] imgBytes = decodeBase64Safely(permit.getSketchImageUrl());
-                    if (imgBytes != null && imgBytes.length > 0) {
-                        String sketchDriveUrl = googleDriveService.uploadBytesToFolderId(
-                                imgBytes, "Vicinity_Sketch_Map" + ext, contentType, targetFolderId
-                        );
-                        if (sketchDriveUrl != null) {
-                            permit.setSketchImageUrl(sketchDriveUrl);
-                            uploadedDocCount++;
-                        }
-                    }
-                }
-
-                // C. ALWAYS upload the official Application Details & Specifications document into the folder!
-                // This guarantees the timestamp folder is NEVER empty and contains the complete filled-up forms and specifications.
-                byte[] summaryDoc = generateApplicationSummaryDoc(permit);
-                String summaryFileName = permit.getId() + "_Application_Details.txt";
-                String driveSummaryUrl = googleDriveService.uploadBytesToFolderId(
+                    // Upload backup summary text dossier to Google Drive folder
+                    byte[] summaryDoc = generateApplicationSummaryDoc(permit);
+                    String summaryFileName = permit.getId() + "_Application_Details.txt";
+                    googleDriveService.uploadBytesToFolderId(
                         summaryDoc, summaryFileName, "text/plain", targetFolderId
-                );
-                if (driveSummaryUrl != null) {
-                    uploadedDocCount++;
-                    if (primaryDriveUrl == null) {
-                        permit.setFileUrl(driveSummaryUrl);
-                    }
+                    );
                 }
             }
         } catch (Exception e) {
-            System.err.println("Notice: Google Drive auto-upload skipped or encountered an issue: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Notice: Google Drive background backup skipped: " + e.getMessage());
         }
 
         PermitApplication saved = permitApplicationRepository.save(permit);

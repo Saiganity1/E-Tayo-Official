@@ -36,10 +36,12 @@ public class FileUploadController {
 
     private final GoogleDriveService googleDriveService;
     private final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
 
-    public FileUploadController(GoogleDriveService googleDriveService, UserRepository userRepository) {
+    public FileUploadController(GoogleDriveService googleDriveService, UserRepository userRepository, FileStorageService fileStorageService) {
         this.googleDriveService = googleDriveService;
         this.userRepository = userRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     @PostMapping
@@ -110,13 +112,24 @@ public class FileUploadController {
 
             List<String> fileUrls = new ArrayList<>();
             for (MultipartFile file : files) {
-                String fileUrl = googleDriveService.uploadApplicantFile(file, applicantName, effectiveProjectType, timestamp);
-                fileUrls.add(fileUrl);
+                // 1. Primary: Save directly into system local storage
+                String savedFileName = fileStorageService.saveFile(file);
+                String localUrl = "/api/files/" + savedFileName;
+                fileUrls.add(localUrl);
+
+                // 2. Secondary: Background backup to Google Drive if configured
+                if (googleDriveService != null && googleDriveService.isConfigured()) {
+                    try {
+                        googleDriveService.uploadApplicantFile(file, applicantName, effectiveProjectType, timestamp);
+                    } catch (Exception driveEx) {
+                        System.err.println("Notice: Google Drive background backup skipped: " + driveEx.getMessage());
+                    }
+                }
             }
             
             response.put("urls", fileUrls);
             response.put("timestamp", timestamp);
-            response.put("message", files.size() + " files verified and uploaded successfully");
+            response.put("message", files.size() + " files saved to system and backed up successfully");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();

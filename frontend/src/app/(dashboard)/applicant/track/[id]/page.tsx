@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePermitContext } from "../../../../../context/PermitContext";
-import { ChevronLeft, CheckCircle2, Clock, Search, AlertTriangle, FileText, CheckCircle, XCircle } from "lucide-react";
+import { ChevronLeft, CheckCircle2, Clock, Search, AlertTriangle, FileText, CheckCircle, XCircle, Eye, Download } from "lucide-react";
 
 export default function ApplicationTrackDetail() {
   const params = useParams();
@@ -204,17 +204,64 @@ export default function ApplicationTrackDetail() {
             <h2 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#1e293b", marginBottom: "1.5rem" }}>Attachments</h2>
             {appData.fileUrl ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {appData.fileUrl.split(',').map((url: string, idx: number) => (
-                  <a key={idx} href={url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", border: "1px solid #e2e8f0", borderRadius: "12px", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.borderColor = "#3b82f6"} onMouseLeave={(e) => e.currentTarget.style.borderColor = "#e2e8f0"}>
-                    <div style={{ background: "#eff6ff", color: "#3b82f6", padding: "10px", borderRadius: "10px" }}>
-                      <FileText size={24} />
+                {appData.fileUrl.split(',').map((url: string, idx: number) => {
+                  const trimmed = url.trim();
+                  const isDrive = trimmed.includes("drive.google.com");
+                  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+                  const resolvedUrl = trimmed.startsWith("/api/files/") ? `${apiBase}${trimmed}` : trimmed;
+
+                  return (
+                    <div 
+                      key={idx} 
+                      style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "space-between", 
+                        flexWrap: "wrap",
+                        gap: "1rem", 
+                        padding: "1rem 1.25rem", 
+                        border: "1px solid #e2e8f0", 
+                        borderRadius: "14px", 
+                        background: "#ffffff",
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.02)"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                        <div style={{ background: "#eff6ff", color: "#3b82f6", padding: "10px", borderRadius: "10px" }}>
+                          <FileText size={24} />
+                        </div>
+                        <div>
+                          <strong style={{ display: "block", color: "#0f172a", fontSize: "0.95rem" }}>
+                            {idx === 0 ? "Official Application Form" : `Engineering Attachment ${idx}`}
+                          </strong>
+                          <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", marginTop: "2px" }}>
+                            {isDrive ? "Archival Copy • Backed up to Cloud Storage" : "Official System Record • Local In-System Verified"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <a
+                          href={resolvedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-outline"
+                          style={{ padding: "0.45rem 0.85rem", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", gap: "5px", textDecoration: "none" }}
+                        >
+                          <Eye size={14} /> View Document
+                        </a>
+                        <a
+                          href={resolvedUrl}
+                          download={`Application_Document_${idx + 1}.pdf`}
+                          className="btn-primary"
+                          style={{ padding: "0.45rem 0.85rem", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", gap: "5px", textDecoration: "none" }}
+                        >
+                          <Download size={14} /> Download
+                        </a>
+                      </div>
                     </div>
-                    <div>
-                      <span style={{ display: "block", color: "#0f172a", fontWeight: "600" }}>Document {idx + 1}</span>
-                      <span style={{ display: "block", color: "#64748b", fontSize: "0.85rem", marginTop: "2px" }}>Opens securely in Google Drive</span>
-                    </div>
-                  </a>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p style={{ color: "#64748b", fontSize: "0.95rem" }}>No files attached to this application.</p>

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePermitContext } from "../../../../../context/PermitContext";
+import { generateLocationalClearancePdf } from "../../../../../utils/locationalClearancePdfGenerator";
 import { 
   ShieldCheck, 
   FileText, 
@@ -15,8 +16,31 @@ import {
   Calendar, 
   ExternalLink,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Printer,
+  Maximize2,
+  Minimize2,
+  Image as ImageIcon,
+  Layers,
+  Cloud,
+  RefreshCw,
+  FileCheck
 } from "lucide-react";
+
+interface ViewerDoc {
+  id: string;
+  title: string;
+  tabLabel: string;
+  type: "pdf" | "image";
+  url: string;
+  fileName: string;
+  isOfficialForm?: boolean;
+  hasDriveBackup?: boolean;
+  driveBackupUrl?: string;
+}
 
 export default function StaffEvaluatePage() {
   const params = useParams();
@@ -31,44 +55,176 @@ export default function StaffEvaluatePage() {
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [blobUrl, setBlobUrl] = useState<string>("/templates/ANNEX_D_TEMPLATE.pdf");
+
+  // In-System Document Viewer State
+  const [documents, setDocuments] = useState<ViewerDoc[]>([]);
+  const [activeDocIndex, setActiveDocIndex] = useState<number>(0);
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const [rotation, setRotation] = useState<number>(0);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isGeneratingDoc, setIsGeneratingDoc] = useState<boolean>(true);
+  const viewerContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!app?.fileUrl) {
-      setBlobUrl("/templates/ANNEX_D_TEMPLATE.pdf");
-      return;
-    }
+    if (!app) return;
 
-    if (app.fileUrl.startsWith("http") || app.fileUrl.startsWith("/")) {
-      setBlobUrl(app.fileUrl);
-      return;
-    }
+    let isMounted = true;
+    const createdBlobUrls: string[] = [];
 
-    if (app.fileUrl.startsWith("data:application/pdf")) {
-      try {
-        const parts = app.fileUrl.split(",");
-        if (parts.length > 1 && parts[1].length > 100) {
-          const byteCharacters = atob(parts[1]);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: "application/pdf" });
-          const url = URL.createObjectURL(blob);
-          setBlobUrl(url);
+    const resolveDocs = async () => {
+      setIsGeneratingDoc(true);
+      const docs: ViewerDoc[] = [];
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-          return () => {
-            URL.revokeObjectURL(url);
-          };
-        }
-      } catch (e) {
-        console.error("Failed to convert base64 to blob URL, using template fallback:", e);
+      // 1. PRIMARY DOCUMENT (Locational Clearance or Unified Permit Form)
+      let primaryUrl = "";
+      let isGenerated = false;
+      let driveBackupUrl: string | undefined = undefined;
+
+      const rawFileUrl = app.fileUrl || "";
+
+      // Check if rawFileUrl contains a Google Drive backup link
+      if (rawFileUrl.includes("drive.google.com")) {
+        driveBackupUrl = rawFileUrl.split(",").find((u) => u.includes("drive.google.com"));
       }
-    }
 
-    setBlobUrl("/templates/ANNEX_D_TEMPLATE.pdf");
-  }, [app?.fileUrl]);
+      // Check if rawFileUrl has local /api/files/ link
+      const localFileMatch = rawFileUrl.split(",").find((u) => u.startsWith("/api/files/"));
+      if (localFileMatch) {
+        primaryUrl = `${apiBase}${localFileMatch}`;
+      } else if (rawFileUrl.startsWith("data:application/pdf")) {
+        try {
+          const parts = rawFileUrl.split(",");
+          if (parts.length > 1) {
+            const byteCharacters = atob(parts[1]);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: "application/pdf" });
+            const blobUrl = URL.createObjectURL(blob);
+            createdBlobUrls.push(blobUrl);
+            primaryUrl = blobUrl;
+          }
+        } catch (e) {
+          console.warn("Could not decode base64 PDF:", e);
+        }
+      }
+
+      // If no valid local file or if it was solely a Google Drive link / template, dynamically generate the official filled PDF
+      if (!primaryUrl || primaryUrl.includes("drive.google.com")) {
+        try {
+          const generatedBase64 = await generateLocationalClearancePdf({
+            applicationNo: app.id,
+            submissionDate: app.dateSubmitted || new Date().toLocaleDateString(),
+            applicantName: app.applicantName || "Applicant",
+            applicantAddress: app.applicantAddress || app.projectAddress || "Sto. Tomas, Pampanga",
+            applicantPhone: app.applicantPhone || "0917-000-0000",
+            applicantEmail: app.applicantEmail || "",
+            projectName: app.projectName || `${app.projectType || "Locational Clearance"} Project`,
+            projectType: app.projectType || "Locational Clearance",
+            projectNature: "New Construction",
+            projectAddress: app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga",
+            barangay: "Sto. Tomas",
+            lotArea: "200",
+            bldgArea: "120",
+            rightOverLand: "Owner",
+            projectTenure: "Permanent",
+            existingLandUse: "Residential",
+            isTenanted: "No",
+            projectCost: app.estimatedFees ? `${app.estimatedFees * 500}` : "1,500,000.00",
+          });
+
+          if (generatedBase64) {
+            const byteCharacters = atob(generatedBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: "application/pdf" });
+            const blobUrl = URL.createObjectURL(blob);
+            createdBlobUrls.push(blobUrl);
+            primaryUrl = blobUrl;
+            isGenerated = true;
+          }
+        } catch (genErr) {
+          console.error("Failed to generate in-system clearance PDF, using official template:", genErr);
+          primaryUrl = "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf";
+        }
+      }
+
+      docs.push({
+        id: "primary-form",
+        title: "Official Locational Clearance Form",
+        tabLabel: "Official Clearance Form",
+        type: "pdf",
+        url: primaryUrl || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
+        fileName: app.fileName || `${app.id}_Locational_Clearance.pdf`,
+        isOfficialForm: true,
+        hasDriveBackup: Boolean(driveBackupUrl),
+        driveBackupUrl: driveBackupUrl,
+      });
+
+      // 2. VICINITY SKETCH MAP (if available)
+      if (app.sketchImageUrl) {
+        let sketchUrl = app.sketchImageUrl;
+        if (sketchUrl.startsWith("/api/files/")) {
+          sketchUrl = `${apiBase}${sketchUrl}`;
+        }
+        docs.push({
+          id: "vicinity-sketch",
+          title: "Section D: Vicinity Sketch Map",
+          tabLabel: "Vicinity Sketch Map",
+          type: "image",
+          url: sketchUrl,
+          fileName: `${app.id}_Vicinity_Sketch.png`,
+          isOfficialForm: false,
+        });
+      }
+
+      // 3. ADDITIONAL ATTACHMENTS (if multiple files were submitted)
+      if (rawFileUrl && rawFileUrl.includes(",")) {
+        const extraParts = rawFileUrl.split(",").filter((p) => p.trim() && !p.includes("drive.google.com"));
+        extraParts.forEach((part, idx) => {
+          if (idx === 0) return; // skip primary form
+          let attUrl = part.trim();
+          if (attUrl.startsWith("/api/files/")) {
+            attUrl = `${apiBase}${attUrl}`;
+          }
+          const isImg =
+            attUrl.includes(".png") ||
+            attUrl.includes(".jpg") ||
+            attUrl.includes(".jpeg") ||
+            attUrl.startsWith("data:image/");
+
+          docs.push({
+            id: `attachment-${idx}`,
+            title: `Technical Engineering Attachment ${idx}`,
+            tabLabel: `Attachment ${idx}`,
+            type: isImg ? "image" : "pdf",
+            url: attUrl,
+            fileName: `${app.id}_Attachment_${idx}.${isImg ? "png" : "pdf"}`,
+            isOfficialForm: false,
+          });
+        });
+      }
+
+      if (isMounted) {
+        setDocuments(docs);
+        setActiveDocIndex(0);
+        setIsGeneratingDoc(false);
+      }
+    };
+
+    resolveDocs();
+
+    return () => {
+      isMounted = false;
+      createdBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [app?.id, app?.fileUrl, app?.sketchImageUrl]);
 
   if (!app) {
     return (
@@ -84,6 +240,41 @@ export default function StaffEvaluatePage() {
       </div>
     );
   }
+
+  const activeDoc = documents[activeDocIndex] || documents[0];
+
+  const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 15, 200));
+  const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 15, 50));
+  const handleResetZoom = () => {
+    setZoomLevel(100);
+    setRotation(0);
+  };
+  const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
+
+  const handlePrint = () => {
+    if (!activeDoc) return;
+    const printWindow = window.open(activeDoc.url, "_blank");
+    if (printWindow) {
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+  };
+
+  const handleToggleFullscreen = () => {
+    if (!viewerContainerRef.current) return;
+    if (!isFullscreen) {
+      if (viewerContainerRef.current.requestFullscreen) {
+        viewerContainerRef.current.requestFullscreen();
+      }
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+      setIsFullscreen(false);
+    }
+  };
 
   const handleApprove = async () => {
     setIsProcessing(true);
@@ -101,8 +292,7 @@ export default function StaffEvaluatePage() {
       } catch (e) {}
     }
 
-    const applicantLabel = app.applicantName ? `${app.applicantName}` : (app.applicantEmail || "Applicant");
-    const permitTitle = app.permitType ? app.permitType.replace(/_/g, " ") : "Locational Clearance";
+    const applicantLabel = app.applicantName ? `${app.applicantName}` : app.applicantEmail || "Applicant";
     const logSummary = `Staff ${staffName} (${staffEmail}) evaluated application ${app.id} (${applicantLabel}) - Status: APPROVED`;
     const logDetails = `Locational Clearance Approved for ${applicantLabel}. Compliant with CLUP & Zoning Ordinance. Remarks: ${decisionNotes || shortSummary}`;
 
@@ -142,7 +332,7 @@ export default function StaffEvaluatePage() {
 
     await updateApplication(updatedApp);
 
-    // 1. Immediately record in Admin System Audit Logs
+    // 1. Record in Admin System Audit Logs
     try {
       await addSystemLog({
         action: "EVALUATION_APPROVED",
@@ -156,7 +346,7 @@ export default function StaffEvaluatePage() {
       console.warn("Could not save system log", e);
     }
 
-    // 2. Also record official evaluation log in backend
+    // 2. Record official evaluation log in backend
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -171,7 +361,7 @@ export default function StaffEvaluatePage() {
           permitType: app.permitType || "locational_clearance",
           action: "Approved",
           comments: decisionNotes || shortSummary,
-        })
+        }),
       });
     } catch (e) {
       console.warn("Could not save evaluation log", e);
@@ -197,7 +387,7 @@ export default function StaffEvaluatePage() {
       } catch (e) {}
     }
 
-    const applicantLabel = app.applicantName ? `${app.applicantName}` : (app.applicantEmail || "Applicant");
+    const applicantLabel = app.applicantName ? `${app.applicantName}` : app.applicantEmail || "Applicant";
     const permitTitle = app.permitType ? app.permitType.replace(/_/g, " ") : "Locational Clearance";
     const logSummary = `Staff ${staffName} (${staffEmail}) evaluated application ${app.id} (${applicantLabel}) - Status: REVISION REQUESTED`;
     const logDetails = `Requirements revision requested for ${applicantLabel} (${permitTitle}). Remarks: ${decisionNotes || "Incomplete requirements."}`;
@@ -209,7 +399,7 @@ export default function StaffEvaluatePage() {
     };
     await updateApplication(updatedApp);
 
-    // 1. Immediately record in Admin System Audit Logs
+    // 1. Record in Admin System Audit Logs
     try {
       await addSystemLog({
         action: "EVALUATION_REVISION_REQUESTED",
@@ -223,7 +413,7 @@ export default function StaffEvaluatePage() {
       console.warn("Could not save system log", e);
     }
 
-    // 2. Also record official evaluation log in backend
+    // 2. Record official evaluation log in backend
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -238,7 +428,7 @@ export default function StaffEvaluatePage() {
           permitType: app.permitType || "locational_clearance",
           action: "Incomplete Requirements",
           comments: decisionNotes,
-        })
+        }),
       });
     } catch (e) {
       console.warn("Could not save evaluation log", e);
@@ -249,7 +439,7 @@ export default function StaffEvaluatePage() {
   };
 
   return (
-    <div className="evaluate-page animate-fade-in-up" style={{ maxWidth: "1400px", margin: "0 auto", padding: "1.5rem 1rem 4rem 1rem" }}>
+    <div className="evaluate-page animate-fade-in-up" style={{ maxWidth: "1550px", margin: "0 auto", padding: "1.5rem 1rem 4rem 1rem" }}>
       {/* Top Header & Breadcrumb */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
         <div>
@@ -263,7 +453,7 @@ export default function StaffEvaluatePage() {
             Project Evaluation & Approval
           </h1>
           <p style={{ color: "#64748b", margin: "0.25rem 0 0 0", fontSize: "0.95rem" }}>
-            Review submitted Locational Clearance application and zoning compliance.
+            Sto. Tomas Municipal Zoning & Land Use Compliance Review
           </p>
         </div>
 
@@ -311,8 +501,8 @@ export default function StaffEvaluatePage() {
         </div>
       )}
 
-      {/* Main Grid: Left Details, Center PDF, Right Decision */}
-      <div style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: "1.5rem" }}>
+      {/* Main Grid: Left Details, Right In-System Viewer */}
+      <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: "1.5rem" }}>
         
         {/* LEFT COLUMN: APPLICANT & PROJECT DOSSIER */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
@@ -353,19 +543,19 @@ export default function StaffEvaluatePage() {
                 <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase" }}>Site Location</span>
                 <span>{app.projectAddress || app.location?.address}</span>
               </div>
-              {(app as any).projectType && (
+              {app.projectType && (
                 <div>
                   <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase" }}>Project Type</span>
                   <span style={{ background: "#ede9fe", color: "#6b21a8", padding: "2px 8px", borderRadius: "6px", fontSize: "0.82rem", fontWeight: "700", display: "inline-block" }}>
-                    {(app as any).projectType}
+                    {app.projectType}
                   </span>
                 </div>
               )}
-              {(app as any).locationalClearanceRef && (
+              {app.locationalClearanceRef && (
                 <div>
                   <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase" }}>Zoning Clearance Ref</span>
                   <span style={{ color: "#047857", fontWeight: "700", fontSize: "0.85rem" }}>
-                    ✓ {(app as any).locationalClearanceRef}
+                    ✓ {app.locationalClearanceRef}
                   </span>
                 </div>
               )}
@@ -378,25 +568,6 @@ export default function StaffEvaluatePage() {
                 <span>{app.dateSubmitted}</span>
               </div>
             </div>
-
-            {/* Section D Attached Sketch Thumbnail */}
-            {(app as any).sketchImageUrl && (
-              <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid #e2e8f0" }}>
-                <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase", marginBottom: "6px" }}>
-                  Section D Location Sketch Attached
-                </span>
-                <div style={{ maxHeight: "120px", overflow: "hidden", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-                  <img
-                    src={(app as any).sketchImageUrl}
-                    alt="Section D Sketch"
-                    style={{ width: "100%", height: "120px", objectFit: "cover" }}
-                  />
-                </div>
-                <span style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: "600", marginTop: "4px", display: "block" }}>
-                  ✓ Attached to official Locational Clearance dossier
-                </span>
-              </div>
-            )}
 
             {/* Section E & F Verification Badge */}
             <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid #e2e8f0", fontSize: "0.78rem" }}>
@@ -484,53 +655,221 @@ export default function StaffEvaluatePage() {
           </div>
         </div>
 
-        {/* RIGHT / MAIN COLUMN: EMBEDDED LOCATIONAL CLEARANCE PDF VIEWER */}
-        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", display: "flex", flexDirection: "column", minHeight: "750px", boxShadow: "0 2px 10px rgba(0,0,0,0.04)" }}>
-          {/* Document Viewer Header Bar */}
-          <div style={{ padding: "1rem 1.5rem", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+        {/* RIGHT / MAIN COLUMN: IN-SYSTEM DOCUMENT VIEWING SYSTEM */}
+        <div 
+          ref={viewerContainerRef}
+          style={{ 
+            background: "#ffffff", 
+            borderRadius: "16px", 
+            border: "1px solid #e2e8f0", 
+            overflow: "hidden", 
+            display: "flex", 
+            flexDirection: "column", 
+            minHeight: "800px", 
+            boxShadow: "0 4px 20px rgba(0,0,0,0.06)" 
+          }}
+        >
+          {/* Document Tabs Bar (Multi-document support) */}
+          <div style={{ background: "#f1f5f9", padding: "0.5rem 1rem 0 1rem", borderBottom: "1px solid #cbd5e1", display: "flex", alignItems: "center", gap: "6px", overflowX: "auto" }}>
+            {documents.map((doc, idx) => {
+              const isActive = idx === activeDocIndex;
+              return (
+                <button
+                  key={doc.id}
+                  onClick={() => {
+                    setActiveDocIndex(idx);
+                    handleResetZoom();
+                  }}
+                  style={{
+                    padding: "0.6rem 1rem",
+                    borderTopLeftRadius: "10px",
+                    borderTopRightRadius: "10px",
+                    border: "1px solid",
+                    borderColor: isActive ? "#cbd5e1 #cbd5e1 transparent #cbd5e1" : "transparent",
+                    background: isActive ? "#ffffff" : "transparent",
+                    color: isActive ? "#1e40af" : "#64748b",
+                    fontWeight: isActive ? "700" : "500",
+                    fontSize: "0.84rem",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    whiteSpace: "nowrap",
+                    position: "relative",
+                    bottom: "-1px"
+                  }}
+                >
+                  {doc.type === "image" ? <ImageIcon size={15} /> : <FileText size={15} />}
+                  <span>{doc.tabLabel}</span>
+                  {doc.isOfficialForm && (
+                    <span style={{ background: "#dbeafe", color: "#1d4ed8", padding: "1px 6px", borderRadius: "999px", fontSize: "0.7rem", fontWeight: "700" }}>
+                      Official
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* In-System Viewer Control Toolbar */}
+          <div style={{ padding: "0.75rem 1.25rem", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+            
+            {/* Left: Document Info & In-System Verified Badge */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div style={{ background: "#dbeafe", padding: "8px", borderRadius: "8px", color: "#1d4ed8" }}>
-                <FileText size={20} />
+                {activeDoc?.type === "image" ? <ImageIcon size={18} /> : <FileCheck size={18} />}
               </div>
               <div>
-                <strong style={{ fontSize: "1rem", color: "#0f172a", display: "block" }}>
-                  APPLICATION FOR LOCATIONAL CLEARANCE
+                <strong style={{ fontSize: "0.95rem", color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
+                  {activeDoc?.title || "Application Document"}
+                  <span style={{ fontSize: "0.7rem", background: "#dcfce7", color: "#15803d", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                    In-System Viewer
+                  </span>
                 </strong>
-                <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
-                  Official Sto. Tomas Municipal Zoning & Land Use Document
-                </span>
+                <div style={{ fontSize: "0.75rem", color: "#64748b", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>Sto. Tomas E-Permit Engine</span>
+                  {activeDoc?.hasDriveBackup && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: "#2563eb" }}>
+                      • <Cloud size={12} /> Google Drive Backup Linked
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <a
-                href={blobUrl || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"}
-                download={`LOCATIONAL_CLEARANCE_${(app.applicantName || "Applicant").replace(/\s+/g, "_")}.pdf`}
-                className="btn-outline"
-                style={{ padding: "0.45rem 0.85rem", fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none" }}
+            {/* Center: Viewer Controls (Zoom, Reset, Rotate) */}
+            <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#ffffff", padding: "3px 6px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+              <button
+                onClick={handleZoomOut}
+                title="Zoom Out"
+                style={{ background: "none", border: "none", padding: "5px", cursor: "pointer", borderRadius: "4px", color: "#475569", display: "flex", alignItems: "center" }}
               >
-                <Download size={15} /> Download PDF
+                <ZoomOut size={16} />
+              </button>
+              <span style={{ fontSize: "0.75rem", fontWeight: "600", minWidth: "42px", textAlign: "center", color: "#1e293b" }}>
+                {zoomLevel}%
+              </span>
+              <button
+                onClick={handleZoomIn}
+                title="Zoom In"
+                style={{ background: "none", border: "none", padding: "5px", cursor: "pointer", borderRadius: "4px", color: "#475569", display: "flex", alignItems: "center" }}
+              >
+                <ZoomIn size={16} />
+              </button>
+              <div style={{ width: "1px", height: "16px", background: "#e2e8f0", margin: "0 2px" }} />
+              {activeDoc?.type === "image" && (
+                <button
+                  onClick={handleRotate}
+                  title="Rotate 90deg"
+                  style={{ background: "none", border: "none", padding: "5px", cursor: "pointer", borderRadius: "4px", color: "#475569", display: "flex", alignItems: "center" }}
+                >
+                  <RotateCw size={15} />
+                </button>
+              )}
+              <button
+                onClick={handleResetZoom}
+                title="Reset View"
+                style={{ background: "none", border: "none", padding: "5px 8px", cursor: "pointer", borderRadius: "4px", color: "#475569", fontSize: "0.72rem", fontWeight: "600" }}
+              >
+                Reset
+              </button>
+            </div>
+
+            {/* Right: Actions (Print, Download, Open Tab, Fullscreen) */}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <button
+                onClick={handlePrint}
+                title="Print Document"
+                style={{ padding: "0.45rem 0.75rem", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#334155", fontSize: "0.82rem", fontWeight: "600", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}
+              >
+                <Printer size={15} /> Print
+              </button>
+              <a
+                href={activeDoc?.url}
+                download={activeDoc?.fileName || `LOCATIONAL_CLEARANCE_${(app.applicantName || "Applicant").replace(/\s+/g, "_")}.pdf`}
+                style={{ padding: "0.45rem 0.75rem", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#334155", fontSize: "0.82rem", fontWeight: "600", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px", textDecoration: "none" }}
+              >
+                <Download size={15} /> Download
               </a>
               <a
-                href={blobUrl || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"}
+                href={activeDoc?.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-primary"
-                style={{ padding: "0.45rem 0.85rem", fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none" }}
+                style={{ padding: "0.45rem 0.75rem", background: "#2563eb", color: "#ffffff", borderRadius: "8px", fontSize: "0.82rem", fontWeight: "600", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px", textDecoration: "none" }}
               >
                 <ExternalLink size={15} /> Open in New Tab
               </a>
+              <button
+                onClick={handleToggleFullscreen}
+                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                style={{ padding: "0.45rem", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#475569", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+              >
+                {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
             </div>
           </div>
 
-          {/* Embedded PDF iframe */}
-          <div style={{ flex: 1, position: "relative", background: "#525659", minHeight: "680px" }}>
-            <iframe
-              src={`${blobUrl || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"}#toolbar=1&navpanes=0`}
-              title="Locational Clearance Form Preview"
-              style={{ width: "100%", height: "100%", border: "none", minHeight: "720px" }}
-            />
+          {/* In-System Document Render Area */}
+          <div style={{ flex: 1, position: "relative", background: "#525659", minHeight: "720px", display: "flex", justifyContent: "center", alignItems: "center", overflow: "auto" }}>
+            {isGeneratingDoc ? (
+              <div style={{ color: "#ffffff", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                <RefreshCw size={28} className="animate-spin" />
+                <span style={{ fontSize: "0.95rem", fontWeight: "600" }}>Rendering In-System Official Document...</span>
+              </div>
+            ) : activeDoc?.type === "image" ? (
+              <div style={{ padding: "2rem", display: "flex", justifyContent: "center", alignItems: "center", width: "100%", height: "100%", overflow: "auto" }}>
+                <img
+                  src={activeDoc.url}
+                  alt={activeDoc.title}
+                  style={{
+                    maxWidth: "90%",
+                    maxHeight: "680px",
+                    objectFit: "contain",
+                    transform: `scale(${zoomLevel / 100}) rotate(${rotation}deg)`,
+                    transition: "transform 0.2s ease",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                    borderRadius: "8px",
+                    background: "#ffffff"
+                  }}
+                />
+              </div>
+            ) : (
+              <div style={{ width: "100%", height: "100%", minHeight: "740px", transform: zoomLevel !== 100 ? `scale(${zoomLevel / 100})` : undefined, transformOrigin: "top center", transition: "transform 0.2s ease" }}>
+                <object
+                  data={`${activeDoc?.url}#toolbar=1&navpanes=0&view=FitH`}
+                  type="application/pdf"
+                  style={{ width: "100%", height: "100%", minHeight: "740px", border: "none" }}
+                >
+                  <iframe
+                    src={`${activeDoc?.url}#toolbar=1&navpanes=0&view=FitH`}
+                    title="In-System Locational Clearance Preview"
+                    style={{ width: "100%", height: "100%", minHeight: "740px", border: "none" }}
+                  />
+                </object>
+              </div>
+            )}
           </div>
+
+          {/* Viewer Footer Status Bar */}
+          <div style={{ padding: "0.6rem 1.25rem", background: "#f8fafc", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.78rem", color: "#64748b" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#16a34a" }} />
+              <span>In-System Storage Active • Sto. Tomas Local Document Engine</span>
+            </div>
+            <div>
+              {activeDoc?.hasDriveBackup && activeDoc?.driveBackupUrl && (
+                <a
+                  href={activeDoc.driveBackupUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "#2563eb", textDecoration: "none", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                >
+                  <Cloud size={13} /> View Archival Copy in Google Drive
+                </a>
+              )}
+            </div>
+          </div>
+
         </div>
 
       </div>
