@@ -35,6 +35,7 @@ public class FileController {
                 .contentType(mediaType)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                 .header(HttpHeaders.CACHE_CONTROL, "max-age=3600, must-revalidate")
+                .header("Content-Security-Policy", "frame-ancestors 'self' https://*.vercel.app https://e-tayo-official.vercel.app http://localhost:3000 http://localhost:3001")
                 .body(resource);
     }
 

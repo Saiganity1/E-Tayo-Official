@@ -93,7 +93,19 @@ export default function StaffEvaluatePage() {
       // Check if rawFileUrl has local /api/files/ link
       const localFileMatch = rawFileUrl.split(",").find((u) => u.startsWith("/api/files/"));
       if (localFileMatch) {
-        primaryUrl = `${apiBase}${localFileMatch}`;
+        try {
+          const fileRes = await fetch(`${apiBase}${localFileMatch}`);
+          if (fileRes.ok) {
+            const blob = await fileRes.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            createdBlobUrls.push(blobUrl);
+            primaryUrl = blobUrl;
+          } else {
+            console.warn("Backend file returned status", fileRes.status, "- falling back to in-system generator");
+          }
+        } catch (fetchErr) {
+          console.warn("Failed to fetch backend file, falling back to in-system generator:", fetchErr);
+        }
       } else if (rawFileUrl.startsWith("data:application/pdf")) {
         try {
           const parts = rawFileUrl.split(",");
@@ -291,17 +303,33 @@ export default function StaffEvaluatePage() {
       // 3. ADDITIONAL ATTACHMENTS (if multiple files were submitted)
       if (rawFileUrl && rawFileUrl.includes(",")) {
         const extraParts = rawFileUrl.split(",").filter((p) => p.trim() && !p.includes("drive.google.com"));
-        extraParts.forEach((part, idx) => {
-          if (idx === 0) return; // skip primary form
+        for (let idx = 0; idx < extraParts.length; idx++) {
+          if (idx === 0) continue; // skip primary form
+          const part = extraParts[idx];
           let attUrl = part.trim();
-          if (attUrl.startsWith("/api/files/")) {
-            attUrl = `${apiBase}${attUrl}`;
-          }
           const isImg =
             attUrl.includes(".png") ||
             attUrl.includes(".jpg") ||
             attUrl.includes(".jpeg") ||
             attUrl.startsWith("data:image/");
+
+          if (!isImg && attUrl.startsWith("/api/files/")) {
+            try {
+              const attRes = await fetch(`${apiBase}${attUrl}`);
+              if (attRes.ok) {
+                const attBlob = await attRes.blob();
+                const attBlobUrl = URL.createObjectURL(attBlob);
+                createdBlobUrls.push(attBlobUrl);
+                attUrl = attBlobUrl;
+              } else {
+                attUrl = `${apiBase}${attUrl}`;
+              }
+            } catch {
+              attUrl = `${apiBase}${attUrl}`;
+            }
+          } else if (attUrl.startsWith("/api/files/")) {
+            attUrl = `${apiBase}${attUrl}`;
+          }
 
           docs.push({
             id: `attachment-${idx}`,
@@ -312,7 +340,7 @@ export default function StaffEvaluatePage() {
             fileName: `${app.id}_Attachment_${idx}.${isImg ? "png" : "pdf"}`,
             isOfficialForm: false,
           });
-        });
+        }
       }
 
       if (isMounted) {

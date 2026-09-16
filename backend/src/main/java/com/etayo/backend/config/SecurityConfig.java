@@ -100,8 +100,13 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 );
 
-        // Clickjacking protection: allow frames only from same origin (for H2 console / modals)
-        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
+        // Frame options & Content-Security-Policy: allow embedding in Vercel frontend, localhost, and same origin
+        http.headers(headers -> headers
+                .frameOptions(frameOptions -> frameOptions.disable())
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
+                        "frame-ancestors 'self' https://*.vercel.app https://e-tayo-official.vercel.app http://localhost:3000 http://localhost:3001"
+                ))
+        );
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
