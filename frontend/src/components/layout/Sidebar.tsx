@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
   Building2, Home, PlusCircle, Search, FileCheck, 
-  MessageSquare, ShieldAlert, Map, X, Menu, Settings, LogOut, Users, ClipboardList
+  MessageSquare, ShieldAlert, Map, X, Menu, Settings, LogOut, Users, ClipboardList, FileText
 } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
 import NotificationBell from "./NotificationBell";
@@ -39,6 +39,7 @@ export default function Sidebar() {
         return [
           { href: "/applicant/dashboard", label: "Dashboard", icon: Home },
           { href: "/applicant/apply", label: "New Application", icon: PlusCircle },
+          { href: "/applicant/templates", label: "Official Forms", icon: FileText },
           { href: "/applicant/track", label: "Application Status", icon: ClipboardList },
           { href: "/applicant/map", label: "Map", icon: Map },
           { href: "/applicant/messages", label: "Messages", icon: MessageSquare, badge: 3 },
@@ -46,6 +47,7 @@ export default function Sidebar() {
       case "staff":
         return [
           { href: "/staff/dashboard", label: "Review Hub", icon: FileCheck },
+          { href: "/staff/templates", label: "Official Forms", icon: FileText },
           { href: "/staff/track", label: "Query & Inspect", icon: Search },
           { href: "/staff/map", label: "Map", icon: Map },
           { href: "/staff/messages", label: "Messages", icon: MessageSquare, badge: 5 },
@@ -54,6 +56,7 @@ export default function Sidebar() {
         return [
           { href: "/admin/dashboard", label: "Admin Portal", icon: ShieldAlert },
           { href: "/staff/dashboard", label: "Review Workspaces", icon: FileCheck },
+          { href: "/staff/templates", label: "Official Forms", icon: FileText },
           { href: "/admin/users", label: "Applicants Management", icon: Users },
           { href: "/admin/staff", label: "Staff Management", icon: ShieldAlert },
           { href: "/admin/messages", label: "Messages", icon: MessageSquare, badge: 1 },

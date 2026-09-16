@@ -396,6 +396,43 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
           drawTech(data.electronicsEngineerName.toUpperCase(), 120, 295, 8, true);
           drawTech(data.electronicsEngineerPRC || "PRC-PECE-0038912", 350, 295, 7.5, false);
         }
+      } else if (formKey === "demolitionPermit") {
+        drawTech(data.applicationNo, 115, 740, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 617, 8.5, true);
+        drawTech(data.applicantAddress, 100, 588, 7.5, false);
+        drawTech(data.projectAddress, 100, 531, 7.5, true);
+      } else if (formKey === "fencingPermit") {
+        drawTech(data.applicationNo, 115, 740, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 624, 8.5, true);
+        drawTech(data.applicantAddress, 100, 598, 7.5, false);
+        drawTech(data.projectAddress, 100, 542, 7.5, true);
+      } else if (formKey === "excavationPermit") {
+        drawTech(data.applicationNo, 115, 740, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 604, 8.5, true);
+        drawTech(data.applicantAddress, 100, 576, 7.5, false);
+        drawTech(data.projectAddress, 100, 516, 7.5, true);
+      } else if (formKey === "signPermit") {
+        drawTech(data.applicationNo, 115, 785, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 730, 8.5, true);
+        drawTech(data.applicantAddress, 100, 702, 7.5, false);
+        drawTech(data.projectAddress, 100, 645, 7.5, true);
+      } else if (formKey === "temporaryServiceConnection") {
+        drawTech(data.applicationNo, 115, 785, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 100, 750, 8.5, true);
+        drawTech(data.applicantAddress, 100, 706, 7.5, false);
+        drawTech(data.projectAddress, 100, 632, 7.5, true);
+      } else if (formKey === "certificateOfOccupancy") {
+        drawTech(data.applicationNo, 115, 785, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 120, 617, 8.5, true);
+        drawTech(data.projectAddress, 120, 496, 7.5, true);
+      } else if (formKey === "certificateOfCompletion") {
+        drawTech(data.applicationNo, 115, 785, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 120, 667, 8.5, true);
+        drawTech(data.projectAddress, 120, 648, 7.5, true);
+      } else if (formKey === "cfei") {
+        drawTech(data.applicationNo, 115, 850, 8.5, true);
+        drawTech(data.applicantName?.toUpperCase(), 120, 787, 8.5, true);
+        drawTech(data.projectAddress, 120, 731, 7.5, true);
       }
 
       // Copy pages of this official filled technical permit into the unified main document

@@ -10,6 +10,14 @@ export interface PermitFormMatrix {
   electronicsPermit: RequirementLevel;
   fireBfpPermit: RequirementLevel;
   zoningPermit: RequirementLevel;
+  demolitionPermit?: RequirementLevel;
+  fencingPermit?: RequirementLevel;
+  excavationPermit?: RequirementLevel;
+  signPermit?: RequirementLevel;
+  temporaryServiceConnection?: RequirementLevel;
+  certificateOfOccupancy?: RequirementLevel;
+  certificateOfCompletion?: RequirementLevel;
+  cfei?: RequirementLevel;
 }
 
 export type ProjectCategory =
@@ -82,6 +90,54 @@ export const PERMIT_FORM_METADATA: Record<keyof PermitFormMatrix, { label: strin
     code: 'LC', 
     desc: 'Zoning & land use compliance (Stage 1 prerequisite)',
     templateFile: '/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf'
+  },
+  demolitionPermit: {
+    label: 'Demolition Permit',
+    code: 'DP',
+    desc: 'Official Demolition Permit application form (NBC Form B-08)',
+    templateFile: '/templates/DEMOLITION-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf'
+  },
+  fencingPermit: {
+    label: 'Fencing Permit',
+    code: 'FP',
+    desc: 'Official Fencing Permit application form (NBC Form B-03)',
+    templateFile: '/templates/FENCING-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf'
+  },
+  excavationPermit: {
+    label: 'Excavation & Ground Preparation Permit',
+    code: 'EXP',
+    desc: 'Official Excavation and Ground Preparation Permit form (NBC Form B-02)',
+    templateFile: '/templates/EXCAVATION-AND-GROUND-PREPARATION-PERMIT-Gilbert-Cruz.pdf'
+  },
+  signPermit: {
+    label: 'Sign & Billboard Permit',
+    code: 'SGP',
+    desc: 'Official Sign and Billboard Permit application form (NBC Form B-07)',
+    templateFile: '/templates/SIGN-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf'
+  },
+  temporaryServiceConnection: {
+    label: 'Temporary Service Connection Permit',
+    code: 'TSC',
+    desc: 'Official Temporary Electrical Service Connection permit form (NBC Form E-03)',
+    templateFile: '/templates/PERMIT-FOR-TEMPORARY-SERVICE-CONNECTION-Gilbert-Cruz.pdf'
+  },
+  certificateOfOccupancy: {
+    label: 'Certificate of Occupancy Unified Application',
+    code: 'CO',
+    desc: 'Unified application form for Certificate of Occupancy',
+    templateFile: '/templates/UNIFIED-APPLICATION-FORM-FOR-CERTIFICATE-OF-OCCUPANCY-Sto-Tomas.pdf'
+  },
+  certificateOfCompletion: {
+    label: 'Certificate of Completion',
+    code: 'CC',
+    desc: 'Official Certificate of Completion form signed by project engineers',
+    templateFile: '/templates/CERTIFICATE-OF-COMPLETION-Sto-Tomas-Header-Bold.pdf'
+  },
+  cfei: {
+    label: 'Certificate of Final Electrical Inspection (CFEI)',
+    code: 'CFEI',
+    desc: 'Official Certificate of Final Electrical Inspection form (NBC Form 96006-E)',
+    templateFile: '/templates/CERTIFICATE-OF-FINAL-ELECTRICAL-INSPECTION-Gilbert-Cruz.pdf'
   }
 };
 
@@ -524,7 +580,8 @@ export const PROJECT_TYPES_MATRIX: ProjectTypeItem[] = [
       mechanicalPermit: 'not_required',
       electronicsPermit: 'not_required',
       fireBfpPermit: 'conditional',
-      zoningPermit: 'conditional'
+      zoningPermit: 'conditional',
+      demolitionPermit: 'required'
     }
   },
   {
@@ -542,7 +599,8 @@ export const PROJECT_TYPES_MATRIX: ProjectTypeItem[] = [
       mechanicalPermit: 'not_required',
       electronicsPermit: 'not_required',
       fireBfpPermit: 'not_required',
-      zoningPermit: 'conditional'
+      zoningPermit: 'conditional',
+      fencingPermit: 'required'
     }
   },
   {
@@ -560,7 +618,27 @@ export const PROJECT_TYPES_MATRIX: ProjectTypeItem[] = [
       mechanicalPermit: 'not_required',
       electronicsPermit: 'not_required',
       fireBfpPermit: 'conditional',
-      zoningPermit: 'conditional'
+      zoningPermit: 'conditional',
+      excavationPermit: 'required'
+    }
+  },
+  {
+    id: 'excavation_ground_prep',
+    name: 'Excavation & Ground Preparation',
+    category: 'Ancillary & Alterations',
+    description: 'Earthmoving, heavy foundation excavation, embankment grading, or site ground preparation.',
+    estimatedDays: '2 - 3 days',
+    matrix: {
+      buildingPermit: 'conditional',
+      architecturalPermit: 'not_required',
+      civilStructuralPermit: 'required',
+      electricalPermit: 'not_required',
+      sanitaryPermit: 'not_required',
+      mechanicalPermit: 'not_required',
+      electronicsPermit: 'not_required',
+      fireBfpPermit: 'not_required',
+      zoningPermit: 'conditional',
+      excavationPermit: 'required'
     }
   },
   {
@@ -576,9 +654,10 @@ export const PROJECT_TYPES_MATRIX: ProjectTypeItem[] = [
       electricalPermit: 'conditional',
       sanitaryPermit: 'not_required',
       mechanicalPermit: 'not_required',
-      electronicsPermit: 'conditional',
+      electronicsPermit: 'not_required',
       fireBfpPermit: 'conditional',
-      zoningPermit: 'required'
+      zoningPermit: 'required',
+      signPermit: 'required'
     }
   },
   {
@@ -654,6 +733,46 @@ export const PROJECT_TYPES_MATRIX: ProjectTypeItem[] = [
       fireBfpPermit: 'required',
       zoningPermit: 'not_required'
     }
+  },
+  {
+    id: 'temporary_service_connection',
+    name: 'Temporary Service Connection (Power/Utilities)',
+    category: 'Utilities & Mechanical',
+    description: 'Temporary electrical service connection for construction, testing, or seasonal operations.',
+    estimatedDays: '1 - 2 days',
+    matrix: {
+      buildingPermit: 'not_required',
+      architecturalPermit: 'not_required',
+      civilStructuralPermit: 'not_required',
+      electricalPermit: 'required',
+      sanitaryPermit: 'not_required',
+      mechanicalPermit: 'not_required',
+      electronicsPermit: 'not_required',
+      fireBfpPermit: 'conditional',
+      zoningPermit: 'not_required',
+      temporaryServiceConnection: 'required'
+    }
+  },
+  {
+    id: 'occupancy_completion_clearance',
+    name: 'Certificate of Occupancy & Completion Package',
+    category: 'Ancillary & Alterations',
+    description: 'Final post-construction clearance package: Certificate of Occupancy, Certificate of Completion, and CFEI.',
+    estimatedDays: '3 - 5 days',
+    matrix: {
+      buildingPermit: 'not_required',
+      architecturalPermit: 'not_required',
+      civilStructuralPermit: 'not_required',
+      electricalPermit: 'not_required',
+      sanitaryPermit: 'not_required',
+      mechanicalPermit: 'not_required',
+      electronicsPermit: 'not_required',
+      fireBfpPermit: 'required',
+      zoningPermit: 'not_required',
+      certificateOfOccupancy: 'required',
+      certificateOfCompletion: 'required',
+      cfei: 'required'
+    }
   }
 ];
 
@@ -684,6 +803,15 @@ export function getPermitFormTemplate(formKey: keyof PermitFormMatrix, projectTy
     if (projectType.id === 'signage_billboard' && (formKey === 'architecturalPermit' || formKey === 'buildingPermit')) {
       return '/templates/SIGN-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf';
     }
+    if (projectType.id === 'excavation_ground_prep' && (formKey === 'civilStructuralPermit' || formKey === 'buildingPermit')) {
+      return '/templates/EXCAVATION-AND-GROUND-PREPARATION-PERMIT-Gilbert-Cruz.pdf';
+    }
+    if (projectType.id === 'temporary_service_connection' && (formKey === 'electricalPermit' || formKey === 'buildingPermit')) {
+      return '/templates/PERMIT-FOR-TEMPORARY-SERVICE-CONNECTION-Gilbert-Cruz.pdf';
+    }
+    if (projectType.id === 'occupancy_completion_clearance' && formKey === 'buildingPermit') {
+      return '/templates/UNIFIED-APPLICATION-FORM-FOR-CERTIFICATE-OF-OCCUPANCY-Sto-Tomas.pdf';
+    }
   }
   return PERMIT_FORM_METADATA[formKey]?.templateFile;
 }
@@ -695,6 +823,8 @@ export interface OfficialTemplateFile {
   filename: string;
   path: string;
   description: string;
+  projectTypeId?: string;
+  formKey?: keyof PermitFormMatrix;
 }
 
 export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
@@ -704,7 +834,9 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "BP",
     filename: "UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
     path: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
-    description: "Official unified application form for building permit (NBCP Form 1)"
+    description: "Official unified application form for building permit (NBCP Form 1)",
+    projectTypeId: "single_detached_house",
+    formKey: "buildingPermit"
   },
   {
     name: "Application for Locational Clearance",
@@ -712,7 +844,8 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "LC",
     filename: "LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
     path: "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
-    description: "Official Sto. Tomas Locational Clearance application form"
+    description: "Official Sto. Tomas Locational Clearance application form",
+    formKey: "zoningPermit"
   },
   {
     name: "Architectural Permit",
@@ -720,7 +853,8 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "AP",
     filename: "ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
     path: "/templates/ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
-    description: "Official Architectural Permit application form"
+    description: "Official Architectural Permit application form",
+    formKey: "architecturalPermit"
   },
   {
     name: "Civil / Structural Permit",
@@ -728,7 +862,8 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "SP",
     filename: "Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf",
     path: "/templates/Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf",
-    description: "Official Civil and Structural Permit application form"
+    description: "Official Civil and Structural Permit application form",
+    formKey: "civilStructuralPermit"
   },
   {
     name: "Electrical Permit",
@@ -736,7 +871,8 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "EP",
     filename: "ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf",
     path: "/templates/ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf",
-    description: "Official Electrical Permit application form"
+    description: "Official Electrical Permit application form",
+    formKey: "electricalPermit"
   },
   {
     name: "Sanitary / Plumbing Permit",
@@ -744,7 +880,8 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "PL",
     filename: "SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf",
     path: "/templates/SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf",
-    description: "Official Sanitary and Plumbing Permit application form"
+    description: "Official Sanitary and Plumbing Permit application form",
+    formKey: "sanitaryPermit"
   },
   {
     name: "Mechanical Permit",
@@ -752,7 +889,8 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "MP",
     filename: "MECHANICAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
     path: "/templates/MECHANICAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
-    description: "Official Mechanical Permit application form"
+    description: "Official Mechanical Permit application form",
+    formKey: "mechanicalPermit"
   },
   {
     name: "Electronics Permit",
@@ -760,7 +898,8 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "EL",
     filename: "ELECTRONICS-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
     path: "/templates/ELECTRONICS-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
-    description: "Official Electronics Permit application form"
+    description: "Official Electronics Permit application form",
+    formKey: "electronicsPermit"
   },
   {
     name: "Demolition Permit",
@@ -768,7 +907,9 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "DP",
     filename: "DEMOLITION-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
     path: "/templates/DEMOLITION-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
-    description: "Official Demolition Permit application form"
+    description: "Official Demolition Permit application form (NBC Form B-08)",
+    projectTypeId: "demolition",
+    formKey: "demolitionPermit"
   },
   {
     name: "Fencing Permit",
@@ -776,7 +917,9 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "FP",
     filename: "FENCING-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
     path: "/templates/FENCING-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
-    description: "Official Fencing Permit application form"
+    description: "Official Fencing Permit application form (NBC Form B-03)",
+    projectTypeId: "fence",
+    formKey: "fencingPermit"
   },
   {
     name: "Excavation and Ground Preparation Permit",
@@ -784,7 +927,9 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "EXP",
     filename: "EXCAVATION-AND-GROUND-PREPARATION-PERMIT-Gilbert-Cruz.pdf",
     path: "/templates/EXCAVATION-AND-GROUND-PREPARATION-PERMIT-Gilbert-Cruz.pdf",
-    description: "Official Excavation and Ground Preparation Permit form"
+    description: "Official Excavation and Ground Preparation Permit form (NBC Form B-02)",
+    projectTypeId: "excavation_ground_prep",
+    formKey: "excavationPermit"
   },
   {
     name: "Sign Permit",
@@ -792,7 +937,9 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "SGP",
     filename: "SIGN-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
     path: "/templates/SIGN-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
-    description: "Official Sign and Billboard Permit application form"
+    description: "Official Sign and Billboard Permit application form (NBC Form B-07)",
+    projectTypeId: "signage_billboard",
+    formKey: "signPermit"
   },
   {
     name: "Permit for Temporary Service Connection",
@@ -800,7 +947,9 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "TSC",
     filename: "PERMIT-FOR-TEMPORARY-SERVICE-CONNECTION-Gilbert-Cruz.pdf",
     path: "/templates/PERMIT-FOR-TEMPORARY-SERVICE-CONNECTION-Gilbert-Cruz.pdf",
-    description: "Official Temporary Service Connection permit form"
+    description: "Official Temporary Service Connection permit form (NBC Form E-03)",
+    projectTypeId: "temporary_service_connection",
+    formKey: "temporaryServiceConnection"
   },
   {
     name: "Certificate of Occupancy Unified Form",
@@ -808,7 +957,9 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "CO",
     filename: "UNIFIED-APPLICATION-FORM-FOR-CERTIFICATE-OF-OCCUPANCY-Sto-Tomas.pdf",
     path: "/templates/UNIFIED-APPLICATION-FORM-FOR-CERTIFICATE-OF-OCCUPANCY-Sto-Tomas.pdf",
-    description: "Unified application form for Certificate of Occupancy"
+    description: "Unified application form for Certificate of Occupancy",
+    projectTypeId: "occupancy_completion_clearance",
+    formKey: "certificateOfOccupancy"
   },
   {
     name: "Certificate of Completion",
@@ -816,7 +967,9 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "CC",
     filename: "CERTIFICATE-OF-COMPLETION-Sto-Tomas-Header-Bold.pdf",
     path: "/templates/CERTIFICATE-OF-COMPLETION-Sto-Tomas-Header-Bold.pdf",
-    description: "Official Certificate of Completion form"
+    description: "Official Certificate of Completion form signed by project engineers",
+    projectTypeId: "occupancy_completion_clearance",
+    formKey: "certificateOfCompletion"
   },
   {
     name: "Certificate of Final Electrical Inspection (CFEI)",
@@ -824,6 +977,8 @@ export const ALL_OFFICIAL_TEMPLATES: OfficialTemplateFile[] = [
     code: "CFEI",
     filename: "CERTIFICATE-OF-FINAL-ELECTRICAL-INSPECTION-Gilbert-Cruz.pdf",
     path: "/templates/CERTIFICATE-OF-FINAL-ELECTRICAL-INSPECTION-Gilbert-Cruz.pdf",
-    description: "Official Certificate of Final Electrical Inspection form"
+    description: "Official Certificate of Final Electrical Inspection form (NBC Form 96006-E)",
+    projectTypeId: "occupancy_completion_clearance",
+    formKey: "cfei"
   }
 ];

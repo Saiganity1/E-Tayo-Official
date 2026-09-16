@@ -52,6 +52,14 @@ const PERMIT_ICONS: Record<keyof PermitFormMatrix, any> = {
   electronicsPermit: Radio,
   fireBfpPermit: Flame,
   zoningPermit: MapPin,
+  demolitionPermit: Trash2,
+  fencingPermit: ShieldCheck,
+  excavationPermit: Wrench,
+  signPermit: FileText,
+  temporaryServiceConnection: Zap,
+  certificateOfOccupancy: CheckCircle2,
+  certificateOfCompletion: FileCheck,
+  cfei: Zap,
 };
 
 const LocationPickerMap = dynamic(() => import("../../../../components/map/LocationPickerMap"), { 
@@ -161,13 +169,41 @@ export default function ApplyPage() {
       }
     } catch (e) {}
 
-    // Check if arriving from a specific clearance link (e.g. ?clearanceRef=LC-2026-4157)
+    // Check if arriving from a specific clearance link, project type, or template parameter
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get("clearanceRef");
       if (ref) {
         setSelectedClearanceRef(ref);
         setCurrentStep(2);
+      }
+
+      const typeParam = params.get("type") || params.get("projectType");
+      if (typeParam) {
+        const found = PROJECT_TYPES_MATRIX.find(p => p.id === typeParam);
+        if (found) setSelectedProjectType(found);
+      }
+
+      const templateParam = params.get("template") || params.get("code");
+      if (templateParam) {
+        const tmpl = ALL_OFFICIAL_TEMPLATES.find(
+          t => t.code.toLowerCase() === templateParam.toLowerCase() ||
+               t.filename.toLowerCase().includes(templateParam.toLowerCase()) ||
+               t.formKey?.toLowerCase() === templateParam.toLowerCase()
+        );
+        if (tmpl && tmpl.projectTypeId) {
+          const matchedProj = PROJECT_TYPES_MATRIX.find(p => p.id === tmpl.projectTypeId);
+          if (matchedProj) setSelectedProjectType(matchedProj);
+        }
+      }
+
+      if (params.get("openTemplates") === "true") {
+        setShowAllTemplatesModal(true);
+      }
+
+      const stepParam = params.get("step");
+      if (stepParam && !isNaN(Number(stepParam))) {
+        setCurrentStep(Number(stepParam));
       }
     }
 
@@ -3424,28 +3460,51 @@ export default function ApplyPage() {
                       </p>
                     </div>
 
-                    <a
-                      href={tmpl.path}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        alignSelf: "flex-start",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "6px 12px",
-                        borderRadius: "8px",
-                        background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
-                        color: "white",
-                        fontSize: "0.78rem",
-                        fontWeight: "700",
-                        textDecoration: "none",
-                        boxShadow: "0 2px 6px rgba(79, 70, 229, 0.25)"
-                      }}
-                    >
-                      <Download size={13} /> Download PDF
-                    </a>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <a
+                        href={tmpl.path}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          padding: "6px 12px",
+                          borderRadius: "8px",
+                          background: "#ffffff",
+                          border: "1.5px solid #cbd5e1",
+                          color: "#334155",
+                          fontSize: "0.78rem",
+                          fontWeight: "700",
+                          textDecoration: "none",
+                          transition: "all 0.15s ease"
+                        }}
+                      >
+                        <Eye size={13} color="#4f46e5" /> View Form
+                      </a>
+
+                      <a
+                        href={tmpl.path}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          padding: "6px 12px",
+                          borderRadius: "8px",
+                          background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+                          color: "white",
+                          fontSize: "0.78rem",
+                          fontWeight: "700",
+                          textDecoration: "none",
+                          boxShadow: "0 2px 6px rgba(79, 70, 229, 0.25)"
+                        }}
+                      >
+                        <Download size={13} /> Download PDF
+                      </a>
+                    </div>
                   </div>
                 ))}
               </div>

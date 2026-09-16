@@ -1004,6 +1004,61 @@ export default function TechnicalPermitFormsStep({
               </div>
             )}
 
+            {/* TAB CONTENT: SPECIAL / ANCILLARY PERMIT FORMS */}
+            {!["mechanicalPermit", "electricalPermit", "buildingPermit", "civilStructuralPermit", "architecturalPermit", "sanitaryPermit", "fireBfpPermit"].includes(activeTab) && (
+              <div className="animate-fade-in-up">
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
+                  <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#ede9fe", color: "#6d28d9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <FileText size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#0f172a" }}>
+                      {PERMIT_FORM_METADATA[activeTab]?.label || activeTab} ({PERMIT_FORM_METADATA[activeTab]?.code})
+                    </h3>
+                    <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
+                      {PERMIT_FORM_METADATA[activeTab]?.desc || "Official Municipal Permitting Form"}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{
+                  background: "#f8fafc",
+                  border: "1.5px solid #e2e8f0",
+                  borderRadius: "12px",
+                  padding: "1.25rem",
+                  marginBottom: "1rem"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                    <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#1e293b" }}>
+                      Official Template: {PERMIT_FORM_METADATA[activeTab]?.label}
+                    </span>
+                    {PERMIT_FORM_METADATA[activeTab]?.templateFile && (
+                      <a
+                        href={PERMIT_FORM_METADATA[activeTab]?.templateFile}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          fontSize: "0.78rem",
+                          color: "#4f46e5",
+                          fontWeight: "700",
+                          textDecoration: "none"
+                        }}
+                      >
+                        <Download size={13} /> Download Official PDF Template
+                      </a>
+                    )}
+                  </div>
+                  <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: "1.5" }}>
+                    This official form will be pre-filled with your applicant credentials (<strong>{applicantName}</strong>), construction site at <strong>{streetAddress}, Brgy. {barangay}</strong>, and scope of work. All official boxes (Box 1 and Box 2) are automatically compiled into your official permit package.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* COMPILE / GENERATE ACTION BUTTON */}
             <div style={{
               display: "flex",
