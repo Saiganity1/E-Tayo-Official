@@ -204,7 +204,7 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
 
   // --- BOX 9: Project Location ---
   const fullLoc = data.projectAddress || `Sto. Tomas, Pampanga`;
-  drawText(fullLoc, 46, 530, 8, true, 60);
+  drawText(fullLoc, 46, 534, 6.5, false, 60);
 
   // --- BOX 10: Project Area (in square meters) ---
   drawText(data.lotArea ? `${data.lotArea} sq.m.` : "", 340, 542, 8, true);

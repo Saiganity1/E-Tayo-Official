@@ -24,6 +24,17 @@ import {
   MapPin, 
   Sparkles 
 } from "lucide-react";
+import { 
+  generateUnifiedPermitPdf, 
+  generateBuildingPermitPdf, 
+  generateArchitecturalPermitPdf, 
+  generateStructuralPermitPdf, 
+  generateElectricalPermitPdf, 
+  generateSanitaryPermitPdf,
+  UnifiedPermitFormData
+} from "../../../../../utils/unifiedPermitPdfGenerator";
+import { generateLocationalClearancePdf } from "../../../../../utils/locationalClearancePdfGenerator";
+import { PROJECT_TYPES_MATRIX, ProjectTypeItem } from "../../../../../data/projectTypeMatrix";
 
 export default function ApplicationTrackDetail() {
   const params = useParams();
@@ -115,6 +126,108 @@ export default function ApplicationTrackDetail() {
     { num: 3, title: "Final Approval", desc: "Awaiting signatures from officials" },
     { num: 4, title: "Permit Release", desc: "Ready for pickup / download" }
   ];
+
+  const getFilledDocUrl = async (doc: any): Promise<string> => {
+    if (doc.url && doc.url.startsWith("data:") && !doc.url.includes("placeholder")) {
+      return doc.url;
+    }
+
+    const pTypeObj: ProjectTypeItem = (appData?.projectType && typeof appData.projectType === "object")
+      ? appData.projectType
+      : PROJECT_TYPES_MATRIX.find(p => p.name.toLowerCase() === (appData?.projectType || "").toLowerCase() || p.id === appData?.projectType)
+      || PROJECT_TYPES_MATRIX[0];
+
+    const formData: UnifiedPermitFormData = {
+      applicationNo: appData?.id || "APP-2026-6636",
+      locationalClearanceRef: appData?.locationalClearanceRef || "LC-2026-9307",
+      projectType: pTypeObj,
+      applicantName: appData?.applicantName || "Paul Payumo",
+      applicantPhone: appData?.applicantPhone || "0917-123-4567",
+      applicantEmail: appData?.applicantEmail || "applicant@etayo.gov.ph",
+      applicantAddress: appData?.projectAddress || appData?.applicantAddress || "Lawasn St., Blue Diamond, Brgy. Sapa, Sto. Tomas, Pampanga",
+      applicantTIN: appData?.applicantTIN || "000-123-456-000",
+      formOfOwnership: appData?.formOfOwnership || "INDIVIDUAL",
+      projectName: appData?.projectName || `${pTypeObj.name} Installation & Construction`,
+      projectAddress: appData?.projectAddress || appData?.location?.address || "Lawasn St., Blue Diamond",
+      barangay: appData?.barangay || "Sapa (Santo Nino)",
+      lotNo: appData?.lotNo || "Lot 12",
+      blockNo: appData?.blockNo || "Blk 4",
+      tctNo: appData?.tctNo || "TCT-123456",
+      taxDecNo: appData?.taxDecNo || "TD-2026-0012",
+      lotArea: appData?.lotArea || "200",
+      floorArea: appData?.floorArea || "120",
+      buildingFootprint: appData?.buildingFootprint || "60",
+      projectCost: appData?.projectCost || (appData?.estimatedFees ? `${appData.estimatedFees * 500}` : "1,500,000.00"),
+      scopeOfWork: appData?.scopeOfWork || "New Construction",
+      occupancyClass: appData?.occupancyClass || "Group A - Residential",
+      proposedStoreys: appData?.proposedStoreys || "2",
+      numberOfUnits: appData?.numberOfUnits || "1",
+      proposedStartDate: appData?.dateSubmitted || new Date().toLocaleDateString(),
+      expectedCompletionDate: "WITHIN 180 DAYS",
+      costBuilding: "1,200,000.00",
+      costElectrical: "150,000.00",
+      costMechanical: "50,000.00",
+      costPlumbing: "50,000.00",
+      costElectronics: "50,000.00",
+      architectName: appData?.architectName || "Arch. Maria Santos, UAP",
+      architectPRC: appData?.architectPRC || "PRC-0045211",
+      civilEngineerName: appData?.civilEngineerName || "Engr. Roberto Cruz, CE",
+      civilEngineerPRC: appData?.civilEngineerPRC || "PRC-0078923",
+      electricalEngineerName: appData?.electricalEngineerName || "Engr. Danilo Reyes, PEE",
+      electricalEngineerPRC: appData?.electricalEngineerPRC || "PRC-0033421",
+      masterPlumberName: appData?.masterPlumberName || "Engr. Jose Mendoza, MP",
+      masterPlumberPRC: appData?.masterPlumberPRC || "PRC-0012984",
+      submissionDate: appData?.dateSubmitted || new Date().toLocaleDateString(),
+    };
+
+    try {
+      if (doc.code === "AP") {
+        const b64 = await generateArchitecturalPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "SP") {
+        const b64 = await generateStructuralPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "EP") {
+        const b64 = await generateElectricalPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "PL") {
+        const b64 = await generateSanitaryPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "BP") {
+        const b64 = await generateBuildingPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "LC" || doc.code === "LC-DOSSIER") {
+        const b64 = await generateLocationalClearancePdf({
+          applicationNo: appData?.locationalClearanceRef || appData?.id || "LC-2026-9307",
+          submissionDate: appData?.dateSubmitted || new Date().toLocaleDateString(),
+          applicantName: appData?.applicantName || "Paul Payumo",
+          applicantAddress: appData?.projectAddress || appData?.applicantAddress || "Sto. Tomas, Pampanga",
+          applicantPhone: appData?.applicantPhone || "0917-000-0000",
+          applicantEmail: appData?.applicantEmail || "",
+          projectName: appData?.projectName || `${pTypeObj.name} Project`,
+          projectType: pTypeObj.name,
+          projectNature: "New Construction",
+          projectAddress: appData?.projectAddress || appData?.location?.address || "Sto. Tomas, Pampanga",
+          barangay: appData?.barangay || "Sto. Tomas",
+          lotArea: appData?.lotArea || "200",
+          bldgArea: appData?.floorArea || "120",
+          rightOverLand: "Owner",
+          projectTenure: "Permanent",
+          existingLandUse: "Residential",
+          isTenanted: "No",
+          projectCost: appData?.projectCost || "1,500,000.00",
+        });
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "BP-DOSSIER") {
+        const b64 = await generateUnifiedPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      }
+    } catch (e) {
+      console.warn("Could not generate filled form, using default doc.url:", e);
+    }
+
+    return doc.url;
+  };
 
   // Safe document opening and downloading helpers for data URIs, templates, and backend URLs
   const openDocumentSafely = (url: string) => {
@@ -673,7 +786,10 @@ export default function ApplicationTrackDetail() {
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "flex-end", paddingTop: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
                         <button
                           type="button"
-                          onClick={() => openDocumentSafely(doc.url)}
+                          onClick={async () => {
+                            const u = await getFilledDocUrl(doc);
+                            openDocumentSafely(u);
+                          }}
                           className="btn-outline"
                           style={{ 
                             padding: "0.42rem 0.85rem", 
@@ -693,7 +809,10 @@ export default function ApplicationTrackDetail() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => downloadDocumentSafely(doc.url, doc.downloadName)}
+                          onClick={async () => {
+                            const u = await getFilledDocUrl(doc);
+                            downloadDocumentSafely(u, doc.downloadName);
+                          }}
                           className="btn-primary"
                           style={{ 
                             padding: "0.42rem 0.95rem", 

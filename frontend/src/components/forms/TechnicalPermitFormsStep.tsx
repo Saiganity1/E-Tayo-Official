@@ -14,7 +14,15 @@ import {
   PermitFormMatrix, 
   getPermitFormTemplate 
 } from "../../data/projectTypeMatrix";
-import { generateUnifiedPermitPdf } from "../../utils/unifiedPermitPdfGenerator";
+import { 
+  generateUnifiedPermitPdf, 
+  generateBuildingPermitPdf, 
+  generateArchitecturalPermitPdf, 
+  generateStructuralPermitPdf, 
+  generateElectricalPermitPdf, 
+  generateSanitaryPermitPdf,
+  UnifiedPermitFormData 
+} from "../../utils/unifiedPermitPdfGenerator";
 
 interface TechnicalPermitFormsStepProps {
   projectType: ProjectTypeItem;
@@ -322,7 +330,7 @@ export default function TechnicalPermitFormsStep({
       const submissionDate = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
       const fullAddress = `${streetAddress || "Main Street"}, Brgy. ${barangay}, Sto. Tomas, Pampanga`;
 
-      const base64Pdf = await generateUnifiedPermitPdf({
+      const payload: UnifiedPermitFormData = {
         applicationNo,
         locationalClearanceRef: locationalClearanceRef || (isClearanceRequired ? "LC-VERIFIED" : "EXEMPT"),
         projectType,
@@ -461,23 +469,46 @@ export default function TechnicalPermitFormsStep({
         electronicsEngineerTIN,
         activePermitForms: mandatoryKeys,
         submissionDate
-      });
+      };
 
+      const base64Pdf = await generateUnifiedPermitPdf(payload);
       const dataUrl = `data:application/pdf;base64,${base64Pdf}`;
       setGeneratedPdfBlob(dataUrl);
 
-      // Populate uploadedPermitDocs for each mandatory key
+      // Populate uploadedPermitDocs for each mandatory key with its individual filled PDF
       const newDocs: Record<string, any> = { ...uploadedPermitDocs };
-      mandatoryKeys.forEach((key) => {
+      for (const key of mandatoryKeys) {
         const meta = PERMIT_FORM_METADATA[key];
+        let formUrl = dataUrl;
+        try {
+          if (key === "buildingPermit") {
+            const b64 = await generateBuildingPermitPdf(payload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "architecturalPermit") {
+            const b64 = await generateArchitecturalPermitPdf(payload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "civilStructuralPermit") {
+            const b64 = await generateStructuralPermitPdf(payload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "electricalPermit") {
+            const b64 = await generateElectricalPermitPdf(payload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "sanitaryPermit") {
+            const b64 = await generateSanitaryPermitPdf(payload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          }
+        } catch (indivErr) {
+          console.warn(`Fallback to unified dossier for ${key}:`, indivErr);
+        }
+
         newDocs[key] = {
           fileName: `${meta.code}_${projectType.name.replace(/\s+/g, '_')}_Official_Filled.pdf`,
           fileSize: "1.4 MB",
-          fileUrl: dataUrl,
+          fileUrl: formUrl,
           uploadedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           isDigitallyGenerated: true
         };
-      });
+      }
 
       setUploadedPermitDocs(newDocs);
       setNotification(

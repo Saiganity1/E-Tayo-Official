@@ -4,7 +4,15 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePermitContext } from "../../../../../context/PermitContext";
 import { generateLocationalClearancePdf } from "../../../../../utils/locationalClearancePdfGenerator";
-import { generateUnifiedPermitPdf } from "../../../../../utils/unifiedPermitPdfGenerator";
+import { 
+  generateUnifiedPermitPdf, 
+  generateBuildingPermitPdf, 
+  generateArchitecturalPermitPdf, 
+  generateStructuralPermitPdf, 
+  generateElectricalPermitPdf, 
+  generateSanitaryPermitPdf,
+  UnifiedPermitFormData
+} from "../../../../../utils/unifiedPermitPdfGenerator";
 import { PROJECT_TYPES_MATRIX, ProjectTypeItem, PermitFormMatrix } from "../../../../../data/projectTypeMatrix";
 import { 
   ShieldCheck, 
@@ -283,47 +291,167 @@ export default function StaffEvaluatePage() {
         }
       }
 
-      // If building permit, add dedicated tabs for all official technical engineering forms
+      // If building permit, add dedicated tabs for all official technical engineering forms with applicant data
       if (isBuildingPermit) {
-        docs.push({
-          id: "architectural-permit-tab",
-          title: "Official Architectural Permit Form (NBC Form A-01)",
-          tabLabel: "Architectural (AP)",
-          type: "pdf",
-          url: "/templates/ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
-          fileName: `${app.id}_Architectural_Permit_AP.pdf`,
-          isOfficialForm: true,
-        });
+        const pTypeObj: ProjectTypeItem = (app.projectType && typeof app.projectType === "object")
+          ? app.projectType
+          : PROJECT_TYPES_MATRIX.find(p => p.name.toLowerCase() === (app.projectType || "").toLowerCase() || p.id === app.projectType)
+          || PROJECT_TYPES_MATRIX[0];
 
-        docs.push({
-          id: "civil-structural-permit-tab",
-          title: "Official Civil / Structural Permit Form (NBC Form S-01)",
-          tabLabel: "Civil / Structural (SP)",
-          type: "pdf",
-          url: "/templates/Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf",
-          fileName: `${app.id}_Civil_Structural_Permit_SP.pdf`,
-          isOfficialForm: true,
-        });
+        const formData: UnifiedPermitFormData = {
+          applicationNo: app.id,
+          locationalClearanceRef: app.locationalClearanceRef || "LC-2026-9307",
+          projectType: pTypeObj,
+          applicantName: app.applicantName || "Paul Payumo",
+          applicantPhone: app.applicantPhone || "0917-123-4567",
+          applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+          applicantAddress: app.projectAddress || app.applicantAddress || "Lawasn St., Blue Diamond, Brgy. Sapa, Sto. Tomas, Pampanga",
+          applicantTIN: app.applicantTIN || "000-123-456-000",
+          formOfOwnership: app.formOfOwnership || "INDIVIDUAL",
+          projectName: app.projectName || `${pTypeObj.name} Installation & Construction`,
+          projectAddress: app.projectAddress || app.location?.address || "Lawasn St., Blue Diamond",
+          barangay: app.barangay || "Sapa (Santo Nino)",
+          lotNo: app.lotNo || "Lot 12",
+          blockNo: app.blockNo || "Blk 4",
+          tctNo: app.tctNo || "TCT-123456",
+          taxDecNo: app.taxDecNo || "TD-2026-0012",
+          lotArea: app.lotArea || "200",
+          floorArea: app.floorArea || "120",
+          buildingFootprint: app.buildingFootprint || "60",
+          projectCost: app.projectCost || (app.estimatedFees ? `${app.estimatedFees * 500}` : "1,500,000.00"),
+          scopeOfWork: app.scopeOfWork || "New Construction",
+          occupancyClass: app.occupancyClass || "Group A - Residential",
+          proposedStoreys: app.proposedStoreys || "2",
+          numberOfUnits: app.numberOfUnits || "1",
+          proposedStartDate: app.dateSubmitted || new Date().toLocaleDateString(),
+          expectedCompletionDate: "WITHIN 180 DAYS",
+          costBuilding: "1,200,000.00",
+          costElectrical: "150,000.00",
+          costMechanical: "50,000.00",
+          costPlumbing: "50,000.00",
+          costElectronics: "50,000.00",
+          architectName: app.architectName || "Arch. Maria Santos, UAP",
+          architectPRC: app.architectPRC || "PRC-0045211",
+          civilEngineerName: app.civilEngineerName || "Engr. Roberto Cruz, CE",
+          civilEngineerPRC: app.civilEngineerPRC || "PRC-0078923",
+          electricalEngineerName: app.electricalEngineerName || "Engr. Danilo Reyes, PEE",
+          electricalEngineerPRC: app.electricalEngineerPRC || "PRC-0033421",
+          masterPlumberName: app.masterPlumberName || "Engr. Jose Mendoza, MP",
+          masterPlumberPRC: app.masterPlumberPRC || "PRC-0012984",
+          submissionDate: app.dateSubmitted || new Date().toLocaleDateString(),
+        };
 
-        docs.push({
-          id: "electrical-permit-tab",
-          title: "Official Electrical Permit Form (NBC Form E-01)",
-          tabLabel: "Electrical (EP)",
-          type: "pdf",
-          url: "/templates/ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf",
-          fileName: `${app.id}_Electrical_Permit_EP.pdf`,
-          isOfficialForm: true,
-        });
+        const createBlobFromBase64 = (b64: string): string => {
+          const byteChars = atob(b64);
+          const byteNums = new Array(byteChars.length);
+          for (let i = 0; i < byteChars.length; i++) {
+            byteNums[i] = byteChars.charCodeAt(i);
+          }
+          const blob = new Blob([new Uint8Array(byteNums)], { type: "application/pdf" });
+          const url = URL.createObjectURL(blob);
+          createdBlobUrls.push(url);
+          return url;
+        };
 
-        docs.push({
-          id: "sanitary-plumbing-permit-tab",
-          title: "Official Sanitary & Plumbing Permit Form (NBC Form P-01)",
-          tabLabel: "Sanitary / Plumbing (PL)",
-          type: "pdf",
-          url: "/templates/SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf",
-          fileName: `${app.id}_Sanitary_Plumbing_Permit_PL.pdf`,
-          isOfficialForm: true,
-        });
+        // 1. Architectural Permit (AP)
+        try {
+          const archB64 = await generateArchitecturalPermitPdf(formData);
+          const archUrl = createBlobFromBase64(archB64);
+          docs.push({
+            id: "architectural-permit-tab",
+            title: "Official Architectural Permit Form (NBC Form A-01)",
+            tabLabel: "Architectural (AP)",
+            type: "pdf",
+            url: archUrl,
+            fileName: `${app.id}_Architectural_Permit_AP.pdf`,
+            isOfficialForm: true,
+          });
+        } catch (e) {
+          docs.push({
+            id: "architectural-permit-tab",
+            title: "Official Architectural Permit Form (NBC Form A-01)",
+            tabLabel: "Architectural (AP)",
+            type: "pdf",
+            url: "/templates/ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+            fileName: `${app.id}_Architectural_Permit_AP.pdf`,
+            isOfficialForm: true,
+          });
+        }
+
+        // 2. Civil / Structural Permit (SP)
+        try {
+          const structB64 = await generateStructuralPermitPdf(formData);
+          const structUrl = createBlobFromBase64(structB64);
+          docs.push({
+            id: "civil-structural-permit-tab",
+            title: "Official Civil / Structural Permit Form (NBC Form S-01)",
+            tabLabel: "Civil / Structural (SP)",
+            type: "pdf",
+            url: structUrl,
+            fileName: `${app.id}_Civil_Structural_Permit_SP.pdf`,
+            isOfficialForm: true,
+          });
+        } catch (e) {
+          docs.push({
+            id: "civil-structural-permit-tab",
+            title: "Official Civil / Structural Permit Form (NBC Form S-01)",
+            tabLabel: "Civil / Structural (SP)",
+            type: "pdf",
+            url: "/templates/Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf",
+            fileName: `${app.id}_Civil_Structural_Permit_SP.pdf`,
+            isOfficialForm: true,
+          });
+        }
+
+        // 3. Electrical Permit (EP)
+        try {
+          const elecB64 = await generateElectricalPermitPdf(formData);
+          const elecUrl = createBlobFromBase64(elecB64);
+          docs.push({
+            id: "electrical-permit-tab",
+            title: "Official Electrical Permit Form (NBC Form E-01)",
+            tabLabel: "Electrical (EP)",
+            type: "pdf",
+            url: elecUrl,
+            fileName: `${app.id}_Electrical_Permit_EP.pdf`,
+            isOfficialForm: true,
+          });
+        } catch (e) {
+          docs.push({
+            id: "electrical-permit-tab",
+            title: "Official Electrical Permit Form (NBC Form E-01)",
+            tabLabel: "Electrical (EP)",
+            type: "pdf",
+            url: "/templates/ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf",
+            fileName: `${app.id}_Electrical_Permit_EP.pdf`,
+            isOfficialForm: true,
+          });
+        }
+
+        // 4. Sanitary / Plumbing Permit (PL)
+        try {
+          const sanB64 = await generateSanitaryPermitPdf(formData);
+          const sanUrl = createBlobFromBase64(sanB64);
+          docs.push({
+            id: "sanitary-plumbing-permit-tab",
+            title: "Official Sanitary & Plumbing Permit Form (NBC Form P-01)",
+            tabLabel: "Sanitary / Plumbing (PL)",
+            type: "pdf",
+            url: sanUrl,
+            fileName: `${app.id}_Sanitary_Plumbing_Permit_PL.pdf`,
+            isOfficialForm: true,
+          });
+        } catch (e) {
+          docs.push({
+            id: "sanitary-plumbing-permit-tab",
+            title: "Official Sanitary & Plumbing Permit Form (NBC Form P-01)",
+            tabLabel: "Sanitary / Plumbing (PL)",
+            type: "pdf",
+            url: "/templates/SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf",
+            fileName: `${app.id}_Sanitary_Plumbing_Permit_PL.pdf`,
+            isOfficialForm: true,
+          });
+        }
       }
 
       // 2. VICINITY SKETCH MAP (if available)

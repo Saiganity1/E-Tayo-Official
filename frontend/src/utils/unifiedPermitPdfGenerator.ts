@@ -168,7 +168,7 @@ export interface UnifiedPermitFormData {
   electronicsEngineerTIN?: string;
 
   // Active form checkboxes selected
-  activePermitForms: (keyof PermitFormMatrix)[];
+  activePermitForms?: (keyof PermitFormMatrix)[];
   submissionDate?: string;
 }
 
@@ -182,6 +182,18 @@ function safeText(str: string | undefined | null): string {
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
     .replace(/[^\x20-\x7E\t\n\r]/g, "");
+}
+
+function parseApplicantName(name: string | undefined | null): { lastName: string; firstName: string; mi: string } {
+  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { lastName: "PAYUMO", firstName: "PAUL", mi: "N/A" };
+  if (parts.length === 1) return { lastName: parts[0].toUpperCase(), firstName: "", mi: "N/A" };
+  if (parts.length === 2) return { lastName: parts[1].toUpperCase(), firstName: parts[0].toUpperCase(), mi: "N/A" };
+  return {
+    firstName: parts.slice(0, -1).join(" ").toUpperCase(),
+    lastName: parts[parts.length - 1].toUpperCase(),
+    mi: parts[1] ? parts[1][0].toUpperCase() + "." : "N/A",
+  };
 }
 
 async function fetchTemplateBytes(templatePath: string): Promise<ArrayBuffer> {
@@ -225,332 +237,494 @@ async function fetchTemplateBytes(templatePath: string): Promise<ArrayBuffer> {
   throw new Error(`Could not load template file: ${templatePath}`);
 }
 
+const darkNavy = rgb(0.05, 0.12, 0.35);
+
 /**
- * Loads the official UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf
- * and all required ancillary technical permit templates from the folder,
- * overlays applicant responses into their respective boxes, and combines
- * them into a single official PDF application dossier.
+ * 1. OFFICIAL UNIFIED BUILDING PERMIT (NBC FORM B-01)
  */
-export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Promise<string> {
-  // 1. Load the official Unified Building Permit Template
-  const unifiedTemplateBytes = await fetchTemplateBytes("/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf");
-  const mainDoc = await PDFDocument.load(unifiedTemplateBytes);
+export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Promise<string> {
+  const bytes = await fetchTemplateBytes("/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf");
+  const doc = await PDFDocument.load(bytes);
+  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
 
-  const fontBold = await mainDoc.embedFont(StandardFonts.HelveticaBold);
-  const fontRegular = await mainDoc.embedFont(StandardFonts.Helvetica);
+  const p1 = doc.getPage(0);
 
-  const darkNavy = rgb(0.05, 0.12, 0.35); // Official document ink color
-
-  const p1 = mainDoc.getPage(0);
-
-  const drawP1Text = (
-    text: string | undefined | null,
-    x: number,
-    y: number,
-    fontSize: number = 8,
-    isBold: boolean = false,
-    maxWidth?: number
-  ) => {
+  const drawText = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false, maxWidth?: number) => {
     if (!text) return;
     let clean = safeText(text).trim();
-    if (maxWidth && clean.length > maxWidth) {
-      clean = clean.slice(0, maxWidth);
-    }
-    p1.drawText(clean, {
-      x,
-      y,
-      size: fontSize,
-      font: isBold ? fontBold : fontRegular,
-      color: darkNavy,
-    });
+    if (maxWidth && clean.length > maxWidth) clean = clean.slice(0, maxWidth);
+    p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  const drawP1Check = (x: number, y: number) => {
-    p1.drawText("X", {
-      x,
-      y,
-      size: 8.5,
-      font: fontBold,
-      color: darkNavy,
-    });
+  const drawCheck = (x: number, y: number) => {
+    p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
   };
 
-  // --- HEADER: Application No & Prerequisites ---
-  drawP1Text(data.applicationNo || "APP-2026-UNIFIED", 115, 788, 9, true);
+  // Header
+  drawText(data.applicationNo || "APP-2026-6636", 115, 788, 9, true);
+  if (data.locationalClearanceRef) drawCheck(240, 802);
+  drawCheck(345, 802); // Fire safety clearance also applied
 
-  // Mark Locational Clearance prerequisite
-  if (data.locationalClearanceRef) {
-    drawP1Check(235, 802);
-  }
+  // Box 1: Owner
+  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  drawText(lastName, 42, 735, 8.5, true, 30);
+  drawText(firstName, 240, 735, 8.5, true, 20);
+  drawText(mi, 360, 735, 8, true);
+  drawText(data.applicantTIN || "000-123-456-000", 415, 735, 8, false);
+  drawText(data.formOfOwnership || "INDIVIDUAL", 200, 712, 8, false, 25);
 
-  // Parse applicant name (Last, First, Middle)
-  const nameParts = (data.applicantName || "").trim().split(" ");
-  let lastName = "";
-  let firstName = "";
-  let mi = "";
-  if (nameParts.length === 1) {
-    lastName = nameParts[0];
-  } else if (nameParts.length === 2) {
-    firstName = nameParts[0];
-    lastName = nameParts[1];
-  } else {
-    firstName = nameParts.slice(0, -1).join(" ");
-    lastName = nameParts[nameParts.length - 1];
-    mi = nameParts[1] ? nameParts[1][0].toUpperCase() + "." : "";
-  }
+  // Address
+  drawText(data.projectAddress || data.applicantAddress || "Lawasn St., Blue Diamond", 42, 694, 7.5, false, 25);
+  drawText(data.barangay || "Sapa (Santo Nino)", 175, 694, 7.5, false, 15);
+  drawText("Sto. Tomas, Pampanga", 245, 694, 7.5, false, 20);
+  drawText("2020", 345, 694, 7.5, false);
+  drawText(data.applicantPhone || "0917-123-4567", 415, 694, 7.5, true);
 
-  // --- BOX 1: OWNER / APPLICANT ---
-  drawP1Text(lastName.toUpperCase(), 42, 735, 8.5, true, 30);
-  drawP1Text(firstName.toUpperCase(), 240, 735, 8.5, true, 20);
-  drawP1Text(mi || "N/A", 360, 735, 8, true);
-  drawP1Text(data.applicantTIN || "000-123-456-000", 395, 735, 8, false);
+  // Location of Construction Line 1
+  drawText(data.lotNo || "Lot 12", 174, 680, 7.5, true);
+  drawText(data.blockNo || "Blk 4", 230, 680, 7.5, true);
+  drawText(data.tctNo || "TCT-123456", 295, 680, 7.5, true);
+  drawText(data.taxDecNo || "TD-2026-0012", 442, 680, 7.5, false);
 
-  drawP1Text(data.formOfOwnership || "INDIVIDUAL", 200, 712, 8, false, 25);
+  // Location of Construction Line 2 (Street, Barangay, City)
+  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 70, 666, 7.5, false, 18);
+  drawText(data.barangay || "Sapa (Santo Nino)", 180, 666, 7.5, true, 18);
+  drawText("Sto. Tomas, Pampanga", 355, 666, 7.5, true, 20);
 
-  // Address line
-  drawP1Text(data.projectAddress || data.applicantAddress || "Poblacion", 42, 692, 7.5, false, 25);
-  drawP1Text(data.barangay || "Sto. Tomas", 173, 692, 7.5, false, 15);
-  drawP1Text("Sto. Tomas, Pampanga", 242, 692, 7.5, false, 20);
-  drawP1Text("2020", 342, 692, 7.5, false);
-  drawP1Text(data.applicantPhone || "0917-123-4567", 426, 692, 7.5, true);
-
-  // --- BOX 2: LOCATION OF CONSTRUCTION ---
-  drawP1Text(data.lotNo || "Lot 12", 168, 680, 7.5, true);
-  drawP1Text(data.blockNo || "Blk 4", 226, 680, 7.5, true);
-  drawP1Text(data.tctNo || "TCT-123456", 285, 680, 7.5, true);
-  drawP1Text(data.taxDecNo || "TD-2026-0012", 420, 680, 7.5, false);
-
-  drawP1Text(data.projectAddress || "Main Street", 65, 666, 7.5, false, 25);
-  drawP1Text(data.barangay || "San Bartolome", 185, 666, 7.5, true);
-  drawP1Text("Sto. Tomas, Pampanga", 350, 666, 7.5, true);
-
-  // --- BOX 3: SCOPE OF WORK ---
+  // Box 3: Scope of Work
   const scopeNorm = (data.scopeOfWork || "new construction").toLowerCase();
-  if (scopeNorm.includes("erect")) {
-    drawP1Check(37, 629);
-  } else if (scopeNorm.includes("add")) {
-    drawP1Check(37, 617);
-  } else if (scopeNorm.includes("alter")) {
-    drawP1Check(37, 604);
-  } else if (scopeNorm.includes("renov")) {
-    drawP1Check(168, 642);
-  } else if (scopeNorm.includes("convert") || scopeNorm.includes("conversion")) {
-    drawP1Check(168, 629);
-  } else if (scopeNorm.includes("repair")) {
-    drawP1Check(168, 617);
-  } else if (scopeNorm.includes("accessory")) {
-    drawP1Check(303, 629);
-  } else if (scopeNorm.includes("other")) {
-    drawP1Check(303, 604);
-    drawP1Text(data.scopeOthers || data.scopeOfWork, 350, 604, 7.5, false);
-  } else {
-    // Default: New Construction
-    drawP1Check(37, 642);
-  }
+  if (scopeNorm.includes("erect")) drawCheck(37, 629);
+  else if (scopeNorm.includes("add")) drawCheck(37, 617);
+  else if (scopeNorm.includes("alter")) drawCheck(37, 604);
+  else if (scopeNorm.includes("renov")) drawCheck(168, 642);
+  else if (scopeNorm.includes("convert")) drawCheck(168, 629);
+  else if (scopeNorm.includes("repair")) drawCheck(168, 617);
+  else if (scopeNorm.includes("accessory")) drawCheck(303, 629);
+  else drawCheck(37, 642); // Default: New Construction
 
-  // --- BOX 4: USE OR CHARACTER OF OCCUPANCY ---
+  // Box 4: Use / Occupancy
   const cat = data.projectType?.category || "Residential";
-  if (cat === "Commercial") {
-    drawP1Check(228, 569); // Commercial Store / Bank
-  } else if (cat === "Industrial") {
-    drawP1Check(226, 513); // Light Industrial
-  } else if (cat === "Institutional") {
-    drawP1Check(56, 463); // Institutional
-  } else {
-    // Default: Group A - Residential Dwellings
-    drawP1Check(56, 569); // Single / Duplex
+  if (cat === "Commercial") drawCheck(228, 569);
+  else if (cat === "Industrial") drawCheck(226, 513);
+  else if (cat === "Institutional") drawCheck(56, 463);
+  else drawCheck(37, 581); // Group A Residential
+
+  // Box 5: Physical Specs & Cost Breakdown
+  const occName = (data.projectType?.name || "Single-Detached House").toUpperCase();
+  drawText(occName, 120, 422, 7.5, true, 22);
+
+  // Format clean project cost number (removing duplicate "PHP" since "P" is pre-printed)
+  const cleanCost = String(data.projectCost || "1,500,000.00").replace(/PHP/gi, "").trim();
+  drawText(cleanCost, 370, 422, 8, true);
+
+  drawText(data.numberOfUnits || "1", 135, 412, 7.5, false);
+  drawText(data.costBuilding ? String(data.costBuilding).replace(/PHP/gi, "").trim() : "1,200,000.00", 370, 412, 7.5, false);
+
+  drawText(data.proposedStoreys || "2", 135, 402, 7.5, false);
+  drawText(data.costElectrical ? String(data.costElectrical).replace(/PHP/gi, "").trim() : "150,000.00", 370, 402, 7.5, false);
+
+  drawText(data.floorArea || "120", 135, 392, 7.5, true);
+  drawText(data.costMechanical ? String(data.costMechanical).replace(/PHP/gi, "").trim() : "50,000.00", 370, 392, 7.5, false);
+
+  drawText(data.lotArea || "200", 135, 382, 7.5, true);
+  drawText(data.costElectronics ? String(data.costElectronics).replace(/PHP/gi, "").trim() : "50,000.00", 370, 382, 7.5, false);
+  drawText(data.costPlumbing ? String(data.costPlumbing).replace(/PHP/gi, "").trim() : "50,000.00", 370, 372, 7.5, false);
+
+  const constDate = data.proposedStartDate || data.submissionDate || "Sep 17, 2026";
+  drawText(constDate, 145, 362, 7.5, false);
+  drawText(data.expectedCompletionDate || "WITHIN 180 DAYS", 330, 362, 7.5, false);
+
+  // Box 2: Full-Time Inspector / Supervisor
+  const leadEngr = data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE";
+  drawText(leadEngr.toUpperCase(), 90, 323, 8.5, true);
+  drawText("Sto. Tomas, Pampanga", 345, 340, 7.5, false);
+  drawText(data.civilEngineerPRC || data.architectPRC || "PRC-0078923", 345, 316, 7.5, false);
+  drawText(data.civilEngineerPRCValidity || data.architectPRCValidity || "2028-12-31", 445, 316, 7.5, false);
+  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 345, 304, 7.5, false);
+  drawText(data.civilEngineerPTRIssued || "Jan 05, 2026", 445, 304, 7.5, false);
+  drawText("Sto. Tomas", 345, 292, 7.5, false);
+  drawText(data.civilEngineerTIN || "123-456-789-000", 445, 292, 7.5, false);
+
+  // Box 4: Owner Signature
+  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 80, 240, 8.5, true);
+  drawText(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 80, 212, 7.5, false);
+
+  return await doc.saveAsBase64({ dataUri: false });
+}
+
+/**
+ * 2. OFFICIAL ARCHITECTURAL PERMIT (NBC FORM A-01)
+ */
+export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData): Promise<string> {
+  const bytes = await fetchTemplateBytes("/templates/ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf");
+  const doc = await PDFDocument.load(bytes);
+  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
+  const p1 = doc.getPage(0);
+
+  const drawText = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false, maxWidth?: number) => {
+    if (!text) return;
+    let clean = safeText(text).trim();
+    if (maxWidth && clean.length > maxWidth) clean = clean.slice(0, maxWidth);
+    p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
+  };
+
+  const drawCheck = (x: number, y: number) => {
+    p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
+  };
+
+  // Header
+  drawText(data.applicationNo || "APP-2026-6636", 115, 788, 8.5, true);
+
+  // Box 1
+  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  drawText(lastName, 42, 735, 8.5, true, 30);
+  drawText(firstName, 240, 735, 8.5, true, 20);
+  drawText(mi, 360, 735, 8, true);
+  drawText(data.applicantTIN || "000-123-456-000", 410, 735, 8, false);
+  drawText(data.formOfOwnership || "INDIVIDUAL", 200, 712, 8, false, 25);
+  drawText((data.projectType?.category || "Residential").toUpperCase(), 340, 712, 8, false, 25);
+
+  // Address
+  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 42, 672, 7.5, false, 25);
+  drawText(data.barangay || "Sapa (Santo Nino)", 160, 672, 7.5, false, 15);
+  drawText("Sto. Tomas, Pampanga", 240, 672, 7.5, false, 20);
+  drawText("2020", 320, 672, 7.5, false);
+  drawText(data.applicantPhone || "0917-123-4567", 360, 672, 7.5, true);
+
+  // Location
+  drawText(data.lotNo || "Lot 12", 140, 648, 7.5, true);
+  drawText(data.blockNo || "Blk 4", 200, 648, 7.5, true);
+  drawText(data.tctNo || "TCT-123456", 265, 648, 7.5, true);
+  drawText(data.taxDecNo || "TD-2026-0012", 390, 648, 7.5, false);
+
+  // Scope: [X] New Construction
+  drawCheck(40, 626);
+
+  // Box 2: Site Occupancy & Fire Safety
+  drawText(data.buildingFootprint || "60", 188, 442, 7.5, true);
+  drawText("20", 188, 430, 7.5, false); // Impervious
+  drawText("20", 188, 418, 7.5, false); // Unpaved
+  drawCheck(203, 442); // Exit Doors
+  drawCheck(312, 430); // Fire fighting
+  drawCheck(312, 418); // Smoke detectors
+  drawCheck(312, 404); // Emergency lights
+
+  // Box 3: Architect
+  const archName = data.architectName || "Arch. Maria Santos, UAP";
+  drawText(archName.toUpperCase(), 90, 302, 8.5, true);
+  drawText("Sto. Tomas, Pampanga", 70, 258, 7.5, false);
+  drawText(data.architectIAPOA || "IAPOA-2026-091", 70, 239, 7.5, false);
+  drawText(data.architectPRC || "PRC-0045211", 70, 225, 7.5, false);
+  drawText(data.architectPRCValidity || "2028-12-31", 210, 225, 7.5, false);
+  drawText(data.architectPTR || "PTR-ST-2026-004", 70, 211, 7.5, false);
+  drawText(data.architectPTRIssued || "Jan 05, 2026", 210, 211, 7.5, false);
+  drawText("Sto. Tomas", 70, 197, 7.5, false);
+  drawText(data.architectTIN || "123-456-789-000", 210, 197, 7.5, false);
+
+  // Box 5: Owner
+  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 80, 122, 8.5, true);
+  drawText(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 50, 78, 7.5, false);
+
+  return await doc.saveAsBase64({ dataUri: false });
+}
+
+/**
+ * 3. OFFICIAL CIVIL / STRUCTURAL PERMIT (NBC FORM S-01)
+ */
+export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): Promise<string> {
+  const bytes = await fetchTemplateBytes("/templates/Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf");
+  const doc = await PDFDocument.load(bytes);
+  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
+  const p1 = doc.getPage(0);
+
+  const drawText = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false, maxWidth?: number) => {
+    if (!text) return;
+    let clean = safeText(text).trim();
+    if (maxWidth && clean.length > maxWidth) clean = clean.slice(0, maxWidth);
+    p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
+  };
+
+  const drawCheck = (x: number, y: number) => {
+    p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
+  };
+
+  // Header (Application No box)
+  drawText(data.applicationNo || "APP-2026-6636", 115, 705, 8.5, true);
+
+  // Box 1
+  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  drawText(lastName, 42, 648, 8.5, true, 30);
+  drawText(firstName, 240, 648, 8.5, true, 20);
+  drawText(mi, 360, 648, 8, true);
+  drawText(data.applicantTIN || "000-123-456-000", 410, 648, 8, false);
+  drawText(data.formOfOwnership || "INDIVIDUAL", 200, 624, 8, false, 25);
+  drawText((data.projectType?.category || "Residential").toUpperCase(), 340, 624, 8, false, 25);
+
+  // Address
+  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 42, 582, 7.5, false, 25);
+  drawText(data.barangay || "Sapa (Santo Nino)", 160, 582, 7.5, false, 15);
+  drawText("Sto. Tomas, Pampanga", 230, 582, 7.5, false, 20);
+  drawText("2020", 320, 582, 7.5, false);
+  drawText(data.applicantPhone || "0917-123-4567", 360, 582, 7.5, true);
+
+  // Location
+  drawText(data.lotNo || "Lot 12", 140, 558, 7.5, true);
+  drawText(data.blockNo || "Blk 4", 200, 558, 7.5, true);
+  drawText(data.tctNo || "TCT-123456", 265, 558, 7.5, true);
+  drawText(data.taxDecNo || "TD-2026-0012", 390, 558, 7.5, false);
+
+  // Scope: [X] New Construction
+  drawCheck(39, 512);
+
+  // Box 2: Nature of Civil/Structural Works
+  drawCheck(45, 422); // Foundation
+  drawCheck(175, 445); // Concrete Framing
+  drawCheck(175, 422); // Slabs
+  drawCheck(175, 410); // Walls
+
+  // Box 3: Civil Engineer
+  const ceName = data.civilEngineerName || "Engr. Roberto Cruz, CE";
+  drawText(ceName.toUpperCase(), 80, 205, 8.5, true);
+  drawText("Sto. Tomas, Pampanga", 45, 145, 7.5, false);
+  drawText(data.civilEngineerPRC || "PRC-0078923", 45, 125, 7.5, false);
+  drawText(data.civilEngineerPRCValidity || "2028-12-31", 135, 125, 7.5, false);
+  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 45, 110, 7.5, false);
+  drawText(data.civilEngineerPTRIssued || "Jan 05, 2026", 135, 110, 7.5, false);
+  drawText("Sto. Tomas", 45, 95, 7.5, false);
+  drawText(data.civilEngineerTIN || "123-456-789-000", 135, 95, 7.5, false);
+
+  // Box 5: Owner
+  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 80, 120, 8.5, true);
+  drawText(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 45, 75, 7.5, false);
+
+  return await doc.saveAsBase64({ dataUri: false });
+}
+
+/**
+ * 4. OFFICIAL ELECTRICAL PERMIT (NBC FORM E-01)
+ */
+export async function generateElectricalPermitPdf(data: UnifiedPermitFormData): Promise<string> {
+  const bytes = await fetchTemplateBytes("/templates/ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf");
+  const doc = await PDFDocument.load(bytes);
+  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
+  const p1 = doc.getPage(0);
+
+  const drawText = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false, maxWidth?: number) => {
+    if (!text) return;
+    let clean = safeText(text).trim();
+    if (maxWidth && clean.length > maxWidth) clean = clean.slice(0, maxWidth);
+    p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
+  };
+
+  const drawCheck = (x: number, y: number) => {
+    p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
+  };
+
+  // Header
+  drawText(data.applicationNo || "APP-2026-6636", 50, 771, 8.5, true);
+  drawText(data.submissionDate || "Sep 17, 2026", 410, 771, 8, false);
+  drawText(data.proposedStartDate || "Sep 17, 2026", 60, 731, 7.5, false);
+  drawText(data.expectedCompletionDate || "WITHIN 180 DAYS", 410, 731, 7.5, false);
+
+  // Box 1
+  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  drawText(lastName, 50, 691, 8.5, true, 30);
+  drawText(firstName, 240, 691, 8.5, true, 20);
+  drawText(mi, 360, 691, 8, true);
+  drawText(data.applicantTIN || "000-123-456-000", 415, 691, 8, false);
+
+  // Address
+  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 50, 661, 7.5, false, 25);
+  drawText(data.barangay || "Sapa (Santo Nino)", 180, 661, 7.5, false, 15);
+  drawText("Sto. Tomas, Pampanga", 280, 661, 7.5, false, 20);
+  drawText(data.applicantPhone || "0917-123-4567", 415, 661, 7.5, true);
+
+  // Location of installation
+  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 60, 631, 7.5, false, 25);
+  drawText(data.barangay || "Sapa (Santo Nino)", 240, 631, 7.5, true, 18);
+  drawText("Sto. Tomas, Pampanga", 360, 631, 7.5, true, 20);
+
+  // Scope & Occupancy
+  drawCheck(39, 603); // [X] New Installation
+  drawCheck(26, 566); // [X] A. Residential Dwelling
+
+  // Number of Outlets
+  drawText(data.lightingOutletsCount || "24", 40, 514, 7.5, true);
+  drawText(data.convenienceOutletsCount || "18", 40, 504, 7.5, true);
+  drawText(data.acuOutletsCount || "3", 40, 494, 7.5, true);
+  drawText("1", 175, 514, 7.5, true); // Cooking unit
+  drawText(data.waterHeaterOutletsCount || "2", 175, 504, 7.5, true); // Water heater
+
+  // Box 2: Professional Electrical Engineer
+  const peeName = data.electricalEngineerName || "Engr. Danilo Reyes, PEE";
+  drawText(peeName.toUpperCase(), 50, 456, 8.5, true);
+  drawText(data.electricalEngineerPRC || "PRC-0033421", 350, 456, 7.5, false);
+  drawText(data.electricalEngineerPRCValidity || "2028-12-31", 455, 456, 7.5, false);
+  drawText("Sto. Tomas, Pampanga", 50, 426, 7.5, false);
+  drawText("0917-555-4321", 350, 426, 7.5, false);
+  drawText(data.electricalEngineerPTR || "PTR-ST-2026-4412", 50, 401, 7.5, false);
+  drawText(data.electricalEngineerPTRIssued || "Jan 05, 2026", 200, 401, 7.5, false);
+  drawText("Sto. Tomas", 350, 401, 7.5, false);
+  drawText(peeName.toUpperCase(), 50, 371, 8.5, true);
+  drawText(data.electricalEngineerTIN || "334-219-880-000", 350, 371, 7.5, false);
+
+  // Box 5: Owner
+  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 60, 76, 8.5, true);
+
+  return await doc.saveAsBase64({ dataUri: false });
+}
+
+/**
+ * 5. OFFICIAL SANITARY / PLUMBING PERMIT (NBC FORM P-01)
+ */
+export async function generateSanitaryPermitPdf(data: UnifiedPermitFormData): Promise<string> {
+  const bytes = await fetchTemplateBytes("/templates/SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf");
+  const doc = await PDFDocument.load(bytes);
+  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
+
+  // Page 1
+  const p1 = doc.getPage(0);
+
+  const drawText1 = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false, maxWidth?: number) => {
+    if (!text) return;
+    let clean = safeText(text).trim();
+    if (maxWidth && clean.length > maxWidth) clean = clean.slice(0, maxWidth);
+    p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
+  };
+
+  const drawCheck1 = (x: number, y: number) => {
+    p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
+  };
+
+  // Header
+  drawText1(data.applicationNo || "APP-2026-6636", 50, 806, 8.5, true);
+  drawText1(data.submissionDate || "Sep 17, 2026", 80, 776, 8, false);
+
+  // Box 1
+  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  drawText1(lastName, 50, 721, 8.5, true, 30);
+  drawText1(firstName, 240, 721, 8.5, true, 20);
+  drawText1(mi, 360, 721, 8, true);
+  drawText1(data.applicantTIN || "000-123-456-000", 430, 721, 8, false);
+
+  // Address
+  drawText1(data.projectAddress || "Lawasn St., Blue Diamond", 50, 691, 7.5, false, 25);
+  drawText1(data.barangay || "Sapa (Santo Nino)", 180, 691, 7.5, false, 15);
+  drawText1("Sto. Tomas, Pampanga", 280, 691, 7.5, false, 20);
+  drawText1(data.applicantPhone || "0917-123-4567", 415, 691, 7.5, true);
+
+  // Project Location (2nd Address line)
+  drawText1(data.projectAddress || "Lawasn St., Blue Diamond", 50, 661, 7.5, false, 25);
+  drawText1(data.barangay || "Sapa (Santo Nino)", 180, 661, 7.5, true, 18);
+  drawText1("Sto. Tomas, Pampanga", 280, 661, 7.5, true, 20);
+
+  // Scope & Occupancy
+  drawCheck1(38, 641); // [X] New Installation
+  drawCheck1(34, 598); // [X] Residential
+
+  // Fixtures
+  drawText1(data.waterClosetsCount || "3", 35, 501, 7.5, true);
+  drawCheck1(70, 501);
+  drawText1(data.floorDrainsCount || "3", 35, 488, 7.5, true);
+  drawCheck1(70, 488);
+  drawText1(data.lavatoriesCount || "3", 35, 475, 7.5, true);
+  drawCheck1(70, 475);
+  drawText1(data.kitchenSinksCount || "1", 35, 462, 7.5, true);
+  drawCheck1(70, 462);
+  drawText1(data.faucetsCount || "4", 35, 449, 7.5, true);
+  drawCheck1(70, 449);
+  drawText1(data.showersCount || "2", 35, 436, 7.5, true);
+  drawCheck1(70, 436);
+
+  // Water supply & septic
+  drawCheck1(26, 241); // [X] City / Municipal Water System
+  drawCheck1(185, 254); // [X] Septic Vault
+
+  drawText1(data.proposedStoreys || "2", 160, 206, 7.5, true);
+  drawText1(`${data.floorArea || "120"} SQ. M.`, 380, 206, 7.5, true);
+  drawText1(data.proposedStartDate || "Sep 17, 2026", 100, 181, 7.5, false);
+  drawText1(`PHP ${data.costPlumbing || "50,000.00"}`, 360, 181, 7.5, true);
+
+  const mpName = data.masterPlumberName || "Engr. Jose Mendoza, MP";
+  drawText1(mpName.toUpperCase(), 360, 148, 8, true);
+
+  // Page 2: Credentials
+  if (doc.getPageCount() > 1) {
+    const p2 = doc.getPage(1);
+    const drawText2 = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false) => {
+      if (!text) return;
+      let clean = safeText(text).trim();
+      p2.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
+    };
+
+    drawText2(mpName.toUpperCase(), 120, 810, 8.5, true);
+    drawText2(data.masterPlumberPRC || "PRC-0012984", 420, 810, 7.5, false);
+    drawText2("Sto. Tomas, Pampanga", 120, 785, 7.5, false);
+    drawText2(data.masterPlumberPTR || "PTR-ST-2026-1102", 120, 760, 7.5, false);
+    drawText2("Jan 05, 2026", 320, 760, 7.5, false);
+    drawText2("Sto. Tomas", 450, 760, 7.5, false);
+    drawText2(data.masterPlumberTIN || "112-984-550-000", 120, 735, 7.5, false);
+
+    // Applicant signature
+    drawText2((data.applicantName || "PAUL PAYUMO").toUpperCase(), 120, 685, 8.5, true);
+    drawText2("CTC-2026-00192", 120, 660, 7.5, false);
   }
 
-  // --- BOX 5: BUILDING DETAILS & ESTIMATED COSTS ---
-  drawP1Text((data.projectType?.name || "Residential").toUpperCase(), 135, 423, 8, true, 20);
-  drawP1Text(`PHP ${data.projectCost || "1,500,000.00"}`, 310, 423, 8, true);
+  return await doc.saveAsBase64({ dataUri: false });
+}
 
-  drawP1Text(data.numberOfUnits || "1", 135, 413, 8, false);
-  drawP1Text(data.costBuilding || data.projectCost || "1,000,000.00", 265, 413, 7.5, false);
+/**
+ * 6. COMPILED OFFICIAL UNIFIED APPLICATION DOSSIER
+ * Generates the Building Permit as Master Cover, then appends all required
+ * technical permits (AP, SP, EP, PL, etc.) with the applicant's entered responses.
+ */
+export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Promise<string> {
+  // 1. Generate Building Permit as base
+  const buildingPdfBase64 = await generateBuildingPermitPdf(data);
+  const mainDoc = await PDFDocument.load(Buffer.from(buildingPdfBase64, "base64"));
 
-  drawP1Text(data.proposedStoreys || "1", 135, 404, 8, false);
-  drawP1Text(data.costElectrical || "150,000.00", 265, 404, 7.5, false); // Electrical cost
-
-  drawP1Text(data.floorArea ? `${data.floorArea}` : "150", 120, 395, 8, true);
-  drawP1Text(data.costMechanical || "100,000.00", 265, 395, 7.5, false); // Mechanical cost
-
-  drawP1Text(data.lotArea ? `${data.lotArea}` : "200", 120, 386, 8, true);
-  drawP1Text(data.costElectronics || "50,000.00", 265, 386, 7.5, false); // Electronics cost
-
-  drawP1Text(data.costPlumbing || "100,000.00", 265, 377, 7.5, false); // Plumbing cost
-
-  const constDate = data.proposedStartDate || data.submissionDate || new Date().toLocaleDateString();
-  drawP1Text(constDate, 145, 368, 7.5, false);
-  drawP1Text(data.expectedCompletionDate || "WITHIN 180 DAYS", 330, 368, 7.5, false);
-
-  // --- DESIGN PROFESSIONALS & SIGNATURES ---
-  const leadEngr = data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE";
-  drawP1Text(leadEngr.toUpperCase(), 120, 295, 8, true);
-  drawP1Text(data.civilEngineerPRC || data.architectPRC || "PRC-0078923", 350, 306, 7.5, false);
-  drawP1Text(data.civilEngineerPTR || "PTR-ST-2026-001", 350, 294, 7.5, false);
-  drawP1Text("Sto. Tomas, Pampanga", 350, 335, 7.5, false);
-
-  // Owner signature Box 4
-  drawP1Text((data.applicantName || "APPLICANT").toUpperCase(), 80, 230, 8, true);
-  drawP1Text(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 80, 210, 7.5, false);
-
-  // 2. Load & Append Active Technical / Ancillary Permit Forms
-  const activeForms = Array.isArray(data.activePermitForms) ? data.activePermitForms : [];
+  const activeForms = Array.isArray(data.activePermitForms) && data.activePermitForms.length > 0
+    ? data.activePermitForms
+    : ["architecturalPermit", "civilStructuralPermit", "electricalPermit", "sanitaryPermit"];
 
   for (const formKey of activeForms) {
     if (formKey === "buildingPermit" || formKey === "zoningPermit" || formKey === "fireBfpPermit") {
       continue;
     }
 
-    const meta = PERMIT_FORM_METADATA[formKey];
-    if (!meta || !meta.templateFile) continue;
-
     try {
-      const techBytes = await fetchTemplateBytes(meta.templateFile);
-      const techDoc = await PDFDocument.load(techBytes);
-      const techFontBold = await techDoc.embedFont(StandardFonts.HelveticaBold);
-      const techFontRegular = await techDoc.embedFont(StandardFonts.Helvetica);
-      const tp1 = techDoc.getPage(0);
-
-      const drawTech = (
-        text: string | undefined | null,
-        x: number,
-        y: number,
-        fontSize: number = 8,
-        isBold: boolean = false,
-        maxWidth?: number
-      ) => {
-        if (!text) return;
-        let clean = safeText(text).trim();
-        if (maxWidth && clean.length > maxWidth) {
-          clean = clean.slice(0, maxWidth);
-        }
-        tp1.drawText(clean, {
-          x,
-          y,
-          size: fontSize,
-          font: isBold ? techFontBold : techFontRegular,
-          color: darkNavy,
-        });
-      };
-
-      // Stamp common fields on Box 1 of each technical permit
-      if (formKey === "electricalPermit") {
-        drawTech(data.applicationNo, 115, 785, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 705, 8.5, true);
-        drawTech(data.applicantAddress, 100, 677, 7.5, false);
-        drawTech(data.projectAddress, 140, 650, 7.5, true);
-        // [X] New Installation
-        tp1.drawText("X", { x: 45, y: 627, size: 8.5, font: techFontBold, color: darkNavy });
-        // Professional Electrical Engineer
-        if (data.electricalEngineerName) {
-          drawTech(data.electricalEngineerName.toUpperCase(), 65, 490, 8, true);
-          drawTech(data.electricalEngineerPRC || "PRC-PEE-0033421", 420, 503, 7.5, false);
-          drawTech(data.electricalEngineerPTR || "PTR-ST-2026-4412", 85, 447, 7.5, false);
-          drawTech("Sto. Tomas, Pampanga", 85, 462, 7.5, false);
-        }
-      } else if (formKey === "mechanicalPermit") {
-        drawTech(data.applicationNo, 115, 740, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 665, 8.5, true);
-        drawTech(data.projectAddress, 100, 580, 7.5, true);
-        // Equipment / Machinery Scope checkbox
-        if (data.projectType?.id === "elevator_escalator") {
-          // Escalator: x = 213.8, y = 460.8; Passenger Elevator: x = 213.8, y = 433.1
-          tp1.drawText("X", { x: 215, y: 461, size: 8.5, font: techFontBold, color: darkNavy });
-          tp1.drawText("X", { x: 215, y: 433, size: 8.5, font: techFontBold, color: darkNavy });
-        } else if (data.projectType?.id === "generator_set") {
-          // Internal Combustion Engine: x = 33.4, y = 460.8
-          tp1.drawText("X", { x: 35, y: 461, size: 8.5, font: techFontBold, color: darkNavy });
-        } else {
-          // Ventilation / AC: x = 213.8, y = 470
-          tp1.drawText("X", { x: 215, y: 470, size: 8.5, font: techFontBold, color: darkNavy });
-        }
-        // Professional Mechanical Engineer
-        if (data.mechanicalEngineerName) {
-          drawTech(data.mechanicalEngineerName.toUpperCase(), 80, 303, 8, true);
-          drawTech(data.mechanicalEngineerPRC || "PRC-PME-0021489", 65, 265, 7.5, false);
-          drawTech("Sto. Tomas, Pampanga", 30, 284, 7.5, false);
-        }
-        drawTech(data.applicantName?.toUpperCase(), 80, 160, 8, true);
-      } else if (formKey === "sanitaryPermit") {
-        drawTech(data.applicationNo, 115, 785, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 715, 8.5, true);
-        drawTech(data.projectAddress, 100, 690, 7.5, true);
-        tp1.drawText("X", { x: 40, y: 666, size: 8.5, font: techFontBold, color: darkNavy }); // New installation
-        if (data.masterPlumberName) {
-          drawTech(data.masterPlumberName.toUpperCase(), 120, 210, 8, true);
-          drawTech(data.masterPlumberPRC || "PRC-MP-0012984", 420, 210, 7.5, false);
-        }
-      } else if (formKey === "architecturalPermit") {
-        drawTech(data.applicationNo, 115, 785, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 715, 8.5, true);
-        drawTech(data.projectAddress, 100, 680, 7.5, true);
-        if (data.architectName) {
-          drawTech(data.architectName.toUpperCase(), 120, 295, 8, true);
-          drawTech(data.architectPRC || "PRC-ARC-0045211", 350, 295, 7.5, false);
-        }
+      let formBase64: string | null = null;
+      if (formKey === "architecturalPermit") {
+        formBase64 = await generateArchitecturalPermitPdf(data);
       } else if (formKey === "civilStructuralPermit") {
-        drawTech(data.applicationNo, 115, 750, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 690, 8.5, true);
-        drawTech(data.projectAddress, 100, 660, 7.5, true);
-        if (data.civilEngineerName) {
-          drawTech(data.civilEngineerName.toUpperCase(), 120, 280, 8, true);
-          drawTech(data.civilEngineerPRC || "PRC-CE-0078923", 350, 280, 7.5, false);
+        formBase64 = await generateStructuralPermitPdf(data);
+      } else if (formKey === "electricalPermit") {
+        formBase64 = await generateElectricalPermitPdf(data);
+      } else if (formKey === "sanitaryPermit") {
+        formBase64 = await generateSanitaryPermitPdf(data);
+      } else {
+        const meta = PERMIT_FORM_METADATA[formKey];
+        if (meta?.templateFile) {
+          const rawBytes = await fetchTemplateBytes(meta.templateFile);
+          const rawDoc = await PDFDocument.load(rawBytes);
+          formBase64 = await rawDoc.saveAsBase64({ dataUri: false });
         }
-      } else if (formKey === "electronicsPermit") {
-        drawTech(data.applicationNo, 115, 785, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 715, 8.5, true);
-        drawTech(data.projectAddress, 100, 680, 7.5, true);
-        if (data.electronicsEngineerName) {
-          drawTech(data.electronicsEngineerName.toUpperCase(), 120, 295, 8, true);
-          drawTech(data.electronicsEngineerPRC || "PRC-PECE-0038912", 350, 295, 7.5, false);
-        }
-      } else if (formKey === "demolitionPermit") {
-        drawTech(data.applicationNo, 115, 740, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 617, 8.5, true);
-        drawTech(data.applicantAddress, 100, 588, 7.5, false);
-        drawTech(data.projectAddress, 100, 531, 7.5, true);
-      } else if (formKey === "fencingPermit") {
-        drawTech(data.applicationNo, 115, 740, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 624, 8.5, true);
-        drawTech(data.applicantAddress, 100, 598, 7.5, false);
-        drawTech(data.projectAddress, 100, 542, 7.5, true);
-      } else if (formKey === "excavationPermit") {
-        drawTech(data.applicationNo, 115, 740, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 604, 8.5, true);
-        drawTech(data.applicantAddress, 100, 576, 7.5, false);
-        drawTech(data.projectAddress, 100, 516, 7.5, true);
-      } else if (formKey === "signPermit") {
-        drawTech(data.applicationNo, 115, 785, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 730, 8.5, true);
-        drawTech(data.applicantAddress, 100, 702, 7.5, false);
-        drawTech(data.projectAddress, 100, 645, 7.5, true);
-      } else if (formKey === "temporaryServiceConnection") {
-        drawTech(data.applicationNo, 115, 785, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 100, 750, 8.5, true);
-        drawTech(data.applicantAddress, 100, 706, 7.5, false);
-        drawTech(data.projectAddress, 100, 632, 7.5, true);
-      } else if (formKey === "certificateOfOccupancy") {
-        drawTech(data.applicationNo, 115, 785, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 120, 617, 8.5, true);
-        drawTech(data.projectAddress, 120, 496, 7.5, true);
-      } else if (formKey === "certificateOfCompletion") {
-        drawTech(data.applicationNo, 115, 785, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 120, 667, 8.5, true);
-        drawTech(data.projectAddress, 120, 648, 7.5, true);
-      } else if (formKey === "cfei") {
-        drawTech(data.applicationNo, 115, 850, 8.5, true);
-        drawTech(data.applicantName?.toUpperCase(), 120, 787, 8.5, true);
-        drawTech(data.projectAddress, 120, 731, 7.5, true);
       }
 
-      // Copy pages of this official filled technical permit into the unified main document
-      const copiedPages = await mainDoc.copyPages(techDoc, techDoc.getPageIndices());
-      for (const cp of copiedPages) {
-        mainDoc.addPage(cp);
+      if (formBase64) {
+        const techDoc = await PDFDocument.load(Buffer.from(formBase64, "base64"));
+        const copiedPages = await mainDoc.copyPages(techDoc, techDoc.getPageIndices());
+        for (const cp of copiedPages) {
+          mainDoc.addPage(cp);
+        }
       }
-    } catch (techErr) {
-      console.warn(`Could not attach technical permit form ${formKey}:`, techErr);
+    } catch (err) {
+      console.warn(`Notice: Could not compile ancillary form ${formKey}:`, err);
     }
   }
 
