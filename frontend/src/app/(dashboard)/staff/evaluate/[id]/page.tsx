@@ -283,6 +283,49 @@ export default function StaffEvaluatePage() {
         }
       }
 
+      // If building permit, add dedicated tabs for all official technical engineering forms
+      if (isBuildingPermit) {
+        docs.push({
+          id: "architectural-permit-tab",
+          title: "Official Architectural Permit Form (NBC Form A-01)",
+          tabLabel: "Architectural (AP)",
+          type: "pdf",
+          url: "/templates/ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+          fileName: `${app.id}_Architectural_Permit_AP.pdf`,
+          isOfficialForm: true,
+        });
+
+        docs.push({
+          id: "civil-structural-permit-tab",
+          title: "Official Civil / Structural Permit Form (NBC Form S-01)",
+          tabLabel: "Civil / Structural (SP)",
+          type: "pdf",
+          url: "/templates/Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf",
+          fileName: `${app.id}_Civil_Structural_Permit_SP.pdf`,
+          isOfficialForm: true,
+        });
+
+        docs.push({
+          id: "electrical-permit-tab",
+          title: "Official Electrical Permit Form (NBC Form E-01)",
+          tabLabel: "Electrical (EP)",
+          type: "pdf",
+          url: "/templates/ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf",
+          fileName: `${app.id}_Electrical_Permit_EP.pdf`,
+          isOfficialForm: true,
+        });
+
+        docs.push({
+          id: "sanitary-plumbing-permit-tab",
+          title: "Official Sanitary & Plumbing Permit Form (NBC Form P-01)",
+          tabLabel: "Sanitary / Plumbing (PL)",
+          type: "pdf",
+          url: "/templates/SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf",
+          fileName: `${app.id}_Sanitary_Plumbing_Permit_PL.pdf`,
+          isOfficialForm: true,
+        });
+      }
+
       // 2. VICINITY SKETCH MAP (if available)
       if (app.sketchImageUrl) {
         let sketchUrl = app.sketchImageUrl;

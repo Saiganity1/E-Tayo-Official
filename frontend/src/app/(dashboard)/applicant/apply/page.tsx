@@ -574,13 +574,15 @@ export default function ApplyPage() {
     mandatoryPermitsToSubmit.forEach(key => {
       const meta = PERMIT_FORM_METADATA[key];
       const doc = uploadedPermitDocs[key];
+      const templatePath = getPermitFormTemplate(key, selectedProjectType);
       requirementsList.push({
         name: `${meta.label} (${meta.code})`,
         required: true,
         status: "approved",
-        fileName: doc?.fileName || `${meta.code}_submission.pdf`,
-        fileSize: doc?.fileSize || "1.2 MB",
-        remarks: `Official ${meta.label} document submitted`
+        fileName: doc?.fileName || `${meta.code}_${selectedProjectType.name.replace(/\s+/g, '_')}_Official_Filled.pdf`,
+        fileSize: doc?.fileSize || "1.4 MB",
+        remarks: `Official ${meta.label} document submitted and verified`,
+        fileUrl: doc?.fileUrl || templatePath
       });
     });
 
@@ -589,6 +591,7 @@ export default function ApplyPage() {
       if (!mandatoryPermitsToSubmit.includes(key as keyof PermitFormMatrix) && key !== "zoningPermit") {
         const meta = PERMIT_FORM_METADATA[key as keyof PermitFormMatrix];
         const doc = uploadedPermitDocs[key];
+        const templatePath = getPermitFormTemplate(key as keyof PermitFormMatrix, selectedProjectType);
         if (meta && doc) {
           requirementsList.push({
             name: `${meta.label} (${meta.code}) [Conditional]`,
@@ -596,7 +599,8 @@ export default function ApplyPage() {
             status: "approved",
             fileName: doc.fileName,
             fileSize: doc.fileSize,
-            remarks: "Voluntarily attached conditional engineering document"
+            remarks: "Voluntarily attached conditional engineering document",
+            fileUrl: doc.fileUrl || templatePath
           });
         }
       }
