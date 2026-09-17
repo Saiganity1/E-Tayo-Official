@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { PermitApplication, SystemLog, FeeStructure, PermitType } from "../types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
@@ -102,8 +102,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Client-side hydration
   const [mounted, setMounted] = useState(false);
 
-  // Reusable fetch function for initial load and polling
-  const fetchData = async () => {
+  const userRoleRef = useRef<UserRole>(userRole);
+  useEffect(() => {
+    userRoleRef.current = userRole;
+  }, [userRole]);
+
+  // Reusable fetch function for initial load and polling (memoized to keep reference stable)
+  const fetchData = useCallback(async () => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       
@@ -130,7 +135,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         "Authorization": `Bearer ${token}`
       };
 
-      const isStaffOrAdmin = userRole === "admin" || userRole === "staff";
+      const isStaffOrAdmin = userRoleRef.current === "admin" || userRoleRef.current === "staff";
       const [appsRes, logsRes, feesRes] = await Promise.all([
         fetch(`${API_BASE_URL}/permits`, { headers }).catch(e => ({ ok: false, json: async () => [] })),
         isStaffOrAdmin 
@@ -201,7 +206,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (error) {
       console.warn("Notice: Backend connecting or polling...", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -424,9 +429,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   };
 
-  const refreshApplications = async () => {
+  const refreshApplications = useCallback(async () => {
     await fetchData();
-  };
+  }, [fetchData]);
 
   const updateFeeMultiplier = async (id: string, newValue: number) => {
     setFeeStructures((prev) =>

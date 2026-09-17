@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { 
@@ -149,6 +149,17 @@ export default function ApplyPage() {
   const [copiedRef, setCopiedRef] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const goToStep = useCallback((stepNumber: number) => {
+    setCurrentStep(stepNumber);
+    if (typeof window !== "undefined") {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("step", String(stepNumber));
+        window.history.replaceState({}, "", url.toString());
+      } catch (e) {}
+    }
+  }, []);
+
   const handleCheckClearanceStatus = async () => {
     setIsCheckingClearance(true);
     try {
@@ -159,6 +170,9 @@ export default function ApplyPage() {
     setTimeout(() => setIsCheckingClearance(false), 600);
   };
 
+  const hasInitializedFromUrlRef = useRef(false);
+
+  // One-time initialization on mount from URL parameters and local session
   useEffect(() => {
     setMounted(true);
     try {
@@ -169,18 +183,19 @@ export default function ApplyPage() {
       }
     } catch (e) {}
 
-    // Check if arriving from a specific clearance link, project type, or template parameter
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && !hasInitializedFromUrlRef.current) {
+      hasInitializedFromUrlRef.current = true;
       const params = new URLSearchParams(window.location.search);
       const ref = params.get("clearanceRef");
       if (ref) {
         setSelectedClearanceRef(ref);
-        setCurrentStep(2);
       }
 
       const typeParam = params.get("type") || params.get("projectType");
       if (typeParam) {
-        const found = PROJECT_TYPES_MATRIX.find(p => p.id === typeParam);
+        const found = PROJECT_TYPES_MATRIX.find(
+          p => p.id === typeParam || p.name.toLowerCase() === typeParam.toLowerCase()
+        );
         if (found) setSelectedProjectType(found);
       }
 
@@ -204,9 +219,15 @@ export default function ApplyPage() {
       const stepParam = params.get("step");
       if (stepParam && !isNaN(Number(stepParam))) {
         setCurrentStep(Number(stepParam));
+      } else if (ref) {
+        // Only start at step 2 if arriving from a clearance link without explicit step
+        setCurrentStep(2);
       }
     }
+  }, []);
 
+  // Separate listener for window focus to keep applications updated without resetting current step
+  useEffect(() => {
     const onFocus = () => {
       refreshApplications?.();
     };
@@ -244,30 +265,59 @@ export default function ApplyPage() {
   // Check whether the currently selected project type requires / conditionally requires Locational Clearance
   const isClearanceRequired = selectedProjectType ? selectedProjectType.matrix.zoningPermit !== 'not_required' : true;
 
+  // Combine applications with localStorage cached applications to avoid false negative flickers during async refreshes
+  const allAvailableApps = useMemo(() => {
+    let list = applications || [];
+    if (list.length === 0 && typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("etayo_cached_applications");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            list = parsed;
+          }
+        }
+      } catch (e) {}
+    }
+    return list;
+  }, [applications]);
+
   // Find any locational clearance application matching this project type or the selected reference
-  const matchedClearanceApp = !isNewApplicationMode ? (
-    (selectedClearanceRef && applications.find(a => a.id === selectedClearanceRef)) ||
-    applications.find(a => 
-      (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
-      (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name))) &&
-      (a.status === "approved" || a.status === "released")
-    ) ||
-    applications.find(a => 
-      (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
-      (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name)))
-    )
-  ) : (selectedClearanceRef ? applications.find(a => a.id === selectedClearanceRef) : null);
+  const matchedClearanceApp = useMemo(() => {
+    if (isNewApplicationMode) {
+      return selectedClearanceRef ? allAvailableApps.find(a => a.id === selectedClearanceRef) : null;
+    }
+    return (
+      (selectedClearanceRef && allAvailableApps.find(a => a.id === selectedClearanceRef)) ||
+      allAvailableApps.find(a => 
+        (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
+        (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name))) &&
+        (a.status?.toLowerCase() === "approved" || a.status?.toLowerCase() === "released")
+      ) ||
+      allAvailableApps.find(a => 
+        (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
+        (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name)))
+      )
+    );
+  }, [isNewApplicationMode, selectedClearanceRef, allAvailableApps, selectedProjectType]);
 
   const isClearanceApproved = Boolean(
-    matchedClearanceApp && (matchedClearanceApp.status === "approved" || matchedClearanceApp.status === "released")
+    matchedClearanceApp && (
+      matchedClearanceApp.status?.toLowerCase() === "approved" || 
+      matchedClearanceApp.status?.toLowerCase() === "released"
+    )
   );
 
   const isClearancePending = Boolean(
-    matchedClearanceApp && (matchedClearanceApp.status === "pending" || matchedClearanceApp.status === "under_review")
+    matchedClearanceApp && (
+      matchedClearanceApp.status?.toLowerCase() === "pending" || 
+      matchedClearanceApp.status?.toLowerCase() === "under_review" ||
+      matchedClearanceApp.status?.toLowerCase() === "in_progress"
+    )
   );
 
   const isClearanceRejected = Boolean(
-    matchedClearanceApp && matchedClearanceApp.status === "rejected"
+    matchedClearanceApp && matchedClearanceApp.status?.toLowerCase() === "rejected"
   );
 
   // Clearance is ONLY considered passed if not required by the project type, OR if officially APPROVED by the admin/MPDO
@@ -275,38 +325,57 @@ export default function ApplyPage() {
   const activeClearanceRef = matchedClearanceApp?.id || selectedClearanceRef || (isClearanceRequired ? null : "EXEMPT");
 
   // Filter available clearances the user might already have submitted in the system
-  const userClearances = applications.filter(
+  const userClearances = allAvailableApps.filter(
     (app) => app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))
   );
 
+  // Auto-sync project type to match approved locational clearance
+  useEffect(() => {
+    if (matchedClearanceApp?.projectType) {
+      const found = PROJECT_TYPES_MATRIX.find(
+        p => p.name.toLowerCase() === matchedClearanceApp.projectType?.toLowerCase() ||
+             p.id.toLowerCase() === matchedClearanceApp.projectType?.toLowerCase()
+      );
+      if (found && found.id !== selectedProjectType?.id) {
+        setSelectedProjectType(found);
+      }
+    }
+  }, [matchedClearanceApp?.projectType, selectedProjectType?.id]);
+
   // Guard 1: if user tries to advance to Step 3, 4, or 5 without approved locational clearance, bounce back to Step 2
   useEffect(() => {
+    if (!mounted) return;
     if (currentStep > 2 && isClearanceRequired && !isClearancePassed) {
-      setCurrentStep(2);
+      goToStep(2);
       if (isClearancePending) {
         setLockedNotice(`Your Locational Clearance (${matchedClearanceApp?.id}) is awaiting Admin approval. The municipal zoning administrator must approve your clearance before you can proceed to other forms.`);
       } else {
         setLockedNotice(`Locational Clearance is mandatory for ${selectedProjectType.name} and must be approved by the Admin before proceeding.`);
       }
     }
-  }, [currentStep, isClearanceRequired, isClearancePassed, isClearancePending, matchedClearanceApp, selectedProjectType]);
+  }, [mounted, currentStep, isClearanceRequired, isClearancePassed, isClearancePending, matchedClearanceApp, selectedProjectType, goToStep]);
 
   // Guard 2: if locational clearance is approved, user cannot revert back to Step 1 (Project Type is locked to approved clearance)
   useEffect(() => {
+    if (!mounted) return;
     if (currentStep === 1 && isClearanceApproved && !isNewApplicationMode) {
-      setCurrentStep(3);
+      goToStep(3);
       setLockedNotice(`Project Type is locked because Locational Clearance has already been approved for "${selectedProjectType.name}". To apply for a different project, click "Create New Application".`);
     }
-  }, [currentStep, isClearanceApproved, isNewApplicationMode, selectedProjectType]);
+  }, [mounted, currentStep, isClearanceApproved, isNewApplicationMode, selectedProjectType, goToStep]);
 
-  // Sync selected permit type internally
+  // Sync selected permit type internally without triggering unnecessary re-renders
   useEffect(() => {
     if (currentStep === 2 && isClearanceRequired && !isClearancePassed) {
-      setSelectedPermitType("locational_clearance");
+      if (selectedPermitType !== "locational_clearance") {
+        setSelectedPermitType("locational_clearance");
+      }
     } else {
-      setSelectedPermitType("building_permit");
+      if (selectedPermitType !== "building_permit") {
+        setSelectedPermitType("building_permit");
+      }
     }
-  }, [currentStep, isClearanceRequired, isClearancePassed, setSelectedPermitType]);
+  }, [currentStep, isClearanceRequired, isClearancePassed, selectedPermitType, setSelectedPermitType]);
 
   const [projectName, setProjectName] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
@@ -619,7 +688,7 @@ export default function ApplyPage() {
         onSuccessWithRef={(newRef) => {
           setSelectedClearanceRef(newRef);
           setShowGoogleForm(false);
-          setCurrentStep(2);
+          goToStep(2);
         }}
         initialProjectType={selectedProjectType?.name}
         initialProjectName={projectName}
@@ -796,15 +865,15 @@ export default function ApplyPage() {
                         setLockedNotice(`Project Type cannot be modified because Locational Clearance has already been approved for "${selectedProjectType.name}". If you want to apply for a different project, click "Create New Application" above.`);
                         return;
                       }
-                      setCurrentStep(1);
+                      goToStep(1);
                       return;
                     }
                     if (step.id === 2) {
-                      setCurrentStep(2);
+                      goToStep(2);
                       return;
                     }
                     if (isClearancePassed) {
-                      setCurrentStep(step.id);
+                      goToStep(step.id);
                     } else {
                       if (isClearancePending) {
                         setLockedNotice(`Your Locational Clearance (${matchedClearanceApp?.id}) is awaiting Admin approval. The municipal zoning administrator must approve your clearance before you can proceed to ${step.title}.`);
@@ -1263,9 +1332,9 @@ export default function ApplyPage() {
                                 (a.status === "approved" || a.status === "released")
                               );
                               if (pRequiresClearance && !hasApproved) {
-                                setCurrentStep(2);
+                                goToStep(2);
                               } else {
-                                setCurrentStep(3);
+                                goToStep(3);
                               }
                             }}
                             style={{
@@ -1411,7 +1480,7 @@ export default function ApplyPage() {
 
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(3)}
+                    onClick={() => goToStep(3)}
                     style={{
                       background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                       color: "white",
@@ -1521,7 +1590,7 @@ export default function ApplyPage() {
 
                     <button
                       type="button"
-                      onClick={() => setCurrentStep(3)}
+                      onClick={() => goToStep(3)}
                       style={{
                         background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                         color: "white",
@@ -1924,8 +1993,8 @@ export default function ApplyPage() {
                 setProjectCost={setProjectCost}
                 uploadedPermitDocs={uploadedPermitDocs}
                 setUploadedPermitDocs={setUploadedPermitDocs}
-                onProceedToMapping={() => setCurrentStep(4)}
-                onBack={() => setCurrentStep(2)}
+                onProceedToMapping={() => goToStep(4)}
+                onBack={() => goToStep(2)}
               />
             </div>
           )}
@@ -2724,7 +2793,7 @@ export default function ApplyPage() {
                     setLockedNotice(`Project Type is locked because Locational Clearance has already been approved for "${selectedProjectType.name}". If you want to apply for another project, click "Create New Application".`);
                     return;
                   }
-                  setCurrentStep(prev => prev - 1);
+                  goToStep(currentStep - 1);
                 }} 
                 disabled={uploading || (currentStep === 2 && isClearanceApproved && !isNewApplicationMode)}
                 style={{
@@ -2743,7 +2812,7 @@ export default function ApplyPage() {
               isClearanceRequired && !isClearancePassed ? (
                 <button 
                   className="btn-primary" 
-                  onClick={() => setCurrentStep(2)}
+                  onClick={() => goToStep(2)}
                   style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
                 >
                   <span>Next: Locational Clearance</span>
@@ -2752,7 +2821,7 @@ export default function ApplyPage() {
               ) : (
                 <button 
                   className="btn-primary" 
-                  onClick={() => setCurrentStep(3)}
+                  onClick={() => goToStep(3)}
                   style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
                 >
                   <span>Next: Required Permit Forms</span>
@@ -2763,7 +2832,7 @@ export default function ApplyPage() {
               isClearancePassed ? (
                 <button 
                   className="btn-primary" 
-                  onClick={() => setCurrentStep(3)}
+                  onClick={() => goToStep(3)}
                   style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
                 >
                   <span>Next: Required Permit Forms</span>
@@ -2801,7 +2870,7 @@ export default function ApplyPage() {
             ) : currentStep === 3 ? (
               <button 
                 className="btn-primary" 
-                onClick={() => setCurrentStep(4)}
+                onClick={() => goToStep(4)}
                 style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
               >
                 <span>Next: Mapping</span>
@@ -2810,7 +2879,7 @@ export default function ApplyPage() {
             ) : currentStep === 4 ? (
               <button 
                 className="btn-primary" 
-                onClick={() => setCurrentStep(5)}
+                onClick={() => goToStep(5)}
                 style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
               >
                 <span>Next: Review & Submit</span>
@@ -3630,7 +3699,7 @@ export default function ApplyPage() {
                   setProjectCost("");
                   setUploadedPermitDocs({});
                   setLockedNotice(null);
-                  setCurrentStep(1);
+                  goToStep(1);
                   setShowNewAppModal(false);
                   setNewAppAlert("Started new application draft. Your previous application remains saved in Application Status.");
                   setTimeout(() => setNewAppAlert(null), 5000);
