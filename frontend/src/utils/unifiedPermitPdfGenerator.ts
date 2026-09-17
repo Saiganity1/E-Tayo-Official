@@ -6,15 +6,16 @@ export interface UnifiedPermitFormData {
   locationalClearanceRef: string;
   projectType: ProjectTypeItem;
 
-  // Applicant details
+  // Applicant details (Box 1)
   applicantName: string;
   applicantPhone: string;
   applicantEmail: string;
   applicantAddress: string;
   applicantTIN?: string;
   formOfOwnership?: string;
+  govIdNo?: string;
 
-  // Project details
+  // Project details & Location (Box 2)
   projectName: string;
   projectAddress: string;
   barangay: string;
@@ -24,39 +25,147 @@ export interface UnifiedPermitFormData {
   taxDecNo?: string;
   lotArea: string;
   floorArea: string;
+  buildingFootprint?: string;
+  buildingHeight?: string;
   projectCost: string;
   scopeOfWork: string;
   scopeOthers?: string;
   occupancyClass: string;
   proposedStoreys: string;
   numberOfUnits?: string;
+  proposedStartDate?: string;
+  expectedCompletionDate?: string;
+
+  // Cost breakdowns (Box 5)
+  costBuilding?: string;
+  costElectrical?: string;
+  costMechanical?: string;
+  costPlumbing?: string;
+  costElectronics?: string;
+  costOthers?: string;
+
+  // Architectural Permit details
+  architecturalStyle?: string;
+  roofingMaterial?: string;
+  exteriorWallFinish?: string;
+  interiorWallFinish?: string;
+  floorFinishes?: string;
+  ceilingFinishes?: string;
+  doorsSpec?: string;
+  windowsSpec?: string;
+  frontSetback?: string;
+  rearSetback?: string;
+  leftSetback?: string;
+  rightSetback?: string;
+  bedroomCount?: string;
+  bathroomCount?: string;
+
+  // Civil / Structural Permit details
+  foundationType?: string;
+  foundationDepth?: string;
+  structuralFraming?: string;
+  floorSlabSystem?: string;
+  roofFramingSystem?: string;
+  concreteStrength?: string;
+  steelGrade?: string;
+  masonrySpec?: string;
+
+  // Electrical Permit details
+  electricalConnectedLoad?: string;
+  electricalVoltage?: string;
+  electricalFeeder?: string;
+  mainBreaker?: string;
+  branchCircuitsCount?: string;
+  lightingOutletsCount?: string;
+  convenienceOutletsCount?: string;
+  acuOutletsCount?: string;
+  waterHeaterOutletsCount?: string;
+  groundingSpec?: string;
+
+  // Sanitary / Plumbing Permit details
+  waterSupplySource?: string;
+  sewageSystem?: string;
+  septicTankDimensions?: string;
+  waterPipesMaterial?: string;
+  wastePipesMaterial?: string;
+  waterClosetsCount?: string;
+  lavatoriesCount?: string;
+  kitchenSinksCount?: string;
+  showersCount?: string;
+  floorDrainsCount?: string;
+  faucetsCount?: string;
+
+  // Equipment & specialized machinery details (for Elevator/Escalator, Mechanical, Generator)
+  machineryType?: string;
+  machineryBrand?: string;
+  machineryCapacity?: string;
+  machineryPower?: string;
+  machinerySpeed?: string;
+  machineryStoreys?: string;
+  electricalLoadKva?: string;
+  serviceVoltage?: string;
+
+  // Electronics details
+  telecomScope?: string;
+  cctvScope?: string;
+  fdasScope?: string;
+
+  // Fire / BFP details
+  numberOfExits?: string;
+  fireEgressDetails?: string;
+  fireExtinguisherSpecs?: string;
+  emergencyLightsCount?: string;
+  smokeDetectorsCount?: string;
+  firewallSpecs?: string;
 
   // Professional details
   architectName?: string;
   architectPRC?: string;
+  architectPRCValidity?: string;
+  architectIAPOA?: string;
   architectPTR?: string;
+  architectPTRIssued?: string;
+  architectTIN?: string;
+
   civilEngineerName?: string;
   civilEngineerPRC?: string;
+  civilEngineerPRCValidity?: string;
+  civilEngineerPICE?: string;
   civilEngineerPTR?: string;
+  civilEngineerPTRIssued?: string;
+  civilEngineerTIN?: string;
+
   electricalEngineerName?: string;
   electricalEngineerPRC?: string;
+  electricalEngineerPRCValidity?: string;
+  electricalEngineerIIEE?: string;
   electricalEngineerPTR?: string;
+  electricalEngineerPTRIssued?: string;
+  electricalEngineerTIN?: string;
+
   masterPlumberName?: string;
   masterPlumberPRC?: string;
+  masterPlumberPRCValidity?: string;
+  masterPlumberNAMPAP?: string;
   masterPlumberPTR?: string;
+  masterPlumberPTRIssued?: string;
+  masterPlumberTIN?: string;
+
   mechanicalEngineerName?: string;
   mechanicalEngineerPRC?: string;
+  mechanicalEngineerPRCValidity?: string;
+  mechanicalEngineerPSME?: string;
   mechanicalEngineerPTR?: string;
+  mechanicalEngineerPTRIssued?: string;
+  mechanicalEngineerTIN?: string;
+
   electronicsEngineerName?: string;
   electronicsEngineerPRC?: string;
+  electronicsEngineerPRCValidity?: string;
+  electronicsEngineerIECEP?: string;
   electronicsEngineerPTR?: string;
-
-  // Equipment & specialized machinery details (for Elevator/Escalator, Mechanical, Generator)
-  machineryType?: string;
-  machineryCapacity?: string;
-  machineryPower?: string;
-  electricalLoadKva?: string;
-  serviceVoltage?: string;
+  electronicsEngineerPTRIssued?: string;
+  electronicsEngineerTIN?: string;
 
   // Active form checkboxes selected
   activePermitForms: (keyof PermitFormMatrix)[];
@@ -257,22 +366,22 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
   drawP1Text(`PHP ${data.projectCost || "1,500,000.00"}`, 310, 423, 8, true);
 
   drawP1Text(data.numberOfUnits || "1", 135, 413, 8, false);
-  drawP1Text(data.projectCost || "1,000,000.00", 265, 413, 7.5, false);
+  drawP1Text(data.costBuilding || data.projectCost || "1,000,000.00", 265, 413, 7.5, false);
 
   drawP1Text(data.proposedStoreys || "1", 135, 404, 8, false);
-  drawP1Text("150,000.00", 265, 404, 7.5, false); // Electrical cost
+  drawP1Text(data.costElectrical || "150,000.00", 265, 404, 7.5, false); // Electrical cost
 
   drawP1Text(data.floorArea ? `${data.floorArea}` : "150", 120, 395, 8, true);
-  drawP1Text("100,000.00", 265, 395, 7.5, false); // Mechanical cost
+  drawP1Text(data.costMechanical || "100,000.00", 265, 395, 7.5, false); // Mechanical cost
 
   drawP1Text(data.lotArea ? `${data.lotArea}` : "200", 120, 386, 8, true);
-  drawP1Text("50,000.00", 265, 386, 7.5, false); // Electronics cost
+  drawP1Text(data.costElectronics || "50,000.00", 265, 386, 7.5, false); // Electronics cost
 
-  drawP1Text("100,000.00", 265, 377, 7.5, false); // Plumbing cost
+  drawP1Text(data.costPlumbing || "100,000.00", 265, 377, 7.5, false); // Plumbing cost
 
-  const constDate = data.submissionDate || new Date().toLocaleDateString();
+  const constDate = data.proposedStartDate || data.submissionDate || new Date().toLocaleDateString();
   drawP1Text(constDate, 145, 368, 7.5, false);
-  drawP1Text("WITHIN 180 DAYS", 330, 368, 7.5, false);
+  drawP1Text(data.expectedCompletionDate || "WITHIN 180 DAYS", 330, 368, 7.5, false);
 
   // --- DESIGN PROFESSIONALS & SIGNATURES ---
   const leadEngr = data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE";
