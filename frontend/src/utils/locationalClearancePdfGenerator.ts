@@ -152,65 +152,65 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   };
 
   // --- HEADER: Application Details ---
-  drawText(data.applicationNo || "LC-2026-PENDING", 115, 698, 8.5, true);
-  drawText(data.submissionDate || new Date().toLocaleDateString(), 115, 686, 8, false);
-  drawText("ONLINE-PORTAL", 115, 674, 8, false);
+  drawText(data.applicationNo || "LC-2026-PENDING", 106, 700.0, 8.5, true);
+  drawText(data.submissionDate || new Date().toLocaleDateString(), 106, 688.0, 8, false);
+  drawText("ONLINE-PORTAL", 112, 676.0, 8, false);
 
   // --- BOX 1: Name of Applicant ---
-  drawText(data.applicantName?.toUpperCase(), 46, 642, 8.5, true, 45);
+  drawText(data.applicantName?.toUpperCase(), 46, 642.0, 8.5, true, 45);
 
   // --- BOX 2: Name of Corporation ---
   if (data.corporationName && data.corporationName.trim()) {
-    drawText(data.corporationName.toUpperCase(), 314, 642, 8, true, 45);
+    drawText(data.corporationName.toUpperCase(), 314, 642.0, 8, true, 45);
   } else {
-    drawText("N/A (INDIVIDUAL APPLICANT)", 314, 642, 8, false);
+    drawText("N/A (INDIVIDUAL APPLICANT)", 314, 642.0, 8, false);
   }
 
   // --- BOX 3: Address / Telephone of Applicant ---
   const addrTel = `${data.applicantAddress || ""}${data.applicantPhone ? ` | Tel: ${data.applicantPhone}` : ""}`;
-  drawText(addrTel, 46, 616, 7.5, false, 55);
+  drawText(addrTel, 46, 616.0, 7.5, false, 55);
 
   // --- BOX 4: Address / Telephone of Corporation ---
-  drawText(data.corporationName ? (data.applicantAddress || "N/A") : "N/A", 314, 616, 7.5, false, 55);
+  drawText(data.corporationName ? (data.applicantAddress || "N/A") : "N/A", 314, 616.0, 7.5, false, 55);
 
   // --- BOX 5: Authorized Representative ---
   if (data.representativeName && data.representativeName.trim()) {
-    drawText(data.representativeName.toUpperCase(), 46, 590, 8, true, 45);
+    drawText(data.representativeName.toUpperCase(), 46, 590.0, 8, true, 45);
   } else {
-    drawText("N/A (SELF-REPRESENTED)", 46, 590, 8, false);
+    drawText("N/A (SELF-REPRESENTED)", 46, 590.0, 8, false);
   }
 
   // --- BOX 6: Address / Tel of Authorized Representative ---
   if (data.representativeName && data.representativeName.trim()) {
     const repContact = `${data.representativeAddress || data.applicantAddress || ""}${data.representativePhone ? ` | Tel: ${data.representativePhone}` : ""}`;
-    drawText(repContact, 314, 590, 7.5, false, 55);
+    drawText(repContact, 314, 590.0, 7.5, false, 55);
   } else {
-    drawText("N/A", 314, 590, 7.5, false);
+    drawText("N/A", 314, 590.0, 7.5, false);
   }
 
   // --- BOX 7: Project Type ---
-  drawText(data.projectType?.toUpperCase() || data.projectName?.toUpperCase(), 46, 565, 8, true, 48);
+  drawText(data.projectType?.toUpperCase() || data.projectName?.toUpperCase(), 46, 565.0, 8, true, 48);
 
   // --- BOX 8: Project Nature ---
   const natureNorm = (data.projectNature || "").toLowerCase();
   if (natureNorm.includes("others") || natureNorm.includes("renov") || natureNorm.includes("alter") || natureNorm.includes("change")) {
-    drawCheck(443.5, 567);
+    drawCheck(443.5, 565.0);
     const othersText = data.natureOthers || data.projectNature || "Renovation / Alteration";
-    drawText(othersText, 478, 567, 7.5, true, 22);
+    drawText(othersText, 478, 565.0, 7.5, true, 22);
   } else {
     // Default: New Development
-    drawCheck(323.5, 567);
+    drawCheck(323.5, 565.0);
   }
 
   // --- BOX 9: Project Location ---
   const fullLoc = data.projectAddress || `Sto. Tomas, Pampanga`;
-  drawText(fullLoc, 46, 534, 6.5, false, 60);
+  drawText(fullLoc, 46, 536.0, 7.5, false, 60);
 
   // --- BOX 10: Project Area (in square meters) ---
-  drawText(data.lotArea ? `${data.lotArea} sq.m.` : "", 340, 542, 8, true);
-  drawText(data.bldgArea ? `${data.bldgArea} sq.m.` : "", 445, 542, 8, true);
+  drawText(data.lotArea ? `${data.lotArea} sq.m.` : "", 340, 542.5, 8, true);
+  drawText(data.bldgArea ? `${data.bldgArea} sq.m.` : "", 445, 542.5, 8, true);
   if (data.improvementArea && data.improvementArea !== "0") {
-    drawText(`${data.improvementArea} sq.m.`, 545, 542, 7.5, true);
+    drawText(`${data.improvementArea} sq.m.`, 545, 542.5, 7.5, true);
   }
 
   // --- BOX 11: Right Over Land ---
@@ -218,13 +218,13 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   if (rightNorm.includes("lease")) {
     drawCheck(58.5, 506);
   } else if (rightNorm.includes("other")) {
-    drawCheck(135.5, 514);
+    drawCheck(135.5, 516.0);
     if (data.rightOverLandOthers) {
-      drawText(data.rightOverLandOthers, 175, 514, 7.5, false, 25);
+      drawText(data.rightOverLandOthers, 175, 516.0, 7.5, false, 25);
     }
   } else {
     // Default: Owner
-    drawCheck(58.5, 514);
+    drawCheck(58.5, 516.0);
   }
 
   // --- BOX 12: Project Tenure ---
@@ -232,7 +232,7 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   if (tenureNorm.includes("temp")) {
     drawCheck(326.5, 506);
   } else {
-    drawCheck(326.5, 514);
+    drawCheck(326.5, 516.0);
   }
 
   // --- BOX 13: Existing Land Use of Project Site ---
@@ -270,11 +270,11 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
 
   // --- BOX 14: Project Cost (in pesos, write in words and figures) ---
   if (data.projectCostWords) {
-    drawText(data.projectCostWords, 46, 450, 7.5, false, 65);
+    drawText(data.projectCostWords, 46, 452.0, 7.5, false, 65);
   } else {
-    drawText(`Estimated Total Cost: PHP ${data.projectCost}`, 46, 450, 7.5, false, 65);
+    drawText(`Estimated Total Cost: PHP ${data.projectCost}`, 46, 452.0, 7.5, false, 65);
   }
-  drawText(data.projectCost || "1,500,000.00", 420, 455, 8.5, true);
+  drawText(data.projectCost || "1,500,000.00", 420, 456.0, 8.5, true);
 
   // --- BOX 15: Written Notice from LGU ---
   const noticeNorm = (data.hasWrittenNotice || "no").toLowerCase();
