@@ -654,7 +654,7 @@ export const PROJECT_TYPES_MATRIX: ProjectTypeItem[] = [
       electricalPermit: 'conditional',
       sanitaryPermit: 'not_required',
       mechanicalPermit: 'not_required',
-      electronicsPermit: 'not_required',
+      electronicsPermit: 'conditional',
       fireBfpPermit: 'conditional',
       zoningPermit: 'required',
       signPermit: 'required'
@@ -672,7 +672,7 @@ export const PROJECT_TYPES_MATRIX: ProjectTypeItem[] = [
       civilStructuralPermit: 'required',
       electricalPermit: 'required',
       sanitaryPermit: 'required',
-      mechanicalPermit: 'required',
+      mechanicalPermit: 'conditional',
       electronicsPermit: 'not_required',
       fireBfpPermit: 'conditional',
       zoningPermit: 'required'

@@ -23,6 +23,7 @@ import {
   generateSanitaryPermitPdf,
   UnifiedPermitFormData 
 } from "../../utils/unifiedPermitPdfGenerator";
+import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
 
 interface TechnicalPermitFormsStepProps {
   projectType: ProjectTypeItem;
@@ -81,6 +82,7 @@ export default function TechnicalPermitFormsStep({
   const [activeTab, setActiveTab] = useState<keyof PermitFormMatrix>(
     mandatoryKeys[0] || "buildingPermit"
   );
+  const [showMatrixGuide, setShowMatrixGuide] = useState(false);
 
   // ==========================================
   // 1. GENERAL APPLICANT & PROPERTY DATA (Universal)
@@ -595,20 +597,45 @@ export default function TechnicalPermitFormsStep({
             </p>
           </div>
 
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            background: areAllMandatorySatisfied ? "#dcfce7" : "#fef3c7",
-            border: areAllMandatorySatisfied ? "1px solid #86efac" : "1px solid #fde68a",
-            color: areAllMandatorySatisfied ? "#166534" : "#92400e",
-            padding: "6px 14px",
-            borderRadius: "999px",
-            fontSize: "0.82rem",
-            fontWeight: "800"
-          }}>
-            <Clock size={15} />
-            <span>{satisfiedKeys.length} / {mandatoryKeys.length} Forms Ready</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => setShowMatrixGuide(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#fffbeb",
+                border: "1.5px solid #fde68a",
+                color: "#92400e",
+                padding: "6px 14px",
+                borderRadius: "999px",
+                fontSize: "0.82rem",
+                fontWeight: "700",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
+              }}
+            >
+              <FileText size={14} color="#d97706" />
+              <span>Permit Requirements Matrix</span>
+            </button>
+
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              background: areAllMandatorySatisfied ? "#dcfce7" : "#fef3c7",
+              border: areAllMandatorySatisfied ? "1px solid #86efac" : "1px solid #fde68a",
+              color: areAllMandatorySatisfied ? "#166534" : "#92400e",
+              padding: "6px 14px",
+              borderRadius: "999px",
+              fontSize: "0.82rem",
+              fontWeight: "800"
+            }}>
+              <Clock size={15} />
+              <span>{satisfiedKeys.length} / {mandatoryKeys.length} Forms Ready</span>
+            </div>
           </div>
         </div>
       </div>
@@ -2183,6 +2210,13 @@ export default function TechnicalPermitFormsStep({
           {areAllMandatorySatisfied ? <ChevronRight size={18} /> : <Lock size={16} />}
         </button>
       </div>
+
+      {/* PERMIT MATRIX GUIDE MODAL */}
+      <PermitMatrixGuideModal
+        isOpen={showMatrixGuide}
+        onClose={() => setShowMatrixGuide(false)}
+        selectedProjectId={projectType.id}
+      />
     </div>
   );
 }

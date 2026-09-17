@@ -18,6 +18,7 @@ import dynamic from "next/dynamic";
 import LocationalClearanceGoogleForm from "../../../../components/forms/LocationalClearanceGoogleForm";
 import UnifiedProjectGoogleForm from "../../../../components/forms/UnifiedProjectGoogleForm";
 import TechnicalPermitFormsStep from "../../../../components/forms/TechnicalPermitFormsStep";
+import PermitMatrixGuideModal from "../../../../components/modals/PermitMatrixGuideModal";
 import { generateUnifiedPermitPdf } from "../../../../utils/unifiedPermitPdfGenerator";
 import { 
   PROJECT_TYPES_MATRIX, 
@@ -143,6 +144,7 @@ export default function ApplyPage() {
   const [showUnifiedForm, setShowUnifiedForm] = useState(false);
   const [showRequirementsAlert, setShowRequirementsAlert] = useState(false);
   const [showAllTemplatesModal, setShowAllTemplatesModal] = useState(false);
+  const [showMatrixGuideModal, setShowMatrixGuideModal] = useState(false);
   const [showNewAppModal, setShowNewAppModal] = useState(false);
   const [isNewApplicationMode, setIsNewApplicationMode] = useState(false);
   const [newAppAlert, setNewAppAlert] = useState<string | null>(null);
@@ -236,7 +238,7 @@ export default function ApplyPage() {
   }, [refreshApplications]);
 
   useEffect(() => {
-    if (showRequirementsAlert || showAllTemplatesModal) {
+    if (showRequirementsAlert || showAllTemplatesModal || showMatrixGuideModal) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -244,7 +246,7 @@ export default function ApplyPage() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showRequirementsAlert, showAllTemplatesModal]);
+  }, [showRequirementsAlert, showAllTemplatesModal, showMatrixGuideModal]);
 
   const handleCopyRef = (text: string) => {
     try {
@@ -1037,10 +1039,33 @@ export default function ApplyPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                     <button
                       type="button"
+                      onClick={() => setShowMatrixGuideModal(true)}
+                      style={{
+                        background: "#fffbeb",
+                        border: "1.5px solid #fde68a",
+                        color: "#92400e",
+                        padding: "8px 14px",
+                        borderRadius: "10px",
+                        fontSize: "0.82rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      <Layers size={14} color="#d97706" />
+                      Permit Matrix Guide (31 Project Types)
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => setShowAllTemplatesModal(true)}
                       style={{
-                        background: "#f8fafc",
-                        border: "1.5px solid #cbd5e1",
+                        background: "#ffffff",
+                        border: "1.5px solid #e2e8f0",
                         color: "#334155",
                         padding: "8px 14px",
                         borderRadius: "10px",
@@ -3612,6 +3637,17 @@ export default function ApplyPage() {
         </div>,
         document.body
       )}
+
+      {/* OFFICIAL PERMIT MATRIX GUIDE MODAL (31 PROJECT TYPES) */}
+      <PermitMatrixGuideModal
+        isOpen={showMatrixGuideModal}
+        onClose={() => setShowMatrixGuideModal(false)}
+        selectedProjectId={selectedProjectType?.id}
+        onSelectProjectType={(proj) => {
+          setSelectedProjectType(proj);
+          setShowMatrixGuideModal(false);
+        }}
+      />
 
       {/* CONFIRMATION MODAL: CREATE NEW APPLICATION */}
       {showNewAppModal && typeof document !== "undefined" && createPortal(
