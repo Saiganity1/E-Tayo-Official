@@ -388,6 +388,83 @@ export default function ApplyPage() {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [detectedZone, setDetectedZone] = useState<{barangay?: string, zoneType?: string, description?: string} | null>(null);
+
+  // Automatically autofill project & applicant parameters from existing Application Status (matchedClearanceApp)
+  useEffect(() => {
+    if (!matchedClearanceApp) return;
+
+    // 1. Applicant Name
+    if (matchedClearanceApp.applicantName && (!applicantName || applicantName === "Applicant")) {
+      setApplicantName(matchedClearanceApp.applicantName);
+    }
+
+    // 2. Project Name
+    const rawProjectName = matchedClearanceApp.projectName || "";
+    const cleanProjectName = rawProjectName
+      .replace(/\s*-\s*Locational\s*Clearance/gi, "")
+      .replace(/\s*\(Locational\s*Clearance\)/gi, "")
+      .trim();
+    if (cleanProjectName) {
+      setProjectName(cleanProjectName);
+    } else if (selectedProjectType?.name && !projectName) {
+      setProjectName(`${selectedProjectType.name} Project`);
+    }
+
+    // 3. Address & Barangay parsing
+    const addr = (matchedClearanceApp as any).projectAddress || matchedClearanceApp.location?.address || "";
+    if (addr) {
+      const brgyMatch = addr.match(/Brgy\.?\s*([A-Za-z\s]+?)(?:,\s*Sto\.?\s*Tomas|$)/i);
+      if (brgyMatch && brgyMatch[1]) {
+        const foundBrgy = brgyMatch[1].trim();
+        setBarangay(foundBrgy);
+      } else if ((matchedClearanceApp as any).barangay) {
+        setBarangay((matchedClearanceApp as any).barangay);
+      }
+
+      const streetPart = addr.split(/Brgy\.?/i)[0].replace(/,\s*$/, "").trim();
+      if (streetPart) {
+        setStreetAddress(streetPart);
+      } else if ((matchedClearanceApp as any).streetAddress) {
+        setStreetAddress((matchedClearanceApp as any).streetAddress);
+      }
+    }
+
+    // 4. Lot Area, Floor Area, and Project Cost parsing
+    const desc = matchedClearanceApp.projectDescription || "";
+    const lotMatch = desc.match(/Lot:\s*([0-9.,]+)/i);
+    const bldgMatch = desc.match(/Bldg:\s*([0-9.,]+)/i);
+    const costMatch = desc.match(/Cost:\s*(?:Php\s*)?([0-9.,]+)/i);
+
+    const extractedLot = (matchedClearanceApp as any).lotArea || (lotMatch ? lotMatch[1] : "");
+    const extractedFloor = (matchedClearanceApp as any).floorArea || (matchedClearanceApp as any).bldgArea || (bldgMatch ? bldgMatch[1] : "");
+    const extractedCost = (matchedClearanceApp as any).projectCost || (costMatch ? costMatch[1] : "");
+
+    if (extractedLot) {
+      setLotArea(String(extractedLot));
+    } else if (!lotArea) {
+      setLotArea("180");
+    }
+
+    if (extractedFloor) {
+      setFloorArea(String(extractedFloor));
+    } else if (!floorArea) {
+      setFloorArea("120");
+    }
+
+    if (extractedCost) {
+      setProjectCost(String(extractedCost));
+    } else if (!projectCost) {
+      setProjectCost("1,600,000.00");
+    }
+
+    // 5. GPS Coordinates
+    if (matchedClearanceApp.location?.lat) {
+      setLatitude(String(matchedClearanceApp.location.lat));
+    }
+    if (matchedClearanceApp.location?.lng) {
+      setLongitude(String(matchedClearanceApp.location.lng));
+    }
+  }, [matchedClearanceApp, selectedProjectType]);
   
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -2006,6 +2083,7 @@ export default function ApplyPage() {
               <TechnicalPermitFormsStep
                 projectType={selectedProjectType}
                 locationalClearanceRef={activeClearanceRef}
+                clearanceApp={matchedClearanceApp}
                 isClearanceRequired={isClearanceRequired}
                 applicantName={applicantName}
                 projectName={projectName}

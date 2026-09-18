@@ -30,6 +30,7 @@ import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
 interface TechnicalPermitFormsStepProps {
   projectType: ProjectTypeItem;
   locationalClearanceRef: string | null;
+  clearanceApp?: any;
   isClearanceRequired: boolean;
   applicantName: string;
   projectName: string;
@@ -53,6 +54,7 @@ interface TechnicalPermitFormsStepProps {
 export default function TechnicalPermitFormsStep({
   projectType,
   locationalClearanceRef,
+  clearanceApp,
   isClearanceRequired,
   applicantName,
   projectName,
@@ -303,13 +305,92 @@ export default function TechnicalPermitFormsStep({
   const satisfiedKeys = mandatoryKeys.filter((key) => Boolean(uploadedPermitDocs[key]));
   const areAllMandatorySatisfied = mandatoryKeys.every((key) => Boolean(uploadedPermitDocs[key]));
 
+  // Synchronize Box 1 & 2 land title and permit boundary fields from clearanceApp or Sto. Tomas defaults
+  useEffect(() => {
+    if (clearanceApp) {
+      if (clearanceApp.location?.lotNo || clearanceApp.lotNo) {
+        setLotNo(clearanceApp.location?.lotNo || clearanceApp.lotNo);
+      }
+      if (clearanceApp.location?.blockNo || clearanceApp.blockNo) {
+        setBlockNo(clearanceApp.location?.blockNo || clearanceApp.blockNo);
+      }
+      if (clearanceApp.tctNo) {
+        setTctNo(clearanceApp.tctNo);
+      }
+      if (clearanceApp.taxDecNo) {
+        setTaxDecNo(clearanceApp.taxDecNo);
+      }
+      if (clearanceApp.applicantTIN) {
+        setApplicantTIN(clearanceApp.applicantTIN);
+      }
+      if (clearanceApp.formOfOwnership) {
+        setFormOfOwnership(clearanceApp.formOfOwnership);
+      }
+      if (clearanceApp.govIdNo || clearanceApp.ctcNumber) {
+        setGovIdNo(clearanceApp.govIdNo || clearanceApp.ctcNumber);
+      }
+    }
+
+    // Guarantee default baseline values in parent state so fields are never empty
+    if (!projectName || projectName.trim() === "") {
+      const cleanName = clearanceApp?.projectName?.replace(/\s*-\s*Locational\s*Clearance/gi, "")?.trim();
+      setProjectName(cleanName || `${projectType.name} Construction`);
+    }
+    if (!streetAddress || streetAddress.trim() === "") {
+      setStreetAddress("Purok 3, Main Street");
+    }
+    if (!lotArea || lotArea.trim() === "") {
+      setLotArea("180");
+    }
+    if (!floorArea || floorArea.trim() === "") {
+      setFloorArea("120");
+    }
+    if (!projectCost || projectCost.trim() === "") {
+      setProjectCost("1,600,000.00");
+    }
+  }, [clearanceApp, projectType.name]);
+
+  const handleSyncFromClearance = () => {
+    if (clearanceApp) {
+      const cleanName = (clearanceApp.projectName || "").replace(/\s*-\s*Locational\s*Clearance/gi, "").trim();
+      setProjectName(cleanName || `${projectType.name} Construction`);
+      
+      const addr = clearanceApp.projectAddress || clearanceApp.location?.address || "";
+      if (addr) {
+        const brgyMatch = addr.match(/Brgy\.?\s*([A-Za-z\s]+?)(?:,\s*Sto\.?\s*Tomas|$)/i);
+        if (brgyMatch && brgyMatch[1]) setBarangay(brgyMatch[1].trim());
+        const streetPart = addr.split(/Brgy\.?/i)[0].replace(/,\s*$/, "").trim();
+        if (streetPart) setStreetAddress(streetPart);
+      }
+
+      const desc = clearanceApp.projectDescription || "";
+      const lotMatch = desc.match(/Lot:\s*([0-9.,]+)/i);
+      const bldgMatch = desc.match(/Bldg:\s*([0-9.,]+)/i);
+      const costMatch = desc.match(/Cost:\s*(?:Php\s*)?([0-9.,]+)/i);
+
+      if (lotMatch) setLotArea(lotMatch[1]);
+      if (bldgMatch) setFloorArea(bldgMatch[1]);
+      if (costMatch) setProjectCost(costMatch[1]);
+
+      if (clearanceApp.location?.lotNo) setLotNo(clearanceApp.location.lotNo);
+      if (clearanceApp.location?.blockNo) setBlockNo(clearanceApp.location.blockNo);
+      if (clearanceApp.tctNo) setTctNo(clearanceApp.tctNo);
+      if (clearanceApp.taxDecNo) setTaxDecNo(clearanceApp.taxDecNo);
+      if (clearanceApp.applicantTIN) setApplicantTIN(clearanceApp.applicantTIN);
+      if (clearanceApp.formOfOwnership) setFormOfOwnership(clearanceApp.formOfOwnership);
+    }
+    handleAutoFillDefaults();
+    setNotification("Re-synchronized all project and land title specifications from approved Locational Clearance.");
+    setTimeout(() => setNotification(null), 4000);
+  };
+
   // Auto-Fill official Sto. Tomas standard baseline parameters
   const handleAutoFillDefaults = () => {
-    setLotNo("Lot 12");
-    setBlockNo("Block 4");
-    setTctNo("TCT-042-20260012");
-    setTaxDecNo("TD-2026-00124-ST");
-    setApplicantTIN("123-456-789-000");
+    setLotNo(prev => prev || "Lot 12");
+    setBlockNo(prev => prev || "Block 4");
+    setTctNo(prev => prev || "TCT-042-20260012");
+    setTaxDecNo(prev => prev || "TD-2026-00124-ST");
+    setApplicantTIN(prev => prev || "123-456-789-000");
     setFormOfOwnership("Individual / Sole Proprietor");
     setBuildingFootprint("120");
     setBuildingHeight("6.8");
@@ -319,6 +400,13 @@ export default function TechnicalPermitFormsStep({
     setCostMechanical("80,000.00");
     setCostElectronics("60,000.00");
     setCostOthers("40,000.00");
+
+    if (!projectName) setProjectName(`${projectType.name} Construction`);
+    if (!streetAddress) setStreetAddress("Purok 3, Main Street");
+    if (!lotArea) setLotArea("180");
+    if (!floorArea) setFloorArea("120");
+    if (!projectCost) setProjectCost("1,600,000.00");
+
     setNotification("Auto-populated official Sto. Tomas NBCP engineering standards. You can inspect or modify any field.");
     setTimeout(() => setNotification(null), 4000);
   };
@@ -740,6 +828,69 @@ export default function TechnicalPermitFormsStep({
           boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
           marginBottom: "1.5rem"
         }}>
+          {/* CLEARANCE AUTOFILL STATUS BANNER */}
+          {locationalClearanceRef && (
+            <div style={{
+              background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
+              border: "1.5px solid #86efac",
+              borderRadius: "14px",
+              padding: "0.85rem 1.25rem",
+              marginBottom: "1.5rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "10px",
+              boxShadow: "0 2px 8px rgba(16, 185, 129, 0.08)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  background: "#dcfce7",
+                  color: "#16a34a",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0
+                }}>
+                  <CheckCircle2 size={18} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.88rem", fontWeight: "800", color: "#166534" }}>
+                    Auto-filled from Application Status ({locationalClearanceRef})
+                  </div>
+                  <div style={{ fontSize: "0.78rem", color: "#15803d" }}>
+                    Project identification, owner, land title boundaries, and Sto. Tomas NBCP standards loaded.
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSyncFromClearance}
+                style={{
+                  background: "#ffffff",
+                  border: "1.5px solid #86efac",
+                  color: "#166534",
+                  borderRadius: "8px",
+                  padding: "6px 12px",
+                  fontSize: "0.78rem",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  transition: "all 0.15s ease"
+                }}
+              >
+                <RefreshCw size={13} color="#16a34a" />
+                <span>Re-sync Application Data</span>
+              </button>
+            </div>
+          )}
+
           {/* TABS HEADER WITH ACTIONS */}
           <div style={{
             display: "flex",
@@ -846,7 +997,8 @@ export default function TechnicalPermitFormsStep({
                   <input
                     type="text"
                     required
-                    value={projectName || `${projectType.name} Construction`}
+                    value={projectName}
+                    placeholder={`${projectType.name} Construction`}
                     onChange={(e) => setProjectName(e.target.value)}
                     style={{ width: "100%", padding: "8px 11px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", marginTop: "4px", background: "white" }}
                   />
@@ -874,7 +1026,8 @@ export default function TechnicalPermitFormsStep({
                   <input
                     type="text"
                     required
-                    value={streetAddress || "Main Street"}
+                    value={streetAddress}
+                    placeholder="Purok 3, Main Street"
                     onChange={(e) => setStreetAddress(e.target.value)}
                     style={{ width: "100%", padding: "8px 11px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", marginTop: "4px", background: "white" }}
                   />
@@ -887,7 +1040,8 @@ export default function TechnicalPermitFormsStep({
                   <input
                     type="text"
                     required
-                    value={projectCost || "1,600,000.00"}
+                    value={projectCost}
+                    placeholder="1,600,000.00"
                     onChange={(e) => setProjectCost(e.target.value)}
                     style={{ width: "100%", padding: "8px 11px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", marginTop: "4px", background: "white" }}
                   />
@@ -1052,7 +1206,8 @@ export default function TechnicalPermitFormsStep({
                       <input
                         type="number"
                         required
-                        value={lotArea || "200"}
+                        value={lotArea}
+                        placeholder="180"
                         onChange={(e) => setLotArea(e.target.value)}
                         style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }}
                       />
@@ -1064,7 +1219,8 @@ export default function TechnicalPermitFormsStep({
                       <input
                         type="number"
                         required
-                        value={floorArea || "150"}
+                        value={floorArea}
+                        placeholder="120"
                         onChange={(e) => setFloorArea(e.target.value)}
                         style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }}
                       />
