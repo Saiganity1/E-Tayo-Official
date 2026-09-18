@@ -23,6 +23,7 @@ import {
   generateSanitaryPermitPdf,
   generateMechanicalPermitPdf,
   generateElectronicsPermitPdf,
+  generateBfpApplicationPdf,
   UnifiedPermitFormData 
 } from "../../utils/unifiedPermitPdfGenerator";
 import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
@@ -593,6 +594,10 @@ export default function TechnicalPermitFormsStep({
             formUrl = `data:application/pdf;base64,${b64}`;
           } else if (key === "electronicsPermit") {
             const b64 = await generateElectronicsPermitPdf(payload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "fireBfpPermit") {
+            // BFP has no blank PDF template — generate the application summary sheet from scratch
+            const b64 = await generateBfpApplicationPdf(payload);
             formUrl = `data:application/pdf;base64,${b64}`;
           }
         } catch (indivErr) {

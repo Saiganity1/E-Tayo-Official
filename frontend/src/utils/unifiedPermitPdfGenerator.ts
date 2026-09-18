@@ -855,7 +855,221 @@ export async function generateElectronicsPermitPdf(data: UnifiedPermitFormData):
 }
 
 /**
- * 8. COMPILED OFFICIAL UNIFIED APPLICATION DOSSIER
+ * 8. BFP FIRE SAFETY EVALUATION CLEARANCE (FSEC) APPLICATION
+ * Built entirely from scratch — no PDF template required.
+ * The BFP issues their own clearance after site inspection; this document
+ * is the applicant's official FSEC Application Summary Sheet submitted to
+ * the Bureau of Fire Protection, Sto. Tomas City Station.
+ */
+export async function generateBfpApplicationPdf(data: UnifiedPermitFormData): Promise<string> {
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([612, 792]); // Letter size
+
+  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const fontReg  = await doc.embedFont(StandardFonts.Helvetica);
+
+  const navy   = rgb(0.05, 0.12, 0.35);
+  const red    = rgb(0.75, 0.05, 0.10);
+  const gray   = rgb(0.40, 0.40, 0.40);
+  const border = rgb(0.80, 0.80, 0.80);
+
+  const { width, height } = page.getSize();
+  const L = 45, R = width - 45;
+
+  // ── Helper: wrap & draw text ──────────────────────────────────────────────
+  const drawLine = (
+    text: string,
+    x: number,
+    y: number,
+    size: number = 8,
+    font = fontReg,
+    color = navy,
+    maxChars = 90
+  ) => {
+    // Sanitize: keep only printable ASCII (pdf-lib standard fonts require this)
+    const clean = safeText(text).slice(0, maxChars).trim();
+    if (!clean) return;
+    page.drawText(clean, { x, y, size, font, color });
+  };
+
+  const hRule = (y: number, color = border) =>
+    page.drawLine({ start: { x: L, y }, end: { x: R, y }, thickness: 0.5, color });
+
+  const box = (x: number, y: number, w: number, h: number) =>
+    page.drawRectangle({ x, y, width: w, height: h, borderColor: border, borderWidth: 0.5, color: rgb(0.97, 0.97, 0.97) });
+
+  // ── RED HEADER BAND ───────────────────────────────────────────────────────
+  page.drawRectangle({ x: 0, y: height - 72, width, height: 72, color: rgb(0.72, 0.05, 0.09) });
+  drawLine("REPUBLIC OF THE PHILIPPINES", 155, height - 18, 7.5, fontReg, rgb(1, 1, 1));
+  drawLine("BUREAU OF FIRE PROTECTION", 148, height - 30, 10, fontBold, rgb(1, 1, 1));
+  drawLine("Sto. Tomas City Fire Station, Pampanga", 140, height - 42, 8, fontReg, rgb(1, 1, 1));
+  drawLine("FIRE SAFETY EVALUATION CLEARANCE (FSEC) APPLICATION", 80, height - 56, 9, fontBold, rgb(1, 1, 1));
+  drawLine("In compliance with RA 9514 (Revised Fire Code of the Philippines)", 130, height - 68, 7, fontReg, rgb(1, 1, 1));
+
+  // ── APP NO / DATE ROW ─────────────────────────────────────────────────────
+  let y = height - 90;
+  box(L, y - 14, 250, 20);
+  box(R - 200, y - 14, 200, 20);
+  drawLine("Application No.:", L + 5, y - 9, 7.5, fontBold, navy);
+  drawLine(data.applicationNo || "FSEC-PENDING", L + 90, y - 9, 8, fontBold, red);
+  drawLine("Date Filed:", R - 195, y - 9, 7.5, fontBold, navy);
+  drawLine(data.submissionDate || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+    R - 138, y - 9, 8, fontReg, navy);
+
+  // ── SECTION 1: APPLICANT ─────────────────────────────────────────────────
+  y -= 30;
+  page.drawRectangle({ x: L, y: y + 2, width: R - L, height: 14, color: rgb(0.88, 0.10, 0.14) });
+  drawLine("1.  APPLICANT INFORMATION", L + 5, y + 5, 8, fontBold, rgb(1, 1, 1));
+
+  y -= 20;
+  drawLine("Name of Applicant / Owner:", L, y, 7.5, fontBold, gray);
+  drawLine((data.applicantName || "").toUpperCase(), L + 150, y, 8.5, fontBold, navy);
+  page.drawLine({ start: { x: L + 148, y: y - 2 }, end: { x: R, y: y - 2 }, thickness: 0.4, color: border });
+
+  y -= 18;
+  drawLine("TIN:", L, y, 7.5, fontBold, gray);
+  drawLine(data.applicantTIN || "N/A", L + 30, y, 8, fontReg, navy);
+  drawLine("Form of Ownership:", L + 140, y, 7.5, fontBold, gray);
+  drawLine(data.formOfOwnership || "Individual", L + 240, y, 8, fontReg, navy);
+  drawLine("Contact No.:", L + 360, y, 7.5, fontBold, gray);
+  drawLine(data.applicantPhone || "N/A", L + 430, y, 8, fontReg, navy);
+
+  y -= 18;
+  drawLine("Address:", L, y, 7.5, fontBold, gray);
+  drawLine(data.applicantAddress || data.projectAddress || "N/A", L + 55, y, 8, fontReg, navy, 70);
+
+  // ── SECTION 2: PROJECT / LOCATION ────────────────────────────────────────
+  y -= 28;
+  page.drawRectangle({ x: L, y: y + 2, width: R - L, height: 14, color: rgb(0.88, 0.10, 0.14) });
+  drawLine("2.  PROJECT / LOCATION OF CONSTRUCTION", L + 5, y + 5, 8, fontBold, rgb(1, 1, 1));
+
+  y -= 20;
+  drawLine("Project Name / Description:", L, y, 7.5, fontBold, gray);
+  drawLine(data.projectName || (data.projectType?.name || ""), L + 160, y, 8, fontBold, navy, 55);
+
+  y -= 18;
+  drawLine("Street / Purok:", L, y, 7.5, fontBold, gray);
+  drawLine(data.projectAddress || "N/A", L + 80, y, 8, fontReg, navy, 30);
+  drawLine("Barangay:", L + 220, y, 7.5, fontBold, gray);
+  drawLine(data.barangay || "N/A", L + 275, y, 8, fontReg, navy, 20);
+  drawLine("City:", L + 400, y, 7.5, fontBold, gray);
+  drawLine("Sto. Tomas, Pampanga", L + 425, y, 8, fontReg, navy, 22);
+
+  y -= 18;
+  drawLine("Lot No.:", L, y, 7.5, fontBold, gray);
+  drawLine(data.lotNo || "N/A", L + 45, y, 8, fontReg, navy);
+  drawLine("Block:", L + 120, y, 7.5, fontBold, gray);
+  drawLine(data.blockNo || "N/A", L + 150, y, 8, fontReg, navy);
+  drawLine("TCT No.:", L + 220, y, 7.5, fontBold, gray);
+  drawLine(data.tctNo || "N/A", L + 265, y, 8, fontReg, navy);
+  drawLine("Tax Dec.:", L + 380, y, 7.5, fontBold, gray);
+  drawLine(data.taxDecNo || "N/A", L + 425, y, 8, fontReg, navy);
+
+  y -= 18;
+  drawLine("Total Lot Area:", L, y, 7.5, fontBold, gray);
+  drawLine(`${data.lotArea || "N/A"} sq.m.`, L + 80, y, 8, fontReg, navy);
+  drawLine("Total Floor Area:", L + 180, y, 7.5, fontBold, gray);
+  drawLine(`${data.floorArea || "N/A"} sq.m.`, L + 270, y, 8, fontReg, navy);
+  drawLine("No. of Storeys:", L + 370, y, 7.5, fontBold, gray);
+  drawLine(data.proposedStoreys || "N/A", L + 450, y, 8, fontReg, navy);
+
+  y -= 18;
+  drawLine("Type of Occupancy:", L, y, 7.5, fontBold, gray);
+  drawLine(data.projectType?.category || "Residential", L + 110, y, 8, fontBold, navy);
+  drawLine("Estimated Project Cost:", L + 260, y, 7.5, fontBold, gray);
+  drawLine(`PHP ${data.projectCost || "N/A"}`, L + 375, y, 8, fontBold, navy);
+
+  // ── SECTION 3: MEANS OF EGRESS ───────────────────────────────────────────
+  y -= 28;
+  page.drawRectangle({ x: L, y: y + 2, width: R - L, height: 14, color: rgb(0.88, 0.10, 0.14) });
+  drawLine("3.  MEANS OF EGRESS & LIFE SAFETY (RA 9514, Section 3.7)", L + 5, y + 5, 8, fontBold, rgb(1, 1, 1));
+
+  y -= 20;
+  drawLine("No. of Independent Exit Doors:", L, y, 7.5, fontBold, gray);
+  drawLine(data.numberOfExits || "N/A", L + 175, y, 8, fontReg, navy, 55);
+
+  y -= 15;
+  drawLine("Exit Door Clear Opening Width:", L, y, 7.5, fontBold, gray);
+  drawLine(data.fireEgressDetails || "N/A", L + 175, y, 8, fontReg, navy, 60);
+
+  y -= 15;
+  drawLine("Stairway & Handrail Specifications:", L, y, 7.5, fontBold, gray);
+  drawLine(data.firewallSpecs ? "" : "0.90m minimum stair width, continuous steel handrail", L + 210, y, 8, fontReg, navy, 55);
+
+  y -= 15;
+  drawLine("Firewall / Party Wall Specifications:", L, y, 7.5, fontBold, gray);
+  drawLine(data.firewallSpecs || "N/A", L + 215, y, 8, fontReg, navy, 55);
+
+  // ── SECTION 4: FIRE SUPPRESSION SYSTEMS ──────────────────────────────────
+  y -= 28;
+  page.drawRectangle({ x: L, y: y + 2, width: R - L, height: 14, color: rgb(0.88, 0.10, 0.14) });
+  drawLine("4.  FIRE SUPPRESSION & LIFE-SAFETY EQUIPMENT", L + 5, y + 5, 8, fontBold, rgb(1, 1, 1));
+
+  y -= 20;
+  drawLine("Portable Fire Extinguishers:", L, y, 7.5, fontBold, gray);
+  drawLine(data.fireExtinguisherSpecs || "N/A", L + 165, y, 8, fontReg, navy, 60);
+
+  y -= 15;
+  drawLine("Emergency Lighting Units:", L, y, 7.5, fontBold, gray);
+  drawLine(data.emergencyLightsCount || "N/A", L + 148, y, 8, fontReg, navy, 65);
+
+  y -= 15;
+  drawLine("Smoke / Heat Detectors:", L, y, 7.5, fontBold, gray);
+  drawLine(data.smokeDetectorsCount || "N/A", L + 138, y, 8, fontReg, navy, 65);
+
+  // ── SECTION 5: COMPLIANCE CHECKBOXES ─────────────────────────────────────
+  y -= 28;
+  page.drawRectangle({ x: L, y: y + 2, width: R - L, height: 14, color: rgb(0.88, 0.10, 0.14) });
+  drawLine("5.  RA 9514 COMPLIANCE DECLARATION", L + 5, y + 5, 8, fontBold, rgb(1, 1, 1));
+
+  const checkItems = [
+    "All fire exits are unobstructed, clearly marked, and open outward",
+    "Portable fire extinguishers are fully charged, mounted, and tagged",
+    "Emergency lights are tested and functional (90-min. battery backup)",
+    "Smoke / heat detectors are installed in all required areas",
+    "Sprinkler system installed (if required by occupancy type & floor area)",
+    "Firewall / party wall complies with RIRR of RA 9514, Rule 10",
+    "Means of egress comply with NFPA 101 Life Safety Code (adopted by RA 9514)",
+    "FSIC/FSEC fees paid per BFP Schedule of Fees and Charges",
+  ];
+  y -= 4;
+  for (const item of checkItems) {
+    y -= 14;
+    page.drawRectangle({ x: L, y: y - 2, width: 10, height: 10, borderColor: navy, borderWidth: 0.7, color: rgb(0.92, 0.95, 1) });
+    page.drawText("X", { x: L + 2, y: y - 1, size: 8, font: fontBold, color: navy });
+    drawLine(item, L + 16, y, 7.5, fontReg, navy, 88);
+  }
+
+  // ── SECTION 6: SIGNATURES ─────────────────────────────────────────────────
+  y -= 32;
+  hRule(y + 4);
+  page.drawRectangle({ x: L, y: y - 56, width: (R - L) / 2 - 10, height: 62, borderColor: border, borderWidth: 0.5 });
+  page.drawRectangle({ x: L + (R - L) / 2 + 10, y: y - 56, width: (R - L) / 2 - 10, height: 62, borderColor: border, borderWidth: 0.5 });
+
+  // Applicant side
+  drawLine("APPLICANT'S CERTIFICATION", L + 4, y - 8, 7, fontBold, red);
+  drawLine("I hereby certify that all information stated herein is true and correct", L + 4, y - 19, 6.5, fontReg, gray, 58);
+  drawLine("and that the construction shall strictly comply with RA 9514.", L + 4, y - 28, 6.5, fontReg, gray, 56);
+  page.drawLine({ start: { x: L + 8, y: y - 44 }, end: { x: L + 200, y: y - 44 }, thickness: 0.6, color: navy });
+  drawLine((data.applicantName || "").toUpperCase(), L + 8, y - 55, 7.5, fontBold, navy);
+
+  // BFP side
+  const bfpX = L + (R - L) / 2 + 14;
+  drawLine("BFP EVALUATOR'S SIGNATURE", bfpX, y - 8, 7, fontBold, red);
+  drawLine("Evaluated by:", bfpX, y - 19, 6.5, fontReg, gray);
+  page.drawLine({ start: { x: bfpX + 4, y: y - 44 }, end: { x: R - 8, y: y - 44 }, thickness: 0.6, color: navy });
+  drawLine("Fire Safety Inspector, BFP Sto. Tomas", bfpX + 4, y - 55, 7, fontReg, gray);
+
+  // ── FOOTER ────────────────────────────────────────────────────────────────
+  page.drawRectangle({ x: 0, y: 0, width, height: 22, color: rgb(0.88, 0.10, 0.14) });
+  drawLine("This document is an official FSEC Application Summary. The BFP will issue the actual Fire Safety Evaluation Clearance after site inspection.",
+    55, 7, 6, fontReg, rgb(1, 1, 1), 110);
+
+  return await doc.saveAsBase64({ dataUri: false });
+}
+
+/**
+ * 9. COMPILED OFFICIAL UNIFIED APPLICATION DOSSIER
  * Generates the Building Permit as Master Cover, then appends all required
  * technical permits (AP, SP, EP, PL, MP, EL, etc.) with the applicant's entered responses.
  */
@@ -869,7 +1083,7 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     : ["architecturalPermit", "civilStructuralPermit", "electricalPermit", "sanitaryPermit"];
 
   for (const formKey of activeForms) {
-    if (formKey === "buildingPermit" || formKey === "zoningPermit" || formKey === "fireBfpPermit") {
+    if (formKey === "buildingPermit" || formKey === "zoningPermit") {
       continue;
     }
 
@@ -887,6 +1101,8 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
         formBase64 = await generateMechanicalPermitPdf(data);
       } else if (formKey === "electronicsPermit") {
         formBase64 = await generateElectronicsPermitPdf(data);
+      } else if (formKey === "fireBfpPermit") {
+        formBase64 = await generateBfpApplicationPdf(data);
       } else {
         const meta = (PERMIT_FORM_METADATA as Record<string, { label: string; code: string; desc: string; templateFile?: string }>)[formKey];
         if (meta?.templateFile) {
