@@ -39,7 +39,6 @@ export default function Sidebar() {
         return [
           { href: "/applicant/dashboard", label: "Dashboard", icon: Home },
           { href: "/applicant/apply", label: "New Application", icon: PlusCircle },
-          { href: "/applicant/templates", label: "Official Forms", icon: FileText },
           { href: "/applicant/track", label: "Application Status", icon: ClipboardList },
           { href: "/applicant/map", label: "Map", icon: Map },
           { href: "/applicant/messages", label: "Messages", icon: MessageSquare, badge: 3 },

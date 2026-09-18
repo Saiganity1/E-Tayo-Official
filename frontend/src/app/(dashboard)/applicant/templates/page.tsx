@@ -1,8 +1,14 @@
 "use client";
 
-import React from "react";
-import TemplatesDirectory from "../../../../components/templates/TemplatesDirectory";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ApplicantTemplatesPage() {
-  return <TemplatesDirectory role="applicant" />;
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/applicant/dashboard");
+  }, [router]);
+
+  return null;
 }
