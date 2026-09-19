@@ -9,6 +9,7 @@ import {
   ArrowRight, Check, BookOpen, AlertCircle
 } from "lucide-react";
 import { ALL_OFFICIAL_TEMPLATES, OfficialTemplateFile } from "../../data/projectTypeMatrix";
+import { usePermitContext } from "../../context/PermitContext";
 
 interface TemplatesDirectoryProps {
   role?: "applicant" | "staff" | "admin";
@@ -66,62 +67,111 @@ export default function TemplatesDirectory({ role = "applicant" }: TemplatesDire
     });
   }, [searchQuery, selectedCategory]);
 
+  const { userRole } = usePermitContext();
+  const isAdmin = role === "admin" || userRole === "admin";
+
   return (
     <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "1.5rem 1rem 3rem" }}>
-      {/* Header Banner */}
-      <div style={{
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #094067 100%)",
-        borderRadius: "20px",
-        padding: "2.25rem 2rem",
-        color: "white",
-        boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.3)",
-        position: "relative",
-        overflow: "hidden",
-        marginBottom: "2rem"
-      }}>
-        <div style={{ position: "relative", zIndex: 2 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "6px 14px", borderRadius: "9999px", background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", fontSize: "0.82rem", fontWeight: "600", marginBottom: "1rem" }}>
-            <Sparkles size={15} style={{ color: "#38bdf8" }} />
-            <span>Official Sto. Tomas Permitting Forms Library</span>
-          </div>
-
-          <h1 style={{ fontSize: "2rem", fontWeight: "900", margin: "0 0 0.5rem", letterSpacing: "-0.025em" }}>
-            Official Municipal Permitting Templates
-          </h1>
-          <p style={{ fontSize: "1rem", color: "#cbd5e1", margin: 0, maxWidth: "780px", lineHeight: "1.6" }}>
-            All 16 statutory permit forms, technical ancillary schedules, and completion certificates adopted by the Office of the Building Official (OBO), Municipality of Sto. Tomas, Batangas. Directly inspect, download blank copies, or apply online.
-          </p>
-
-          {/* Quick Metrics */}
-          <div style={{ display: "flex", gap: "1.25rem", marginTop: "1.5rem", flexWrap: "wrap" }}>
-            <div style={{ background: "rgba(255,255,255,0.08)", padding: "8px 16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)" }}>
-              <div style={{ fontSize: "1.25rem", fontWeight: "800", color: "#38bdf8" }}>16</div>
-              <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Verified Forms Available</div>
-            </div>
-            <div style={{ background: "rgba(255,255,255,0.08)", padding: "8px 16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)" }}>
-              <div style={{ fontSize: "1.25rem", fontWeight: "800", color: "#34d399" }}>100%</div>
-              <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>NBCP Compliant</div>
-            </div>
-            <div style={{ background: "rgba(255,255,255,0.08)", padding: "8px 16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)" }}>
-              <div style={{ fontSize: "1.25rem", fontWeight: "800", color: "#f472b6" }}>Digital</div>
-              <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Auto-Stamping Ready</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Decorative background grid */}
+      {/* Admin Clean Header (Hero Banner Removed on Admin side) */}
+      {isAdmin ? (
         <div style={{
-          position: "absolute",
-          top: "-50px",
-          right: "-50px",
-          width: "300px",
-          height: "300px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(0,0,0,0) 70%)",
-          zIndex: 1,
-          pointerEvents: "none"
-        }} />
-      </div>
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          border: "1.5px solid #e2e8f0",
+          borderRadius: "18px",
+          padding: "1.25rem 1.75rem",
+          marginBottom: "1.5rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "1rem",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.02)"
+        }}>
+          <div>
+            <h2 style={{ fontSize: "1.35rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.25rem 0" }}>
+              Official Permitting Forms Library
+            </h2>
+            <p style={{ margin: 0, fontSize: "0.88rem", color: "#64748b" }}>
+              Inspect and download official blank templates, or test interactive form field mappings.
+            </p>
+          </div>
+          <Link
+            href="/admin/form-tester"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+              color: "white",
+              padding: "9px 18px",
+              borderRadius: "12px",
+              fontWeight: "700",
+              fontSize: "0.88rem",
+              textDecoration: "none",
+              boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
+              transition: "all 0.2s ease"
+            }}
+          >
+            <Sparkles size={16} />
+            <span>Open Form Testing Studio</span>
+          </Link>
+        </div>
+      ) : (
+        /* Header Banner for non-admin */
+        <div style={{
+          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #094067 100%)",
+          borderRadius: "20px",
+          padding: "2.25rem 2rem",
+          color: "white",
+          boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.3)",
+          position: "relative",
+          overflow: "hidden",
+          marginBottom: "2rem"
+        }}>
+          <div style={{ position: "relative", zIndex: 2 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "6px 14px", borderRadius: "9999px", background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", fontSize: "0.82rem", fontWeight: "600", marginBottom: "1rem" }}>
+              <Sparkles size={15} style={{ color: "#38bdf8" }} />
+              <span>Official Sto. Tomas Permitting Forms Library</span>
+            </div>
+
+            <h1 style={{ fontSize: "2rem", fontWeight: "900", margin: "0 0 0.5rem", letterSpacing: "-0.025em" }}>
+              Official Municipal Permitting Templates
+            </h1>
+            <p style={{ fontSize: "1rem", color: "#cbd5e1", margin: 0, maxWidth: "780px", lineHeight: "1.6" }}>
+              All 16 statutory permit forms, technical ancillary schedules, and completion certificates adopted by the Office of the Building Official (OBO), Municipality of Sto. Tomas, Batangas. Directly inspect, download blank copies, or apply online.
+            </p>
+
+            {/* Quick Metrics */}
+            <div style={{ display: "flex", gap: "1.25rem", marginTop: "1.5rem", flexWrap: "wrap" }}>
+              <div style={{ background: "rgba(255,255,255,0.08)", padding: "8px 16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <div style={{ fontSize: "1.25rem", fontWeight: "800", color: "#38bdf8" }}>16</div>
+                <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Verified Forms Available</div>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.08)", padding: "8px 16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <div style={{ fontSize: "1.25rem", fontWeight: "800", color: "#34d399" }}>100%</div>
+                <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>NBCP Compliant</div>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.08)", padding: "8px 16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <div style={{ fontSize: "1.25rem", fontWeight: "800", color: "#f472b6" }}>Digital</div>
+                <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Auto-Stamping Ready</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Decorative background grid */}
+          <div style={{
+            position: "absolute",
+            top: "-50px",
+            right: "-50px",
+            width: "300px",
+            height: "300px",
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(0,0,0,0) 70%)",
+            zIndex: 1,
+            pointerEvents: "none"
+          }} />
+        </div>
+      )}
 
       {/* Search & Filter Toolbar */}
       <div style={{

@@ -54,6 +54,7 @@ export default function Sidebar() {
       case "admin":
         return [
           { href: "/admin/dashboard", label: "Admin Portal", icon: ShieldAlert },
+          { href: "/admin/form-tester", label: "Form Testing Studio", icon: ClipboardList },
           { href: "/staff/dashboard", label: "Review Workspaces", icon: FileCheck },
           { href: "/staff/templates", label: "Official Forms", icon: FileText },
           { href: "/admin/users", label: "Applicants Management", icon: Users },
