@@ -201,40 +201,8 @@ export default function ApplicationStatusPage() {
 
   return (
     <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "4rem" }}>
-      {/* GUEST BANNER OR STATS OVERVIEW CARDS */}
-      {!isLoggedIn ? (
-        <section style={{
-          background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-          color: "white",
-          borderRadius: "22px",
-          padding: "2.25rem 2.5rem",
-          marginBottom: "2rem",
-          boxShadow: "0 12px 35px rgba(15, 23, 42, 0.18)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "1.5rem"
-        }}>
-          <div style={{ maxWidth: "650px" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,0.12)", padding: "4px 12px", borderRadius: "999px", fontSize: "0.8rem", fontWeight: "700", color: "#93c5fd", marginBottom: "0.75rem" }}>
-              <ShieldCheck size={14} /> Official Municipal Permit Tracking Portal
-            </div>
-            <h2 style={{ fontSize: "1.55rem", fontWeight: "800", margin: "0 0 0.5rem 0", color: "#ffffff" }}>
-              Track Application Progress & Official Status
-            </h2>
-            <p style={{ margin: 0, color: "#cbd5e1", fontSize: "0.95rem", lineHeight: "1.5" }}>
-              Have an official Tracking ID receipt? Enter it into the Direct Tracking Lookup below to inspect evaluation milestones. Sign in to your account to view your private application history.
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            <Link href="/login?redirect=/applicant/track" style={{ background: "#2563eb", color: "white", padding: "0.8rem 1.5rem", borderRadius: "12px", fontWeight: "800", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem", boxShadow: "0 4px 14px rgba(37,99,235,0.3)" }}>
-              Sign In to View Applications <ArrowRight size={16} />
-            </Link>
-          </div>
-        </section>
-      ) : (
-        /* INTERACTIVE KPI STATS DASHBOARD */
+      {/* INTERACTIVE KPI STATS DASHBOARD (ONLY FOR LOGGED IN USERS) */}
+      {isLoggedIn && (
         <section style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
