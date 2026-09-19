@@ -146,7 +146,6 @@ export default function ApplyPage() {
   const [showAllTemplatesModal, setShowAllTemplatesModal] = useState(false);
   const [showMatrixGuideModal, setShowMatrixGuideModal] = useState(false);
   const [showNewAppModal, setShowNewAppModal] = useState(false);
-  const [isNewApplicationMode, setIsNewApplicationMode] = useState(false);
   const [newAppAlert, setNewAppAlert] = useState<string | null>(null);
   const [copiedRef, setCopiedRef] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -284,24 +283,11 @@ export default function ApplyPage() {
     return list;
   }, [applications]);
 
-  // Find any locational clearance application matching this project type or the selected reference
+  // Find locational clearance application ONLY when an explicit reference is selected (e.g. from Track page or Step 2 selection)
   const matchedClearanceApp = useMemo(() => {
-    if (isNewApplicationMode) {
-      return selectedClearanceRef ? allAvailableApps.find(a => a.id === selectedClearanceRef) : null;
-    }
-    return (
-      (selectedClearanceRef && allAvailableApps.find(a => a.id === selectedClearanceRef)) ||
-      allAvailableApps.find(a => 
-        (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
-        (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name))) &&
-        (a.status?.toLowerCase() === "approved" || a.status?.toLowerCase() === "released")
-      ) ||
-      allAvailableApps.find(a => 
-        (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
-        (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name)))
-      )
-    );
-  }, [isNewApplicationMode, selectedClearanceRef, allAvailableApps, selectedProjectType]);
+    if (!selectedClearanceRef) return null;
+    return allAvailableApps.find(a => a.id === selectedClearanceRef) || null;
+  }, [selectedClearanceRef, allAvailableApps]);
 
   const isClearanceApproved = Boolean(
     matchedClearanceApp && (
@@ -327,11 +313,21 @@ export default function ApplyPage() {
   const activeClearanceRef = matchedClearanceApp?.id || selectedClearanceRef || (isClearanceRequired ? null : "EXEMPT");
 
   // Filter available clearances the user might already have submitted in the system
-  const userClearances = allAvailableApps.filter(
-    (app) => app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))
-  );
+  const userClearances = useMemo(() => {
+    return allAvailableApps.filter(
+      (app) => app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))
+    );
+  }, [allAvailableApps]);
 
-  // Auto-sync project type to match approved locational clearance
+  // Existing approved clearances matching currently selected project type (available for linking in Step 2)
+  const matchingApprovedClearances = useMemo(() => {
+    return userClearances.filter(a =>
+      (a.status?.toLowerCase() === "approved" || a.status?.toLowerCase() === "released") &&
+      (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name)))
+    );
+  }, [userClearances, selectedProjectType]);
+
+  // Auto-sync project type to match approved locational clearance (when an explicit clearance reference is loaded)
   useEffect(() => {
     if (matchedClearanceApp?.projectType) {
       const found = PROJECT_TYPES_MATRIX.find(
@@ -356,15 +352,6 @@ export default function ApplyPage() {
       }
     }
   }, [mounted, currentStep, isClearanceRequired, isClearancePassed, isClearancePending, matchedClearanceApp, selectedProjectType, goToStep]);
-
-  // Guard 2: if locational clearance is approved, user cannot revert back to Step 1 (Project Type is locked to approved clearance)
-  useEffect(() => {
-    if (!mounted) return;
-    if (currentStep === 1 && isClearanceApproved && !isNewApplicationMode) {
-      goToStep(3);
-      setLockedNotice(`Project Type is locked because Locational Clearance has already been approved for "${selectedProjectType.name}". To apply for a different project, click "Create New Application".`);
-    }
-  }, [mounted, currentStep, isClearanceApproved, isNewApplicationMode, selectedProjectType, goToStep]);
 
   // Sync selected permit type internally without triggering unnecessary re-renders
   useEffect(() => {
@@ -936,18 +923,12 @@ export default function ApplyPage() {
               const isExempt = step.id === 2 && !isClearanceRequired;
               const isClearanceVerified = step.id === 2 && isClearancePassed && isClearanceRequired;
               const isClearanceAwaitingAdmin = step.id === 2 && isClearancePending && isClearanceRequired;
-              const isStep1LockedByApprovedClearance = step.id === 1 && isClearanceApproved && !isNewApplicationMode;
-              
               return (
                 <li 
                   key={step.id} 
                   className={`step-item ${isActive ? "active" : ""} ${isPassed ? "passed" : ""}`}
                   onClick={() => {
                     if (step.id === 1) {
-                      if (isClearanceApproved && !isNewApplicationMode) {
-                        setLockedNotice(`Project Type cannot be modified because Locational Clearance has already been approved for "${selectedProjectType.name}". If you want to apply for a different project, click "Create New Application" above.`);
-                        return;
-                      }
                       goToStep(1);
                       return;
                     }
@@ -966,7 +947,7 @@ export default function ApplyPage() {
                     }
                   }}
                   style={{ 
-                    cursor: isStep1LockedByApprovedClearance || (!isClearancePassed && step.id > 2) ? "not-allowed" : "pointer" 
+                    cursor: (!isClearancePassed && step.id > 2) ? "not-allowed" : "pointer" 
                   }}
                 >
                   <div className="step-indicator" style={{
@@ -976,9 +957,7 @@ export default function ApplyPage() {
                     borderColor: isClearanceAwaitingAdmin && !isActive ? "#f59e0b" : undefined,
                     color: isClearanceAwaitingAdmin && !isActive ? "#b45309" : undefined
                   }}>
-                    {isStep1LockedByApprovedClearance ? (
-                      <Lock size={15} color="#059669" />
-                    ) : isPassed ? (
+                    {isPassed ? (
                       <CheckCircle size={16} />
                     ) : isClearanceAwaitingAdmin ? (
                       <Clock size={16} color="#d97706" />
@@ -993,9 +972,7 @@ export default function ApplyPage() {
                       color: isClearanceAwaitingAdmin && !isActive ? "#d97706" : (isActive ? "#4f46e5" : "#94a3b8"), 
                       fontWeight: isActive || isClearanceAwaitingAdmin ? "700" : "500" 
                     }}>
-                      {isStep1LockedByApprovedClearance
-                        ? "Locked (Approved)"
-                        : isActive 
+                      {isActive 
                         ? "In Progress" 
                         : isExempt 
                         ? "Exempt" 
@@ -1027,8 +1004,8 @@ export default function ApplyPage() {
         </div>
 
         <div className="wizard-content">
-          {/* APPROVED CLEARANCE LOCKED PROJECT BANNER */}
-          {isClearanceApproved && !isNewApplicationMode && (
+          {/* APPROVED CLEARANCE BANNER (Only when an explicit clearance is actively linked) */}
+          {selectedClearanceRef && isClearanceApproved && (
             <div className="animate-fade-in-up" style={{
               background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
               border: "1.5px solid #a7f3d0",
@@ -1049,21 +1026,26 @@ export default function ApplyPage() {
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                     <strong style={{ color: "#065f46", fontSize: "0.92rem" }}>
-                      Active Approved Project: {selectedProjectType.name}
+                      Active Approved Clearance: {selectedProjectType.name}
                     </strong>
                     <span style={{ fontSize: "0.76rem", fontWeight: "700", background: "#ffffff", color: "#047857", padding: "2px 8px", borderRadius: "999px", border: "1px solid #a7f3d0" }}>
-                      Clearance: {activeClearanceRef || "Approved"}
+                      Ref: {activeClearanceRef}
                     </span>
                   </div>
                   <span style={{ color: "#047857", fontSize: "0.82rem" }}>
-                    Project Type is locked to this approved clearance. Need to file for another project? Start a new application below.
+                    Permit forms are synchronized to approved Locational Clearance {activeClearanceRef}.
                   </span>
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => setShowNewAppModal(true)}
+                onClick={() => {
+                  setSelectedClearanceRef(null);
+                  setLockedNotice(null);
+                  setNewAppAlert("Unlinked clearance. Starting fresh application draft.");
+                  setTimeout(() => setNewAppAlert(null), 4000);
+                }}
                 style={{
                   background: "#ffffff",
                   border: "1.5px solid #059669",
@@ -1079,7 +1061,7 @@ export default function ApplyPage() {
                   boxShadow: "0 2px 6px rgba(5, 150, 105, 0.1)"
                 }}
               >
-                <Plus size={14} /> Create New Application
+                <RotateCcw size={14} /> Unlink Clearance (Start Fresh)
               </button>
             </div>
           )}
@@ -1431,13 +1413,11 @@ export default function ApplyPage() {
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedProjectType(p);
+                              if (selectedClearanceRef && matchedClearanceApp?.projectType !== p.name) {
+                                setSelectedClearanceRef(null);
+                              }
                               const pRequiresClearance = p.matrix.zoningPermit !== 'not_required';
-                              const hasApproved = applications.some(a => 
-                                (a.permitType === "locational_clearance" || (a.id && a.id.startsWith("LC-"))) &&
-                                (a.projectType === p.name || (a.projectName && a.projectName.includes(p.name))) &&
-                                (a.status === "approved" || a.status === "released")
-                              );
-                              if (pRequiresClearance && !hasApproved) {
+                              if (pRequiresClearance) {
                                 goToStep(2);
                               } else {
                                 goToStep(3);
@@ -1674,7 +1654,10 @@ export default function ApplyPage() {
                   <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
                     <button
                       type="button"
-                      onClick={() => setShowNewAppModal(true)}
+                      onClick={() => {
+                        setSelectedClearanceRef(null);
+                        setLockedNotice(null);
+                      }}
                       style={{
                         background: "#ffffff",
                         border: "1.5px solid #cbd5e1",
@@ -1691,7 +1674,7 @@ export default function ApplyPage() {
                       }}
                     >
                       <Plus size={15} color="#2563eb" />
-                      <span>Start New Application (Different Project)</span>
+                      <span>File New Clearance for this Project</span>
                     </button>
 
                     <button
@@ -1924,6 +1907,65 @@ export default function ApplyPage() {
               ) : (
                 /* CASE 3: CLEARANCE REQUIRED BUT NOT YET COMPLETED */
                 <div>
+                  {/* OPTION TO LINK EXISTING APPROVED CLEARANCE IF FOUND ON FILE */}
+                  {matchingApprovedClearances.length > 0 && !selectedClearanceRef && (
+                    <div className="animate-fade-in-up" style={{
+                      background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
+                      border: "1.5px solid #86efac",
+                      borderRadius: "16px",
+                      padding: "1.25rem 1.5rem",
+                      marginBottom: "1.5rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "1rem",
+                      boxShadow: "0 4px 14px rgba(16, 185, 129, 0.08)"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#dcfce7", color: "#15803d", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <ShieldCheck size={24} />
+                        </div>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                            <strong style={{ color: "#166534", fontSize: "0.95rem" }}>
+                              Approved Locational Clearance Found on File
+                            </strong>
+                            <span style={{ fontSize: "0.78rem", background: "#ffffff", border: "1px solid #86efac", color: "#15803d", padding: "1px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                              {matchingApprovedClearances[0].id}
+                            </span>
+                          </div>
+                          <p style={{ margin: "3px 0 0 0", color: "#15803d", fontSize: "0.85rem" }}>
+                            You have an approved clearance for <strong>{selectedProjectType?.name}</strong>. You can use it to proceed directly to technical permit forms, or file a brand new clearance below.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedClearanceRef(matchingApprovedClearances[0].id);
+                        }}
+                        style={{
+                          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "10px",
+                          padding: "10px 18px",
+                          fontSize: "0.85rem",
+                          fontWeight: "800",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          boxShadow: "0 4px 12px rgba(16, 185, 129, 0.25)"
+                        }}
+                      >
+                        <CheckCircle2 size={16} />
+                        <span>Use This Clearance ({matchingApprovedClearances[0].id})</span>
+                      </button>
+                    </div>
+                  )}
+
                   <div style={{
                     border: "1.5px solid #cbd5e1",
                     background: "#ffffff",
@@ -2895,19 +2937,9 @@ export default function ApplyPage() {
             {currentStep > 1 && (
               <button 
                 className="btn-outline" 
-                onClick={() => {
-                  if (currentStep === 2 && isClearanceApproved && !isNewApplicationMode) {
-                    setLockedNotice(`Project Type is locked because Locational Clearance has already been approved for "${selectedProjectType.name}". If you want to apply for another project, click "Create New Application".`);
-                    return;
-                  }
-                  goToStep(currentStep - 1);
-                }} 
-                disabled={uploading || (currentStep === 2 && isClearanceApproved && !isNewApplicationMode)}
-                style={{
-                  opacity: currentStep === 2 && isClearanceApproved && !isNewApplicationMode ? 0.4 : 1,
-                  cursor: currentStep === 2 && isClearanceApproved && !isNewApplicationMode ? "not-allowed" : "pointer"
-                }}
-                title={currentStep === 2 && isClearanceApproved && !isNewApplicationMode ? "Project Type locked to approved clearance" : "Previous Step"}
+                onClick={() => goToStep(currentStep - 1)} 
+                disabled={uploading}
+                title="Previous Step"
               >
                 <ChevronLeft size={18} /> Back
               </button>
@@ -3806,7 +3838,6 @@ export default function ApplyPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setIsNewApplicationMode(true);
                   setSelectedClearanceRef(null);
                   setSelectedProjectType(PROJECT_TYPES_MATRIX[0]);
                   setProjectName("");
