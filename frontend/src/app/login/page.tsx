@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [timeoutMessage, setTimeoutMessage] = useState(false);
   
   const router = useRouter();
-  const { setUserRole } = usePermitContext();
+  const { setUserRole, addSystemLog } = usePermitContext();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -60,6 +60,20 @@ export default function LoginPage() {
       }
 
       setUserRole(role);
+
+      try {
+        await addSystemLog({
+          action: "USER_LOGIN",
+          category: "security",
+          status: "success",
+          user: sanitizedEmail,
+          message: `User ${data.name || sanitizedEmail} logged in successfully`,
+          details: `Authenticated with role ${data.role || role} · Sto. Tomas Permitting Portal`
+        });
+      } catch (logErr) {
+        console.warn("Could not log user login", logErr);
+      }
+
       router.push(destination);
     } catch (err: any) {
       alert("Login failed: " + err.message);

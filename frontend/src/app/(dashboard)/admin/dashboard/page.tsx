@@ -109,13 +109,17 @@ export default function AdminDashboard() {
       (log.action || "").toLowerCase().includes(sTerm) ||
       (log.category || "").toLowerCase().includes(sTerm);
 
-    const matchesCategory = selectedCategory === "all" || log.category === selectedCategory;
+    const matchesCategory = selectedCategory === "all" || 
+      (selectedCategory === "application" && (log.category === "application" || (log.action && (log.action.includes("EVALUAT") || log.action.includes("APPLICATION") || log.action.includes("PERMIT"))))) ||
+      (selectedCategory === "security" && (log.category === "security" || (log.action && (log.action.includes("LOGIN") || log.action.includes("AUTH") || log.action.includes("OTP"))))) ||
+      (selectedCategory === "setting" && log.category === "setting") ||
+      (selectedCategory === "system" && log.category === "system");
 
     return matchesSearch && matchesCategory;
   });
 
-  const evaluationLogsCount = systemLogs.filter(l => l.category === "application" || (l.action && l.action.includes("EVALUAT"))).length;
-  const securityLogsCount = systemLogs.filter(l => l.category === "security" || (l.action && l.action.includes("LOGIN"))).length;
+  const evaluationLogsCount = systemLogs.filter(l => l.category === "application" || (l.action && (l.action.includes("EVALUAT") || l.action.includes("PERMIT") || l.action.includes("APPLICATION")))).length;
+  const securityLogsCount = systemLogs.filter(l => l.category === "security" || (l.action && (l.action.includes("LOGIN") || l.action.includes("AUTH") || l.action.includes("OTP")))).length;
 
   return (
     <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1400px", margin: "0 auto", paddingBottom: "4rem" }}>
