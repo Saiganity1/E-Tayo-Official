@@ -379,6 +379,35 @@ export default function ApplicantMessagesPage() {
         };
         setMessages(prev => [...prev, localMsg]);
 
+        // Also trigger Mang Tomas AI response if talking to Mang Tomas / General Desk
+        fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: finalContent,
+            history: messages.slice(-6).map(m => ({
+              role: m.senderEmail === MANG_TOMAS.email ? "bot" : "user",
+              text: m.content
+            })),
+            userApplications: applications || []
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.reply) {
+            const botMsg = {
+              id: `mang-tomas-${Date.now()}`,
+              senderEmail: MANG_TOMAS.email,
+              recipientEmail: currentUserEmail,
+              content: data.reply,
+              applicationId: activeThreadId,
+              timestamp: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, botMsg]);
+          }
+        })
+        .catch(err => console.warn("Failed to get Mang Tomas response:", err));
+
         setInputMessage("");
         setAttachedFile(null);
       } catch (err) {
@@ -397,6 +426,36 @@ export default function ApplicantMessagesPage() {
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, localMsg]);
+
+      // Call /api/chat for local offline/knowledge base response
+      fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: finalContent,
+          history: messages.slice(-6).map(m => ({
+            role: m.senderEmail === MANG_TOMAS.email ? "bot" : "user",
+            text: m.content
+          })),
+          userApplications: applications || []
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.reply) {
+          const botMsg = {
+            id: `mang-tomas-${Date.now()}`,
+            senderEmail: MANG_TOMAS.email,
+            recipientEmail: currentUserEmail,
+            content: data.reply,
+            applicationId: activeThreadId,
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, botMsg]);
+        }
+      })
+      .catch(() => {});
+
       setInputMessage("");
       setAttachedFile(null);
     }

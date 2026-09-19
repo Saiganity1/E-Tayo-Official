@@ -1,23 +1,35 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { MessageSquare, X, Send, Bot } from "lucide-react";
+import { MessageSquare, X, Send, Bot, Sparkles, RefreshCw } from "lucide-react";
+import { usePermitContext } from "../../context/PermitContext";
 
 interface ChatMessage {
   id: string;
   role: "bot" | "user";
   text: string;
   timestamp: Date;
+  source?: "gemini" | "openai" | "local_knowledge" | "error_fallback";
 }
 
+const QUICK_PROMPTS = [
+  "Ano requirements sa pagpapatayo ng bahay?",
+  "Bakit kailangan muna ang Locational Clearance?",
+  "Kumusta ang status ng application ko?",
+  "Magkano ang permit fees para sa 2-storey?",
+  "Ano ang required setbacks sa residential?"
+];
+
 export default function MangTomasBot() {
+  const { applications } = usePermitContext();
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState("");
+  const [isThinking, setIsThinking] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "msg-0",
       role: "bot",
-      text: "Mabuhay! I am Mang Tomas, your virtual assistant for Sto. Tomas. What are you planning to build today?",
+      text: "Mabuhay! I am **Mang Tomas**, your virtual assistant for Sto. Tomas, Pampanga. Ano po ang plano ninyong ipatayo ngayon? Maaari ninyo akong tanungin tungkol sa mga requirements, zoning, permit fees, o ang status ng inyong application!",
       timestamp: new Date()
     }
   ]);
@@ -30,57 +42,101 @@ export default function MangTomasBot() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isThinking]);
 
-  const generateResponse = (text: string): string => {
-    const lower = text.toLowerCase();
-    
-    if (lower.match(/(house|home|residential|apartment|bahay|tirahan)/)) {
-      return "For a residential house, you will primarily need a **Building Permit** and a **Locational Clearance**. Please make sure you have your land title and blueprints ready!";
+  const sendQueryToAi = async (userText: string) => {
+    setIsThinking(true);
+
+    try {
+      // Send conversation history and live applications context to /api/chat
+      const historyPayload = messages.slice(-6).map(m => ({
+        role: m.role,
+        text: m.text
+      }));
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userText,
+          history: historyPayload,
+          userApplications: applications || []
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const botReply = data.reply || "Mabuhay! Paumanhin po, maaari po bang paki-ulit ang inyong tanong?";
+        
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `msg-${Date.now() + 1}`,
+            role: "bot",
+            text: botReply,
+            timestamp: new Date(),
+            source: data.source
+          }
+        ]);
+      } else {
+        throw new Error("Chat API returned non-OK status");
+      }
+    } catch (err) {
+      console.warn("Error calling /api/chat, falling back to local guidance:", err);
+      // Local fallback in case network error occurs
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `msg-${Date.now() + 1}`,
+          role: "bot",
+          text: "Mabuhay! Ako po si Mang Tomas. Para sa inyong mga katanungan sa permit, maaari kayong pumunta sa **Permit Types** page o i-check ang inyong **Application Status** sa sidebar menu!",
+          timestamp: new Date(),
+          source: "error_fallback"
+        }
+      ]);
+    } finally {
+      setIsThinking(false);
     }
-    if (lower.match(/(store|business|commercial|shop|sari-sari|tindahan|negosyo)/)) {
-      return "If you're building a commercial space like a store, you'll need a **Building Permit**, **Locational Clearance**, and eventually a **Business Permit**. Would you like to start an application now?";
-    }
-    if (lower.match(/(fee|cost|price|magkano|bayad)/)) {
-      return "Permit fees depend on your Total Floor Area and the type of building. You can find detailed estimates on the Fees section of your dashboard.";
-    }
-    if (lower.match(/(track|status|nasaan|where)/)) {
-      return "You can check the real-time status of your application by clicking on 'Application Status' in the sidebar menu.";
-    }
-    if (lower.match(/(hello|hi|mabuhay|hey)/)) {
-      return "Hello there! I'm Mang Tomas. How can I assist you with your permits today?";
-    }
-    if (lower.match(/(thanks|thank you|salamat)/)) {
-      return "You're very welcome! If you have any more questions, just ask.";
-    }
-    
-    return "I'm still learning! For complex inquiries, please check the 'Permit Types' page or visit the Municipal Engineer's Office in person.";
   };
 
-  const handleSend = (e?: React.FormEvent) => {
+  const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isThinking) return;
 
+    const userText = inputText.trim();
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       role: "user",
-      text: inputText.trim(),
+      text: userText,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMsg]);
     setInputText("");
 
-    // Simulate thinking delay
-    setTimeout(() => {
-      const botResponse: ChatMessage = {
-        id: `msg-${Date.now() + 1}`,
-        role: "bot",
-        text: generateResponse(userMsg.text),
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, botResponse]);
-    }, 600);
+    await sendQueryToAi(userText);
+  };
+
+  const handleQuickPrompt = async (prompt: string) => {
+    if (isThinking) return;
+    const userMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      role: "user",
+      text: prompt,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMsg]);
+    await sendQueryToAi(prompt);
+  };
+
+  const renderFormattedText = (text: string) => {
+    // Replace **bold**
+    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Replace `code`
+    formatted = formatted.replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 0.88em;">$1</code>');
+    // Replace newlines with <br/>
+    formatted = formatted.replace(/\n/g, '<br/>');
+    return formatted;
   };
 
   return (
@@ -90,10 +146,13 @@ export default function MangTomasBot() {
         <button
           onClick={() => setIsOpen(true)}
           className="mang-tomas-fab"
-          aria-label="Open Chat"
+          aria-label="Open Chat with Mang Tomas"
         >
-          <MessageSquare size={28} color="white" />
-          <span className="fab-tooltip">Ask Mang Tomas!</span>
+          <div style={{ position: "relative" }}>
+            <MessageSquare size={28} color="white" />
+            <span style={{ position: "absolute", top: -2, right: -2, width: "10px", height: "10px", background: "#4ade80", borderRadius: "50%", border: "2px solid #1d4ed8" }}></span>
+          </div>
+          <span className="fab-tooltip">Ask Mang Tomas AI!</span>
         </button>
       )}
 
@@ -107,13 +166,18 @@ export default function MangTomasBot() {
                 <Bot size={22} color="white" />
               </div>
               <div className="bot-info">
-                <h3>Mang Tomas</h3>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <h3>Mang Tomas</h3>
+                  <span style={{ fontSize: "0.68rem", background: "rgba(255,255,255,0.2)", padding: "1px 6px", borderRadius: "999px", fontWeight: "800", letterSpacing: "0.04em" }}>
+                    AI OFFICER
+                  </span>
+                </div>
                 <span className="bot-status">
-                  <span className="status-dot"></span> Online
+                  <span className="status-dot"></span> Online • Sto. Tomas OBO
                 </span>
               </div>
             </div>
-            <button className="close-btn" onClick={() => setIsOpen(false)}>
+            <button className="close-btn" onClick={() => setIsOpen(false)} aria-label="Close chat">
               <X size={20} />
             </button>
           </div>
@@ -128,26 +192,70 @@ export default function MangTomasBot() {
                   </div>
                 )}
                 <div className={`message-bubble ${msg.role === "user" ? "user-bubble" : "bot-bubble"}`}>
-                  <p dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-                  <span className="msg-time">
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                  <p dangerouslySetInnerHTML={{ __html: renderFormattedText(msg.text) }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+                    {msg.source && msg.source !== "local_knowledge" && (
+                      <span style={{ fontSize: "0.6rem", opacity: 0.6, fontStyle: "italic" }}>
+                        Powered by AI
+                      </span>
+                    )}
+                    <span className="msg-time" style={{ marginLeft: "auto" }}>
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
+
+            {/* Thinking / Loading Indicator */}
+            {isThinking && (
+              <div className="message-bubble-wrapper bot-wrapper">
+                <div className="bubble-avatar bot-bubble-avatar">
+                  <Bot size={16} />
+                </div>
+                <div className="message-bubble bot-bubble" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "12px 18px" }}>
+                  <span style={{ fontSize: "0.85rem", color: "#64748b" }}>Mang Tomas is thinking</span>
+                  <span className="typing-dot dot1"></span>
+                  <span className="typing-dot dot2"></span>
+                  <span className="typing-dot dot3"></span>
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Quick Prompts Suggestions */}
+          {messages.length <= 3 && !isThinking && (
+            <div className="quick-prompts-container">
+              <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "4px" }}>
+                <Sparkles size={11} color="#2563eb" /> Suggested Inquiries:
+              </span>
+              <div className="quick-prompts-scroll">
+                {QUICK_PROMPTS.map((prompt, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleQuickPrompt(prompt)}
+                    className="quick-prompt-btn"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Input Area */}
           <form className="chat-input-area" onSubmit={handleSend}>
             <input
               type="text"
-              placeholder="Type your question here..."
+              placeholder="Ask Mang Tomas (English, Tagalog, Taglish)..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               className="chat-input"
+              disabled={isThinking}
             />
-            <button type="submit" className="chat-send-btn" disabled={!inputText.trim()}>
+            <button type="submit" className="chat-send-btn" disabled={!inputText.trim() || isThinking}>
               <Send size={18} />
             </button>
           </form>
@@ -162,9 +270,9 @@ export default function MangTomasBot() {
           width: 60px;
           height: 60px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+          background: linear-gradient(135deg, #1d4ed8, #2563eb);
           border: none;
-          box-shadow: 0 4px 15px rgba(29, 78, 216, 0.4);
+          box-shadow: 0 6px 20px rgba(29, 78, 216, 0.45);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -173,23 +281,24 @@ export default function MangTomasBot() {
           transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
         }
         .mang-tomas-fab:hover {
-          transform: scale(1.1);
-          box-shadow: 0 6px 20px rgba(29, 78, 216, 0.6);
+          transform: scale(1.08);
+          box-shadow: 0 8px 25px rgba(29, 78, 216, 0.6);
         }
         .fab-tooltip {
           position: absolute;
           right: 75px;
-          background: #1e293b;
+          background: #0f172a;
           color: white;
           padding: 6px 12px;
-          border-radius: 6px;
-          font-size: 0.85rem;
-          font-weight: 600;
+          border-radius: 8px;
+          font-size: 0.82rem;
+          font-weight: 700;
           white-space: nowrap;
           opacity: 0;
           pointer-events: none;
           transition: opacity 0.2s, transform 0.2s;
           transform: translateX(10px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         .mang-tomas-fab:hover .fab-tooltip {
           opacity: 1;
@@ -203,29 +312,29 @@ export default function MangTomasBot() {
           transform: translateY(-50%);
           border-width: 5px 0 5px 6px;
           border-style: solid;
-          border-color: transparent transparent transparent #1e293b;
+          border-color: transparent transparent transparent #0f172a;
         }
 
         .mang-tomas-window {
           position: fixed;
           bottom: 24px;
           right: 24px;
-          width: 350px;
-          height: 500px;
+          width: 380px;
+          height: 540px;
           max-height: calc(100vh - 48px);
           background: white;
-          border-radius: 16px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+          border-radius: 20px;
+          box-shadow: 0 12px 45px rgba(15, 23, 42, 0.25);
           display: flex;
           flex-direction: column;
           z-index: 10000;
           overflow: hidden;
-          border: 1px solid #e2e8f0;
+          border: 1px solid #cbd5e1;
         }
 
         .chat-header {
-          background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
-          padding: 16px;
+          background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+          padding: 16px 20px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -247,20 +356,23 @@ export default function MangTomasBot() {
           align-items: center;
           justify-content: center;
           backdrop-filter: blur(4px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
         }
         
         .bot-info h3 {
           margin: 0;
-          font-size: 1.1rem;
-          font-weight: 700;
+          font-size: 1.05rem;
+          font-weight: 800;
+          letter-spacing: -0.01em;
         }
         
         .bot-status {
-          font-size: 0.75rem;
+          font-size: 0.72rem;
           display: flex;
           align-items: center;
           gap: 6px;
           opacity: 0.9;
+          margin-top: 2px;
         }
         
         .status-dot {
@@ -268,7 +380,7 @@ export default function MangTomasBot() {
           height: 8px;
           background: #4ade80;
           border-radius: 50%;
-          box-shadow: 0 0 5px #4ade80;
+          box-shadow: 0 0 6px #4ade80;
         }
 
         .close-btn {
@@ -276,7 +388,7 @@ export default function MangTomasBot() {
           border: none;
           color: white;
           cursor: pointer;
-          opacity: 0.7;
+          opacity: 0.8;
           transition: opacity 0.2s, transform 0.2s;
           display: flex;
           align-items: center;
@@ -295,14 +407,14 @@ export default function MangTomasBot() {
           background: #f8fafc;
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 14px;
         }
 
         .message-bubble-wrapper {
           display: flex;
           align-items: flex-end;
           gap: 8px;
-          max-width: 85%;
+          max-width: 88%;
         }
         .user-wrapper {
           align-self: flex-end;
@@ -330,9 +442,9 @@ export default function MangTomasBot() {
           padding: 12px 16px;
           border-radius: 18px;
           position: relative;
-          font-size: 0.95rem;
-          line-height: 1.4;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+          font-size: 0.92rem;
+          line-height: 1.45;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         
         .message-bubble p {
@@ -345,12 +457,12 @@ export default function MangTomasBot() {
 
         .bot-bubble {
           background: white;
-          color: #334155;
+          color: #1e293b;
           border-bottom-left-radius: 4px;
           border: 1px solid #e2e8f0;
         }
         .user-bubble {
-          background: #1d4ed8;
+          background: #2563eb;
           color: white;
           border-bottom-right-radius: 4px;
         }
@@ -358,40 +470,71 @@ export default function MangTomasBot() {
         .msg-time {
           display: block;
           font-size: 0.65rem;
-          margin-top: 6px;
-          opacity: 0.7;
-          text-align: right;
+          opacity: 0.6;
+        }
+
+        .quick-prompts-container {
+          padding: 8px 16px;
+          background: #f1f5f9;
+          border-top: 1px solid #e2e8f0;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .quick-prompts-scroll {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          padding-bottom: 4px;
+          scrollbar-width: thin;
+        }
+        .quick-prompt-btn {
+          background: white;
+          border: 1px solid #cbd5e1;
+          color: #1d4ed8;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          white-space: nowrap;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          flex-shrink: 0;
+        }
+        .quick-prompt-btn:hover {
+          background: #eff6ff;
+          border-color: #93c5fd;
         }
 
         .chat-input-area {
-          padding: 16px;
+          padding: 12px 16px;
           background: white;
           border-top: 1px solid #e2e8f0;
           display: flex;
-          gap: 12px;
+          gap: 10px;
           align-items: center;
         }
 
         .chat-input {
           flex: 1;
-          padding: 12px 16px;
+          padding: 10px 16px;
           background: #f1f5f9;
-          border: 1px solid transparent;
+          border: 1.5px solid transparent;
           border-radius: 99px;
-          font-size: 0.95rem;
+          font-size: 0.9rem;
           outline: none;
           transition: border-color 0.2s, background 0.2s;
         }
         .chat-input:focus {
           background: white;
-          border-color: #3b82f6;
+          border-color: #2563eb;
         }
 
         .chat-send-btn {
-          width: 44px;
-          height: 44px;
+          width: 40px;
+          height: 40px;
           border-radius: 50%;
-          background: #1d4ed8;
+          background: #2563eb;
           color: white;
           border: none;
           display: flex;
@@ -399,16 +542,32 @@ export default function MangTomasBot() {
           justify-content: center;
           cursor: pointer;
           flex-shrink: 0;
-          transition: transform 0.2s, background 0.2s;
+          transition: transform 0.15s, background 0.15s;
         }
         .chat-send-btn:hover:not(:disabled) {
-          background: #1e3a8a;
+          background: #1d4ed8;
           transform: scale(1.05);
         }
         .chat-send-btn:disabled {
-          background: #94a3b8;
+          background: #cbd5e1;
           cursor: not-allowed;
-          opacity: 0.7;
+        }
+
+        .typing-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #3b82f6;
+          display: inline-block;
+          animation: typingBlink 1.4s infinite both;
+        }
+        .dot1 { animation-delay: 0s; }
+        .dot2 { animation-delay: 0.2s; }
+        .dot3 { animation-delay: 0.4s; }
+
+        @keyframes typingBlink {
+          0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+          40% { opacity: 1; transform: scale(1.2); }
         }
 
         @media (max-width: 640px) {
