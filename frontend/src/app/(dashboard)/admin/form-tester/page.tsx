@@ -227,6 +227,32 @@ export default function FormTestingStudio() {
   const [genTimeMs, setGenTimeMs] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"general" | "specs" | "professionals">("general");
 
+  const blobUrlRef = React.useRef<string | null>(null);
+
+  const createPdfBlobUrl = (dataUrlOrBase64: string): string => {
+    if (!dataUrlOrBase64) return "";
+    if (dataUrlOrBase64.startsWith("blob:")) return dataUrlOrBase64;
+
+    try {
+      let base64 = dataUrlOrBase64;
+      if (base64.includes(",")) {
+        base64 = base64.split(",")[1];
+      }
+
+      const byteCharacters = atob(base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: "application/pdf" });
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      console.error("Error converting PDF to blob:", e);
+      return dataUrlOrBase64;
+    }
+  };
+
   const selectedForm = FORMS.find(f => f.id === selectedFormId) || FORMS[0];
 
   const handleFieldChange = (field: keyof UnifiedPermitFormData, value: any) => {
@@ -306,7 +332,18 @@ export default function FormTestingStudio() {
         generatedUrl = await generateLocationalClearancePdf(lcData);
       }
 
-      setPdfUrl(generatedUrl);
+      // Convert large base64 data URI to a blob URL to prevent URI TOO LONG error in iframes
+      const blobUrl = createPdfBlobUrl(generatedUrl);
+
+      // Clean up previous blob URL to prevent memory leaks
+      if (blobUrlRef.current && blobUrlRef.current.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(blobUrlRef.current);
+        } catch (e) {}
+      }
+      blobUrlRef.current = blobUrl;
+
+      setPdfUrl(blobUrl);
       setGenTimeMs(Math.round(performance.now() - startTime));
     } catch (err: any) {
       console.error("Failed to generate test PDF:", err);
@@ -320,6 +357,17 @@ export default function FormTestingStudio() {
   useEffect(() => {
     handleGeneratePdf();
   }, [selectedFormId]);
+
+  // Clean up blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (blobUrlRef.current && blobUrlRef.current.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(blobUrlRef.current);
+        } catch (e) {}
+      }
+    };
+  }, []);
 
   return (
     <div style={{ maxWidth: "1560px", margin: "0 auto", padding: "1.5rem 1rem 3rem" }}>
