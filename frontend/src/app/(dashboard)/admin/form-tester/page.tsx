@@ -288,6 +288,7 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
 export default function FormTestingStudio() {
   const [selectedFormId, setSelectedFormId] = useState<string>("BP");
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
+  const [autoSync, setAutoSync] = useState<boolean>(true);
   const [formData, setFormData] = useState<UnifiedPermitFormData>(CALIBRATED_TEST_DATA);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -295,6 +296,7 @@ export default function FormTestingStudio() {
   const [activeTab, setActiveTab] = useState<"general" | "specs" | "professionals">("general");
 
   const blobUrlRef = React.useRef<string | null>(null);
+  const generationSeq = React.useRef<number>(0);
 
   const createPdfBlobUrl = (dataUrlOrBase64: string): string => {
     if (!dataUrlOrBase64) return "";
@@ -353,6 +355,7 @@ export default function FormTestingStudio() {
   };
 
   const handleGeneratePdf = async () => {
+    const seq = ++generationSeq.current;
     setIsGenerating(true);
     const startTime = performance.now();
     try {
@@ -415,31 +418,44 @@ export default function FormTestingStudio() {
         generatedUrl = await generateLocationalClearancePdf(lcData);
       }
 
-      // Convert large base64 data URI to a blob URL to prevent URI TOO LONG error in iframes
-      const blobUrl = createPdfBlobUrl(generatedUrl);
+      // Only apply result if this is still the latest generation call
+      if (seq === generationSeq.current) {
+        // Convert large base64 data URI to a blob URL to prevent URI TOO LONG error in iframes
+        const blobUrl = createPdfBlobUrl(generatedUrl);
 
-      // Clean up previous blob URL to prevent memory leaks
-      if (blobUrlRef.current && blobUrlRef.current.startsWith("blob:")) {
-        try {
-          URL.revokeObjectURL(blobUrlRef.current);
-        } catch (e) {}
+        // Clean up previous blob URL to prevent memory leaks
+        if (blobUrlRef.current && blobUrlRef.current.startsWith("blob:")) {
+          try {
+            URL.revokeObjectURL(blobUrlRef.current);
+          } catch (e) {}
+        }
+        blobUrlRef.current = blobUrl;
+
+        setPdfUrl(blobUrl);
+        setGenTimeMs(Math.round(performance.now() - startTime));
       }
-      blobUrlRef.current = blobUrl;
-
-      setPdfUrl(blobUrl);
-      setGenTimeMs(Math.round(performance.now() - startTime));
     } catch (err: any) {
-      console.error("Failed to generate test PDF:", err);
-      alert("Error generating PDF: " + (err.message || String(err)));
+      if (seq === generationSeq.current) {
+        console.error("Failed to generate test PDF:", err);
+        alert("Error generating PDF: " + (err.message || String(err)));
+      }
     } finally {
-      setIsGenerating(false);
+      if (seq === generationSeq.current) {
+        setIsGenerating(false);
+      }
     }
   };
 
-  // Automatically generate when switching forms for instant visual feedback
+  // Real-time automatic PDF update on keystrokes/data change with intelligent 350ms debounce
   useEffect(() => {
-    handleGeneratePdf();
-  }, [selectedFormId]);
+    if (!autoSync) return;
+
+    const timer = setTimeout(() => {
+      handleGeneratePdf();
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [formData, selectedFormId, autoSync]);
 
   // Clean up blob URL on unmount
   useEffect(() => {
@@ -518,7 +534,35 @@ export default function FormTestingStudio() {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+          <button
+            type="button"
+            onClick={() => setAutoSync(prev => !prev)}
+            style={{
+              background: autoSync ? "rgba(16, 185, 129, 0.18)" : "rgba(255, 255, 255, 0.08)",
+              color: autoSync ? "#34d399" : "#cbd5e1",
+              border: autoSync ? "1px solid rgba(16, 185, 129, 0.4)" : "1px solid rgba(255, 255, 255, 0.15)",
+              padding: "9px 14px",
+              borderRadius: "12px",
+              fontWeight: "700",
+              fontSize: "0.85rem",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px"
+            }}
+            title="Toggle automatic real-time PDF update as you type"
+          >
+            <span style={{
+              display: "inline-block",
+              width: "8px",
+              height: "8px",
+              borderRadius: "999px",
+              background: autoSync ? "#34d399" : "#94a3b8",
+              boxShadow: autoSync ? "0 0 8px #34d399" : "none"
+            }} />
+            <span>Real-Time Sync: {autoSync ? "ON" : "OFF"}</span>
+          </button>
           <button
             type="button"
             onClick={handleLoadSample}
@@ -579,7 +623,7 @@ export default function FormTestingStudio() {
             }}
           >
             {isGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Play size={16} fill="white" />}
-            <span>{isGenerating ? "Generating..." : "Generate & Inspect PDF"}</span>
+            <span>{isGenerating ? "Syncing..." : "Generate & Inspect PDF"}</span>
           </button>
         </div>
       </div>
@@ -1531,17 +1575,43 @@ export default function FormTestingStudio() {
 
           {/* PDF Frame */}
           <div style={{ flex: 1, background: "#334155", position: "relative" }}>
-            {isGenerating ? (
+            {isGenerating && !pdfUrl ? (
               <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "white", gap: "1rem" }}>
                 <RefreshCw size={36} className="animate-spin" color="#38bdf8" />
                 <span style={{ fontWeight: "700", fontSize: "0.95rem" }}>Calibrating & Compiling Form Overlay...</span>
               </div>
             ) : pdfUrl ? (
-              <iframe
-                src={pdfUrl}
-                title="Generated Test PDF"
-                style={{ width: "100%", height: "100%", border: "none" }}
-              />
+              <>
+                <iframe
+                  src={pdfUrl}
+                  title="Generated Test PDF"
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                />
+                {isGenerating && (
+                  <div style={{
+                    position: "absolute",
+                    top: "14px",
+                    right: "14px",
+                    background: "rgba(15, 23, 42, 0.9)",
+                    backdropFilter: "blur(8px)",
+                    color: "white",
+                    padding: "7px 12px",
+                    borderRadius: "10px",
+                    boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "0.78rem",
+                    fontWeight: "700",
+                    border: "1px solid rgba(56, 189, 248, 0.4)",
+                    zIndex: 10,
+                    pointerEvents: "none"
+                  }}>
+                    <RefreshCw size={13} className="animate-spin" color="#38bdf8" />
+                    <span style={{ color: "#38bdf8" }}>Real-time syncing edits...</span>
+                  </div>
+                )}
+              </>
             ) : (
               <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#94a3b8", gap: "1rem" }}>
                 <FileText size={48} />
