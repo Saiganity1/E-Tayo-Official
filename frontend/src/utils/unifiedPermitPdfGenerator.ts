@@ -299,44 +299,51 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
 
   // Header
   drawText(data.applicationNo || "APP-2026-6636", 115, 788, 9, true);
-  if (data.locationalClearanceRef) drawCheck(222, 801);
-  drawCheck(342, 801); // Fire safety clearance also applied
+  if (data.locationalClearanceRef) drawCheck(226.5, 801);
+  drawCheck(346.5, 801); // Fire safety clearance also applied
 
   // Box 1: Owner
   const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
   drawText(lastName, 118, 735.0, 8.5, true, 18);
-  drawText(firstName, 238, 735.0, 8.5, true, 18);
+  drawText(firstName, 238, 735.0, 8.5, true, 20);
   drawText(mi, 358, 735.0, 8, true);
   drawText(data.applicantTIN || "000-123-456-000", 405, 735.0, 8, false);
   drawText(data.formOfOwnership || "INDIVIDUAL", 195, 714.0, 8, false, 25);
 
-  // Address
-  drawText(data.projectAddress || data.applicantAddress || "Lawasn St., Blue Diamond", 42, 694.5, 7.5, false, 24);
-  drawText(data.barangay || "Sapa (Santo Nino)", 175, 694.5, 7.5, false, 14);
-  drawText("Sto. Tomas, Pampanga", 245, 694.5, 7.5, false, 18);
+  // Address: Prefer applicant's address, fallback to project address
+  drawText(data.applicantAddress || data.projectAddress || "123 Rizal St., Poblacion", 42, 694.5, 7.0, false, 32);
+  drawText(data.barangay || "Poblacion", 175, 694.5, 7.5, false, 16);
+  drawText("Sto. Tomas, Pampanga", 245, 694.5, 7.5, false, 25);
   drawText("2020", 345, 694.5, 7.5, false);
   drawText(data.applicantPhone || "0917-123-4567", 405, 694.5, 7.5, true);
 
   // Location of Construction Line 1
-  drawText(data.lotNo || "Lot 12", 168, 680.5, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 226, 680.5, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 284, 680.5, 7.5, true, 11);
+  drawText(data.lotNo || "12", 168, 680.5, 7.5, true);
+  drawText(data.blockNo || "4", 226, 680.5, 7.5, true);
+  drawText(data.tctNo || "TCT-123456", 284, 680.5, 7.5, true, 18);
   drawText(data.taxDecNo || "TD-2026-0012", 416, 680.5, 7.5, false);
 
   // Location of Construction Line 2 (Street, Barangay, City)
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 68, 667.5, 7.5, false, 20);
-  drawText(data.barangay || "Sapa (Santo Nino)", 180, 667.5, 7.5, true, 18);
-  drawText("Sto. Tomas, Pampanga", 350, 667.5, 7.5, true, 22);
+  // Clean street to avoid repeating Lot/Blk which collides with the printed label "BARANGAY"
+  const rawStreet = data.projectAddress || "Sunset Valley Subd.";
+  const cleanStreet = rawStreet.replace(/^LOT\s*[^,]+,\s*(?:BLOCK|BLK)\s*[^,]+,\s*/i, "").trim();
+  drawText(cleanStreet, 68, 667.5, 6.8, false, 18);
+  drawText(data.barangay || "Poblacion", 185, 667.5, 7.5, true, 16);
+  drawText("Sto. Tomas, Pampanga", 355, 667.5, 7.5, true, 22);
 
   // Box 3: Scope of Work
   const scopeNorm = (data.scopeOfWork || "new construction").toLowerCase();
-  if (scopeNorm.includes("erect")) drawCheck(36.5, 626.5);
+  if (scopeNorm.includes("new") || scopeNorm.includes("construct")) drawCheck(36.5, 639.5);
+  else if (scopeNorm.includes("erect")) drawCheck(36.5, 626.5);
   else if (scopeNorm.includes("add")) drawCheck(36.5, 614.0);
   else if (scopeNorm.includes("alter")) drawCheck(36.5, 601.5);
   else if (scopeNorm.includes("renov")) drawCheck(167.5, 639.5);
   else if (scopeNorm.includes("convert")) drawCheck(167.5, 626.5);
   else if (scopeNorm.includes("repair")) drawCheck(167.5, 614.0);
+  else if (scopeNorm.includes("mov")) drawCheck(167.5, 601.5);
+  else if (scopeNorm.includes("rais")) drawCheck(302.5, 639.5);
   else if (scopeNorm.includes("accessory")) drawCheck(302.5, 626.5);
+  else if (scopeNorm.includes("legal")) drawCheck(302.5, 614.0);
   else drawCheck(36.5, 639.5); // Default: New Construction
 
   // Box 4: Use / Occupancy
@@ -344,28 +351,31 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   if (cat === "Commercial") drawCheck(225, 565.0);
   else if (cat === "Industrial") drawCheck(223, 509.0);
   else if (cat === "Institutional") drawCheck(53, 459.0);
-  else drawCheck(34, 577.5); // Group A Residential
+  else {
+    drawCheck(34, 577.5); // Group A Residential
+    drawCheck(46.5, 569.5); // Single family dwelling
+  }
 
   // Box 5: Physical Specs & Cost Breakdown
   const occName = (data.projectType?.name || "Single-Detached House").toUpperCase();
-  drawText(occName, 115, 426.0, 7.5, true, 14);
+  drawText(occName, 115, 426.0, 7.5, true, 24);
 
   // Format clean project cost number (placed after pre-printed TOTAL ESTIMATED COST: P)
   const cleanCost = String(data.projectCost || "1,500,000.00").replace(/PHP/gi, "").trim();
   drawText(cleanCost, 305, 426.0, 8, true);
 
   drawText(data.numberOfUnits || "1", 120, 416.0, 7.5, false);
-  drawText(data.costBuilding ? String(data.costBuilding).replace(/PHP/gi, "").trim() : "1,200,000.00", 260, 416.0, 7.5, false);
+  drawText(data.costBuilding ? String(data.costBuilding).replace(/PHP/gi, "").trim() : "1,200,000.00", 278, 416.0, 7.5, false);
 
   drawText(data.proposedStoreys || "2", 120, 407.0, 7.5, false);
-  drawText(data.costElectrical ? String(data.costElectrical).replace(/PHP/gi, "").trim() : "150,000.00", 260, 407.0, 7.5, false);
+  drawText(data.costElectrical ? String(data.costElectrical).replace(/PHP/gi, "").trim() : "150,000.00", 278, 407.0, 7.5, false);
 
   drawText(data.floorArea || "120", 95, 397.5, 7.5, true);
-  drawText(data.costMechanical ? String(data.costMechanical).replace(/PHP/gi, "").trim() : "50,000.00", 260, 397.5, 7.5, false);
+  drawText(data.costMechanical ? String(data.costMechanical).replace(/PHP/gi, "").trim() : "50,000.00", 278, 397.5, 7.5, false);
 
   drawText(data.lotArea || "200", 75, 388.5, 7.5, true);
-  drawText(data.costElectronics ? String(data.costElectronics).replace(/PHP/gi, "").trim() : "50,000.00", 260, 388.5, 7.5, false);
-  drawText(data.costPlumbing ? String(data.costPlumbing).replace(/PHP/gi, "").trim() : "50,000.00", 260, 379.0, 7.5, false);
+  drawText(data.costElectronics ? String(data.costElectronics).replace(/PHP/gi, "").trim() : "50,000.00", 278, 388.5, 7.5, false);
+  drawText(data.costPlumbing ? String(data.costPlumbing).replace(/PHP/gi, "").trim() : "50,000.00", 278, 379.0, 7.5, false);
   if (data.costOthers) drawText(String(data.costOthers).replace(/PHP/gi, "").trim(), 380, 379.0, 7.5, false);
 
   const constDate = data.proposedStartDate || data.submissionDate || "Sep 17, 2026";
@@ -374,20 +384,28 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
 
   // Box 2: Full-Time Inspector / Supervisor
   const leadEngr = data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE";
-  drawText(leadEngr.toUpperCase(), 115, 300.0, 8.5, true);
-  drawText("Sto. Tomas, Pampanga", 345, 338.0, 7.5, false);
-  drawText(data.civilEngineerPRC || data.architectPRC || "PRC-0078923", 345, 303.5, 7.5, false);
-  drawText(data.civilEngineerPRCValidity || data.architectPRCValidity || "2028-12-31", 445, 303.5, 7.5, false);
-  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 345, 291.5, 7.5, false);
-  drawText(data.civilEngineerPTRIssued || "Jan 05, 2026", 445, 291.5, 7.5, false);
-  drawText("Sto. Tomas", 345, 279.5, 7.5, false);
-  drawText(data.civilEngineerTIN || "123-456-789-000", 445, 279.5, 7.5, false);
+  // Position above the pre-printed "ARCHITECT OR CIVIL ENGINEER" line to prevent collision
+  drawText(leadEngr.toUpperCase(), 110, 314.0, 8.5, true, 32);
+  drawText("Sto. Tomas, Pampanga", 365, 338.0, 7.5, false);
+  drawText(data.civilEngineerPRC || data.architectPRC || "0078923", 355, 303.5, 7.5, false);
+  // Shift right to sit cleanly on underline after "Validity" label
+  drawText(data.civilEngineerPRCValidity || data.architectPRCValidity || "2028-12-31", 492, 303.5, 7.5, false);
+  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 355, 291.5, 7.5, false);
+  // Extract date only (strip municipality prefix if present) and place after "Date Issued" label
+  const rawPtrDate = data.civilEngineerPTRIssued || "Jan 05, 2026";
+  const ptrDate = rawPtrDate.includes("/") ? rawPtrDate.split("/")[1].trim() : rawPtrDate;
+  drawText(ptrDate, 510, 291.5, 7.5, false);
+  drawText("Sto. Tomas", 360, 279.5, 7.5, false);
+  // Shift right after "TIN" label
+  drawText(data.civilEngineerTIN || "123-456-789-000", 475, 279.5, 7.5, false);
 
   // Box 3: Owner Signature
   drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 100, 232.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 235, 228.0, 7.5, false);
-  drawText(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 65, 208.0, 7.5, false);
-  drawText(data.govIdNo || "CTC-2026-00192", 80, 194.0, 7.5, false);
+  // Shift right after "Date" label
+  drawText(data.submissionDate || "Sep 17, 2026", 255, 228.0, 7.5, false);
+  drawText(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 72, 208.0, 7.5, false, 35);
+  // Shift right after "Gov't Issued ID No." label
+  drawText(data.govIdNo || "CTC-2026-00192", 105, 194.0, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
