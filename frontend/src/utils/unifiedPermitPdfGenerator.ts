@@ -274,6 +274,15 @@ async function fetchTemplateBytes(templatePath: string): Promise<ArrayBuffer> {
 }
 
 const darkNavy = rgb(0.05, 0.12, 0.35);
+const signatureBlue = rgb(0.04, 0.12, 0.45);
+
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 /**
  * 1. OFFICIAL UNIFIED BUILDING PERMIT (NBC FORM B-01)
@@ -283,8 +292,10 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   const doc = await PDFDocument.load(bytes);
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
+  const fontItalic = await doc.embedFont(StandardFonts.TimesRomanItalic);
 
   const p1 = doc.getPage(0);
+  const p2 = doc.getPageCount() > 1 ? doc.getPage(1) : null;
 
   const drawText = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false, maxWidth?: number) => {
     if (!text) return;
@@ -399,13 +410,50 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   // Shift right after "TIN" label
   drawText(data.civilEngineerTIN || "123-456-789-000", 475, 279.5, 7.5, false);
 
-  // Box 3: Owner Signature
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 100, 232.0, 8.5, true);
+  // Box 3: Owner Signature & Details
+  const applicantUpper = (data.applicantName || "JUAN DELA CRUZ").toUpperCase();
+  const applicantSig = toTitleCase(data.applicantName || "Juan Dela Cruz");
+
+  // Built-in Signature (Script) over printed name line
+  p1.drawText(applicantSig, { x: 78, y: 240.0, size: 13.5, font: fontItalic, color: signatureBlue });
+  p1.drawSvgPath("M 0 0 Q 30 -5 65 -1 T 115 0", { x: 78, y: 237.0, borderColor: signatureBlue, borderWidth: 0.75 });
+
+  // Printed Name of the applicant
+  drawText(applicantUpper, 80, 230.0, 8.5, true, 26);
+
   // Shift right after "Date" label
   drawText(data.submissionDate || "Sep 17, 2026", 255, 228.0, 7.5, false);
   drawText(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 72, 208.0, 7.5, false, 35);
-  // Shift right after "Gov't Issued ID No." label
-  drawText(data.govIdNo || "CTC-2026-00192", 105, 194.0, 7.5, false);
+
+  // Gov't Issued ID No. - fit inside the cell (x=33 to x=150) so it never crosses the vertical line into "Date Issued"
+  const cleanGovId = safeText(data.govIdNo || "CTC-2026-00192").trim();
+  const govIdSize = fontRegular.widthOfTextAtSize(cleanGovId, 6.5) > 56 ? 5.8 : 6.5;
+  p1.drawText(cleanGovId, { x: 88, y: 194.5, size: govIdSize, font: fontRegular, color: darkNavy });
+
+  // Box 5: Jurat Applicant Name
+  drawText(applicantUpper, 115, 131.0, 8.0, true, 26);
+  drawText(cleanGovId, 325, 131.0, 6.5, false);
+
+  // Page 2 (Consent & Acknowledgment): Applicant Built-in Signature & Printed Name
+  if (p2) {
+    const p2DrawText = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false, maxWidth?: number) => {
+      if (!text) return;
+      let clean = safeText(text).trim();
+      if (maxWidth && clean.length > maxWidth) clean = clean.slice(0, maxWidth);
+      p2.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
+    };
+
+    // Center over the printed line "SIGNATURE OVER PRINTED NAME / OWNER/APPLICANT" (line x=338.6 to x=570, center=454)
+    const nameWidth = fontBold.widthOfTextAtSize(applicantUpper, 9.0);
+    const nameX = Math.max(345, 454 - nameWidth / 2);
+    p2DrawText(applicantUpper, nameX, 60.0, 9.0, true);
+
+    // Built-in Signature above printed name
+    const sigWidth = fontItalic.widthOfTextAtSize(applicantSig, 14.0);
+    const sigX = Math.max(345, 454 - sigWidth / 2);
+    p2.drawText(applicantSig, { x: sigX, y: 72.0, size: 14.0, font: fontItalic, color: signatureBlue });
+    p2.drawSvgPath("M 0 0 Q 35 -6 70 -1 T 120 0", { x: sigX, y: 69.0, borderColor: signatureBlue, borderWidth: 0.75 });
+  }
 
   return await doc.saveAsBase64({ dataUri: false });
 }
