@@ -340,18 +340,6 @@ export default function ApplyPage() {
     }
   }, [matchedClearanceApp?.projectType, selectedProjectType?.id]);
 
-  // Guard 1: if user tries to advance to Step 3, 4, or 5 without approved locational clearance, bounce back to Step 2
-  useEffect(() => {
-    if (!mounted) return;
-    if (currentStep > 2 && isClearanceRequired && !isClearancePassed) {
-      goToStep(2);
-      if (isClearancePending) {
-        setLockedNotice(`Your Locational Clearance (${matchedClearanceApp?.id}) is awaiting Admin approval. The municipal zoning administrator must approve your clearance before you can proceed to other forms.`);
-      } else {
-        setLockedNotice(`Locational Clearance is mandatory for ${selectedProjectType.name} and must be approved by the Admin before proceeding.`);
-      }
-    }
-  }, [mounted, currentStep, isClearanceRequired, isClearancePassed, isClearancePending, matchedClearanceApp, selectedProjectType, goToStep]);
 
   // Sync selected permit type internally without triggering unnecessary re-renders
   useEffect(() => {
@@ -853,37 +841,6 @@ export default function ApplyPage() {
               <Plus size={16} color="#2563eb" />
               <span>Create New Application</span>
             </button>
-
-            <div style={{
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              borderRadius: "14px",
-              padding: "8px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
-            }}>
-              <div style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "10px",
-                background: "#eff6ff",
-                color: "#2563eb",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}>
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>System Status</div>
-                <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#16a34a", display: "flex", alignItems: "center", gap: "5px" }}>
-                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }}></span>
-                  Online Permitting Active
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </header>
@@ -1413,15 +1370,7 @@ export default function ApplyPage() {
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedProjectType(p);
-                              if (selectedClearanceRef && matchedClearanceApp?.projectType !== p.name) {
-                                setSelectedClearanceRef(null);
-                              }
-                              const pRequiresClearance = p.matrix.zoningPermit !== 'not_required';
-                              if (pRequiresClearance) {
-                                goToStep(2);
-                              } else {
-                                goToStep(3);
-                              }
+                              goToStep(3);
                             }}
                             style={{
                               background: isSelected ? "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" : "#f1f5f9",
@@ -1905,215 +1854,66 @@ export default function ApplyPage() {
                   </div>
                 </div>
               ) : (
-                /* CASE 3: CLEARANCE REQUIRED BUT NOT YET COMPLETED */
-                <div>
-                  {/* OPTION TO LINK EXISTING APPROVED CLEARANCE IF FOUND ON FILE */}
-                  {matchingApprovedClearances.length > 0 && !selectedClearanceRef && (
-                    <div className="animate-fade-in-up" style={{
-                      background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
-                      border: "1.5px solid #86efac",
-                      borderRadius: "16px",
-                      padding: "1.25rem 1.5rem",
-                      marginBottom: "1.5rem",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: "1rem",
-                      boxShadow: "0 4px 14px rgba(16, 185, 129, 0.08)"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#dcfce7", color: "#15803d", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <ShieldCheck size={24} />
-                        </div>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                            <strong style={{ color: "#166534", fontSize: "0.95rem" }}>
-                              Approved Locational Clearance Found on File
-                            </strong>
-                            <span style={{ fontSize: "0.78rem", background: "#ffffff", border: "1px solid #86efac", color: "#15803d", padding: "1px 8px", borderRadius: "999px", fontWeight: "700" }}>
-                              {matchingApprovedClearances[0].id}
-                            </span>
-                          </div>
-                          <p style={{ margin: "3px 0 0 0", color: "#15803d", fontSize: "0.85rem" }}>
-                            You have an approved clearance for <strong>{selectedProjectType?.name}</strong>. You can use it to proceed directly to technical permit forms, or file a brand new clearance below.
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedClearanceRef(matchingApprovedClearances[0].id);
-                        }}
-                        style={{
-                          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "10px",
-                          padding: "10px 18px",
-                          fontSize: "0.85rem",
-                          fontWeight: "800",
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          boxShadow: "0 4px 12px rgba(16, 185, 129, 0.25)"
-                        }}
-                      >
-                        <CheckCircle2 size={16} />
-                        <span>Use This Clearance ({matchingApprovedClearances[0].id})</span>
-                      </button>
-                    </div>
-                  )}
-
-                  <div style={{
-                    border: "1.5px solid #cbd5e1",
-                    background: "#ffffff",
-                    borderRadius: "20px",
-                    boxShadow: "0 10px 30px -10px rgba(0, 0, 0, 0.07)",
-                    overflow: "hidden"
-                  }}>
-                    {/* Card Header */}
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(239, 246, 255, 0.95) 0%, rgba(240, 253, 250, 0.9) 100%)",
+                  border: "1.5px solid #93c5fd",
+                  borderRadius: "18px",
+                  padding: "1.75rem 2rem",
+                  boxShadow: "0 4px 20px rgba(59, 130, 246, 0.06)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "1.5rem",
+                  flexWrap: "wrap"
+                }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "1.25rem", flex: 1, minWidth: "280px" }}>
                     <div style={{
-                      background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+                      width: "50px",
+                      height: "50px",
+                      borderRadius: "14px",
+                      background: "#2563eb",
                       color: "white",
-                      padding: "1.75rem 2rem",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: "1rem"
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      boxShadow: "0 6px 16px rgba(37, 99, 235, 0.25)"
                     }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                        <div style={{
-                          width: "48px",
-                          height: "48px",
-                          borderRadius: "14px",
-                          background: "rgba(79, 70, 229, 0.25)",
-                          border: "1px solid rgba(129, 140, 248, 0.4)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#a5b4fc"
-                        }}>
-                          <ShieldCheck size={26} />
-                        </div>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
-                            <span style={{
-                              background: "#4f46e5",
-                              color: "white",
-                              fontSize: "0.72rem",
-                              fontWeight: "800",
-                              padding: "2px 8px",
-                              borderRadius: "4px",
-                              letterSpacing: "0.5px"
-                            }}>
-                              MANDATORY STAGE 1 PREREQUISITE
-                            </span>
-                            <span style={{ fontSize: "0.76rem", color: "#94a3b8", fontWeight: "600" }}>
-                              Sto. Tomas MPDO & Zoning Administration
-                            </span>
-                          </div>
-                          <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: "800" }}>
-                            Application for Locational Clearance
-                          </h3>
-                        </div>
-                      </div>
-
-                      <a
-                        href="/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
-                        download
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "8px 14px",
-                          borderRadius: "8px",
-                          background: "rgba(255, 255, 255, 0.12)",
-                          border: "1px solid rgba(255, 255, 255, 0.25)",
-                          color: "white",
-                          fontSize: "0.82rem",
-                          fontWeight: "700",
-                          textDecoration: "none"
-                        }}
-                      >
-                        <Download size={14} /> Download Official Form (PDF)
-                      </a>
+                      <CheckCircle2 size={26} />
                     </div>
-
-                    {/* Card Body */}
-                    <div style={{ padding: "2rem" }}>
-                      <div style={{
-                        background: "#f8fafc",
-                        border: "1.5px solid #e2e8f0",
-                        borderRadius: "14px",
-                        padding: "1.25rem 1.5rem",
-                        marginBottom: "1.75rem",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "1rem"
-                      }}>
-                        <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#e0e7ff", color: "#4338ca", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <Building2 size={22} />
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: "800", color: "#0f172a", fontSize: "0.95rem", marginBottom: "3px" }}>
-                            Zoning Compliance for: {selectedProjectType.name} ({selectedProjectType.category})
-                          </div>
-                          <p style={{ margin: 0, fontSize: "0.86rem", color: "#475569", lineHeight: "1.5" }}>
-                            Under municipal zoning ordinances, construction permitting for <strong>{selectedProjectType.name}</strong> requires an approved Locational Clearance evaluating land use compatibility before technical engineering plans can be submitted. Complete the official 19-box Sto. Tomas municipal form online to obtain your clearance reference.
-                          </p>
-                        </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.35rem" }}>
+                        <h3 style={{ margin: 0, fontWeight: "800", color: "#1e3a8a", fontSize: "1.2rem" }}>
+                          Zoning & Permitting Verification
+                        </h3>
                       </div>
-
-                      <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "1rem",
-                        background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
-                        border: "1.5px solid #a7f3d0",
-                        borderRadius: "16px",
-                        padding: "1.5rem 1.75rem"
-                      }}>
-                        <div>
-                          <h4 style={{ margin: "0 0 0.35rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#065f46" }}>
-                            Ready to file your Locational Clearance?
-                          </h4>
-                          <p style={{ margin: 0, fontSize: "0.85rem", color: "#047857", lineHeight: "1.4" }}>
-                            Fill in applicant info, project nature, lot & building areas, land tenure, and valuation. Submitting generates your official clearance reference and automatically unlocks Step 3: Mapping.
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setShowGoogleForm(true)}
-                          style={{
-                            background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "10px",
-                            padding: "12px 24px",
-                            fontSize: "0.92rem",
-                            fontWeight: "800",
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)"
-                          }}
-                        >
-                          <FileText size={18} />
-                          <span>Fill Official Locational Clearance Online</span>
-                          <ChevronRight size={18} />
-                        </button>
-                      </div>
+                      <p style={{ margin: 0, color: "#334155", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                        Proceed to <strong>Step 3: Required Permit Forms</strong> to complete all technical building, architectural, structural, and electrical permit forms for <strong>{selectedProjectType.name}</strong>.
+                      </p>
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => goToStep(3)}
+                    style={{
+                      background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "11px 22px",
+                      fontSize: "0.92rem",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)"
+                    }}
+                  >
+                    <span>Proceed to Step 3: Required Permit Forms</span>
+                    <ChevronRight size={18} />
+                  </button>
                 </div>
               )}
             </div>
@@ -2947,65 +2747,15 @@ export default function ApplyPage() {
             
             <div className="flex-spacer"></div>
 
-            {currentStep === 1 ? (
-              isClearanceRequired && !isClearancePassed ? (
-                <button 
-                  className="btn-primary" 
-                  onClick={() => goToStep(2)}
-                  style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
-                >
-                  <span>Next: Locational Clearance</span>
-                  <ChevronRight size={18} />
-                </button>
-              ) : (
-                <button 
-                  className="btn-primary" 
-                  onClick={() => goToStep(3)}
-                  style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
-                >
-                  <span>Next: Required Permit Forms</span>
-                  <ChevronRight size={18} />
-                </button>
-              )
-            ) : currentStep === 2 ? (
-              isClearancePassed ? (
-                <button 
-                  className="btn-primary" 
-                  onClick={() => goToStep(3)}
-                  style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
-                >
-                  <span>Next: Required Permit Forms</span>
-                  <ChevronRight size={18} />
-                </button>
-              ) : isClearancePending ? (
-                <button 
-                  type="button"
-                  disabled
-                  style={{ 
-                    background: "#f1f5f9", 
-                    border: "1.5px solid #cbd5e1", 
-                    color: "#64748b", 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: "8px", 
-                    padding: "10px 22px", 
-                    borderRadius: "10px", 
-                    cursor: "not-allowed",
-                    fontWeight: 700
-                  }}
-                >
-                  <Lock size={16} />
-                  <span>Awaiting Admin Approval (Clearance Required)</span>
-                </button>
-              ) : (
-                <button 
-                  className="btn-primary" 
-                  onClick={() => setShowGoogleForm(true)} 
-                  style={{ background: "#059669", borderColor: "#047857", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
-                >
-                  <FileText size={18} /> Fill Official Locational Clearance Form <ChevronRight size={18} />
-                </button>
-              )
+            {currentStep === 1 || currentStep === 2 ? (
+              <button 
+                className="btn-primary" 
+                onClick={() => goToStep(3)}
+                style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+              >
+                <span>Next: Required Permit Forms</span>
+                <ChevronRight size={18} />
+              </button>
             ) : currentStep === 3 ? (
               <button 
                 className="btn-primary" 
