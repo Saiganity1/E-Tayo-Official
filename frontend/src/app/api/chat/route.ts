@@ -80,8 +80,9 @@ YOUR PERSONALITY & GUIDELINES:
           parts: [{ text: trimmedMessage }]
         });
 
-        const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+        // Try gemini-3.6-flash (recommended for latest Gemini API)
+        let geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -94,6 +95,18 @@ YOUR PERSONALITY & GUIDELINES:
             })
           }
         );
+
+        if (!geminiRes.ok) {
+          // Fallback to gemini-flash-latest
+          geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ contents, generationConfig: { temperature: 0.4, maxOutputTokens: 800 } })
+            }
+          );
+        }
 
         if (geminiRes.ok) {
           const data = await geminiRes.json();
