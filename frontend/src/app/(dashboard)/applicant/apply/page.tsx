@@ -1942,29 +1942,6 @@ export default function ApplyPage() {
                     {/* Card Body */}
                     <div style={{ padding: "2rem" }}>
                       <div style={{
-                        background: "#f8fafc",
-                        border: "1.5px solid #e2e8f0",
-                        borderRadius: "14px",
-                        padding: "1.25rem 1.5rem",
-                        marginBottom: "1.75rem",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "1rem"
-                      }}>
-                        <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#e0e7ff", color: "#4338ca", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <Building2 size={22} />
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: "800", color: "#0f172a", fontSize: "0.95rem", marginBottom: "3px" }}>
-                            Zoning Compliance for: {selectedProjectType.name} ({selectedProjectType.category})
-                          </div>
-                          <p style={{ margin: 0, fontSize: "0.86rem", color: "#475569", lineHeight: "1.5" }}>
-                            Under municipal zoning ordinances, construction permitting for <strong>{selectedProjectType.name}</strong> requires an approved Locational Clearance evaluating land use compatibility before technical engineering plans can be submitted. Complete the official 19-box Sto. Tomas municipal form online to obtain your clearance reference.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div style={{
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
