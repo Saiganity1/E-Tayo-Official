@@ -5,7 +5,8 @@ import Link from "next/link";
 import { 
   Building2, Layers, Zap, Droplets, Wrench, Radio, Flame, ShieldCheck, 
   FileText, Play, RotateCcw, Download, ExternalLink, Sparkles, Check, 
-  CheckCircle2, AlertCircle, Search, RefreshCw, ZoomIn, Eye, ArrowLeft
+  CheckCircle2, AlertCircle, Search, RefreshCw, ZoomIn, Eye, ArrowLeft,
+  Trash2, Grid, Tv, Plug, Award, FileCheck, ClipboardCheck, Hammer
 } from "lucide-react";
 import { 
   generateBuildingPermitPdf, 
@@ -15,6 +16,14 @@ import {
   generateSanitaryPermitPdf, 
   generateMechanicalPermitPdf, 
   generateElectronicsPermitPdf, 
+  generateDemolitionPermitPdf,
+  generateFencingPermitPdf,
+  generateExcavationPermitPdf,
+  generateSignPermitPdf,
+  generateTemporaryServicePermitPdf,
+  generateCertificateOfOccupancyPdf,
+  generateCertificateOfCompletionPdf,
+  generateCfeiPdf,
   generateBfpApplicationPdf, 
   generateUnifiedPermitPdf, 
   UnifiedPermitFormData 
@@ -35,16 +44,37 @@ interface FormOption {
 }
 
 const FORMS: FormOption[] = [
-  { id: "BP", name: "Building Permit Form (DPWH Form 77-001-B)", code: "BP", category: "Primary", icon: Building2, desc: "Box 1-8 construction permit with scope, occupancy & cost breakdowns", pages: 2 },
-  { id: "UNIFIED", name: "Unified Application Form (Building Permit)", code: "UNIFIED", category: "Primary", icon: FileText, desc: "Combined municipal checklist, applicant profile & zoning assessment", pages: 1 },
-  { id: "AP", name: "Architectural Permit Form", code: "AP", category: "Ancillary", icon: Layers, desc: "Architectural specifications, setbacks, finishes, doors & windows", pages: 2 },
-  { id: "SP", name: "Civil / Structural Permit Form", code: "SP", category: "Ancillary", icon: Building2, desc: "Foundation depth, concrete strength, structural framing & steel grades", pages: 2 },
-  { id: "EP", name: "Electrical Permit Form", code: "EP", category: "Ancillary", icon: Zap, desc: "Connected load, service voltage, main breakers, wiring & fixture schedule", pages: 2 },
-  { id: "PL", name: "Sanitary / Plumbing Permit Form", code: "PL", category: "Ancillary", icon: Droplets, desc: "Water supply, sanitary fixtures count, septic tank & piping specs", pages: 2 },
-  { id: "MP", name: "Mechanical Permit Form", code: "MP", category: "Ancillary", icon: Wrench, desc: "Machinery, escalators, ACUs, ventilation & refrigeration specs", pages: 2 },
-  { id: "EL", name: "Electronics Permit Form", code: "EL", category: "Ancillary", icon: Radio, desc: "Structured cabling, CCTV security, fire alarm systems & telecom", pages: 2 },
+  // Primary (1)
+  { id: "BP", name: "Unified Application Form for Building Permit (NBC Form 1)", code: "BP", category: "Primary", icon: Building2, desc: "DPWH Form 77-001-B master building permit with scope, occupancy & cost breakdowns", pages: 2 },
+  { id: "UNIFIED", name: "Compiled Unified Permit Master Dossier", code: "UNIFIED", category: "Primary", icon: FileText, desc: "Full unified dossier combining building permit cover & all active ancillary permits", pages: 12 },
+
+  // Zoning & Land Use (1)
+  { id: "LC", name: "Application for Locational Clearance / Zoning", code: "LC", category: "Zoning & Land Use", icon: ShieldCheck, desc: "Official Sto. Tomas zoning classification, land use tenure & site description", pages: 1 },
+
+  // Ancillary Permits (6)
+  { id: "AP", name: "Architectural Permit Form (NBC Form A-01)", code: "AP", category: "Ancillary", icon: Layers, desc: "Architectural specifications, setbacks, finishes, doors & windows", pages: 2 },
+  { id: "SP", name: "Civil / Structural Permit Form (NBC Form S-01)", code: "SP", category: "Ancillary", icon: Building2, desc: "Foundation depth, concrete strength, structural framing & steel grades", pages: 2 },
+  { id: "EP", name: "Electrical Permit Form (NBC Form E-01)", code: "EP", category: "Ancillary", icon: Zap, desc: "Connected load, service voltage, main breakers, wiring & fixture schedule", pages: 2 },
+  { id: "PL", name: "Sanitary / Plumbing Permit Form (NBC Form P-01)", code: "PL", category: "Ancillary", icon: Droplets, desc: "Water supply, sanitary fixtures count, septic tank & piping specs", pages: 2 },
+  { id: "MP", name: "Mechanical Permit Form (NBC Form M-01)", code: "MP", category: "Ancillary", icon: Wrench, desc: "Machinery, escalators, ACUs, ventilation & refrigeration specs", pages: 2 },
+  { id: "EL", name: "Electronics Permit Form (NBC Form EL-01)", code: "EL", category: "Ancillary", icon: Radio, desc: "Structured cabling, CCTV security, fire alarm systems & telecom", pages: 2 },
+
+  // Special Permits (4)
+  { id: "DP", name: "Demolition Permit Form (NBC Form B-08)", code: "DP", category: "Special", icon: Trash2, desc: "Demolition of structures, floor area, storeys & safety measures", pages: 2 },
+  { id: "FP", name: "Fencing Permit Form (NBC Form B-03)", code: "FP", category: "Special", icon: Grid, desc: "Perimeter fencing, masonry walls, height & length dimensions", pages: 2 },
+  { id: "EXP", name: "Excavation and Ground Preparation Permit (NBC Form B-02)", code: "EXP", category: "Special", icon: Layers, desc: "Foundation excavation, ground levelling, depth & volume specs", pages: 2 },
+  { id: "SGP", name: "Sign Permit Form (NBC Form B-07)", code: "SGP", category: "Special", icon: Tv, desc: "Business & advertising signboards, display dimensions & illumination", pages: 2 },
+
+  // Utilities & Services (1)
+  { id: "TSC", name: "Permit for Temporary Service Connection (NBC Form E-03)", code: "TSC", category: "Utilities & Services", icon: Plug, desc: "Temporary power connection for construction & equipment testing", pages: 2 },
+
+  // Completion & Occupancy (3)
+  { id: "CO", name: "Certificate of Occupancy Unified Form", code: "CO", category: "Completion & Occupancy", icon: Award, desc: "Unified application for Certificate of Occupancy with final project inspection", pages: 1 },
+  { id: "CC", name: "Certificate of Completion Form", code: "CC", category: "Completion & Occupancy", icon: FileCheck, desc: "Official Certificate of Completion signed by supervising engineers", pages: 3 },
+  { id: "CFEI", name: "Certificate of Final Electrical Inspection (CFEI)", code: "CFEI", category: "Completion & Occupancy", icon: ClipboardCheck, desc: "NBC Form 96006-E final electrical inspection certificate & energization clearance", pages: 2 },
+
+  // Fire Safety (1)
   { id: "BFP", name: "BFP Fire Safety Evaluation Form (FSEC)", code: "BFP", category: "Fire Safety", icon: Flame, desc: "Fire exits, egress clearance, firewalls & extinguisher schedules", pages: 1 },
-  { id: "LC", name: "Locational Clearance / Zoning Form", code: "LC", category: "Zoning", icon: ShieldCheck, desc: "Zoning classification, land use tenure & site description", pages: 1 },
 ];
 
 const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
@@ -130,73 +160,109 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   masonrySpec: "150mm Non-Load Bearing Concrete Hollow Blocks (CHB)",
 
   // Electrical
-  electricalConnectedLoad: "15.50 kVA Connected Load",
-  electricalVoltage: "230V Single Phase 60Hz 2-Wire Service",
-  electricalFeeder: "2 - 14mm² THHN Cu. Wire in 25mm PVC Conduit",
-  mainBreaker: "60A 2P 240V Molded Case Circuit Breaker (MCCB)",
-  branchCircuitsCount: "8 Branch Circuits",
-  lightingOutletsCount: "28 Outlets",
-  convenienceOutletsCount: "32 Duplex Outlets",
-  acuOutletsCount: "4 Dedicated Outlets",
-  waterHeaterOutletsCount: "2 Dedicated Outlets",
-  groundingSpec: "16mm Solid Copper Ground Rod with 8mm² Bare Cu. Wire",
+  electricalConnectedLoad: "15.0 kVA Connected Load",
+  electricalVoltage: "230V, Single Phase, 2-Wire, 60Hz",
+  electricalFeeder: "2 - 38 sq.mm THHN Copper Wire in 40mm dia. PVC Conduit",
+  mainBreaker: "100A 2-Pole Molded Case Circuit Breaker (MCCB)",
+  branchCircuitsCount: "12 Branch Circuits",
+  lightingOutletsCount: "28",
+  convenienceOutletsCount: "24",
+  acuOutletsCount: "4",
+  waterHeaterOutletsCount: "2",
+  groundingSpec: "16mm dia. x 3.0m Copper Clad Ground Rod with #8 AWG Bare Copper Wire",
 
   // Plumbing
-  waterSupplySource: "Local Sto. Tomas Water District Pipeline",
-  sewageSystem: "Individual 3-Chamber Reinforced Concrete Septic Tank",
-  septicTankDimensions: "3.20m Length x 1.60m Width x 1.80m Depth",
-  waterPipesMaterial: "PPR-C (Polypropylene Random Copolymer) PN20 Pipes",
-  wastePipesMaterial: "Series 1000 uPVC Sanitary Sewer Pipes and Fittings",
-  waterClosetsCount: "3 Sets",
-  lavatoriesCount: "3 Sets",
-  kitchenSinksCount: "2 Sets",
-  showersCount: "3 Sets",
-  floorDrainsCount: "4 Sets",
-  faucetsCount: "6 Sets",
+  waterSupplySource: "Sto. Tomas Water District (Municipal Supply)",
+  sewageSystem: "Individual 3-Chamber Septic Tank with Leaching Field",
+  septicTankDimensions: "3.20m Length x 1.60m Width x 1.80m Depth (Capacity: 9.2 cu.m.)",
+  waterPipesMaterial: "PPR-C (Polypropylene Random Copolymer) PN-20 Pipes",
+  wastePipesMaterial: "uPVC Series 1000 Heavy Duty Sanitary Pipes",
+  waterClosetsCount: "4",
+  lavatoriesCount: "4",
+  kitchenSinksCount: "2",
+  showersCount: "3",
+  floorDrainsCount: "5",
+  faucetsCount: "6",
 
   // Mechanical
-  machineryType: "Inverter Split-Type Air Conditioning System",
-  machineryBrand: "Daikin / Carrier High-Efficiency Inverter",
-  machineryCapacity: "4 Units Totaling 6.5 Horsepower Capacity",
-  machineryPower: "4.85 kW Power Consumption",
+  machineryType: "Inverter Split-Type Air Conditioning System (4 Units)",
+  machineryBrand: "Daikin / Carrier High Efficiency Inverter",
+  machineryCapacity: "7.5 Total Horsepower (HP) / 24,000 BTU/hr",
+  machineryPower: "5.5 kW Total Connected Mechanical Power",
   machinerySpeed: "Variable Speed Inverter Compressor",
-  machineryStoreys: "Served: Ground & Second Floor",
-  electricalLoadKva: "6.5 kVA Mechanical Service Load",
-  serviceVoltage: "230V 1-Phase 60Hz",
+  machineryStoreys: "Ground & Second Floors",
+  electricalLoadKva: "6.8 kVA",
+  serviceVoltage: "230V, 1-Phase, 60Hz",
 
   // Electronics
-  telecomScope: "Cat6 Structured Cabling Gigabit Ethernet LAN Distribution",
-  cctvScope: "8-Channel 4K PoE IP Security Camera Surveillance Network",
-  fdasScope: "Addressable Fire Detection and Smoke Alarm Annunciator System",
+  telecomScope: "FTTH High-Speed Fiber Optic Data Infrastructure with Wi-Fi 6 Access Points",
+  cctvScope: "8-Channel 4K IP CCTV Surveillance System with NVR and Mobile Remote Viewing",
+  fdasScope: "Addressable Fire Detection & Alarm System (Smoke & Heat Detectors with Strobe Alarm)",
 
   // Fire / BFP
-  numberOfExits: "2 Fire Exit Doors (Front & Rear Main Entrances)",
-  fireEgressDetails: "1.20m Minimum Clear Width Hallways and Stairways",
-  fireExtinguisherSpecs: "3 Units of 10 lbs Multi-Purpose ABC Dry Chemical",
-  emergencyLightsCount: "4 Twin-head LED Automatic Battery Backup Units",
-  smokeDetectorsCount: "6 Hardwired Photoelectric Smoke Detectors",
-  firewallSpecs: "200mm Reinforced CHB Firewall with 2-Hour Fire Resistance",
+  numberOfExits: "2 Independent Egress Exits with Minimum 0.90m Clear Width",
+  fireEgressDetails: "Direct Exterior Access via Main Front Door & Rear Service Door",
+  fireExtinguisherSpecs: "2 Units 10-lb ABC Dry Chemical Multi-Purpose Fire Extinguishers (UL-Listed)",
+  emergencyLightsCount: "4 Dual-Head LED Emergency Light Units with 90-Minute Battery Backup",
+  smokeDetectorsCount: "6 Photoelectric Standalone/Interconnected Smoke Alarm Detectors",
+  firewallSpecs: "150mm CHB Two-Hour Fire-Rated Concrete Firewall with 1.0m Parapet Extension",
 
-  // Licensed Professionals
-  architectName: "ARCH. GILBERT M. CRUZ, UAP",
-  architectPRC: "0054321",
-  architectPRCValidity: "2027-11-20",
-  architectIAPOA: "UAP-102938",
-  architectPTR: "PTR-ST-998877",
+  // Demolition Permit
+  demolitionBuildingType: "Single-Detached Two-Storey Residential Structure",
+  demolitionArea: "180.00",
+  demolitionStoreys: "2",
+  demolitionScope: "Demolition of Old Dilapidated Structure Prior to New Construction",
+
+  // Fencing Permit
+  fencingType: "Reinforced Concrete / CHB with Decorative Steel Grills",
+  fencingLength: "45.00",
+  fencingHeight: "2.20",
+  fencingCost: "150,000.00",
+
+  // Excavation Permit
+  excavationVolume: "120.00",
+  excavationDepth: "2.50",
+  excavationScope: "Foundation Excavation, Site Grading & Ground Levelling",
+
+  // Sign Permit
+  signType: "Business Sign, Wall Type (Illuminated LED)",
+  signDimensions: "3.00m Width x 1.50m Height (Area: 4.50 sq.m.)",
+  signMaterial: "Acrylic Face with LED Backlight on Steel Framing",
+  signCost: "45,000.00",
+
+  // Temporary Service Connection
+  temporaryServicePurpose: "FOR CONSTRUCTION POWER & EQUIPMENT TESTING",
+  temporaryServiceKva: "15.0",
+  temporaryServiceVoltage: "230V, Single Phase, 60Hz",
+  temporaryServiceDuration: "90",
+
+  // Occupancy & Completion
+  actualCompletionDate: "2027-04-30",
+  actualProjectCost: "2,500,000.00",
+  actualFloorArea: "185.50",
+  constructionSupervisorName: "Engr. Roberto Cruz, CE",
+  cfeiInspectorName: "Engr. GILBERT B. CRUZ, Electrical Inspector",
+
+  // Professional Credentials
+  architectName: "ARCH. MARIA ELENA SANTOS, UAP",
+  architectPRC: "0045211",
+  architectPRCValidity: "2028-09-15",
+  architectIAPOA: "IAPOA-2026-9988",
+  architectPTR: "PTR-ST-665544",
   architectPTRIssued: "Sto. Tomas, Pampanga / Jan 08, 2026",
   architectTIN: "234-567-890-000",
 
-  civilEngineerName: "ENGR. MARCO POLO D. SANTOS, CE",
-  civilEngineerPRC: "0087654",
-  civilEngineerPRCValidity: "2028-06-15",
-  civilEngineerPICE: "PICE-887766",
-  civilEngineerPTR: "PTR-ST-776655",
+  civilEngineerName: "ENGR. ROBERTO CRUZ, PICE",
+  civilEngineerPRC: "0078923",
+  civilEngineerPRCValidity: "2027-06-20",
+  civilEngineerPICE: "PICE-445566",
+  civilEngineerPTR: "PTR-ST-554433",
   civilEngineerPTRIssued: "Sto. Tomas, Pampanga / Jan 10, 2026",
   civilEngineerTIN: "345-678-901-000",
 
-  electricalEngineerName: "ENGR. EDISON T. REYES, PEE",
-  electricalEngineerPRC: "0033221",
-  electricalEngineerPRCValidity: "2027-09-30",
+  electricalEngineerName: "ENGR. DANILO REYES, PEE",
+  electricalEngineerPRC: "0033421",
+  electricalEngineerPRCValidity: "2028-11-30",
   electricalEngineerIIEE: "IIEE-554433",
   electricalEngineerPTR: "PTR-ST-443322",
   electricalEngineerPTRIssued: "Sto. Tomas, Pampanga / Jan 12, 2026",
@@ -221,6 +287,7 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
 
 export default function FormTestingStudio() {
   const [selectedFormId, setSelectedFormId] = useState<string>("BP");
+  const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [formData, setFormData] = useState<UnifiedPermitFormData>(CALIBRATED_TEST_DATA);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -306,6 +373,22 @@ export default function FormTestingStudio() {
         generatedUrl = await generateMechanicalPermitPdf(formData);
       } else if (selectedFormId === "EL") {
         generatedUrl = await generateElectronicsPermitPdf(formData);
+      } else if (selectedFormId === "DP") {
+        generatedUrl = await generateDemolitionPermitPdf(formData);
+      } else if (selectedFormId === "FP") {
+        generatedUrl = await generateFencingPermitPdf(formData);
+      } else if (selectedFormId === "EXP") {
+        generatedUrl = await generateExcavationPermitPdf(formData);
+      } else if (selectedFormId === "SGP") {
+        generatedUrl = await generateSignPermitPdf(formData);
+      } else if (selectedFormId === "TSC") {
+        generatedUrl = await generateTemporaryServicePermitPdf(formData);
+      } else if (selectedFormId === "CO") {
+        generatedUrl = await generateCertificateOfOccupancyPdf(formData);
+      } else if (selectedFormId === "CC") {
+        generatedUrl = await generateCertificateOfCompletionPdf(formData);
+      } else if (selectedFormId === "CFEI") {
+        generatedUrl = await generateCfeiPdf(formData);
       } else if (selectedFormId === "BFP") {
         generatedUrl = await generateBfpApplicationPdf(formData);
       } else if (selectedFormId === "LC") {
@@ -369,6 +452,30 @@ export default function FormTestingStudio() {
     };
   }, []);
 
+  // Filter forms based on category
+  const categories = [
+    { key: "All", label: `All Forms (${FORMS.length})` },
+    { key: "Primary", label: "Primary (2)" },
+    { key: "Zoning", label: "Zoning (1)" },
+    { key: "Ancillary", label: "Ancillary (6)" },
+    { key: "Special", label: "Special Permits (4)" },
+    { key: "Utilities", label: "Utilities (1)" },
+    { key: "Completion", label: "Completion & Occupancy (3)" },
+    { key: "Fire Safety", label: "Fire Safety (1)" },
+  ];
+
+  const displayedForms = FORMS.filter(f => {
+    if (categoryFilter === "All") return true;
+    if (categoryFilter === "Primary") return f.category === "Primary";
+    if (categoryFilter === "Zoning") return f.category.includes("Zoning");
+    if (categoryFilter === "Ancillary") return f.category === "Ancillary";
+    if (categoryFilter === "Special") return f.category === "Special";
+    if (categoryFilter === "Utilities") return f.category.includes("Utilities");
+    if (categoryFilter === "Completion") return f.category.includes("Completion");
+    if (categoryFilter === "Fire Safety") return f.category.includes("Fire");
+    return true;
+  });
+
   return (
     <div style={{ maxWidth: "1560px", margin: "0 auto", padding: "1.5rem 1rem 3rem" }}>
       {/* Top Breadcrumb & Return */}
@@ -380,7 +487,7 @@ export default function FormTestingStudio() {
           <ArrowLeft size={16} /> Back to Official Templates Library
         </Link>
         <span style={{ fontSize: "0.75rem", background: "#f1f5f9", padding: "4px 10px", borderRadius: "999px", color: "#475569", fontWeight: "700" }}>
-          ADMIN CALIBRATION MODE
+          ADMIN CALIBRATION MODE &bull; 16 OFFICIAL MUNICIPAL FORMS
         </span>
       </div>
 
@@ -390,7 +497,7 @@ export default function FormTestingStudio() {
         color: "white",
         borderRadius: "20px",
         padding: "1.75rem 2rem",
-        marginBottom: "1.5rem",
+        marginBottom: "1.25rem",
         boxShadow: "0 10px 30px rgba(15, 23, 42, 0.2)",
         display: "flex",
         alignItems: "center",
@@ -401,12 +508,12 @@ export default function FormTestingStudio() {
         <div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.3)", padding: "4px 12px", borderRadius: "999px", color: "#38bdf8", fontSize: "0.8rem", fontWeight: "700", marginBottom: "0.6rem" }}>
             <Sparkles size={14} />
-            <span>Interactive Form Testing & Placement Studio</span>
+            <span>Interactive Form Testing & Placement Studio &bull; All 16 Official Municipal Forms</span>
           </div>
           <h1 style={{ fontSize: "1.85rem", fontWeight: "900", margin: "0 0 0.4rem 0", letterSpacing: "-0.5px" }}>
             Official Permitting Forms Verification Suite
           </h1>
-          <p style={{ margin: 0, color: "#94a3b8", fontSize: "0.92rem", maxWidth: "780px", lineHeight: "1.5" }}>
+          <p style={{ margin: 0, color: "#94a3b8", fontSize: "0.92rem", maxWidth: "800px", lineHeight: "1.5" }}>
             Test each municipal permit form individually. Enter test values, check if all checkboxes and input fields are answerable, and verify that text lands in the exact coordinates of the official scanned government template.
           </p>
         </div>
@@ -477,6 +584,37 @@ export default function FormTestingStudio() {
         </div>
       </div>
 
+      {/* Category Filter Tabs */}
+      <div style={{
+        display: "flex",
+        gap: "0.5rem",
+        overflowX: "auto",
+        paddingBottom: "0.5rem",
+        marginBottom: "0.75rem"
+      }}>
+        {categories.map(cat => (
+          <button
+            key={cat.key}
+            type="button"
+            onClick={() => setCategoryFilter(cat.key)}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "999px",
+              border: categoryFilter === cat.key ? "1px solid #2563eb" : "1px solid #e2e8f0",
+              background: categoryFilter === cat.key ? "#eff6ff" : "#ffffff",
+              color: categoryFilter === cat.key ? "#1d4ed8" : "#64748b",
+              fontWeight: categoryFilter === cat.key ? "800" : "600",
+              fontSize: "0.8rem",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              transition: "all 0.15s ease"
+            }}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
       {/* Form Picker Tabs (Horizontal Scrollable Selector) */}
       <div style={{
         display: "flex",
@@ -485,7 +623,7 @@ export default function FormTestingStudio() {
         paddingBottom: "0.75rem",
         marginBottom: "1.5rem"
       }}>
-        {FORMS.map(form => {
+        {displayedForms.map(form => {
           const isSelected = form.id === selectedFormId;
           const Icon = form.icon;
           return (
@@ -1007,12 +1145,229 @@ export default function FormTestingStudio() {
                       </div>
                     </div>
                   )}
+
+                  {selectedForm.id === "DP" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Structure to Demolish</label>
+                        <input type="text" value={formData.demolitionBuildingType || ""} onChange={e => handleFieldChange("demolitionBuildingType", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Demolition Area (sq.m.)</label>
+                        <input type="text" value={formData.demolitionArea || ""} onChange={e => handleFieldChange("demolitionArea", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Number of Storeys</label>
+                        <input type="text" value={formData.demolitionStoreys || ""} onChange={e => handleFieldChange("demolitionStoreys", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Scope & Precautions</label>
+                        <input type="text" value={formData.demolitionScope || ""} onChange={e => handleFieldChange("demolitionScope", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedForm.id === "FP" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Fencing Type & Materials</label>
+                        <input type="text" value={formData.fencingType || ""} onChange={e => handleFieldChange("fencingType", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Total Fence Length (meters)</label>
+                        <input type="text" value={formData.fencingLength || ""} onChange={e => handleFieldChange("fencingLength", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Fence Height (meters)</label>
+                        <input type="text" value={formData.fencingHeight || ""} onChange={e => handleFieldChange("fencingHeight", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Estimated Fencing Cost (PHP)</label>
+                        <input type="text" value={formData.fencingCost || ""} onChange={e => handleFieldChange("fencingCost", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedForm.id === "EXP" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Excavation Scope</label>
+                        <input type="text" value={formData.excavationScope || ""} onChange={e => handleFieldChange("excavationScope", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Excavation Volume (cu.m.)</label>
+                        <input type="text" value={formData.excavationVolume || ""} onChange={e => handleFieldChange("excavationVolume", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Maximum Depth (meters)</label>
+                        <input type="text" value={formData.excavationDepth || ""} onChange={e => handleFieldChange("excavationDepth", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Start & Completion Dates</label>
+                        <input type="text" value={`${formData.proposedStartDate || "Oct 01, 2026"} to ${formData.expectedCompletionDate || "Nov 15, 2026"}`} readOnly style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9" }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedForm.id === "SGP" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Sign Type & Location</label>
+                        <input type="text" value={formData.signType || ""} onChange={e => handleFieldChange("signType", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Dimensions (Width x Height)</label>
+                        <input type="text" value={formData.signDimensions || ""} onChange={e => handleFieldChange("signDimensions", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Signboard Material & Lighting</label>
+                        <input type="text" value={formData.signMaterial || ""} onChange={e => handleFieldChange("signMaterial", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Estimated Sign Cost (PHP)</label>
+                        <input type="text" value={formData.signCost || ""} onChange={e => handleFieldChange("signCost", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedForm.id === "TSC" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Purpose of Temporary Power</label>
+                        <input type="text" value={formData.temporaryServicePurpose || ""} onChange={e => handleFieldChange("temporaryServicePurpose", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Connected Load (kVA)</label>
+                        <input type="text" value={formData.temporaryServiceKva || ""} onChange={e => handleFieldChange("temporaryServiceKva", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Service Voltage</label>
+                        <input type="text" value={formData.temporaryServiceVoltage || ""} onChange={e => handleFieldChange("temporaryServiceVoltage", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Duration (Days)</label>
+                        <input type="text" value={formData.temporaryServiceDuration || ""} onChange={e => handleFieldChange("temporaryServiceDuration", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedForm.id === "CO" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Building Permit Ref. No.</label>
+                        <input type="text" value={formData.applicationNo || ""} onChange={e => handleFieldChange("applicationNo", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Actual Completion Date</label>
+                        <input type="text" value={formData.actualCompletionDate || ""} onChange={e => handleFieldChange("actualCompletionDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Actual Floor Area (sq.m.)</label>
+                        <input type="text" value={formData.actualFloorArea || formData.floorArea} onChange={e => handleFieldChange("actualFloorArea", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Actual Project Cost (PHP)</label>
+                        <input type="text" value={formData.actualProjectCost || formData.projectCost} onChange={e => handleFieldChange("actualProjectCost", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedForm.id === "CC" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Building Permit Ref. No.</label>
+                        <input type="text" value={formData.applicationNo || ""} onChange={e => handleFieldChange("applicationNo", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Construction Supervisor</label>
+                        <input type="text" value={formData.constructionSupervisorName || ""} onChange={e => handleFieldChange("constructionSupervisorName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Planned Start Date</label>
+                        <input type="text" value={formData.proposedStartDate || ""} onChange={e => handleFieldChange("proposedStartDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Actual Date of Completion</label>
+                        <input type="text" value={formData.actualCompletionDate || ""} onChange={e => handleFieldChange("actualCompletionDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedForm.id === "CFEI" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>CFEI Reference No.</label>
+                        <input type="text" value={formData.applicationNo || ""} onChange={e => handleFieldChange("applicationNo", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Electrical Inspector</label>
+                        <input type="text" value={formData.cfeiInspectorName || ""} onChange={e => handleFieldChange("cfeiInspectorName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Total Connected Load (kVA)</label>
+                        <input type="text" value={formData.electricalConnectedLoad || ""} onChange={e => handleFieldChange("electricalConnectedLoad", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Date of Final Inspection</label>
+                        <input type="text" value={formData.actualCompletionDate || "2027-04-30"} onChange={e => handleFieldChange("actualCompletionDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedForm.id === "LC" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Locational Clearance Ref.</label>
+                        <input type="text" value={formData.locationalClearanceRef || ""} onChange={e => handleFieldChange("locationalClearanceRef", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Right Over Land</label>
+                        <input type="text" value="Owner" readOnly style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Zoning / Existing Land Use</label>
+                        <input type="text" value="R-1 Low Density Residential" readOnly style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Project Tenure</label>
+                        <input type="text" value="Permanent" readOnly style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9" }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {activeTab === "professionals" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                {/* Construction Supervisor / Inspector */}
+                {(selectedForm.id === "CC" || selectedForm.id === "CO" || selectedForm.id === "CFEI") && (
+                  <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#eff6ff", border: "1.5px solid #bfdbfe" }}>
+                    <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#1d4ed8" }}>Project Supervisor / Municipal Inspector</span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>
+                          {selectedForm.id === "CFEI" ? "Electrical Inspector Name" : "Construction Supervisor Name"}
+                        </label>
+                        <input 
+                          type="text" 
+                          value={selectedForm.id === "CFEI" ? (formData.cfeiInspectorName || "") : (formData.constructionSupervisorName || "")} 
+                          onChange={e => handleFieldChange(selectedForm.id === "CFEI" ? "cfeiInspectorName" : "constructionSupervisorName", e.target.value)} 
+                          style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Role / Designation</label>
+                        <input 
+                          type="text" 
+                          value={selectedForm.id === "CFEI" ? "City Electrical Inspector" : "Full-Time In-Charge of Construction"} 
+                          readOnly 
+                          style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#f8fafc" }} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* Architect */}
                 <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                   <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#1d4ed8" }}>Architect / Design Professional</span>
