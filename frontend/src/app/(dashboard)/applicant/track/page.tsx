@@ -16,7 +16,6 @@ export default function ApplicationStatusPage() {
   const router = useRouter();
   const { applications, cancelApplication } = usePermitContext();
 
-  const [trackId, setTrackId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -80,13 +79,6 @@ export default function ApplicationStatusPage() {
       }
     } catch (e) {}
   }, []);
-
-  const handleTrackSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (trackId.trim()) {
-      router.push(`/applicant/track/${trackId.trim()}`);
-    }
-  };
 
   const handleCopyId = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -467,62 +459,6 @@ export default function ApplicationStatusPage() {
         </section>
       )}
 
-      {/* QUICK TRACKING LOOKUP BAR */}
-      <section style={{
-        background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-        border: "1.5px solid #e2e8f0",
-        borderRadius: "20px",
-        padding: "1.4rem 1.75rem",
-        marginBottom: "2rem",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.02)"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-          <div>
-            <h3 style={{ margin: "0 0 0.25rem 0", fontSize: "1.1rem", fontWeight: "800", color: "#1e293b", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <Search size={18} color="#2563eb" /> Direct Tracking ID Lookup
-            </h3>
-            <p style={{ margin: 0, fontSize: "0.88rem", color: "#64748b" }}>
-              Enter any official reference receipt (e.g. <code>LC-2026-9307</code>, <code>BP-2026-0012</code>) to open the live audit trail.
-            </p>
-          </div>
-
-          <form onSubmit={handleTrackSubmit} style={{ display: "flex", gap: "0.5rem", flex: 1, maxWidth: "440px", minWidth: "260px" }}>
-            <input 
-              type="text" 
-              placeholder="e.g. LC-2026-9307"
-              value={trackId}
-              onChange={e => setTrackId(e.target.value)}
-              style={{
-                flex: 1,
-                padding: "9px 14px",
-                borderRadius: "12px",
-                border: "1.5px solid #cbd5e1",
-                fontSize: "0.9rem",
-                outline: "none",
-                background: "#ffffff"
-              }}
-            />
-            <button 
-              type="submit" 
-              style={{
-                background: "#0f172a",
-                color: "white",
-                border: "none",
-                borderRadius: "12px",
-                padding: "9px 18px",
-                fontWeight: "700",
-                fontSize: "0.88rem",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px"
-              }}
-            >
-              Track <ChevronRight size={15} />
-            </button>
-          </form>
-        </div>
-      </section>
 
       {/* SEGMENTED TAB SELECTOR: ACTIVE VS ARCHIVED */}
       <div style={{
