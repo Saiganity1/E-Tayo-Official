@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { usePermitContext } from "../../../../context/PermitContext";
-import { Search, Plus, Filter, Bell, User, Clock, CheckCircle2, AlertTriangle, FileText } from "lucide-react";
+import { Search, Plus, Filter, Bell, User, Clock, CheckCircle2, AlertTriangle, FileText, Archive } from "lucide-react";
 import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
 
@@ -11,40 +11,111 @@ export default function ApplicantDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [userName, setUserName] = useState("Applicant");
+  const [userEmail, setUserEmail] = useState("");
+  const [archivedIds, setArchivedIds] = useState<string[]>([]);
+  const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "info" } | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
+  const showToast = (text: string, type: "success" | "info" = "info") => {
+    setToastMsg({ text, type });
+    setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  useEffect(() => {
     try {
       const userStr = localStorage.getItem("user");
       if (userStr) {
         const userObj = JSON.parse(userStr);
         if (userObj.name) setUserName(userObj.name);
+        if (userObj.email) setUserEmail(userObj.email);
       }
     } catch (e) {}
+
+    const syncArchived = () => {
+      try {
+        const savedArchived = localStorage.getItem("etayo_archived_application_ids");
+        if (savedArchived) {
+          const parsed = JSON.parse(savedArchived);
+          if (Array.isArray(parsed)) {
+            setArchivedIds(parsed);
+          }
+        } else {
+          setArchivedIds([]);
+        }
+      } catch (e) {}
+    };
+
+    syncArchived();
+
+    window.addEventListener("storage", syncArchived);
+    window.addEventListener("etayo_archive_changed", syncArchived);
 
     // Simulate network request to show off skeleton loading UX
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 800);
-    return () => clearTimeout(timer);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("storage", syncArchived);
+      window.removeEventListener("etayo_archive_changed", syncArchived);
+    };
   }, []);
 
-  // Filter by the actual logged-in applicant name
-  const applicantApps = applications.filter(app => app.applicantName === userName);
+  // Filter by the actual logged-in applicant name or email
+  const applicantApps = useMemo(() => {
+    const email = (userEmail || "").toLowerCase().trim();
+    const name = (userName || "").toLowerCase().trim();
 
-  const filteredApps = applicantApps.filter(app => {
-    const matchesSearch = app.projectName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          app.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || app.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+    return (applications || []).filter(app => {
+      const appEmail = (app.applicantEmail || "").toLowerCase().trim();
+      const appName = (app.applicantName || "").toLowerCase().trim();
 
-  const stats = {
-    total: applicantApps.length,
-    pending: applicantApps.filter(a => a.status === "pending").length,
-    review: applicantApps.filter(a => a.status === "under_review").length,
-    approved: applicantApps.filter(a => ["approved", "released"].includes(a.status)).length,
+      const matchEmail = Boolean(email && appEmail && (appEmail === email || appEmail.includes(email)));
+      const matchName = Boolean(name && appName && (appName === name || appName.includes(name)));
+
+      return matchEmail || matchName || (name !== "applicant" && appName === name);
+    });
+  }, [applications, userEmail, userName]);
+
+  // Exclude all archived applications so they NEVER appear in Recent Applications
+  const activeApplicantApps = useMemo(() => {
+    return applicantApps.filter(app => !archivedIds.includes(app.id));
+  }, [applicantApps, archivedIds]);
+
+  const archivedCount = useMemo(() => {
+    return applicantApps.filter(app => archivedIds.includes(app.id)).length;
+  }, [applicantApps, archivedIds]);
+
+  const filteredApps = useMemo(() => {
+    return activeApplicantApps.filter(app => {
+      const matchesSearch = app.projectName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            app.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" || app.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [activeApplicantApps, searchTerm, statusFilter]);
+
+  const stats = useMemo(() => ({
+    total: activeApplicantApps.length,
+    pending: activeApplicantApps.filter(a => a.status === "pending").length,
+    review: activeApplicantApps.filter(a => a.status === "under_review").length,
+    approved: activeApplicantApps.filter(a => ["approved", "released"].includes(a.status)).length,
+  }), [activeApplicantApps]);
+
+  const handleArchiveCard = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const next = Array.from(new Set([...archivedIds, id]));
+    setArchivedIds(next);
+    try {
+      localStorage.setItem("etayo_archived_application_ids", JSON.stringify(next));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("etayo_archive_changed"));
+      }
+    } catch (err) {}
+    showToast(`Application ${id} moved to archive.`, "info");
   };
 
   const getStatusConfig = (status: string) => {
@@ -133,8 +204,34 @@ export default function ApplicantDashboard() {
       </section>
 
       <section className="applications-section" style={{ marginTop: "2rem", background: "rgba(255,255,255,0.6)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.8)", borderRadius: "24px", padding: "2rem", boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
-        <div className="section-header" style={{ marginBottom: "2rem" }}>
-          <h2 style={{ fontSize: "1.5rem", fontWeight: "700", color: "#1e293b" }}>Recent Applications</h2>
+        <div className="section-header" style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: "700", color: "#1e293b", margin: 0 }}>Recent Applications</h2>
+            {archivedCount > 0 && (
+              <Link
+                href="/applicant/track?tab=archived"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "0.82rem",
+                  fontWeight: "700",
+                  padding: "5px 12px",
+                  borderRadius: "20px",
+                  background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
+                  color: "#6d28d9",
+                  border: "1px solid #ddd6fe",
+                  textDecoration: "none",
+                  boxShadow: "0 2px 6px rgba(109, 40, 217, 0.08)",
+                  transition: "all 0.2s ease",
+                }}
+                title="View all archived applications in Application Status"
+              >
+                <Archive size={14} color="#7c3aed" />
+                <span>{archivedCount} Archived</span>
+              </Link>
+            )}
+          </div>
           <div className="filters">
             <div className="search-bar" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }}>
               <Search size={18} className="search-icon" color="#94a3b8" />
@@ -182,9 +279,43 @@ export default function ApplicantDashboard() {
                   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                   cursor: "pointer",
                 }}>
-                  <div className="app-card-header">
-                    <span className="app-id" style={{ background: "#f8fafc", color: "#475569", fontWeight: "700", padding: "4px 10px", borderRadius: "8px" }}>{app.id}</span>
-                    <span className="app-status" style={{ backgroundColor: statusConfig.bg, color: statusConfig.color, fontWeight: "700", padding: "6px 12px", borderRadius: "20px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <div className="app-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span className="app-id" style={{ background: "#f8fafc", color: "#475569", fontWeight: "700", padding: "4px 10px", borderRadius: "8px" }}>{app.id}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleArchiveCard(app.id, e)}
+                        title="Archive application (removes from Recent Applications)"
+                        style={{
+                          background: "#f8fafc",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          padding: "4px 8px",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          fontSize: "0.75rem",
+                          fontWeight: "600",
+                          color: "#64748b",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#ede9fe";
+                          e.currentTarget.style.color = "#6d28d9";
+                          e.currentTarget.style.borderColor = "#c4b5fd";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "#f8fafc";
+                          e.currentTarget.style.color = "#64748b";
+                          e.currentTarget.style.borderColor = "#e2e8f0";
+                        }}
+                      >
+                        <Archive size={13} />
+                        <span>Archive</span>
+                      </button>
+                    </div>
+                    <span className="app-status" style={{ backgroundColor: statusConfig.bg, color: statusConfig.color, fontWeight: "700", padding: "6px 12px", borderRadius: "20px", display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
                       <StatusIcon size={14} strokeWidth={2.5} /> {statusConfig.label}
                     </span>
                   </div>
@@ -199,6 +330,29 @@ export default function ApplicantDashboard() {
           )}
         </div>
       </section>
+
+      {toastMsg && (
+        <div style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          background: "#0f172a",
+          color: "#ffffff",
+          padding: "12px 20px",
+          borderRadius: "14px",
+          fontSize: "0.9rem",
+          fontWeight: "600",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          zIndex: 9999,
+          border: "1px solid rgba(255,255,255,0.1)",
+        }}>
+          <Archive size={16} color="#c084fc" />
+          <span>{toastMsg.text}</span>
+        </div>
+      )}
 
     </div>
   );

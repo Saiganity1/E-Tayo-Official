@@ -69,6 +69,16 @@ export default function ApplicationStatusPage() {
         }
       }
     } catch (e) {}
+
+    // Support tab deep-linking (e.g. /applicant/track?tab=archived)
+    try {
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("tab") === "archived") {
+          setActiveTab("archived");
+        }
+      }
+    } catch (e) {}
   }, []);
 
   const handleTrackSubmit = (e: React.FormEvent) => {
@@ -94,6 +104,9 @@ export default function ApplicationStatusPage() {
       const next = Array.from(new Set([...prev, id]));
       try {
         localStorage.setItem("etayo_archived_application_ids", JSON.stringify(next));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("etayo_archive_changed"));
+        }
       } catch (err) {}
       return next;
     });
@@ -107,6 +120,9 @@ export default function ApplicationStatusPage() {
       const next = prev.filter(x => x !== id);
       try {
         localStorage.setItem("etayo_archived_application_ids", JSON.stringify(next));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("etayo_archive_changed"));
+        }
       } catch (err) {}
       return next;
     });
