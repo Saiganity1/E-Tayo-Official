@@ -314,6 +314,18 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   civilEngineerPTRIssuedAt: "Sto. Tomas",
   civilEngineerTIN: "345-678-901-000",
 
+  // Box 4: Supervisor / In-Charge of Civil/Structural Works
+  sameAsDesignCivilEngineer: false,
+  supervisorCivilEngineerName: "ENGR. MARCO SANTOS, PICE",
+  supervisorCivilEngineerAddress: "Sto. Tomas, Pampanga",
+  supervisorCivilEngineerPRC: "0088912",
+  supervisorCivilEngineerPRCValidity: "2027-09-15",
+  supervisorCivilEngineerPICE: "PICE-778899",
+  supervisorCivilEngineerPTR: "PTR-ST-667788",
+  supervisorCivilEngineerPTRIssued: "Jan 10, 2026",
+  supervisorCivilEngineerPTRIssuedAt: "Sto. Tomas",
+  supervisorCivilEngineerTIN: "456-789-012-000",
+
   electricalEngineerName: "ENGR. DANILO REYES, PEE",
   electricalEngineerAddress: "Sto. Tomas, Pampanga",
   electricalEngineerPRC: "0033421",
@@ -2602,10 +2614,11 @@ export default function FormTestingStudio() {
                         <option value="Repair">Repair</option>
                         <option value="Moving">Moving</option>
                         <option value="Raising">Raising</option>
+                        <option value="Demolition">Demolition</option>
                         <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                         <option value="Others">Others (Specify)</option>
                       </select>
-                      {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Accessory", "Other"].some(k => (formData.scopeOfWork || "").toLowerCase().includes(k.toLowerCase())) && (
+                      {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => (formData.scopeOfWork || "").toLowerCase().includes(k.toLowerCase())) && (
                         <div style={{ marginTop: "6px" }}>
                           <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b", marginBottom: "2px" }}>
                             Specify {formData.scopeOfWork} Details (Printed on Form Underline)
@@ -3004,10 +3017,20 @@ export default function FormTestingStudio() {
                 )}
 
                 {/* Specific form fields depending on active form */}
-                <div style={{ marginTop: "0.5rem", padding: "1rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                  <h4 style={{ margin: "0 0 0.75rem 0", fontSize: "0.88rem", fontWeight: "800", color: "#1e293b" }}>
-                    Form-Specific Technical Parameters ({selectedForm.code})
-                  </h4>
+                {selectedForm.id === "SP" ? (
+                  <div style={{ marginTop: "0.5rem", padding: "1.25rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px dashed #cbd5e1", textAlign: "center" }}>
+                    <p style={{ margin: "0 0 0.4rem 0", fontSize: "0.85rem", fontWeight: "700", color: "#334155" }}>
+                      NBC Form S-01 Box 2: Nature of Civil/Structural Works
+                    </p>
+                    <p style={{ margin: 0, fontSize: "0.76rem", color: "#64748b" }}>
+                      Box 2 is kept clean on the official permit in compliance with municipal building guidelines. Please navigate to <strong>3. Engineers & Credentials</strong> to view Civil Engineer Box 3 & Box 4 certifications and Box 5 / Box 6 signatures.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: "0.5rem", padding: "1rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                    <h4 style={{ margin: "0 0 0.75rem 0", fontSize: "0.88rem", fontWeight: "800", color: "#1e293b" }}>
+                      Form-Specific Technical Parameters ({selectedForm.code})
+                    </h4>
 
                   {selectedForm.id === "BP" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -3158,26 +3181,6 @@ export default function FormTestingStudio() {
                     </div>
                   )}
 
-                  {selectedForm.id === "SP" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Foundation Type</label>
-                        <input type="text" value={formData.foundationType || ""} onChange={e => handleFieldChange("foundationType", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Concrete Strength</label>
-                        <input type="text" value={formData.concreteStrength || ""} onChange={e => handleFieldChange("concreteStrength", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Structural Framing</label>
-                        <input type="text" value={formData.structuralFraming || ""} onChange={e => handleFieldChange("structuralFraming", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Steel Grade</label>
-                        <input type="text" value={formData.steelGrade || ""} onChange={e => handleFieldChange("steelGrade", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                    </div>
-                  )}
 
                   {selectedForm.id === "EP" && (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
@@ -3444,6 +3447,7 @@ export default function FormTestingStudio() {
                     </div>
                   )}
                 </div>
+                )}
               </div>
             )}
 
@@ -3616,10 +3620,12 @@ export default function FormTestingStudio() {
                       </div>
                     )}
 
-                    {/* Civil Engineer */}
+                    {/* Civil Engineer - Box 3: Design Professional */}
                     {(selectedForm.id === "BP" || selectedForm.id === "SP" || selectedForm.id === "DP" || selectedForm.id === "EXP" || selectedForm.id === "SGP" || selectedForm.id === "CO" || selectedForm.id === "CC") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#047857" }}>Civil / Structural Engineer (Full-Time Inspector & Supervisor)</span>
+                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#047857" }}>
+                          Box 3: DESIGN PROFESSIONAL, PLANS AND SPECIFICATIONS (Civil / Structural Engineer)
+                        </span>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
@@ -3644,7 +3650,7 @@ export default function FormTestingStudio() {
                             <input type="text" value={formData.civilEngineerTIN || "345-678-901-000"} onChange={e => handleFieldChange("civilEngineerTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
                             <input type="text" value={formData.civilEngineerPTR || ""} onChange={e => handleFieldChange("civilEngineerPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
@@ -3657,7 +3663,100 @@ export default function FormTestingStudio() {
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
                             <input type="text" value={formData.civilEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("civilEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Signed</label>
+                            <input type="text" value={formData.civilEngineerSignedDate || "Jan 08, 2026"} onChange={e => handleFieldChange("civilEngineerSignedDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
                         </div>
+
+                        {selectedForm.id === "SP" && (
+                          <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                            <SignatureCreator
+                              value={formData.civilEngineerSignature}
+                              onChange={sig => handleFieldChange("civilEngineerSignature", sig)}
+                              label={`Civil Engineer E-Signature (Box 3 - ${formData.civilEngineerName || "Civil Engineer"})`}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Civil Engineer - Box 4: Supervisor / In-Charge of Civil/Structural Works */}
+                    {(selectedForm.id === "BP" || selectedForm.id === "SP") && (
+                      <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#047857" }}>
+                            Box 4: SUPERVISOR / IN-CHARGE OF CIVIL/STRUCTURAL WORKS (Civil Engineer)
+                          </span>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#334155", cursor: "pointer" }}>
+                            <input 
+                              type="checkbox" 
+                              checked={!!formData.sameAsDesignCivilEngineer} 
+                              onChange={e => handleFieldChange("sameAsDesignCivilEngineer", e.target.checked)} 
+                            />
+                            Same as Design Professional (Box 3)
+                          </label>
+                        </div>
+
+                        {!formData.sameAsDesignCivilEngineer ? (
+                          <>
+                            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Supervisor Civil Engineer Full Name</label>
+                                <input type="text" value={formData.supervisorCivilEngineerName || ""} onChange={e => handleFieldChange("supervisorCivilEngineerName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                                <input type="text" value={formData.supervisorCivilEngineerAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("supervisorCivilEngineerAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
+                                <input type="text" value={formData.supervisorCivilEngineerPRC || ""} onChange={e => handleFieldChange("supervisorCivilEngineerPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC Validity</label>
+                                <input type="text" value={formData.supervisorCivilEngineerPRCValidity || "2027-06-20"} onChange={e => handleFieldChange("supervisorCivilEngineerPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
+                                <input type="text" value={formData.supervisorCivilEngineerPTR || ""} onChange={e => handleFieldChange("supervisorCivilEngineerPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                                <input type="text" value={formData.supervisorCivilEngineerPTRIssued || "Jan 10, 2026"} onChange={e => handleFieldChange("supervisorCivilEngineerPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
+                                <input type="text" value={formData.supervisorCivilEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("supervisorCivilEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Signed</label>
+                                <input type="text" value={formData.supervisorCivilEngineerSignedDate || "Jan 08, 2026"} onChange={e => handleFieldChange("supervisorCivilEngineerSignedDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                            </div>
+                            <div style={{ marginTop: "0.5rem" }}>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                              <input type="text" value={formData.supervisorCivilEngineerTIN || "345-678-901-000"} onChange={e => handleFieldChange("supervisorCivilEngineerTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
+                            {selectedForm.id === "SP" && (
+                              <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                                <SignatureCreator
+                                  value={formData.supervisorCivilEngineerSignature}
+                                  onChange={sig => handleFieldChange("supervisorCivilEngineerSignature", sig)}
+                                  label={`Supervisor Civil Engineer E-Signature (Box 4 - ${formData.supervisorCivilEngineerName || "Supervisor Civil Engineer"})`}
+                                />
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div style={{ marginTop: "0.5rem", padding: "8px 12px", borderRadius: "8px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", fontSize: "0.76rem" }}>
+                            Using identical credentials and signature from Box 3 (Design Professional: {formData.civilEngineerName || "Civil Engineer"}).
+                          </div>
+                        )}
                       </div>
                     )}
 

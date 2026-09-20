@@ -249,6 +249,22 @@ export interface UnifiedPermitFormData {
   civilEngineerPTRIssued?: string;
   civilEngineerPTRIssuedAt?: string;
   civilEngineerTIN?: string;
+  civilEngineerSignedDate?: string;
+  civilEngineerSignature?: string;
+
+  // Supervisor Civil Engineer details (Box 4)
+  sameAsDesignCivilEngineer?: boolean;
+  supervisorCivilEngineerName?: string;
+  supervisorCivilEngineerAddress?: string;
+  supervisorCivilEngineerPRC?: string;
+  supervisorCivilEngineerPRCValidity?: string;
+  supervisorCivilEngineerPICE?: string;
+  supervisorCivilEngineerPTR?: string;
+  supervisorCivilEngineerPTRIssued?: string;
+  supervisorCivilEngineerPTRIssuedAt?: string;
+  supervisorCivilEngineerTIN?: string;
+  supervisorCivilEngineerSignedDate?: string;
+  supervisorCivilEngineerSignature?: string;
 
   electricalEngineerName?: string;
   electricalEngineerAddress?: string;
@@ -302,8 +318,8 @@ export interface UnifiedPermitFormData {
   representativeAddress?: string;
   representativePhone?: string;
 
-  // Signatures & Box 3 / Box 4 Consent Details
   applicantSignature?: string; // base64 data URL
+  applicantSignedDate?: string;
   representativeSignature?: string; // base64 data URL
   govIdDateIssued?: string;
   govIdPlaceIssued?: string;
@@ -314,6 +330,7 @@ export interface UnifiedPermitFormData {
   lotOwnerGovIdNo?: string;
   lotOwnerGovIdDateIssued?: string;
   lotOwnerGovIdPlaceIssued?: string;
+  lotOwnerSignedDate?: string;
 }
 
 async function embedSignatureImage(
@@ -1261,39 +1278,177 @@ export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): 
   drawText(data.tctNo || "TCT-123456", 345, 567.5, 7.5, true, 16);
   drawText(data.taxDecNo || "TD-2026-0012", 465, 567.5, 7.5, false);
 
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 65, 550.0, 7.5, false, 15);
+  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 65, 550.0, 7.0, false, 13);
   drawText(data.barangay || "Sapa (Santo Nino)", 185, 550.0, 7.5, true, 18);
-  // Municipality: Sto Tomas is already preprinted in the form template
+  // Municipality: cover any misplaced floating text and draw cleanly aligned on the underline
+  p1.drawRectangle({
+    x: 395.0,
+    y: 556.0,
+    width: 48.0,
+    height: 8.5,
+    color: rgb(1, 1, 1),
+  });
+  const spMunicipality = (data.applicantMunicipality || "Sto. Tomas").trim();
+  drawText(spMunicipality, 425, 550.0, 7.5, true, 25);
 
-  // Scope: [X] New Construction
-  drawCheck(47, 520.0);
+  // Scope of Work (All 12 Official Checkboxes matching NBC Form S-01)
+  const scopeNorm = (data.scopeOfWork || "New Construction").toLowerCase().trim();
+  const scopeDetails = (data.scopeOfWorkDetails || data.scopeOthers || "").trim();
 
-  // Box 2: Nature of Civil/Structural Works - X marks placed cleanly inside boxes
-  drawCheck(52, 368.0); // Foundation
-  drawCheck(192, 412.0); // Concrete Framing
-  drawCheck(192, 368.0); // Slabs
-  drawCheck(192, 356.0); // Walls
+  // Column 1: NEW CONSTRUCTION, ERECTION, ADDITION, ALTERATION
+  if (scopeNorm.includes("erect")) {
+    drawCheck(47.0, 509.0);
+  } else if (scopeNorm.includes("add")) {
+    drawCheck(47.0, 498.0);
+  } else if (scopeNorm.includes("alter")) {
+    drawCheck(47.0, 487.0);
+  // Column 2: RENOVATION, CONVERSION, REPAIR, MOVING
+  } else if (scopeNorm.includes("renov")) {
+    drawCheck(174.5, 520.0);
+    if (scopeDetails) drawText(scopeDetails, 240, 520.0, 7.0, false, 24);
+  } else if (scopeNorm.includes("convert")) {
+    drawCheck(174.5, 509.0);
+    if (scopeDetails) drawText(scopeDetails, 240, 509.0, 7.0, false, 24);
+  } else if (scopeNorm.includes("repair")) {
+    drawCheck(174.5, 498.0);
+    if (scopeDetails) drawText(scopeDetails, 222, 498.0, 7.0, false, 26);
+  } else if (scopeNorm.includes("mov")) {
+    drawCheck(174.5, 487.0);
+    if (scopeDetails) drawText(scopeDetails, 226, 487.0, 7.0, false, 26);
+  // Column 3: RAISING, DEMOLITION, ACCESSORY BUILDING/STRUCTURE, OTHERS
+  } else if (scopeNorm.includes("rais")) {
+    drawCheck(355.5, 520.0);
+    if (scopeDetails) drawText(scopeDetails, 400, 520.0, 7.0, false, 26);
+  } else if (scopeNorm.includes("demoli")) {
+    drawCheck(355.5, 509.0);
+    if (scopeDetails) drawText(scopeDetails, 420, 509.0, 7.0, false, 24);
+  } else if (scopeNorm.includes("accessory")) {
+    drawCheck(355.5, 498.0);
+    if (scopeDetails) drawText(scopeDetails, 515, 498.0, 7.0, false, 14);
+  } else if (scopeNorm.includes("other")) {
+    drawCheck(355.5, 487.0);
+    if (scopeDetails) drawText(scopeDetails, 445, 487.0, 7.0, false, 24);
+  } else {
+    // Default: New Construction
+    drawCheck(47.0, 520.0);
+  }
 
-  // Box 3: Civil Engineer
-  const ceName = data.civilEngineerName || "Engr. Roberto Cruz, CE";
-  drawText(ceName.toUpperCase(), 95, 258.0, 8.5, true);
-  drawText("Sto. Tomas, Pampanga", 75, 224.0, 7.5, false);
-  drawText(data.civilEngineerPRC || "PRC-0078923", 75, 206.0, 7.5, false);
-  drawText(data.civilEngineerPRCValidity || "2028-12-31", 195, 206.0, 7.5, false);
-  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 75, 193.0, 7.5, false);
+  // Box 2: Nature of Civil/Structural Works - left clean (to be accomplished by the design professional)
+
+  // Box 3: DESIGN PROFESSIONAL, PLANS AND SPECIFICATIONS (Civil / Structural Engineer)
+  const ceName = (data.civilEngineerName || "Engr. Roberto Cruz, CE").trim();
+  const ceUpper = ceName.toUpperCase();
+  const ceNameW = fontBold.widthOfTextAtSize(ceUpper, 8.5);
+  const ceNameX = 160.0 - (ceNameW / 2);
+  drawText(ceUpper, ceNameX, 285.5, 8.5, true);
+
+  if (data.civilEngineerSignature) {
+    await embedSignatureImage(doc, p1, data.civilEngineerSignature, 160.0 - 55, 280.0, 110, 32);
+  }
+
+  const rawCeDate = data.civilEngineerSignedDate || data.submissionDate || "Jan 08, 2026";
+  drawText(rawCeDate, 115, 257.0, 7.5, false);
+
+  const ceAddr = data.civilEngineerAddress || "Sto. Tomas, Pampanga";
+  drawText(ceAddr, 80, 249.0, 7.5, false, 35);
+
+  drawText(data.civilEngineerPRC || "0078923", 78, 237.0, 7.5, false, 12);
+  drawText(data.civilEngineerPRCValidity || "2028-12-31", 190, 237.0, 7.5, false, 12);
+
+  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 78, 225.5, 7.5, false, 18);
   const rawCePtrDate = data.civilEngineerPTRIssued || "Jan 05, 2026";
   const cePtrDate = rawCePtrDate.includes("/") ? rawCePtrDate.split("/")[1].trim() : rawCePtrDate;
-  drawText(cePtrDate, 195, 193.0, 7.5, false);
-  drawText("Sto. Tomas", 75, 179.0, 7.5, false);
-  drawText(data.civilEngineerTIN || "123-456-789-000", 185, 179.0, 7.5, false);
+  drawText(cePtrDate, 200, 225.5, 7.5, false, 14);
 
-  // Box 5: Owner
-  if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 95, 95.0, 110, 30);
+  drawText(data.civilEngineerPTRIssuedAt || "Sto. Tomas", 78, 214.0, 7.5, false, 15);
+  drawText(data.civilEngineerTIN || "123-456-789-000", 175, 214.0, 7.5, false, 18);
+
+  // Box 4: SUPERVISOR / IN-CHARGE OF CIVIL/STRUCTURAL WORKS
+  const isCeSame = data.sameAsDesignCivilEngineer !== false && (data.sameAsDesignCivilEngineer || !data.supervisorCivilEngineerName);
+  const supCeName = (isCeSame ? (data.civilEngineerName || "Engr. Roberto Cruz, CE") : (data.supervisorCivilEngineerName || data.civilEngineerName || "Engr. Roberto Cruz, CE")).trim();
+  const supCeUpper = supCeName.toUpperCase();
+  const supCeNameW = fontBold.widthOfTextAtSize(supCeUpper, 8.5);
+  const supCeNameX = 425.0 - (supCeNameW / 2);
+  drawText(supCeUpper, supCeNameX, 285.5, 8.5, true);
+
+  const supCeSig = isCeSame
+    ? (data.civilEngineerSignature || data.supervisorCivilEngineerSignature)
+    : (data.supervisorCivilEngineerSignature || data.civilEngineerSignature);
+  if (supCeSig) {
+    await embedSignatureImage(doc, p1, supCeSig, 425.0 - 55, 280.0, 110, 32);
   }
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 95, 98.0, 8.5, true);
-  drawText(data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga", 75, 64.0, 7.5, false);
-  drawText(data.govIdNo || "CTC-2026-00192", 75, 50.0, 7.5, false);
+
+  const rawSupCeDate = (isCeSame ? rawCeDate : (data.supervisorCivilEngineerSignedDate || rawCeDate));
+  drawText(rawSupCeDate, 390, 257.0, 7.5, false);
+
+  const supCeAddr = (isCeSame ? (data.civilEngineerAddress || "Sto. Tomas, Pampanga") : (data.supervisorCivilEngineerAddress || data.civilEngineerAddress || "Sto. Tomas, Pampanga")).trim();
+  drawText(supCeAddr, 355, 249.0, 7.5, false, 30);
+
+  const supCePRC = (isCeSame ? (data.civilEngineerPRC || "0078923") : (data.supervisorCivilEngineerPRC || data.civilEngineerPRC || "0078923")).trim();
+  drawText(supCePRC, 355, 237.0, 7.5, false, 10);
+
+  const supCePRCVal = (isCeSame ? (data.civilEngineerPRCValidity || "2028-12-31") : (data.supervisorCivilEngineerPRCValidity || data.civilEngineerPRCValidity || "2028-12-31")).trim();
+  drawText(supCePRCVal, 455, 237.0, 7.5, false, 12);
+
+  const supCePTR = (isCeSame ? (data.civilEngineerPTR || "PTR-ST-001") : (data.supervisorCivilEngineerPTR || data.civilEngineerPTR || "PTR-ST-001")).trim();
+  drawText(supCePTR, 355, 225.5, 7.5, false, 12);
+
+  const rawSupCePtrDate = isCeSame ? cePtrDate : (data.supervisorCivilEngineerPTRIssued || cePtrDate);
+  const supCePtrDate = rawSupCePtrDate.includes("/") ? rawSupCePtrDate.split("/")[1].trim() : rawSupCePtrDate;
+  drawText(supCePtrDate, 465, 225.5, 7.5, false, 12);
+
+  const supCePTRIssuedAt = (isCeSame ? (data.civilEngineerPTRIssuedAt || "Sto. Tomas") : (data.supervisorCivilEngineerPTRIssuedAt || data.civilEngineerPTRIssuedAt || "Sto. Tomas")).trim();
+  drawText(supCePTRIssuedAt, 355, 214.0, 7.5, false, 12);
+
+  const supCeTIN = (isCeSame ? (data.civilEngineerTIN || "123-456-789-000") : (data.supervisorCivilEngineerTIN || data.civilEngineerTIN || "123-456-789-000")).trim();
+  drawText(supCeTIN, 440, 214.0, 7.5, false, 16);
+
+  // Box 5: BUILDING OWNER
+  const ownerUpper = (data.applicantName || "JUAN DELA CRUZ").toUpperCase();
+  const ownerNameW = fontBold.widthOfTextAtSize(ownerUpper, 8.5);
+  const ownerNameX = 155.0 - (ownerNameW / 2);
+  drawText(ownerUpper, ownerNameX, 149.0, 8.5, true);
+
+  if (data.applicantSignature) {
+    await embedSignatureImage(doc, p1, data.applicantSignature, 155.0 - 55, 145.0, 110, 32);
+  }
+
+  const rawOwnerDate = data.applicantSignedDate || data.submissionDate || "Jan 08, 2026";
+  drawText(rawOwnerDate, 115, 128.0, 7.5, false);
+
+  const ownerAddr = data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga";
+  drawText(ownerAddr, 80, 111.0, 7.5, false, 35);
+
+  drawText(data.govIdNo || "CTC-2026-00192", 35, 88.0, 7.5, false, 15);
+  drawText(data.govIdDateIssued || "Jan 10, 2026", 115, 88.0, 7.5, false, 14);
+  drawText(data.govIdPlaceIssued || "Sto. Tomas", 205, 88.0, 7.5, false, 15);
+
+  // Box 6: WITH MY CONSENT: LOT OWNER
+  if (data.lotOwnerConsent || data.lotOwnerName) {
+    const lotUpper = safeText(data.lotOwnerName || "MARIA CLARA DELA CRUZ").toUpperCase();
+    const lotNameW = fontBold.widthOfTextAtSize(lotUpper, 8.5);
+    const lotNameX = 425.0 - (lotNameW / 2);
+    drawText(lotUpper, lotNameX, 149.0, 8.5, true);
+
+    if (data.lotOwnerSignature) {
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 425.0 - 55, 145.0, 110, 32);
+    }
+
+    const rawLotDate = data.lotOwnerSignedDate || rawOwnerDate;
+    drawText(rawLotDate, 390, 128.0, 7.5, false);
+
+    const lotAddr = safeText(data.lotOwnerAddress || data.projectAddress || "Sto. Tomas, Pampanga").trim();
+    drawText(lotAddr, 355, 111.0, 7.5, false, 30);
+
+    const lotGovId = safeText(data.lotOwnerGovIdNo || "CTC-2026-00871").trim();
+    drawText(lotGovId, 318, 88.0, 7.5, false, 12);
+
+    const lotDate = safeText(data.lotOwnerGovIdDateIssued || "Jan 12, 2026").trim();
+    drawText(lotDate, 385, 88.0, 7.5, false, 12);
+
+    const lotPlace = safeText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas").trim();
+    drawText(lotPlace, 465, 88.0, 7.5, false, 12);
+  }
 
   return await doc.saveAsBase64({ dataUri: false });
 }

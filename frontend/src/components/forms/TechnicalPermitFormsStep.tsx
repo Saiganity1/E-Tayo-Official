@@ -27,6 +27,7 @@ import {
   UnifiedPermitFormData 
 } from "../../utils/unifiedPermitPdfGenerator";
 import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
+import SignatureCreator from "../common/SignatureCreator";
 
 interface TechnicalPermitFormsStepProps {
   projectType: ProjectTypeItem;
@@ -128,6 +129,21 @@ export default function TechnicalPermitFormsStep({
   );
   const [formOfOwnership, setFormOfOwnership] = useState("INDIVIDUAL / OWNER");
   const [govIdNo, setGovIdNo] = useState("CTC-2026-08912");
+  const [govIdDateIssued, setGovIdDateIssued] = useState("Jan 10, 2026");
+  const [govIdPlaceIssued, setGovIdPlaceIssued] = useState("Sto. Tomas, Pampanga");
+  const [applicantSignature, setApplicantSignature] = useState<string>("");
+  const [applicantSignedDate, setApplicantSignedDate] = useState("Jan 08, 2026");
+
+  // Box 6: WITH MY CONSENT: LOT OWNER
+  const [lotOwnerConsent, setLotOwnerConsent] = useState(false);
+  const [lotOwnerName, setLotOwnerName] = useState<string>(clearanceApp?.lotOwnerName || "Maria Clara Dela Cruz");
+  const [lotOwnerAddress, setLotOwnerAddress] = useState<string>(clearanceApp?.lotOwnerAddress || "Sto. Tomas, Pampanga");
+  const [lotOwnerGovIdNo, setLotOwnerGovIdNo] = useState("CTC-2026-00871");
+  const [lotOwnerGovIdDateIssued, setLotOwnerGovIdDateIssued] = useState("Jan 12, 2026");
+  const [lotOwnerGovIdPlaceIssued, setLotOwnerGovIdPlaceIssued] = useState("Sto. Tomas, Pampanga");
+  const [lotOwnerSignedDate, setLotOwnerSignedDate] = useState("Jan 08, 2026");
+  const [lotOwnerSignature, setLotOwnerSignature] = useState<string>("");
+
   const [lotNo, setLotNo] = useState("Lot 12");
   const [blockNo, setBlockNo] = useState("Block 4");
   const [tctNo, setTctNo] = useState("TCT-042-20260012");
@@ -260,12 +276,30 @@ export default function TechnicalPermitFormsStep({
   const [concreteStrength, setConcreteStrength] = useState("20.7 MPa (3,000 psi at 28 days)");
   const [steelGrade, setSteelGrade] = useState("Grade 40 (275 MPa) for ≤12mm, Grade 60 (414 MPa) for ≥16mm");
   const [civilEngineerName, setCivilEngineerName] = useState("Engr. Roberto Cruz, CE");
+  const [civilEngineerAddress, setCivilEngineerAddress] = useState("Sto. Tomas, Pampanga");
   const [civilEngineerPRC, setCivilEngineerPRC] = useState("PRC-CE-0078923");
   const [civilEngineerPRCValidity, setCivilEngineerPRCValidity] = useState("2028-11-24");
   const [civilEngineerPICE, setCivilEngineerPICE] = useState("PICE-2026-8812");
   const [civilEngineerPTR, setCivilEngineerPTR] = useState("PTR-ST-2026-001");
-  const [civilEngineerPTRIssued, setCivilEngineerPTRIssued] = useState("Sto. Tomas, Pampanga");
+  const [civilEngineerPTRIssued, setCivilEngineerPTRIssued] = useState("Jan 08, 2026");
+  const [civilEngineerPTRIssuedAt, setCivilEngineerPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
   const [civilEngineerTIN, setCivilEngineerTIN] = useState("234-567-890-000");
+  const [civilEngineerSignature, setCivilEngineerSignature] = useState<string>("");
+  const [civilEngineerSignedDate, setCivilEngineerSignedDate] = useState("Jan 08, 2026");
+
+  // Box 4: Supervisor / In-Charge of Civil/Structural Works
+  const [sameAsDesignCivilEngineer, setSameAsDesignCivilEngineer] = useState(true);
+  const [supervisorCivilEngineerName, setSupervisorCivilEngineerName] = useState("Engr. Roberto Cruz, CE");
+  const [supervisorCivilEngineerAddress, setSupervisorCivilEngineerAddress] = useState("Sto. Tomas, Pampanga");
+  const [supervisorCivilEngineerPRC, setSupervisorCivilEngineerPRC] = useState("PRC-CE-0078923");
+  const [supervisorCivilEngineerPRCValidity, setSupervisorCivilEngineerPRCValidity] = useState("2028-11-24");
+  const [supervisorCivilEngineerPICE, setSupervisorCivilEngineerPICE] = useState("PICE-2026-8812");
+  const [supervisorCivilEngineerPTR, setSupervisorCivilEngineerPTR] = useState("PTR-ST-2026-001");
+  const [supervisorCivilEngineerPTRIssued, setSupervisorCivilEngineerPTRIssued] = useState("Jan 08, 2026");
+  const [supervisorCivilEngineerPTRIssuedAt, setSupervisorCivilEngineerPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
+  const [supervisorCivilEngineerTIN, setSupervisorCivilEngineerTIN] = useState("234-567-890-000");
+  const [supervisorCivilEngineerSignature, setSupervisorCivilEngineerSignature] = useState<string>("");
+  const [supervisorCivilEngineerSignedDate, setSupervisorCivilEngineerSignedDate] = useState("Jan 08, 2026");
 
   // ==========================================
   // 5. ELECTRICAL PERMIT (EP) FIELDS
@@ -508,6 +542,14 @@ export default function TechnicalPermitFormsStep({
     if (!lotArea) setLotArea("180");
     if (!floorArea) setFloorArea("120");
     if (!projectCost) setProjectCost("1,600,000.00");
+    setGovIdDateIssued(prev => prev || "Jan 10, 2026");
+    setGovIdPlaceIssued(prev => prev || "Sto. Tomas, Pampanga");
+    setLotOwnerName(prev => prev || "Maria Clara Dela Cruz");
+    setLotOwnerAddress(prev => prev || "Sto. Tomas, Pampanga");
+    setLotOwnerGovIdNo(prev => prev || "CTC-2026-00871");
+    setLotOwnerGovIdDateIssued(prev => prev || "Jan 12, 2026");
+    setLotOwnerGovIdPlaceIssued(prev => prev || "Sto. Tomas, Pampanga");
+    setLotOwnerSignedDate(prev => prev || "Jan 08, 2026");
 
     setNotification("Auto-populated official Sto. Tomas NBCP engineering standards. You can inspect or modify any field.");
     setTimeout(() => setNotification(null), 4000);
@@ -677,12 +719,24 @@ export default function TechnicalPermitFormsStep({
         supervisorArchitectPTRIssuedAt,
         supervisorArchitectTIN,
         civilEngineerName,
+        civilEngineerAddress,
         civilEngineerPRC,
         civilEngineerPRCValidity,
         civilEngineerPICE,
         civilEngineerPTR,
         civilEngineerPTRIssued,
+        civilEngineerPTRIssuedAt,
         civilEngineerTIN,
+        sameAsDesignCivilEngineer,
+        supervisorCivilEngineerName,
+        supervisorCivilEngineerAddress,
+        supervisorCivilEngineerPRC,
+        supervisorCivilEngineerPRCValidity,
+        supervisorCivilEngineerPICE,
+        supervisorCivilEngineerPTR,
+        supervisorCivilEngineerPTRIssued,
+        supervisorCivilEngineerPTRIssuedAt,
+        supervisorCivilEngineerTIN,
         electricalEngineerName,
         electricalEngineerPRC,
         electricalEngineerPRCValidity,
@@ -711,6 +765,22 @@ export default function TechnicalPermitFormsStep({
         electronicsEngineerPTR,
         electronicsEngineerPTRIssued,
         electronicsEngineerTIN,
+        applicantSignature,
+        applicantSignedDate,
+        govIdDateIssued,
+        govIdPlaceIssued,
+        civilEngineerSignature,
+        civilEngineerSignedDate,
+        supervisorCivilEngineerSignature,
+        supervisorCivilEngineerSignedDate,
+        lotOwnerConsent,
+        lotOwnerName: lotOwnerConsent ? lotOwnerName : undefined,
+        lotOwnerAddress: lotOwnerConsent ? lotOwnerAddress : undefined,
+        lotOwnerGovIdNo: lotOwnerConsent ? lotOwnerGovIdNo : undefined,
+        lotOwnerGovIdDateIssued: lotOwnerConsent ? lotOwnerGovIdDateIssued : undefined,
+        lotOwnerGovIdPlaceIssued: lotOwnerConsent ? lotOwnerGovIdPlaceIssued : undefined,
+        lotOwnerSignedDate: lotOwnerConsent ? lotOwnerSignedDate : undefined,
+        lotOwnerSignature: lotOwnerConsent ? lotOwnerSignature : undefined,
         activePermitForms: mandatoryKeys,
         submissionDate
       };
@@ -1972,10 +2042,11 @@ export default function TechnicalPermitFormsStep({
                         <option value="Repair">Repair</option>
                         <option value="Moving">Moving</option>
                         <option value="Raising">Raising</option>
+                        <option value="Demolition">Demolition</option>
                         <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                         <option value="Others">Others (Specify)</option>
                       </select>
-                      {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+                      {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
                         <div style={{ marginTop: "8px" }}>
                           <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
                             Specify {scopeOfWork} Details (Prints on Form Underline) *
@@ -2177,6 +2248,215 @@ export default function TechnicalPermitFormsStep({
                     </div>
                   </div>
                 </div>
+
+                {/* Section E: Box 5 (BP Box 3): BUILDING OWNER / APPLICANT */}
+                <div style={{ background: "#ffffff", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <div>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e3a8a", textTransform: "uppercase" }}>
+                        BUILDING OWNER / APPLICANT (Signature Over Printed Name & CTC)
+                      </span>
+                      <p style={{ margin: "2px 0 0 0", fontSize: "0.74rem", color: "#64748b" }}>
+                        Official applicant sign-off and Community Tax Certificate (CTC) verification
+                      </p>
+                    </div>
+                    <span style={{ fontSize: "0.7rem", color: "#1e3a8a", fontWeight: "700", background: "#dbeafe", padding: "3px 8px", borderRadius: "4px" }}>
+                      NBC Form B-01 / S-01
+                    </span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.85rem", marginTop: "10px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Applicant Full Name *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={compiledFullName} 
+                        readOnly 
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#f1f5f9", fontWeight: "700" }} 
+                      />
+                      <span style={{ fontSize: "0.68rem", color: "#64748b" }}>Synchronized with Box 1 Owner Name</span>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Signed *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={applicantSignedDate} 
+                        onChange={(e) => setApplicantSignedDate(e.target.value)} 
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "0.85rem" }}>
+                    <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Address *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={compiledFullAddress} 
+                      readOnly 
+                      style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#f1f5f9" }} 
+                    />
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.85rem", marginTop: "0.85rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>C.T.C. No. / Gov't ID No. *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={govIdNo} 
+                        onChange={(e) => setGovIdNo(e.target.value)} 
+                        placeholder="e.g. CTC-2026-08912"
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Issued *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={govIdDateIssued} 
+                        onChange={(e) => setGovIdDateIssued(e.target.value)} 
+                        placeholder="e.g. Jan 10, 2026"
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Place Issued *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={govIdPlaceIssued} 
+                        onChange={(e) => setGovIdPlaceIssued(e.target.value)} 
+                        placeholder="e.g. Sto. Tomas, Pampanga"
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                    <SignatureCreator
+                      value={applicantSignature}
+                      onChange={setApplicantSignature}
+                      label={`Applicant E-Signature (Affixed over printed name: ${compiledFullName})`}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Section F: Box 6 (BP Box 4): WITH MY CONSENT: LOT OWNER */}
+                <div style={{ background: "#ffffff", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#0f172a", textTransform: "uppercase" }}>
+                        WITH MY CONSENT: LOT OWNER
+                      </span>
+                      <p style={{ margin: "2px 0 0 0", fontSize: "0.74rem", color: "#64748b" }}>
+                        Consent of the registered lot owner if different from the applicant
+                      </p>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "700", color: "#2563eb", cursor: "pointer" }}>
+                      <input 
+                        type="checkbox" 
+                        checked={lotOwnerConsent} 
+                        onChange={(e) => setLotOwnerConsent(e.target.checked)} 
+                        style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                      />
+                      Include: With My Consent (Lot Owner)
+                    </label>
+                  </div>
+
+                  {lotOwnerConsent ? (
+                    <div style={{ marginTop: "1rem", paddingTop: "0.85rem", borderTop: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.85rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Lot Owner Full Name (Signature Over Printed Name) *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={lotOwnerName} 
+                            onChange={(e) => setLotOwnerName(e.target.value)} 
+                            placeholder="e.g. MARIA CLARA DELA CRUZ"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white", fontWeight: "700" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Signed *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={lotOwnerSignedDate} 
+                            onChange={(e) => setLotOwnerSignedDate(e.target.value)} 
+                            placeholder="e.g. Jan 08, 2026"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: "0.85rem" }}>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Address *</label>
+                        <input 
+                          type="text" 
+                          required 
+                          value={lotOwnerAddress} 
+                          onChange={(e) => setLotOwnerAddress(e.target.value)} 
+                          placeholder="e.g. Sto. Tomas, Pampanga"
+                          style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                        />
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.85rem", marginTop: "0.85rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>C.T.C. No. / Gov't ID No. *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={lotOwnerGovIdNo} 
+                            onChange={(e) => setLotOwnerGovIdNo(e.target.value)} 
+                            placeholder="e.g. CTC-2026-00871"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Issued *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={lotOwnerGovIdDateIssued} 
+                            onChange={(e) => setLotOwnerGovIdDateIssued(e.target.value)} 
+                            placeholder="e.g. Jan 12, 2026"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Place Issued *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={lotOwnerGovIdPlaceIssued} 
+                            onChange={(e) => setLotOwnerGovIdPlaceIssued(e.target.value)} 
+                            placeholder="e.g. Sto. Tomas, Pampanga"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                        <SignatureCreator
+                          value={lotOwnerSignature}
+                          onChange={setLotOwnerSignature}
+                          label={`Lot Owner E-Signature (Affixed over printed name: ${lotOwnerName || "Lot Owner"})`}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: "0.75rem", padding: "8px 12px", borderRadius: "6px", background: "#f8fafc", color: "#64748b", fontSize: "0.78rem" }}>
+                      Lot Owner Consent will be left blank because the applicant is indicated as the property owner. Check the box above if separate lot owner consent is required.
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -2229,10 +2509,11 @@ export default function TechnicalPermitFormsStep({
                       <option value="Repair">Repair</option>
                       <option value="Moving">Moving</option>
                       <option value="Raising">Raising</option>
+                      <option value="Demolition">Demolition</option>
                       <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                       <option value="Others">Others (Specify)</option>
                     </select>
-                    {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+                    {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
                       <div style={{ marginTop: "8px" }}>
                         <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
                           Specify {scopeOfWork} Details (Prints on Form Underline) *
@@ -2606,65 +2887,41 @@ export default function TechnicalPermitFormsStep({
                   </div>
                 </div>
 
-                {/* Section A: Foundation & Framing */}
-                <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#334155", textTransform: "uppercase" }}>
-                    Foundation & Superstructure Framing Specifications
+                {/* Notice: Box 2 is accomplished on the structural plans */}
+                <div style={{
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  marginBottom: "1rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px"
+                }}>
+                  <Info size={18} color="#0284c7" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: "0.78rem", color: "#475569" }}>
+                    <strong>Box 2 (Nature of Civil/Structural Works):</strong> In compliance with NBC Form S-01, technical framing calculations and specifications are submitted directly on the signed and sealed blueprints. Accomplish the professional engineer and owner verification boxes below.
                   </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1rem", marginTop: "10px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Foundation Type & System *</label>
-                      <input type="text" required value={foundationType} onChange={(e) => setFoundationType(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Embedment Depth *</label>
-                      <input type="text" required value={foundationDepth} onChange={(e) => setFoundationDepth(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Superstructure Framing System *</label>
-                      <input type="text" required value={structuralFraming} onChange={(e) => setStructuralFraming(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Floor Slab System *</label>
-                      <input type="text" required value={floorSlabSystem} onChange={(e) => setFloorSlabSystem(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Roof Framing System *</label>
-                      <input type="text" required value={roofFramingSystem} onChange={(e) => setRoofFramingSystem(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Masonry CHB & Reinforcement *</label>
-                      <input type="text" required value={masonrySpec} onChange={(e) => setMasonrySpec(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                  </div>
                 </div>
 
-                {/* Section B: Material Strength Ratings */}
-                <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#334155", textTransform: "uppercase" }}>
-                    Structural Materials Strength Ratings (NSCP 2015)
-                  </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "10px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Concrete Compressive Strength fc' *</label>
-                      <input type="text" required value={concreteStrength} onChange={(e) => setConcreteStrength(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Steel Rebar Yield Strength fy *</label>
-                      <input type="text" required value={steelGrade} onChange={(e) => setSteelGrade(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section C: Civil Engineer Credentials */}
+                {/* Section C: Civil Engineer Credentials (Box 3) */}
                 <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#334155", textTransform: "uppercase" }}>
-                    Box 2: Design Professional: Civil / Structural Engineer (PICE)
-                  </span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#047857", textTransform: "uppercase" }}>
+                      Box 3: DESIGN PROFESSIONAL, PLANS AND SPECIFICATION (Civil / Structural Engineer)
+                    </span>
+                    <span style={{ fontSize: "0.7rem", color: "#059669", fontWeight: "600" }}>
+                      NBC Form S-01 (Signed & Sealed Over Printed Name)
+                    </span>
+                  </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem", marginTop: "10px" }}>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Civil Engineer Name *</label>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Civil Engineer Full Name *</label>
                       <input type="text" required value={civilEngineerName} onChange={(e) => setCivilEngineerName(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Address *</label>
+                      <input type="text" required value={civilEngineerAddress} onChange={(e) => setCivilEngineerAddress(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>PRC Registration No. *</label>
@@ -2683,10 +2940,314 @@ export default function TechnicalPermitFormsStep({
                       <input type="text" required value={civilEngineerPTR} onChange={(e) => setCivilEngineerPTR(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Place Issued *</label>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Issued *</label>
                       <input type="text" required value={civilEngineerPTRIssued} onChange={(e) => setCivilEngineerPTRIssued(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
                     </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Place Issued *</label>
+                      <input type="text" required value={civilEngineerPTRIssuedAt} onChange={(e) => setCivilEngineerPTRIssuedAt(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Tax Identification No. (TIN) *</label>
+                      <input type="text" required value={civilEngineerTIN} onChange={(e) => setCivilEngineerTIN(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Signed *</label>
+                      <input type="text" required value={civilEngineerSignedDate} onChange={(e) => setCivilEngineerSignedDate(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                    </div>
                   </div>
+                  <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                    <SignatureCreator
+                      value={civilEngineerSignature}
+                      onChange={setCivilEngineerSignature}
+                      label={`Civil Engineer E-Signature (Box 3 - ${civilEngineerName || "Civil Engineer"})`}
+                    />
+                  </div>
+                </div>
+
+                {/* Section D: Supervisor / In-Charge of Civil/Structural Works (Box 4) */}
+                <div style={{ background: "#f0fdf4", border: "1.5px solid #bbf7d0", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#166534", textTransform: "uppercase" }}>
+                      Box 4: SUPERVISOR / IN-CHARGE OF CIVIL/STRUCTURAL WORKS (Civil Engineer)
+                    </span>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#166534", cursor: "pointer" }}>
+                      <input 
+                        type="checkbox" 
+                        checked={sameAsDesignCivilEngineer} 
+                        onChange={e => setSameAsDesignCivilEngineer(e.target.checked)} 
+                      />
+                      Same as Design Professional (Box 3)
+                    </label>
+                  </div>
+
+                  {!sameAsDesignCivilEngineer ? (
+                    <>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Supervisor Civil Engineer Full Name *</label>
+                          <input type="text" required value={supervisorCivilEngineerName} onChange={(e) => setSupervisorCivilEngineerName(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Address *</label>
+                          <input type="text" required value={supervisorCivilEngineerAddress} onChange={(e) => setSupervisorCivilEngineerAddress(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>PRC Registration No. *</label>
+                          <input type="text" required value={supervisorCivilEngineerPRC} onChange={(e) => setSupervisorCivilEngineerPRC(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>PRC Validity Date *</label>
+                          <input type="date" required value={supervisorCivilEngineerPRCValidity} onChange={(e) => setSupervisorCivilEngineerPRCValidity(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>PICE Membership No. *</label>
+                          <input type="text" required value={supervisorCivilEngineerPICE} onChange={(e) => setSupervisorCivilEngineerPICE(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>PTR Number *</label>
+                          <input type="text" required value={supervisorCivilEngineerPTR} onChange={(e) => setSupervisorCivilEngineerPTR(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Date Issued *</label>
+                          <input type="text" required value={supervisorCivilEngineerPTRIssued} onChange={(e) => setSupervisorCivilEngineerPTRIssued(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Place Issued *</label>
+                          <input type="text" required value={supervisorCivilEngineerPTRIssuedAt} onChange={(e) => setSupervisorCivilEngineerPTRIssuedAt(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Tax Identification No. (TIN) *</label>
+                          <input type="text" required value={supervisorCivilEngineerTIN} onChange={(e) => setSupervisorCivilEngineerTIN(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Date Signed *</label>
+                          <input type="text" required value={supervisorCivilEngineerSignedDate} onChange={(e) => setSupervisorCivilEngineerSignedDate(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                        </div>
+                      </div>
+                      <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #bbf7d0" }}>
+                        <SignatureCreator
+                          value={supervisorCivilEngineerSignature}
+                          onChange={setSupervisorCivilEngineerSignature}
+                          label={`Supervisor Civil Engineer E-Signature (Box 4 - ${supervisorCivilEngineerName || "Supervisor Civil Engineer"})`}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ padding: "8px 12px", borderRadius: "6px", background: "#dcfce7", color: "#166534", fontSize: "0.82rem" }}>
+                      Using identical credentials and signature from Box 3 (Design Professional: {civilEngineerName || "Civil Engineer"}).
+                    </div>
+                  )}
+                </div>
+
+                {/* Section E: Box 5: BUILDING OWNER */}
+                <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <div>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e3a8a", textTransform: "uppercase" }}>
+                        BOX 5: BUILDING OWNER (Signature Over Printed Name & CTC Verification)
+                      </span>
+                      <p style={{ margin: "2px 0 0 0", fontSize: "0.74rem", color: "#64748b" }}>
+                        Official owner acknowledgment and Community Tax Certificate (CTC) sign-off
+                      </p>
+                    </div>
+                    <span style={{ fontSize: "0.7rem", color: "#1e3a8a", fontWeight: "700", background: "#dbeafe", padding: "3px 8px", borderRadius: "4px" }}>
+                      NBC Form S-01 Box 5
+                    </span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.85rem", marginTop: "10px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Building Owner Printed Name *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={compiledFullName} 
+                        readOnly 
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#f1f5f9", fontWeight: "700" }} 
+                      />
+                      <span style={{ fontSize: "0.68rem", color: "#64748b" }}>Synchronized with Box 1 Owner Name</span>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Signed *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={applicantSignedDate} 
+                        onChange={(e) => setApplicantSignedDate(e.target.value)} 
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "0.85rem" }}>
+                    <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Address *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={compiledFullAddress} 
+                      readOnly 
+                      style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#f1f5f9" }} 
+                    />
+                    <span style={{ fontSize: "0.68rem", color: "#64748b" }}>Synchronized with Box 1 Street & Barangay Address</span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.85rem", marginTop: "0.85rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>C.T.C. No. / Gov't ID No. *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={govIdNo} 
+                        onChange={(e) => setGovIdNo(e.target.value)} 
+                        placeholder="e.g. CTC-2026-08912"
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Issued *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={govIdDateIssued} 
+                        onChange={(e) => setGovIdDateIssued(e.target.value)} 
+                        placeholder="e.g. Jan 10, 2026"
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Place Issued *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={govIdPlaceIssued} 
+                        onChange={(e) => setGovIdPlaceIssued(e.target.value)} 
+                        placeholder="e.g. Sto. Tomas, Pampanga"
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                    <SignatureCreator
+                      value={applicantSignature}
+                      onChange={setApplicantSignature}
+                      label={`Building Owner E-Signature (Affixed over printed name: ${compiledFullName})`}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Section F: Box 6: WITH MY CONSENT: LOT OWNER */}
+                <div style={{ background: "#ffffff", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#0f172a", textTransform: "uppercase" }}>
+                        BOX 6: WITH MY CONSENT: LOT OWNER
+                      </span>
+                      <p style={{ margin: "2px 0 0 0", fontSize: "0.74rem", color: "#64748b" }}>
+                        Consent of the registered lot owner if different from the building owner / applicant
+                      </p>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "700", color: "#2563eb", cursor: "pointer" }}>
+                      <input 
+                        type="checkbox" 
+                        checked={lotOwnerConsent} 
+                        onChange={(e) => setLotOwnerConsent(e.target.checked)} 
+                        style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                      />
+                      Include Box 6: With My Consent (Lot Owner)
+                    </label>
+                  </div>
+
+                  {lotOwnerConsent ? (
+                    <div style={{ marginTop: "1rem", paddingTop: "0.85rem", borderTop: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.85rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Lot Owner Full Name (Signature Over Printed Name) *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={lotOwnerName} 
+                            onChange={(e) => setLotOwnerName(e.target.value)} 
+                            placeholder="e.g. MARIA CLARA DELA CRUZ"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white", fontWeight: "700" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Signed *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={lotOwnerSignedDate} 
+                            onChange={(e) => setLotOwnerSignedDate(e.target.value)} 
+                            placeholder="e.g. Jan 08, 2026"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: "0.85rem" }}>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Address *</label>
+                        <input 
+                          type="text" 
+                          required 
+                          value={lotOwnerAddress} 
+                          onChange={(e) => setLotOwnerAddress(e.target.value)} 
+                          placeholder="e.g. Sto. Tomas, Pampanga"
+                          style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                        />
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.85rem", marginTop: "0.85rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>C.T.C. No. / Gov't ID No. *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={lotOwnerGovIdNo} 
+                            onChange={(e) => setLotOwnerGovIdNo(e.target.value)} 
+                            placeholder="e.g. CTC-2026-00871"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Issued *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={lotOwnerGovIdDateIssued} 
+                            onChange={(e) => setLotOwnerGovIdDateIssued(e.target.value)} 
+                            placeholder="e.g. Jan 12, 2026"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Place Issued *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={lotOwnerGovIdPlaceIssued} 
+                            onChange={(e) => setLotOwnerGovIdPlaceIssued(e.target.value)} 
+                            placeholder="e.g. Sto. Tomas, Pampanga"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                        <SignatureCreator
+                          value={lotOwnerSignature}
+                          onChange={setLotOwnerSignature}
+                          label={`Lot Owner E-Signature (Affixed over printed name: ${lotOwnerName || "Lot Owner"})`}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: "0.75rem", padding: "8px 12px", borderRadius: "6px", background: "#f8fafc", color: "#64748b", fontSize: "0.78rem" }}>
+                      Box 6 (Lot Owner Consent) will be left blank on the official permit because the applicant is indicated as the property owner. Check the box above if separate lot owner consent is required.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
