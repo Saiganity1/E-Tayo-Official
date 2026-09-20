@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
-import { PenTool, Eraser, Upload, Check, Trash2, RotateCcw, Sparkles } from "lucide-react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import { PenTool, Eraser, Upload, Check, Trash2, Sparkles, CheckCircle2 } from "lucide-react";
 
 interface SignatureCreatorProps {
   value?: string;
@@ -19,12 +19,24 @@ export default function SignatureCreator({
   const [mode, setMode] = useState<"draw" | "upload">("draw");
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
+  const [isSavedRecently, setIsSavedRecently] = useState(false);
+  // If a value is passed in initially, start in preview mode; otherwise, in drawing mode
+  const [isEditing, setIsEditing] = useState<boolean>(!value);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Initialize canvas context
+  // Re-sync editing state if value becomes empty from outside
   useEffect(() => {
-    if (mode === "draw" && canvasRef.current) {
+    if (!value) {
+      setIsEditing(true);
+      setHasDrawn(false);
+    }
+  }, [value]);
+
+  // Set up canvas stroke styling
+  const setupContext = useCallback(() => {
+    if (canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
       if (ctx) {
@@ -34,21 +46,38 @@ export default function SignatureCreator({
         ctx.lineJoin = "round";
       }
     }
-  }, [mode, value]);
+  }, []);
+
+  useEffect(() => {
+    if (mode === "draw" && isEditing) {
+      setupContext();
+    }
+  }, [mode, isEditing, setupContext]);
+
+  // Helper to accurately scale client coordinates to internal canvas resolution
+  const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const clientX = "touches" in e && e.touches.length > 0 ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = "touches" in e && e.touches.length > 0 ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
+    };
+  };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
+    setupContext();
+    const { x, y } = getCanvasCoords(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
@@ -57,26 +86,32 @@ export default function SignatureCreator({
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
+    const { x, y } = getCanvasCoords(e);
     ctx.lineTo(x, y);
     ctx.stroke();
   };
 
   const stopDrawing = (e?: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-    if (e) e.preventDefault();
+    if (e && e.cancelable) e.preventDefault();
     setIsDrawing(false);
+
+    // Auto-save to parent onChange immediately so signature is NEVER lost
+    const canvas = canvasRef.current;
+    if (canvas && hasDrawn) {
+      try {
+        const dataUrl = canvas.toDataURL("image/png");
+        onChange(dataUrl);
+      } catch (err) {
+        console.error("Failed to auto-save drawn signature:", err);
+      }
+    }
   };
 
   const handleClear = () => {
@@ -86,13 +121,17 @@ export default function SignatureCreator({
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHasDrawn(false);
+    setIsSavedRecently(false);
+    onChange("");
   };
 
-  const handleSaveDrawn = () => {
+  const handleManualSave = () => {
     const canvas = canvasRef.current;
     if (!canvas || !hasDrawn) return;
     const dataUrl = canvas.toDataURL("image/png");
     onChange(dataUrl);
+    setIsSavedRecently(true);
+    setTimeout(() => setIsSavedRecently(false), 2000);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,23 +142,20 @@ export default function SignatureCreator({
       const result = event.target?.result as string;
       if (result) {
         onChange(result);
+        setIsEditing(false);
       }
     };
     reader.readAsDataURL(file);
   };
 
   const handleCreateSample = () => {
-    // Generate an authentic sample signature onto the canvas
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#041c72";
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
+    setupContext();
 
     // Draw realistic cursive strokes for sample
     ctx.beginPath();
@@ -140,6 +176,8 @@ export default function SignatureCreator({
     setHasDrawn(true);
     const dataUrl = canvas.toDataURL("image/png");
     onChange(dataUrl);
+    setIsSavedRecently(true);
+    setTimeout(() => setIsSavedRecently(false), 2000);
   };
 
   return (
@@ -148,15 +186,19 @@ export default function SignatureCreator({
         <label style={{ fontSize: "0.78rem", fontWeight: "700", color: "#334155" }}>
           {label} {required && <span style={{ color: "#ef4444" }}>*</span>}
         </label>
-        {value && (
+        {value ? (
           <span style={{ fontSize: "0.72rem", color: "#059669", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
             <Check size={13} /> Signature Affixed
+          </span>
+        ) : (
+          <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
+            <PenTool size={12} /> Draw or Upload
           </span>
         )}
       </div>
 
-      {/* If signature already affixed, show preview with option to change */}
-      {value ? (
+      {/* When collapsed with an existing signature, show clean preview card */}
+      {!isEditing && value ? (
         <div
           style={{
             border: "1.5px solid #cbd5e1",
@@ -191,32 +233,59 @@ export default function SignatureCreator({
                 Valid E-Signature Active
               </span>
               <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
-                This signature will be embedded directly onto the official permit documents.
+                Embedded directly onto official municipal documents.
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => onChange("")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              padding: "6px 12px",
-              borderRadius: "6px",
-              border: "1px solid #fca5a5",
-              background: "#fef2f2",
-              color: "#dc2626",
-              fontSize: "0.75rem",
-              fontWeight: "700",
-              cursor: "pointer"
-            }}
-          >
-            <Trash2 size={13} /> Re-Sign / Clear
-          </button>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditing(true);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                border: "1px solid #bfdbfe",
+                background: "#eff6ff",
+                color: "#1d4ed8",
+                fontSize: "0.75rem",
+                fontWeight: "700",
+                cursor: "pointer"
+              }}
+            >
+              <PenTool size={13} /> Edit / Re-Sign
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setIsEditing(true);
+                setHasDrawn(false);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "6px 10px",
+                borderRadius: "6px",
+                border: "1px solid #fca5a5",
+                background: "#fef2f2",
+                color: "#dc2626",
+                fontSize: "0.75rem",
+                fontWeight: "700",
+                cursor: "pointer"
+              }}
+            >
+              <Trash2 size={13} /> Clear
+            </button>
+          </div>
         </div>
       ) : (
-        /* E-Signature Creator: Drawing Board / Uploader */
+        /* E-Signature Creator: Interactive Drawing Board / Uploader */
         <div
           style={{
             border: "1.5px solid #cbd5e1",
@@ -299,7 +368,7 @@ export default function SignatureCreator({
                     onTouchStart={startDrawing}
                     onTouchMove={draw}
                     onTouchEnd={stopDrawing}
-                    style={{ width: "100%", height: "100%" }}
+                    style={{ width: "100%", height: "100%", display: "block" }}
                   />
 
                   {/* Sign here baseline indicator */}
@@ -315,7 +384,9 @@ export default function SignatureCreator({
                       justifyContent: "space-between"
                     }}
                   >
-                    <span style={{ fontSize: "0.65rem", color: "#94a3b8", userSelect: "none" }}>Sign above this line (Mouse / Touch / Stylus)</span>
+                    <span style={{ fontSize: "0.65rem", color: "#94a3b8", userSelect: "none" }}>
+                      Sign above this line (Mouse / Touch / Stylus)
+                    </span>
                     <span style={{ fontSize: "0.65rem", color: "#94a3b8", userSelect: "none" }}>X</span>
                   </div>
                 </div>
@@ -363,26 +434,55 @@ export default function SignatureCreator({
                     </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleSaveDrawn}
-                    disabled={!hasDrawn}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      padding: "6px 14px",
-                      borderRadius: "6px",
-                      border: "none",
-                      background: hasDrawn ? "#2563eb" : "#94a3b8",
-                      color: "#ffffff",
-                      fontSize: "0.75rem",
-                      fontWeight: "700",
-                      cursor: hasDrawn ? "pointer" : "not-allowed"
-                    }}
-                  >
-                    <Check size={13} /> Save E-Signature
-                  </button>
+                  <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+                    <button
+                      type="button"
+                      onClick={handleManualSave}
+                      disabled={!hasDrawn && !value}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        padding: "6px 14px",
+                        borderRadius: "6px",
+                        border: "none",
+                        background: isSavedRecently ? "#059669" : (hasDrawn || value) ? "#2563eb" : "#94a3b8",
+                        color: "#ffffff",
+                        fontSize: "0.75rem",
+                        fontWeight: "700",
+                        cursor: (hasDrawn || value) ? "pointer" : "not-allowed",
+                        transition: "background 0.2s"
+                      }}
+                    >
+                      {isSavedRecently ? (
+                        <>
+                          <CheckCircle2 size={13} /> Saved!
+                        </>
+                      ) : (
+                        <>
+                          <Check size={13} /> Save E-Signature
+                        </>
+                      )}
+                    </button>
+                    {value && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(false)}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          background: "#ffffff",
+                          color: "#334155",
+                          fontSize: "0.75rem",
+                          fontWeight: "600",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Done
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -438,3 +538,4 @@ export default function SignatureCreator({
     </div>
   );
 }
+

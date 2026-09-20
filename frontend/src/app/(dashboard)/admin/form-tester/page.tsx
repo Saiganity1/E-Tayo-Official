@@ -78,17 +78,25 @@ const FORMS: FormOption[] = [
 
 const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   applicationNo: "APP-TEST-2026-0001",
+  permitNo: "AP-2026-0001",
+  buildingPermitNo: "BP-2026-0001",
   locationalClearanceRef: "LC-2026-9307",
   projectType: PROJECT_TYPES_MATRIX[0],
   applicantFirstName: "JUAN",
   applicantMiddleName: "SANTOS",
   applicantLastName: "DELA CRUZ",
   applicantName: "JUAN DELA CRUZ",
-  applicantPhone: "0917-555-0199",
+  applicantPhone: "0917-123-4567",
   applicantEmail: "juan.delacruz@example.com",
-  applicantAddress: "123 RIZAL ST., BRGY. POBLACION, STO. TOMAS, PAMPANGA",
+  applicantAddress: "123 RIZAL ST., POBLACION, STO. TOMAS, PAMPANGA",
+  applicantNoStreet: "123 RIZAL ST.",
+  applicantBarangay: "POBLACION",
+  applicantMunicipality: "STO. TOMAS",
+  applicantProvince: "PAMPANGA",
+  applicantZipCode: "2020",
   applicantTIN: "123-456-789-000",
   formOfOwnership: "INDIVIDUAL / OWNER",
+  constructionOwnedByEnterprise: "N/A (INDIVIDUAL)",
   govIdNo: "PRC-ID-00987654",
 
   // Header Classifications & Applications (BP)
@@ -111,9 +119,23 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   projectCost: "2,500,000.00",
   scopeOfWork: "New Construction",
   scopeOthers: "",
+  scopeOfWorkDetails: "",
+  percentBuildingFootprint: "55.00",
+  percentImperviousSurface: "25.00",
+  percentUnpavedSurface: "20.00",
+  percentSiteOccupancyOthers: "",
+  fireCodeExitDoors: true,
+  fireCodeCorridors: true,
+  fireCodeDistanceExits: true,
+  fireCodeAccessStreet: true,
+  fireCodeFireWalls: true,
+  fireCodeFireFighting: false,
+  fireCodeSmokeDetectors: true,
+  fireCodeEmergencyLights: true,
+  fireCodeOthers: "",
   projectNature: "New Development",
   natureOthers: "",
-  occupancyClass: "Group A - Residential",
+  occupancyClass: "RESIDENTIAL",
   proposedStoreys: "2",
   numberOfUnits: "1",
   proposedStartDate: "2026-10-01",
@@ -257,16 +279,30 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   constructionSupervisorName: "Engr. Roberto Cruz, CE",
   cfeiInspectorName: "Engr. GILBERT B. CRUZ, Electrical Inspector",
 
-  // Professional Credentials
+  // Professional Credentials - Box 3: Design Professional
   architectName: "ARCH. MARIA ELENA SANTOS, UAP",
   architectAddress: "Sto. Tomas, Pampanga",
   architectPRC: "0045211",
   architectPRCValidity: "2028-09-15",
   architectIAPOA: "IAPOA-2026-9988",
+  architectIAPOAValidity: "2028-12-31",
   architectPTR: "PTR-ST-665544",
   architectPTRIssued: "Jan 08, 2026",
   architectPTRIssuedAt: "Sto. Tomas",
   architectTIN: "234-567-890-000",
+
+  // Box 4: Supervisor / In-Charge of Architectural Works
+  sameAsDesignArchitect: false,
+  supervisorArchitectName: "ARCH. JUAN CARLOS REYES, UAP",
+  supervisorArchitectAddress: "Sto. Tomas, Pampanga",
+  supervisorArchitectPRC: "0056123",
+  supervisorArchitectPRCValidity: "2027-08-20",
+  supervisorArchitectIAPOA: "IAPOA-2026-8877",
+  supervisorArchitectIAPOAValidity: "2027-12-31",
+  supervisorArchitectPTR: "PTR-ST-778899",
+  supervisorArchitectPTRIssued: "Jan 10, 2026",
+  supervisorArchitectPTRIssuedAt: "Sto. Tomas",
+  supervisorArchitectTIN: "345-678-901-000",
 
   civilEngineerName: "ENGR. ROBERTO CRUZ, PICE",
   civilEngineerAddress: "Sto. Tomas, Pampanga",
@@ -321,15 +357,15 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   // Box 3 & Box 4: Owner E-Signature & Government ID
   govIdDateIssued: "Jan 10, 2024",
   govIdPlaceIssued: "Sto. Tomas",
-  applicantSignature: "",
+  applicantSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih0p4xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
   representativeSignature: "",
-  lotOwnerConsent: false,
-  lotOwnerName: "",
-  lotOwnerSignature: "",
-  lotOwnerAddress: "",
-  lotOwnerGovIdNo: "",
-  lotOwnerGovIdDateIssued: "",
-  lotOwnerGovIdPlaceIssued: "",
+  lotOwnerConsent: true,
+  lotOwnerName: "Dave Sicat",
+  lotOwnerSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih0p4xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+  lotOwnerAddress: "153 Sitio Visitas",
+  lotOwnerGovIdNo: "PRC-ID-00987654",
+  lotOwnerGovIdDateIssued: "Jan 10, 2024",
+  lotOwnerGovIdPlaceIssued: "Sto. Tomas",
 
   // Corporation & Representative (for LC)
   corporationName: "",
@@ -339,6 +375,52 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   representativeAddress: "",
   representativePhone: "",
   projectCostWords: "TWO MILLION FIVE HUNDRED THOUSAND PESOS ONLY",
+};
+
+const getAutoPermitNumber = (formId: string, applicationNo?: string): string => {
+  const clean = (applicationNo || "2026-0001").replace(/^APP-(TEST-)?/i, "").trim();
+  const yearSeq = clean || "2026-0001";
+  switch (formId) {
+    case "AP": return `AP-${yearSeq}`;
+    case "SP": return `SP-${yearSeq}`;
+    case "EP": return `EP-${yearSeq}`;
+    case "PL": return `PP-${yearSeq}`;
+    case "MP": return `MP-${yearSeq}`;
+    case "EL": return `EL-${yearSeq}`;
+    case "BP": return `BP-${yearSeq}`;
+    case "DP": return `DP-${yearSeq}`;
+    case "FP": return `FP-${yearSeq}`;
+    case "EXP": return `EXP-${yearSeq}`;
+    case "SGP": return `SGP-${yearSeq}`;
+    case "TSC": return `TSC-${yearSeq}`;
+    case "CO": return `CO-${yearSeq}`;
+    case "CC": return `CC-${yearSeq}`;
+    case "CFEI": return `CFEI-${yearSeq}`;
+    default: return `${formId}-${yearSeq}`;
+  }
+};
+
+const getPermitNoLabel = (formId: string): string => {
+  switch (formId) {
+    case "AP": return "Architectural Permit No. (AP NO)";
+    case "SP": return "Civil / Structural Permit No. (C/SP NO)";
+    case "EP": return "Electrical Permit No. (EP NO)";
+    case "PL": return "Sanitary / Plumbing Permit No. (PP NO)";
+    case "MP": return "Mechanical Permit No. (MP NO)";
+    case "EL": return "Electronics Permit No. (EL NO)";
+    case "BP": return "Building Permit No. (BP NO)";
+    case "DP": return "Demolition Permit No. (DP NO)";
+    case "FP": return "Fencing Permit No. (FP NO)";
+    case "EXP": return "Excavation Permit No. (EXP NO)";
+    case "SGP": return "Sign Permit No. (SGP NO)";
+    case "TSC": return "Temporary Service Permit No. (TSC NO)";
+    default: return `${formId} Permit No.`;
+  }
+};
+
+const isFormLinkedToBuildingPermit = (formId: string): boolean => {
+  // Ancillary permits and certificates that connect to the master Building Permit No.
+  return ["AP", "SP", "EP", "PL", "MP", "EL", "CO", "CC", "CFEI"].includes(formId);
 };
 
 export default function FormTestingStudio() {
@@ -404,7 +486,8 @@ export default function FormTestingStudio() {
     const first = part === "first" ? val : (formData.applicantFirstName || "");
     const middle = part === "middle" ? val : (formData.applicantMiddleName || "");
     const last = part === "last" ? val : (formData.applicantLastName || "");
-    const full = [first, middle, last].filter(Boolean).join(" ");
+    const miDisplay = middle ? (middle.endsWith(".") ? middle : middle[0] + ".") : "";
+    const full = [first, miDisplay, last].filter(Boolean).join(" ");
     setFormData(prev => ({
       ...prev,
       applicantFirstName: first,
@@ -514,7 +597,7 @@ export default function FormTestingStudio() {
           landUseOthers: formData.landUseOthers || "",
           agriculturalCrop: formData.agriculturalCrop || "",
           isTenanted: formData.isTenanted || "No",
-          projectCost: formData.projectCost,
+          projectCost: formData.projectCost || "2,500,000.00",
           projectCostWords: formData.projectCostWords || numberToWordsInPesos(formData.projectCost || "2,500,000.00"),
           hasWrittenNotice: formData.hasWrittenNotice || "No",
           noticeOfficer: formData.noticeOfficer || "",
@@ -903,37 +986,217 @@ export default function FormTestingStudio() {
           <div style={{ padding: "1.5rem", maxHeight: "750px", overflowY: "auto" }}>
             {(activeTab === "general" || selectedForm.id === "LC") && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569" }}>
-                      {(selectedForm.id === "CO" || selectedForm.id === "CC")
-                        ? "Building Permit Ref. No." 
-                        : (selectedForm.id === "CFEI" ? "Application Reference No." : "Application No.")}
-                    </label>
-                    <span style={{ fontSize: "0.68rem", color: "#0284c7", fontWeight: "700", background: "#e0f2fe", padding: "1px 6px", borderRadius: "4px" }}>
-                      Auto-gathered
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: selectedForm.id === "LC" 
+                    ? "1fr" 
+                    : isFormLinkedToBuildingPermit(selectedForm.id) 
+                      ? "1fr 1fr 1fr" 
+                      : "1fr 1fr",
+                  gap: "0.75rem"
+                }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569" }}>
+                        {(selectedForm.id === "CO" || selectedForm.id === "CC")
+                          ? "Building Permit Ref. No." 
+                          : (selectedForm.id === "CFEI" ? "Application Reference No." : "Application No.")}
+                      </label>
+                      <span style={{ fontSize: "0.68rem", color: "#0284c7", fontWeight: "700", background: "#e0f2fe", padding: "1px 6px", borderRadius: "4px" }}>
+                        Auto-gathered
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.applicationNo}
+                      readOnly
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        fontWeight: "600",
+                        background: "#f8fafc",
+                        color: "#334155",
+                        cursor: "not-allowed"
+                      }}
+                    />
+                    <span style={{ display: "block", fontSize: "0.7rem", color: "#64748b", marginTop: "3px" }}>
+                      Automatically gathered from user Application Number
                     </span>
                   </div>
-                  <input
-                    type="text"
-                    value={formData.applicationNo}
-                    readOnly
-                    style={{
-                      width: "100%",
-                      padding: "8px 10px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      fontSize: "0.85rem",
-                      fontWeight: "600",
-                      background: "#f8fafc",
-                      color: "#334155",
-                      cursor: "not-allowed"
-                    }}
-                  />
-                  <span style={{ display: "block", fontSize: "0.7rem", color: "#64748b", marginTop: "3px" }}>
-                    Automatically gathered from user Application Number
-                  </span>
+
+                  {selectedForm.id !== "LC" && (
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                        <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569" }}>
+                          {getPermitNoLabel(selectedForm.id)}
+                        </label>
+                        <span style={{ fontSize: "0.68rem", color: "#059669", fontWeight: "700", background: "#d1fae5", padding: "1px 6px", borderRadius: "4px" }}>
+                          Auto-generated
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.permitNo || getAutoPermitNumber(selectedForm.id, formData.applicationNo)}
+                        onChange={e => handleFieldChange("permitNo", e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "8px 10px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #10b981",
+                          fontSize: "0.85rem",
+                          fontWeight: "700",
+                          background: "#f0fdf4",
+                          color: "#065f46"
+                        }}
+                      />
+                      <span style={{ display: "block", fontSize: "0.7rem", color: "#64748b", marginTop: "3px" }}>
+                        Auto-generated and mapped directly into official {selectedForm.code} boxes
+                      </span>
+                    </div>
+                  )}
+
+                  {isFormLinkedToBuildingPermit(selectedForm.id) && (
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                        <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569" }}>
+                          Building Permit No. (BP NO)
+                        </label>
+                        <span style={{ fontSize: "0.68rem", color: "#2563eb", fontWeight: "700", background: "#dbeafe", padding: "1px 6px", borderRadius: "4px" }}>
+                          Auto-gathered (Connected)
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.buildingPermitNo || (formData.applicationNo ? getAutoPermitNumber("BP", formData.applicationNo) : "BP-2026-0001")}
+                        onChange={e => handleFieldChange("buildingPermitNo", e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "8px 10px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #3b82f6",
+                          fontSize: "0.85rem",
+                          fontWeight: "700",
+                          background: "#eff6ff",
+                          color: "#1d4ed8"
+                        }}
+                      />
+                      <span style={{ display: "block", fontSize: "0.7rem", color: "#64748b", marginTop: "3px" }}>
+                        Auto-gathered from project with Building Permit — mapped into the 10 official boxes
+                      </span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Project Selection & Building Permit Auto-Gather Connection Card */}
+                {selectedForm.id !== "LC" && (
+                  <div style={{
+                    padding: "1rem 1.25rem",
+                    borderRadius: "12px",
+                    background: (formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType) ? "#f0fdf4" : "#f8fafc",
+                    border: (formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType) ? "1.5px solid #86efac" : "1.5px solid #e2e8f0",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Building2 size={16} color={(formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType) ? "#16a34a" : "#64748b"} />
+                        <span style={{ fontSize: "0.82rem", fontWeight: "800", color: (formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType) ? "#14532d" : "#334155" }}>
+                          Selected Project & Building Permit Connection
+                        </span>
+                      </div>
+                      {(formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType) ? (
+                        <span style={{ fontSize: "0.72rem", background: "#dcfce7", color: "#15803d", padding: "3px 8px", borderRadius: "6px", fontWeight: "800", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          <CheckCircle2 size={12} /> Connected with Master Building Permit
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: "0.72rem", background: "#f1f5f9", color: "#64748b", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                          Standalone Permit (No Building Permit Required)
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
+                          Pick Project / Construction Type
+                        </label>
+                        <select
+                          value={formData.projectType?.id || PROJECT_TYPES_MATRIX[0].id}
+                          onChange={e => {
+                            const selected = PROJECT_TYPES_MATRIX.find(p => p.id === e.target.value);
+                            if (selected) {
+                              const hasBp = selected.matrix?.buildingPermit === 'required' || selected.matrix?.buildingPermit === 'conditional';
+                              const cleanApp = (formData.applicationNo || "2026-0001").replace(/^APP-(TEST-)?/i, "").trim();
+                              setFormData(prev => ({
+                                ...prev,
+                                projectType: selected,
+                                projectName: prev.projectName && prev.projectName !== prev.projectType?.name ? prev.projectName : `${selected.name} Project`,
+                                buildingPermitNo: hasBp ? (prev.buildingPermitNo || `BP-${cleanApp}`) : prev.buildingPermitNo,
+                                occupancyClass: selected.category ? selected.category.toUpperCase() : (prev.occupancyClass || "RESIDENTIAL")
+                              }));
+                            }
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "8px",
+                            border: "1.5px solid #cbd5e1",
+                            fontSize: "0.85rem",
+                            background: "#ffffff",
+                            fontWeight: "700",
+                            color: "#0f172a",
+                            cursor: "pointer"
+                          }}
+                        >
+                          {Array.from(new Set(PROJECT_TYPES_MATRIX.map(p => p.category))).map(cat => (
+                            <optgroup key={cat} label={`── ${cat.toUpperCase()} ──`}>
+                              {PROJECT_TYPES_MATRIX.filter(p => p.category === cat).map(proj => (
+                                <option key={proj.id} value={proj.id}>
+                                  {proj.name} {proj.matrix?.buildingPermit === 'required' ? "• [With Building Permit]" : "• [Standalone]"}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
+                          Master Building Permit No. (Auto-Gathered)
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.buildingPermitNo || ""}
+                          onChange={e => handleFieldChange("buildingPermitNo", e.target.value)}
+                          placeholder="BP-2026-0001"
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "8px",
+                            border: (formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType) ? "1.5px solid #16a34a" : "1px solid #cbd5e1",
+                            fontSize: "0.85rem",
+                            fontWeight: "700",
+                            background: (formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType) ? "#f0fdf4" : "#f8fafc",
+                            color: (formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType) ? "#15803d" : "#64748b"
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: "0.73rem", color: (formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType) ? "#166534" : "#64748b", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Sparkles size={13} color={(formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType) ? "#16a34a" : "#94a3b8"} />
+                      <span>
+                        {(formData.projectType?.matrix?.buildingPermit === 'required' || !formData.projectType)
+                          ? `Auto-gathering active: Picking this project connects the Master Building Permit (${formData.buildingPermitNo || "BP-2026-0001"}). In the Architectural Permit (NBC Form A-01), the 10 official boxes under "BUILDING PERMIT NO." are automatically filled.`
+                          : "This project does not require a Building Permit. Ancillary boxes will remain unlinked unless a Building Permit is specified."}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* BP Classification & Application Type */}
                 {selectedForm.id === "BP" && (
@@ -1041,92 +1304,495 @@ export default function FormTestingStudio() {
                   </div>
                 )}
 
-                {/* Separated Applicant Name inputs */}
-                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr 1.2fr", gap: "0.75rem" }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                      First Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.applicantFirstName || ""}
-                      onChange={e => handleNamePartChange("first", e.target.value)}
-                      style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "600" }}
-                    />
+                {/* BOX 1: OWNER / APPLICANT - Specific Official Form Layout matching screenshot */}
+                <div style={{
+                  borderRadius: "10px",
+                  border: "2px solid #0f172a",
+                  overflow: "hidden",
+                  background: "#ffffff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                }}>
+                  {/* Official Header Strip */}
+                  <div style={{
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    padding: "6px 12px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                  }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: "800", letterSpacing: "0.5px" }}>
+                      BOX 1 (TO BE ACCOMPLISHED IN PRINT BY THE OWNER/APPLICANT)
+                    </span>
+                    <span style={{ fontSize: "0.68rem", background: "rgba(255,255,255,0.2)", color: "#ffffff", padding: "1px 6px", borderRadius: "4px", fontWeight: "700" }}>
+                      Specific Official Fields
+                    </span>
                   </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                      M.I.
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.applicantMiddleName || ""}
-                      onChange={e => handleNamePartChange("middle", e.target.value)}
-                      style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "600" }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                      Last Name / Surname
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.applicantLastName || ""}
-                      onChange={e => handleNamePartChange("last", e.target.value)}
-                      style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "600" }}
-                    />
+
+                  {/* Specific Name Grid matching screenshot: OWNER/APPLICANT | LAST NAME | FIRST NAME | M.I. | TIN */}
+                  <div style={{ padding: "0.85rem 1rem", background: "#f8fafc" }}>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: selectedForm.id === "LC" ? "120px 1.4fr 1.2fr 0.6fr" : "110px 1.4fr 1.2fr 0.6fr 1fr",
+                      gap: "0.65rem",
+                      alignItems: "end"
+                    }}>
+                      {/* OWNER/APPLICANT Tag */}
+                      <div style={{ paddingBottom: "8px" }}>
+                        <span style={{
+                          display: "block",
+                          fontSize: "0.72rem",
+                          fontWeight: "800",
+                          color: "#1e293b",
+                          letterSpacing: "0.4px"
+                        }}>
+                          OWNER / APPLICANT
+                        </span>
+                        <span style={{ fontSize: "0.66rem", color: "#64748b" }}>
+                          (Print in capital letters)
+                        </span>
+                      </div>
+
+                      {/* LAST NAME */}
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "800", color: "#334155", marginBottom: "4px", letterSpacing: "0.3px" }}>
+                          LAST NAME
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="DELA CRUZ"
+                          value={formData.applicantLastName || ""}
+                          onChange={e => handleNamePartChange("last", e.target.value.toUpperCase())}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "6px",
+                            border: "1.5px solid #cbd5e1",
+                            fontSize: "0.88rem",
+                            fontWeight: "800",
+                            color: "#0f172a",
+                            background: "#ffffff",
+                            textTransform: "uppercase"
+                          }}
+                        />
+                      </div>
+
+                      {/* FIRST NAME */}
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "800", color: "#334155", marginBottom: "4px", letterSpacing: "0.3px" }}>
+                          FIRST NAME
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="JUAN"
+                          value={formData.applicantFirstName || ""}
+                          onChange={e => handleNamePartChange("first", e.target.value.toUpperCase())}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "6px",
+                            border: "1.5px solid #cbd5e1",
+                            fontSize: "0.88rem",
+                            fontWeight: "800",
+                            color: "#0f172a",
+                            background: "#ffffff",
+                            textTransform: "uppercase"
+                          }}
+                        />
+                      </div>
+
+                      {/* M.I. */}
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "800", color: "#334155", marginBottom: "4px", letterSpacing: "0.3px", textAlign: "center" }}>
+                          M.I.
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="S."
+                          maxLength={4}
+                          value={formData.applicantMiddleName || ""}
+                          onChange={e => handleNamePartChange("middle", e.target.value.toUpperCase())}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "6px",
+                            border: "1.5px solid #cbd5e1",
+                            fontSize: "0.88rem",
+                            fontWeight: "800",
+                            color: "#0f172a",
+                            background: "#ffffff",
+                            textTransform: "uppercase",
+                            textAlign: "center"
+                          }}
+                        />
+                      </div>
+
+                      {/* TIN (if not LC) */}
+                      {selectedForm.id !== "LC" && (
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "800", color: "#334155", marginBottom: "4px", letterSpacing: "0.3px" }}>
+                            TIN
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="123-456-789-000"
+                            value={formData.applicantTIN || ""}
+                            onChange={e => handleFieldChange("applicantTIN", e.target.value)}
+                            style={{
+                              width: "100%",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              border: "1.5px solid #cbd5e1",
+                              fontSize: "0.88rem",
+                              fontWeight: "700",
+                              color: "#0f172a",
+                              background: "#ffffff"
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Compiled Form Full Name Display */}
+                    <div style={{
+                      marginTop: "0.65rem",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      background: "#e0f2fe",
+                      border: "1px solid #bae6fd",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between"
+                    }}>
+                      <span style={{ fontSize: "0.72rem", color: "#0369a1", fontWeight: "700" }}>
+                        Compiled Form Full Name:
+                      </span>
+                      <span style={{ fontSize: "0.82rem", color: "#0c4a6e", fontWeight: "800" }}>
+                        {formData.applicantFirstName || "JUAN"} {formData.applicantMiddleName ? (formData.applicantMiddleName.endsWith(".") ? formData.applicantMiddleName : formData.applicantMiddleName[0] + ".") : "S."} {formData.applicantLastName || "DELA CRUZ"}
+                      </span>
+                    </div>
+
+                    {/* Official Row 2 of Box 1: FOR CONSTRUCTION OWNED BY AN ENTERPRISE | FORM OF OWNERSHIP | USE OR CHARACTER OF OCCUPANCY */}
+                    <div style={{
+                      marginTop: "0.85rem",
+                      paddingTop: "0.85rem",
+                      borderTop: "1.5px dashed #cbd5e1"
+                    }}>
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "1.4fr 1.1fr 1.2fr",
+                        gap: "0.65rem",
+                        alignItems: "start"
+                      }}>
+                        {/* 1. FOR CONSTRUCTION OWNED BY AN ENTERPRISE */}
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.72rem", fontWeight: "900", color: "#1e293b", letterSpacing: "0.3px", lineHeight: "1.25" }}>
+                              <div>FOR CONSTRUCTION OWNED</div>
+                              <div style={{ color: "#2563eb" }}>BY AN ENTERPRISE</div>
+                            </label>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="e.g. SAN MIGUEL CORP. (or N/A)"
+                            value={formData.constructionOwnedByEnterprise ?? formData.corporationName ?? ""}
+                            onChange={e => {
+                              handleFieldChange("constructionOwnedByEnterprise", e.target.value.toUpperCase());
+                              handleFieldChange("corporationName", e.target.value.toUpperCase());
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              border: "1.5px solid #cbd5e1",
+                              fontSize: "0.85rem",
+                              fontWeight: "700",
+                              color: "#0f172a",
+                              background: "#ffffff",
+                              textTransform: "uppercase"
+                            }}
+                          />
+                          <span style={{ display: "block", fontSize: "0.66rem", color: "#64748b", marginTop: "3px" }}>
+                            Name of enterprise / corporation owning the construction (or N/A)
+                          </span>
+                        </div>
+
+                        {/* 2. FORM OF OWNERSHIP */}
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "900", color: "#1e293b", marginBottom: "4px", letterSpacing: "0.2px" }}>
+                            FORM OF OWNERSHIP
+                          </label>
+                          <select
+                            value={["INDIVIDUAL / OWNER", "INDIVIDUAL / SOLE PROPRIETORSHIP", "CORPORATION", "PARTNERSHIP", "GOVERNMENT / INSTITUTIONAL", "NON-PROFIT / NGO", "COOPERATIVE"].includes((formData.formOfOwnership || "INDIVIDUAL / OWNER").toUpperCase()) ? (formData.formOfOwnership || "INDIVIDUAL / OWNER").toUpperCase() : "OTHERS"}
+                            onChange={e => {
+                              if (e.target.value !== "OTHERS") {
+                                handleFieldChange("formOfOwnership", e.target.value);
+                              } else {
+                                handleFieldChange("formOfOwnership", "");
+                              }
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              border: "1.5px solid #cbd5e1",
+                              fontSize: "0.85rem",
+                              fontWeight: "700",
+                              color: "#0f172a",
+                              background: "#ffffff",
+                              cursor: "pointer"
+                            }}
+                          >
+                            <option value="INDIVIDUAL / OWNER">INDIVIDUAL / OWNER</option>
+                            <option value="INDIVIDUAL / SOLE PROPRIETORSHIP">INDIVIDUAL / SOLE PROPRIETORSHIP</option>
+                            <option value="CORPORATION">CORPORATION</option>
+                            <option value="PARTNERSHIP">PARTNERSHIP</option>
+                            <option value="GOVERNMENT / INSTITUTIONAL">GOVERNMENT / INSTITUTIONAL</option>
+                            <option value="NON-PROFIT / NGO">NON-PROFIT / NGO</option>
+                            <option value="COOPERATIVE">COOPERATIVE</option>
+                            <option value="OTHERS">OTHER (CUSTOM)</option>
+                          </select>
+                          {!["INDIVIDUAL / OWNER", "INDIVIDUAL / SOLE PROPRIETORSHIP", "CORPORATION", "PARTNERSHIP", "GOVERNMENT / INSTITUTIONAL", "NON-PROFIT / NGO", "COOPERATIVE"].includes((formData.formOfOwnership || "").toUpperCase()) && (
+                            <input
+                              type="text"
+                              placeholder="Specify Form of Ownership..."
+                              value={formData.formOfOwnership || ""}
+                              onChange={e => handleFieldChange("formOfOwnership", e.target.value.toUpperCase())}
+                              style={{
+                                width: "100%",
+                                marginTop: "5px",
+                                padding: "6px 9px",
+                                borderRadius: "6px",
+                                border: "1.5px solid #93c5fd",
+                                fontSize: "0.82rem",
+                                fontWeight: "700",
+                                color: "#0f172a",
+                                background: "#f0f9ff"
+                              }}
+                            />
+                          )}
+                          <span style={{ display: "block", fontSize: "0.66rem", color: "#64748b", marginTop: "3px" }}>
+                            Legal ownership structure
+                          </span>
+                        </div>
+
+                        {/* 3. USE OR CHARACTER OF OCCUPANCY */}
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "900", color: "#1e293b", marginBottom: "4px", letterSpacing: "0.2px" }}>
+                            USE OR CHARACTER OF OCCUPANCY
+                          </label>
+                          <select
+                            value={(() => {
+                              const upper = (formData.occupancyClass || "RESIDENTIAL").toUpperCase();
+                              if (upper.includes("RESIDENTIAL")) return "RESIDENTIAL";
+                              if (upper.includes("COMMERCIAL")) return "COMMERCIAL";
+                              if (upper.includes("INDUSTRIAL")) return "INDUSTRIAL";
+                              if (upper.includes("INSTITUTIONAL")) return "INSTITUTIONAL";
+                              if (upper.includes("AGRICULTURAL")) return "AGRICULTURAL";
+                              if (upper.includes("EDUCATIONAL")) return "EDUCATIONAL & RECREATIONAL";
+                              if (upper.includes("ASSEMBLY")) return "ASSEMBLY / RECREATION";
+                              return ["RESIDENTIAL", "COMMERCIAL", "INDUSTRIAL", "INSTITUTIONAL", "AGRICULTURAL", "EDUCATIONAL & RECREATIONAL", "ASSEMBLY / RECREATION"].includes(upper) ? upper : "OTHERS";
+                            })()}
+                            onChange={e => {
+                              if (e.target.value !== "OTHERS") {
+                                handleFieldChange("occupancyClass", e.target.value);
+                              } else {
+                                handleFieldChange("occupancyClass", "");
+                              }
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              border: "1.5px solid #cbd5e1",
+                              fontSize: "0.85rem",
+                              fontWeight: "700",
+                              color: "#0f172a",
+                              background: "#ffffff",
+                              cursor: "pointer"
+                            }}
+                          >
+                            <option value="RESIDENTIAL">RESIDENTIAL</option>
+                            <option value="COMMERCIAL">COMMERCIAL</option>
+                            <option value="INDUSTRIAL">INDUSTRIAL</option>
+                            <option value="INSTITUTIONAL">INSTITUTIONAL</option>
+                            <option value="AGRICULTURAL">AGRICULTURAL</option>
+                            <option value="EDUCATIONAL & RECREATIONAL">EDUCATIONAL & RECREATIONAL</option>
+                            <option value="ASSEMBLY / RECREATION">ASSEMBLY / RECREATION</option>
+                            <option value="OTHERS">OTHER (CUSTOM)</option>
+                          </select>
+                          {!["RESIDENTIAL", "COMMERCIAL", "INDUSTRIAL", "INSTITUTIONAL", "AGRICULTURAL", "EDUCATIONAL & RECREATIONAL", "ASSEMBLY / RECREATION"].includes((formData.occupancyClass || "").toUpperCase()) && !(formData.occupancyClass || "").toUpperCase().includes("RESIDENTIAL") && (
+                            <input
+                              type="text"
+                              placeholder="Specify Character of Occupancy..."
+                              value={formData.occupancyClass || ""}
+                              onChange={e => handleFieldChange("occupancyClass", e.target.value.toUpperCase())}
+                              style={{
+                                width: "100%",
+                                marginTop: "5px",
+                                padding: "6px 9px",
+                                borderRadius: "6px",
+                                border: "1.5px solid #93c5fd",
+                                fontSize: "0.82rem",
+                                fontWeight: "700",
+                                color: "#0f172a",
+                                background: "#f0f9ff"
+                              }}
+                            />
+                          )}
+                          <span style={{ display: "block", fontSize: "0.66rem", color: "#64748b", marginTop: "3px" }}>
+                            NBC occupancy classification
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                    Applicant / Owner Full Name (Box 1)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.applicantName}
-                    onChange={e => handleFieldChange("applicantName", e.target.value)}
-                    style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "600" }}
-                  />
-                </div>
+                {/* Box 1 Row 3: ADDRESS: NO., SITIO, | BARANGAY, | MUNICIPALITY | ZIP CODE | CONTACT NO. */}
+                <div style={{
+                  padding: "0.85rem 1rem",
+                  borderRadius: "10px",
+                  background: "#f8fafc",
+                  border: "1.5px solid #e2e8f0"
+                }}>
+                  <div style={{
+                    fontSize: "0.74rem",
+                    fontWeight: "900",
+                    color: "#1e293b",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.4px",
+                    marginBottom: "0.6rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between"
+                  }}>
+                    <span>ADDRESS & CONTACT INFORMATION</span>
+                    <span style={{ fontSize: "0.66rem", color: "#64748b", fontWeight: "600" }}>
+                      Official Government Form Grid (Row 3)
+                    </span>
+                  </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: selectedForm.id === "LC" ? "1fr" : "1fr 1fr", gap: "0.75rem" }}>
-                  {selectedForm.id !== "LC" && (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1.3fr 1.1fr 1.1fr 0.7fr 1.1fr 1.4fr",
+                    gap: "0.65rem"
+                  }}>
+                    {/* 1. NO., STREET / SITIO */}
                     <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                        Applicant TIN
+                      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "3px" }}>
+                        NO., STREET, SITIO
                       </label>
                       <input
                         type="text"
-                        value={formData.applicantTIN || ""}
-                        onChange={e => handleFieldChange("applicantTIN", e.target.value)}
-                        style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                        value={formData.applicantNoStreet || "123 RIZAL ST."}
+                        onChange={e => {
+                          const val = e.target.value.toUpperCase();
+                          handleFieldChange("applicantNoStreet", val);
+                          handleFieldChange("applicantAddress", `${val}, ${formData.applicantBarangay || "POBLACION"}, ${formData.applicantMunicipality || "STO. TOMAS"}, ${formData.applicantProvince || "PAMPANGA"}`);
+                        }}
+                        style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700", textTransform: "uppercase" }}
                       />
                     </div>
-                  )}
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                      Phone / Contact
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.applicantPhone}
-                      onChange={e => handleFieldChange("applicantPhone", e.target.value)}
-                      style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                    Applicant Address (Street, Barangay, City/Municipality)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.applicantAddress}
-                    onChange={e => handleFieldChange("applicantAddress", e.target.value)}
-                    style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
-                  />
+                    {/* 2. BARANGAY */}
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "3px" }}>
+                        BARANGAY
+                      </label>
+                      <select
+                        value={(formData.applicantBarangay || "POBLACION").toUpperCase()}
+                        onChange={e => {
+                          const val = e.target.value;
+                          handleFieldChange("applicantBarangay", val);
+                          handleFieldChange("barangay", val);
+                          handleFieldChange("applicantAddress", `${formData.applicantNoStreet || "123 RIZAL ST."}, ${val}, ${formData.applicantMunicipality || "STO. TOMAS"}, ${formData.applicantProvince || "PAMPANGA"}`);
+                        }}
+                        style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700", cursor: "pointer", background: "#ffffff" }}
+                      >
+                        {["POBLACION", "SAN BARTOLOME", "SAN MATIAS", "SAN VICENTE", "SANTA ANA", "SANTO ROSARIO", "SAN NICOLAS"].map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                        <option value="OTHERS">OTHER (SPECIFY)</option>
+                      </select>
+                    </div>
+
+                    {/* 3. CITY / MUNICIPALITY */}
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "3px" }}>
+                        MUNICIPALITY
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.applicantMunicipality || "STO. TOMAS"}
+                        onChange={e => {
+                          const val = e.target.value.toUpperCase();
+                          handleFieldChange("applicantMunicipality", val);
+                          handleFieldChange("applicantAddress", `${formData.applicantNoStreet || "123 RIZAL ST."}, ${formData.applicantBarangay || "POBLACION"}, ${val}, ${formData.applicantProvince || "PAMPANGA"}`);
+                        }}
+                        style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700", textTransform: "uppercase" }}
+                      />
+                    </div>
+
+                    {/* 4. ZIP CODE */}
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "3px", textAlign: "center" }}>
+                        ZIP CODE
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={formData.applicantZipCode || "2020"}
+                        onChange={e => handleFieldChange("applicantZipCode", e.target.value)}
+                        style={{ width: "100%", padding: "7px 7px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700", textAlign: "center" }}
+                      />
+                    </div>
+
+                    {/* 5. CONTACT NO. */}
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "3px" }}>
+                        CONTACT NO.
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.applicantPhone || "0917-123-4567"}
+                        onChange={e => handleFieldChange("applicantPhone", e.target.value)}
+                        style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700" }}
+                      />
+                    </div>
+
+                    {/* 6. EMAIL ADDRESS */}
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "3px" }}>
+                        EMAIL ADDRESS
+                      </label>
+                      <input
+                        type="email"
+                        value={formData.applicantEmail || "juan.delacruz@example.com"}
+                        onChange={e => handleFieldChange("applicantEmail", e.target.value)}
+                        placeholder="juan.delacruz@example.com"
+                        style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{
+                    marginTop: "0.5rem",
+                    padding: "4px 10px",
+                    borderRadius: "5px",
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between"
+                  }}>
+                    <span style={{ fontSize: "0.68rem", color: "#1e40af", fontWeight: "700" }}>
+                      Compiled Form Address:
+                    </span>
+                    <span style={{ fontSize: "0.76rem", color: "#1e3a8a", fontWeight: "800" }}>
+                      {`${formData.applicantNoStreet || "123 RIZAL ST."}, ${formData.applicantBarangay || "POBLACION"}, ${formData.applicantMunicipality || "STO. TOMAS"}, ${formData.applicantProvince || "PAMPANGA"} ${formData.applicantZipCode || "2020"}`}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Corporation & Representative (Boxes 2, 4, 5, 6 - for LC) */}
@@ -1932,16 +2598,38 @@ export default function FormTestingStudio() {
                         <option value="Addition">Addition</option>
                         <option value="Alteration">Alteration</option>
                         <option value="Renovation">Renovation</option>
+                        <option value="Conversion">Conversion</option>
                         <option value="Repair">Repair</option>
+                        <option value="Moving">Moving</option>
+                        <option value="Raising">Raising</option>
+                        <option value="Accessory Building / Structure">Accessory Building / Structure</option>
+                        <option value="Others">Others (Specify)</option>
                       </select>
+                      {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Accessory", "Other"].some(k => (formData.scopeOfWork || "").toLowerCase().includes(k.toLowerCase())) && (
+                        <div style={{ marginTop: "6px" }}>
+                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b", marginBottom: "2px" }}>
+                            Specify {formData.scopeOfWork} Details (Printed on Form Underline)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.scopeOfWorkDetails || formData.scopeOthers || ""}
+                            onChange={e => {
+                              handleFieldChange("scopeOfWorkDetails", e.target.value);
+                              handleFieldChange("scopeOthers", e.target.value);
+                            }}
+                            placeholder={`e.g. Details for ${formData.scopeOfWork}`}
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                        Occupancy Classification
+                        Occupancy Classification Detail (NBCP Rule VII)
                       </label>
                       <select
-                        value={formData.occupancyClass || "Group A - Residential (Single)"}
-                        onChange={e => handleFieldChange("occupancyClass", e.target.value)}
+                        value={formData.occupancyClassificationDetail || "Group A - Residential (Single)"}
+                        onChange={e => handleFieldChange("occupancyClassificationDetail", e.target.value)}
                         style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#1e293b", fontWeight: "600" }}
                       >
                         <optgroup label="GROUP A: RESIDENTIAL (DWELLINGS)">
@@ -2162,7 +2850,7 @@ export default function FormTestingStudio() {
                           style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
                         />
                         <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#334155" }}>
-                          Include Box 4: With My Consent (Lot Owner / Authorized Representative)
+                          Include {selectedForm.id === "AP" || selectedForm.id === "MP" ? "Box 6" : selectedForm.id === "SGP" ? "Box 8" : "Box 4"}: With My Consent (Lot Owner / Authorized Representative)
                         </span>
                       </label>
 
@@ -2359,22 +3047,113 @@ export default function FormTestingStudio() {
                   )}
 
                   {selectedForm.id === "AP" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Architectural Style</label>
-                        <input type="text" value={formData.architecturalStyle || ""} onChange={e => handleFieldChange("architecturalStyle", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      {/* Box 2.2: Percentage of Site Occupancy */}
+                      <div style={{ padding: "0.75rem", borderRadius: "8px", background: "#f1f5f9", border: "1px solid #cbd5e1" }}>
+                        <span style={{ display: "block", fontSize: "0.78rem", fontWeight: "800", color: "#1e293b", marginBottom: "6px", textTransform: "uppercase" }}>
+                          2. PERCENTAGE OF SITE OCCUPANCY
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b" }}>PERCENTAGE OF BUILDING FOOTPRINT</label>
+                            <input type="text" value={formData.percentBuildingFootprint || ""} onChange={e => handleFieldChange("percentBuildingFootprint", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b" }}>PERCENTAGE OF IMPERVIOUS SURFACE AREA</label>
+                            <input type="text" value={formData.percentImperviousSurface || ""} onChange={e => handleFieldChange("percentImperviousSurface", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b" }}>PERCENTAGE OF UNPAVED SURFACE AREA</label>
+                            <input type="text" value={formData.percentUnpavedSurface || ""} onChange={e => handleFieldChange("percentUnpavedSurface", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b" }}>OTHERS (Specify)</label>
+                            <input type="text" placeholder="e.g. Lawn / Landscaping" value={formData.percentSiteOccupancyOthers || ""} onChange={e => handleFieldChange("percentSiteOccupancyOthers", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Roofing Spec</label>
-                        <input type="text" value={formData.roofingMaterial || ""} onChange={e => handleFieldChange("roofingMaterial", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Box 2.3: Conformance to Fire Code */}
+                      <div style={{ padding: "0.85rem", borderRadius: "8px", background: "#f1f5f9", border: "1px solid #cbd5e1" }}>
+                        <span style={{ display: "block", fontSize: "0.78rem", fontWeight: "800", color: "#1e293b", marginBottom: "8px", textTransform: "uppercase" }}>
+                          3. CONFORMANCE TO FIRE CODE OF THE PHILIPPINES (P.D. 1185)
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.3fr 1.1fr", gap: "1rem", alignItems: "start" }}>
+                          {/* Column 1 */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                              <input type="checkbox" checked={formData.fireCodeExitDoors !== false} onChange={e => handleFieldChange("fireCodeExitDoors", e.target.checked)} />
+                              NUMBER AND WIDTH OF EXIT DOORS
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                              <input type="checkbox" checked={formData.fireCodeCorridors !== false} onChange={e => handleFieldChange("fireCodeCorridors", e.target.checked)} />
+                              WIDTH OF CORRIDORS
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                              <input type="checkbox" checked={formData.fireCodeDistanceExits !== false} onChange={e => handleFieldChange("fireCodeDistanceExits", e.target.checked)} />
+                              DISTANCE TO FIRE EXITS
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                              <input type="checkbox" checked={formData.fireCodeAccessStreet !== false} onChange={e => handleFieldChange("fireCodeAccessStreet", e.target.checked)} />
+                              ACCESS TO PUBLIC STREET
+                            </label>
+                          </div>
+
+                          {/* Column 2 */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                              <input type="checkbox" checked={formData.fireCodeFireWalls !== false} onChange={e => handleFieldChange("fireCodeFireWalls", e.target.checked)} />
+                              FIRE WALLS
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                              <input type="checkbox" checked={!!formData.fireCodeFireFighting} onChange={e => handleFieldChange("fireCodeFireFighting", e.target.checked)} />
+                              FIRE FIGHTING AND SAFETY FACILITIES
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                              <input type="checkbox" checked={formData.fireCodeSmokeDetectors !== false} onChange={e => handleFieldChange("fireCodeSmokeDetectors", e.target.checked)} />
+                              SMOKE DETECTORS
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                              <input type="checkbox" checked={formData.fireCodeEmergencyLights !== false} onChange={e => handleFieldChange("fireCodeEmergencyLights", e.target.checked)} />
+                              EMERGENCY LIGHTS
+                            </label>
+                          </div>
+
+                          {/* Column 3 */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                              <input type="checkbox" checked={Boolean(formData.fireCodeOthers)} onChange={e => handleFieldChange("fireCodeOthers", e.target.checked ? "Compliant with BFP standards" : "")} />
+                              OTHERS (Specify)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Specify other fire safety compliance..."
+                              value={formData.fireCodeOthers || ""}
+                              onChange={e => handleFieldChange("fireCodeOthers", e.target.value)}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Doors Spec</label>
-                        <input type="text" value={formData.doorsSpec || ""} onChange={e => handleFieldChange("doorsSpec", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Windows Spec</label>
-                        <input type="text" value={formData.windowsSpec || ""} onChange={e => handleFieldChange("windowsSpec", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Architectural Specifications */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Architectural Style</label>
+                          <input type="text" value={formData.architecturalStyle || ""} onChange={e => handleFieldChange("architecturalStyle", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Roofing Spec</label>
+                          <input type="text" value={formData.roofingMaterial || ""} onChange={e => handleFieldChange("roofingMaterial", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Doors Spec</label>
+                          <input type="text" value={formData.doorsSpec || ""} onChange={e => handleFieldChange("doorsSpec", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Windows Spec</label>
+                          <input type="text" value={formData.windowsSpec || ""} onChange={e => handleFieldChange("windowsSpec", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2699,13 +3478,20 @@ export default function FormTestingStudio() {
                       </div>
                     )}
 
-                    {/* Architect */}
+                    {/* Architect - Box 3: Design Professional */}
                     {(selectedForm.id === "AP" || selectedForm.id === "FP" || selectedForm.id === "SGP" || selectedForm.id === "CC") && (
-                      <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#1d4ed8" }}>Architect / Design Professional</span>
+                      <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#1d4ed8" }}>
+                            Box 3: DESIGN PROFESSIONAL, PLANS AND SPECIFICATION (Architect)
+                          </span>
+                          <span style={{ fontSize: "0.68rem", color: "#64748b", fontWeight: "600" }}>
+                            NBC Form A-01 (Signed & Sealed)
+                          </span>
+                        </div>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Architect Full Name (Over Printed Name)</label>
                             <input type="text" value={formData.architectName || ""} onChange={e => handleFieldChange("architectName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
@@ -2713,21 +3499,27 @@ export default function FormTestingStudio() {
                             <input type="text" value={formData.architectAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("architectAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>IAPOA No.</label>
+                            <input type="text" value={formData.architectIAPOA || "IAPOA-2026-9988"} onChange={e => handleFieldChange("architectIAPOA", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>IAPOA Validity</label>
+                            <input type="text" value={formData.architectIAPOAValidity || "2028-12-31"} onChange={e => handleFieldChange("architectIAPOAValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
                             <input type="text" value={formData.architectPRC || ""} onChange={e => handleFieldChange("architectPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC Validity</label>
                             <input type="text" value={formData.architectPRCValidity || "2028-09-15"} onChange={e => handleFieldChange("architectPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
-                            <input type="text" value={formData.architectTIN || "234-567-890-000"} onChange={e => handleFieldChange("architectTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
                             <input type="text" value={formData.architectPTR || ""} onChange={e => handleFieldChange("architectPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
@@ -2740,7 +3532,87 @@ export default function FormTestingStudio() {
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
                             <input type="text" value={formData.architectPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("architectPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                            <input type="text" value={formData.architectTIN || "234-567-890-000"} onChange={e => handleFieldChange("architectTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Architect - Box 4: Supervisor / In-Charge of Architectural Works */}
+                    {selectedForm.id === "AP" && (
+                      <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#0284c7" }}>
+                            Box 4: SUPERVISOR / IN-CHARGE OF ARCHITECTURAL WORKS (Architect)
+                          </span>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#334155", cursor: "pointer" }}>
+                            <input 
+                              type="checkbox" 
+                              checked={!!formData.sameAsDesignArchitect} 
+                              onChange={e => handleFieldChange("sameAsDesignArchitect", e.target.checked)} 
+                            />
+                            Same as Design Professional (Box 3)
+                          </label>
+                        </div>
+
+                        {!formData.sameAsDesignArchitect ? (
+                          <>
+                            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Supervisor Architect Full Name</label>
+                                <input type="text" value={formData.supervisorArchitectName || ""} onChange={e => handleFieldChange("supervisorArchitectName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                                <input type="text" value={formData.supervisorArchitectAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("supervisorArchitectAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>IAPOA No.</label>
+                                <input type="text" value={formData.supervisorArchitectIAPOA || "IAPOA-2026-8877"} onChange={e => handleFieldChange("supervisorArchitectIAPOA", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>IAPOA Validity</label>
+                                <input type="text" value={formData.supervisorArchitectIAPOAValidity || "2027-12-31"} onChange={e => handleFieldChange("supervisorArchitectIAPOAValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
+                                <input type="text" value={formData.supervisorArchitectPRC || ""} onChange={e => handleFieldChange("supervisorArchitectPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC Validity</label>
+                                <input type="text" value={formData.supervisorArchitectPRCValidity || "2027-08-20"} onChange={e => handleFieldChange("supervisorArchitectPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
+                                <input type="text" value={formData.supervisorArchitectPTR || ""} onChange={e => handleFieldChange("supervisorArchitectPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                                <input type="text" value={formData.supervisorArchitectPTRIssued || "Jan 10, 2026"} onChange={e => handleFieldChange("supervisorArchitectPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
+                                <input type="text" value={formData.supervisorArchitectPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("supervisorArchitectPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                                <input type="text" value={formData.supervisorArchitectTIN || "345-678-901-000"} onChange={e => handleFieldChange("supervisorArchitectTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ marginTop: "0.5rem", padding: "8px 12px", borderRadius: "8px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", fontSize: "0.76rem" }}>
+                            Using identical credentials from Box 3 (Design Professional: {formData.architectName || "Architect"}).
+                          </div>
+                        )}
                       </div>
                     )}
 

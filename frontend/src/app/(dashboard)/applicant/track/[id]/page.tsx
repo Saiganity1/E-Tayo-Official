@@ -137,8 +137,13 @@ export default function ApplicationTrackDetail() {
       : PROJECT_TYPES_MATRIX.find(p => p.name.toLowerCase() === (appData?.projectType || "").toLowerCase() || p.id === appData?.projectType)
       || PROJECT_TYPES_MATRIX[0];
 
+    const cleanSeq = appData?.id ? appData.id.replace(/^[A-Za-z]+-/i, "") : "2026-6636";
     const formData: UnifiedPermitFormData = {
       applicationNo: appData?.id || "APP-2026-6636",
+      buildingPermitNo: appData?.buildingPermitNo || (pTypeObj.matrix?.buildingPermit === 'required' || !pTypeObj ? `BP-${cleanSeq}` : undefined),
+      permitNo: appData?.permitNo || `AP-${cleanSeq}`,
+      architecturalPermitNo: appData?.architecturalPermitNo || `AP-${cleanSeq}`,
+      structuralPermitNo: appData?.structuralPermitNo || `SP-${cleanSeq}`,
       locationalClearanceRef: appData?.locationalClearanceRef || "LC-2026-9307",
       projectType: pTypeObj,
       applicantName: appData?.applicantName || "Paul Payumo",

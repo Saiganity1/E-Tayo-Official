@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   FileText, Wrench, Zap, Shield, Layers, Droplets, Flame, Radio, 
   CheckCircle2, AlertCircle, Download, Upload, Trash2, Check, 
   ArrowRight, Sparkles, Building, ChevronRight, Info, Eye, 
   Clock, ShieldCheck, ChevronLeft, Lock, Award, Hammer, Compass,
-  Sliders, UserCheck, RefreshCw, FileCheck, Home, CheckSquare, Plus, ExternalLink
+  Sliders, UserCheck, RefreshCw, FileCheck, Home, CheckSquare, Plus, ExternalLink, User
 } from "lucide-react";
 import { 
   ProjectTypeItem, 
@@ -92,13 +92,64 @@ export default function TechnicalPermitFormsStep({
   // ==========================================
   // 1. GENERAL APPLICANT & PROPERTY DATA (Universal)
   // ==========================================
+  // Parse name parts from applicantName prop or clearanceApp
+  const parseNameParts = (fullName: string) => {
+    const clean = (fullName || "").trim();
+    if (!clean) return { lastName: "DELA CRUZ", firstName: "JUAN", middleName: "S." };
+    if (clean.includes(",")) {
+      const [last, rest] = clean.split(",");
+      const parts = (rest || "").trim().split(/\s+/);
+      const first = parts.slice(0, -1).join(" ") || parts[0] || "";
+      const mi = parts.length > 1 ? parts[parts.length - 1] : "";
+      return { lastName: last.trim().toUpperCase(), firstName: first.toUpperCase(), middleName: mi.toUpperCase() };
+    }
+    const parts = clean.split(/\s+/);
+    if (parts.length === 1) return { lastName: parts[0].toUpperCase(), firstName: "", middleName: "" };
+    if (parts.length === 2) return { lastName: parts[1].toUpperCase(), firstName: parts[0].toUpperCase(), middleName: "" };
+    if (parts.length >= 3 && (parts[parts.length - 2].toUpperCase() === "DELA" || parts[parts.length - 2].toUpperCase() === "DE" || parts[parts.length - 2].toUpperCase() === "DELOS" || parts[parts.length - 2].toUpperCase() === "SAN")) {
+      const lastName = `${parts[parts.length - 2]} ${parts[parts.length - 1]}`.toUpperCase();
+      const firstName = parts[0].toUpperCase();
+      const middleName = parts.slice(1, -2).join(" ").toUpperCase() || "";
+      return { lastName, firstName, middleName: middleName ? (middleName.endsWith(".") ? middleName : middleName[0] + ".") : "" };
+    }
+    const lastName = parts[parts.length - 1].toUpperCase();
+    const firstName = parts[0].toUpperCase();
+    const middleName = parts.slice(1, -1).join(" ").toUpperCase();
+    return { lastName, firstName, middleName: middleName ? (middleName.endsWith(".") ? middleName : middleName[0] + ".") : "" };
+  };
+
+  const initialNameParts = parseNameParts(applicantName || clearanceApp?.applicantName || "Juan Dela Cruz");
+  const [applicantLastName, setApplicantLastName] = useState(initialNameParts.lastName);
+  const [applicantFirstName, setApplicantFirstName] = useState(initialNameParts.firstName);
+  const [applicantMiddleName, setApplicantMiddleName] = useState(initialNameParts.middleName);
   const [applicantTIN, setApplicantTIN] = useState("123-456-789-000");
-  const [formOfOwnership, setFormOfOwnership] = useState("Individual / Sole Proprietor");
+  const [constructionOwnedByEnterprise, setConstructionOwnedByEnterprise] = useState(
+    clearanceApp?.corporationName || clearanceApp?.constructionOwnedByEnterprise || "N/A (INDIVIDUAL)"
+  );
+  const [formOfOwnership, setFormOfOwnership] = useState("INDIVIDUAL / OWNER");
   const [govIdNo, setGovIdNo] = useState("CTC-2026-08912");
   const [lotNo, setLotNo] = useState("Lot 12");
   const [blockNo, setBlockNo] = useState("Block 4");
   const [tctNo, setTctNo] = useState("TCT-042-20260012");
   const [taxDecNo, setTaxDecNo] = useState("TD-2026-00124-ST");
+
+  // Address & Contact Information (Box 1 Row 3)
+  const [applicantNoStreet, setApplicantNoStreet] = useState(streetAddress || "123 RIZAL ST.");
+  const [applicantBarangay, setApplicantBarangay] = useState(barangay || "POBLACION");
+  const [applicantMunicipality, setApplicantMunicipality] = useState("STO. TOMAS");
+  const [applicantProvince, setApplicantProvince] = useState("PAMPANGA");
+  const [applicantZipCode, setApplicantZipCode] = useState("2020");
+  const [applicantPhone, setApplicantPhone] = useState("0917-123-4567");
+  const [applicantEmail, setApplicantEmail] = useState(clearanceApp?.applicantEmail || "juan.delacruz@example.com");
+
+  const compiledFullAddress = useMemo(() => {
+    return [applicantNoStreet, applicantBarangay ? `Brgy. ${applicantBarangay}` : "", applicantMunicipality, applicantProvince, applicantZipCode].filter(Boolean).join(", ") || "123 Rizal St., Poblacion, Sto. Tomas, Pampanga";
+  }, [applicantNoStreet, applicantBarangay, applicantMunicipality, applicantProvince, applicantZipCode]);
+
+  const compiledFullName = useMemo(() => {
+    const mi = applicantMiddleName ? (applicantMiddleName.endsWith(".") ? applicantMiddleName : `${applicantMiddleName}.`) : "";
+    return [applicantFirstName, mi, applicantLastName].filter(Boolean).join(" ") || applicantName || "JUAN S. DELA CRUZ";
+  }, [applicantFirstName, applicantMiddleName, applicantLastName, applicantName]);
 
   // ==========================================
   // 2. UNIFIED BUILDING PERMIT (BP) FIELDS
@@ -108,15 +159,17 @@ export default function TechnicalPermitFormsStep({
       ? "New Mechanical & Electrical Installation"
       : "New Construction"
   );
+  const [scopeOfWorkDetails, setScopeOfWorkDetails] = useState("");
   const [occupancyClass, setOccupancyClass] = useState(
     projectType.category === "Commercial"
-      ? "Group E - Business & Commercial Mercantile"
+      ? "COMMERCIAL"
       : projectType.category === "Industrial"
-      ? "Group F - Light Industrial Plant"
+      ? "INDUSTRIAL"
       : projectType.category === "Institutional"
-      ? "Group D - Institutional / Public Assembly"
-      : "Group A - Residential Dwellings (Single-Detached / Duplex)"
+      ? "INSTITUTIONAL"
+      : "RESIDENTIAL"
   );
+  const [occupancyRuleVII, setOccupancyRuleVII] = useState("Group A - Residential Dwellings (Single-Detached / Duplex)");
   const [buildingFootprint, setBuildingFootprint] = useState("120");
   const [buildingHeight, setBuildingHeight] = useState("6.8");
   const [proposedStoreys, setProposedStoreys] = useState(
@@ -154,12 +207,46 @@ export default function TechnicalPermitFormsStep({
   const [doorsSpec, setDoorsSpec] = useState("Solid Narra Hardwood Main Entrance Door, Molded Panel Interior Flush Doors");
   const [windowsSpec, setWindowsSpec] = useState("Powder-Coated Aluminum Casement & Sliding Windows with 6mm Tinted Glass");
   const [architectName, setArchitectName] = useState("Arch. Maria Santos, UAP");
-  const [architectPRC, setArchitectPRC] = useState("PRC-ARC-0045211");
-  const [architectPRCValidity, setArchitectPRCValidity] = useState("2028-06-15");
-  const [architectIAPOA, setArchitectIAPOA] = useState("IAPOA-2026-1049");
-  const [architectPTR, setArchitectPTR] = useState("PTR-ST-2026-9021");
-  const [architectPTRIssued, setArchitectPTRIssued] = useState("Sto. Tomas, Pampanga");
-  const [architectTIN, setArchitectTIN] = useState("345-678-901-000");
+  const [architectAddress, setArchitectAddress] = useState("Sto. Tomas, Pampanga");
+  const [architectPRC, setArchitectPRC] = useState("0045211");
+  const [architectPRCValidity, setArchitectPRCValidity] = useState("2028-09-15");
+  const [architectIAPOA, setArchitectIAPOA] = useState("IAPOA-2026-9988");
+  const [architectIAPOAValidity, setArchitectIAPOAValidity] = useState("2028-12-31");
+  const [architectPTR, setArchitectPTR] = useState("PTR-ST-665544");
+  const [architectPTRIssued, setArchitectPTRIssued] = useState("Jan 08, 2026");
+  const [architectPTRIssuedAt, setArchitectPTRIssuedAt] = useState("Sto. Tomas");
+  const [architectTIN, setArchitectTIN] = useState("234-567-890-000");
+
+  // Box 4: Supervisor / In-Charge of Architectural Works
+  const [sameAsDesignArchitect, setSameAsDesignArchitect] = useState(false);
+  const [supervisorArchitectName, setSupervisorArchitectName] = useState("ARCH. JUAN CARLOS REYES, UAP");
+  const [supervisorArchitectAddress, setSupervisorArchitectAddress] = useState("Sto. Tomas, Pampanga");
+  const [supervisorArchitectPRC, setSupervisorArchitectPRC] = useState("0056123");
+  const [supervisorArchitectPRCValidity, setSupervisorArchitectPRCValidity] = useState("2027-08-20");
+  const [supervisorArchitectIAPOA, setSupervisorArchitectIAPOA] = useState("IAPOA-2026-8877");
+  const [supervisorArchitectIAPOAValidity, setSupervisorArchitectIAPOAValidity] = useState("2027-12-31");
+  const [supervisorArchitectPTR, setSupervisorArchitectPTR] = useState("PTR-ST-778899");
+  const [supervisorArchitectPTRIssued, setSupervisorArchitectPTRIssued] = useState("Jan 10, 2026");
+  const [supervisorArchitectPTRIssuedAt, setSupervisorArchitectPTRIssuedAt] = useState("Sto. Tomas");
+  const [supervisorArchitectTIN, setSupervisorArchitectTIN] = useState("345-678-901-000");
+
+  // NBC Form A-01 (Architectural Permit) Box 2 Subsections:
+  // 2. Percentage of Site Occupancy
+  const [percentBuildingFootprint, setPercentBuildingFootprint] = useState("55.00");
+  const [percentImperviousSurface, setPercentImperviousSurface] = useState("25.00");
+  const [percentUnpavedSurface, setPercentUnpavedSurface] = useState("20.00");
+  const [percentSiteOccupancyOthers, setPercentSiteOccupancyOthers] = useState("");
+
+  // 3. Conformance to Fire Code of the Philippines (P.D. 1185)
+  const [fireCodeExitDoors, setFireCodeExitDoors] = useState(true);
+  const [fireCodeCorridors, setFireCodeCorridors] = useState(true);
+  const [fireCodeDistanceExits, setFireCodeDistanceExits] = useState(true);
+  const [fireCodeAccessStreet, setFireCodeAccessStreet] = useState(true);
+  const [fireCodeFireWalls, setFireCodeFireWalls] = useState(true);
+  const [fireCodeFireFighting, setFireCodeFireFighting] = useState(false);
+  const [fireCodeSmokeDetectors, setFireCodeSmokeDetectors] = useState(true);
+  const [fireCodeEmergencyLights, setFireCodeEmergencyLights] = useState(true);
+  const [fireCodeOthers, setFireCodeOthers] = useState("");
 
   // ==========================================
   // 4. CIVIL / STRUCTURAL PERMIT (SP) FIELDS
@@ -321,8 +408,14 @@ export default function TechnicalPermitFormsStep({
       if (clearanceApp.taxDecNo) {
         setTaxDecNo(clearanceApp.taxDecNo);
       }
+      if (clearanceApp.applicantLastName) setApplicantLastName(clearanceApp.applicantLastName);
+      if (clearanceApp.applicantFirstName) setApplicantFirstName(clearanceApp.applicantFirstName);
+      if (clearanceApp.applicantMiddleName) setApplicantMiddleName(clearanceApp.applicantMiddleName);
       if (clearanceApp.applicantTIN) {
         setApplicantTIN(clearanceApp.applicantTIN);
+      }
+      if (clearanceApp.corporationName || clearanceApp.constructionOwnedByEnterprise) {
+        setConstructionOwnedByEnterprise(clearanceApp.corporationName || clearanceApp.constructionOwnedByEnterprise);
       }
       if (clearanceApp.formOfOwnership) {
         setFormOfOwnership(clearanceApp.formOfOwnership);
@@ -377,7 +470,13 @@ export default function TechnicalPermitFormsStep({
       if (clearanceApp.location?.blockNo) setBlockNo(clearanceApp.location.blockNo);
       if (clearanceApp.tctNo) setTctNo(clearanceApp.tctNo);
       if (clearanceApp.taxDecNo) setTaxDecNo(clearanceApp.taxDecNo);
+      if (clearanceApp.applicantLastName) setApplicantLastName(clearanceApp.applicantLastName);
+      if (clearanceApp.applicantFirstName) setApplicantFirstName(clearanceApp.applicantFirstName);
+      if (clearanceApp.applicantMiddleName) setApplicantMiddleName(clearanceApp.applicantMiddleName);
       if (clearanceApp.applicantTIN) setApplicantTIN(clearanceApp.applicantTIN);
+      if (clearanceApp.corporationName || clearanceApp.constructionOwnedByEnterprise) {
+        setConstructionOwnedByEnterprise(clearanceApp.corporationName || clearanceApp.constructionOwnedByEnterprise);
+      }
       if (clearanceApp.formOfOwnership) setFormOfOwnership(clearanceApp.formOfOwnership);
     }
     handleAutoFillDefaults();
@@ -392,7 +491,9 @@ export default function TechnicalPermitFormsStep({
     setTctNo(prev => prev || "TCT-042-20260012");
     setTaxDecNo(prev => prev || "TD-2026-00124-ST");
     setApplicantTIN(prev => prev || "123-456-789-000");
-    setFormOfOwnership("Individual / Sole Proprietor");
+    if (!constructionOwnedByEnterprise) setConstructionOwnedByEnterprise("N/A (INDIVIDUAL)");
+    setFormOfOwnership(prev => prev || "INDIVIDUAL / OWNER");
+    setOccupancyClass(prev => prev || (projectType.category === "Commercial" ? "COMMERCIAL" : projectType.category === "Industrial" ? "INDUSTRIAL" : projectType.category === "Institutional" ? "INSTITUTIONAL" : "RESIDENTIAL"));
     setBuildingFootprint("120");
     setBuildingHeight("6.8");
     setCostBuilding("1,100,000.00");
@@ -419,20 +520,41 @@ export default function TechnicalPermitFormsStep({
     setNotification(null);
 
     try {
-      const applicationNo = `UNIFIED-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const currentYear = new Date().getFullYear();
+      const randomSeq = Math.floor(1000 + Math.random() * 9000);
+      const applicationNo = `UNIFIED-${currentYear}-${randomSeq}`;
+      const buildingPermitNo = `BP-${currentYear}-${randomSeq}`;
       const submissionDate = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-      const fullAddress = `${streetAddress || "Main Street"}, Brgy. ${barangay}, Sto. Tomas, Pampanga`;
+      const fullAddress = compiledFullAddress;
 
       const payload: UnifiedPermitFormData = {
         applicationNo,
+        buildingPermitNo: (projectType.matrix?.buildingPermit === 'required' || projectType.matrix?.buildingPermit === 'conditional') ? buildingPermitNo : undefined,
+        permitNo: `AP-${currentYear}-${randomSeq}`,
+        architecturalPermitNo: `AP-${currentYear}-${randomSeq}`,
+        structuralPermitNo: `SP-${currentYear}-${randomSeq}`,
+        electricalPermitNo: `EP-${currentYear}-${randomSeq}`,
+        plumbingPermitNo: `PP-${currentYear}-${randomSeq}`,
+        mechanicalPermitNo: `MP-${currentYear}-${randomSeq}`,
+        electronicsPermitNo: `EL-${currentYear}-${randomSeq}`,
         locationalClearanceRef: locationalClearanceRef || (isClearanceRequired ? "LC-VERIFIED" : "EXEMPT"),
         projectType,
-        applicantName,
-        applicantPhone: "0917-123-4567",
-        applicantEmail: "applicant@etayo.gov.ph",
+        applicantName: compiledFullName,
+        applicantFirstName,
+        applicantLastName,
+        applicantMiddleName,
+        applicantPhone,
+        applicantEmail: applicantEmail || "applicant@etayo.gov.ph",
         applicantAddress: fullAddress,
+        applicantNoStreet,
+        applicantBarangay,
+        applicantMunicipality,
+        applicantProvince,
+        applicantZipCode,
         applicantTIN,
         formOfOwnership,
+        constructionOwnedByEnterprise: constructionOwnedByEnterprise || (formOfOwnership.includes("INDIVIDUAL") ? "N/A" : ""),
+        enterpriseName: constructionOwnedByEnterprise || (formOfOwnership.includes("INDIVIDUAL") ? "N/A" : ""),
         govIdNo,
         projectName: projectName || `${projectType.name} Construction`,
         projectAddress: fullAddress,
@@ -447,6 +569,21 @@ export default function TechnicalPermitFormsStep({
         buildingHeight,
         projectCost: projectCost || "1,600,000.00",
         scopeOfWork,
+        scopeOfWorkDetails,
+        scopeOthers: scopeOfWorkDetails,
+        percentBuildingFootprint,
+        percentImperviousSurface,
+        percentUnpavedSurface,
+        percentSiteOccupancyOthers,
+        fireCodeExitDoors,
+        fireCodeCorridors,
+        fireCodeDistanceExits,
+        fireCodeAccessStreet,
+        fireCodeFireWalls,
+        fireCodeFireFighting,
+        fireCodeSmokeDetectors,
+        fireCodeEmergencyLights,
+        fireCodeOthers,
         occupancyClass,
         proposedStoreys,
         numberOfUnits,
@@ -519,12 +656,26 @@ export default function TechnicalPermitFormsStep({
         smokeDetectorsCount,
         firewallSpecs,
         architectName,
+        architectAddress,
         architectPRC,
         architectPRCValidity,
         architectIAPOA,
+        architectIAPOAValidity,
         architectPTR,
         architectPTRIssued,
+        architectPTRIssuedAt,
         architectTIN,
+        sameAsDesignArchitect,
+        supervisorArchitectName,
+        supervisorArchitectAddress,
+        supervisorArchitectPRC,
+        supervisorArchitectPRCValidity,
+        supervisorArchitectIAPOA,
+        supervisorArchitectIAPOAValidity,
+        supervisorArchitectPTR,
+        supervisorArchitectPTRIssued,
+        supervisorArchitectPTRIssuedAt,
+        supervisorArchitectTIN,
         civilEngineerName,
         civilEngineerPRC,
         civilEngineerPRCValidity,
@@ -975,7 +1126,655 @@ export default function TechnicalPermitFormsStep({
           </div>
 
           <form onSubmit={handleGenerateDigitalForms}>
-            {/* GENERAL DETAILS SUMMARY (Shared across all forms) */}
+            {/* ============================================================== */}
+            {/* BOX 1: OWNER / APPLICANT & ENTERPRISE DETAILS (Universal)       */}
+            {/* ============================================================== */}
+            <div style={{
+              background: "#ffffff",
+              border: "1.5px solid #cbd5e1",
+              borderRadius: "16px",
+              padding: "1.25rem 1.5rem",
+              marginBottom: "1.25rem",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.02)"
+            }}>
+              {/* Box 1 Header */}
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "8px",
+                marginBottom: "1rem",
+                paddingBottom: "0.75rem",
+                borderBottom: "1.5px solid #f1f5f9"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "10px",
+                    background: "#eef2ff",
+                    color: "#4f46e5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}>
+                    <User size={20} />
+                  </div>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
+                      <span style={{
+                        fontSize: "0.68rem",
+                        fontWeight: "800",
+                        color: "#4338ca",
+                        background: "#e0e7ff",
+                        padding: "2px 7px",
+                        borderRadius: "4px",
+                        letterSpacing: "0.4px"
+                      }}>
+                        NBC FORM A-01 / S-01 / B-01 • BOX 1
+                      </span>
+                      <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: "600" }}>
+                        Owner & Enterprise Information
+                      </span>
+                    </div>
+                    <h4 style={{ margin: 0, fontSize: "0.98rem", fontWeight: "800", color: "#0f172a" }}>
+                      BOX 1: OWNER / APPLICANT (TO BE ACCOMPLISHED IN PRINT)
+                    </h4>
+                  </div>
+                </div>
+
+                <div style={{
+                  fontSize: "0.72rem",
+                  fontWeight: "700",
+                  color: "#059669",
+                  background: "#ecfdf5",
+                  border: "1px solid #a7f3d0",
+                  padding: "4px 10px",
+                  borderRadius: "999px"
+                }}>
+                  Auto-Synchronized Across All Permits
+                </div>
+              </div>
+
+              {/* Row 1: OWNER / APPLICANT Columns: LAST NAME | FIRST NAME | M.I. | TIN */}
+              <div style={{
+                background: "#f8fafc",
+                border: "1.5px solid #e2e8f0",
+                borderRadius: "12px",
+                padding: "1rem 1.15rem",
+                marginBottom: "1rem"
+              }}>
+                <div style={{
+                  fontSize: "0.74rem",
+                  fontWeight: "900",
+                  color: "#1e293b",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "0.6rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}>
+                  <span>OWNER / APPLICANT</span>
+                  <span style={{ fontSize: "0.68rem", color: "#64748b", fontWeight: "600" }}>
+                    Official Government Form Grid
+                  </span>
+                </div>
+
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "1.3fr 1.3fr 0.55fr 1fr",
+                  gap: "0.75rem"
+                }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "4px" }}>
+                      LAST NAME *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={applicantLastName}
+                      onChange={(e) => setApplicantLastName(e.target.value.toUpperCase())}
+                      placeholder="DELA CRUZ"
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #cbd5e1",
+                        fontSize: "0.88rem",
+                        fontWeight: "800",
+                        textTransform: "uppercase",
+                        color: "#0f172a",
+                        background: "#ffffff"
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "4px" }}>
+                      FIRST NAME *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={applicantFirstName}
+                      onChange={(e) => setApplicantFirstName(e.target.value.toUpperCase())}
+                      placeholder="JUAN"
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #cbd5e1",
+                        fontSize: "0.88rem",
+                        fontWeight: "800",
+                        textTransform: "uppercase",
+                        color: "#0f172a",
+                        background: "#ffffff"
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "4px", textAlign: "center" }}>
+                      M.I.
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      value={applicantMiddleName}
+                      onChange={(e) => setApplicantMiddleName(e.target.value.toUpperCase())}
+                      placeholder="S."
+                      style={{
+                        width: "100%",
+                        padding: "8px 8px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #cbd5e1",
+                        fontSize: "0.88rem",
+                        fontWeight: "800",
+                        textTransform: "uppercase",
+                        textAlign: "center",
+                        color: "#0f172a",
+                        background: "#ffffff"
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "4px" }}>
+                      TIN *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={applicantTIN}
+                      onChange={(e) => setApplicantTIN(e.target.value)}
+                      placeholder="123-456-789-000"
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #cbd5e1",
+                        fontSize: "0.88rem",
+                        fontWeight: "700",
+                        color: "#0f172a",
+                        background: "#ffffff"
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Compiled Form Full Name Display */}
+                <div style={{
+                  marginTop: "0.65rem",
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}>
+                  <span style={{ fontSize: "0.72rem", color: "#1e40af", fontWeight: "700" }}>
+                    Compiled Form Full Name:
+                  </span>
+                  <span style={{ fontSize: "0.82rem", color: "#1e3a8a", fontWeight: "800" }}>
+                    {compiledFullName}
+                  </span>
+                </div>
+              </div>
+
+              {/* Row 2: FOR CONSTRUCTION OWNED BY AN ENTERPRISE | FORM OF OWNERSHIP | USE OR CHARACTER OF OCCUPANCY */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "1.4fr 1.1fr 1.2fr",
+                gap: "0.75rem",
+                alignItems: "start",
+                background: "#f8fafc",
+                border: "1.5px solid #e2e8f0",
+                borderRadius: "12px",
+                padding: "1rem 1.15rem"
+              }}>
+                {/* 1. FOR CONSTRUCTION OWNED BY AN ENTERPRISE (matches official screenshot) */}
+                <div>
+                  <div style={{ marginBottom: "5px" }}>
+                    <div style={{
+                      fontSize: "0.72rem",
+                      fontWeight: "900",
+                      color: "#0f172a",
+                      textTransform: "uppercase",
+                      lineHeight: "1.25",
+                      letterSpacing: "0.3px"
+                    }}>
+                      <div>FOR CONSTRUCTION OWNED</div>
+                      <div style={{ color: "#2563eb" }}>BY AN ENTERPRISE</div>
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    value={constructionOwnedByEnterprise}
+                    onChange={(e) => setConstructionOwnedByEnterprise(e.target.value.toUpperCase())}
+                    placeholder="e.g. SAN MIGUEL CORP. (or N/A)"
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: "7px",
+                      border: "1.5px solid #cbd5e1",
+                      fontSize: "0.85rem",
+                      fontWeight: "800",
+                      color: "#0f172a",
+                      background: "#ffffff",
+                      textTransform: "uppercase"
+                    }}
+                  />
+                  <span style={{ display: "block", fontSize: "0.68rem", color: "#64748b", marginTop: "3px" }}>
+                    Name of enterprise / corporation owning the construction (or N/A)
+                  </span>
+                </div>
+
+                {/* 2. FORM OF OWNERSHIP (Dropdown with custom option) */}
+                <div>
+                  <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "900", color: "#0f172a", textTransform: "uppercase", marginBottom: "5px", letterSpacing: "0.3px" }}>
+                    FORM OF OWNERSHIP
+                  </label>
+                  <select
+                    value={["INDIVIDUAL / OWNER", "INDIVIDUAL / SOLE PROPRIETORSHIP", "CORPORATION", "PARTNERSHIP", "GOVERNMENT / INSTITUTIONAL", "NON-PROFIT / NGO", "COOPERATIVE"].includes(formOfOwnership.toUpperCase()) ? formOfOwnership.toUpperCase() : "OTHERS"}
+                    onChange={(e) => {
+                      if (e.target.value !== "OTHERS") {
+                        setFormOfOwnership(e.target.value);
+                      } else {
+                        setFormOfOwnership("");
+                      }
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: "7px",
+                      border: "1.5px solid #cbd5e1",
+                      fontSize: "0.85rem",
+                      fontWeight: "700",
+                      color: "#0f172a",
+                      background: "#ffffff",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <option value="INDIVIDUAL / OWNER">INDIVIDUAL / OWNER</option>
+                    <option value="INDIVIDUAL / SOLE PROPRIETORSHIP">INDIVIDUAL / SOLE PROPRIETORSHIP</option>
+                    <option value="CORPORATION">CORPORATION</option>
+                    <option value="PARTNERSHIP">PARTNERSHIP</option>
+                    <option value="GOVERNMENT / INSTITUTIONAL">GOVERNMENT / INSTITUTIONAL</option>
+                    <option value="NON-PROFIT / NGO">NON-PROFIT / NGO</option>
+                    <option value="COOPERATIVE">COOPERATIVE</option>
+                    <option value="OTHERS">OTHER (CUSTOM)</option>
+                  </select>
+                  {!["INDIVIDUAL / OWNER", "INDIVIDUAL / SOLE PROPRIETORSHIP", "CORPORATION", "PARTNERSHIP", "GOVERNMENT / INSTITUTIONAL", "NON-PROFIT / NGO", "COOPERATIVE"].includes(formOfOwnership.toUpperCase()) && (
+                    <input
+                      type="text"
+                      placeholder="Specify Form of Ownership..."
+                      value={formOfOwnership}
+                      onChange={(e) => setFormOfOwnership(e.target.value.toUpperCase())}
+                      style={{
+                        width: "100%",
+                        marginTop: "5px",
+                        padding: "6px 9px",
+                        borderRadius: "6px",
+                        border: "1.5px solid #93c5fd",
+                        fontSize: "0.82rem",
+                        fontWeight: "700",
+                        color: "#0f172a",
+                        background: "#f0f9ff"
+                      }}
+                    />
+                  )}
+                  <span style={{ display: "block", fontSize: "0.68rem", color: "#64748b", marginTop: "3px" }}>
+                    Legal ownership entity
+                  </span>
+                </div>
+
+                {/* 3. USE OR CHARACTER OF OCCUPANCY (Dropdown with custom option) */}
+                <div>
+                  <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "900", color: "#0f172a", textTransform: "uppercase", marginBottom: "5px", letterSpacing: "0.3px" }}>
+                    USE OR CHARACTER OF OCCUPANCY
+                  </label>
+                  <select
+                    value={(() => {
+                      const upper = occupancyClass.toUpperCase();
+                      if (upper.includes("RESIDENTIAL")) return "RESIDENTIAL";
+                      if (upper.includes("COMMERCIAL")) return "COMMERCIAL";
+                      if (upper.includes("INDUSTRIAL")) return "INDUSTRIAL";
+                      if (upper.includes("INSTITUTIONAL")) return "INSTITUTIONAL";
+                      if (upper.includes("AGRICULTURAL")) return "AGRICULTURAL";
+                      if (upper.includes("EDUCATIONAL")) return "EDUCATIONAL & RECREATIONAL";
+                      if (upper.includes("ASSEMBLY")) return "ASSEMBLY / RECREATION";
+                      return ["RESIDENTIAL", "COMMERCIAL", "INDUSTRIAL", "INSTITUTIONAL", "AGRICULTURAL", "EDUCATIONAL & RECREATIONAL", "ASSEMBLY / RECREATION"].includes(upper) ? upper : "OTHERS";
+                    })()}
+                    onChange={(e) => {
+                      if (e.target.value !== "OTHERS") {
+                        setOccupancyClass(e.target.value);
+                      } else {
+                        setOccupancyClass("");
+                      }
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: "7px",
+                      border: "1.5px solid #cbd5e1",
+                      fontSize: "0.85rem",
+                      fontWeight: "700",
+                      color: "#0f172a",
+                      background: "#ffffff",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <option value="RESIDENTIAL">RESIDENTIAL</option>
+                    <option value="COMMERCIAL">COMMERCIAL</option>
+                    <option value="INDUSTRIAL">INDUSTRIAL</option>
+                    <option value="INSTITUTIONAL">INSTITUTIONAL</option>
+                    <option value="AGRICULTURAL">AGRICULTURAL</option>
+                    <option value="EDUCATIONAL & RECREATIONAL">EDUCATIONAL & RECREATIONAL</option>
+                    <option value="ASSEMBLY / RECREATION">ASSEMBLY / RECREATION</option>
+                    <option value="OTHERS">OTHER (CUSTOM)</option>
+                  </select>
+                  {!["RESIDENTIAL", "COMMERCIAL", "INDUSTRIAL", "INSTITUTIONAL", "AGRICULTURAL", "EDUCATIONAL & RECREATIONAL", "ASSEMBLY / RECREATION"].includes(occupancyClass.toUpperCase()) && !occupancyClass.toUpperCase().includes("RESIDENTIAL") && (
+                    <input
+                      type="text"
+                      placeholder="Specify Character of Occupancy..."
+                      value={occupancyClass}
+                      onChange={(e) => setOccupancyClass(e.target.value.toUpperCase())}
+                      style={{
+                        width: "100%",
+                        marginTop: "5px",
+                        padding: "6px 9px",
+                        borderRadius: "6px",
+                        border: "1.5px solid #93c5fd",
+                        fontSize: "0.82rem",
+                        fontWeight: "700",
+                        color: "#0f172a",
+                        background: "#f0f9ff"
+                      }}
+                    />
+                  )}
+                  <span style={{ display: "block", fontSize: "0.68rem", color: "#64748b", marginTop: "3px" }}>
+                    National Building Code classification
+                  </span>
+                </div>
+              </div>
+
+              {/* Row 3: ADDRESS: NO., SITIO, | BARANGAY, | MUNICIPALITY | ZIP CODE | CONTACT NO. */}
+              <div style={{
+                marginTop: "0.85rem",
+                background: "#f8fafc",
+                border: "1.5px solid #e2e8f0",
+                borderRadius: "12px",
+                padding: "1rem 1.15rem"
+              }}>
+                <div style={{
+                  fontSize: "0.74rem",
+                  fontWeight: "900",
+                  color: "#1e293b",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "0.6rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}>
+                  <span>ADDRESS & CONTACT INFORMATION</span>
+                  <span style={{ fontSize: "0.68rem", color: "#64748b", fontWeight: "600" }}>
+                    Official Government Form Grid (Row 3)
+                  </span>
+                </div>
+
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "1.3fr 1.1fr 1.1fr 0.7fr 1.1fr 1.4fr",
+                  gap: "0.75rem"
+                }}>
+                  {/* 1. NO., STREET / SITIO */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "4px" }}>
+                      NO., STREET, SITIO *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={applicantNoStreet}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        setApplicantNoStreet(val);
+                        setStreetAddress(val);
+                      }}
+                      placeholder="123 RIZAL ST."
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        fontWeight: "800",
+                        textTransform: "uppercase",
+                        color: "#0f172a",
+                        background: "#ffffff"
+                      }}
+                    />
+                    <span style={{ display: "block", fontSize: "0.66rem", color: "#64748b", marginTop: "3px" }}>
+                      House / Unit No. & Street
+                    </span>
+                  </div>
+
+                  {/* 2. BARANGAY */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "4px" }}>
+                      BARANGAY *
+                    </label>
+                    <select
+                      value={applicantBarangay.toUpperCase()}
+                      onChange={(e) => {
+                        setApplicantBarangay(e.target.value);
+                        setBarangay(e.target.value);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        fontWeight: "700",
+                        color: "#0f172a",
+                        background: "#ffffff",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {["POBLACION", "SAN BARTOLOME", "SAN MATIAS", "SAN VICENTE", "SANTA ANA", "SANTO ROSARIO", "SAN NICOLAS"].map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                      <option value="OTHERS">OTHER (SPECIFY)</option>
+                    </select>
+                    {!["POBLACION", "SAN BARTOLOME", "SAN MATIAS", "SAN VICENTE", "SANTA ANA", "SANTO ROSARIO", "SAN NICOLAS"].includes(applicantBarangay.toUpperCase()) && (
+                      <input
+                        type="text"
+                        placeholder="Specify Barangay..."
+                        value={applicantBarangay}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setApplicantBarangay(val);
+                          setBarangay(val);
+                        }}
+                        style={{
+                          width: "100%",
+                          marginTop: "5px",
+                          padding: "6px 8px",
+                          borderRadius: "6px",
+                          border: "1.5px solid #93c5fd",
+                          fontSize: "0.82rem",
+                          fontWeight: "700",
+                          color: "#0f172a",
+                          background: "#f0f9ff"
+                        }}
+                      />
+                    )}
+                    <span style={{ display: "block", fontSize: "0.66rem", color: "#64748b", marginTop: "3px" }}>
+                      Barangay jurisdiction
+                    </span>
+                  </div>
+
+                  {/* 3. CITY / MUNICIPALITY */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "4px" }}>
+                      MUNICIPALITY *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={applicantMunicipality}
+                      onChange={(e) => setApplicantMunicipality(e.target.value.toUpperCase())}
+                      placeholder="STO. TOMAS"
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        fontWeight: "800",
+                        textTransform: "uppercase",
+                        color: "#0f172a",
+                        background: "#ffffff"
+                      }}
+                    />
+                    <span style={{ display: "block", fontSize: "0.66rem", color: "#64748b", marginTop: "3px" }}>
+                      Municipality / City
+                    </span>
+                  </div>
+
+                  {/* 4. ZIP CODE */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "4px", textAlign: "center" }}>
+                      ZIP CODE *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={applicantZipCode}
+                      onChange={(e) => setApplicantZipCode(e.target.value)}
+                      placeholder="2020"
+                      style={{
+                        width: "100%",
+                        padding: "8px 8px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        fontWeight: "800",
+                        textAlign: "center",
+                        color: "#0f172a",
+                        background: "#ffffff"
+                      }}
+                    />
+                    <span style={{ display: "block", fontSize: "0.66rem", color: "#64748b", marginTop: "3px", textAlign: "center" }}>
+                      Postal code
+                    </span>
+                  </div>
+
+                  {/* 5. CONTACT NO. */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "4px" }}>
+                      CONTACT NO. *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={applicantPhone}
+                      onChange={(e) => setApplicantPhone(e.target.value)}
+                      placeholder="0917-123-4567"
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        fontWeight: "800",
+                        color: "#0f172a",
+                        background: "#ffffff"
+                      }}
+                    />
+                    <span style={{ display: "block", fontSize: "0.66rem", color: "#64748b", marginTop: "3px" }}>
+                      Contact number
+                    </span>
+                  </div>
+
+                  {/* 6. EMAIL ADDRESS */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", marginBottom: "4px" }}>
+                      EMAIL ADDRESS *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={applicantEmail}
+                      onChange={(e) => setApplicantEmail(e.target.value)}
+                      placeholder="juan.delacruz@example.com"
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        fontWeight: "800",
+                        color: "#0f172a",
+                        background: "#ffffff"
+                      }}
+                    />
+                    <span style={{ display: "block", fontSize: "0.66rem", color: "#64748b", marginTop: "3px" }}>
+                      Email address
+                    </span>
+                  </div>
+                </div>
+
+                {/* Compiled Form Full Address Display */}
+                <div style={{
+                  marginTop: "0.65rem",
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}>
+                  <span style={{ fontSize: "0.72rem", color: "#1e40af", fontWeight: "700" }}>
+                    Compiled Form Address:
+                  </span>
+                  <span style={{ fontSize: "0.82rem", color: "#1e3a8a", fontWeight: "800" }}>
+                    {compiledFullAddress}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* ============================================================== */}
+            {/* BOX 2: PROJECT LOCATION & LAND TITLE BOUNDARIES                 */}
+            {/* ============================================================== */}
             <div style={{
               background: "#f8fafc",
               border: "1.5px solid #e2e8f0",
@@ -986,7 +1785,7 @@ export default function TechnicalPermitFormsStep({
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "1rem" }}>
                 <Building size={18} color="#4f46e5" />
                 <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#1e293b" }}>
-                  Project Identification & Land Title Boundaries (Box 1 & 2)
+                  BOX 2: Project Identification & Land Title Boundaries
                 </h4>
               </div>
 
@@ -1171,9 +1970,25 @@ export default function TechnicalPermitFormsStep({
                         <option value="Renovation">Renovation</option>
                         <option value="Conversion">Conversion</option>
                         <option value="Repair">Repair</option>
+                        <option value="Moving">Moving</option>
+                        <option value="Raising">Raising</option>
                         <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                         <option value="Others">Others (Specify)</option>
                       </select>
+                      {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+                        <div style={{ marginTop: "8px" }}>
+                          <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                            Specify {scopeOfWork} Details (Prints on Form Underline) *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder={`e.g., Specific ${scopeOfWork} details or structure type`}
+                            value={scopeOfWorkDetails}
+                            onChange={(e) => setScopeOfWorkDetails(e.target.value)}
+                            style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "white" }}
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -1181,8 +1996,8 @@ export default function TechnicalPermitFormsStep({
                         Character of Occupancy (NBCP Rule VII) *
                       </label>
                       <select
-                        value={occupancyClass}
-                        onChange={(e) => setOccupancyClass(e.target.value)}
+                        value={occupancyRuleVII}
+                        onChange={(e) => setOccupancyRuleVII(e.target.value)}
                         style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }}
                       >
                         <option value="Group A - Residential Dwellings (Single-Detached / Duplex)">Group A - Residential Dwellings (Single-Detached / Duplex)</option>
@@ -1384,6 +2199,185 @@ export default function TechnicalPermitFormsStep({
                   </div>
                 </div>
 
+                {/* Box 2: Scope of Work, Percentage of Site Occupancy & Fire Code Conformance */}
+                <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#6d28d9", textTransform: "uppercase" }}>
+                      Box 2: Scope of Work, Site Occupancy & Fire Code Conformance
+                    </span>
+                    <span style={{ fontSize: "0.72rem", background: "#ede9fe", color: "#6d28d9", padding: "2px 8px", borderRadius: "12px", fontWeight: "700" }}>
+                      NBC Form A-01 • Box 2
+                    </span>
+                  </div>
+
+                  {/* 2.1 Scope of Work */}
+                  <div style={{ marginBottom: "1rem", padding: "0.85rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                      1. Scope of Work (Box 2.1) *
+                    </label>
+                    <select
+                      value={scopeOfWork}
+                      onChange={(e) => setScopeOfWork(e.target.value)}
+                      style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }}
+                    >
+                      <option value="New Construction">New Construction</option>
+                      <option value="Erection">Erection</option>
+                      <option value="Addition">Addition</option>
+                      <option value="Alteration">Alteration</option>
+                      <option value="Renovation">Renovation</option>
+                      <option value="Conversion">Conversion</option>
+                      <option value="Repair">Repair</option>
+                      <option value="Moving">Moving</option>
+                      <option value="Raising">Raising</option>
+                      <option value="Accessory Building / Structure">Accessory Building / Structure</option>
+                      <option value="Others">Others (Specify)</option>
+                    </select>
+                    {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+                      <div style={{ marginTop: "8px" }}>
+                        <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                          Specify {scopeOfWork} Details (Prints on Form Underline) *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={`Specify details for ${scopeOfWork}`}
+                          value={scopeOfWorkDetails}
+                          onChange={(e) => setScopeOfWorkDetails(e.target.value)}
+                          style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2.2 Percentage of Site Occupancy */}
+                  <div style={{ marginBottom: "1rem", padding: "0.85rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase" }}>
+                        2. PERCENTAGE OF SITE OCCUPANCY
+                      </span>
+                      <span style={{ fontSize: "0.7rem", background: "#ede9fe", color: "#6d28d9", padding: "1px 6px", borderRadius: "4px", fontWeight: "700" }}>
+                        NBC Form A-01 • Box 2.2
+                      </span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#475569", marginBottom: "2px" }}>PERCENTAGE OF BUILDING FOOTPRINT</label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="text"
+                            value={percentBuildingFootprint}
+                            onChange={(e) => setPercentBuildingFootprint(e.target.value)}
+                            style={{ width: "100%", padding: "6px 20px 6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "white" }}
+                          />
+                          <span style={{ position: "absolute", right: "8px", top: "7px", fontSize: "0.75rem", color: "#94a3b8" }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#475569", marginBottom: "2px" }}>PERCENTAGE OF IMPERVIOUS SURFACE AREA</label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="text"
+                            value={percentImperviousSurface}
+                            onChange={(e) => setPercentImperviousSurface(e.target.value)}
+                            style={{ width: "100%", padding: "6px 20px 6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "white" }}
+                          />
+                          <span style={{ position: "absolute", right: "8px", top: "7px", fontSize: "0.75rem", color: "#94a3b8" }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#475569", marginBottom: "2px" }}>PERCENTAGE OF UNPAVED SURFACE AREA</label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="text"
+                            value={percentUnpavedSurface}
+                            onChange={(e) => setPercentUnpavedSurface(e.target.value)}
+                            style={{ width: "100%", padding: "6px 20px 6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "white" }}
+                          />
+                          <span style={{ position: "absolute", right: "8px", top: "7px", fontSize: "0.75rem", color: "#94a3b8" }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#475569", marginBottom: "2px" }}>OTHERS (Specify)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Lawn / Landscaping"
+                          value={percentSiteOccupancyOthers}
+                          onChange={(e) => setPercentSiteOccupancyOthers(e.target.value)}
+                          style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "white" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2.3 Conformance to Fire Code */}
+                  <div style={{ padding: "0.85rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase" }}>
+                        3. CONFORMANCE TO FIRE CODE OF THE PHILIPPINES (P.D. 1185)
+                      </span>
+                      <span style={{ fontSize: "0.7rem", background: "#fee2e2", color: "#b91c1c", padding: "1px 6px", borderRadius: "4px", fontWeight: "700" }}>
+                        P.D. 1185
+                      </span>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.3fr 1.1fr", gap: "1rem", alignItems: "start" }}>
+                      {/* Column 1 */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                          <input type="checkbox" checked={fireCodeExitDoors} onChange={(e) => setFireCodeExitDoors(e.target.checked)} style={{ accentColor: "#7c3aed" }} />
+                          NUMBER AND WIDTH OF EXIT DOORS
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                          <input type="checkbox" checked={fireCodeCorridors} onChange={(e) => setFireCodeCorridors(e.target.checked)} style={{ accentColor: "#7c3aed" }} />
+                          WIDTH OF CORRIDORS
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                          <input type="checkbox" checked={fireCodeDistanceExits} onChange={(e) => setFireCodeDistanceExits(e.target.checked)} style={{ accentColor: "#7c3aed" }} />
+                          DISTANCE TO FIRE EXITS
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                          <input type="checkbox" checked={fireCodeAccessStreet} onChange={(e) => setFireCodeAccessStreet(e.target.checked)} style={{ accentColor: "#7c3aed" }} />
+                          ACCESS TO PUBLIC STREET
+                        </label>
+                      </div>
+
+                      {/* Column 2 */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                          <input type="checkbox" checked={fireCodeFireWalls} onChange={(e) => setFireCodeFireWalls(e.target.checked)} style={{ accentColor: "#7c3aed" }} />
+                          FIRE WALLS
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                          <input type="checkbox" checked={fireCodeFireFighting} onChange={(e) => setFireCodeFireFighting(e.target.checked)} style={{ accentColor: "#7c3aed" }} />
+                          FIRE FIGHTING AND SAFETY FACILITIES
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                          <input type="checkbox" checked={fireCodeSmokeDetectors} onChange={(e) => setFireCodeSmokeDetectors(e.target.checked)} style={{ accentColor: "#7c3aed" }} />
+                          SMOKE DETECTORS
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                          <input type="checkbox" checked={fireCodeEmergencyLights} onChange={(e) => setFireCodeEmergencyLights(e.target.checked)} style={{ accentColor: "#7c3aed" }} />
+                          EMERGENCY LIGHTS
+                        </label>
+                      </div>
+
+                      {/* Column 3 */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                          <input type="checkbox" checked={Boolean(fireCodeOthers)} onChange={(e) => { if (!e.target.checked) setFireCodeOthers(""); else setFireCodeOthers("Fire escape & alarm system"); }} style={{ accentColor: "#7c3aed" }} />
+                          OTHERS (Specify)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Specify other fire safety compliance..."
+                          value={fireCodeOthers}
+                          onChange={(e) => setFireCodeOthers(e.target.value)}
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem", background: "white" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Section A: Design Style & Space Planning */}
                 <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
                   <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#6d28d9", textTransform: "uppercase" }}>
@@ -1471,15 +2465,32 @@ export default function TechnicalPermitFormsStep({
                   </div>
                 </div>
 
-                {/* Section D: Registered Architect Credentials */}
+                {/* Section D: Registered Architect Credentials (Box 3) */}
                 <div style={{ background: "#f5f3ff", border: "1.5px solid #ddd6fe", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#6d28d9", textTransform: "uppercase" }}>
-                    Box 2: Design Professional: Registered Architect (UAP / IAPOA)
-                  </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem", marginTop: "10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#6d28d9", textTransform: "uppercase" }}>
+                      Box 3: DESIGN PROFESSIONAL, PLANS AND SPECIFICATION (Architect)
+                    </span>
+                    <span style={{ fontSize: "0.7rem", color: "#7c3aed", fontWeight: "600" }}>
+                      NBC Form A-01 (Signed & Sealed Over Printed Name)
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem" }}>
                     <div>
                       <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>Architect Full Name *</label>
                       <input type="text" required value={architectName} onChange={(e) => setArchitectName(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>Address *</label>
+                      <input type="text" required value={architectAddress} onChange={(e) => setArchitectAddress(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>IAPOA Certificate No. *</label>
+                      <input type="text" required value={architectIAPOA} onChange={(e) => setArchitectIAPOA(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>IAPOA Validity Date *</label>
+                      <input type="text" required value={architectIAPOAValidity} onChange={(e) => setArchitectIAPOAValidity(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>PRC Registration No. *</label>
@@ -1487,21 +2498,91 @@ export default function TechnicalPermitFormsStep({
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>PRC Validity Date *</label>
-                      <input type="date" required value={architectPRCValidity} onChange={(e) => setArchitectPRCValidity(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>IAPOA Certificate No. *</label>
-                      <input type="text" required value={architectIAPOA} onChange={(e) => setArchitectIAPOA(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      <input type="text" required value={architectPRCValidity} onChange={(e) => setArchitectPRCValidity(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>PTR Number *</label>
                       <input type="text" required value={architectPTR} onChange={(e) => setArchitectPTR(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>Place Issued *</label>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>Date Issued *</label>
                       <input type="text" required value={architectPTRIssued} onChange={(e) => setArchitectPTRIssued(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
                     </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>Place Issued *</label>
+                      <input type="text" required value={architectPTRIssuedAt} onChange={(e) => setArchitectPTRIssuedAt(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#5b21b6" }}>Tax Identification No. (TIN) *</label>
+                      <input type="text" required value={architectTIN} onChange={(e) => setArchitectTIN(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                    </div>
                   </div>
+                </div>
+
+                {/* Section E: Supervisor / In-Charge of Architectural Works (Box 4) */}
+                <div style={{ background: "#f0fdf4", border: "1.5px solid #bbf7d0", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#166534", textTransform: "uppercase" }}>
+                      Box 4: SUPERVISOR / IN-CHARGE OF ARCHITECTURAL WORKS (Architect)
+                    </span>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#166534", cursor: "pointer" }}>
+                      <input 
+                        type="checkbox" 
+                        checked={sameAsDesignArchitect} 
+                        onChange={e => setSameAsDesignArchitect(e.target.checked)} 
+                      />
+                      Same as Design Professional (Box 3)
+                    </label>
+                  </div>
+
+                  {!sameAsDesignArchitect ? (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Supervisor Architect Full Name *</label>
+                        <input type="text" required value={supervisorArchitectName} onChange={(e) => setSupervisorArchitectName(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Address *</label>
+                        <input type="text" required value={supervisorArchitectAddress} onChange={(e) => setSupervisorArchitectAddress(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>IAPOA Certificate No. *</label>
+                        <input type="text" required value={supervisorArchitectIAPOA} onChange={(e) => setSupervisorArchitectIAPOA(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>IAPOA Validity Date *</label>
+                        <input type="text" required value={supervisorArchitectIAPOAValidity} onChange={(e) => setSupervisorArchitectIAPOAValidity(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>PRC Registration No. *</label>
+                        <input type="text" required value={supervisorArchitectPRC} onChange={(e) => setSupervisorArchitectPRC(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>PRC Validity Date *</label>
+                        <input type="text" required value={supervisorArchitectPRCValidity} onChange={(e) => setSupervisorArchitectPRCValidity(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>PTR Number *</label>
+                        <input type="text" required value={supervisorArchitectPTR} onChange={(e) => setSupervisorArchitectPTR(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Date Issued *</label>
+                        <input type="text" required value={supervisorArchitectPTRIssued} onChange={(e) => setSupervisorArchitectPTRIssued(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Place Issued *</label>
+                        <input type="text" required value={supervisorArchitectPTRIssuedAt} onChange={(e) => setSupervisorArchitectPTRIssuedAt(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#166534" }}>Tax Identification No. (TIN) *</label>
+                        <input type="text" required value={supervisorArchitectTIN} onChange={(e) => setSupervisorArchitectTIN(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: "8px 12px", borderRadius: "6px", background: "#dcfce7", color: "#166534", fontSize: "0.82rem" }}>
+                      Using identical credentials from Box 3 (Design Professional: {architectName || "Architect"}).
+                    </div>
+                  )}
                 </div>
               </div>
             )}
