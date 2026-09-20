@@ -486,14 +486,11 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     }
   }
 
-  // Box 19: Signature of Authorized Representative
-  if (data.representativeName && data.representativeName.trim()) {
-    const repSigData = data.representativeSignature || data.applicantSignature;
-    if (repSigData) {
-      const repSigImg = await embedSig(repSigData);
-      if (repSigImg) {
-        page.drawImage(repSigImg, { x: 325, y: 309, width: 100, height: 19 });
-      }
+  // Box 19: Signature of Authorized Representative (Separate from Applicant)
+  if (data.representativeSignature) {
+    const repSigImg = await embedSig(data.representativeSignature);
+    if (repSigImg) {
+      page.drawImage(repSigImg, { x: 325, y: 309, width: 100, height: 19 });
     }
   }
 

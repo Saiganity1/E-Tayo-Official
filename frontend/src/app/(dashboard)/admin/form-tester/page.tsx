@@ -485,7 +485,7 @@ export default function FormTestingStudio() {
           applicantPhone: formData.applicantPhone,
           applicantEmail: formData.applicantEmail,
           applicantSignature: formData.applicantSignature,
-          representativeSignature: formData.representativeSignature || formData.applicantSignature,
+          representativeSignature: formData.representativeSignature,
           corporationName: formData.corporationName,
           corporationAddress: formData.corporationAddress,
           corporationPhone: formData.corporationPhone,
@@ -2042,27 +2042,61 @@ export default function FormTestingStudio() {
                 )}
 
                 {/* Box 3: Owner / Applicant E-Signature & Government ID */}
-                <div style={{ marginTop: "0.5rem", padding: "1rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
-                  <div style={{ marginBottom: "0.75rem" }}>
-                    <span style={{ fontSize: "0.85rem", fontWeight: "800", color: "#1e293b", display: "block" }}>
-                      {selectedForm.id === "LC" 
-                        ? (formData.representativeName?.trim() ? "Applicant & Authorized Representative E-Signature (Boxes 18 & 19)" : "Applicant E-Signature (Box 18)")
-                        : "Box 3: Owner / Applicant E-Signature & Government ID"}
-                    </span>
-                    <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
-                      Draw or upload your authentic e-signature to affix directly over your printed name.
-                    </span>
+                <div style={{ marginTop: "0.5rem", padding: "1.2rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #cbd5e1", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                  <div>
+                    <div style={{ marginBottom: "0.75rem" }}>
+                      <span style={{ fontSize: "0.88rem", fontWeight: "800", color: "#1e293b", display: "block" }}>
+                        {selectedForm.id === "LC" ? "Applicant E-Signature (Box 18)" : "Box 3: Owner / Applicant E-Signature & Government ID"}
+                      </span>
+                      <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                        Draw or upload your authentic e-signature to affix directly over the applicant's printed name ({formData.applicantName || "Applicant"}).
+                      </span>
+                    </div>
+
+                    {/* Applicant E-Signature Creator */}
+                    <SignatureCreator
+                      value={formData.applicantSignature}
+                      onChange={(sig) => handleFieldChange("applicantSignature", sig)}
+                      label={`Applicant E-Signature (Signed over ${formData.applicantName || "Applicant"})`}
+                      required
+                    />
                   </div>
 
-                  {/* E-Signature Creator */}
-                  <SignatureCreator
-                    value={formData.applicantSignature}
-                    onChange={(sig) => handleFieldChange("applicantSignature", sig)}
-                    label={selectedForm.id === "LC" && formData.representativeName?.trim() 
-                      ? `Affix E-Signature (Applies to Box 18 & Box 19 over ${formData.representativeName})`
-                      : "Applicant E-Signature (Signed over Printed Name)"}
-                    required
-                  />
+                  {/* Separate Authorized Representative E-Signature for LC */}
+                  {selectedForm.id === "LC" && (
+                    <div style={{ paddingTop: "1rem", borderTop: "1.5px solid #e2e8f0" }}>
+                      <div style={{ marginBottom: "0.75rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "0.88rem", fontWeight: "800", color: "#1e293b" }}>
+                            Authorized Representative E-Signature (Box 19)
+                          </span>
+                          <span style={{
+                            fontSize: "0.68rem",
+                            fontWeight: "700",
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            background: formData.representativeName?.trim() ? "#e0f2fe" : "#f1f5f9",
+                            color: formData.representativeName?.trim() ? "#0369a1" : "#64748b"
+                          }}>
+                            {formData.representativeName?.trim() ? `Appointed: ${formData.representativeName}` : "Optional (Self-Represented)"}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                          {formData.representativeName?.trim()
+                            ? `Draw or upload the signature for representative: ${formData.representativeName} (affixed directly over printed name in Box 19).`
+                            : "Draw or upload the signature of the authorized representative (affixed on Box 19 if appointed in Box 5)."}
+                        </span>
+                      </div>
+
+                      <SignatureCreator
+                        value={formData.representativeSignature || ""}
+                        onChange={(sig) => handleFieldChange("representativeSignature", sig)}
+                        label={formData.representativeName?.trim() 
+                          ? `Representative E-Signature (Signed over ${formData.representativeName})`
+                          : "Representative E-Signature (Box 19)"}
+                      />
+                    </div>
+                  )}
 
                   {/* Gov't ID, Date Issued, Place Issued - Hidden for Locational Clearance */}
                   {selectedForm.id !== "LC" && (
