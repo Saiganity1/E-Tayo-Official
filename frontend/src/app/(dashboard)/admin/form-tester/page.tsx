@@ -46,7 +46,6 @@ interface FormOption {
 const FORMS: FormOption[] = [
   // Primary (1)
   { id: "BP", name: "Unified Application Form for Building Permit (NBC Form 1)", code: "BP", category: "Primary", icon: Building2, desc: "DPWH Form 77-001-B master building permit with scope, occupancy & cost breakdowns", pages: 2 },
-  { id: "UNIFIED", name: "Compiled Unified Permit Master Dossier", code: "UNIFIED", category: "Primary", icon: FileText, desc: "Full unified dossier combining building permit cover & all active ancillary permits", pages: 12 },
 
   // Zoning & Land Use (1)
   { id: "LC", name: "Application for Locational Clearance / Zoning", code: "LC", category: "Zoning & Land Use", icon: ShieldCheck, desc: "Official Sto. Tomas zoning classification, land use tenure & site description", pages: 1 },
@@ -72,9 +71,6 @@ const FORMS: FormOption[] = [
   { id: "CO", name: "Certificate of Occupancy Unified Form", code: "CO", category: "Completion & Occupancy", icon: Award, desc: "Unified application for Certificate of Occupancy with final project inspection", pages: 1 },
   { id: "CC", name: "Certificate of Completion Form", code: "CC", category: "Completion & Occupancy", icon: FileCheck, desc: "Official Certificate of Completion signed by supervising engineers", pages: 3 },
   { id: "CFEI", name: "Certificate of Final Electrical Inspection (CFEI)", code: "CFEI", category: "Completion & Occupancy", icon: ClipboardCheck, desc: "NBC Form 96006-E final electrical inspection certificate & energization clearance", pages: 2 },
-
-  // Fire Safety (1)
-  { id: "BFP", name: "BFP Fire Safety Evaluation Form (FSEC)", code: "BFP", category: "Fire Safety", icon: Flame, desc: "Fire exits, egress clearance, firewalls & extinguisher schedules", pages: 1 },
 ];
 
 const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
@@ -500,13 +496,12 @@ export default function FormTestingStudio() {
   // Filter forms based on category
   const categories = [
     { key: "All", label: `All Forms (${FORMS.length})` },
-    { key: "Primary", label: "Primary (2)" },
+    { key: "Primary", label: "Primary (1)" },
     { key: "Zoning", label: "Zoning (1)" },
     { key: "Ancillary", label: "Ancillary (6)" },
     { key: "Special", label: "Special Permits (4)" },
     { key: "Utilities", label: "Utilities (1)" },
     { key: "Completion", label: "Completion & Occupancy (3)" },
-    { key: "Fire Safety", label: "Fire Safety (1)" },
   ];
 
   const displayedForms = FORMS.filter(f => {
@@ -517,7 +512,6 @@ export default function FormTestingStudio() {
     if (categoryFilter === "Special") return f.category === "Special";
     if (categoryFilter === "Utilities") return f.category.includes("Utilities");
     if (categoryFilter === "Completion") return f.category.includes("Completion");
-    if (categoryFilter === "Fire Safety") return f.category.includes("Fire");
     return true;
   });
 
@@ -819,7 +813,7 @@ export default function FormTestingStudio() {
           <div style={{ padding: "1.5rem", maxHeight: "750px", overflowY: "auto" }}>
             {activeTab === "general" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div style={{ display: "grid", gridTemplateColumns: (selectedForm.id === "BP" || selectedForm.id === "UNIFIED") ? "1fr 1fr" : "1fr", gap: "0.75rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: selectedForm.id === "BP" ? "1fr 1fr" : "1fr", gap: "0.75rem" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
                       {(selectedForm.id === "CO" || selectedForm.id === "CC")
@@ -833,7 +827,7 @@ export default function FormTestingStudio() {
                       style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "600" }}
                     />
                   </div>
-                  {(selectedForm.id === "BP" || selectedForm.id === "UNIFIED") && (
+                  {selectedForm.id === "BP" && (
                     <div>
                       <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
                         Locational Clearance Ref
@@ -947,20 +941,6 @@ export default function FormTestingStudio() {
                       value={formData.projectType?.name || "Single-Detached Residential Dwelling"}
                       readOnly
                       style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#f8fafc", fontWeight: "600" }}
-                    />
-                  </div>
-                )}
-
-                {selectedForm.id === "UNIFIED" && (
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                      Project Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.projectName}
-                      onChange={e => handleFieldChange("projectName", e.target.value)}
-                      style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "600" }}
                     />
                   </div>
                 )}
@@ -1117,8 +1097,8 @@ export default function FormTestingStudio() {
 
             {activeTab === "specs" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {/* Section 2: Shown only for BP, EXP, DP, and UNIFIED */}
-                {(selectedForm.id === "BP" || selectedForm.id === "EXP" || selectedForm.id === "DP" || selectedForm.id === "UNIFIED") && (
+                {/* Section 2: Shown only for BP, EXP, and DP */}
+                {(selectedForm.id === "BP" || selectedForm.id === "EXP" || selectedForm.id === "DP") && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                     <div style={{ display: "grid", gridTemplateColumns: selectedForm.id === "BP" ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: "0.75rem" }}>
                       <div>
@@ -1169,31 +1149,16 @@ export default function FormTestingStudio() {
                       )}
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: selectedForm.id === "UNIFIED" ? "1fr 1fr" : "1fr", gap: "0.75rem" }}>
-                      {selectedForm.id === "UNIFIED" && (
-                        <div>
-                          <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                            Building Height (meters)
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.buildingHeight || ""}
-                            onChange={e => handleFieldChange("buildingHeight", e.target.value)}
-                            style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
-                          />
-                        </div>
-                      )}
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                          {selectedForm.id === "BP" ? "TOTAL ESTIMATED COST (PHP)" : "Total Estimated Project Cost (PHP)"}
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.projectCost}
-                          onChange={e => handleFieldChange("projectCost", e.target.value)}
-                          style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", color: "#047857" }}
-                        />
-                      </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
+                        {selectedForm.id === "BP" ? "TOTAL ESTIMATED COST (PHP)" : "Total Estimated Project Cost (PHP)"}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.projectCost}
+                        onChange={e => handleFieldChange("projectCost", e.target.value)}
+                        style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", color: "#047857" }}
+                      />
                     </div>
                   </div>
                 )}
@@ -1347,19 +1312,6 @@ export default function FormTestingStudio() {
                       <div>
                         <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>CCTV Surveillance Scope</label>
                         <input type="text" value={formData.cctvScope || ""} onChange={e => handleFieldChange("cctvScope", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedForm.id === "BFP" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>No. of Fire Exits</label>
-                        <input type="text" value={formData.numberOfExits || ""} onChange={e => handleFieldChange("numberOfExits", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Fire Extinguisher Specs</label>
-                        <input type="text" value={formData.fireExtinguisherSpecs || ""} onChange={e => handleFieldChange("fireExtinguisherSpecs", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
                       </div>
                     </div>
                   )}
@@ -1595,7 +1547,7 @@ export default function FormTestingStudio() {
                 ) : (
                   <>
                     {/* Construction Supervisor / Inspector */}
-                    {(selectedForm.id === "CC" || selectedForm.id === "CO" || selectedForm.id === "CFEI" || selectedForm.id === "UNIFIED") && (
+                    {(selectedForm.id === "CC" || selectedForm.id === "CO" || selectedForm.id === "CFEI") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#eff6ff", border: "1.5px solid #bfdbfe" }}>
                         <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#1d4ed8" }}>Project Supervisor / Municipal Inspector</span>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -1624,7 +1576,7 @@ export default function FormTestingStudio() {
                     )}
 
                     {/* Architect */}
-                    {(selectedForm.id === "AP" || selectedForm.id === "FP" || selectedForm.id === "SGP" || selectedForm.id === "CC" || selectedForm.id === "UNIFIED") && (
+                    {(selectedForm.id === "AP" || selectedForm.id === "FP" || selectedForm.id === "SGP" || selectedForm.id === "CC") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#1d4ed8" }}>Architect / Design Professional</span>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -1645,7 +1597,7 @@ export default function FormTestingStudio() {
                     )}
 
                     {/* Civil Engineer */}
-                    {(selectedForm.id === "BP" || selectedForm.id === "SP" || selectedForm.id === "DP" || selectedForm.id === "EXP" || selectedForm.id === "SGP" || selectedForm.id === "CO" || selectedForm.id === "CC" || selectedForm.id === "UNIFIED") && (
+                    {(selectedForm.id === "BP" || selectedForm.id === "SP" || selectedForm.id === "DP" || selectedForm.id === "EXP" || selectedForm.id === "SGP" || selectedForm.id === "CO" || selectedForm.id === "CC") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#047857" }}>Civil / Structural Engineer</span>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -1666,7 +1618,7 @@ export default function FormTestingStudio() {
                     )}
 
                     {/* Electrical Engineer */}
-                    {(selectedForm.id === "EP" || selectedForm.id === "TSC" || selectedForm.id === "UNIFIED") && (
+                    {(selectedForm.id === "EP" || selectedForm.id === "TSC") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#b45309" }}>Professional Electrical Engineer (PEE)</span>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -1687,7 +1639,7 @@ export default function FormTestingStudio() {
                     )}
 
                     {/* Master Plumber */}
-                    {(selectedForm.id === "PL" || selectedForm.id === "UNIFIED") && (
+                    {selectedForm.id === "PL" && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0369a1" }}>Master Plumber / Sanitary Engineer</span>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -1708,7 +1660,7 @@ export default function FormTestingStudio() {
                     )}
 
                     {/* Mechanical Engineer */}
-                    {(selectedForm.id === "MP" || selectedForm.id === "UNIFIED") && (
+                    {selectedForm.id === "MP" && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#7c3aed" }}>Professional Mechanical Engineer (PME)</span>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -1729,7 +1681,7 @@ export default function FormTestingStudio() {
                     )}
 
                     {/* Electronics Engineer */}
-                    {(selectedForm.id === "EL" || selectedForm.id === "UNIFIED") && (
+                    {selectedForm.id === "EL" && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0891b2" }}>Professional Electronics Engineer (PECE)</span>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
