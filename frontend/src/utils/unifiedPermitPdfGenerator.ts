@@ -1339,69 +1339,69 @@ export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): 
   const ceName = (data.civilEngineerName || "Engr. Roberto Cruz, CE").trim();
   const ceUpper = ceName.toUpperCase();
   const ceNameW = fontBold.widthOfTextAtSize(ceUpper, 8.5);
-  const ceNameX = 160.0 - (ceNameW / 2);
-  drawText(ceUpper, ceNameX, 285.5, 8.5, true);
+  const ceNameX = 140.0 - (ceNameW / 2);
+  drawText(ceUpper, ceNameX, 288.0, 8.5, true);
 
   if (data.civilEngineerSignature) {
-    await embedSignatureImage(doc, p1, data.civilEngineerSignature, 160.0 - 55, 280.0, 110, 32);
+    await embedSignatureImage(doc, p1, data.civilEngineerSignature, 140.0 - 55, 282.0, 110, 32);
   }
 
   const rawCeDate = data.civilEngineerSignedDate || data.submissionDate || "Jan 08, 2026";
-  drawText(rawCeDate, 115, 257.0, 7.5, false);
+  drawText(rawCeDate, 120, 264.5, 7.5, false);
 
   const ceAddr = data.civilEngineerAddress || "Sto. Tomas, Pampanga";
-  drawText(ceAddr, 80, 249.0, 7.5, false, 35);
+  drawText(ceAddr, 75, 252.5, 7.5, false, 35);
 
-  drawText(data.civilEngineerPRC || "0078923", 78, 237.0, 7.5, false, 12);
-  drawText(data.civilEngineerPRCValidity || "2028-12-31", 190, 237.0, 7.5, false, 12);
+  drawText(data.civilEngineerPRC || "0078923", 75, 240.5, 7.5, false, 12);
+  drawText(data.civilEngineerPRCValidity || "2028-12-31", 190, 240.5, 7.5, false, 12);
 
-  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 78, 225.5, 7.5, false, 18);
+  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 75, 228.0, 7.5, false, 18);
   const rawCePtrDate = data.civilEngineerPTRIssued || "Jan 05, 2026";
   const cePtrDate = rawCePtrDate.includes("/") ? rawCePtrDate.split("/")[1].trim() : rawCePtrDate;
-  drawText(cePtrDate, 200, 225.5, 7.5, false, 14);
+  drawText(cePtrDate, 205, 228.0, 7.5, false, 14);
 
-  drawText(data.civilEngineerPTRIssuedAt || "Sto. Tomas", 78, 214.0, 7.5, false, 15);
-  drawText(data.civilEngineerTIN || "123-456-789-000", 175, 214.0, 7.5, false, 18);
+  drawText(data.civilEngineerPTRIssuedAt || "Sto. Tomas", 75, 215.0, 7.5, false, 15);
+  drawText(data.civilEngineerTIN || "123-456-789-000", 175, 215.0, 7.5, false, 18);
 
   // Box 4: SUPERVISOR / IN-CHARGE OF CIVIL/STRUCTURAL WORKS
   const isCeSame = data.sameAsDesignCivilEngineer !== false && (data.sameAsDesignCivilEngineer || !data.supervisorCivilEngineerName);
   const supCeName = (isCeSame ? (data.civilEngineerName || "Engr. Roberto Cruz, CE") : (data.supervisorCivilEngineerName || data.civilEngineerName || "Engr. Roberto Cruz, CE")).trim();
   const supCeUpper = supCeName.toUpperCase();
   const supCeNameW = fontBold.widthOfTextAtSize(supCeUpper, 8.5);
-  const supCeNameX = 425.0 - (supCeNameW / 2);
-  drawText(supCeUpper, supCeNameX, 285.5, 8.5, true);
+  const supCeNameX = 410.0 - (supCeNameW / 2);
+  drawText(supCeUpper, supCeNameX, 290.0, 8.5, true);
 
   const supCeSig = isCeSame
     ? (data.civilEngineerSignature || data.supervisorCivilEngineerSignature)
     : (data.supervisorCivilEngineerSignature || data.civilEngineerSignature);
   if (supCeSig) {
-    await embedSignatureImage(doc, p1, supCeSig, 425.0 - 55, 280.0, 110, 32);
+    await embedSignatureImage(doc, p1, supCeSig, 410.0 - 55, 284.0, 110, 32);
   }
 
   const rawSupCeDate = (isCeSame ? rawCeDate : (data.supervisorCivilEngineerSignedDate || rawCeDate));
-  drawText(rawSupCeDate, 390, 257.0, 7.5, false);
+  drawText(rawSupCeDate, 386, 266.0, 7.5, false);
 
   const supCeAddr = (isCeSame ? (data.civilEngineerAddress || "Sto. Tomas, Pampanga") : (data.supervisorCivilEngineerAddress || data.civilEngineerAddress || "Sto. Tomas, Pampanga")).trim();
-  drawText(supCeAddr, 355, 249.0, 7.5, false, 30);
+  drawText(supCeAddr, 345, 254.5, 7.5, false, 30);
 
   const supCePRC = (isCeSame ? (data.civilEngineerPRC || "0078923") : (data.supervisorCivilEngineerPRC || data.civilEngineerPRC || "0078923")).trim();
-  drawText(supCePRC, 355, 237.0, 7.5, false, 10);
+  drawText(supCePRC, 347, 242.5, 7.5, false, 10);
 
   const supCePRCVal = (isCeSame ? (data.civilEngineerPRCValidity || "2028-12-31") : (data.supervisorCivilEngineerPRCValidity || data.civilEngineerPRCValidity || "2028-12-31")).trim();
-  drawText(supCePRCVal, 455, 237.0, 7.5, false, 12);
+  drawText(supCePRCVal, 468, 242.5, 7.5, false, 12);
 
   const supCePTR = (isCeSame ? (data.civilEngineerPTR || "PTR-ST-001") : (data.supervisorCivilEngineerPTR || data.civilEngineerPTR || "PTR-ST-001")).trim();
-  drawText(supCePTR, 355, 225.5, 7.5, false, 12);
+  drawText(supCePTR, 347, 230.5, 7.5, false, 12);
 
   const rawSupCePtrDate = isCeSame ? cePtrDate : (data.supervisorCivilEngineerPTRIssued || cePtrDate);
   const supCePtrDate = rawSupCePtrDate.includes("/") ? rawSupCePtrDate.split("/")[1].trim() : rawSupCePtrDate;
-  drawText(supCePtrDate, 465, 225.5, 7.5, false, 12);
+  drawText(supCePtrDate, 485, 230.5, 7.5, false, 12);
 
   const supCePTRIssuedAt = (isCeSame ? (data.civilEngineerPTRIssuedAt || "Sto. Tomas") : (data.supervisorCivilEngineerPTRIssuedAt || data.civilEngineerPTRIssuedAt || "Sto. Tomas")).trim();
-  drawText(supCePTRIssuedAt, 355, 214.0, 7.5, false, 12);
+  drawText(supCePTRIssuedAt, 347, 217.0, 7.5, false, 12);
 
   const supCeTIN = (isCeSame ? (data.civilEngineerTIN || "123-456-789-000") : (data.supervisorCivilEngineerTIN || data.civilEngineerTIN || "123-456-789-000")).trim();
-  drawText(supCeTIN, 440, 214.0, 7.5, false, 16);
+  drawText(supCeTIN, 452, 217.0, 7.5, false, 16);
 
   // Box 5: BUILDING OWNER
   const ownerUpper = (data.applicantName || "JUAN DELA CRUZ").toUpperCase();
