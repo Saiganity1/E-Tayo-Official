@@ -8,6 +8,9 @@ export interface UnifiedPermitFormData {
 
   // Applicant details (Box 1)
   applicantName: string;
+  applicantFirstName?: string;
+  applicantMiddleName?: string;
+  applicantLastName?: string;
   applicantPhone: string;
   applicantEmail: string;
   applicantAddress: string;
@@ -42,6 +45,7 @@ export interface UnifiedPermitFormData {
   costMechanical?: string;
   costPlumbing?: string;
   costElectronics?: string;
+  costEquipment?: string;
   costOthers?: string;
 
   // Architectural Permit details
@@ -220,16 +224,44 @@ function safeText(str: string | undefined | null): string {
     .replace(/[^\x20-\x7E\t\n\r]/g, "");
 }
 
-function parseApplicantName(name: string | undefined | null): { lastName: string; firstName: string; mi: string } {
-  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return { lastName: "PAYUMO", firstName: "PAUL", mi: "N/A" };
-  if (parts.length === 1) return { lastName: parts[0].toUpperCase(), firstName: "", mi: "N/A" };
-  if (parts.length === 2) return { lastName: parts[1].toUpperCase(), firstName: parts[0].toUpperCase(), mi: "N/A" };
-  return {
-    firstName: parts.slice(0, -1).join(" ").toUpperCase(),
-    lastName: parts[parts.length - 1].toUpperCase(),
-    mi: parts[1] ? parts[1][0].toUpperCase() + "." : "N/A",
-  };
+function parseApplicantName(
+  input: UnifiedPermitFormData | string | undefined | null
+): { lastName: string; firstName: string; middleName: string; mi: string } {
+  if (typeof input === "object" && input !== null) {
+    if (input.applicantLastName || input.applicantFirstName) {
+      const last = (input.applicantLastName || "").toUpperCase();
+      const first = (input.applicantFirstName || "").toUpperCase();
+      const mid = (input.applicantMiddleName || "").toUpperCase();
+      const mi = mid ? (mid.endsWith(".") ? mid : mid[0] + ".") : "N/A";
+      return { lastName: last, firstName: first, middleName: mid, mi };
+    }
+    input = input.applicantName;
+  }
+  const parts = (input || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { lastName: "DELA CRUZ", firstName: "JUAN", middleName: "SANTOS", mi: "S." };
+  if (parts.length === 1) return { lastName: parts[0].toUpperCase(), firstName: "", middleName: "", mi: "N/A" };
+  if (parts.length === 2) return { lastName: parts[1].toUpperCase(), firstName: parts[0].toUpperCase(), middleName: "", mi: "N/A" };
+
+  const upperParts = parts.map(p => p.toUpperCase());
+  if (
+    upperParts.length >= 3 &&
+    (upperParts[upperParts.length - 2] === "DELA" ||
+      upperParts[upperParts.length - 2] === "DE" ||
+      upperParts[upperParts.length - 2] === "DELOS" ||
+      upperParts[upperParts.length - 2] === "SAN")
+  ) {
+    const lastName = `${upperParts[upperParts.length - 2]} ${upperParts[upperParts.length - 1]}`;
+    const firstName = upperParts[0];
+    const middleName = upperParts.length > 3 ? upperParts.slice(1, upperParts.length - 2).join(" ") : "";
+    const mi = middleName ? middleName[0] + "." : "N/A";
+    return { lastName, firstName, middleName, mi };
+  }
+
+  const lastName = upperParts[upperParts.length - 1];
+  const firstName = upperParts[0];
+  const middleName = upperParts.slice(1, -1).join(" ");
+  const mi = middleName ? middleName[0] + "." : "N/A";
+  return { lastName, firstName, middleName, mi };
 }
 
 async function fetchTemplateBytes(templatePath: string): Promise<ArrayBuffer> {
@@ -310,11 +342,14 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
 
   // Header
   drawText(data.applicationNo || "APP-2026-6636", 115, 788, 9, true);
-  if (data.locationalClearanceRef) drawCheck(226.5, 801);
+  if (data.locationalClearanceRef) {
+    drawCheck(226.5, 801);
+    drawText(data.locationalClearanceRef, 245, 801.0, 7.5, true);
+  }
   drawCheck(346.5, 801); // Fire safety clearance also applied
 
   // Box 1: Owner
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  const { lastName, firstName, mi } = parseApplicantName(data);
   drawText(lastName, 118, 735.0, 8.5, true, 18);
   drawText(firstName, 238, 735.0, 8.5, true, 20);
   drawText(mi, 358, 735.0, 8, true);
@@ -368,8 +403,8 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   }
 
   // Box 5: Physical Specs & Cost Breakdown
-  const occName = (data.projectType?.name || "Single-Detached House").toUpperCase();
-  drawText(occName, 115, 426.0, 7.5, true, 24);
+  const occName = (data.occupancyClass || data.projectType?.name || "Single-Detached House").toUpperCase();
+  drawText(occName, 115, 426.0, 6.8, true, 20);
 
   // Format clean project cost number (placed after pre-printed TOTAL ESTIMATED COST: P)
   const cleanCost = String(data.projectCost || "1,500,000.00").replace(/PHP/gi, "").trim();
@@ -423,16 +458,14 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
 
   // Shift right after "Date" label
   drawText(data.submissionDate || "Sep 17, 2026", 255, 228.0, 7.5, false);
-  drawText(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 72, 208.0, 7.5, false, 35);
+  drawText(data.projectAddress || "LOT 12, BLOCK 4, SUNSET VALLEY SUBD.", 72, 208.0, 7.5, false, 45);
 
   // Gov't Issued ID No. - fit inside the cell (x=33 to x=150) so it never crosses the vertical line into "Date Issued"
   const cleanGovId = safeText(data.govIdNo || "CTC-2026-00192").trim();
   const govIdSize = fontRegular.widthOfTextAtSize(cleanGovId, 6.5) > 56 ? 5.8 : 6.5;
   p1.drawText(cleanGovId, { x: 88, y: 194.5, size: govIdSize, font: fontRegular, color: darkNavy });
 
-  // Box 5: Jurat Applicant Name
-  drawText(applicantUpper, 115, 131.0, 8.0, true, 26);
-  drawText(cleanGovId, 325, 131.0, 6.5, false);
+  // Box 5: Jurat Applicant Name - Removed per tester feedback ("BOX 5 - Remove name & government-issued ID number")
 
   // Page 2 (Consent & Acknowledgment): Applicant Built-in Signature & Printed Name
   if (p2) {
@@ -479,11 +512,11 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
     p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "APP-2026-6636", 105, 797.0, 8.5, true);
+  // Header: APPLICATION NO. inside box
+  drawText(data.applicationNo || "APP-2026-6636", 75, 794.0, 8.5, true);
 
   // Box 1
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  const { lastName, firstName, mi } = parseApplicantName(data);
   drawText(lastName, 160, 735.0, 8.5, true, 20);
   drawText(firstName, 280, 735.0, 8.5, true, 22);
   drawText(mi, 428, 735.0, 8, true);
@@ -491,9 +524,9 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
   drawText(data.formOfOwnership || "INDIVIDUAL", 235, 708.0, 8, false, 25);
   drawText((data.projectType?.category || "Residential").toUpperCase(), 405, 708.0, 8, false, 25);
 
-  // Address
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 80, 683.5, 7.5, false, 22);
-  drawText(data.barangay || "Sapa (Santo Nino)", 195, 683.5, 7.5, false, 16);
+  // Address (Applicant Address)
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 683.5, 7.5, false, 28);
+  drawText(data.barangay || "Poblacion", 195, 683.5, 7.5, false, 16);
   drawText("Sto. Tomas, Pampanga", 295, 683.5, 7.5, false, 18);
   drawText("2020", 390, 683.5, 7.5, false);
   drawText(data.applicantPhone || "0917-123-4567", 436, 683.5, 7.5, true);
@@ -511,14 +544,10 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
   // Scope: [X] New Construction
   drawCheck(46.5, 618.0);
 
-  // Box 2: Site Occupancy & Fire Safety
-  drawText(data.buildingFootprint || "60", 188, 442, 7.5, true);
-  drawText("20", 188, 430, 7.5, false); // Impervious
-  drawText("20", 188, 418, 7.5, false); // Unpaved
-  drawCheck(203, 442); // Exit Doors
-  drawCheck(312, 430); // Fire fighting
-  drawCheck(312, 418); // Smoke detectors
-  drawCheck(312, 404); // Emergency lights
+  // Box 2: Site Occupancy (removed hardcoded comments per tester feedback)
+  if (data.buildingFootprint) {
+    drawText(data.buildingFootprint, 188, 442, 7.5, true);
+  }
 
   // Box 3: Architect
   const archName = data.architectName || "Arch. Maria Santos, UAP";
@@ -528,13 +557,16 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
   drawText(data.architectPRC || "PRC-0045211", 75, 228.0, 7.5, false);
   drawText(data.architectPRCValidity || "2028-12-31", 215, 228.0, 7.5, false);
   drawText(data.architectPTR || "PTR-ST-2026-004", 75, 216.0, 7.5, false);
-  drawText(data.architectPTRIssued || "Jan 05, 2026", 215, 216.0, 7.5, false);
+  // Date Issued - contains date only
+  const rawArchPtrDate = data.architectPTRIssued || "Jan 05, 2026";
+  const archPtrDateOnly = rawArchPtrDate.includes("/") ? rawArchPtrDate.split("/")[1].trim() : rawArchPtrDate;
+  drawText(archPtrDateOnly, 215, 216.0, 7.5, false);
   drawText("Sto. Tomas", 75, 198.0, 7.5, false);
   drawText(data.architectTIN || "123-456-789-000", 205, 198.0, 7.5, false);
 
   // Box 5: Owner
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 100, 112.0, 8.5, true);
-  drawText(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 75, 60.0, 7.5, false);
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 112.0, 8.5, true);
+  drawText(data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga", 75, 60.0, 7.5, false);
   drawText(data.govIdNo || "CTC-2026-00192", 75, 48.0, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
@@ -565,7 +597,7 @@ export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): 
   drawText(data.applicationNo || "APP-2026-6636", 55, 702.0, 8.5, true);
 
   // Box 1
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  const { lastName, firstName, mi } = parseApplicantName(data);
   drawText(lastName, 160, 641.0, 8.5, true, 20);
   drawText(firstName, 275, 641.0, 8.5, true, 22);
   drawText(mi, 422, 641.0, 8, true);
@@ -574,9 +606,9 @@ export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): 
   drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 615.0, 8, false, 25);
 
   // Address
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 80, 587.0, 7.5, false, 22);
-  drawText(data.barangay || "Sapa (Santo Nino)", 195, 587.0, 7.5, false, 16);
-  drawText("Sto. Tomas, Pampanga", 295, 587.0, 7.5, false, 18);
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 587.0, 7.5, false, 28);
+  drawText(data.barangay || "Poblacion", 195, 587.0, 7.5, false, 16);
+  drawText("Sto. Tomas, Pampanga", 300, 587.0, 7.5, false, 18);
   drawText("2020", 390, 587.0, 7.5, false);
   drawText(data.applicantPhone || "0917-123-4567", 430, 587.0, 7.5, true);
 
@@ -593,27 +625,29 @@ export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): 
   // Scope: [X] New Construction
   drawCheck(47, 520.0);
 
-  // Box 2: Nature of Civil/Structural Works
-  drawCheck(55, 372.0); // Foundation
-  drawCheck(195, 415.0); // Concrete Framing
-  drawCheck(195, 372.0); // Slabs
-  drawCheck(195, 360.0); // Walls
+  // Box 2: Nature of Civil/Structural Works - X marks placed cleanly inside boxes
+  drawCheck(52, 368.0); // Foundation
+  drawCheck(192, 412.0); // Concrete Framing
+  drawCheck(192, 368.0); // Slabs
+  drawCheck(192, 356.0); // Walls
 
   // Box 3: Civil Engineer
   const ceName = data.civilEngineerName || "Engr. Roberto Cruz, CE";
-  drawText(ceName.toUpperCase(), 95, 255.0, 8.5, true);
-  drawText("Sto. Tomas, Pampanga", 75, 222.0, 7.5, false);
-  drawText(data.civilEngineerPRC || "PRC-0078923", 75, 205.0, 7.5, false);
-  drawText(data.civilEngineerPRCValidity || "2028-12-31", 195, 205.0, 7.5, false);
-  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 75, 192.0, 7.5, false);
-  drawText(data.civilEngineerPTRIssued || "Jan 05, 2026", 195, 192.0, 7.5, false);
-  drawText("Sto. Tomas", 75, 178.0, 7.5, false);
-  drawText(data.civilEngineerTIN || "123-456-789-000", 185, 178.0, 7.5, false);
+  drawText(ceName.toUpperCase(), 95, 258.0, 8.5, true);
+  drawText("Sto. Tomas, Pampanga", 75, 224.0, 7.5, false);
+  drawText(data.civilEngineerPRC || "PRC-0078923", 75, 206.0, 7.5, false);
+  drawText(data.civilEngineerPRCValidity || "2028-12-31", 195, 206.0, 7.5, false);
+  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 75, 193.0, 7.5, false);
+  const rawCePtrDate = data.civilEngineerPTRIssued || "Jan 05, 2026";
+  const cePtrDate = rawCePtrDate.includes("/") ? rawCePtrDate.split("/")[1].trim() : rawCePtrDate;
+  drawText(cePtrDate, 195, 193.0, 7.5, false);
+  drawText("Sto. Tomas", 75, 179.0, 7.5, false);
+  drawText(data.civilEngineerTIN || "123-456-789-000", 185, 179.0, 7.5, false);
 
   // Box 5: Owner
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 95, 96.0, 8.5, true);
-  drawText(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 75, 62.0, 7.5, false);
-  drawText(data.govIdNo || "CTC-2026-00192", 75, 48.0, 7.5, false);
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 95, 98.0, 8.5, true);
+  drawText(data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga", 75, 64.0, 7.5, false);
+  drawText(data.govIdNo || "CTC-2026-00192", 75, 50.0, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
@@ -639,28 +673,28 @@ export async function generateElectricalPermitPdf(data: UnifiedPermitFormData): 
     p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "APP-2026-6636", 50, 760.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 425, 760.0, 8, false);
-  drawText(data.proposedStartDate || "Sep 17, 2026", 50, 741.0, 7.5, false);
-  drawText(data.expectedCompletionDate || "WITHIN 180 DAYS", 425, 741.0, 7.5, false);
+  // Header: APPLICATION NO. & DATE APPLICATION FILED inside boxes
+  drawText(data.applicationNo || "APP-2026-6636", 75, 755.0, 8.5, true);
+  drawText(data.submissionDate || "Sep 17, 2026", 410, 755.0, 8, false);
+  drawText(data.proposedStartDate || "Sep 17, 2026", 75, 741.0, 7.5, false);
+  drawText(data.expectedCompletionDate || "WITHIN 180 DAYS", 410, 741.0, 7.5, false);
 
   // Box 1
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
   drawText(lastName, 175, 704.0, 8.5, true, 18);
   drawText(firstName, 255, 704.0, 8.5, true, 20);
-  drawText(mi, 345, 704.0, 8, true);
+  drawText(middleName || mi, 345, 704.0, 8, true);
   drawText(data.applicantTIN || "000-123-456-000", 425, 704.0, 8, false);
 
-  // Address
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 45, 676.0, 7.5, false, 28);
-  drawText(data.barangay || "Sapa (Santo Nino)", 250, 676.0, 7.5, false, 15);
+  // Address (Applicant Address)
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 45, 676.0, 7.5, false, 28);
+  drawText(data.barangay || "Poblacion", 250, 676.0, 7.5, false, 15);
   drawText("Sto. Tomas, Pampanga", 335, 676.0, 7.5, false, 18);
   drawText(data.applicantPhone || "0917-123-4567", 425, 676.0, 7.5, true);
 
   // Location of installation
   drawText(data.projectAddress || "Lawasn St., Blue Diamond", 100, 648.0, 7.5, false, 28);
-  drawText(data.barangay || "Sapa (Santo Nino)", 330, 648.0, 7.5, true, 18);
+  drawText(data.barangay || "Poblacion", 330, 648.0, 7.5, true, 18);
   drawText("Sto. Tomas, Pampanga", 420, 648.0, 7.5, true, 20);
 
   // Scope & Occupancy
@@ -682,13 +716,16 @@ export async function generateElectricalPermitPdf(data: UnifiedPermitFormData): 
   drawText("Sto. Tomas, Pampanga", 45, 458.0, 7.5, false);
   drawText("0917-555-4321", 375, 458.0, 7.5, false);
   drawText(data.electricalEngineerPTR || "PTR-ST-2026-4412", 45, 438.0, 7.5, false);
-  drawText(data.electricalEngineerPTRIssued || "Jan 05, 2026", 200, 438.0, 7.5, false);
+  // DATE ISSUED - contains date only
+  const rawPeePtrDate = data.electricalEngineerPTRIssued || "Jan 05, 2026";
+  const peePtrDateOnly = rawPeePtrDate.includes("/") ? rawPeePtrDate.split("/")[1].trim() : rawPeePtrDate;
+  drawText(peePtrDateOnly, 200, 438.0, 7.5, false);
   drawText("Sto. Tomas", 375, 438.0, 7.5, false);
   drawText(peeName.toUpperCase(), 45, 412.0, 8.5, true);
   drawText(data.electricalEngineerTIN || "334-219-880-000", 375, 412.0, 7.5, false);
 
   // Box 5: Owner
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 45, 145.0, 8.5, true);
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 45, 145.0, 8.5, true);
   drawText(data.applicantTIN || "000-123-456-000", 340, 145.0, 7.5, false);
   drawText(data.govIdNo || "CTC-2026-00192", 445, 138.0, 7.5, false);
 
@@ -718,45 +755,45 @@ export async function generateSanitaryPermitPdf(data: UnifiedPermitFormData): Pr
     p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
   };
 
-  // Header
-  drawText1(data.applicationNo || "APP-2026-6636", 95, 828.0, 8.5, true);
+  // Header: APPLICATION NO. in box
+  drawText1(data.applicationNo || "APP-2026-6636", 75, 824.0, 8.5, true);
   drawText1(data.submissionDate || "Sep 17, 2026", 100, 792.0, 8, false);
 
   // Box 1
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
   drawText1(lastName, 170, 735.0, 8.5, true, 20);
   drawText1(firstName, 260, 735.0, 8.5, true, 22);
-  drawText1(mi, 380, 735.0, 8, true);
+  drawText1(middleName || mi, 380, 735.0, 8, true);
   drawText1(data.applicantTIN || "000-123-456-000", 475, 735.0, 8, false);
 
-  // Address
-  drawText1(data.projectAddress || "Lawasn St., Blue Diamond", 45, 713.0, 7.5, false, 28);
-  drawText1(data.barangay || "Sapa (Santo Nino)", 260, 713.0, 7.5, false, 15);
+  // Address (Applicant Address)
+  drawText1(data.applicantAddress || "123 Rizal St., Poblacion", 45, 713.0, 7.5, false, 28);
+  drawText1(data.barangay || "Poblacion", 260, 713.0, 7.5, false, 15);
   drawText1("Sto. Tomas, Pampanga", 360, 713.0, 7.5, false, 18);
   drawText1(data.applicantPhone || "0917-123-4567", 475, 713.0, 7.5, true);
 
-  // Project Location (2nd Address line)
-  drawText1(data.projectAddress || "Lawasn St., Blue Diamond", 45, 691.5, 7.5, false, 28);
-  drawText1(data.barangay || "Sapa (Santo Nino)", 260, 691.5, 7.5, true, 18);
+  // Location of Installation (2nd line)
+  drawText1(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 45, 691.5, 7.5, false, 28);
+  drawText1(data.barangay || "Poblacion", 260, 691.5, 7.5, true, 18);
   drawText1("Sto. Tomas, Pampanga", 360, 691.5, 7.5, true, 20);
 
-  // Scope & Occupancy
+  // Scope: NEW INSTALLATION
   drawCheck1(40, 666.0); // [X] New Installation
   drawCheck1(40, 624.0); // [X] Residential
 
-  // Fixtures
-  drawText1(data.waterClosetsCount || "3", 35, 528.0, 7.5, true);
-  drawCheck1(80, 528.0);
-  drawText1(data.floorDrainsCount || "3", 35, 516.0, 7.5, true);
-  drawCheck1(80, 516.0);
-  drawText1(data.lavatoriesCount || "3", 35, 504.0, 7.5, true);
-  drawCheck1(80, 504.0);
-  drawText1(data.kitchenSinksCount || "1", 35, 492.0, 7.5, true);
-  drawCheck1(80, 492.0);
-  drawText1(data.faucetsCount || "4", 35, 480.0, 7.5, true);
-  drawCheck1(80, 480.0);
-  drawText1(data.showersCount || "2", 35, 468.0, 7.5, true);
-  drawCheck1(80, 468.0);
+  // Fixtures: moved slightly higher (+4px)
+  drawText1(data.waterClosetsCount || "3", 35, 532.0, 7.5, true);
+  drawCheck1(80, 532.0);
+  drawText1(data.floorDrainsCount || "3", 35, 520.0, 7.5, true);
+  drawCheck1(80, 520.0);
+  drawText1(data.lavatoriesCount || "3", 35, 508.0, 7.5, true);
+  drawCheck1(80, 508.0);
+  drawText1(data.kitchenSinksCount || "1", 35, 496.0, 7.5, true);
+  drawCheck1(80, 496.0);
+  drawText1(data.faucetsCount || "4", 35, 484.0, 7.5, true);
+  drawCheck1(80, 484.0);
+  drawText1(data.showersCount || "2", 35, 472.0, 7.5, true);
+  drawCheck1(80, 472.0);
 
   // Water supply & septic
   drawCheck1(35, 348.0); // [X] City / Municipal Water System
@@ -822,54 +859,54 @@ export async function generateMechanicalPermitPdf(data: UnifiedPermitFormData): 
   drawText(data.submissionDate || "Sep 17, 2026", 85, 722.0, 8, false);
 
   // Box 1: Owner
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
   drawText(lastName, 166, 663.0, 8.5, true, 20);
   drawText(firstName, 256, 663.0, 8.5, true, 20);
-  drawText(mi, 355, 663.0, 8, true);
+  drawText(middleName || mi, 355, 663.0, 8, true);
   drawText(data.applicantTIN || "000-123-456-000", 433, 663.0, 8, false);
 
   // Form of Ownership & Occupancy
   drawText(data.formOfOwnership || "INDIVIDUAL", 230, 635.0, 8, false, 25);
   drawText((data.projectType?.category || "Residential").toUpperCase(), 468, 635.0, 8, false, 25);
 
-  // Address
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 200, 612.0, 7.5, false, 35);
-  drawText(data.applicantPhone || "0917-123-4567", 465, 612.0, 7.5, true);
-  drawText(data.barangay || "Sapa (Santo Nino)", 80, 592.0, 7.5, false, 20);
-  drawText("Sto. Tomas, Pampanga", 280, 592.0, 7.5, false, 25);
+  // Address: moved higher (+4px)
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 200, 616.0, 7.5, false, 35);
+  drawText(data.applicantPhone || "0917-123-4567", 465, 616.0, 7.5, true);
+  drawText(data.barangay || "Poblacion", 80, 596.0, 7.5, false, 20);
+  drawText("Sto. Tomas, Pampanga", 280, 596.0, 7.5, false, 25);
 
-  // Location of installation
-  drawText(data.lotNo || "Lot 12", 195, 566.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 295, 566.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 390, 566.0, 7.5, true, 14);
-  drawText(data.taxDecNo || "TD-2026-0012", 515, 566.0, 7.5, false);
+  // Location of installation: moved higher (+4px)
+  drawText(data.lotNo || "Lot 12", 195, 570.0, 7.5, true);
+  drawText(data.blockNo || "Blk 4", 295, 570.0, 7.5, true);
+  drawText(data.tctNo || "TCT-123456", 390, 570.0, 7.5, true, 14);
+  drawText(data.taxDecNo || "TD-2026-0012", 515, 570.0, 7.5, false);
 
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 70, 548.0, 7.5, false, 22);
-  drawText(data.barangay || "Sapa (Santo Nino)", 245, 548.0, 7.5, true, 20);
-  drawText("Sto. Tomas, Pampanga", 460, 548.0, 7.5, true, 22);
+  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 70, 552.0, 7.5, false, 22);
+  drawText(data.barangay || "Poblacion", 245, 552.0, 7.5, true, 20);
+  drawText("Sto. Tomas, Pampanga", 460, 552.0, 7.5, true, 22);
 
   // Scope of work
-  drawCheck(52, 538.0); // New Construction
+  drawCheck(52, 532.0); // New Construction
 
   // Box 2: Installation and Operation
   drawCheck(34, 432.0); // Packaged / Split type aircon
   drawCheck(215, 468.0); // Mechanical ventilation
   drawCheck(354, 468.0); // Pumps
 
-  // Box 3: Professional Mechanical Engineer
+  // Box 3: Professional Mechanical Engineer: moved higher (+4px)
   const pmeName = data.mechanicalEngineerName || "Engr. Ricardo Gomez, PME";
-  drawText(pmeName.toUpperCase(), 60, 325.0, 8.5, true);
-  drawText("Sto. Tomas, Pampanga", 50, 298.0, 7.5, false);
-  drawText(data.mechanicalEngineerPRC || "PRC-0055123", 50, 278.0, 7.5, false);
-  drawText(data.mechanicalEngineerPRCValidity || "2028-12-31", 175, 278.0, 7.5, false);
-  drawText(data.mechanicalEngineerPTR || "PTR-ST-2026-7789", 50, 258.0, 7.5, false);
-  drawText(data.mechanicalEngineerPTRIssued || "Jan 05, 2026", 175, 258.0, 7.5, false);
-  drawText(data.mechanicalEngineerTIN || "112-445-889-000", 50, 238.0, 7.5, false);
+  drawText(pmeName.toUpperCase(), 60, 329.0, 8.5, true);
+  drawText("Sto. Tomas, Pampanga", 50, 302.0, 7.5, false);
+  drawText(data.mechanicalEngineerPRC || "PRC-0055123", 50, 282.0, 7.5, false);
+  drawText(data.mechanicalEngineerPRCValidity || "2028-12-31", 175, 282.0, 7.5, false);
+  drawText(data.mechanicalEngineerPTR || "PTR-ST-2026-7789", 50, 262.0, 7.5, false);
+  drawText(data.mechanicalEngineerPTRIssued || "Jan 05, 2026", 175, 262.0, 7.5, false);
+  drawText(data.mechanicalEngineerTIN || "112-445-889-000", 50, 242.0, 7.5, false);
 
-  // Box 5: Owner
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 60, 110.0, 8.5, true);
-  drawText(data.projectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 50, 65.0, 7.5, false);
-  drawText(data.govIdNo || "CTC-2026-00192", 50, 48.0, 7.5, false);
+  // Box 5: Owner: moved higher (+5px)
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 60, 115.0, 8.5, true);
+  drawText(data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga", 50, 68.0, 7.5, false);
+  drawText(data.govIdNo || "CTC-2026-00192", 50, 50.0, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
@@ -899,59 +936,61 @@ export async function generateElectronicsPermitPdf(data: UnifiedPermitFormData):
   drawText(data.applicationNo || "APP-2026-6636", 50, 720.0, 8.5, true);
   drawText(data.submissionDate || "Sep 17, 2026", 420, 720.0, 8, false);
 
-  // Box 1: Owner Row (Top row in template)
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  // Box 1: Owner Row
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
   drawText(lastName, 160, 662.0, 8.5, true, 20);
   drawText(firstName, 270, 662.0, 8.5, true, 20);
-  drawText(mi, 395, 662.0, 8, true);
-  drawText(data.applicantTIN || "000-123-456-000", 440, 662.0, 8, false);
+  drawText(middleName || mi, 395, 662.0, 8, true);
+  // TIN placed in correct column
+  drawText(data.applicantTIN || "000-123-456-000", 475, 662.0, 8, false);
 
-  // Form of Ownership & Character of Occupancy
+  // Form of Ownership & For construction owned by
   drawText(data.formOfOwnership || "INDIVIDUAL", 220, 638.0, 8, false, 25);
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 80, 638.0, 8, false, 25);
   drawText((data.projectType?.category || "Residential").toUpperCase(), 420, 638.0, 8, false, 25);
 
-  // Address
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 85, 616.0, 7.5, false, 22);
-  drawText(data.barangay || "Sapa (Santo Nino)", 200, 616.0, 7.5, false, 15);
-  drawText("Sto. Tomas, Pampanga", 290, 616.0, 7.5, false, 18);
-  drawText("2020", 380, 616.0, 7.5, false);
-  drawText(data.applicantPhone || "0917-123-4567", 425, 616.0, 7.5, true);
+  // Address (Applicant Address, correct spelling of Pampanga & Sunset)
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 85, 620.0, 7.5, false, 22);
+  drawText(data.barangay || "Poblacion", 200, 620.0, 7.5, false, 15);
+  drawText("Sto. Tomas, Pampanga", 290, 620.0, 7.5, false, 18);
+  drawText("2020", 380, 620.0, 7.5, false);
+  drawText(data.applicantPhone || "0917-123-4567", 425, 620.0, 7.5, true);
 
-  // Location of Construction
-  drawText(data.lotNo || "Lot 12", 155, 586.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 235, 586.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 325, 586.0, 7.5, true, 16);
-  drawText(data.taxDecNo || "TD-2026-0012", 450, 586.0, 7.5, false);
+  // Location of Construction: moved higher (+4px)
+  drawText(data.lotNo || "Lot 12", 155, 590.0, 7.5, true);
+  drawText(data.blockNo || "Blk 4", 235, 590.0, 7.5, true);
+  drawText(data.tctNo || "TCT-123456", 325, 590.0, 7.5, true, 16);
+  drawText(data.taxDecNo || "TD-2026-0012", 450, 590.0, 7.5, false);
 
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 65, 568.0, 7.5, false, 24);
-  drawText(data.barangay || "Sapa (Santo Nino)", 230, 568.0, 7.5, true, 18);
-  drawText("Sto. Tomas, Pampanga", 420, 568.0, 7.5, true, 20);
+  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 65, 572.0, 7.5, false, 24);
+  drawText(data.barangay || "Poblacion", 230, 572.0, 7.5, true, 18);
+  drawText("Sto. Tomas, Pampanga", 420, 572.0, 7.5, true, 20);
 
-  // Scope: [X] New Installation
-  drawCheck(56, 530.0);
+  // Scope: [X] New Installation (moved higher)
+  drawCheck(56, 534.0);
 
-  // Box 2: Nature of Works (Telecom, Security/Alarm, CCTV, FDAS)
-  drawCheck(46, 442.0); // Telecommunication
-  drawCheck(46, 386.0); // Security & Alarm
-  drawCheck(205, 442.0); // Electronics & Alarm
-  drawCheck(380, 386.0); // Building wiring / fiber optic
+  // Box 2: Nature of Works: moved higher (+4px)
+  drawCheck(46, 446.0); // Telecommunication
+  drawCheck(46, 390.0); // Security & Alarm
+  drawCheck(205, 446.0); // Electronics & Alarm
+  drawCheck(380, 390.0); // Building wiring / fiber optic
 
-  // Box 3: Professional Electronics Engineer
+  // Box 3: Professional Electronics Engineer: moved higher (+4px)
   const peceName = data.electronicsEngineerName || "Engr. Fernando Ramos, PECE";
-  drawText(peceName.toUpperCase(), 60, 290.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 210, 290.0, 7.5, false);
-  drawText("Sto. Tomas, Pampanga", 60, 260.0, 7.5, false);
-  drawText(data.electronicsEngineerPRC || "PRC-0022891", 60, 242.0, 7.5, false);
-  drawText(data.electronicsEngineerPRCValidity || "2028-12-31", 175, 242.0, 7.5, false);
-  drawText(data.electronicsEngineerPTR || "PTR-ST-2026-9045", 60, 226.0, 7.5, false);
-  drawText(data.electronicsEngineerPTRIssued || "Jan 05, 2026", 175, 226.0, 7.5, false);
-  drawText("Sto. Tomas", 60, 208.0, 7.5, false);
-  drawText(data.electronicsEngineerTIN || "228-910-334-000", 175, 208.0, 7.5, false);
+  drawText(peceName.toUpperCase(), 60, 294.0, 8.5, true);
+  drawText(data.submissionDate || "Sep 17, 2026", 210, 294.0, 7.5, false);
+  drawText("Sto. Tomas, Pampanga", 60, 264.0, 7.5, false);
+  drawText(data.electronicsEngineerPRC || "PRC-0022891", 60, 246.0, 7.5, false);
+  drawText(data.electronicsEngineerPRCValidity || "2028-12-31", 175, 246.0, 7.5, false);
+  drawText(data.electronicsEngineerPTR || "PTR-ST-2026-9045", 60, 230.0, 7.5, false);
+  drawText(data.electronicsEngineerPTRIssued || "Jan 05, 2026", 175, 230.0, 7.5, false);
+  drawText("Sto. Tomas", 60, 212.0, 7.5, false);
+  drawText(data.electronicsEngineerTIN || "228-910-334-000", 175, 212.0, 7.5, false);
 
   // Box 5: Owner
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 60, 98.0, 8.5, true);
-  drawText("Sto. Tomas, Pampanga", 60, 60.0, 7.5, false);
-  drawText(data.govIdNo || "CTC-2026-00192", 60, 44.0, 7.5, false);
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 60, 102.0, 8.5, true);
+  drawText("Sto. Tomas, Pampanga", 60, 64.0, 7.5, false);
+  drawText(data.govIdNo || "CTC-2026-00192", 60, 48.0, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
@@ -1262,50 +1301,50 @@ export async function generateDemolitionPermitPdf(data: UnifiedPermitFormData): 
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "APP-2026-6636", 55, 680.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 430, 680.0, 8, false);
+  // Header: Application No. inside box
+  drawText(data.applicationNo || "APP-2026-6636", 75, 676.0, 8.5, true);
+  drawText(data.submissionDate || "Sep 17, 2026", 430, 676.0, 8, false);
 
-  // Box 1
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
-  drawText(lastName, 160, 622.0, 8.5, true, 20);
-  drawText(firstName, 260, 622.0, 8.5, true, 22);
-  drawText(mi, 370, 622.0, 8, true);
-  drawText(data.applicantTIN || "000-123-456-000", 440, 622.0, 8, false);
-  drawText(data.formOfOwnership || "INDIVIDUAL", 210, 595.0, 8, false, 25);
-  drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 595.0, 8, false, 25);
+  // Box 1: Moved lower to sit on line
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
+  drawText(lastName, 160, 616.0, 8.5, true, 20);
+  drawText(firstName, 260, 616.0, 8.5, true, 22);
+  drawText(middleName || mi, 370, 616.0, 8, true);
+  drawText(data.applicantTIN || "000-123-456-000", 440, 616.0, 7.0, false);
+  drawText(data.formOfOwnership || "INDIVIDUAL", 210, 591.0, 8, false, 25);
+  drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 591.0, 8, false, 25);
 
-  // Address
-  drawText(data.projectAddress || data.applicantAddress || "Lawasn St., Blue Diamond", 80, 569.0, 7.5, false, 28);
-  drawText(data.barangay || "Sapa (Santo Nino)", 250, 569.0, 7.5, false, 16);
-  drawText(data.applicantPhone || "0917-123-4567", 440, 569.0, 7.5, true);
+  // Address: moved lower
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 563.0, 7.5, false, 28);
+  drawText(data.barangay || "Poblacion", 250, 563.0, 7.5, false, 16);
+  drawText(data.applicantPhone || "0917-123-4567", 440, 563.0, 7.5, true);
 
   // Location of Demolition
-  drawText(data.lotNo || "Lot 12", 160, 542.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 240, 542.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 320, 542.0, 7.5, true, 16);
-  drawText(data.taxDecNo || "TD-2026-0012", 440, 542.0, 7.5, false);
+  drawText(data.lotNo || "Lot 12", 160, 538.0, 7.5, true);
+  drawText(data.blockNo || "Blk 4", 240, 538.0, 7.5, true);
+  drawText(data.tctNo || "TCT-123456", 320, 538.0, 7.5, true, 16);
+  drawText(data.taxDecNo || "TD-2026-0012", 440, 538.0, 7.5, false);
 
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 80, 523.0, 7.5, false, 24);
-  drawText(data.barangay || "Sapa (Santo Nino)", 240, 523.0, 7.5, true, 20);
+  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 80, 519.0, 7.5, false, 24);
+  drawText(data.barangay || "Poblacion", 240, 519.0, 7.5, true, 20);
 
   // Box 2: Demolition Details
-  const bldgType = data.demolitionBuildingType || data.projectType?.name || "Single-Detached Two-Storey Residential Structure";
-  drawText(bldgType, 160, 480.0, 8, true, 45);
+  const bldgType = data.demolitionBuildingType || data.projectType?.name || "Single-Detached Residential";
+  drawText(bldgType, 160, 480.0, 7.5, true, 36);
   drawText(`${data.demolitionArea || data.floorArea || "180.00"} sq.m.`, 160, 460.0, 8, true);
   drawText(data.demolitionStoreys || data.proposedStoreys || "2", 360, 460.0, 8, true);
   drawText(data.proposedStartDate || "Oct 01, 2026", 160, 440.0, 7.5, false);
   drawText(data.expectedCompletionDate || "Nov 15, 2026", 360, 440.0, 7.5, false);
 
-  // Box 3: Engineer
+  // Box 3: Engineer - moved higher
   const ceName = data.civilEngineerName || "Engr. Roberto Cruz, CE";
-  drawText(ceName.toUpperCase(), 100, 360.0, 8.5, true);
-  drawText(data.civilEngineerPRC || "PRC-0078923", 80, 335.0, 7.5, false);
-  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 80, 320.0, 7.5, false);
+  drawText(ceName.toUpperCase(), 100, 365.0, 8.5, true);
+  drawText(data.civilEngineerPRC || "PRC-0078923", 80, 340.0, 7.5, false);
+  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 80, 325.0, 7.5, false);
 
-  // Box 4: Applicant
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 100, 235.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 80, 205.0, 7.5, false);
+  // Box 4: Applicant - moved higher
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 240.0, 8.5, true);
+  drawText(data.govIdNo || "CTC-2026-00192", 80, 210.0, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
@@ -1327,51 +1366,51 @@ export async function generateFencingPermitPdf(data: UnifiedPermitFormData): Pro
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "APP-2026-6636", 55, 680.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 430, 680.0, 8, false);
+  // Header: Applicant No. inside box
+  drawText(data.applicationNo || "APP-2026-6636", 75, 676.0, 8.5, true);
+  drawText(data.submissionDate || "Sep 17, 2026", 430, 676.0, 8, false);
 
   // Box 1
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
-  drawText(lastName, 160, 622.0, 8.5, true, 20);
-  drawText(firstName, 260, 622.0, 8.5, true, 22);
-  drawText(mi, 370, 622.0, 8, true);
-  drawText(data.applicantTIN || "000-123-456-000", 440, 622.0, 8, false);
-  drawText(data.formOfOwnership || "INDIVIDUAL", 210, 595.0, 8, false, 25);
-  drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 595.0, 8, false, 25);
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
+  drawText(lastName, 160, 618.0, 8.5, true, 20);
+  drawText(firstName, 260, 618.0, 8.5, true, 22);
+  drawText(middleName || mi, 370, 618.0, 8, true);
+  drawText(data.applicantTIN || "000-123-456-000", 440, 618.0, 7.5, false);
+  drawText(data.formOfOwnership || "INDIVIDUAL", 210, 591.0, 8, false, 25);
+  drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 591.0, 8, false, 25);
 
   // Address
-  drawText(data.projectAddress || data.applicantAddress || "Lawasn St., Blue Diamond", 80, 569.0, 7.5, false, 28);
-  drawText(data.barangay || "Sapa (Santo Nino)", 250, 569.0, 7.5, false, 16);
-  drawText(data.applicantPhone || "0917-123-4567", 440, 569.0, 7.5, true);
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 565.0, 7.5, false, 28);
+  drawText(data.barangay || "Poblacion", 250, 565.0, 7.5, false, 16);
+  drawText(data.applicantPhone || "0917-123-4567", 440, 565.0, 7.5, true);
 
   // Location of Fencing
-  drawText(data.lotNo || "Lot 12", 160, 542.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 240, 542.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 320, 542.0, 7.5, true, 16);
-  drawText(data.taxDecNo || "TD-2026-0012", 440, 542.0, 7.5, false);
+  drawText(data.lotNo || "Lot 12", 160, 538.0, 7.5, true);
+  drawText(data.blockNo || "Blk 4", 240, 538.0, 7.5, true);
+  drawText(data.tctNo || "TCT-123456", 320, 538.0, 7.5, true, 16);
+  drawText(data.taxDecNo || "TD-2026-0012", 440, 538.0, 7.5, false);
 
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 80, 523.0, 7.5, false, 24);
-  drawText(data.barangay || "Sapa (Santo Nino)", 240, 523.0, 7.5, true, 20);
+  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 80, 519.0, 7.5, false, 24);
+  drawText(data.barangay || "Poblacion", 240, 519.0, 7.5, true, 20);
 
-  // Box 2: Fencing Specifications
+  // Box 2: Fencing Specifications: moved higher (+5px)
   const fenceType = data.fencingType || "Reinforced Concrete / CHB with Decorative Steel Grills";
-  drawText(fenceType, 160, 465.0, 8, true, 48);
-  drawText(`${data.fencingLength || "45.00"} METERS`, 160, 445.0, 8, true);
-  drawText(`${data.fencingHeight || "2.20"} METERS`, 360, 445.0, 8, true);
-  drawText(`PHP ${data.fencingCost || "150,000.00"}`, 160, 428.0, 8, true);
-  drawText(data.proposedStartDate || "Oct 01, 2026", 160, 410.0, 7.5, false);
-  drawText(data.expectedCompletionDate || "Nov 15, 2026", 360, 410.0, 7.5, false);
+  drawText(fenceType, 160, 470.0, 8, true, 48);
+  drawText(`${data.fencingLength || "45.00"} METERS`, 160, 450.0, 8, true);
+  drawText(`${data.fencingHeight || "2.20"} METERS`, 360, 450.0, 8, true);
+  drawText(`PHP ${data.fencingCost || "150,000.00"}`, 160, 433.0, 8, true);
+  drawText(data.proposedStartDate || "Oct 01, 2026", 160, 415.0, 7.5, false);
+  drawText(data.expectedCompletionDate || "Nov 15, 2026", 360, 415.0, 7.5, false);
 
   // Box 3: Architect / Civil Engineer
   const archName = data.architectName || "Arch. Maria Santos, UAP";
-  drawText(archName.toUpperCase(), 100, 360.0, 8.5, true);
-  drawText(data.architectPRC || "PRC-0045211", 80, 335.0, 7.5, false);
-  drawText(data.architectPTR || "PTR-ST-2026-004", 80, 320.0, 7.5, false);
+  drawText(archName.toUpperCase(), 100, 365.0, 8.5, true);
+  drawText(data.architectPRC || "PRC-0045211", 80, 340.0, 7.5, false);
+  drawText(data.architectPTR || "PTR-ST-2026-004", 80, 325.0, 7.5, false);
 
-  // Box 4: Applicant Signature
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 100, 235.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 80, 205.0, 7.5, false);
+  // Box 4: Applicant Signature: moved higher (+5px)
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 240.0, 8.5, true);
+  drawText(data.govIdNo || "CTC-2026-00192", 80, 210.0, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
@@ -1393,40 +1432,42 @@ export async function generateExcavationPermitPdf(data: UnifiedPermitFormData): 
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "APP-2026-6636", 55, 660.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 430, 660.0, 8, false);
+  // Header: Applicant No. inside box
+  drawText(data.applicationNo || "APP-2026-6636", 75, 656.0, 8.5, true);
+  drawText(data.submissionDate || "Sep 17, 2026", 430, 656.0, 8, false);
 
   // Box 1
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
   drawText(lastName, 160, 602.0, 8.5, true, 20);
   drawText(firstName, 260, 602.0, 8.5, true, 22);
-  drawText(mi, 370, 602.0, 8, true);
+  drawText(middleName || mi, 370, 602.0, 8, true);
   drawText(data.applicantTIN || "000-123-456-000", 450, 602.0, 8, false);
   drawText(data.formOfOwnership || "INDIVIDUAL", 210, 575.0, 8, false, 25);
   drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 575.0, 8, false, 25);
 
-  // Address
-  drawText(data.projectAddress || data.applicantAddress || "Lawasn St., Blue Diamond", 80, 546.0, 7.5, false, 28);
-  drawText(data.barangay || "Sapa (Santo Nino)", 80, 528.0, 7.5, false, 20);
+  // Address (Applicant Address)
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 546.0, 7.5, false, 28);
+  drawText(data.barangay || "Poblacion", 80, 528.0, 7.5, false, 20);
   drawText(data.applicantPhone || "0917-123-4567", 450, 546.0, 7.5, true);
 
   // Location
   drawText(data.lotNo || "Lot 12", 160, 514.0, 7.5, true);
   drawText(data.blockNo || "Blk 4", 240, 514.0, 7.5, true);
   drawText(data.tctNo || "TCT-123456", 320, 514.0, 7.5, true, 16);
+  // Missing Tax Dec No. added
+  drawText(data.taxDecNo || "TD-2026-0012", 440, 514.0, 7.5, false);
 
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 80, 496.0, 7.5, false, 24);
-  drawText(data.barangay || "Sapa (Santo Nino)", 240, 496.0, 7.5, true, 20);
+  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 80, 496.0, 7.5, false, 24);
+  drawText(data.barangay || "Poblacion", 240, 496.0, 7.5, true, 20);
 
-  // Box 2: Excavation Specifications
+  // Box 2: Excavation Specifications: moved higher (+5px)
   const excScope = data.excavationScope || "Foundation Excavation, Site Grading & Ground Levelling";
-  drawText(excScope, 160, 460.0, 8, true, 48);
-  drawText(`${data.excavationVolume || "120.00"} CU. M.`, 160, 440.0, 8, true);
-  drawText(`${data.excavationDepth || "2.50"} METERS`, 360, 440.0, 8, true);
-  drawText(`PHP ${data.projectCost || "85,000.00"}`, 160, 420.0, 8, true);
-  drawText(data.proposedStartDate || "Oct 01, 2026", 160, 400.0, 7.5, false);
-  drawText(data.expectedCompletionDate || "Nov 15, 2026", 360, 400.0, 7.5, false);
+  drawText(excScope, 160, 465.0, 8, true, 48);
+  drawText(`${data.excavationVolume || "120.00"} CU. M.`, 160, 445.0, 8, true);
+  drawText(`${data.excavationDepth || "2.50"} METERS`, 360, 445.0, 8, true);
+  drawText(`PHP ${data.projectCost || "85,000.00"}`, 160, 425.0, 8, true);
+  drawText(data.proposedStartDate || "Oct 01, 2026", 160, 405.0, 7.5, false);
+  drawText(data.expectedCompletionDate || "Nov 15, 2026", 360, 405.0, 7.5, false);
 
   // Box 3: Civil Engineer
   const ceName = data.civilEngineerName || "Engr. Roberto Cruz, CE";
@@ -1434,9 +1475,9 @@ export async function generateExcavationPermitPdf(data: UnifiedPermitFormData): 
   drawText(data.civilEngineerPRC || "PRC-0078923", 80, 245.0, 7.5, false);
   drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 80, 232.0, 7.5, false);
 
-  // Box 4: Building Owner Signature
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 100, 125.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 80, 80.0, 7.5, false);
+  // Box 4: Building Owner Signature: moved higher (+5px)
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 130.0, 8.5, true);
+  drawText(data.govIdNo || "CTC-2026-00192", 80, 85.0, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
@@ -1458,31 +1499,40 @@ export async function generateSignPermitPdf(data: UnifiedPermitFormData): Promis
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "APP-2026-6636", 55, 785.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 440, 785.0, 8, false);
+  const drawCheck = (x: number, y: number) => {
+    p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
+  };
+
+  // Header: Applicant No. inside box
+  drawText(data.applicationNo || "APP-2026-6636", 75, 781.0, 8.5, true);
+  drawText(data.submissionDate || "Sep 17, 2026", 440, 781.0, 8, false);
 
   // Box 1
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
   drawText(lastName, 160, 728.0, 8.5, true, 20);
   drawText(firstName, 260, 728.0, 8.5, true, 22);
-  drawText(mi, 370, 728.0, 8, true);
+  drawText(middleName || mi, 370, 728.0, 8, true);
   drawText(data.applicantTIN || "000-123-456-000", 460, 728.0, 8, false);
   drawText(data.formOfOwnership || "INDIVIDUAL / ENTERPRISE", 210, 700.0, 8, false, 25);
   drawText((data.projectType?.category || "Commercial / Business").toUpperCase(), 380, 700.0, 8, false, 25);
 
-  // Address
-  drawText(data.projectAddress || data.applicantAddress || "Lawasn St., Blue Diamond", 80, 672.0, 7.5, false, 28);
-  drawText(data.barangay || "Sapa (Santo Nino)", 240, 672.0, 7.5, false, 18);
+  // Address (Applicant Address)
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 672.0, 7.5, false, 28);
+  drawText(data.barangay || "Poblacion", 240, 672.0, 7.5, false, 18);
   drawText(data.applicantPhone || "0917-123-4567", 460, 672.0, 7.5, true);
 
   // Location of Sign
   drawText(data.lotNo || "Lot 12", 160, 643.0, 7.5, true);
   drawText(data.blockNo || "Blk 4", 240, 643.0, 7.5, true);
   drawText(data.tctNo || "TCT-123456", 320, 643.0, 7.5, true, 16);
+  // Missing Tax Dec No. added
+  drawText(data.taxDecNo || "TD-2026-0012", 440, 643.0, 7.5, false);
 
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 80, 613.0, 7.5, false, 24);
-  drawText(data.barangay || "Sapa (Santo Nino)", 240, 613.0, 7.5, true, 20);
+  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 80, 613.0, 7.5, false, 24);
+  drawText(data.barangay || "Poblacion", 240, 613.0, 7.5, true, 20);
+
+  // Scope of Work: [X] New Installation
+  drawCheck(55, 613.0);
 
   // Box 2: Sign Details
   const sType = data.signType || "Business Sign, Wall Type (Illuminated LED)";
@@ -1493,15 +1543,15 @@ export async function generateSignPermitPdf(data: UnifiedPermitFormData): Promis
   drawText(data.proposedStartDate || "Oct 01, 2026", 160, 438.0, 7.5, false);
   drawText(data.expectedCompletionDate || "Oct 15, 2026", 360, 438.0, 7.5, false);
 
-  // Box 3: Architect / Structural Engineer
+  // Box 3: Architect / Structural Engineer: moved higher (+5px)
   const archName = data.architectName || "Arch. Maria Santos, UAP";
-  drawText(archName.toUpperCase(), 100, 280.0, 8.5, true);
-  drawText(data.architectPRC || "PRC-0045211", 80, 255.0, 7.5, false);
-  drawText(data.architectPTR || "PTR-ST-2026-004", 80, 240.0, 7.5, false);
+  drawText(archName.toUpperCase(), 100, 285.0, 8.5, true);
+  drawText(data.architectPRC || "PRC-0045211", 80, 260.0, 7.5, false);
+  drawText(data.architectPTR || "PTR-ST-2026-004", 80, 245.0, 7.5, false);
 
-  // Box 5: Applicant Signature
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 100, 195.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 80, 168.0, 7.5, false);
+  // Box 5: Applicant Signature: moved higher (+5px)
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 200.0, 8.5, true);
+  drawText(data.govIdNo || "CTC-2026-00192", 80, 173.0, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
@@ -1523,37 +1573,39 @@ export async function generateTemporaryServicePermitPdf(data: UnifiedPermitFormD
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "APP-2026-6636", 55, 770.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 440, 770.0, 8, false);
+  // Header: Applicant No. inside box
+  drawText(data.applicationNo || "APP-2026-6636", 75, 766.0, 8.5, true);
+  drawText(data.submissionDate || "Sep 17, 2026", 440, 766.0, 8, false);
 
   // Box 1
-  const { lastName, firstName, mi } = parseApplicantName(data.applicantName);
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
   drawText(lastName, 160, 747.0, 8.5, true, 20);
   drawText(firstName, 260, 747.0, 8.5, true, 22);
-  drawText(mi, 370, 747.0, 8, true);
+  drawText(middleName || mi, 370, 747.0, 8, true);
   drawText(data.applicantTIN || "000-123-456-000", 450, 747.0, 8, false);
   drawText(data.formOfOwnership || "INDIVIDUAL", 210, 704.0, 8, false, 25);
   drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 704.0, 8, false, 25);
 
-  // Address
-  drawText(data.projectAddress || data.applicantAddress || "Lawasn St., Blue Diamond", 80, 671.0, 7.5, false, 28);
-  drawText(data.barangay || "Sapa (Santo Nino)", 240, 671.0, 7.5, false, 18);
+  // Address (Applicant Address)
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 671.0, 7.5, false, 28);
+  drawText(data.barangay || "Poblacion", 240, 671.0, 7.5, false, 18);
   drawText(data.applicantPhone || "0917-123-4567", 450, 671.0, 7.5, true);
 
   // Location
   drawText(data.lotNo || "Lot 12", 160, 629.0, 7.5, true);
   drawText(data.blockNo || "Blk 4", 240, 629.0, 7.5, true);
   drawText(data.tctNo || "TCT-123456", 320, 629.0, 7.5, true, 16);
+  // Missing Tax Dec No. added
+  drawText(data.taxDecNo || "TD-2026-0012", 440, 629.0, 7.5, false);
 
-  drawText(data.projectAddress || "Lawasn St., Blue Diamond", 80, 609.0, 7.5, false, 24);
-  drawText(data.barangay || "Sapa (Santo Nino)", 240, 609.0, 7.5, true, 20);
+  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 80, 609.0, 7.5, false, 24);
+  drawText(data.barangay || "Poblacion", 240, 609.0, 7.5, true, 20);
 
-  // Box 2: Temporary Service Specs
-  drawText(data.temporaryServicePurpose || "FOR CONSTRUCTION POWER & TESTING", 160, 577.0, 8, true, 45);
-  drawText(`${data.temporaryServiceKva || "15.0"} kVA, ${data.temporaryServiceVoltage || "230V, Single Phase, 60Hz"}`, 160, 548.0, 8, true);
-  drawText(`${data.temporaryServiceDuration || "90"} DAYS`, 160, 528.0, 8, true);
-  drawText(data.proposedStartDate || "Oct 01, 2026", 160, 508.0, 7.5, false);
+  // Box 2: Temporary Service Specs: moved higher (+5px)
+  drawText(data.temporaryServicePurpose || "FOR CONSTRUCTION POWER & TESTING", 160, 582.0, 8, true, 45);
+  drawText(`${data.temporaryServiceKva || "15.0"} kVA, ${data.temporaryServiceVoltage || "230V, Single Phase, 60Hz"}`, 160, 553.0, 8, true);
+  drawText(`${data.temporaryServiceDuration || "90"} DAYS`, 160, 533.0, 8, true);
+  drawText(data.proposedStartDate || "Oct 01, 2026", 160, 513.0, 7.5, false);
 
   // Box 3: Electrical Engineer
   const peeName = data.electricalEngineerName || "Engr. Danilo Reyes, PEE";
@@ -1561,9 +1613,9 @@ export async function generateTemporaryServicePermitPdf(data: UnifiedPermitFormD
   drawText(data.electricalEngineerPRC || "PRC-0033421", 80, 365.0, 7.5, false);
   drawText(data.electricalEngineerPTR || "PTR-ST-2026-4412", 80, 350.0, 7.5, false);
 
-  // Box 4: Owner Signature
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 100, 145.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 80, 120.0, 7.5, false);
+  // Box 4: Owner Signature: moved higher (+5px)
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 150.0, 8.5, true);
+  drawText(data.govIdNo || "CTC-2026-00192", 80, 125.0, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
@@ -1585,32 +1637,37 @@ export async function generateCertificateOfOccupancyPdf(data: UnifiedPermitFormD
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header & References
-  drawText(data.applicationNo || "BP-2026-0091", 160, 742.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 440, 742.0, 8, false);
+  // Header & References: BUILDING PERMIT NO. on underline
+  drawText(data.applicationNo || "BP-2026-0091", 160, 738.0, 8.5, true);
+  drawText(data.submissionDate || "Sep 17, 2026", 440, 738.0, 8, false);
 
-  // Owner details
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 140, 642.0, 8.5, true);
-  drawText(data.applicantAddress || "123 Rizal St., Brgy. Poblacion, Sto. Tomas, Pampanga", 180, 618.0, 7.5, false, 45);
+  // Owner details: separated name
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
+  const ownerFormatted = `${lastName}, ${firstName} ${middleName ? middleName + " " : ""}${mi !== "N/A" ? mi : ""}`.trim();
+  drawText(ownerFormatted.toUpperCase(), 140, 642.0, 8.5, true);
+  // ADDRESS OF APPLICANT / OWNER on underline
+  drawText(data.applicantAddress || "123 Rizal St., Brgy. Poblacion, Sto. Tomas, Pampanga", 180, 614.0, 7.5, false, 45);
 
-  // Project details
-  drawText((data.projectName || "DELA CRUZ TWO-STOREY RESIDENCE").toUpperCase(), 140, 405.0, 8.5, true);
-  drawText(`${data.projectAddress || ""}, Brgy. ${data.barangay || "Poblacion"}, Sto. Tomas, Pampanga`, 140, 375.0, 7.5, false, 55);
-  drawText((data.occupancyClass || data.projectType?.category || "Group A - Residential").toUpperCase(), 260, 342.0, 8, true);
+  // Project details & Occupancy: moved higher onto underlines
+  drawText((data.projectName || "DELA CRUZ TWO-STOREY RESIDENCE").toUpperCase(), 140, 410.0, 8.5, true);
+  drawText(`${data.projectAddress || ""}, Brgy. ${data.barangay || "Poblacion"}, Sto. Tomas, Pampanga`, 140, 380.0, 7.5, false, 55);
+  drawText((data.occupancyClass || data.projectType?.category || "Group A - Residential").toUpperCase(), 260, 348.0, 8, true);
 
-  // Dates & Costs
-  drawText(data.proposedStartDate || "Oct 01, 2026", 140, 312.0, 7.5, false);
-  drawText(data.actualCompletionDate || data.expectedCompletionDate || "Apr 30, 2027", 380, 312.0, 7.5, true);
-  drawText(`${data.actualFloorArea || data.floorArea || "185.50"} sq.m.`, 140, 282.0, 8, true);
-  drawText(`PHP ${data.actualProjectCost || data.projectCost || "2,500,000.00"}`, 380, 282.0, 8, true);
+  // Dates & Costs: moved higher onto underlines
+  drawText(data.proposedStartDate || "Oct 01, 2026", 140, 318.0, 7.5, false);
+  drawText(data.actualCompletionDate || data.expectedCompletionDate || "Apr 30, 2027", 380, 318.0, 7.5, true);
+  drawText(data.proposedStoreys || "2", 140, 303.0, 7.5, true);
+  drawText(data.numberOfUnits || "1", 380, 303.0, 7.5, true);
+  drawText(`${data.actualFloorArea || data.floorArea || "185.50"} sq.m.`, 140, 288.0, 8, true);
+  drawText(`PHP ${data.actualProjectCost || data.projectCost || "2,500,000.00"}`, 380, 288.0, 8, true);
 
-  // Applicant Signature
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 360, 195.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 360, 172.0, 7.5, false);
+  // Applicant Signature: moved higher
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 360, 200.0, 8.5, true);
+  drawText(data.govIdNo || "CTC-2026-00192", 360, 177.0, 7.5, false);
 
-  // Engineer Signature
+  // Engineer Signature: moved higher
   const supName = data.constructionSupervisorName || data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE";
-  drawText(supName.toUpperCase(), 360, 85.0, 8.5, true);
+  drawText(supName.toUpperCase(), 360, 90.0, 8.5, true);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
@@ -1623,6 +1680,12 @@ export async function generateCertificateOfCompletionPdf(data: UnifiedPermitForm
   const doc = await PDFDocument.load(bytes);
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
+
+  // Remove Page 3 from PDF per tester feedback
+  if (doc.getPageCount() > 2) {
+    doc.removePage(2);
+  }
+
   const p1 = doc.getPage(0);
 
   const drawText = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false, maxWidth?: number) => {
@@ -1636,26 +1699,38 @@ export async function generateCertificateOfCompletionPdf(data: UnifiedPermitForm
   drawText(data.applicationNo || "BP-2026-0091", 320, 748.0, 8.5, true);
   drawText(data.submissionDate || "Sep 17, 2026", 480, 748.0, 8, false);
 
-  // Owner details
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 140, 690.0, 8.5, true);
+  // Owner details: separated name
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
+  const ownerFormatted = `${lastName}, ${firstName} ${middleName ? middleName + " " : ""}${mi !== "N/A" ? mi : ""}`.trim();
+  drawText(ownerFormatted.toUpperCase(), 140, 690.0, 8.5, true);
   drawText(data.applicantAddress || "Sto. Tomas, Pampanga", 150, 665.0, 7.5, false, 48);
+  // Zip Code & CONTACT NO.
+  drawText("2020", 340, 665.0, 7.5, false);
+  drawText(data.applicantPhone || "0917-123-4567", 440, 665.0, 7.5, true);
 
-  // Project & Occupancy
-  drawText(`${data.projectName || "Residential Building"}, ${data.projectAddress || ""}, Brgy. ${data.barangay || "Poblacion"}`, 150, 642.0, 7.5, false, 55);
-  drawText((data.occupancyClass || data.projectType?.category || "Residential").toUpperCase(), 200, 630.0, 8, true);
+  // LOCATION OF CONSTRUCTION & USE on underline
+  drawText(`${data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd."}, Brgy. ${data.barangay || "Poblacion"}`, 150, 640.0, 7.5, false, 55);
+  drawText((data.occupancyClass || data.projectType?.category || "Residential").toUpperCase(), 200, 626.0, 8, true);
 
-  // Dates & Floor Area / Cost
+  // Dates & Floor Area / Cost on underline
   drawText(data.proposedStartDate || "Oct 01, 2026", 120, 572.0, 7.5, false);
   drawText(data.actualCompletionDate || data.expectedCompletionDate || "Apr 30, 2027", 340, 572.0, 7.5, true);
   drawText(`${data.floorArea || "185.50"} SQ. M.`, 140, 542.0, 8, true);
   drawText(`PHP ${data.projectCost || "2,500,000.00"}`, 340, 542.0, 8, true);
 
-  // Full-time supervisor
+  // NO. OF STOREY(S) & NO. OF UNIT(S) in table/chart
+  drawText(data.proposedStoreys || "2", 140, 520.0, 8, true);
+  drawText(data.numberOfUnits || "1", 340, 520.0, 8, true);
+
+  // Full-time supervisor: moved higher (+5px)
   const supName = data.constructionSupervisorName || data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE";
-  drawText(supName.toUpperCase(), 140, 280.0, 8.5, true);
+  drawText(supName.toUpperCase(), 140, 285.0, 8.5, true);
 
   // Conforme: Owner
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 140, 170.0, 8.5, true);
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 140, 170.0, 8.5, true);
+
+  // BEFORE ME, at the City/Municipality of on underline
+  drawText("Sto. Tomas, Pampanga", 240, 140.0, 8, true);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
@@ -1677,19 +1752,32 @@ export async function generateCfeiPdf(data: UnifiedPermitFormData): Promise<stri
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header & Permit
-  drawText(data.applicationNo || "CFEI-2026-0042", 420, 835.0, 8.5, true);
+  // Header & Permit: Application Reference No. on underline
+  drawText(data.applicationNo || "CFEI-2026-0042", 420, 831.0, 8.5, true);
 
-  // Owner
-  drawText((data.applicantName || "PAUL PAYUMO").toUpperCase(), 150, 788.0, 8.5, true);
-  drawText(data.applicantAddress || "Sto. Tomas, Pampanga", 150, 758.0, 7.5, false, 50);
+  // Owner: on underline
+  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 150, 784.0, 8.5, true);
+  // ADDRESS: NO. STREET on underline
+  drawText(data.applicantAddress || "123 Rizal St.", 150, 754.0, 7.5, false, 50);
+  // BARANGAY, CITY/MUNICIPALITY
+  drawText(`Brgy. ${data.barangay || "Poblacion"}, Sto. Tomas, Pampanga`, 150, 735.0, 7.5, false, 50);
 
-  // Type of occupancy
-  drawText("X", 55, 688.0, 8.5, true); // [X] Residential Dwelling
+  // Type of occupancy: X mark properly placed inside the box
+  drawText("X", 52, 686.0, 8.5, true); // [X] Residential Dwelling
 
   // Dates
   drawText(data.proposedStartDate || "Oct 01, 2026", 150, 644.0, 7.5, false);
   drawText(data.actualCompletionDate || data.expectedCompletionDate || "Apr 30, 2027", 420, 644.0, 7.5, true);
+
+  // LOCATION OF INSTALLATION: LOT NO., BLK. NO., STREET, BARANGAY, & CITY/MUNICIPALITY
+  drawText(
+    `Lot ${data.lotNo || "12"}, Blk ${data.blockNo || "4"}, ${data.projectAddress || "Sunset Valley Subd."}, Brgy. ${data.barangay || "Poblacion"}, Sto. Tomas, Pampanga`,
+    150,
+    610.0,
+    7.5,
+    false,
+    55
+  );
 
   // Load
   const loadSummary = `${data.electricalConnectedLoad || "15.0"} kVA / ${data.electricalVoltage || "230V"}, Single Phase, 60Hz`;
@@ -1701,9 +1789,9 @@ export async function generateCfeiPdf(data: UnifiedPermitFormData): Promise<stri
   drawText(data.electricalEngineerPRC || "PRC-0033421", 320, 485.0, 7.5, false);
   drawText(data.electricalEngineerPTR || "PTR-ST-2026-4412", 120, 458.0, 7.5, false);
 
-  // Electrical Inspector
+  // Electrical Inspector: on underline
   const inspector = data.cfeiInspectorName || "Engr. GILBERT B. CRUZ, Electrical Inspector";
-  drawText(inspector.toUpperCase(), 120, 205.0, 8.5, true);
+  drawText(inspector.toUpperCase(), 120, 201.0, 8.5, true);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
