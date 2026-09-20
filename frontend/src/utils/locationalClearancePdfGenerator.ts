@@ -8,6 +8,7 @@ export interface LocationalClearancePdfData {
   applicantPhone: string;
   applicantEmail?: string;
   applicantSignature?: string;
+  representativeSignature?: string;
   applicantFirstName?: string;
   applicantMiddleName?: string;
   applicantLastName?: string;
@@ -300,15 +301,37 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   // --- BOX 6: Address / Tel of Authorized Representative ---
   if (data.representativeName && data.representativeName.trim()) {
     const repAddr = (data.representativeAddress || data.applicantAddress || "").toUpperCase();
-    if (data.representativePhone && data.representativePhone.trim()) {
-      const repFontSize = repAddr.length > 55 ? 6.0 : 6.8;
-      drawText(repAddr, 312, 594.0, repFontSize, false, 68);
-      drawText(`Tel. / Contact: ${data.representativePhone.trim()}`, 312, 587.5, 6.8, false, 50);
+    const phone = data.representativePhone ? `Tel. / Contact: ${data.representativePhone.trim()}` : "";
+    
+    // Position address after the pre-printed "REPRESENTATIVE" label (which ends at x ≈ 388)
+    const startX = 394;
+    const maxCharsLine1 = 44;
+    
+    if (repAddr.length > maxCharsLine1 && phone) {
+      // Split address across line 1 (after REPRESENTATIVE) and line 2 (with phone)
+      const splitIdx = repAddr.lastIndexOf(" ", maxCharsLine1);
+      const line1 = splitIdx > 0 ? repAddr.slice(0, splitIdx) : repAddr.slice(0, maxCharsLine1);
+      const line2Addr = splitIdx > 0 ? repAddr.slice(splitIdx + 1) : repAddr.slice(maxCharsLine1);
+      drawText(line1, startX, 594.0, 6.5, false, 45);
+      drawText(`${line2Addr} | ${phone}`, 312, 588.0, 6.2, false, 75);
+    } else if (repAddr.length > maxCharsLine1 && !phone) {
+      // Split address across line 1 and line 2
+      const splitIdx = repAddr.lastIndexOf(" ", maxCharsLine1);
+      const line1 = splitIdx > 0 ? repAddr.slice(0, splitIdx) : repAddr.slice(0, maxCharsLine1);
+      const line2 = splitIdx > 0 ? repAddr.slice(splitIdx + 1) : repAddr.slice(maxCharsLine1);
+      drawText(line1, startX, 594.0, 6.5, false, 45);
+      drawText(line2, 312, 588.0, 6.5, false, 65);
     } else {
-      drawText(repAddr, 312, 590.0, 7.5, false, 65);
+      // Address fits cleanly on line 1 after "REPRESENTATIVE"
+      const addrFontSize = repAddr.length > 38 ? 6.0 : 6.8;
+      drawText(repAddr, startX, 594.0, addrFontSize, false, 45);
+      if (phone) {
+        drawText(phone, 312, 588.0, 6.8, false, 50);
+      }
     }
   } else {
-    drawText("N/A", 312, 590.0, 7.5, false);
+    // Self-represented / N/A placed neatly after "REPRESENTATIVE"
+    drawText("N/A", 394, 594.0, 7.5, false);
   }
 
   // --- BOX 7: Project Type ---
@@ -435,30 +458,48 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   }
 
   // --- BOX 18 & 19: Signatures ---
-  if (data.applicantSignature && data.applicantSignature.startsWith("data:image/")) {
+  const embedSig = async (dataUrl: string | undefined | null) => {
+    if (!dataUrl || !dataUrl.startsWith("data:image/")) return null;
     try {
-      const b64Data = data.applicantSignature.includes(",") ? data.applicantSignature.split(",")[1] : data.applicantSignature;
+      const b64Data = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
       const binaryString = atob(b64Data);
       const imgBytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         imgBytes[i] = binaryString.charCodeAt(i);
       }
-      let embeddedImage;
       try {
-        embeddedImage = await pdfDoc.embedPng(imgBytes);
+        return await pdfDoc.embedPng(imgBytes);
       } catch {
-        embeddedImage = await pdfDoc.embedJpg(imgBytes);
-      }
-      if (embeddedImage) {
-        page.drawImage(embeddedImage, { x: 65, y: 322, width: 105, height: 28 });
+        return await pdfDoc.embedJpg(imgBytes);
       }
     } catch (err) {
       console.warn("Could not embed LC signature image:", err);
+      return null;
+    }
+  };
+
+  // Box 18: Signature of Applicant
+  if (data.applicantSignature) {
+    const appSigImg = await embedSig(data.applicantSignature);
+    if (appSigImg) {
+      page.drawImage(appSigImg, { x: 65, y: 309, width: 100, height: 19 });
     }
   }
-  drawText(data.applicantName?.toUpperCase(), 70, 318, 8, true);
+
+  // Box 19: Signature of Authorized Representative
   if (data.representativeName && data.representativeName.trim()) {
-    drawText(data.representativeName.toUpperCase(), 330, 318, 8, true);
+    const repSigData = data.representativeSignature || data.applicantSignature;
+    if (repSigData) {
+      const repSigImg = await embedSig(repSigData);
+      if (repSigImg) {
+        page.drawImage(repSigImg, { x: 325, y: 309, width: 100, height: 19 });
+      }
+    }
+  }
+
+  drawText(data.applicantName?.toUpperCase(), 70, 316, 8, true);
+  if (data.representativeName && data.representativeName.trim()) {
+    drawText(data.representativeName.toUpperCase(), 330, 316, 8, true);
   }
 
   // --- NOTARY / JURAT (Intentionally left clean for Notary Public) ---

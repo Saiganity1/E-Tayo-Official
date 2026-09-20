@@ -319,10 +319,10 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   electronicsEngineerTIN: "789-012-345-000",
 
   // Box 3 & Box 4: Owner E-Signature & Government ID
-  govIdNo: "PRC-ID-0098765",
   govIdDateIssued: "Jan 10, 2024",
   govIdPlaceIssued: "Sto. Tomas",
   applicantSignature: "",
+  representativeSignature: "",
   lotOwnerConsent: false,
   lotOwnerName: "",
   lotOwnerSignature: "",
@@ -485,6 +485,7 @@ export default function FormTestingStudio() {
           applicantPhone: formData.applicantPhone,
           applicantEmail: formData.applicantEmail,
           applicantSignature: formData.applicantSignature,
+          representativeSignature: formData.representativeSignature || formData.applicantSignature,
           corporationName: formData.corporationName,
           corporationAddress: formData.corporationAddress,
           corporationPhone: formData.corporationPhone,
@@ -2044,7 +2045,9 @@ export default function FormTestingStudio() {
                 <div style={{ marginTop: "0.5rem", padding: "1rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
                   <div style={{ marginBottom: "0.75rem" }}>
                     <span style={{ fontSize: "0.85rem", fontWeight: "800", color: "#1e293b", display: "block" }}>
-                      Box 3: Owner / Applicant E-Signature & Government ID
+                      {selectedForm.id === "LC" 
+                        ? (formData.representativeName?.trim() ? "Applicant & Authorized Representative E-Signature (Boxes 18 & 19)" : "Applicant E-Signature (Box 18)")
+                        : "Box 3: Owner / Applicant E-Signature & Government ID"}
                     </span>
                     <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
                       Draw or upload your authentic e-signature to affix directly over your printed name.
@@ -2055,140 +2058,146 @@ export default function FormTestingStudio() {
                   <SignatureCreator
                     value={formData.applicantSignature}
                     onChange={(sig) => handleFieldChange("applicantSignature", sig)}
-                    label="Applicant E-Signature (Signed over Printed Name)"
+                    label={selectedForm.id === "LC" && formData.representativeName?.trim() 
+                      ? `Affix E-Signature (Applies to Box 18 & Box 19 over ${formData.representativeName})`
+                      : "Applicant E-Signature (Signed over Printed Name)"}
                     required
                   />
 
-                  {/* Gov't ID, Date Issued, Place Issued */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
-                        Gov't Issued ID No.
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.govIdNo || "PRC-ID-0098765"}
-                        onChange={e => handleFieldChange("govIdNo", e.target.value)}
-                        placeholder="e.g. PRC-ID-0098765"
-                        style={{ width: "100%", padding: "7px 9px", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
-                        Date Issued
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.govIdDateIssued || "Jan 10, 2024"}
-                        onChange={e => handleFieldChange("govIdDateIssued", e.target.value)}
-                        placeholder="e.g. Jan 10, 2024"
-                        style={{ width: "100%", padding: "7px 9px", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
-                        Place Issued
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.govIdPlaceIssued || "Sto. Tomas"}
-                        onChange={e => handleFieldChange("govIdPlaceIssued", e.target.value)}
-                        placeholder="e.g. Sto. Tomas"
-                        style={{ width: "100%", padding: "7px 9px", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Box 4 Toggle: Lot Owner / Authorized Representative */}
-                  <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid #e2e8f0" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", userSelect: "none" }}>
-                      <input
-                        type="checkbox"
-                        checked={formData.lotOwnerConsent || false}
-                        onChange={e => handleFieldChange("lotOwnerConsent", e.target.checked)}
-                        style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
-                      />
-                      <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#334155" }}>
-                        Include Box 4: With My Consent (Lot Owner / Authorized Representative)
-                      </span>
-                    </label>
-
-                    {formData.lotOwnerConsent && (
-                      <div style={{ marginTop: "0.75rem", padding: "0.75rem", borderRadius: "8px", background: "#ffffff", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.5fr", gap: "0.5rem" }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
-                              Lot Owner / Representative Name
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.lotOwnerName || ""}
-                              onChange={e => handleFieldChange("lotOwnerName", e.target.value)}
-                              placeholder="Full Name"
-                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
-                              Address
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.lotOwnerAddress || ""}
-                              onChange={e => handleFieldChange("lotOwnerAddress", e.target.value)}
-                              placeholder="Complete Address"
-                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                            />
-                          </div>
-                        </div>
-
-                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem" }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
-                              Gov't Issued ID No.
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.lotOwnerGovIdNo || ""}
-                              onChange={e => handleFieldChange("lotOwnerGovIdNo", e.target.value)}
-                              placeholder="ID No."
-                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
-                              Date Issued
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.lotOwnerGovIdDateIssued || ""}
-                              onChange={e => handleFieldChange("lotOwnerGovIdDateIssued", e.target.value)}
-                              placeholder="e.g. Feb 01, 2024"
-                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
-                              Place Issued
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.lotOwnerGovIdPlaceIssued || ""}
-                              onChange={e => handleFieldChange("lotOwnerGovIdPlaceIssued", e.target.value)}
-                              placeholder="City / Municipality"
-                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                            />
-                          </div>
-                        </div>
-
-                        <SignatureCreator
-                          value={formData.lotOwnerSignature}
-                          onChange={(sig) => handleFieldChange("lotOwnerSignature", sig)}
-                          label="Lot Owner / Authorized Representative E-Signature"
+                  {/* Gov't ID, Date Issued, Place Issued - Hidden for Locational Clearance */}
+                  {selectedForm.id !== "LC" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                          Gov't Issued ID No.
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.govIdNo || "PRC-ID-0098765"}
+                          onChange={e => handleFieldChange("govIdNo", e.target.value)}
+                          placeholder="e.g. PRC-ID-0098765"
+                          style={{ width: "100%", padding: "7px 9px", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
                         />
                       </div>
-                    )}
-                  </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                          Date Issued
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.govIdDateIssued || "Jan 10, 2024"}
+                          onChange={e => handleFieldChange("govIdDateIssued", e.target.value)}
+                          placeholder="e.g. Jan 10, 2024"
+                          style={{ width: "100%", padding: "7px 9px", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                          Place Issued
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.govIdPlaceIssued || "Sto. Tomas"}
+                          onChange={e => handleFieldChange("govIdPlaceIssued", e.target.value)}
+                          placeholder="e.g. Sto. Tomas"
+                          style={{ width: "100%", padding: "7px 9px", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Box 4 Toggle: Lot Owner / Authorized Representative - Hidden for Locational Clearance */}
+                  {selectedForm.id !== "LC" && (
+                    <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid #e2e8f0" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", userSelect: "none" }}>
+                        <input
+                          type="checkbox"
+                          checked={formData.lotOwnerConsent || false}
+                          onChange={e => handleFieldChange("lotOwnerConsent", e.target.checked)}
+                          style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                        />
+                        <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#334155" }}>
+                          Include Box 4: With My Consent (Lot Owner / Authorized Representative)
+                        </span>
+                      </label>
+
+                      {formData.lotOwnerConsent && (
+                        <div style={{ marginTop: "0.75rem", padding: "0.75rem", borderRadius: "8px", background: "#ffffff", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.5fr", gap: "0.5rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                                Lot Owner / Representative Name
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.lotOwnerName || ""}
+                                onChange={e => handleFieldChange("lotOwnerName", e.target.value)}
+                                placeholder="Full Name"
+                                style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                                Address
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.lotOwnerAddress || ""}
+                                onChange={e => handleFieldChange("lotOwnerAddress", e.target.value)}
+                                placeholder="Complete Address"
+                                style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                                Gov't Issued ID No.
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.lotOwnerGovIdNo || ""}
+                                onChange={e => handleFieldChange("lotOwnerGovIdNo", e.target.value)}
+                                placeholder="ID No."
+                                style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                                Date Issued
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.lotOwnerGovIdDateIssued || ""}
+                                onChange={e => handleFieldChange("lotOwnerGovIdDateIssued", e.target.value)}
+                                placeholder="e.g. Feb 01, 2024"
+                                style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                                Place Issued
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.lotOwnerGovIdPlaceIssued || ""}
+                                onChange={e => handleFieldChange("lotOwnerGovIdPlaceIssued", e.target.value)}
+                                placeholder="City / Municipality"
+                                style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                              />
+                            </div>
+                          </div>
+
+                          <SignatureCreator
+                            value={formData.lotOwnerSignature}
+                            onChange={(sig) => handleFieldChange("lotOwnerSignature", sig)}
+                            label="Lot Owner / Authorized Representative E-Signature"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

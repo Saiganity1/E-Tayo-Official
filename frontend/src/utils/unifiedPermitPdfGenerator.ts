@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, PDFPage, rgb, StandardFonts } from "pdf-lib";
 import { ProjectTypeItem, PERMIT_FORM_METADATA, PermitFormMatrix } from "../data/projectTypeMatrix";
 
 export interface UnifiedPermitFormData {
@@ -260,6 +260,7 @@ export interface UnifiedPermitFormData {
 
   // Signatures & Box 3 / Box 4 Consent Details
   applicantSignature?: string; // base64 data URL
+  representativeSignature?: string; // base64 data URL
   govIdDateIssued?: string;
   govIdPlaceIssued?: string;
   lotOwnerConsent?: boolean;
