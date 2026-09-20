@@ -32,6 +32,7 @@ import {
   generateLocationalClearancePdf, 
   LocationalClearancePdfData 
 } from "../../../../utils/locationalClearancePdfGenerator";
+import SignatureCreator from "@/components/common/SignatureCreator";
 
 interface FormOption {
   id: string;
@@ -104,6 +105,12 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   applicantTIN: "123-456-789-000",
   formOfOwnership: "INDIVIDUAL / OWNER",
   govIdNo: "PRC-ID-00987654",
+
+  // Header Classifications & Applications (BP)
+  processingType: "SIMPLE" as "SIMPLE" | "COMPLEX",
+  applicationType: "NEW" as "NEW" | "RENEWAL" | "AMENDATORY",
+  appliesLocationalClearance: false,
+  appliesFireSafetyClearance: true,
 
   projectName: "DELA CRUZ TWO-STOREY RESIDENCE",
   projectAddress: "LOT 12, BLOCK 4, SUNSET VALLEY SUBD.",
@@ -245,52 +252,77 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
 
   // Professional Credentials
   architectName: "ARCH. MARIA ELENA SANTOS, UAP",
+  architectAddress: "Sto. Tomas, Pampanga",
   architectPRC: "0045211",
   architectPRCValidity: "2028-09-15",
   architectIAPOA: "IAPOA-2026-9988",
   architectPTR: "PTR-ST-665544",
-  architectPTRIssued: "Sto. Tomas, Pampanga / Jan 08, 2026",
+  architectPTRIssued: "Jan 08, 2026",
+  architectPTRIssuedAt: "Sto. Tomas",
   architectTIN: "234-567-890-000",
 
   civilEngineerName: "ENGR. ROBERTO CRUZ, PICE",
+  civilEngineerAddress: "Sto. Tomas, Pampanga",
   civilEngineerPRC: "0078923",
   civilEngineerPRCValidity: "2027-06-20",
   civilEngineerPICE: "PICE-445566",
   civilEngineerPTR: "PTR-ST-554433",
-  civilEngineerPTRIssued: "Sto. Tomas, Pampanga / Jan 10, 2026",
+  civilEngineerPTRIssued: "Jan 10, 2026",
+  civilEngineerPTRIssuedAt: "Sto. Tomas",
   civilEngineerTIN: "345-678-901-000",
 
   electricalEngineerName: "ENGR. DANILO REYES, PEE",
+  electricalEngineerAddress: "Sto. Tomas, Pampanga",
   electricalEngineerPRC: "0033421",
   electricalEngineerPRCValidity: "2028-11-30",
   electricalEngineerIIEE: "IIEE-554433",
   electricalEngineerPTR: "PTR-ST-443322",
-  electricalEngineerPTRIssued: "Sto. Tomas, Pampanga / Jan 12, 2026",
+  electricalEngineerPTRIssued: "Jan 12, 2026",
+  electricalEngineerPTRIssuedAt: "Sto. Tomas",
   electricalEngineerTIN: "456-789-012-000",
 
   masterPlumberName: "ENGR. DARIO K. AQUINO, RMP",
+  masterPlumberAddress: "Sto. Tomas, Pampanga",
   masterPlumberPRC: "0011998",
   masterPlumberPRCValidity: "2028-01-25",
   masterPlumberNAMPAP: "NAMPAP-778899",
   masterPlumberPTR: "PTR-ST-332211",
-  masterPlumberPTRIssued: "Sto. Tomas, Pampanga / Jan 15, 2026",
+  masterPlumberPTRIssued: "Jan 15, 2026",
+  masterPlumberPTRIssuedAt: "Sto. Tomas",
   masterPlumberTIN: "567-890-123-000",
 
   mechanicalEngineerName: "ENGR. LEONARDO V. TORRES, PME",
+  mechanicalEngineerAddress: "Sto. Tomas, Pampanga",
   mechanicalEngineerPRC: "0044556",
   mechanicalEngineerPRCValidity: "2027-12-18",
   mechanicalEngineerPSME: "PSME-223344",
   mechanicalEngineerPTR: "PTR-ST-221100",
-  mechanicalEngineerPTRIssued: "Sto. Tomas, Pampanga / Jan 18, 2026",
+  mechanicalEngineerPTRIssued: "Jan 18, 2026",
+  mechanicalEngineerPTRIssuedAt: "Sto. Tomas",
   mechanicalEngineerTIN: "678-901-234-000",
 
   electronicsEngineerName: "ENGR. ALAN T. SANTOS, PECE",
+  electronicsEngineerAddress: "Sto. Tomas, Pampanga",
   electronicsEngineerPRC: "0022334",
   electronicsEngineerPRCValidity: "2028-05-12",
   electronicsEngineerIECEP: "IECEP-889900",
   electronicsEngineerPTR: "PTR-ST-110099",
-  electronicsEngineerPTRIssued: "Sto. Tomas, Pampanga / Jan 20, 2026",
+  electronicsEngineerPTRIssued: "Jan 20, 2026",
+  electronicsEngineerPTRIssuedAt: "Sto. Tomas",
   electronicsEngineerTIN: "789-012-345-000",
+
+  // Box 3 & Box 4: Owner E-Signature & Government ID
+  govIdNo: "PRC-ID-0098765",
+  govIdDateIssued: "Jan 10, 2024",
+  govIdPlaceIssued: "Sto. Tomas",
+  applicantSignature: "",
+  lotOwnerConsent: false,
+  lotOwnerName: "",
+  lotOwnerSignature: "",
+  lotOwnerAddress: "",
+  lotOwnerGovIdNo: "",
+  lotOwnerGovIdDateIssued: "",
+  lotOwnerGovIdPlaceIssued: "",
 };
 
 export default function FormTestingStudio() {
@@ -813,34 +845,143 @@ export default function FormTestingStudio() {
           <div style={{ padding: "1.5rem", maxHeight: "750px", overflowY: "auto" }}>
             {activeTab === "general" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div style={{ display: "grid", gridTemplateColumns: selectedForm.id === "BP" ? "1fr 1fr" : "1fr", gap: "0.75rem" }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569" }}>
                       {(selectedForm.id === "CO" || selectedForm.id === "CC")
                         ? "Building Permit Ref. No." 
                         : (selectedForm.id === "CFEI" ? "Application Reference No." : "Application No.")}
                     </label>
-                    <input
-                      type="text"
-                      value={formData.applicationNo}
-                      onChange={e => handleFieldChange("applicationNo", e.target.value)}
-                      style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "600" }}
-                    />
+                    <span style={{ fontSize: "0.68rem", color: "#0284c7", fontWeight: "700", background: "#e0f2fe", padding: "1px 6px", borderRadius: "4px" }}>
+                      Auto-gathered
+                    </span>
                   </div>
-                  {selectedForm.id === "BP" && (
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                        Locational Clearance Ref
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.locationalClearanceRef}
-                        onChange={e => handleFieldChange("locationalClearanceRef", e.target.value)}
-                        style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "600" }}
-                      />
-                    </div>
-                  )}
+                  <input
+                    type="text"
+                    value={formData.applicationNo}
+                    readOnly
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.85rem",
+                      fontWeight: "600",
+                      background: "#f8fafc",
+                      color: "#334155",
+                      cursor: "not-allowed"
+                    }}
+                  />
+                  <span style={{ display: "block", fontSize: "0.7rem", color: "#64748b", marginTop: "3px" }}>
+                    Automatically gathered from user Application Number
+                  </span>
                 </div>
+
+                {/* BP Classification & Application Type */}
+                {selectedForm.id === "BP" && (
+                  <div style={{
+                    padding: "1rem",
+                    borderRadius: "12px",
+                    background: "#f8fafc",
+                    border: "1.5px solid #e2e8f0",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.85rem"
+                  }}>
+                    <div style={{ fontSize: "0.82rem", fontWeight: "800", color: "#1e293b" }}>
+                      Application Classification & Type
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "1rem" }}>
+                      {/* Processing Classification */}
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>
+                          Classification
+                        </label>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          {(["SIMPLE", "COMPLEX"] as const).map(type => (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => handleFieldChange("processingType", type)}
+                              style={{
+                                flex: 1,
+                                padding: "6px 10px",
+                                borderRadius: "6px",
+                                border: (formData.processingType || "SIMPLE") === type ? "1.5px solid #0284c7" : "1px solid #cbd5e1",
+                                background: (formData.processingType || "SIMPLE") === type ? "#e0f2fe" : "#ffffff",
+                                color: (formData.processingType || "SIMPLE") === type ? "#0369a1" : "#475569",
+                                fontWeight: (formData.processingType || "SIMPLE") === type ? "700" : "600",
+                                fontSize: "0.78rem",
+                                cursor: "pointer",
+                                transition: "all 0.15s ease"
+                              }}
+                            >
+                              {type === "COMPLEX" ? "COMPLEX*" : type}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Application Type */}
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>
+                          Application Type
+                        </label>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          {(["NEW", "RENEWAL", "AMENDATORY"] as const).map(type => (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => handleFieldChange("applicationType", type)}
+                              style={{
+                                flex: 1,
+                                padding: "6px 8px",
+                                borderRadius: "6px",
+                                border: (formData.applicationType || "NEW") === type ? "1.5px solid #0284c7" : "1px solid #cbd5e1",
+                                background: (formData.applicationType || "NEW") === type ? "#e0f2fe" : "#ffffff",
+                                color: (formData.applicationType || "NEW") === type ? "#0369a1" : "#475569",
+                                fontWeight: (formData.applicationType || "NEW") === type ? "700" : "600",
+                                fontSize: "0.78rem",
+                                cursor: "pointer",
+                                transition: "all 0.15s ease"
+                              }}
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Applies Also For */}
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>
+                        This Applies Also For:
+                      </label>
+                      <div style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", color: "#334155", cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={!!formData.appliesLocationalClearance}
+                            onChange={e => handleFieldChange("appliesLocationalClearance", e.target.checked)}
+                            style={{ width: "16px", height: "16px", accentColor: "#0284c7" }}
+                          />
+                          Locational Clearance
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", color: "#334155", cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.appliesFireSafetyClearance !== false}
+                            onChange={e => handleFieldChange("appliesFireSafetyClearance", e.target.checked)}
+                            style={{ width: "16px", height: "16px", accentColor: "#0284c7" }}
+                          />
+                          Fire Safety Evaluation Clearance
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Separated Applicant Name inputs */}
                 <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr 1.2fr", gap: "0.75rem" }}>
@@ -857,7 +998,7 @@ export default function FormTestingStudio() {
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                      Middle Initial / Name
+                      M.I.
                     </label>
                     <input
                       type="text"
@@ -1046,12 +1187,77 @@ export default function FormTestingStudio() {
                     <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
                       Occupancy Classification
                     </label>
-                    <input
-                      type="text"
-                      value={formData.occupancyClass}
+                    <select
+                      value={formData.occupancyClass || "Group A - Residential (Single)"}
                       onChange={e => handleFieldChange("occupancyClass", e.target.value)}
-                      style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
-                    />
+                      style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#1e293b", fontWeight: "600" }}
+                    >
+                      <optgroup label="GROUP A: RESIDENTIAL (DWELLINGS)">
+                        <option value="Group A - Residential (Single)">Group A - Single Family Dwelling</option>
+                        <option value="Group A - Residential (Duplex)">Group A - Duplex</option>
+                        <option value="Group A - Residential (R-1, R-2)">Group A - Residential R-1, R-2</option>
+                        <option value="Group A - Residential (Others)">Group A - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP B: RESIDENTIAL">
+                        <option value="Group B - Hotel / Motel">Group B - Hotel / Motel</option>
+                        <option value="Group B - Townhouse">Group B - Townhouse</option>
+                        <option value="Group B - Dormitory / Boardinghouse">Group B - Dormitory / Boardinghouse</option>
+                        <option value="Group B - Residential R-3, R-4, R-5">Group B - Residential R-3, R-4, R-5</option>
+                        <option value="Group B - Others">Group B - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP C: EDUCATIONAL & RECREATIONAL">
+                        <option value="Group C - School Building">Group C - School Building</option>
+                        <option value="Group C - School Auditorium / Gymnasium">Group C - School Auditorium / Gymnasium</option>
+                        <option value="Group C - Civic Center / Clubhouse">Group C - Civic Center / Clubhouse</option>
+                        <option value="Group C - Church, Mosque, Temple, Chapel">Group C - Church, Mosque, Temple, Chapel</option>
+                        <option value="Group C - Others">Group C - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP D: INSTITUTIONAL">
+                        <option value="Group D - Hospital / Medical Facility">Group D - Hospital / Medical Facility</option>
+                        <option value="Group D - Home for the Aged">Group D - Home for the Aged</option>
+                        <option value="Group D - Government Office">Group D - Government Office</option>
+                        <option value="Group D - Others">Group D - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP E: COMMERCIAL">
+                        <option value="Group E - Bank / Financial">Group E - Bank / Financial</option>
+                        <option value="Group E - Store / Retail">Group E - Store / Retail</option>
+                        <option value="Group E - Shopping Center / Mall">Group E - Shopping Center / Mall</option>
+                        <option value="Group E - Drinking / Dining Establishment">Group E - Drinking / Dining Establishment</option>
+                        <option value="Group E - Shop (Tailoring, Salon, etc.)">Group E - Shop (Tailoring, Salon, etc.)</option>
+                        <option value="Group E - Others">Group E - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP F: LIGHT INDUSTRIAL">
+                        <option value="Group F - Factory / Plant (Incombustible)">Group F - Factory / Plant (Incombustible)</option>
+                        <option value="Group F - Others">Group F - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP G: MEDIUM INDUSTRIAL">
+                        <option value="Group G - Storage / Warehouse (Hazardous)">Group G - Storage / Warehouse (Hazardous)</option>
+                        <option value="Group G - Factory (Hazardous / Flammable)">Group G - Factory (Hazardous / Flammable)</option>
+                        <option value="Group G - Others">Group G - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP H: ASSEMBLY (< 1,000)">
+                        <option value="Group H - Theater / Auditorium (< 1,000)">Group H - Theater / Auditorium (&lt; 1,000)</option>
+                        <option value="Group H - Convention Hall / Bleacher (< 1,000)">Group H - Convention Hall / Bleacher (&lt; 1,000)</option>
+                        <option value="Group H - Others (< 1,000)">Group H - Others (&lt; 1,000)</option>
+                      </optgroup>
+                      <optgroup label="GROUP I: ASSEMBLY (1,000 OR MORE)">
+                        <option value="Group I - Coliseum / Sports Complex (1,000+)">Group I - Coliseum / Sports Complex (1,000+)</option>
+                        <option value="Group I - Convention Center (1,000+)">Group I - Convention Center (1,000+)</option>
+                        <option value="Group I - Others (1,000+)">Group I - Others (1,000+)</option>
+                      </optgroup>
+                      <optgroup label="GROUP J: (J-1) AGRICULTURAL">
+                        <option value="Group J-1 - Barn / Granary / Poultry House">Group J-1 - Barn / Granary / Poultry House</option>
+                        <option value="Group J-1 - Piggery / Grain Mill / Silo">Group J-1 - Piggery / Grain Mill / Silo</option>
+                        <option value="Group J-1 - Others">Group J-1 - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP J: (J-2) ACCESSORIES">
+                        <option value="Group J-2 - Private Carport / Garage">Group J-2 - Private Carport / Garage</option>
+                        <option value="Group J-2 - Swimming Pool">Group J-2 - Swimming Pool</option>
+                        <option value="Group J-2 - Fence over 1.80m">Group J-2 - Fence over 1.80m</option>
+                        <option value="Group J-2 - Steel / Concrete Tank">Group J-2 - Steel / Concrete Tank</option>
+                        <option value="Group J-2 - Others">Group J-2 - Others</option>
+                      </optgroup>
+                    </select>
                   </div>
                 </div>
 
@@ -1092,6 +1298,157 @@ export default function FormTestingStudio() {
                     </div>
                   </div>
                 )}
+
+                {/* Box 3: Owner / Applicant E-Signature & Government ID */}
+                <div style={{ marginTop: "0.5rem", padding: "1rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                  <div style={{ marginBottom: "0.75rem" }}>
+                    <span style={{ fontSize: "0.85rem", fontWeight: "800", color: "#1e293b", display: "block" }}>
+                      Box 3: Owner / Applicant E-Signature & Government ID
+                    </span>
+                    <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
+                      Draw or upload your authentic e-signature to affix directly over your printed name.
+                    </span>
+                  </div>
+
+                  {/* E-Signature Creator */}
+                  <SignatureCreator
+                    value={formData.applicantSignature}
+                    onChange={(sig) => handleFieldChange("applicantSignature", sig)}
+                    label="Applicant E-Signature (Signed over Printed Name)"
+                    required
+                  />
+
+                  {/* Gov't ID, Date Issued, Place Issued */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                        Gov't Issued ID No.
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.govIdNo || "PRC-ID-0098765"}
+                        onChange={e => handleFieldChange("govIdNo", e.target.value)}
+                        placeholder="e.g. PRC-ID-0098765"
+                        style={{ width: "100%", padding: "7px 9px", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                        Date Issued
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.govIdDateIssued || "Jan 10, 2024"}
+                        onChange={e => handleFieldChange("govIdDateIssued", e.target.value)}
+                        placeholder="e.g. Jan 10, 2024"
+                        style={{ width: "100%", padding: "7px 9px", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                        Place Issued
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.govIdPlaceIssued || "Sto. Tomas"}
+                        onChange={e => handleFieldChange("govIdPlaceIssued", e.target.value)}
+                        placeholder="e.g. Sto. Tomas"
+                        style={{ width: "100%", padding: "7px 9px", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Box 4 Toggle: Lot Owner / Authorized Representative */}
+                  <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid #e2e8f0" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", userSelect: "none" }}>
+                      <input
+                        type="checkbox"
+                        checked={formData.lotOwnerConsent || false}
+                        onChange={e => handleFieldChange("lotOwnerConsent", e.target.checked)}
+                        style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                      />
+                      <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#334155" }}>
+                        Include Box 4: With My Consent (Lot Owner / Authorized Representative)
+                      </span>
+                    </label>
+
+                    {formData.lotOwnerConsent && (
+                      <div style={{ marginTop: "0.75rem", padding: "0.75rem", borderRadius: "8px", background: "#ffffff", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.5fr", gap: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                              Lot Owner / Representative Name
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.lotOwnerName || ""}
+                              onChange={e => handleFieldChange("lotOwnerName", e.target.value)}
+                              placeholder="Full Name"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                              Address
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.lotOwnerAddress || ""}
+                              onChange={e => handleFieldChange("lotOwnerAddress", e.target.value)}
+                              placeholder="Complete Address"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                              Gov't Issued ID No.
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.lotOwnerGovIdNo || ""}
+                              onChange={e => handleFieldChange("lotOwnerGovIdNo", e.target.value)}
+                              placeholder="ID No."
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                              Date Issued
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.lotOwnerGovIdDateIssued || ""}
+                              onChange={e => handleFieldChange("lotOwnerGovIdDateIssued", e.target.value)}
+                              placeholder="e.g. Feb 01, 2024"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                              Place Issued
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.lotOwnerGovIdPlaceIssued || ""}
+                              onChange={e => handleFieldChange("lotOwnerGovIdPlaceIssued", e.target.value)}
+                              placeholder="City / Municipality"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                            />
+                          </div>
+                        </div>
+
+                        <SignatureCreator
+                          value={formData.lotOwnerSignature}
+                          onChange={(sig) => handleFieldChange("lotOwnerSignature", sig)}
+                          label="Lot Owner / Authorized Representative E-Signature"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1579,18 +1936,42 @@ export default function FormTestingStudio() {
                     {(selectedForm.id === "AP" || selectedForm.id === "FP" || selectedForm.id === "SGP" || selectedForm.id === "CC") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#1d4ed8" }}>Architect / Design Professional</span>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
                             <input type="text" value={formData.architectName || ""} onChange={e => handleFieldChange("architectName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                            <input type="text" value={formData.architectAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("architectAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
                             <input type="text" value={formData.architectPRC || ""} onChange={e => handleFieldChange("architectPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
+                            <input type="text" value={formData.architectPRCValidity || "2028-09-15"} onChange={e => handleFieldChange("architectPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                            <input type="text" value={formData.architectTIN || "234-567-890-000"} onChange={e => handleFieldChange("architectTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
                             <input type="text" value={formData.architectPTR || ""} onChange={e => handleFieldChange("architectPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                            <input type="text" value={formData.architectPTRIssued || "Jan 08, 2026"} onChange={e => handleFieldChange("architectPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
+                            <input type="text" value={formData.architectPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("architectPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
                       </div>
@@ -1599,19 +1980,43 @@ export default function FormTestingStudio() {
                     {/* Civil Engineer */}
                     {(selectedForm.id === "BP" || selectedForm.id === "SP" || selectedForm.id === "DP" || selectedForm.id === "EXP" || selectedForm.id === "SGP" || selectedForm.id === "CO" || selectedForm.id === "CC") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#047857" }}>Civil / Structural Engineer</span>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#047857" }}>Civil / Structural Engineer (Full-Time Inspector & Supervisor)</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
                             <input type="text" value={formData.civilEngineerName || ""} onChange={e => handleFieldChange("civilEngineerName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                            <input type="text" value={formData.civilEngineerAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("civilEngineerAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
                             <input type="text" value={formData.civilEngineerPRC || ""} onChange={e => handleFieldChange("civilEngineerPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
+                            <input type="text" value={formData.civilEngineerPRCValidity || "2027-06-20"} onChange={e => handleFieldChange("civilEngineerPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                            <input type="text" value={formData.civilEngineerTIN || "345-678-901-000"} onChange={e => handleFieldChange("civilEngineerTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
                             <input type="text" value={formData.civilEngineerPTR || ""} onChange={e => handleFieldChange("civilEngineerPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                            <input type="text" value={formData.civilEngineerPTRIssued || "Jan 10, 2026"} onChange={e => handleFieldChange("civilEngineerPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
+                            <input type="text" value={formData.civilEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("civilEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
                       </div>
@@ -1621,18 +2026,42 @@ export default function FormTestingStudio() {
                     {(selectedForm.id === "EP" || selectedForm.id === "TSC") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#b45309" }}>Professional Electrical Engineer (PEE)</span>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
                             <input type="text" value={formData.electricalEngineerName || ""} onChange={e => handleFieldChange("electricalEngineerName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                            <input type="text" value={formData.electricalEngineerAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("electricalEngineerAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
                             <input type="text" value={formData.electricalEngineerPRC || ""} onChange={e => handleFieldChange("electricalEngineerPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
+                            <input type="text" value={formData.electricalEngineerPRCValidity || "2028-11-30"} onChange={e => handleFieldChange("electricalEngineerPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                            <input type="text" value={formData.electricalEngineerTIN || "456-789-012-000"} onChange={e => handleFieldChange("electricalEngineerTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
                             <input type="text" value={formData.electricalEngineerPTR || ""} onChange={e => handleFieldChange("electricalEngineerPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                            <input type="text" value={formData.electricalEngineerPTRIssued || "Jan 12, 2026"} onChange={e => handleFieldChange("electricalEngineerPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
+                            <input type="text" value={formData.electricalEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("electricalEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
                       </div>
@@ -1642,18 +2071,42 @@ export default function FormTestingStudio() {
                     {selectedForm.id === "PL" && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0369a1" }}>Master Plumber / Sanitary Engineer</span>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
                             <input type="text" value={formData.masterPlumberName || ""} onChange={e => handleFieldChange("masterPlumberName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                            <input type="text" value={formData.masterPlumberAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("masterPlumberAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
                             <input type="text" value={formData.masterPlumberPRC || ""} onChange={e => handleFieldChange("masterPlumberPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
+                            <input type="text" value={formData.masterPlumberPRCValidity || "2028-01-25"} onChange={e => handleFieldChange("masterPlumberPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                            <input type="text" value={formData.masterPlumberTIN || "567-890-123-000"} onChange={e => handleFieldChange("masterPlumberTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
                             <input type="text" value={formData.masterPlumberPTR || ""} onChange={e => handleFieldChange("masterPlumberPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                            <input type="text" value={formData.masterPlumberPTRIssued || "Jan 15, 2026"} onChange={e => handleFieldChange("masterPlumberPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
+                            <input type="text" value={formData.masterPlumberPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("masterPlumberPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
                       </div>
@@ -1663,18 +2116,42 @@ export default function FormTestingStudio() {
                     {selectedForm.id === "MP" && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#7c3aed" }}>Professional Mechanical Engineer (PME)</span>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
                             <input type="text" value={formData.mechanicalEngineerName || ""} onChange={e => handleFieldChange("mechanicalEngineerName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                            <input type="text" value={formData.mechanicalEngineerAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("mechanicalEngineerAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
                             <input type="text" value={formData.mechanicalEngineerPRC || ""} onChange={e => handleFieldChange("mechanicalEngineerPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
+                            <input type="text" value={formData.mechanicalEngineerPRCValidity || "2027-12-18"} onChange={e => handleFieldChange("mechanicalEngineerPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                            <input type="text" value={formData.mechanicalEngineerTIN || "678-901-234-000"} onChange={e => handleFieldChange("mechanicalEngineerTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
                             <input type="text" value={formData.mechanicalEngineerPTR || ""} onChange={e => handleFieldChange("mechanicalEngineerPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                            <input type="text" value={formData.mechanicalEngineerPTRIssued || "Jan 18, 2026"} onChange={e => handleFieldChange("mechanicalEngineerPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
+                            <input type="text" value={formData.mechanicalEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("mechanicalEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
                       </div>
@@ -1684,18 +2161,42 @@ export default function FormTestingStudio() {
                     {selectedForm.id === "EL" && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0891b2" }}>Professional Electronics Engineer (PECE)</span>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
                             <input type="text" value={formData.electronicsEngineerName || ""} onChange={e => handleFieldChange("electronicsEngineerName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                            <input type="text" value={formData.electronicsEngineerAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("electronicsEngineerAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
                             <input type="text" value={formData.electronicsEngineerPRC || ""} onChange={e => handleFieldChange("electronicsEngineerPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
+                            <input type="text" value={formData.electronicsEngineerPRCValidity || "2028-05-12"} onChange={e => handleFieldChange("electronicsEngineerPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                            <input type="text" value={formData.electronicsEngineerTIN || "789-012-345-000"} onChange={e => handleFieldChange("electronicsEngineerTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
                             <input type="text" value={formData.electronicsEngineerPTR || ""} onChange={e => handleFieldChange("electronicsEngineerPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                            <input type="text" value={formData.electronicsEngineerPTRIssued || "Jan 20, 2026"} onChange={e => handleFieldChange("electronicsEngineerPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
+                            <input type="text" value={formData.electronicsEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("electronicsEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
                       </div>

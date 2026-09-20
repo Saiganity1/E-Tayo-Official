@@ -18,6 +18,12 @@ export interface UnifiedPermitFormData {
   formOfOwnership?: string;
   govIdNo?: string;
 
+  // Header Classifications & Applications (BP)
+  processingType?: "SIMPLE" | "COMPLEX";
+  applicationType?: "NEW" | "RENEWAL" | "AMENDATORY";
+  appliesLocationalClearance?: boolean;
+  appliesFireSafetyClearance?: boolean;
+
   // Project details & Location (Box 2)
   projectName: string;
   projectAddress: string;
@@ -160,56 +166,113 @@ export interface UnifiedPermitFormData {
 
   // Professional details
   architectName?: string;
+  architectAddress?: string;
   architectPRC?: string;
   architectPRCValidity?: string;
   architectIAPOA?: string;
   architectPTR?: string;
   architectPTRIssued?: string;
+  architectPTRIssuedAt?: string;
   architectTIN?: string;
 
   civilEngineerName?: string;
+  civilEngineerAddress?: string;
   civilEngineerPRC?: string;
   civilEngineerPRCValidity?: string;
   civilEngineerPICE?: string;
   civilEngineerPTR?: string;
   civilEngineerPTRIssued?: string;
+  civilEngineerPTRIssuedAt?: string;
   civilEngineerTIN?: string;
 
   electricalEngineerName?: string;
+  electricalEngineerAddress?: string;
   electricalEngineerPRC?: string;
   electricalEngineerPRCValidity?: string;
   electricalEngineerIIEE?: string;
   electricalEngineerPTR?: string;
   electricalEngineerPTRIssued?: string;
+  electricalEngineerPTRIssuedAt?: string;
   electricalEngineerTIN?: string;
 
   masterPlumberName?: string;
+  masterPlumberAddress?: string;
   masterPlumberPRC?: string;
   masterPlumberPRCValidity?: string;
   masterPlumberNAMPAP?: string;
   masterPlumberPTR?: string;
   masterPlumberPTRIssued?: string;
+  masterPlumberPTRIssuedAt?: string;
   masterPlumberTIN?: string;
 
   mechanicalEngineerName?: string;
+  mechanicalEngineerAddress?: string;
   mechanicalEngineerPRC?: string;
   mechanicalEngineerPRCValidity?: string;
   mechanicalEngineerPSME?: string;
   mechanicalEngineerPTR?: string;
   mechanicalEngineerPTRIssued?: string;
+  mechanicalEngineerPTRIssuedAt?: string;
   mechanicalEngineerTIN?: string;
 
   electronicsEngineerName?: string;
+  electronicsEngineerAddress?: string;
   electronicsEngineerPRC?: string;
   electronicsEngineerPRCValidity?: string;
   electronicsEngineerIECEP?: string;
   electronicsEngineerPTR?: string;
   electronicsEngineerPTRIssued?: string;
+  electronicsEngineerPTRIssuedAt?: string;
   electronicsEngineerTIN?: string;
 
   // Active form checkboxes selected
   activePermitForms?: (keyof PermitFormMatrix)[];
   submissionDate?: string;
+
+  // Signatures & Box 3 / Box 4 Consent Details
+  applicantSignature?: string; // base64 data URL
+  govIdDateIssued?: string;
+  govIdPlaceIssued?: string;
+  lotOwnerConsent?: boolean;
+  lotOwnerName?: string;
+  lotOwnerSignature?: string;
+  lotOwnerAddress?: string;
+  lotOwnerGovIdNo?: string;
+  lotOwnerGovIdDateIssued?: string;
+  lotOwnerGovIdPlaceIssued?: string;
+}
+
+async function embedSignatureImage(
+  doc: PDFDocument,
+  page: PDFPage,
+  dataUrl: string | undefined | null,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): Promise<boolean> {
+  if (!dataUrl || !dataUrl.startsWith("data:image/")) return false;
+  try {
+    const b64Data = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+    const binaryString = atob(b64Data);
+    const imgBytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      imgBytes[i] = binaryString.charCodeAt(i);
+    }
+    let embeddedImage;
+    try {
+      embeddedImage = await doc.embedPng(imgBytes);
+    } catch {
+      embeddedImage = await doc.embedJpg(imgBytes);
+    }
+    if (embeddedImage) {
+      page.drawImage(embeddedImage, { x, y, width, height });
+      return true;
+    }
+  } catch (err) {
+    console.warn("Could not embed e-signature image:", err);
+  }
+  return false;
 }
 
 function safeText(str: string | undefined | null): string {
@@ -340,13 +403,46 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
     p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "APP-2026-6636", 115, 788, 9, true);
-  if (data.locationalClearanceRef) {
-    drawCheck(226.5, 801);
-    drawText(data.locationalClearanceRef, 245, 801.0, 7.5, true);
+  // Header: Application No. in individual boxes (10 boxes)
+  const rawAppNo = (data.applicationNo || "2026-0001").trim();
+  const cleanAppNo = rawAppNo.replace(/^APP-(TEST-)?/i, "");
+  const appChars = cleanAppNo.split("");
+  const boxXPositions = [28.56, 39.00, 49.92, 60.72, 71.52, 82.44, 93.00, 103.80, 114.12, 124.68];
+  
+  boxXPositions.forEach((boxLeft, idx) => {
+    if (idx < appChars.length) {
+      const char = appChars[idx];
+      const charWidth = fontBold.widthOfTextAtSize(char, 9);
+      const charX = boxLeft + (10.8 - charWidth) / 2;
+      p1.drawText(char, { x: charX, y: 772.5, size: 9, font: fontBold, color: darkNavy });
+    }
+  });
+
+  // Processing Classification: SIMPLE vs COMPLEX
+  const processingType = data.processingType || "SIMPLE";
+  if (processingType === "COMPLEX") {
+    drawCheck(344.5, 829.3); // COMPLEX*
+  } else {
+    drawCheck(134.3, 829.4); // SIMPLE (default)
   }
-  drawCheck(346.5, 801); // Fire safety clearance also applied
+
+  // Application Type: NEW vs RENEWAL vs AMENDATORY
+  const appType = data.applicationType || "NEW";
+  if (appType === "RENEWAL") {
+    drawCheck(187.4, 816.2); // RENEWAL
+  } else if (appType === "AMENDATORY") {
+    drawCheck(344.9, 815.6); // AMENDATORY
+  } else {
+    drawCheck(134.2, 816.4); // NEW (default)
+  }
+
+  // Applies also for:
+  if (data.appliesLocationalClearance) {
+    drawCheck(227.3, 802.0); // LOCATIONAL CLEARANCE
+  }
+  if (data.appliesFireSafetyClearance !== false) {
+    drawCheck(344.9, 802.5); // FIRE SAFETY EVALUATION CLEARANCE (default true)
+  }
 
   // Box 1: Owner
   const { lastName, firstName, mi } = parseApplicantName(data);
@@ -392,14 +488,39 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   else if (scopeNorm.includes("legal")) drawCheck(302.5, 614.0);
   else drawCheck(36.5, 639.5); // Default: New Construction
 
-  // Box 4: Use / Occupancy
-  const cat = data.projectType?.category || "Residential";
-  if (cat === "Commercial") drawCheck(225, 565.0);
-  else if (cat === "Industrial") drawCheck(223, 509.0);
-  else if (cat === "Institutional") drawCheck(53, 459.0);
-  else {
-    drawCheck(34, 577.5); // Group A Residential
-    drawCheck(46.5, 569.5); // Single family dwelling
+  // Box 4: Use / Character of Occupancy
+  const occ = (data.occupancyClass || data.projectType?.category || "Group A - Residential (Single)").toLowerCase();
+  if (occ.includes("group b") || occ.includes("hotel") || occ.includes("motel") || occ.includes("townhouse") || occ.includes("dormitory")) {
+    drawCheck(36.0, 556.1); // Group B Residential
+    if (occ.includes("townhouse")) drawCheck(128.4, 548.2);
+    else if (occ.includes("hotel")) drawCheck(46.5, 548.0);
+    else if (occ.includes("dormitory") || occ.includes("boarding")) drawCheck(46.6, 540.0);
+    else drawCheck(46.5, 532.1); // R-3, R-4, R-5
+  } else if (occ.includes("group c") || occ.includes("educational") || occ.includes("recreational") || occ.includes("school") || occ.includes("church")) {
+    drawCheck(35.3, 515.3); // Group C Educational & Recreational
+  } else if (occ.includes("group d") || occ.includes("institutional") || occ.includes("hospital")) {
+    drawCheck(35.2, 473.2); // Group D Institutional
+  } else if (occ.includes("group e") || occ.includes("commercial") || occ.includes("store") || occ.includes("bank") || occ.includes("mall")) {
+    drawCheck(207.6, 580.9); // Group E Commercial
+  } else if (occ.includes("group f") || occ.includes("light industrial") || occ.includes("incombustible")) {
+    drawCheck(207.3, 523.7); // Group F Light Industrial
+  } else if (occ.includes("group g") || occ.includes("medium industrial") || occ.includes("hazardous") || occ.includes("warehouse")) {
+    drawCheck(206.8, 488.3); // Group G Medium Industrial
+  } else if (occ.includes("group h") || occ.includes("< 1,000") || occ.includes("less than 1,000")) {
+    drawCheck(355.3, 585.3); // Group H Assembly (< 1,000)
+  } else if (occ.includes("group i") || occ.includes("1,000 or more") || occ.includes("coliseum") || occ.includes("sports complex")) {
+    drawCheck(354.7, 542.7); // Group I Assembly (1,000+)
+  } else if (occ.includes("group j-1") || occ.includes("agricultural") || occ.includes("barn") || occ.includes("piggery")) {
+    drawCheck(354.6, 495.2); // Group J (J-1) Agricultural
+  } else if (occ.includes("group j-2") || occ.includes("accessories") || occ.includes("carport") || occ.includes("pool") || occ.includes("garage")) {
+    drawCheck(354.8, 464.6); // Group J (J-2) Accessories
+  } else {
+    // Default: Group A Residential (Dwellings)
+    drawCheck(36.0, 581.0); // Group A Residential
+    if (occ.includes("duplex")) drawCheck(89.0, 572.2);
+    else if (occ.includes("r-1") || occ.includes("r-2")) drawCheck(128.7, 572.4);
+    else if (occ.includes("others")) drawCheck(46.5, 564.2);
+    else drawCheck(46.5, 572.3); // Single family dwelling
   }
 
   // Box 5: Physical Specs & Cost Breakdown
@@ -432,26 +553,28 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   const leadEngr = data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE";
   // Position above the pre-printed "ARCHITECT OR CIVIL ENGINEER" line to prevent collision
   drawText(leadEngr.toUpperCase(), 110, 314.0, 8.5, true, 32);
-  drawText("Sto. Tomas, Pampanga", 365, 338.0, 7.5, false);
+  drawText(data.civilEngineerAddress || "Sto. Tomas, Pampanga", 365, 338.0, 7.5, false, 25);
   drawText(data.civilEngineerPRC || data.architectPRC || "0078923", 355, 303.5, 7.5, false);
   // Shift right to sit cleanly on underline after "Validity" label
-  drawText(data.civilEngineerPRCValidity || data.architectPRCValidity || "2028-12-31", 492, 303.5, 7.5, false);
-  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 355, 291.5, 7.5, false);
+  drawText(data.civilEngineerPRCValidity || data.architectPRCValidity || "2027-06-20", 492, 303.5, 7.5, false);
+  drawText(data.civilEngineerPTR || "PTR-ST-554433", 355, 291.5, 7.5, false);
   // Extract date only (strip municipality prefix if present) and place after "Date Issued" label
-  const rawPtrDate = data.civilEngineerPTRIssued || "Jan 05, 2026";
+  const rawPtrDate = data.civilEngineerPTRIssued || "Jan 10, 2026";
   const ptrDate = rawPtrDate.includes("/") ? rawPtrDate.split("/")[1].trim() : rawPtrDate;
   drawText(ptrDate, 510, 291.5, 7.5, false);
-  drawText("Sto. Tomas", 360, 279.5, 7.5, false);
+  drawText(data.civilEngineerPTRIssuedAt || "Sto. Tomas", 360, 279.5, 7.5, false);
   // Shift right after "TIN" label
-  drawText(data.civilEngineerTIN || "123-456-789-000", 475, 279.5, 7.5, false);
+  drawText(data.civilEngineerTIN || "345-678-901-000", 475, 279.5, 7.5, false);
 
   // Box 3: Owner Signature & Details
   const applicantUpper = (data.applicantName || "JUAN DELA CRUZ").toUpperCase();
   const applicantSig = toTitleCase(data.applicantName || "Juan Dela Cruz");
 
-  // Built-in Signature (Script) over printed name line
-  p1.drawText(applicantSig, { x: 78, y: 240.0, size: 13.5, font: fontItalic, color: signatureBlue });
-  p1.drawSvgPath("M 0 0 Q 30 -5 65 -1 T 115 0", { x: 78, y: 237.0, borderColor: signatureBlue, borderWidth: 0.75 });
+  // Embed user's authentic E-Signature if provided
+  let hasEmbeddedSig = false;
+  if (data.applicantSignature) {
+    hasEmbeddedSig = await embedSignatureImage(doc, p1, data.applicantSignature, 65, 234.0, 110, 30);
+  }
 
   // Printed Name of the applicant
   drawText(applicantUpper, 80, 230.0, 8.5, true, 26);
@@ -464,6 +587,21 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   const cleanGovId = safeText(data.govIdNo || "CTC-2026-00192").trim();
   const govIdSize = fontRegular.widthOfTextAtSize(cleanGovId, 6.5) > 56 ? 5.8 : 6.5;
   p1.drawText(cleanGovId, { x: 88, y: 194.5, size: govIdSize, font: fontRegular, color: darkNavy });
+  drawText(data.govIdDateIssued || "Jan 10, 2024", 175, 194.5, 7.0, false);
+  drawText(data.govIdPlaceIssued || "Sto. Tomas", 260, 194.5, 7.0, false);
+
+  // Box 4: With My Consent: Lot Owner / Authorized Representative
+  if (data.lotOwnerName) {
+    if (data.lotOwnerSignature) {
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 345, 234.0, 110, 30);
+    }
+    drawText(data.lotOwnerName.toUpperCase(), 345, 230.0, 8.5, true, 26);
+    drawText(data.submissionDate || "Sep 17, 2026", 522, 228.0, 7.5, false);
+    drawText(data.lotOwnerAddress || data.projectAddress || "LOT 12, BLOCK 4, SUNSET VALLEY SUBD.", 355, 208.0, 7.5, false, 45);
+    if (data.lotOwnerGovIdNo) drawText(data.lotOwnerGovIdNo, 370, 194.5, 7.0, false);
+    if (data.lotOwnerGovIdDateIssued) drawText(data.lotOwnerGovIdDateIssued, 448, 194.5, 7.0, false);
+    if (data.lotOwnerGovIdPlaceIssued) drawText(data.lotOwnerGovIdPlaceIssued, 525, 194.5, 7.0, false);
+  }
 
   // Box 5: Jurat Applicant Name - Removed per tester feedback ("BOX 5 - Remove name & government-issued ID number")
 
@@ -481,11 +619,9 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
     const nameX = Math.max(345, 454 - nameWidth / 2);
     p2DrawText(applicantUpper, nameX, 60.0, 9.0, true);
 
-    // Built-in Signature above printed name
-    const sigWidth = fontItalic.widthOfTextAtSize(applicantSig, 14.0);
-    const sigX = Math.max(345, 454 - sigWidth / 2);
-    p2.drawText(applicantSig, { x: sigX, y: 72.0, size: 14.0, font: fontItalic, color: signatureBlue });
-    p2.drawSvgPath("M 0 0 Q 35 -6 70 -1 T 120 0", { x: sigX, y: 69.0, borderColor: signatureBlue, borderWidth: 0.75 });
+    if (data.applicantSignature) {
+      await embedSignatureImage(doc, p2, data.applicantSignature, 400, 65.0, 110, 30);
+    }
   }
 
   return await doc.saveAsBase64({ dataUri: false });
