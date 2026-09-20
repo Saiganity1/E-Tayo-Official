@@ -187,6 +187,14 @@ export default function LocationalClearanceGoogleForm({
           isTenanted,
           projectCost,
           projectCostWords,
+          hasWrittenNotice,
+          noticeOfficer: noticeOfficer || undefined,
+          noticeOrder: noticeOrder || undefined,
+          noticeDate: noticeDate || undefined,
+          hasRelatedAction,
+          relatedOffice: relatedOffice || undefined,
+          relatedDate: relatedDate || undefined,
+          relatedActionTaken: relatedActionTaken || undefined,
           preferredMode,
           ctcNumber,
           ctcIssuedAt,
@@ -1015,62 +1023,102 @@ export default function LocationalClearanceGoogleForm({
               {/* Box 16 */}
               <div style={{ background: "#f8fafc", padding: "1rem", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                 <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#1e293b", marginBottom: "6px" }}>
-                  16. Is the project applied for the subject of related action(s) with other offices of the Board and/or Local Government Unit?
+                  16. IS THE PROJECT APPLIED FOR THE SUBJECT OF RELATED ACTION(S) WITH OTHER OFFICES OF THE BOARD AND/OR LOCAL GOVERNMENT UNIT?
                 </label>
                 <div style={{ display: "flex", gap: "1.5rem", marginBottom: "8px" }}>
                   <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", cursor: "pointer" }}>
                     <input type="radio" name="relatedAction" checked={hasRelatedAction === "No"} onChange={() => setHasRelatedAction("No")} />
-                    <span>No</span>
+                    <span>[X] No</span>
                   </label>
                   <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", cursor: "pointer" }}>
                     <input type="radio" name="relatedAction" checked={hasRelatedAction === "Yes"} onChange={() => setHasRelatedAction("Yes")} />
-                    <span>Yes (specify details below)</span>
+                    <span>[ ] Yes (Please indicate the following)</span>
                   </label>
                 </div>
                 {hasRelatedAction === "Yes" && (
                   <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 2fr", gap: "6px", marginTop: "6px" }}>
-                    <input
-                      type="text"
-                      placeholder="Office where filed"
-                      value={relatedOffice}
-                      onChange={(e) => setRelatedOffice(e.target.value)}
-                      style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Date filed"
-                      value={relatedDate}
-                      onChange={(e) => setRelatedDate(e.target.value)}
-                      style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Actions taken"
-                      value={relatedActionTaken}
-                      onChange={(e) => setRelatedActionTaken(e.target.value)}
-                      style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
-                    />
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
+                        Office where similar action(s) was filed
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. MPDO"
+                        value={relatedOffice}
+                        onChange={(e) => setRelatedOffice(e.target.value)}
+                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
+                        Date filed
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 01/10/2026"
+                        value={relatedDate}
+                        onChange={(e) => setRelatedDate(e.target.value)}
+                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
+                        Actions taken
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. APPROVED"
+                        value={relatedActionTaken}
+                        onChange={(e) => setRelatedActionTaken(e.target.value)}
+                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* Box 17 */}
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
-                  17. Preferred Mode of Release of Decision *
+              <div style={{ background: "#f8fafc", padding: "1rem", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#1e293b", marginBottom: "8px" }}>
+                  17. PREFERRED MODE OR RELEASE OF DECISION *
                 </label>
-                <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-                  {(["Pick-up", "Mail to Applicant", "Mail to Representative"] as const).map(mode => (
-                    <label key={mode} style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", cursor: "pointer" }}>
+                <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="preferredMode"
+                      checked={preferredMode === "Pick-up"}
+                      onChange={() => setPreferredMode("Pick-up")}
+                      style={{ accentColor: "#0284c7", width: "16px", height: "16px" }}
+                    />
+                    <span>{preferredMode === "Pick-up" ? "[X]" : "[ ]"} Pick-up</span>
+                  </label>
+
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "12px", background: "#ffffff", padding: "6px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+                    <span style={{ fontSize: "0.82rem", fontWeight: "600", color: "#475569" }}>
+                      {preferredMode?.startsWith("Mail") ? "[X]" : "[ ]"} By mail, addressed to
+                    </span>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.82rem", cursor: "pointer" }}>
                       <input
                         type="radio"
                         name="preferredMode"
-                        checked={preferredMode === mode}
-                        onChange={() => setPreferredMode(mode)}
+                        checked={preferredMode === "Mail to Applicant"}
+                        onChange={() => setPreferredMode("Mail to Applicant")}
+                        style={{ accentColor: "#0284c7" }}
                       />
-                      <span>{mode === "Pick-up" ? "Personal Pick-up at MPDO" : mode}</span>
+                      <span>{preferredMode === "Mail to Applicant" ? "[X]" : "[ ]"} Applicant</span>
                     </label>
-                  ))}
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.82rem", cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="preferredMode"
+                        checked={preferredMode === "Mail to Representative"}
+                        onChange={() => setPreferredMode("Mail to Representative")}
+                        style={{ accentColor: "#0284c7" }}
+                      />
+                      <span>{preferredMode === "Mail to Representative" ? "[X]" : "[ ]"} Authorized Representative</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>

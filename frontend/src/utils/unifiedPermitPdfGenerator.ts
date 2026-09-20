@@ -39,6 +39,8 @@ export interface UnifiedPermitFormData {
   projectCost: string;
   scopeOfWork: string;
   scopeOthers?: string;
+  projectNature?: string;
+  natureOthers?: string;
   occupancyClass: string;
   proposedStoreys: string;
   numberOfUnits?: string;
@@ -104,6 +106,25 @@ export interface UnifiedPermitFormData {
   showersCount?: string;
   floorDrainsCount?: string;
   faucetsCount?: string;
+
+  // Locational Clearance specific details (Boxes 11, 12, 13, 14, 15, 16, 17)
+  rightOverLand?: string;
+  rightOverLandOthers?: string;
+  projectTenure?: string;
+  existingLandUse?: string;
+  landUseOthers?: string;
+  agriculturalCrop?: string;
+  isTenanted?: string;
+  projectCostWords?: string;
+  hasWrittenNotice?: string;
+  noticeOfficer?: string;
+  noticeOrder?: string;
+  noticeDate?: string;
+  hasRelatedAction?: string;
+  relatedOffice?: string;
+  relatedDate?: string;
+  relatedActionTaken?: string;
+  preferredMode?: string;
 
   // Equipment & specialized machinery details (for Elevator/Escalator, Mechanical, Generator)
   machineryType?: string;
@@ -228,6 +249,14 @@ export interface UnifiedPermitFormData {
   // Active form checkboxes selected
   activePermitForms?: (keyof PermitFormMatrix)[];
   submissionDate?: string;
+
+  // Corporation & Representative (for LC and Enterprise forms)
+  corporationName?: string;
+  corporationAddress?: string;
+  corporationPhone?: string;
+  representativeName?: string;
+  representativeAddress?: string;
+  representativePhone?: string;
 
   // Signatures & Box 3 / Box 4 Consent Details
   applicantSignature?: string; // base64 data URL

@@ -7,7 +7,13 @@ export interface LocationalClearancePdfData {
   applicantAddress: string;
   applicantPhone: string;
   applicantEmail?: string;
+  applicantSignature?: string;
+  applicantFirstName?: string;
+  applicantMiddleName?: string;
+  applicantLastName?: string;
   corporationName?: string;
+  corporationAddress?: string;
+  corporationPhone?: string;
   representativeName?: string;
   representativeAddress?: string;
   representativePhone?: string;
@@ -61,6 +67,98 @@ function safeText(str: string | undefined | null): string {
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
     .replace(/[^\x20-\x7E\t\n\r]/g, "");
+}
+
+function formatApplicantName(data: LocationalClearancePdfData): string {
+  if (data.applicantLastName && data.applicantFirstName) {
+    const last = data.applicantLastName.trim().toUpperCase();
+    const first = data.applicantFirstName.trim().toUpperCase();
+    const mid = (data.applicantMiddleName || "").trim().toUpperCase();
+    const middlePart = mid ? ` ${mid}` : "";
+    return `${last}, ${first}${middlePart}`;
+  }
+  const raw = (data.applicantName || "").trim();
+  if (!raw) return "DELA CRUZ, JUAN SANTOS";
+  if (raw.includes(",")) return raw.toUpperCase();
+
+  const parts = raw.split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return raw.toUpperCase();
+  if (parts.length === 2) return `${parts[1].toUpperCase()}, ${parts[0].toUpperCase()}`;
+
+  const upperParts = parts.map(p => p.toUpperCase());
+  if (
+    upperParts.length >= 3 &&
+    (upperParts[upperParts.length - 2] === "DELA" ||
+      upperParts[upperParts.length - 2] === "DE" ||
+      upperParts[upperParts.length - 2] === "DELOS" ||
+      upperParts[upperParts.length - 2] === "SAN")
+  ) {
+    const lastName = `${upperParts[upperParts.length - 2]} ${upperParts[upperParts.length - 1]}`;
+    const firstName = upperParts[0];
+    const middlePart = upperParts.length > 3 ? ` ${upperParts.slice(1, upperParts.length - 2).join(" ")}` : "";
+    return `${lastName}, ${firstName}${middlePart}`;
+  }
+
+  const lastName = upperParts[upperParts.length - 1];
+  const firstName = upperParts[0];
+  const middlePart = upperParts.length > 2 ? ` ${upperParts.slice(1, -1).join(" ")}` : "";
+  return `${lastName}, ${firstName}${middlePart}`;
+}
+
+export function numberToWordsInPesos(amount: string | number | undefined | null): string {
+  if (!amount) return "TWO MILLION FIVE HUNDRED THOUSAND PESOS ONLY";
+  
+  // Clean string to number
+  const cleanStr = String(amount).replace(/[^0-9.]/g, "");
+  const num = parseFloat(cleanStr);
+  if (isNaN(num) || num <= 0) return "ZERO PESOS ONLY";
+
+  const ones = [
+    "", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE",
+    "TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN",
+    "SEVENTEEN", "EIGHTEEN", "NINETEEN"
+  ];
+  const tens = [
+    "", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"
+  ];
+
+  function convertHundreds(n: number): string {
+    let str = "";
+    if (n >= 100) {
+      str += ones[Math.floor(n / 100)] + " HUNDRED ";
+      n %= 100;
+    }
+    if (n >= 20) {
+      str += tens[Math.floor(n / 10)] + (n % 10 > 0 ? " " + ones[n % 10] : "");
+    } else if (n > 0) {
+      str += ones[n];
+    }
+    return str.trim();
+  }
+
+  const integerPart = Math.floor(num);
+  const cents = Math.round((num - integerPart) * 100);
+
+  if (integerPart === 0 && cents > 0) {
+    return `${cents}/100 PESOS ONLY`;
+  }
+
+  const billions = Math.floor(integerPart / 1_000_000_000);
+  const millions = Math.floor((integerPart % 1_000_000_000) / 1_000_000);
+  const thousands = Math.floor((integerPart % 1_000_000) / 1_000);
+  const remainder = integerPart % 1_000;
+
+  const parts: string[] = [];
+  if (billions > 0) parts.push(convertHundreds(billions) + " BILLION");
+  if (millions > 0) parts.push(convertHundreds(millions) + " MILLION");
+  if (thousands > 0) parts.push(convertHundreds(thousands) + " THOUSAND");
+  if (remainder > 0) parts.push(convertHundreds(remainder));
+
+  const words = parts.join(" ").trim();
+  if (cents > 0) {
+    return `${words} PESOS AND ${cents}/100 ONLY`;
+  }
+  return `${words} PESOS ONLY`;
 }
 
 async function fetchTemplateBytes(templatePath: string): Promise<ArrayBuffer> {
@@ -152,12 +250,13 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   };
 
   // --- HEADER: Application Details ---
-  drawText(data.applicationNo || "LC-2026-PENDING", 106, 700.0, 8.5, true);
+  drawText(data.applicationNo || "APP-TEST-2026-0001", 106, 700.0, 8.5, true);
   drawText(data.submissionDate || new Date().toLocaleDateString(), 106, 688.0, 8, false);
   drawText("ONLINE-PORTAL", 112, 676.0, 8, false);
 
-  // --- BOX 1: Name of Applicant ---
-  drawText(data.applicantName?.toUpperCase(), 46, 642.0, 8.5, true, 45);
+  // --- BOX 1: Name of Applicant (Last, First, Middle) ---
+  const applicantFormattedName = formatApplicantName(data);
+  drawText(applicantFormattedName, 46, 642.0, 8.5, true, 45);
 
   // --- BOX 2: Name of Corporation ---
   if (data.corporationName && data.corporationName.trim()) {
@@ -167,11 +266,29 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   }
 
   // --- BOX 3: Address / Telephone of Applicant ---
-  const addrTel = `${data.applicantAddress || ""}${data.applicantPhone ? ` | Tel: ${data.applicantPhone}` : ""}`;
-  drawText(addrTel, 46, 616.0, 7.5, false, 55);
+  if (data.applicantPhone && data.applicantPhone.trim()) {
+    const addr = (data.applicantAddress || "").toUpperCase();
+    const phone = `Tel. / Contact: ${data.applicantPhone.trim()}`;
+    const addrFontSize = addr.length > 55 ? 6.0 : 6.8;
+    drawText(addr, 44, 620.0, addrFontSize, false, 68);
+    drawText(phone, 44, 613.5, 6.8, false, 50);
+  } else {
+    drawText(data.applicantAddress?.toUpperCase(), 44, 616.0, 7.5, false, 65);
+  }
 
   // --- BOX 4: Address / Telephone of Corporation ---
-  drawText(data.corporationName ? (data.applicantAddress || "N/A") : "N/A", 314, 616.0, 7.5, false, 55);
+  if (data.corporationAddress && data.corporationAddress.trim()) {
+    const corpAddr = data.corporationAddress.toUpperCase();
+    const corpFontSize = corpAddr.length > 55 ? 6.0 : 6.8;
+    drawText(corpAddr, 312, 620.0, corpFontSize, false, 68);
+    if (data.corporationPhone && data.corporationPhone.trim()) {
+      drawText(`Tel. / Contact: ${data.corporationPhone.trim()}`, 312, 613.5, 6.8, false, 50);
+    }
+  } else if (data.corporationName && data.corporationName.trim()) {
+    drawText(data.applicantAddress?.toUpperCase() || "N/A", 312, 616.0, 7.5, false, 65);
+  } else {
+    drawText("N/A", 312, 616.0, 7.5, false);
+  }
 
   // --- BOX 5: Authorized Representative ---
   if (data.representativeName && data.representativeName.trim()) {
@@ -182,10 +299,16 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
 
   // --- BOX 6: Address / Tel of Authorized Representative ---
   if (data.representativeName && data.representativeName.trim()) {
-    const repContact = `${data.representativeAddress || data.applicantAddress || ""}${data.representativePhone ? ` | Tel: ${data.representativePhone}` : ""}`;
-    drawText(repContact, 314, 590.0, 7.5, false, 55);
+    const repAddr = (data.representativeAddress || data.applicantAddress || "").toUpperCase();
+    if (data.representativePhone && data.representativePhone.trim()) {
+      const repFontSize = repAddr.length > 55 ? 6.0 : 6.8;
+      drawText(repAddr, 312, 594.0, repFontSize, false, 68);
+      drawText(`Tel. / Contact: ${data.representativePhone.trim()}`, 312, 587.5, 6.8, false, 50);
+    } else {
+      drawText(repAddr, 312, 590.0, 7.5, false, 65);
+    }
   } else {
-    drawText("N/A", 314, 590.0, 7.5, false);
+    drawText("N/A", 312, 590.0, 7.5, false);
   }
 
   // --- BOX 7: Project Type ---
@@ -269,12 +392,12 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   }
 
   // --- BOX 14: Project Cost (in pesos, write in words and figures) ---
-  if (data.projectCostWords) {
-    drawText(data.projectCostWords, 46, 452.0, 7.5, false, 65);
-  } else {
-    drawText(`Estimated Total Cost: PHP ${data.projectCost}`, 46, 452.0, 7.5, false, 65);
-  }
-  drawText(data.projectCost || "1,500,000.00", 420, 456.0, 8.5, true);
+  const costWords = (data.projectCostWords && data.projectCostWords.trim())
+    ? data.projectCostWords.trim().toUpperCase()
+    : numberToWordsInPesos(data.projectCost || "2,500,000.00");
+
+  drawText(costWords, 46, 452.0, 7.5, true, 65);
+  drawText(data.projectCost || "2,500,000.00", 420, 456.0, 8.5, true);
 
   // --- BOX 15: Written Notice from LGU ---
   const noticeNorm = (data.hasWrittenNotice || "no").toLowerCase();
@@ -301,8 +424,10 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   // --- BOX 17: Preferred Mode of Release ---
   const modeNorm = (data.preferredMode || "").toLowerCase();
   if (modeNorm.includes("mail") && modeNorm.includes("rep")) {
+    drawCheck(145.0, 347);
     drawCheck(370.5, 347);
   } else if (modeNorm.includes("mail")) {
+    drawCheck(145.0, 347);
     drawCheck(235.5, 347);
   } else {
     // Default: Pick-up at Municipal Hall
@@ -310,21 +435,33 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   }
 
   // --- BOX 18 & 19: Signatures ---
+  if (data.applicantSignature && data.applicantSignature.startsWith("data:image/")) {
+    try {
+      const b64Data = data.applicantSignature.includes(",") ? data.applicantSignature.split(",")[1] : data.applicantSignature;
+      const binaryString = atob(b64Data);
+      const imgBytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        imgBytes[i] = binaryString.charCodeAt(i);
+      }
+      let embeddedImage;
+      try {
+        embeddedImage = await pdfDoc.embedPng(imgBytes);
+      } catch {
+        embeddedImage = await pdfDoc.embedJpg(imgBytes);
+      }
+      if (embeddedImage) {
+        page.drawImage(embeddedImage, { x: 65, y: 322, width: 105, height: 28 });
+      }
+    } catch (err) {
+      console.warn("Could not embed LC signature image:", err);
+    }
+  }
   drawText(data.applicantName?.toUpperCase(), 70, 318, 8, true);
   if (data.representativeName && data.representativeName.trim()) {
     drawText(data.representativeName.toUpperCase(), 330, 318, 8, true);
   }
 
-  // --- NOTARY / JURAT ---
-  const dateObj = new Date();
-  const dayStr = dateObj.getDate().toString();
-  const monthYearStr = dateObj.toLocaleString("en-US", { month: "long", year: "numeric" });
-  drawText(dayStr, 345, 282, 7.5, false);
-  drawText(monthYearStr, 440, 282, 7.5, false);
-
-  drawText(data.ctcNumber || "CTC-VERIFIED-ONLINE", 480, 270, 8, true);
-  drawText(data.ctcIssuedAt || "Sto. Tomas, Pampanga", 135, 258, 7.5, false);
-  drawText(data.ctcIssuedOn || data.submissionDate || dateObj.toLocaleDateString(), 240, 258, 7.5, false);
+  // --- NOTARY / JURAT (Intentionally left clean for Notary Public) ---
 
   // --- OPTIONAL PAGE 2: VICINITY SKETCH MAP ATTACHMENT ---
   let imgBytes = data.sketchImageBytes;
