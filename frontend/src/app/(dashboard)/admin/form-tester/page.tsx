@@ -351,6 +351,13 @@ export default function FormTestingStudio() {
   const [genTimeMs, setGenTimeMs] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"general" | "specs" | "professionals">("general");
 
+  // When Locational Clearance is selected, ensure active tab is 'general'
+  useEffect(() => {
+    if (selectedFormId === "LC" && activeTab !== "general") {
+      setActiveTab("general");
+    }
+  }, [selectedFormId, activeTab]);
+
   const blobUrlRef = React.useRef<string | null>(null);
   const generationSeq = React.useRef<number>(0);
 
@@ -844,8 +851,8 @@ export default function FormTestingStudio() {
                   padding: "6px 14px",
                   borderRadius: "8px",
                   border: "none",
-                  background: activeTab === "general" ? "#2563eb" : "#e2e8f0",
-                  color: activeTab === "general" ? "white" : "#475569",
+                  background: (activeTab === "general" || selectedForm.id === "LC") ? "#2563eb" : "#e2e8f0",
+                  color: (activeTab === "general" || selectedForm.id === "LC") ? "white" : "#475569",
                   fontWeight: "700",
                   fontSize: "0.78rem",
                   cursor: "pointer"
@@ -853,44 +860,48 @@ export default function FormTestingStudio() {
               >
                 1. Applicant & Project
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("specs")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: activeTab === "specs" ? "#2563eb" : "#e2e8f0",
-                  color: activeTab === "specs" ? "white" : "#475569",
-                  fontWeight: "700",
-                  fontSize: "0.78rem",
-                  cursor: "pointer"
-                }}
-              >
-                2. Technical Details & Costs
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("professionals")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: activeTab === "professionals" ? "#2563eb" : "#e2e8f0",
-                  color: activeTab === "professionals" ? "white" : "#475569",
-                  fontWeight: "700",
-                  fontSize: "0.78rem",
-                  cursor: "pointer"
-                }}
-              >
-                3. Engineers & Credentials
-              </button>
+              {selectedForm.id !== "LC" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("specs")}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "8px",
+                      border: "none",
+                      background: activeTab === "specs" ? "#2563eb" : "#e2e8f0",
+                      color: activeTab === "specs" ? "white" : "#475569",
+                      fontWeight: "700",
+                      fontSize: "0.78rem",
+                      cursor: "pointer"
+                    }}
+                  >
+                    2. Technical Details & Costs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("professionals")}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "8px",
+                      border: "none",
+                      background: activeTab === "professionals" ? "#2563eb" : "#e2e8f0",
+                      color: activeTab === "professionals" ? "white" : "#475569",
+                      fontWeight: "700",
+                      fontSize: "0.78rem",
+                      cursor: "pointer"
+                    }}
+                  >
+                    3. Engineers & Credentials
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
           {/* Form Fields Area */}
           <div style={{ padding: "1.5rem", maxHeight: "750px", overflowY: "auto" }}>
-            {activeTab === "general" && (
+            {(activeTab === "general" || selectedForm.id === "LC") && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
@@ -2236,7 +2247,7 @@ export default function FormTestingStudio() {
               </div>
             )}
 
-            {activeTab === "specs" && (
+            {activeTab === "specs" && selectedForm.id !== "LC" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 {/* Section 2: Shown only for BP, EXP, and DP */}
                 {(selectedForm.id === "BP" || selectedForm.id === "EXP" || selectedForm.id === "DP") && (
@@ -2653,42 +2664,14 @@ export default function FormTestingStudio() {
                       </div>
                     </div>
                   )}
-
-                  {selectedForm.id === "LC" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Right Over Land</label>
-                        <input type="text" value="Owner" readOnly style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Zoning / Existing Land Use</label>
-                        <input type="text" value="R-1 Low Density Residential" readOnly style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Project Tenure</label>
-                        <input type="text" value="Permanent" readOnly style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9" }} />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
 
-            {activeTab === "professionals" && (
+            {activeTab === "professionals" && selectedForm.id !== "LC" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                {/* Not applicable for Locational Clearance */}
-                {selectedForm.id === "LC" ? (
-                  <div style={{ padding: "2.5rem 1.5rem", textAlign: "center", background: "#f8fafc", borderRadius: "14px", border: "1.5px dashed #cbd5e1" }}>
-                    <ShieldCheck size={40} color="#64748b" style={{ margin: "0 auto 0.75rem auto", display: "block" }} />
-                    <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "800", color: "#334155" }}>Not Applicable for Locational Clearance</h4>
-                    <p style={{ margin: "0.5rem auto 0 auto", fontSize: "0.86rem", color: "#64748b", maxWidth: "420px", lineHeight: "1.5" }}>
-                      Locational Clearance / Zoning does not require design professionals or supervising engineers on its official template.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Construction Supervisor / Inspector */}
-                    {(selectedForm.id === "CC" || selectedForm.id === "CO" || selectedForm.id === "CFEI") && (
+                {/* Construction Supervisor / Inspector */}
+                {(selectedForm.id === "CC" || selectedForm.id === "CO" || selectedForm.id === "CFEI") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#eff6ff", border: "1.5px solid #bfdbfe" }}>
                         <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#1d4ed8" }}>Project Supervisor / Municipal Inspector</span>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -2985,8 +2968,6 @@ export default function FormTestingStudio() {
                         </div>
                       </div>
                     )}
-                  </>
-                )}
               </div>
             )}
           </div>
