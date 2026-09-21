@@ -411,7 +411,7 @@ export default function Home() {
         /* Floating Action Widgets (FAQ / Mang Tomas & Back to Top) */
         .floating-widgets-dock {
           position: fixed;
-          bottom: 26px;
+          bottom: 78px;
           right: 26px;
           display: flex;
           flex-direction: column;
