@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Footer from "../components/layout/Footer";
 
 export default function Home() {
   const router = useRouter();
@@ -83,6 +84,9 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Official Municipal Footer */}
+      <Footer />
 
       {/* Landing page specific layout classes that extend the global CSS */}
       <style jsx global>{`
