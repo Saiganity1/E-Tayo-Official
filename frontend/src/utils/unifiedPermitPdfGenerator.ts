@@ -1406,48 +1406,48 @@ export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): 
   // Box 5: BUILDING OWNER
   const ownerUpper = (data.applicantName || "JUAN DELA CRUZ").toUpperCase();
   const ownerNameW = fontBold.widthOfTextAtSize(ownerUpper, 8.5);
-  const ownerNameX = 155.0 - (ownerNameW / 2);
-  drawText(ownerUpper, ownerNameX, 149.0, 8.5, true);
+  const ownerNameX = 157.5 - (ownerNameW / 2);
+  drawText(ownerUpper, ownerNameX, 152.5, 8.5, true);
 
   if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 155.0 - 55, 145.0, 110, 32);
+    await embedSignatureImage(doc, p1, data.applicantSignature, 157.5 - 55, 147.0, 110, 32);
   }
 
   const rawOwnerDate = data.applicantSignedDate || data.submissionDate || "Jan 08, 2026";
-  drawText(rawOwnerDate, 115, 128.0, 7.5, false);
+  drawText(rawOwnerDate, 135.0, 135.5, 7.5, false);
 
   const ownerAddr = data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga";
-  drawText(ownerAddr, 80, 111.0, 7.5, false, 35);
+  drawText(ownerAddr, 75.0, 114.0, 7.5, false, 45);
 
-  drawText(data.govIdNo || "CTC-2026-00192", 35, 88.0, 7.5, false, 15);
-  drawText(data.govIdDateIssued || "Jan 10, 2026", 115, 88.0, 7.5, false, 14);
-  drawText(data.govIdPlaceIssued || "Sto. Tomas", 205, 88.0, 7.5, false, 15);
+  drawText(data.govIdNo || "CTC-2026-00192", 30.0, 92.0, 7.0, false, 16);
+  drawText(data.govIdDateIssued || "Jan 10, 2026", 115.0, 92.0, 7.5, false, 14);
+  drawText(data.govIdPlaceIssued || "Sto. Tomas", 205.0, 92.0, 7.5, false, 15);
 
   // Box 6: WITH MY CONSENT: LOT OWNER
   if (data.lotOwnerConsent || data.lotOwnerName) {
     const lotUpper = safeText(data.lotOwnerName || "MARIA CLARA DELA CRUZ").toUpperCase();
     const lotNameW = fontBold.widthOfTextAtSize(lotUpper, 8.5);
     const lotNameX = 425.0 - (lotNameW / 2);
-    drawText(lotUpper, lotNameX, 149.0, 8.5, true);
+    drawText(lotUpper, lotNameX, 157.0, 8.5, true);
 
     if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 425.0 - 55, 145.0, 110, 32);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 425.0 - 55, 151.0, 110, 32);
     }
 
     const rawLotDate = data.lotOwnerSignedDate || rawOwnerDate;
-    drawText(rawLotDate, 390, 128.0, 7.5, false);
+    drawText(rawLotDate, 405.0, 139.5, 7.5, false);
 
     const lotAddr = safeText(data.lotOwnerAddress || data.projectAddress || "Sto. Tomas, Pampanga").trim();
-    drawText(lotAddr, 355, 111.0, 7.5, false, 30);
+    drawText(lotAddr, 345.0, 116.5, 7.5, false, 45);
 
     const lotGovId = safeText(data.lotOwnerGovIdNo || "CTC-2026-00871").trim();
-    drawText(lotGovId, 318, 88.0, 7.5, false, 12);
+    drawText(lotGovId, 305.0, 94.0, 7.5, false, 16);
 
     const lotDate = safeText(data.lotOwnerGovIdDateIssued || "Jan 12, 2026").trim();
-    drawText(lotDate, 385, 88.0, 7.5, false, 12);
+    drawText(lotDate, 392.0, 94.0, 7.5, false, 14);
 
     const lotPlace = safeText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas").trim();
-    drawText(lotPlace, 465, 88.0, 7.5, false, 12);
+    drawText(lotPlace, 475.0, 94.0, 7.5, false, 15);
   }
 
   return await doc.saveAsBase64({ dataUri: false });
