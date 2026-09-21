@@ -1,107 +1,95 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Building2, Mail, MapPin, Phone, ShieldCheck, Clock, ExternalLink } from "lucide-react";
+import { Globe, MapPin, Clock, Mail, Phone, ShieldCheck, ExternalLink, ChevronRight } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="etayo-footer">
-      {/* Official Government Municipal Header Banner */}
-      <div className="footer-gov-banner">
-        <div className="gov-banner-container">
-          <div className="gov-branding-left">
-            {/* Bagong Pilipinas Logo on the left */}
-            <div className="logo-box">
+    <footer className="etayo-white-footer">
+      {/* Subtle Top Government Accent Bar */}
+      <div className="footer-top-accent-bar" />
+
+      {/* Main Content Grid */}
+      <div className="footer-container">
+        <div className="footer-grid">
+          {/* Column 1: Official Municipal Identity & Republic of the Philippines */}
+          <div className="footer-col col-identity">
+            {/* Logos: Bagong Pilipinas on left, Sto. Tomas seal beside it (NO background box) */}
+            <div className="footer-logos-row">
               <Image
                 src="/bagong-pilipinas.png"
                 alt="Bagong Pilipinas Logo"
-                width={85}
-                height={85}
-                className="gov-logo-img"
+                width={70}
+                height={70}
+                className="gov-clean-logo"
                 priority
               />
-            </div>
-
-            {/* Municipality of Sto. Tomas Official Seal beside it */}
-            <div className="logo-box">
               <Image
                 src="/sto-tomas-logo.png"
-                alt="Bayan ng Sto. Tomas Pampanga Seal"
-                width={85}
-                height={85}
-                className="gov-logo-img"
+                alt="Municipality of Sto. Tomas Seal"
+                width={70}
+                height={70}
+                className="gov-clean-logo"
                 priority
               />
             </div>
 
-            {/* Official Titles (Without "Gusto ko Progreso!") */}
-            <div className="gov-text-group">
-              <span className="gov-republic-text">Republic of the Philippines</span>
-              <div className="gov-accent-line" />
-              <h2 className="gov-municipality-title">Municipality of Sto. Tomas</h2>
-              <span className="gov-district-text">4th District of Pampanga</span>
+            <div className="republic-header">
+              <span className="republic-sub">REPUBLIC OF THE PHILIPPINES</span>
+              <h2 className="municipality-title">Municipality of Sto. Tomas</h2>
+              <span className="district-tag">4th District of Pampanga</span>
             </div>
-          </div>
 
-          <div className="gov-portal-tag">
-            <span className="portal-badge">Official Permitting Portal</span>
-            <span className="portal-sub">LGU Sto. Tomas • e-Tayo System</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Footer Links & Information Grid */}
-      <div className="footer-content-section">
-        <div className="footer-grid-container">
-          {/* Column 1: About Sto. Tomas Digital Permitting */}
-          <div className="footer-col">
-            <div className="footer-brand-title">
-              <span className="footer-etayo-mark">e-Tayo</span>
-              <span className="footer-submark">Digital Municipal Services</span>
-            </div>
-            <p className="footer-desc">
+            <p className="footer-lead-text">
               The official online regulatory and permitting platform of the Municipality of Sto. Tomas, Pampanga. Streamlining building permits, locational clearances, and occupancy approvals for residents and businesses.
             </p>
-            <div className="footer-security-pill">
-              <ShieldCheck size={16} className="text-emerald-400" />
+
+            <div className="compliance-badge">
+              <ShieldCheck size={16} className="badge-icon" />
               <span>Compliant with RA 11032 (Ease of Doing Business Act)</span>
             </div>
           </div>
 
-          {/* Column 2: Permitting Services */}
-          <div className="footer-col">
-            <h3 className="footer-col-title">Municipal Permits</h3>
-            <ul className="footer-links">
+          {/* Column 2: About Us (What is e-Tayo) */}
+          <div className="footer-col col-about">
+            <h3 className="footer-heading">ABOUT US</h3>
+            <div className="heading-line" />
+            <p className="about-text">
+              <strong>e-Tayo</strong> is the official digital municipal governance and online permitting portal of the <strong>Municipality of Sto. Tomas, Pampanga</strong>.
+            </p>
+            <p className="about-text">
+              Built to modernize local public service, it empowers citizens, architects, engineers, and property developers with a transparent, efficient, and 100% online gateway to apply for municipal permits without in-person queueing.
+            </p>
+            <ul className="about-highlights">
               <li>
-                <Link href="/applicant/apply">Locational Clearance (Zoning)</Link>
+                <ChevronRight size={14} className="list-icon" />
+                <span>Locational &amp; Zoning Clearances</span>
               </li>
               <li>
-                <Link href="/applicant/apply">Building Permit (Architectural & Civil)</Link>
+                <ChevronRight size={14} className="list-icon" />
+                <span>National Building Code Permits</span>
               </li>
               <li>
-                <Link href="/applicant/apply">Electrical & Mechanical Permits</Link>
+                <ChevronRight size={14} className="list-icon" />
+                <span>Digital Evaluation &amp; Approvals</span>
               </li>
               <li>
-                <Link href="/applicant/apply">Sanitary & Plumbing Permits</Link>
-              </li>
-              <li>
-                <Link href="/applicant/apply">Certificate of Occupancy</Link>
-              </li>
-              <li>
-                <Link href="/applicant/track">Track Application Status</Link>
+                <ChevronRight size={14} className="list-icon" />
+                <span>Real-time QR Verification &amp; Tracking</span>
               </li>
             </ul>
           </div>
 
-          {/* Column 3: Regulatory Offices */}
-          <div className="footer-col">
-            <h3 className="footer-col-title">Offices & Departments</h3>
-            <ul className="footer-links">
+          {/* Column 3: Regulatory Offices & Departments */}
+          <div className="footer-col col-offices">
+            <h3 className="footer-heading">OFFICES &amp; DEPARTMENTS</h3>
+            <div className="heading-line" />
+            <ul className="footer-links-list">
               <li>
                 <span>Office of the Building Official (OBO)</span>
               </li>
               <li>
-                <span>Municipal Planning & Development Office (MPDO)</span>
+                <span>Municipal Planning &amp; Development Office (MPDO)</span>
               </li>
               <li>
                 <span>Municipal Engineering Office (MEO)</span>
@@ -112,310 +100,348 @@ export default function Footer() {
               <li>
                 <span>Municipal Assessor&apos;s Office</span>
               </li>
+              <li>
+                <span>Office of the Municipal Mayor</span>
+              </li>
             </ul>
           </div>
 
-          {/* Column 4: Contact & Public Assistance */}
-          <div className="footer-col">
-            <h3 className="footer-col-title">Public Assistance</h3>
-            <div className="footer-contact-list">
-              <div className="footer-contact-item">
-                <MapPin size={18} className="contact-icon" />
+          {/* Column 4: Public Assistance & Official Website Link */}
+          <div className="footer-col col-assistance">
+            <h3 className="footer-heading">PUBLIC ASSISTANCE</h3>
+            <div className="heading-line" />
+
+            {/* Official Municipal Website Link */}
+            <a
+              href="https://stotomaspampangagov.ph/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="official-portal-link"
+              title="Visit the Official Website of Municipality of Sto. Tomas, Pampanga"
+            >
+              <div className="portal-icon-wrap">
+                <Globe size={18} />
+              </div>
+              <div className="portal-text-wrap">
+                <span className="portal-label">Official LGU Website</span>
+                <span className="portal-url">
+                  stotomaspampangagov.ph
+                  <ExternalLink size={12} className="ext-icon" />
+                </span>
+              </div>
+            </a>
+
+            <div className="contact-details">
+              <div className="contact-item">
+                <MapPin size={17} className="info-icon" />
                 <span>Sto. Tomas Municipal Hall, San Vicente, Sto. Tomas, Pampanga 2020</span>
               </div>
-              <div className="footer-contact-item">
-                <Clock size={18} className="contact-icon" />
+              <div className="contact-item">
+                <Clock size={17} className="info-icon" />
                 <span>Monday – Friday: 8:00 AM – 5:00 PM</span>
               </div>
-              <div className="footer-contact-item">
-                <Mail size={18} className="contact-icon" />
+              <div className="contact-item">
+                <Mail size={17} className="info-icon" />
                 <span>engineering@stotomaspampanga.gov.ph</span>
               </div>
-              <div className="footer-contact-item">
-                <Phone size={18} className="contact-icon" />
-                <span>(045) 434-1234 / LGU Hotline 911</span>
+              <div className="contact-item">
+                <Phone size={17} className="info-icon" />
+                <span>(045) 434-1234 / LGU Public Helpdesk</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Legal & Copyright Bar */}
-      <div className="footer-bottom-bar">
-        <div className="bottom-bar-container">
-          <div className="bottom-left">
+      {/* Bottom Copyright & Legal Strip */}
+      <div className="footer-bottom-strip">
+        <div className="bottom-content">
+          <div className="copy-left">
             <span>© {new Date().getFullYear()} Republic of the Philippines • Municipality of Sto. Tomas, Pampanga.</span>
           </div>
-          <div className="bottom-right">
-            <span>Powered by <strong>e-Tayo</strong> Unified Permitting & Licensing System</span>
+          <div className="copy-right">
+            <span>Powered by <strong>e-Tayo</strong> Unified Digital Permitting &amp; Licensing System</span>
           </div>
         </div>
       </div>
 
       <style jsx>{`
-        .etayo-footer {
+        .etayo-white-footer {
           width: 100%;
-          background: #0f172a;
-          color: #f1f5f9;
+          background: #f8fafc;
+          color: #334155;
           font-family: inherit;
           margin-top: auto;
           position: relative;
           z-index: 10;
+          border-top: 1px solid #e2e8f0;
         }
 
-        /* Top Government Banner */
-        .footer-gov-banner {
-          background: linear-gradient(135deg, #044e29 0%, #065f46 50%, #02381e 100%);
-          border-top: 3px solid #10b981;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-          padding: 1.5rem 3.5rem;
-        }
-
-        .gov-banner-container {
-          max-width: 1400px;
-          margin: 0 auto;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 1.5rem;
-        }
-
-        .gov-branding-left {
-          display: flex;
-          align-items: center;
-          gap: 1.25rem;
-          flex-wrap: wrap;
-        }
-
-        .logo-box {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(255, 255, 255, 0.12);
-          border: 1px solid rgba(255, 255, 255, 0.25);
-          padding: 6px;
-          border-radius: 12px;
-          backdrop-filter: blur(8px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .gov-logo-img {
-          width: 68px;
-          height: 68px;
-          object-fit: contain;
-          display: block;
-        }
-
-        .gov-text-group {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .gov-republic-text {
-          font-size: 0.95rem;
-          font-weight: 600;
-          color: #ecfdf5;
-          letter-spacing: 0.02em;
-          text-transform: uppercase;
-        }
-
-        .gov-accent-line {
-          height: 3px;
+        /* Top Government Accent Line */
+        .footer-top-accent-bar {
+          height: 4px;
           width: 100%;
-          max-width: 320px;
-          background: #f87171; /* Coral line matching original banner */
-          margin: 4px 0 6px 0;
-          border-radius: 2px;
+          background: linear-gradient(90deg, #15803d 0%, #16a34a 35%, #059669 70%, #0d9488 100%);
         }
 
-        .gov-municipality-title {
-          font-size: 1.75rem;
-          font-weight: 900;
-          color: #ffffff;
-          letter-spacing: -0.02em;
-          margin: 0;
-          line-height: 1.15;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .gov-district-text {
-          font-size: 1rem;
-          font-weight: 700;
-          color: #d1fae5;
-          margin-top: 2px;
-          letter-spacing: 0.01em;
-        }
-
-        .gov-portal-tag {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 4px;
-        }
-
-        .portal-badge {
-          background: rgba(255, 255, 255, 0.2);
-          border: 1px solid rgba(255, 255, 255, 0.35);
-          color: #ffffff;
-          font-size: 0.75rem;
-          font-weight: 800;
-          padding: 4px 12px;
-          border-radius: 999px;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-        }
-
-        .portal-sub {
-          font-size: 0.82rem;
-          color: #a7f3d0;
-          font-weight: 600;
-        }
-
-        /* Middle Grid Section */
-        .footer-content-section {
-          padding: 3.5rem 3.5rem 2.5rem 3.5rem;
+        /* Container */
+        .footer-container {
           max-width: 1400px;
           margin: 0 auto;
+          padding: 3.5rem 3.5rem 3rem 3.5rem;
         }
 
-        .footer-grid-container {
+        /* Grid */
+        .footer-grid {
           display: grid;
-          grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
-          gap: 2.5rem;
+          grid-template-columns: 1.35fr 1.15fr 1fr 1.15fr;
+          gap: 3rem;
         }
 
         .footer-col {
           display: flex;
           flex-direction: column;
-          gap: 0.85rem;
         }
 
-        .footer-brand-title {
+        /* Logos Row (NO background boxes) */
+        .footer-logos-row {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1.25rem;
+        }
+
+        .gov-clean-logo {
+          width: 60px;
+          height: 60px;
+          object-fit: contain;
+          display: block;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+        }
+
+        /* Republic Header */
+        .republic-header {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          margin-bottom: 1rem;
         }
 
-        .footer-etayo-mark {
-          font-size: 1.6rem;
-          font-weight: 900;
-          letter-spacing: -0.03em;
-          background: linear-gradient(135deg, #60a5fa, #38bdf8);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .footer-submark {
-          font-size: 0.8rem;
-          font-weight: 700;
-          text-transform: uppercase;
+        .republic-sub {
+          font-size: 0.76rem;
+          font-weight: 800;
           letter-spacing: 0.08em;
-          color: #94a3b8;
+          color: #64748b;
+          text-transform: uppercase;
         }
 
-        .footer-desc {
-          font-size: 0.9rem;
+        .municipality-title {
+          font-size: 1.45rem;
+          font-weight: 900;
+          color: #0f172a;
+          letter-spacing: -0.02em;
+          margin: 3px 0 2px 0;
+          line-height: 1.2;
+        }
+
+        .district-tag {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #15803d;
+          letter-spacing: 0.01em;
+        }
+
+        .footer-lead-text {
+          font-size: 0.88rem;
           line-height: 1.65;
-          color: #94a3b8;
-          margin: 0;
+          color: #475569;
+          margin: 0 0 1.25rem 0;
         }
 
-        .footer-security-pill {
+        /* Compliance Badge */
+        .compliance-badge {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: rgba(16, 185, 129, 0.1);
-          border: 1px solid rgba(16, 185, 129, 0.25);
+          background: #ecfdf5;
+          border: 1px solid #a7f3d0;
           padding: 6px 12px;
           border-radius: 8px;
           font-size: 0.78rem;
-          color: #34d399;
+          color: #065f46;
           font-weight: 600;
-          margin-top: 0.5rem;
+          width: fit-content;
         }
 
-        .footer-col-title {
-          font-size: 0.95rem;
+        .badge-icon {
+          color: #059669;
+          flex-shrink: 0;
+        }
+
+        /* Headings */
+        .footer-heading {
+          font-size: 0.85rem;
           font-weight: 800;
+          letter-spacing: 0.08em;
           text-transform: uppercase;
-          letter-spacing: 0.06em;
-          color: #f8fafc;
+          color: #0f172a;
           margin: 0 0 0.5rem 0;
-          position: relative;
-          padding-bottom: 8px;
         }
 
-        .footer-col-title::after {
-          content: "";
-          position: absolute;
-          bottom: 0;
-          left: 0;
+        .heading-line {
           width: 32px;
-          height: 2px;
-          background: #38bdf8;
+          height: 2.5px;
+          background: #16a34a;
           border-radius: 2px;
+          margin-bottom: 1.25rem;
         }
 
-        .footer-links {
+        /* About Us Column */
+        .about-text {
+          font-size: 0.88rem;
+          line-height: 1.65;
+          color: #475569;
+          margin: 0 0 0.75rem 0;
+        }
+
+        .about-highlights {
+          list-style: none;
+          padding: 0;
+          margin: 0.5rem 0 0 0;
+          display: flex;
+          flex-direction: column;
+          gap: 0.45rem;
+        }
+
+        .about-highlights li {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.84rem;
+          color: #334155;
+          font-weight: 500;
+        }
+
+        .list-icon {
+          color: #16a34a;
+          flex-shrink: 0;
+        }
+
+        /* Offices Column */
+        .footer-links-list {
           list-style: none;
           padding: 0;
           margin: 0;
           display: flex;
           flex-direction: column;
-          gap: 0.65rem;
+          gap: 0.7rem;
         }
 
-        .footer-links li a {
-          color: #94a3b8;
+        .footer-links-list li span {
           font-size: 0.88rem;
-          transition: all 0.2s ease;
-          display: inline-flex;
+          color: #475569;
+          line-height: 1.45;
+          transition: color 0.15s ease;
+        }
+
+        .footer-links-list li span:hover {
+          color: #0f172a;
+        }
+
+        /* Official Portal Link */
+        .official-portal-link {
+          display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 12px;
+          padding: 10px 14px;
+          background: #ffffff;
+          border: 1.5px solid #bbf7d0;
+          border-radius: 10px;
+          text-decoration: none;
+          margin-bottom: 1.25rem;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
         }
 
-        .footer-links li a:hover {
-          color: #38bdf8;
-          transform: translateX(4px);
+        .official-portal-link:hover {
+          border-color: #16a34a;
+          background: #f0fdf4;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(22, 163, 74, 0.12);
         }
 
-        .footer-links li span {
-          color: #94a3b8;
-          font-size: 0.88rem;
+        .portal-icon-wrap {
+          width: 36px;
+          height: 36px;
+          background: #dcfce7;
+          color: #15803d;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
         }
 
-        .footer-contact-list {
+        .portal-text-wrap {
           display: flex;
           flex-direction: column;
-          gap: 0.75rem;
         }
 
-        .footer-contact-item {
+        .portal-label {
+          font-size: 0.72rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #15803d;
+        }
+
+        .portal-url {
+          font-size: 0.88rem;
+          font-weight: 800;
+          color: #0f172a;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .ext-icon {
+          color: #16a34a;
+        }
+
+        /* Contact Details */
+        .contact-details {
+          display: flex;
+          flex-direction: column;
+          gap: 0.85rem;
+        }
+
+        .contact-item {
           display: flex;
           align-items: flex-start;
           gap: 10px;
           font-size: 0.86rem;
-          color: #94a3b8;
+          color: #475569;
           line-height: 1.5;
         }
 
-        .contact-icon {
-          color: #38bdf8;
+        .info-icon {
+          color: #16a34a;
           flex-shrink: 0;
           margin-top: 2px;
         }
 
-        /* Bottom Copyright Bar */
-        .footer-bottom-bar {
-          background: #090d16;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
+        /* Bottom Legal Strip */
+        .footer-bottom-strip {
+          background: #f1f5f9;
+          border-top: 1px solid #e2e8f0;
           padding: 1.25rem 3.5rem;
-          font-size: 0.82rem;
+          font-size: 0.83rem;
           color: #64748b;
         }
 
-        .bottom-bar-container {
+        .bottom-content {
           max-width: 1400px;
           margin: 0 auto;
           display: flex;
@@ -425,51 +451,41 @@ export default function Footer() {
           gap: 1rem;
         }
 
-        .bottom-right strong {
-          color: #94a3b8;
+        .copy-right strong {
+          color: #334155;
         }
 
         /* Responsive Breakpoints */
-        @media (max-width: 1024px) {
-          .footer-grid-container {
+        @media (max-width: 1100px) {
+          .footer-grid {
             grid-template-columns: 1fr 1fr;
-            gap: 2rem;
+            gap: 2.5rem;
           }
-          .footer-gov-banner,
-          .footer-content-section,
-          .footer-bottom-bar {
+          .footer-container,
+          .footer-bottom-strip {
             padding-left: 2rem;
             padding-right: 2rem;
           }
         }
 
         @media (max-width: 768px) {
-          .footer-gov-banner {
-            padding: 1.25rem 1.25rem;
+          .footer-container {
+            padding: 2.5rem 1.25rem 2rem 1.25rem;
           }
-          .footer-content-section {
-            padding: 2rem 1.25rem 1.5rem 1.25rem;
-          }
-          .footer-bottom-bar {
+          .footer-bottom-strip {
             padding: 1rem 1.25rem;
           }
-          .footer-grid-container {
+          .footer-grid {
             grid-template-columns: 1fr;
-            gap: 2rem;
+            gap: 2.25rem;
           }
-          .gov-portal-tag {
-            align-items: flex-start;
-          }
-          .gov-municipality-title {
-            font-size: 1.4rem;
-          }
-          .gov-logo-img {
-            width: 54px;
-            height: 54px;
-          }
-          .bottom-bar-container {
+          .bottom-content {
             flex-direction: column;
             align-items: flex-start;
+          }
+          .gov-clean-logo {
+            width: 52px;
+            height: 52px;
           }
         }
       `}</style>
