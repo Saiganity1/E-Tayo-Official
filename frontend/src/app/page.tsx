@@ -145,12 +145,13 @@ export default function Home() {
         }
 
         .hero-section {
-          min-height: calc(100vh - 65px);
+          min-height: 100vh;
+          min-height: 100dvh;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding-top: 5rem;
-          padding-bottom: 3.5rem;
+          padding-top: 4.5rem;
+          padding-bottom: 2.5rem;
           text-align: center;
           position: relative;
           overflow: hidden;
@@ -173,49 +174,50 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          max-width: 860px;
+          max-width: 920px;
           padding: 0 1.5rem;
         }
 
         .hero-badge {
           background: rgba(37, 99, 235, 0.1);
           color: var(--color-primary);
-          padding: 0.45rem 1.15rem;
+          padding: 0.5rem 1.35rem;
           border-radius: var(--radius-pill);
           font-weight: 800;
-          font-size: 0.82rem;
-          letter-spacing: 0.06em;
+          font-size: 0.88rem;
+          letter-spacing: 0.07em;
           text-transform: uppercase;
-          margin-bottom: 1.25rem;
+          margin-bottom: 1.5rem;
         }
 
         .hero-title {
-          font-size: clamp(2.4rem, 5vw, 3.75rem);
+          font-size: clamp(3rem, 6.5vw, 4.8rem);
           font-weight: 900;
-          line-height: 1.15;
+          line-height: 1.1;
           color: var(--text-primary);
-          margin-bottom: 1rem;
+          margin-bottom: 1.35rem;
           letter-spacing: -0.03em;
         }
 
         .hero-subtitle {
-          font-size: 1.08rem;
+          font-size: 1.2rem;
           color: var(--text-secondary);
-          max-width: 720px;
-          margin-bottom: 2rem;
-          line-height: 1.6;
+          max-width: 780px;
+          margin-bottom: 2.5rem;
+          line-height: 1.65;
         }
 
         .hero-actions {
           display: flex;
-          gap: 1rem;
+          gap: 1.25rem;
           justify-content: center;
           flex-wrap: wrap;
         }
 
         .btn-large {
-          padding: 0.85rem 1.85rem;
-          font-size: 1.02rem;
+          padding: 1rem 2.25rem;
+          font-size: 1.1rem;
+          border-radius: 14px;
         }
       `}</style>
     </main>
