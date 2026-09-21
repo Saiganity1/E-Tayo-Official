@@ -11,6 +11,7 @@ import {
   generateStructuralPermitPdf, 
   generateElectricalPermitPdf, 
   generateSanitaryPermitPdf,
+  generateMechanicalPermitPdf,
   UnifiedPermitFormData
 } from "../../../../../utils/unifiedPermitPdfGenerator";
 import { PROJECT_TYPES_MATRIX, ProjectTypeItem, PermitFormMatrix } from "../../../../../data/projectTypeMatrix";
@@ -299,7 +300,7 @@ export default function StaffEvaluatePage() {
           || PROJECT_TYPES_MATRIX[0];
 
         const cleanSeq = app.id ? app.id.replace(/^[A-Za-z]+-/i, "") : "2026-0001";
-        const issuedDate = (app as any).permitIssuedDate || (app as any).dateIssued || (app.status === "approved" || app.status === "released" ? (app.dateApproved || app.dateSubmitted || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined);
+        const issuedDate = (app as any).permitIssuedDate || (app as any).dateIssued || (app.status === "approved" || app.status === "released" ? ((app as any).dateApproved || app.dateSubmitted || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined);
         const formData: UnifiedPermitFormData = {
           applicationNo: app.id,
           status: app.status,
@@ -310,6 +311,7 @@ export default function StaffEvaluatePage() {
           structuralPermitNo: (app as any).structuralPermitNo || `SP-${cleanSeq}`,
           sanitaryPermitNo: (app as any).sanitaryPermitNo || (app.status === "approved" || app.status === "released" ? `P-${cleanSeq}` : undefined),
           plumbingPermitNo: (app as any).plumbingPermitNo || (app.status === "approved" || app.status === "released" ? `P-${cleanSeq}` : undefined),
+          mechanicalPermitNo: (app as any).mechanicalPermitNo || (app.status === "approved" || app.status === "released" ? `MP-${cleanSeq}` : undefined),
           permitIssuedDate: issuedDate,
           dateIssued: issuedDate,
           approvalDate: (app as any).approvalDate || (app as any).dateApproved,
@@ -380,6 +382,61 @@ export default function StaffEvaluatePage() {
           installationInChargeTIN: (app as any).installationInChargeTIN,
           installationInChargeSignedDate: (app as any).installationInChargeSignedDate,
           installationInChargeSignature: (app as any).installationInChargeSignature,
+          mechanicalScopeOfWork: (app as any).mechanicalScopeOfWork || (app as any).scopeOfWork,
+          mechanicalScopeDetails: (app as any).mechanicalScopeDetails,
+          boiler: (app as any).boiler,
+          pressureVessel: (app as any).pressureVessel,
+          internalCombustionEngine: (app as any).internalCombustionEngine,
+          refrigerationIce: (app as any).refrigerationIce,
+          windowTypeAircon: (app as any).windowTypeAircon,
+          packagedSplitAircon: (app as any).packagedSplitAircon,
+          mechanicalOthers: (app as any).mechanicalOthers,
+          mechanicalOthersSpecify: (app as any).mechanicalOthersSpecify,
+          centralAircon: (app as any).centralAircon,
+          mechanicalVentilation: (app as any).mechanicalVentilation,
+          escalator: (app as any).escalator,
+          movingSidewalk: (app as any).movingSidewalk,
+          freightElevator: (app as any).freightElevator,
+          passengerElevator: (app as any).passengerElevator,
+          cableCar: (app as any).cableCar,
+          dumbwaiter: (app as any).dumbwaiter,
+          pumps: (app as any).pumps,
+          compressedAirGas: (app as any).compressedAirGas,
+          pneumaticTubesConveyors: (app as any).pneumaticTubesConveyors,
+          funicular: (app as any).funicular,
+          mechanicalPreparedBy: (app as any).mechanicalPreparedBy || (app as any).mechanicalEngineerName,
+          machineryType: (app as any).machineryType,
+          machineryBrand: (app as any).machineryBrand,
+          machineryCapacity: (app as any).machineryCapacity,
+          machineryPower: (app as any).machineryPower,
+          machinerySpeed: (app as any).machinerySpeed,
+          machineryStoreys: (app as any).machineryStoreys,
+          mechanicalEngineerName: (app as any).mechanicalEngineerName,
+          mechanicalEngineerPRC: (app as any).mechanicalEngineerPRC,
+          mechanicalEngineerPRCValidity: (app as any).mechanicalEngineerPRCValidity,
+          mechanicalEngineerPSME: (app as any).mechanicalEngineerPSME,
+          mechanicalEngineerAddress: (app as any).mechanicalEngineerAddress,
+          mechanicalEngineerPTRDate: (app as any).mechanicalEngineerPTRDate,
+          mechanicalEngineerPTRIssuedAt: (app as any).mechanicalEngineerPTRIssuedAt,
+          mechanicalEngineerSignedDate: (app as any).mechanicalEngineerSignedDate,
+          mechanicalEngineerSignature: (app as any).mechanicalEngineerSignature,
+          sameAsDesignMechanicalEngineer: (app as any).sameAsDesignMechanicalEngineer,
+          mechSupervisorRole: (app as any).mechSupervisorRole,
+          mechSupervisorName: (app as any).mechSupervisorName,
+          mechSupervisorAddress: (app as any).mechSupervisorAddress,
+          mechSupervisorPRC: (app as any).mechSupervisorPRC,
+          mechSupervisorPRCValidity: (app as any).mechSupervisorPRCValidity,
+          mechSupervisorPTR: (app as any).mechSupervisorPTR,
+          mechSupervisorPTRDate: (app as any).mechSupervisorPTRDate,
+          mechSupervisorPTRIssued: (app as any).mechSupervisorPTRIssued,
+          mechSupervisorPTRIssuedAt: (app as any).mechSupervisorPTRIssuedAt,
+          mechSupervisorTIN: (app as any).mechSupervisorTIN,
+          mechSupervisorSignedDate: (app as any).mechSupervisorSignedDate,
+          mechSupervisorSignature: (app as any).mechSupervisorSignature,
+          applicantGovIdDateIssued: (app as any).applicantGovIdDateIssued || (app as any).govIdDateIssued,
+          applicantGovIdPlaceIssued: (app as any).applicantGovIdPlaceIssued || (app as any).govIdPlaceIssued,
+          applicantCtcNo: (app as any).applicantCtcNo || (app as any).govIdNo,
+          lotOwnerSignedDate: (app as any).lotOwnerSignedDate,
           submissionDate: app.dateSubmitted || new Date().toLocaleDateString(),
         };
 
@@ -493,6 +550,33 @@ export default function StaffEvaluatePage() {
             fileName: `${app.id}_Sanitary_Plumbing_Permit_PL.pdf`,
             isOfficialForm: true,
           });
+        }
+
+        // 5. Mechanical Permit (MP)
+        if (pTypeObj.matrix?.mechanicalPermit === 'required' || pTypeObj.matrix?.mechanicalPermit === 'conditional' || (app as any).mechanicalPermitNo || (app as any).machineryType || (app as any).mechanicalScopeOfWork) {
+          try {
+            const mechB64 = await generateMechanicalPermitPdf(formData);
+            const mechUrl = createBlobFromBase64(mechB64);
+            docs.push({
+              id: "mechanical-permit-tab",
+              title: "Official Mechanical Permit Form (NBC Form M-01)",
+              tabLabel: "Mechanical (MP)",
+              type: "pdf",
+              url: mechUrl,
+              fileName: `${app.id}_Mechanical_Permit_MP.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            docs.push({
+              id: "mechanical-permit-tab",
+              title: "Official Mechanical Permit Form (NBC Form M-01)",
+              tabLabel: "Mechanical (MP)",
+              type: "pdf",
+              url: "/templates/MECHANICAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+              fileName: `${app.id}_Mechanical_Permit_MP.pdf`,
+              isOfficialForm: true,
+            });
+          }
         }
       }
 
@@ -672,17 +756,18 @@ export default function StaffEvaluatePage() {
     const updatedApp = {
       ...app,
       status: "approved" as const,
-      dateApproved: app.dateApproved || issuedDateFormatted,
+      dateApproved: (app as any).dateApproved || issuedDateFormatted,
       dateIssued: (app as any).dateIssued || issuedDateFormatted,
       permitIssuedDate: (app as any).permitIssuedDate || issuedDateFormatted,
       sanitaryPermitNo: (app as any).sanitaryPermitNo || `P-${cleanSeq}`,
       plumbingPermitNo: (app as any).plumbingPermitNo || `P-${cleanSeq}`,
+      mechanicalPermitNo: (app as any).mechanicalPermitNo || `MP-${cleanSeq}`,
       trackingSteps: updatedTracking,
       historyLog: updatedHistory,
       remarks: decisionNotes,
     };
 
-    await updateApplication(updatedApp);
+    await updateApplication(updatedApp as any);
 
     // 1. Record in Admin System Audit Logs
     try {

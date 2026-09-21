@@ -228,6 +228,31 @@ export interface UnifiedPermitFormData {
   machineryStoreys?: string;
   electricalLoadKva?: string;
   serviceVoltage?: string;
+  mechanicalScopeOfWork?: string;
+  mechanicalScopeDetails?: string;
+
+  // Mechanical Box 2: Installation and Operation of
+  boiler?: boolean;
+  pressureVessel?: boolean;
+  internalCombustionEngine?: boolean;
+  refrigerationIce?: boolean;
+  windowTypeAircon?: boolean;
+  packagedSplitAircon?: boolean;
+  mechanicalOthers?: boolean;
+  mechanicalOthersSpecify?: string;
+  centralAircon?: boolean;
+  mechanicalVentilation?: boolean;
+  escalator?: boolean;
+  movingSidewalk?: boolean;
+  freightElevator?: boolean;
+  passengerElevator?: boolean;
+  cableCar?: boolean;
+  dumbwaiter?: boolean;
+  pumps?: boolean;
+  compressedAirGas?: boolean;
+  pneumaticTubesConveyors?: boolean;
+  funicular?: boolean;
+  mechanicalPreparedBy?: string;
 
   // Electronics details
   telecomScope?: string;
@@ -380,9 +405,31 @@ export interface UnifiedPermitFormData {
   mechanicalEngineerPRCValidity?: string;
   mechanicalEngineerPSME?: string;
   mechanicalEngineerPTR?: string;
+  mechanicalEngineerPTRDate?: string;
   mechanicalEngineerPTRIssued?: string;
   mechanicalEngineerPTRIssuedAt?: string;
   mechanicalEngineerTIN?: string;
+  mechanicalEngineerSignedDate?: string;
+  mechanicalEngineerSignature?: string;
+
+  // Supervisor / In-Charge of Mechanical Works (Box 4)
+  sameAsDesignMechanicalEngineer?: boolean;
+  mechSupervisorRole?: "PME" | "ME";
+  mechSupervisorName?: string;
+  mechSupervisorAddress?: string;
+  mechSupervisorPRC?: string;
+  mechSupervisorPRCValidity?: string;
+  mechSupervisorPTR?: string;
+  mechSupervisorPTRDate?: string;
+  mechSupervisorPTRIssued?: string;
+  mechSupervisorPTRIssuedAt?: string;
+  mechSupervisorTIN?: string;
+  mechSupervisorSignedDate?: string;
+  mechSupervisorSignature?: string;
+
+  // Building Owner & Lot Owner extra fields
+  applicantGovIdDateIssued?: string;
+  applicantGovIdPlaceIssued?: string;
 
   electronicsEngineerName?: string;
   electronicsEngineerAddress?: string;
@@ -2237,75 +2284,314 @@ export async function generateMechanicalPermitPdf(data: UnifiedPermitFormData): 
     p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "APP-2026-6636", 45, 735.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 85, 722.0, 8, false);
+  // Header: 1. APPLICATION NO. inside box [30.4, 166.9], center x = 98.65, y = 741.5
+  const rawAppNo = safeText(data.applicationNo || "APP-2026-6636").trim();
+  const appNoW = fontBold.widthOfTextAtSize(rawAppNo, 8.5);
+  p1.drawText(rawAppNo, { x: 98.65 - appNoW / 2, y: 741.5, size: 8.5, font: fontBold, color: darkNavy });
 
-  // Box 1: Owner
+  // Date of Application centered above underline [28.8, 166.0], y = 724.0
+  const appDate = safeText(data.submissionDate || "Sep 17, 2026").trim();
+  const appDateW = fontRegular.widthOfTextAtSize(appDate, 8.0);
+  p1.drawText(appDate, { x: 98.65 - appDateW / 2, y: 724.0, size: 8.0, font: fontRegular, color: darkNavy });
+
+  // Header: 2. MECHANICAL PERMIT NO. inside box [216.5, 374.5], center x = 295.5, y = 741.5
+  // and Date Issued above underline [216.5, 374.5], y = 724.0
+  const cleanSeq = safeText(data.applicationNo || "2026-6636")
+    .replace(/^(APP|UNIFIED|PERMIT|DOC)[\s\-#:]*(TEST-)?/i, "")
+    .trim() || "2026-6636";
+
+  const isApprovedOrIssued =
+    data.isApproved === true ||
+    data.status === "approved" ||
+    data.status === "released" ||
+    Boolean(data.permitIssuedDate) ||
+    Boolean(data.dateIssued) ||
+    Boolean(data.mechanicalPermitNo) ||
+    (Boolean(data.permitNo) && !data.permitNo?.startsWith("AP-") && !data.permitNo?.startsWith("BP-") && !data.permitNo?.startsWith("EP-") && !data.permitNo?.startsWith("P-") && !data.permitNo?.startsWith("SP-")) ||
+    (!data.status); // Default to preview if no submission status is provided (e.g. Form Tester)
+
+  if (isApprovedOrIssued) {
+    const rawMpNo = (
+      data.mechanicalPermitNo ||
+      (data.permitNo && !data.permitNo.startsWith("AP-") && !data.permitNo.startsWith("BP-") && !data.permitNo.startsWith("EP-") && !data.permitNo.startsWith("P-") && !data.permitNo.startsWith("SP-") ? data.permitNo : "") ||
+      `MP-${cleanSeq}`
+    ).trim();
+
+    if (rawMpNo) {
+      const mpNoW = fontBold.widthOfTextAtSize(rawMpNo, 8.5);
+      p1.drawText(rawMpNo, { x: 295.5 - mpNoW / 2, y: 741.5, size: 8.5, font: fontBold, color: darkNavy });
+    }
+
+    const issuedDate = safeText(data.permitIssuedDate || data.dateIssued || data.submissionDate || "Sep 17, 2026").trim();
+    if (issuedDate) {
+      const issuedDateW = fontRegular.widthOfTextAtSize(issuedDate, 8.0);
+      p1.drawText(issuedDate, { x: 295.5 - issuedDateW / 2, y: 724.0, size: 8.0, font: fontRegular, color: darkNavy });
+    }
+  }
+
+  // Header: 3. BUILDING PERMIT NO. inside box [415.8, 577.6], center x = 496.7, y = 743.0
+  // Auto-gathered if project is associated with a Building Permit, or if buildingPermitNo is provided
+  const isBpRequired =
+    !data.projectType ||
+    data.projectType.matrix?.buildingPermit === 'required' ||
+    data.projectType.matrix?.buildingPermit === 'conditional' ||
+    Boolean(data.buildingPermitNo);
+
+  const rawBpNo = (
+    data.buildingPermitNo ||
+    (data.permitNo?.startsWith("BP-") ? data.permitNo : "") ||
+    (isBpRequired ? (data.applicationNo ? `BP-${cleanSeq}` : "BP-2026-0001") : "")
+  ).trim();
+
+  if (rawBpNo) {
+    const bpNoW = fontBold.widthOfTextAtSize(rawBpNo, 8.5);
+    p1.drawText(rawBpNo, { x: 496.7 - bpNoW / 2, y: 743.0, size: 8.5, font: fontBold, color: darkNavy });
+  }
+
+  // Box 1: Owner (baseline y = 663.0)
   const { lastName, firstName, mi, middleName } = parseApplicantName(data);
   drawText(lastName, 166, 663.0, 8.5, true, 20);
   drawText(firstName, 256, 663.0, 8.5, true, 20);
   drawText(middleName || mi, 355, 663.0, 8, true);
   drawText(data.applicantTIN || "000-123-456-000", 433, 663.0, 8, false);
 
-  // Form of Ownership & Occupancy
-  drawText(data.formOfOwnership || "INDIVIDUAL", 230, 635.0, 8, false, 25);
-  drawText((data.projectType?.category || "Residential").toUpperCase(), 468, 635.0, 8, false, 25);
-
-  // Address: moved higher (+4px)
-  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 200, 616.0, 7.5, false, 35);
-  drawText(data.applicantPhone || "0917-123-4567", 465, 616.0, 7.5, true);
-  drawText(data.barangay || "Poblacion", 80, 596.0, 7.5, false, 20);
-  drawText("Sto. Tomas, Pampanga", 280, 596.0, 7.5, false, 25);
-
-  // Location of installation: moved higher (+4px)
-  drawText(data.lotNo || "Lot 12", 195, 570.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 295, 570.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 390, 570.0, 7.5, true, 14);
-  drawText(data.taxDecNo || "TD-2026-0012", 515, 570.0, 7.5, false);
-
-  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 70, 552.0, 7.5, false, 22);
-  drawText(data.barangay || "Poblacion", 245, 552.0, 7.5, true, 20);
-  drawText("Sto. Tomas, Pampanga", 460, 552.0, 7.5, true, 22);
-
-  // Scope of work
-  drawCheck(52, 532.0); // New Construction
-
-  // Box 2: Installation and Operation
-  drawCheck(34, 432.0); // Packaged / Split type aircon
-  drawCheck(215, 468.0); // Mechanical ventilation
-  drawCheck(354, 468.0); // Pumps
-
-  // Box 3: Professional Mechanical Engineer: moved higher (+4px)
-  const pmeName = data.mechanicalEngineerName || "Engr. Ricardo Gomez, PME";
-  drawText(pmeName.toUpperCase(), 60, 329.0, 8.5, true);
-  drawText("Sto. Tomas, Pampanga", 50, 302.0, 7.5, false);
-  drawText(data.mechanicalEngineerPRC || "PRC-0055123", 50, 282.0, 7.5, false);
-  drawText(data.mechanicalEngineerPRCValidity || "2028-12-31", 175, 282.0, 7.5, false);
-  drawText(data.mechanicalEngineerPTR || "PTR-ST-2026-7789", 50, 262.0, 7.5, false);
-  drawText(data.mechanicalEngineerPTRIssued || "Jan 05, 2026", 175, 262.0, 7.5, false);
-  drawText(data.mechanicalEngineerTIN || "112-445-889-000", 50, 242.0, 7.5, false);
-
-  // Box 5: Owner: moved higher (+5px)
-  if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 60, 115.0, 110, 30);
+  // Form of Ownership & Occupancy (baseline y = 635.0)
+  const bpEnterprise = data.constructionOwnedByEnterprise || data.corporationName || data.enterpriseName || (data.formOfOwnership?.includes("INDIVIDUAL") ? "N/A" : "");
+  if (bpEnterprise && bpEnterprise !== "N/A") {
+    drawText(bpEnterprise.toUpperCase(), 35, 635.0, 7.5, false, 25);
+  } else if (bpEnterprise === "N/A") {
+    drawText("N/A", 35, 635.0, 7.5, false);
   }
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 60, 115.0, 8.5, true);
-  drawText(data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga", 50, 68.0, 7.5, false);
-  drawText(data.govIdNo || "CTC-2026-00192", 50, 50.0, 7.5, false);
+  const formOfOwnershipText = (data.formOfOwnership || "INDIVIDUAL / OWNER").toUpperCase();
+  drawText(formOfOwnershipText, 240, 635.0, 8, false, 25);
+  drawText((data.projectType?.category || "Residential").toUpperCase(), 430, 635.0, 8, false, 25);
 
-  // Box 6: With My Consent (Lot Owner)
-  if (data.lotOwnerConsent || data.lotOwnerName) {
-    const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase();
-    if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 360, 168.0, 110, 30);
+  // Address: Line 1 (NO., STREET, TEL FAX NO.) baseline y = 621.0
+  const addr = parseApplicantAddress(data);
+  let houseNo = "";
+  let streetName = addr.noStreet;
+  const matchNo = addr.noStreet.match(/^(\d+[\w\-\/]*|[A-Z]?\d+)\s+(.*)$/i);
+  if (matchNo) {
+    houseNo = matchNo[1];
+    streetName = matchNo[2];
+  }
+  if (houseNo) {
+    drawText(houseNo, 118, 621.0, 7.5, false, 8);
+  }
+  drawText(streetName, 198, 621.0, 7.5, false, 32);
+  drawText(addr.contactNo || data.applicantPhone || "0917-123-4567", 485, 621.0, 7.5, true);
+
+  // Address: Line 2 (BARANGAY, CITY/MUNICIPALITY) baseline y = 603.5
+  drawText(addr.barangay || "POBLACION", 80, 603.5, 7.5, false, 20);
+  drawText(addr.municipality || "STO. TOMAS, PAMPANGA", 275, 603.5, 7.5, false, 25);
+
+  // Location of installation: Line 1 (LOT NO., BLK. NO., TC NO., TAX DEC. NO.) baseline y = 593.0
+  const cleanLot = safeText(data.lotNo || "12").replace(/^lot\s*/i, "").trim();
+  const cleanBlk = safeText(data.blockNo || "4").replace(/^blk\s*/i, "").trim();
+  drawText(cleanLot, 205, 593.0, 7.5, true);
+  drawText(cleanBlk, 305, 593.0, 7.5, true);
+  drawText(data.tctNo || "TCT-123456", 390, 593.0, 7.5, true, 14);
+  drawText(data.taxDecNo || "TD-2026-0012", 515, 593.0, 7.5, false);
+
+  // Location of installation: Line 2 (STREET, BARANGAY, CITY/MUNICIPALITY) baseline y = 574.5
+  const rawProjStreet = safeText(data.projectAddress || "Sunset Valley Subd.").replace(/^(lot\s*\w+,?\s*blk\s*\w+,?\s*)/i, "").trim();
+  drawText(rawProjStreet, 65, 574.5, 7.5, false, 24);
+  drawText(data.barangay || "POBLACION", 245, 574.5, 7.5, true, 20);
+  drawText("STO. TOMAS, PAMPANGA", 458, 574.5, 7.5, true, 22);
+
+  // Scope of Work: Checkbox + Detail Underlines
+  const scope = (data.mechanicalScopeOfWork || data.scopeOfWork || "NEW CONSTRUCTION").toUpperCase();
+  const scopeDetail = safeText(data.mechanicalScopeDetails || data.scopeOfWorkDetails || data.scopeOthers || "").trim();
+
+  // Column 1 (x = 52.5)
+  if (scope.includes("NEW") || scope.includes("CONSTRUCT")) {
+    drawCheck(52.5, 554.0); // [X] NEW CONSTRUCTION
+    if (scopeDetail) drawText(scopeDetail, 150, 554.5, 7.0, false, 15);
+  } else if (scope.includes("ERECT")) {
+    drawCheck(52.5, 544.5); // [X] ERECTION
+    if (scopeDetail) drawText(scopeDetail, 120, 545.0, 7.0, false, 18);
+  } else if (scope.includes("ADD")) {
+    drawCheck(52.5, 535.5); // [X] ADDITION
+    if (scopeDetail) drawText(scopeDetail, 115, 536.0, 7.0, false, 18);
+  } else if (scope.includes("ALTER")) {
+    drawCheck(52.5, 526.5); // [X] ALTERATION
+    if (scopeDetail) drawText(scopeDetail, 125, 527.0, 7.0, false, 18);
+  // Column 2 (x = 208.8)
+  } else if (scope.includes("RENOV")) {
+    drawCheck(208.8, 553.5); // [X] RENOVATION
+    if (scopeDetail) drawText(scopeDetail, 275, 554.0, 7.0, false, 15);
+  } else if (scope.includes("CONVER")) {
+    drawCheck(208.8, 544.5); // [X] CONVERSION
+    if (scopeDetail) drawText(scopeDetail, 280, 545.0, 7.0, false, 15);
+  } else if (scope.includes("REPAIR")) {
+    drawCheck(208.8, 535.5); // [X] REPAIR
+    if (scopeDetail) drawText(scopeDetail, 255, 536.0, 7.0, false, 18);
+  } else if (scope.includes("MOV")) {
+    drawCheck(208.8, 526.5); // [X] MOVING
+    if (scopeDetail) drawText(scopeDetail, 255, 527.0, 7.0, false, 18);
+  // Column 3 (x = 359.5)
+  } else if (scope.includes("RAIS")) {
+    drawCheck(359.5, 552.5); // [X] RAISING
+    if (scopeDetail) drawText(scopeDetail, 405, 553.0, 7.0, false, 30);
+  } else if (scope.includes("DEMOL")) {
+    drawCheck(359.5, 543.5); // [X] DEMOLITION
+    if (scopeDetail) drawText(scopeDetail, 420, 544.0, 7.0, false, 28);
+  } else if (scope.includes("ACCESSOR")) {
+    drawCheck(359.5, 535.0); // [X] ACCESSORY BUILDING/STRUCTURE
+    if (scopeDetail) drawText(scopeDetail, 515, 535.5, 7.0, false, 14);
+  } else {
+    if (scope.includes("OTHER")) {
+      drawCheck(359.5, 526.0); // [X] OTHERS (SPECIFY)
+      if (scopeDetail) drawText(scopeDetail, 440, 526.5, 7.0, false, 25);
+    } else {
+      drawCheck(52.5, 554.0); // Default to NEW CONSTRUCTION
+      if (scopeDetail) drawText(scopeDetail, 150, 554.5, 7.0, false, 15);
     }
-    drawText(lotName, 360, 172.0, 8.5, true, 26);
-    drawText(data.submissionDate || "Jan 08, 2026", 415, 155.0, 7.5, false);
-    drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", 330, 138.0, 7.5, false, 40);
-    drawText(data.lotOwnerGovIdNo || "PRC-ID-00987654", 330, 116.0, 7.0, false);
-    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 425, 116.0, 7.0, false);
-    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 515, 116.0, 7.0, false);
+  }
+
+  // Box 2: Installation and Operation of (NBC Form M-01)
+  // Column 1 (x = 37.5)
+  if (data.boiler === true) drawCheck(37.5, 480.0);
+  if (data.pressureVessel === true) drawCheck(37.5, 470.8);
+  if (data.internalCombustionEngine === true) drawCheck(37.5, 461.6);
+  if (data.refrigerationIce === true) drawCheck(37.5, 452.5);
+  if (data.windowTypeAircon === true) drawCheck(37.5, 443.2);
+  if (data.packagedSplitAircon !== false) drawCheck(37.5, 434.0); // default true
+  if (data.mechanicalOthers === true || data.mechanicalOthersSpecify) {
+    drawCheck(37.5, 424.9);
+    if (data.mechanicalOthersSpecify) {
+      drawText(data.mechanicalOthersSpecify, 115.0, 424.9, 7.0, false, 24);
+    }
+  }
+
+  // Column 2 (x = 218.0)
+  if (data.centralAircon === true) drawCheck(218.0, 480.0);
+  if (data.mechanicalVentilation !== false) drawCheck(218.0, 470.8); // default true
+  if (data.escalator === true) drawCheck(218.0, 461.6);
+  if (data.movingSidewalk === true) drawCheck(218.0, 452.5);
+  if (data.freightElevator === true) drawCheck(218.0, 443.2);
+  if (data.passengerElevator === true) drawCheck(218.0, 434.0);
+  if (data.cableCar === true) drawCheck(218.0, 424.9);
+
+  // Column 3 (x = 357.5)
+  if (data.dumbwaiter === true) drawCheck(357.5, 480.0);
+  if (data.pumps !== false) drawCheck(357.5, 470.8); // default true
+  if (data.compressedAirGas === true) drawCheck(357.5, 461.6);
+  if (data.pneumaticTubesConveyors === true) drawCheck(357.5, 443.2);
+  if (data.funicular === true) drawCheck(357.5, 424.9);
+
+  // PREPARED BY: Design Professional underline at y = 405.0 -> baseline y = 406.0
+  const preparedByName = safeText(data.mechanicalPreparedBy || data.mechanicalEngineerName || "").trim();
+  if (preparedByName) {
+    drawText(preparedByName.toUpperCase(), 95.0, 406.0, 8.0, true);
+  }
+
+  // ==========================================
+  // BOX 3: DESIGN PROFESSIONAL, PLANS AND SPECIFICATION
+  // ==========================================
+  const pmeName = safeText(data.mechanicalEngineerName || "ENGR. LEONARDO V. TORRES, PME").toUpperCase();
+  if (data.mechanicalEngineerSignature) {
+    await embedSignatureImage(doc, p1, data.mechanicalEngineerSignature, 100, 315.0, 110, 26);
+  }
+  const pmeWidth = fontBold.widthOfTextAtSize(pmeName, 8.0);
+  drawText(pmeName, 155.35 - pmeWidth / 2, 323.0, 8.0, true);
+  drawText(data.mechanicalEngineerSignedDate || data.submissionDate || "Jan 08, 2026", 130.0, 295.1, 7.5, false);
+
+  // Address (cell y: 274.2 -> 293.1, label 'ADDRESS' at x: 27.2)
+  drawText(data.mechanicalEngineerAddress || "Sto. Tomas, Pampanga", 75.0, 285.0, 7.5, false, 35);
+
+  // PRC. NO. (x: 21.8 -> 147.8) & Validity (x: 147.8 -> 288.9)
+  drawText(data.mechanicalEngineerPRC || "0044556", 75.0, 266.5, 7.5, false, 12);
+  drawText(data.mechanicalEngineerPRCValidity || "2027-12-18", 195.0, 266.5, 7.5, false, 15);
+
+  // PTR NO. (x: 21.8 -> 147.8) & Date Issued (x: 147.8 -> 288.9)
+  drawText(data.mechanicalEngineerPTR || "PTR-ST-221100", 75.0, 256.6, 7.5, false, 14);
+  drawText(data.mechanicalEngineerPTRDate || data.mechanicalEngineerPTRIssued || "Jan 10, 2026", 210.0, 256.6, 7.5, false, 14);
+
+  // Issued at (x: 21.8 -> 147.8) & TIN (x: 147.8 -> 288.9)
+  drawText(data.mechanicalEngineerPTRIssuedAt || "Sto. Tomas, Pampanga", 75.0, 246.9, 7.0, false, 14);
+  drawText(data.mechanicalEngineerTIN || "678-901-234-000", 175.0, 246.9, 7.5, false, 18);
+
+  // ==========================================
+  // BOX 4: SUPERVISOR/IN-CHARGE OF MECHANICAL WORKS
+  // ==========================================
+  // Checkbox at y = 349.5: [ ] PROFESSIONAL MECHANICAL ENGINEER (x: 311.5) | [ ] MECHANICAL ENGINEER (x: 470.0)
+  if (data.mechSupervisorRole === "ME") {
+    p1.drawText("X", { x: 470.0, y: 349.5, size: 7.5, font: fontBold, color: darkNavy });
+  } else {
+    p1.drawText("X", { x: 311.5, y: 349.5, size: 7.5, font: fontBold, color: darkNavy }); // Default to PME
+  }
+
+  const supName = safeText(
+    data.mechSupervisorName ||
+    (data.sameAsDesignMechanicalEngineer !== false ? pmeName : "")
+  ).toUpperCase();
+
+  if (data.mechSupervisorSignature) {
+    await embedSignatureImage(doc, p1, data.mechSupervisorSignature, 390, 315.0, 110, 26);
+  } else if (data.sameAsDesignMechanicalEngineer !== false && data.mechanicalEngineerSignature) {
+    await embedSignatureImage(doc, p1, data.mechanicalEngineerSignature, 390, 315.0, 110, 26);
+  }
+
+  if (supName) {
+    const supWidth = fontBold.widthOfTextAtSize(supName, 8.0);
+    drawText(supName, 442.4 - supWidth / 2, 323.0, 8.0, true);
+  }
+  drawText(data.mechSupervisorSignedDate || data.submissionDate || "Jan 08, 2026", 425.0, 294.4, 7.5, false);
+
+  // Address (cell y: 273.6 -> 292.5, label 'ADDRESS' at x: 312.2)
+  drawText(data.mechSupervisorAddress || data.mechanicalEngineerAddress || "Sto. Tomas, Pampanga", 365.0, 284.5, 7.5, false, 35);
+
+  // PRC. NO. (x: 306.8 -> 439.8) & Validity (x: 439.8 -> 578.0)
+  drawText(data.mechSupervisorPRC || data.mechanicalEngineerPRC || "0044556", 365.0, 265.8, 7.5, false, 12);
+  drawText(data.mechSupervisorPRCValidity || data.mechanicalEngineerPRCValidity || "2027-12-18", 485.0, 265.8, 7.5, false, 15);
+
+  // PTR NO. (x: 306.8 -> 439.8) & Date Issued (x: 439.8 -> 578.0)
+  drawText(data.mechSupervisorPTR || data.mechanicalEngineerPTR || "PTR-ST-221100", 365.0, 256.0, 7.5, false, 14);
+  drawText(data.mechSupervisorPTRDate || data.mechSupervisorPTRIssued || data.mechanicalEngineerPTRDate || "Jan 10, 2026", 500.0, 256.0, 7.5, false, 14);
+
+  // Issued at (x: 306.8 -> 439.8) & TIN (x: 439.8 -> 578.0)
+  drawText(data.mechSupervisorPTRIssuedAt || data.mechanicalEngineerPTRIssuedAt || "Sto. Tomas, Pampanga", 365.0, 246.2, 7.0, false, 14);
+  drawText(data.mechSupervisorTIN || data.mechanicalEngineerTIN || "678-901-234-000", 465.0, 246.2, 7.5, false, 18);
+
+  // ==========================================
+  // BOX 5: BUILDING OWNER
+  // ==========================================
+  const ownerName = safeText(data.applicantName || "JUAN DELA CRUZ").toUpperCase();
+  if (data.applicantSignature) {
+    await embedSignatureImage(doc, p1, data.applicantSignature, 100, 168.0, 110, 26);
+  }
+  const ownerWidth = fontBold.widthOfTextAtSize(ownerName, 8.5);
+  drawText(ownerName, 156.0 - ownerWidth / 2, 176.5, 8.5, true);
+  drawText(data.submissionDate || "Jan 08, 2026", 135.0, 151.8, 7.5, false);
+
+  // Address (cell y: 129.3 -> 148.2, label 'ADDRESS' at x: 28.8)
+  drawText(data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga", 75.0, 135.5, 7.5, false, 36);
+
+  // C.T.C NO. (x: 23.4 -> 120.0), Date Issued (x: 120.0 -> 196.5), Place Issued (x: 196.5 -> 288.8)
+  drawText(data.applicantCtcNo || data.govIdNo || "CTC-2026-00192", 30.0, 113.5, 7.0, false, 16);
+  drawText(data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 08, 2026", 125.0, 113.5, 7.0, false, 14);
+  drawText(data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 202.0, 113.5, 7.0, false, 16);
+
+  // ==========================================
+  // BOX 6: WITH MY CONSENT: LOT OWNER
+  // ==========================================
+  if (data.lotOwnerConsent || data.lotOwnerName) {
+    const lotName = safeText(data.lotOwnerName || "DAVE SICAT").toUpperCase();
+    if (data.lotOwnerSignature) {
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 390, 168.0, 110, 26);
+    }
+    const lotWidth = fontBold.widthOfTextAtSize(lotName, 8.5);
+    drawText(lotName, 442.65 - lotWidth / 2, 176.5, 8.5, true);
+    drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", 425.0, 151.1, 7.5, false);
+
+    // Address (cell y: 129.3 -> 148.2, label 'ADDRESS' at x: 313.0)
+    drawText(data.lotOwnerAddress || "105 Sitio Visitas, Sto. Tomas, Pampanga", 365.0, 135.5, 7.5, false, 48);
+
+    // C.T.C NO. (x: 307.3 -> 404.1), Date Issued (x: 404.1 -> 480.6), Place Issued (x: 480.6 -> 578.0)
+    drawText(data.lotOwnerGovIdNo || "PRC-ID-00987654", 312.0, 113.5, 7.0, false, 16);
+    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 410.0, 113.5, 7.0, false, 14);
+    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 486.0, 113.5, 7.0, false, 16);
   }
 
   return await doc.saveAsBase64({ dataUri: false });

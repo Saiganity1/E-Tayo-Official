@@ -284,6 +284,30 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   machineryStoreys: "Ground & Second Floors",
   electricalLoadKva: "6.8 kVA",
   serviceVoltage: "230V, 1-Phase, 60Hz",
+  mechanicalScopeOfWork: "New Construction",
+  mechanicalScopeDetails: "",
+  // Mechanical Box 2
+  boiler: false,
+  pressureVessel: false,
+  internalCombustionEngine: false,
+  refrigerationIce: false,
+  windowTypeAircon: false,
+  packagedSplitAircon: true,
+  mechanicalOthers: false,
+  mechanicalOthersSpecify: "",
+  centralAircon: false,
+  mechanicalVentilation: true,
+  escalator: false,
+  movingSidewalk: false,
+  freightElevator: false,
+  passengerElevator: false,
+  cableCar: false,
+  dumbwaiter: false,
+  pumps: true,
+  compressedAirGas: false,
+  pneumaticTubesConveyors: false,
+  funicular: false,
+  mechanicalPreparedBy: "Engr. Antonio Gomez, PME",
 
   // Electronics
   telecomScope: "FTTH High-Speed Fiber Optic Data Infrastructure with Wi-Fi 6 Access Points",
@@ -427,9 +451,28 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   mechanicalEngineerPRCValidity: "2027-12-18",
   mechanicalEngineerPSME: "PSME-223344",
   mechanicalEngineerPTR: "PTR-ST-221100",
+  mechanicalEngineerPTRDate: "Jan 18, 2026",
   mechanicalEngineerPTRIssued: "Jan 18, 2026",
   mechanicalEngineerPTRIssuedAt: "Sto. Tomas",
   mechanicalEngineerTIN: "678-901-234-000",
+  mechanicalEngineerSignedDate: "Jan 19, 2026",
+  mechanicalEngineerSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih0p4xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+
+  // Box 4: Supervisor / In-Charge of Mechanical Works
+  sameAsDesignMechanicalEngineer: true,
+  mechSupervisorRole: "PME",
+  mechSupervisorName: "ENGR. LEONARDO V. TORRES, PME",
+  mechSupervisorAddress: "Sto. Tomas, Pampanga",
+  mechSupervisorPRC: "0044556",
+  mechSupervisorPRCValidity: "2027-12-18",
+  mechSupervisorPTR: "PTR-ST-221100",
+  mechSupervisorPTRDate: "Jan 18, 2026",
+  mechSupervisorPTRIssued: "Jan 18, 2026",
+  mechSupervisorPTRIssuedAt: "Sto. Tomas",
+  mechSupervisorTIN: "678-901-234-000",
+  mechSupervisorSignedDate: "Jan 19, 2026",
+  mechSupervisorSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih0p4xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+
 
   electronicsEngineerName: "ENGR. ALAN T. SANTOS, PECE",
   electronicsEngineerAddress: "Sto. Tomas, Pampanga",
@@ -455,6 +498,9 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   lotOwnerGovIdNo: "PRC-ID-00987654",
   lotOwnerGovIdDateIssued: "Jan 10, 2024",
   lotOwnerGovIdPlaceIssued: "Sto. Tomas",
+  lotOwnerSignedDate: "Jan 08, 2026",
+  applicantGovIdDateIssued: "Jan 08, 2026",
+  applicantGovIdPlaceIssued: "Sto. Tomas",
 
   // Corporation & Representative (for LC)
   corporationName: "",
@@ -3044,7 +3090,7 @@ export default function FormTestingStudio() {
                             </div>
                           </div>
 
-                          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem" }}>
                             <div>
                               <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
                                 Gov't Issued ID No.
@@ -3078,6 +3124,18 @@ export default function FormTestingStudio() {
                                 value={formData.lotOwnerGovIdPlaceIssued || ""}
                                 onChange={e => handleFieldChange("lotOwnerGovIdPlaceIssued", e.target.value)}
                                 placeholder="City / Municipality"
+                                style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569" }}>
+                                Date Signed
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.lotOwnerSignedDate || ""}
+                                onChange={e => handleFieldChange("lotOwnerSignedDate", e.target.value)}
+                                placeholder="e.g. Jan 08, 2026"
                                 style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
                               />
                             </div>
@@ -4062,14 +4120,163 @@ export default function FormTestingStudio() {
                 )}
 
                   {selectedForm.id === "MP" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Machinery / ACU Type</label>
-                        <input type="text" value={formData.machineryType || ""} onChange={e => handleFieldChange("machineryType", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>
+                          Scope of Work (NBC Form M-01 Box 1)
+                        </label>
+                        <select
+                          value={formData.mechanicalScopeOfWork || formData.scopeOfWork || "New Construction"}
+                          onChange={e => handleFieldChange("mechanicalScopeOfWork", e.target.value)}
+                          style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                        >
+                          <option value="New Construction">New Construction</option>
+                          <option value="Erection">Erection</option>
+                          <option value="Addition">Addition</option>
+                          <option value="Alteration">Alteration</option>
+                          <option value="Renovation">Renovation</option>
+                          <option value="Conversion">Conversion</option>
+                          <option value="Repair">Repair</option>
+                          <option value="Moving">Moving</option>
+                          <option value="Raising">Raising</option>
+                          <option value="Demolition">Demolition</option>
+                          <option value="Accessory Building/Structure">Accessory Building/Structure</option>
+                          <option value="Others (Specify)">Others (Specify)</option>
+                        </select>
                       </div>
+
                       <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Total Capacity / HP</label>
-                        <input type="text" value={formData.machineryCapacity || ""} onChange={e => handleFieldChange("machineryCapacity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>
+                          Scope Details (Prints on Form Underline)
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.mechanicalScopeDetails || formData.scopeOfWorkDetails || ""}
+                          onChange={e => handleFieldChange("mechanicalScopeDetails", e.target.value)}
+                          placeholder="e.g. Specific details or machinery location"
+                          style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                        />
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Machinery / ACU Type</label>
+                          <input type="text" value={formData.machineryType || ""} onChange={e => handleFieldChange("machineryType", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Total Capacity / HP</label>
+                          <input type="text" value={formData.machineryCapacity || ""} onChange={e => handleFieldChange("machineryCapacity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                      </div>
+
+                      {/* BOX 2 (TO BE ACCOMPLISHED BY THE DESIGN PROFESSIONAL) */}
+                      <div style={{ borderTop: "1.5px solid #0284c7", paddingTop: "10px", marginTop: "4px" }}>
+                        <span style={{ fontSize: "0.74rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>
+                          BOX 2 (TO BE ACCOMPLISHED BY THE DESIGN PROFESSIONAL)
+                        </span>
+                        <span style={{ fontSize: "0.71rem", fontWeight: "700", color: "#475569", display: "block", marginBottom: "8px" }}>
+                          INSTALLATION AND OPERATION OF:
+                        </span>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                          {/* Column 1 */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                            {[
+                              { key: "boiler", label: "BOILER" },
+                              { key: "pressureVessel", label: "PRESSURE VESSEL" },
+                              { key: "internalCombustionEngine", label: "INTERNAL COMBUSTION ENGINE" },
+                              { key: "refrigerationIce", label: "REFRIGERATION AND ICE MAKING" },
+                              { key: "windowTypeAircon", label: "WINDOW TYPE AIRCONDITIONING" },
+                              { key: "packagedSplitAircon", label: "PACKAGED/SPLIT TYPE AIRCON" },
+                            ].map((item) => (
+                              <label key={item.key} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData[item.key as keyof UnifiedPermitFormData] ? "700" : "500", color: formData[item.key as keyof UnifiedPermitFormData] ? "#0369a1" : "#475569" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(formData[item.key as keyof UnifiedPermitFormData])}
+                                  onChange={e => handleFieldChange(item.key as keyof UnifiedPermitFormData, e.target.checked)}
+                                  style={{ accentColor: "#0284c7" }}
+                                />
+                                {item.label}
+                              </label>
+                            ))}
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData.mechanicalOthers ? "700" : "500", color: formData.mechanicalOthers ? "#0369a1" : "#475569" }}>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(formData.mechanicalOthers)}
+                                onChange={e => handleFieldChange("mechanicalOthers", e.target.checked)}
+                                style={{ accentColor: "#0284c7" }}
+                              />
+                              OTHERS(SPECIFY)
+                            </label>
+                            {formData.mechanicalOthers && (
+                              <input
+                                type="text"
+                                value={formData.mechanicalOthersSpecify || ""}
+                                onChange={e => handleFieldChange("mechanicalOthersSpecify", e.target.value)}
+                                placeholder="Specify equipment"
+                                style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }}
+                              />
+                            )}
+                          </div>
+
+                          {/* Column 2 */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                            {[
+                              { key: "centralAircon", label: "CENTRAL AICONDITIONING" },
+                              { key: "mechanicalVentilation", label: "MECHANICAL VENTILLATION" },
+                              { key: "escalator", label: "ESCALATOR" },
+                              { key: "movingSidewalk", label: "MOVING SIDEWALK" },
+                              { key: "freightElevator", label: "FREIGHT ELEVATOR" },
+                              { key: "passengerElevator", label: "PASSENGER ELEVATOR" },
+                              { key: "cableCar", label: "CABLE CAR" },
+                            ].map((item) => (
+                              <label key={item.key} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData[item.key as keyof UnifiedPermitFormData] ? "700" : "500", color: formData[item.key as keyof UnifiedPermitFormData] ? "#0369a1" : "#475569" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(formData[item.key as keyof UnifiedPermitFormData])}
+                                  onChange={e => handleFieldChange(item.key as keyof UnifiedPermitFormData, e.target.checked)}
+                                  style={{ accentColor: "#0284c7" }}
+                                />
+                                {item.label}
+                              </label>
+                            ))}
+                          </div>
+
+                          {/* Column 3 */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                            {[
+                              { key: "dumbwaiter", label: "DUMBWATER" },
+                              { key: "pumps", label: "PUMPS" },
+                              { key: "compressedAirGas", label: "COMPRESSED AIR VACCUM / GAS" },
+                              { key: "pneumaticTubesConveyors", label: "PNEUMATIC TUBES, CONVEYORS" },
+                              { key: "funicular", label: "FUNICULAR" },
+                            ].map((item) => (
+                              <label key={item.key} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData[item.key as keyof UnifiedPermitFormData] ? "700" : "500", color: formData[item.key as keyof UnifiedPermitFormData] ? "#0369a1" : "#475569" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(formData[item.key as keyof UnifiedPermitFormData])}
+                                  onChange={e => handleFieldChange(item.key as keyof UnifiedPermitFormData, e.target.checked)}
+                                  style={{ accentColor: "#0284c7" }}
+                                />
+                                {item.label}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* PREPARED BY */}
+                        <div style={{ marginTop: "10px", borderTop: "1px dashed #cbd5e1", paddingTop: "8px" }}>
+                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                            PREPARED BY: (Design Professional)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.mechanicalPreparedBy || formData.mechanicalEngineerName || ""}
+                            onChange={e => handleFieldChange("mechanicalPreparedBy", e.target.value)}
+                            placeholder="e.g. Engr. Antonio Gomez, PME"
+                            style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -4833,47 +5040,177 @@ export default function FormTestingStudio() {
                       </div>
                     )}
 
-                    {/* Mechanical Engineer */}
+                    {/* Mechanical Engineer - Box 3: Design Professional & Box 4: Supervisor */}
                     {selectedForm.id === "MP" && (
-                      <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#7c3aed" }}>Professional Mechanical Engineer (PME)</span>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
-                            <input type="text" value={formData.mechanicalEngineerName || ""} onChange={e => handleFieldChange("mechanicalEngineerName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                        {/* BOX 3: DESIGN PROFESSIONAL */}
+                        <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#fffbeb", border: "1.5px solid #fde68a" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#b45309" }}>
+                            Box 3: DESIGN PROFESSIONAL, PLANS AND SPECIFICATION (PME)
+                          </span>
+                          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
+                              <input type="text" value={formData.mechanicalEngineerName || ""} onChange={e => handleFieldChange("mechanicalEngineerName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                              <input type="text" value={formData.mechanicalEngineerAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("mechanicalEngineerAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
                           </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
-                            <input type="text" value={formData.mechanicalEngineerAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("mechanicalEngineerAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
+                              <input type="text" value={formData.mechanicalEngineerPRC || ""} onChange={e => handleFieldChange("mechanicalEngineerPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
+                              <input type="text" value={formData.mechanicalEngineerPRCValidity || "2027-12-18"} onChange={e => handleFieldChange("mechanicalEngineerPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                              <input type="text" value={formData.mechanicalEngineerTIN || "678-901-234-000"} onChange={e => handleFieldChange("mechanicalEngineerTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
+                              <input type="text" value={formData.mechanicalEngineerPTR || ""} onChange={e => handleFieldChange("mechanicalEngineerPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                              <input type="text" value={formData.mechanicalEngineerPTRDate || formData.mechanicalEngineerPTRIssued || "Jan 18, 2026"} onChange={e => handleFieldChange("mechanicalEngineerPTRDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
+                              <input type="text" value={formData.mechanicalEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("mechanicalEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Signed</label>
+                              <input type="text" value={formData.mechanicalEngineerSignedDate || "Jan 19, 2026"} onChange={e => handleFieldChange("mechanicalEngineerSignedDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
+                          </div>
+                          <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #fde68a" }}>
+                            <SignatureCreator
+                              value={formData.mechanicalEngineerSignature}
+                              onChange={sig => handleFieldChange("mechanicalEngineerSignature", sig)}
+                              label={`PME E-Signature (Box 3 - ${formData.mechanicalEngineerName || "Professional Mechanical Engineer"})`}
+                            />
                           </div>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
-                            <input type="text" value={formData.mechanicalEngineerPRC || ""} onChange={e => handleFieldChange("mechanicalEngineerPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+
+                        {/* BOX 4: SUPERVISOR/IN-CHARGE OF MECHANICAL WORKS */}
+                        <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f0fdf4", border: "1.5px solid #86efac" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#166534" }}>
+                              Box 4: SUPERVISOR / IN-CHARGE OF MECHANICAL WORKS
+                            </span>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#15803d", cursor: "pointer" }}>
+                              <input 
+                                type="checkbox" 
+                                checked={!!formData.sameAsDesignMechanicalEngineer} 
+                                onChange={e => {
+                                  const checked = e.target.checked;
+                                  handleFieldChange("sameAsDesignMechanicalEngineer", checked);
+                                  if (checked) {
+                                    handleFieldChange("mechSupervisorName", formData.mechanicalEngineerName);
+                                    handleFieldChange("mechSupervisorAddress", formData.mechanicalEngineerAddress);
+                                    handleFieldChange("mechSupervisorPRC", formData.mechanicalEngineerPRC);
+                                    handleFieldChange("mechSupervisorPRCValidity", formData.mechanicalEngineerPRCValidity);
+                                    handleFieldChange("mechSupervisorPTR", formData.mechanicalEngineerPTR);
+                                    handleFieldChange("mechSupervisorPTRDate", formData.mechanicalEngineerPTRDate);
+                                    handleFieldChange("mechSupervisorPTRIssuedAt", formData.mechanicalEngineerPTRIssuedAt);
+                                    handleFieldChange("mechSupervisorTIN", formData.mechanicalEngineerTIN);
+                                    handleFieldChange("mechSupervisorSignedDate", formData.mechanicalEngineerSignedDate);
+                                    handleFieldChange("mechSupervisorSignature", formData.mechanicalEngineerSignature);
+                                  }
+                                }} 
+                              />
+                              Same as Design Professional (Box 3)
+                            </label>
                           </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
-                            <input type="text" value={formData.mechanicalEngineerPRCValidity || "2027-12-18"} onChange={e => handleFieldChange("mechanicalEngineerPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
-                            <input type="text" value={formData.mechanicalEngineerTIN || "678-901-234-000"} onChange={e => handleFieldChange("mechanicalEngineerTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
-                            <input type="text" value={formData.mechanicalEngineerPTR || ""} onChange={e => handleFieldChange("mechanicalEngineerPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
-                            <input type="text" value={formData.mechanicalEngineerPTRIssued || "Jan 18, 2026"} onChange={e => handleFieldChange("mechanicalEngineerPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
-                            <input type="text" value={formData.mechanicalEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("mechanicalEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
+
+                          {!formData.sameAsDesignMechanicalEngineer ? (
+                            <>
+                              {/* Role selection radio buttons */}
+                              <div style={{ display: "flex", gap: "1rem", margin: "8px 0 10px 0", padding: "6px 10px", background: "#dcfce7", borderRadius: "6px" }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.76rem", fontWeight: formData.mechSupervisorRole === "PME" || !formData.mechSupervisorRole ? "700" : "500", color: "#166534", cursor: "pointer" }}>
+                                  <input
+                                    type="radio"
+                                    name="mechSupervisorRoleRadioTester"
+                                    checked={formData.mechSupervisorRole === "PME" || !formData.mechSupervisorRole}
+                                    onChange={() => handleFieldChange("mechSupervisorRole", "PME")}
+                                    style={{ accentColor: "#16a34a" }}
+                                  />
+                                  <span>[ ] PROFESSIONAL MECHANICAL ENGINEER</span>
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.76rem", fontWeight: formData.mechSupervisorRole === "ME" ? "700" : "500", color: "#166534", cursor: "pointer" }}>
+                                  <input
+                                    type="radio"
+                                    name="mechSupervisorRoleRadioTester"
+                                    checked={formData.mechSupervisorRole === "ME"}
+                                    onChange={() => handleFieldChange("mechSupervisorRole", "ME")}
+                                    style={{ accentColor: "#16a34a" }}
+                                  />
+                                  <span>[ ] MECHANICAL ENGINEER</span>
+                                </label>
+                              </div>
+
+                              <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Supervisor Full Name</label>
+                                  <input type="text" value={formData.mechSupervisorName || ""} onChange={e => handleFieldChange("mechSupervisorName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                                  <input type="text" value={formData.mechSupervisorAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("mechSupervisorAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                </div>
+                              </div>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
+                                  <input type="text" value={formData.mechSupervisorPRC || ""} onChange={e => handleFieldChange("mechSupervisorPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
+                                  <input type="text" value={formData.mechSupervisorPRCValidity || "2027-12-18"} onChange={e => handleFieldChange("mechSupervisorPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
+                                  <input type="text" value={formData.mechSupervisorTIN || "678-901-234-000"} onChange={e => handleFieldChange("mechSupervisorTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                </div>
+                              </div>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
+                                  <input type="text" value={formData.mechSupervisorPTR || ""} onChange={e => handleFieldChange("mechSupervisorPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                                  <input type="text" value={formData.mechSupervisorPTRDate || formData.mechSupervisorPTRIssued || "Jan 18, 2026"} onChange={e => handleFieldChange("mechSupervisorPTRDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
+                                  <input type="text" value={formData.mechSupervisorPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("mechSupervisorPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Signed</label>
+                                  <input type="text" value={formData.mechSupervisorSignedDate || "Jan 19, 2026"} onChange={e => handleFieldChange("mechSupervisorSignedDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                </div>
+                              </div>
+                              <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #86efac" }}>
+                                <SignatureCreator
+                                  value={formData.mechSupervisorSignature}
+                                  onChange={sig => handleFieldChange("mechSupervisorSignature", sig)}
+                                  label={`Supervisor E-Signature (Box 4 - ${formData.mechSupervisorName || "Supervisor Mechanical Engineer"})`}
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ marginTop: "0.5rem", padding: "8px 12px", borderRadius: "8px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", fontSize: "0.76rem" }}>
+                              Using identical credentials and signature from Box 3 (Design Professional: {formData.mechanicalEngineerName || "ENGR. LEONARDO V. TORRES, PME"}).
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

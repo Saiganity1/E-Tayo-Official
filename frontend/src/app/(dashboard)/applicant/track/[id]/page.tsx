@@ -31,6 +31,7 @@ import {
   generateStructuralPermitPdf, 
   generateElectricalPermitPdf, 
   generateSanitaryPermitPdf,
+  generateMechanicalPermitPdf,
   UnifiedPermitFormData
 } from "../../../../../utils/unifiedPermitPdfGenerator";
 import { generateLocationalClearancePdf } from "../../../../../utils/locationalClearancePdfGenerator";
@@ -149,6 +150,7 @@ export default function ApplicationTrackDetail() {
       structuralPermitNo: appData?.structuralPermitNo || `SP-${cleanSeq}`,
       sanitaryPermitNo: (appData as any)?.sanitaryPermitNo || (appData?.status === "approved" || appData?.status === "released" ? `P-${cleanSeq}` : undefined),
       plumbingPermitNo: (appData as any)?.plumbingPermitNo || (appData?.status === "approved" || appData?.status === "released" ? `P-${cleanSeq}` : undefined),
+      mechanicalPermitNo: (appData as any)?.mechanicalPermitNo || (appData?.status === "approved" || appData?.status === "released" ? `MP-${cleanSeq}` : undefined),
       permitIssuedDate: issuedDate,
       dateIssued: issuedDate,
       approvalDate: (appData as any)?.approvalDate || (appData as any)?.dateApproved,
@@ -219,6 +221,60 @@ export default function ApplicationTrackDetail() {
       installationInChargeTIN: (appData as any)?.installationInChargeTIN,
       installationInChargeSignedDate: (appData as any)?.installationInChargeSignedDate,
       installationInChargeSignature: (appData as any)?.installationInChargeSignature,
+      mechanicalScopeOfWork: (appData as any)?.mechanicalScopeOfWork || (appData as any)?.scopeOfWork,
+      mechanicalScopeDetails: (appData as any)?.mechanicalScopeDetails,
+      boiler: (appData as any)?.boiler,
+      pressureVessel: (appData as any)?.pressureVessel,
+      internalCombustionEngine: (appData as any)?.internalCombustionEngine,
+      refrigerationIce: (appData as any)?.refrigerationIce,
+      windowTypeAircon: (appData as any)?.windowTypeAircon,
+      packagedSplitAircon: (appData as any)?.packagedSplitAircon,
+      mechanicalOthers: (appData as any)?.mechanicalOthers,
+      mechanicalOthersSpecify: (appData as any)?.mechanicalOthersSpecify,
+      centralAircon: (appData as any)?.centralAircon,
+      mechanicalVentilation: (appData as any)?.mechanicalVentilation,
+      escalator: (appData as any)?.escalator,
+      movingSidewalk: (appData as any)?.movingSidewalk,
+      freightElevator: (appData as any)?.freightElevator,
+      passengerElevator: (appData as any)?.passengerElevator,
+      cableCar: (appData as any)?.cableCar,
+      dumbwaiter: (appData as any)?.dumbwaiter,
+      pumps: (appData as any)?.pumps,
+      compressedAirGas: (appData as any)?.compressedAirGas,
+      pneumaticTubesConveyors: (appData as any)?.pneumaticTubesConveyors,
+      funicular: (appData as any)?.funicular,
+      mechanicalPreparedBy: (appData as any)?.mechanicalPreparedBy || (appData as any)?.mechanicalEngineerName,
+      machineryType: (appData as any)?.machineryType,
+      machineryBrand: (appData as any)?.machineryBrand,
+      machineryCapacity: (appData as any)?.machineryCapacity,
+      machineryPower: (appData as any)?.machineryPower,
+      machinerySpeed: (appData as any)?.machinerySpeed,
+      machineryStoreys: (appData as any)?.machineryStoreys,
+      mechanicalEngineerName: (appData as any)?.mechanicalEngineerName,
+      mechanicalEngineerPRC: (appData as any)?.mechanicalEngineerPRC,
+      mechanicalEngineerPRCValidity: (appData as any)?.mechanicalEngineerPRCValidity,
+      mechanicalEngineerAddress: (appData as any)?.mechanicalEngineerAddress,
+      mechanicalEngineerPTRDate: (appData as any)?.mechanicalEngineerPTRDate,
+      mechanicalEngineerPTRIssuedAt: (appData as any)?.mechanicalEngineerPTRIssuedAt,
+      mechanicalEngineerSignedDate: (appData as any)?.mechanicalEngineerSignedDate,
+      mechanicalEngineerSignature: (appData as any)?.mechanicalEngineerSignature,
+      sameAsDesignMechanicalEngineer: (appData as any)?.sameAsDesignMechanicalEngineer,
+      mechSupervisorRole: (appData as any)?.mechSupervisorRole,
+      mechSupervisorName: (appData as any)?.mechSupervisorName,
+      mechSupervisorAddress: (appData as any)?.mechSupervisorAddress,
+      mechSupervisorPRC: (appData as any)?.mechSupervisorPRC,
+      mechSupervisorPRCValidity: (appData as any)?.mechSupervisorPRCValidity,
+      mechSupervisorPTR: (appData as any)?.mechSupervisorPTR,
+      mechSupervisorPTRDate: (appData as any)?.mechSupervisorPTRDate,
+      mechSupervisorPTRIssued: (appData as any)?.mechSupervisorPTRIssued,
+      mechSupervisorPTRIssuedAt: (appData as any)?.mechSupervisorPTRIssuedAt,
+      mechSupervisorTIN: (appData as any)?.mechSupervisorTIN,
+      mechSupervisorSignedDate: (appData as any)?.mechSupervisorSignedDate,
+      mechSupervisorSignature: (appData as any)?.mechSupervisorSignature,
+      applicantGovIdDateIssued: (appData as any)?.applicantGovIdDateIssued || (appData as any)?.govIdDateIssued,
+      applicantGovIdPlaceIssued: (appData as any)?.applicantGovIdPlaceIssued || (appData as any)?.govIdPlaceIssued,
+      applicantCtcNo: (appData as any)?.applicantCtcNo || (appData as any)?.govIdNo,
+      lotOwnerSignedDate: (appData as any)?.lotOwnerSignedDate,
       submissionDate: appData?.dateSubmitted || new Date().toLocaleDateString(),
     };
 
@@ -234,6 +290,9 @@ export default function ApplicationTrackDetail() {
         return `data:application/pdf;base64,${b64}`;
       } else if (doc.code === "PL") {
         const b64 = await generateSanitaryPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "MP") {
+        const b64 = await generateMechanicalPermitPdf(formData);
         return `data:application/pdf;base64,${b64}`;
       } else if (doc.code === "BP") {
         const b64 = await generateBuildingPermitPdf(formData);

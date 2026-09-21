@@ -469,13 +469,58 @@ export default function TechnicalPermitFormsStep({
   const [machinerySpeed, setMachinerySpeed] = useState("0.50 m/sec rated velocity");
   const [machineryPower, setMachineryPower] = useState("15 kW (20.0 HP), 3-Phase");
   const [machineryStoreys, setMachineryStoreys] = useState("Ground to 2nd Floor Level (2 Landings)");
-  const [mechanicalEngineerName, setMechanicalEngineerName] = useState("Engr. Antonio Gomez, PME");
-  const [mechanicalEngineerPRC, setMechanicalEngineerPRC] = useState("PRC-PME-0021489");
-  const [mechanicalEngineerPRCValidity, setMechanicalEngineerPRCValidity] = useState("2027-12-05");
+  const [mechanicalEngineerName, setMechanicalEngineerName] = useState("ENGR. LEONARDO V. TORRES, PME");
+  const [mechanicalEngineerAddress, setMechanicalEngineerAddress] = useState("Sto. Tomas, Pampanga");
+  const [mechanicalEngineerPRC, setMechanicalEngineerPRC] = useState("0044556");
+  const [mechanicalEngineerPRCValidity, setMechanicalEngineerPRCValidity] = useState("2027-12-18");
   const [mechanicalEngineerPSME, setMechanicalEngineerPSME] = useState("PSME-2026-0912");
-  const [mechanicalEngineerPTR, setMechanicalEngineerPTR] = useState("PTR-ST-2026-9921");
+  const [mechanicalEngineerPTR, setMechanicalEngineerPTR] = useState("PTR-ST-221100");
+  const [mechanicalEngineerPTRDate, setMechanicalEngineerPTRDate] = useState("Jan 10, 2026");
   const [mechanicalEngineerPTRIssued, setMechanicalEngineerPTRIssued] = useState("Sto. Tomas, Pampanga");
+  const [mechanicalEngineerPTRIssuedAt, setMechanicalEngineerPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
   const [mechanicalEngineerTIN, setMechanicalEngineerTIN] = useState("678-901-234-000");
+  const [mechanicalEngineerSignedDate, setMechanicalEngineerSignedDate] = useState("Jan 08, 2026");
+  const [mechanicalEngineerSignature, setMechanicalEngineerSignature] = useState<string>("");
+
+  // Box 4: Supervisor/In-Charge of Mechanical Works
+  const [sameAsDesignMechanicalEngineer, setSameAsDesignMechanicalEngineer] = useState(true);
+  const [mechSupervisorRole, setMechSupervisorRole] = useState<"PME" | "ME">("PME");
+  const [mechSupervisorName, setMechSupervisorName] = useState("ENGR. LEONARDO V. TORRES, PME");
+  const [mechSupervisorAddress, setMechSupervisorAddress] = useState("Sto. Tomas, Pampanga");
+  const [mechSupervisorPRC, setMechSupervisorPRC] = useState("0044556");
+  const [mechSupervisorPRCValidity, setMechSupervisorPRCValidity] = useState("2027-12-18");
+  const [mechSupervisorPTR, setMechSupervisorPTR] = useState("PTR-ST-221100");
+  const [mechSupervisorPTRDate, setMechSupervisorPTRDate] = useState("Jan 10, 2026");
+  const [mechSupervisorPTRIssuedAt, setMechSupervisorPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
+  const [mechSupervisorTIN, setMechSupervisorTIN] = useState("678-901-234-000");
+  const [mechSupervisorSignedDate, setMechSupervisorSignedDate] = useState("Jan 08, 2026");
+  const [mechSupervisorSignature, setMechSupervisorSignature] = useState<string>("");
+
+  const [mechanicalScopeOfWork, setMechanicalScopeOfWork] = useState("New Construction");
+  const [mechanicalScopeDetails, setMechanicalScopeDetails] = useState("");
+
+  // Box 2: Installation and Operation of (NBC Form M-01)
+  const [boiler, setBoiler] = useState(false);
+  const [pressureVessel, setPressureVessel] = useState(false);
+  const [internalCombustionEngine, setInternalCombustionEngine] = useState(false);
+  const [refrigerationIce, setRefrigerationIce] = useState(false);
+  const [windowTypeAircon, setWindowTypeAircon] = useState(false);
+  const [packagedSplitAircon, setPackagedSplitAircon] = useState(true);
+  const [mechanicalOthers, setMechanicalOthers] = useState(false);
+  const [mechanicalOthersSpecify, setMechanicalOthersSpecify] = useState("");
+  const [centralAircon, setCentralAircon] = useState(false);
+  const [mechanicalVentilation, setMechanicalVentilation] = useState(true);
+  const [escalator, setEscalator] = useState(projectType.id === "elevator_escalator");
+  const [movingSidewalk, setMovingSidewalk] = useState(false);
+  const [freightElevator, setFreightElevator] = useState(false);
+  const [passengerElevator, setPassengerElevator] = useState(false);
+  const [cableCar, setCableCar] = useState(false);
+  const [dumbwaiter, setDumbwaiter] = useState(false);
+  const [pumps, setPumps] = useState(true);
+  const [compressedAirGas, setCompressedAirGas] = useState(false);
+  const [pneumaticTubesConveyors, setPneumaticTubesConveyors] = useState(false);
+  const [funicular, setFunicular] = useState(false);
+  const [mechanicalPreparedBy, setMechanicalPreparedBy] = useState("Engr. Antonio Gomez, PME");
 
   // ==========================================
   // 9. ELECTRONICS PERMIT (EL) FIELDS
@@ -827,6 +872,29 @@ export default function TechnicalPermitFormsStep({
         plumbingCompletionDate,
         plumbingPreparedBy,
         machineryType,
+        mechanicalScopeOfWork,
+        mechanicalScopeDetails,
+        boiler,
+        pressureVessel,
+        internalCombustionEngine,
+        refrigerationIce,
+        windowTypeAircon,
+        packagedSplitAircon,
+        mechanicalOthers,
+        mechanicalOthersSpecify,
+        centralAircon,
+        mechanicalVentilation,
+        escalator,
+        movingSidewalk,
+        freightElevator,
+        passengerElevator,
+        cableCar,
+        dumbwaiter,
+        pumps,
+        compressedAirGas,
+        pneumaticTubesConveyors,
+        funicular,
+        mechanicalPreparedBy,
         machineryBrand,
         machineryCapacity,
         machineryPower,
@@ -898,12 +966,33 @@ export default function TechnicalPermitFormsStep({
         masterPlumberPTRIssued,
         masterPlumberTIN,
         mechanicalEngineerName,
+        mechanicalEngineerAddress,
         mechanicalEngineerPRC,
         mechanicalEngineerPRCValidity,
         mechanicalEngineerPSME,
         mechanicalEngineerPTR,
+        mechanicalEngineerPTRDate,
         mechanicalEngineerPTRIssued,
+        mechanicalEngineerPTRIssuedAt,
         mechanicalEngineerTIN,
+        mechanicalEngineerSignedDate,
+        mechanicalEngineerSignature,
+        sameAsDesignMechanicalEngineer,
+        mechSupervisorRole,
+        mechSupervisorName,
+        mechSupervisorAddress,
+        mechSupervisorPRC,
+        mechSupervisorPRCValidity,
+        mechSupervisorPTR,
+        mechSupervisorPTRDate,
+        mechSupervisorPTRIssued: mechSupervisorPTRDate,
+        mechSupervisorPTRIssuedAt,
+        mechSupervisorTIN,
+        mechSupervisorSignedDate,
+        mechSupervisorSignature,
+        applicantCtcNo: govIdNo,
+        applicantGovIdDateIssued: govIdDateIssued,
+        applicantGovIdPlaceIssued: govIdPlaceIssued,
         electronicsEngineerName,
         electronicsEngineerPRC,
         electronicsEngineerPRCValidity,
@@ -4953,6 +5042,257 @@ export default function TechnicalPermitFormsStep({
                   </div>
                 </div>
 
+                {/* Box 1: Scope of Work (NBC Form M-01) */}
+                <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "8px" }}>
+                    <div>
+                      <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#b45309", textTransform: "uppercase", display: "block" }}>
+                        Box 1: Scope of Work (NBC Form M-01)
+                      </span>
+                      <span style={{ fontSize: "0.82rem", color: "#64748b" }}>
+                        Select the applicable mechanical installation scope
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                    {[
+                      { id: "New Construction", label: "New Construction" },
+                      { id: "Erection", label: "Erection" },
+                      { id: "Addition", label: "Addition" },
+                      { id: "Alteration", label: "Alteration" },
+                      { id: "Renovation", label: "Renovation" },
+                      { id: "Conversion", label: "Conversion" },
+                      { id: "Repair", label: "Repair" },
+                      { id: "Moving", label: "Moving" },
+                      { id: "Raising", label: "Raising" },
+                      { id: "Demolition", label: "Demolition" },
+                      { id: "Accessory Building/Structure", label: "Accessory Building/Structure" },
+                      { id: "Others (Specify)", label: "Others (Specify)" },
+                    ].map((opt) => {
+                      const isSelected = mechanicalScopeOfWork === opt.id;
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() => setMechanicalScopeOfWork(opt.id)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "8px 10px",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            border: isSelected ? "1.5px solid #d97706" : "1px solid #e2e8f0",
+                            background: isSelected ? "#fef3c7" : "#f8fafc",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="mechanicalScopeRadio"
+                            checked={isSelected}
+                            onChange={() => setMechanicalScopeOfWork(opt.id)}
+                            style={{ accentColor: "#d97706", cursor: "pointer" }}
+                          />
+                          <span style={{ fontSize: "0.8rem", fontWeight: isSelected ? "700" : "500", color: isSelected ? "#92400e" : "#334155" }}>
+                            {opt.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {mechanicalScopeOfWork !== "New Construction" && (
+                    <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px dashed #e2e8f0" }}>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                        Specify Scope Details (Printed on Official Form Underline)
+                      </label>
+                      <input
+                        type="text"
+                        value={mechanicalScopeDetails}
+                        onChange={(e) => setMechanicalScopeDetails(e.target.value)}
+                        placeholder={`e.g. Details for ${mechanicalScopeOfWork}`}
+                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Box 2: Installation and Operation of (NBC Form M-01) */}
+                <div style={{ background: "#ffffff", border: "1.5px solid #0284c7", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.85rem", flexWrap: "wrap", gap: "8px" }}>
+                    <div>
+                      <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase", display: "block" }}>
+                        BOX 2 (TO BE ACCOMPLISHED BY THE DESIGN PROFESSIONAL)
+                      </span>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#475569", textTransform: "uppercase" }}>
+                        INSTALLATION AND OPERATION OF:
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
+                    {/* Column 1 */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {[
+                        { label: "BOILER", checked: boiler, setter: setBoiler },
+                        { label: "PRESSURE VESSEL", checked: pressureVessel, setter: setPressureVessel },
+                        { label: "INTERNAL COMBUSTION ENGINE", checked: internalCombustionEngine, setter: setInternalCombustionEngine },
+                        { label: "REFRIGERATION AND ICE MAKING", checked: refrigerationIce, setter: setRefrigerationIce },
+                        { label: "WINDOW TYPE AIRCONDITIONING", checked: windowTypeAircon, setter: setWindowTypeAircon },
+                        { label: "PACKAGED/SPLIT TYPE AIRCON", checked: packagedSplitAircon, setter: setPackagedSplitAircon },
+                      ].map((item, idx) => (
+                        <label
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "6px 8px",
+                            borderRadius: "6px",
+                            background: item.checked ? "#f0f9ff" : "#f8fafc",
+                            border: item.checked ? "1px solid #7dd3fc" : "1px solid #e2e8f0",
+                            cursor: "pointer",
+                            fontSize: "0.76rem",
+                            fontWeight: item.checked ? "700" : "500",
+                            color: item.checked ? "#0369a1" : "#334155",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={item.checked}
+                            onChange={(e) => item.setter(e.target.checked)}
+                            style={{ accentColor: "#0284c7", cursor: "pointer" }}
+                          />
+                          <span>{item.label}</span>
+                        </label>
+                      ))}
+
+                      {/* Others Specify */}
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "6px 8px",
+                          borderRadius: "6px",
+                          background: mechanicalOthers ? "#f0f9ff" : "#f8fafc",
+                          border: mechanicalOthers ? "1px solid #7dd3fc" : "1px solid #e2e8f0",
+                          cursor: "pointer",
+                          fontSize: "0.76rem",
+                          fontWeight: mechanicalOthers ? "700" : "500",
+                          color: mechanicalOthers ? "#0369a1" : "#334155",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={mechanicalOthers}
+                          onChange={(e) => setMechanicalOthers(e.target.checked)}
+                          style={{ accentColor: "#0284c7", cursor: "pointer" }}
+                        />
+                        <span>OTHERS(SPECIFY)</span>
+                      </label>
+                      {mechanicalOthers && (
+                        <input
+                          type="text"
+                          value={mechanicalOthersSpecify}
+                          onChange={(e) => setMechanicalOthersSpecify(e.target.value)}
+                          placeholder="Specify other mechanical system"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem", marginTop: "2px" }}
+                        />
+                      )}
+                    </div>
+
+                    {/* Column 2 */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {[
+                        { label: "CENTRAL AICONDITIONING", checked: centralAircon, setter: setCentralAircon },
+                        { label: "MECHANICAL VENTILLATION", checked: mechanicalVentilation, setter: setMechanicalVentilation },
+                        { label: "ESCALATOR", checked: escalator, setter: setEscalator },
+                        { label: "MOVING SIDEWALK", checked: movingSidewalk, setter: setMovingSidewalk },
+                        { label: "FREIGHT ELEVATOR", checked: freightElevator, setter: setFreightElevator },
+                        { label: "PASSENGER ELEVATOR", checked: passengerElevator, setter: setPassengerElevator },
+                        { label: "CABLE CAR", checked: cableCar, setter: setCableCar },
+                      ].map((item, idx) => (
+                        <label
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "6px 8px",
+                            borderRadius: "6px",
+                            background: item.checked ? "#f0f9ff" : "#f8fafc",
+                            border: item.checked ? "1px solid #7dd3fc" : "1px solid #e2e8f0",
+                            cursor: "pointer",
+                            fontSize: "0.76rem",
+                            fontWeight: item.checked ? "700" : "500",
+                            color: item.checked ? "#0369a1" : "#334155",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={item.checked}
+                            onChange={(e) => item.setter(e.target.checked)}
+                            style={{ accentColor: "#0284c7", cursor: "pointer" }}
+                          />
+                          <span>{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+
+                    {/* Column 3 */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {[
+                        { label: "DUMBWATER", checked: dumbwaiter, setter: setDumbwaiter },
+                        { label: "PUMPS", checked: pumps, setter: setPumps },
+                        { label: "COMPRESSED AIR VACCUM, INSTITUTIONAL and/or INDUSTRIAL GAS", checked: compressedAirGas, setter: setCompressedAirGas },
+                        { label: "PNEUMATIC TUBES, CONVEYORS and/or MONORAILS", checked: pneumaticTubesConveyors, setter: setPneumaticTubesConveyors },
+                        { label: "FUNICULAR", checked: funicular, setter: setFunicular },
+                      ].map((item, idx) => (
+                        <label
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "6px 8px",
+                            borderRadius: "6px",
+                            background: item.checked ? "#f0f9ff" : "#f8fafc",
+                            border: item.checked ? "1px solid #7dd3fc" : "1px solid #e2e8f0",
+                            cursor: "pointer",
+                            fontSize: "0.76rem",
+                            fontWeight: item.checked ? "700" : "500",
+                            color: item.checked ? "#0369a1" : "#334155",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={item.checked}
+                            onChange={(e) => item.setter(e.target.checked)}
+                            style={{ accentColor: "#0284c7", cursor: "pointer" }}
+                          />
+                          <span>{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Prepared By (Design Professional) */}
+                  <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                    <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                      PREPARED BY: (Design Professional) *
+                    </label>
+                    <input
+                      type="text"
+                      value={mechanicalPreparedBy}
+                      onChange={(e) => setMechanicalPreparedBy(e.target.value)}
+                      placeholder="e.g. Engr. Antonio Gomez, PME"
+                      style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                    />
+                  </div>
+                </div>
+
                 <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                     <div>
@@ -4982,32 +5322,282 @@ export default function TechnicalPermitFormsStep({
                   </div>
                 </div>
 
+                {/* BOX 3: DESIGN PROFESSIONAL, PLANS AND SPECIFICATION */}
                 <div style={{ background: "#fffbeb", border: "1.5px solid #fde68a", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#92400e", textTransform: "uppercase" }}>
-                    Box 2: Design Professional: Professional Mechanical Engineer (PME)
-                  </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem", marginTop: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#78350f" }}>Engineer Full Name *</label>
-                      <input type="text" required value={mechanicalEngineerName} onChange={(e) => setMechanicalEngineerName(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#78350f" }}>PRC Registration No. *</label>
-                      <input type="text" required value={mechanicalEngineerPRC} onChange={(e) => setMechanicalEngineerPRC(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#78350f" }}>PRC Validity Date *</label>
-                      <input type="date" required value={mechanicalEngineerPRCValidity} onChange={(e) => setMechanicalEngineerPRCValidity(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#78350f" }}>PTR Number *</label>
-                      <input type="text" required value={mechanicalEngineerPTR} onChange={(e) => setMechanicalEngineerPTR(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#78350f" }}>Place Issued *</label>
-                      <input type="text" required value={mechanicalEngineerPTRIssued} onChange={(e) => setMechanicalEngineerPTRIssued(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                      <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#92400e", textTransform: "uppercase", display: "block" }}>
+                        BOX 3: DESIGN PROFESSIONAL, PLANS AND SPECIFICATION
+                      </span>
+                      <span style={{ fontSize: "0.78rem", color: "#b45309" }}>
+                        Professional Mechanical Engineer (PME) details & seal
+                      </span>
                     </div>
                   </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem", marginTop: "10px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#78350f" }}>Engineer Full Name *</label>
+                      <input type="text" required value={mechanicalEngineerName} onChange={(e) => setMechanicalEngineerName(e.target.value)} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white", fontWeight: "700" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#78350f" }}>Address *</label>
+                      <input type="text" required value={mechanicalEngineerAddress} onChange={(e) => setMechanicalEngineerAddress(e.target.value)} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#78350f" }}>PRC Registration No. *</label>
+                      <input type="text" required value={mechanicalEngineerPRC} onChange={(e) => setMechanicalEngineerPRC(e.target.value)} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#78350f" }}>PRC Validity Date *</label>
+                      <input type="date" required value={mechanicalEngineerPRCValidity} onChange={(e) => setMechanicalEngineerPRCValidity(e.target.value)} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#78350f" }}>PTR Number *</label>
+                      <input type="text" required value={mechanicalEngineerPTR} onChange={(e) => setMechanicalEngineerPTR(e.target.value)} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#78350f" }}>Date Issued *</label>
+                      <input type="text" required value={mechanicalEngineerPTRDate} onChange={(e) => setMechanicalEngineerPTRDate(e.target.value)} placeholder="e.g. Jan 10, 2026" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#78350f" }}>Issued At *</label>
+                      <input type="text" required value={mechanicalEngineerPTRIssuedAt} onChange={(e) => setMechanicalEngineerPTRIssuedAt(e.target.value)} placeholder="e.g. Sto. Tomas, Pampanga" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#78350f" }}>TIN Number *</label>
+                      <input type="text" required value={mechanicalEngineerTIN} onChange={(e) => setMechanicalEngineerTIN(e.target.value)} placeholder="000-000-000-000" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#78350f" }}>Date Signed *</label>
+                      <input type="text" required value={mechanicalEngineerSignedDate} onChange={(e) => setMechanicalEngineerSignedDate(e.target.value)} placeholder="e.g. Jan 08, 2026" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #fde68a" }}>
+                    <SignatureCreator
+                      value={mechanicalEngineerSignature}
+                      onChange={setMechanicalEngineerSignature}
+                      label={`PME E-Signature (Affixed over printed name: ${mechanicalEngineerName})`}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* BOX 4: SUPERVISOR/IN-CHARGE OF MECHANICAL WORKS */}
+                <div style={{ background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "0.5rem" }}>
+                    <div>
+                      <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#166534", textTransform: "uppercase", display: "block" }}>
+                        BOX 4: SUPERVISOR/IN-CHARGE OF MECHANICAL WORKS
+                      </span>
+                      <span style={{ fontSize: "0.78rem", color: "#15803d" }}>
+                        Professional Mechanical Engineer or Registered Mechanical Engineer in-charge of installation
+                      </span>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "700", color: "#15803d", cursor: "pointer", background: "#dcfce7", padding: "4px 8px", borderRadius: "6px" }}>
+                      <input
+                        type="checkbox"
+                        checked={sameAsDesignMechanicalEngineer}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setSameAsDesignMechanicalEngineer(checked);
+                          if (checked) {
+                            setMechSupervisorName(mechanicalEngineerName);
+                            setMechSupervisorAddress(mechanicalEngineerAddress);
+                            setMechSupervisorPRC(mechanicalEngineerPRC);
+                            setMechSupervisorPRCValidity(mechanicalEngineerPRCValidity);
+                            setMechSupervisorPTR(mechanicalEngineerPTR);
+                            setMechSupervisorPTRDate(mechanicalEngineerPTRDate);
+                            setMechSupervisorPTRIssuedAt(mechanicalEngineerPTRIssuedAt);
+                            setMechSupervisorTIN(mechanicalEngineerTIN);
+                            setMechSupervisorSignedDate(mechanicalEngineerSignedDate);
+                            setMechSupervisorSignature(mechanicalEngineerSignature);
+                          }
+                        }}
+                        style={{ accentColor: "#16a34a", cursor: "pointer" }}
+                      />
+                      Same as Design Professional (Box 3)
+                    </label>
+                  </div>
+
+                  {/* Role selection radio buttons */}
+                  <div style={{ display: "flex", gap: "1rem", margin: "8px 0 12px 0" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: mechSupervisorRole === "PME" ? "700" : "500", color: "#166534", cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="mechSupervisorRoleRadio"
+                        checked={mechSupervisorRole === "PME"}
+                        onChange={() => setMechSupervisorRole("PME")}
+                        style={{ accentColor: "#16a34a" }}
+                      />
+                      [ ] PROFESSIONAL MECHANICAL ENGINEER
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: mechSupervisorRole === "ME" ? "700" : "500", color: "#166534", cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="mechSupervisorRoleRadio"
+                        checked={mechSupervisorRole === "ME"}
+                        onChange={() => setMechSupervisorRole("ME")}
+                        style={{ accentColor: "#16a34a" }}
+                      />
+                      [ ] MECHANICAL ENGINEER
+                    </label>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d" }}>Supervisor Full Name *</label>
+                      <input type="text" required value={sameAsDesignMechanicalEngineer ? mechanicalEngineerName : mechSupervisorName} onChange={(e) => setMechSupervisorName(e.target.value)} disabled={sameAsDesignMechanicalEngineer} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: sameAsDesignMechanicalEngineer ? "#f8fafc" : "white", fontWeight: "700" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d" }}>Address *</label>
+                      <input type="text" required value={sameAsDesignMechanicalEngineer ? mechanicalEngineerAddress : mechSupervisorAddress} onChange={(e) => setMechSupervisorAddress(e.target.value)} disabled={sameAsDesignMechanicalEngineer} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: sameAsDesignMechanicalEngineer ? "#f8fafc" : "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d" }}>PRC Registration No. *</label>
+                      <input type="text" required value={sameAsDesignMechanicalEngineer ? mechanicalEngineerPRC : mechSupervisorPRC} onChange={(e) => setMechSupervisorPRC(e.target.value)} disabled={sameAsDesignMechanicalEngineer} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: sameAsDesignMechanicalEngineer ? "#f8fafc" : "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d" }}>PRC Validity Date *</label>
+                      <input type="date" required value={sameAsDesignMechanicalEngineer ? mechanicalEngineerPRCValidity : mechSupervisorPRCValidity} onChange={(e) => setMechSupervisorPRCValidity(e.target.value)} disabled={sameAsDesignMechanicalEngineer} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: sameAsDesignMechanicalEngineer ? "#f8fafc" : "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d" }}>PTR Number *</label>
+                      <input type="text" required value={sameAsDesignMechanicalEngineer ? mechanicalEngineerPTR : mechSupervisorPTR} onChange={(e) => setMechSupervisorPTR(e.target.value)} disabled={sameAsDesignMechanicalEngineer} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: sameAsDesignMechanicalEngineer ? "#f8fafc" : "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d" }}>Date Issued *</label>
+                      <input type="text" required value={sameAsDesignMechanicalEngineer ? mechanicalEngineerPTRDate : mechSupervisorPTRDate} onChange={(e) => setMechSupervisorPTRDate(e.target.value)} disabled={sameAsDesignMechanicalEngineer} placeholder="e.g. Jan 10, 2026" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: sameAsDesignMechanicalEngineer ? "#f8fafc" : "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d" }}>Issued At *</label>
+                      <input type="text" required value={sameAsDesignMechanicalEngineer ? mechanicalEngineerPTRIssuedAt : mechSupervisorPTRIssuedAt} onChange={(e) => setMechSupervisorPTRIssuedAt(e.target.value)} disabled={sameAsDesignMechanicalEngineer} placeholder="e.g. Sto. Tomas, Pampanga" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: sameAsDesignMechanicalEngineer ? "#f8fafc" : "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d" }}>TIN Number *</label>
+                      <input type="text" required value={sameAsDesignMechanicalEngineer ? mechanicalEngineerTIN : mechSupervisorTIN} onChange={(e) => setMechSupervisorTIN(e.target.value)} disabled={sameAsDesignMechanicalEngineer} placeholder="000-000-000-000" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: sameAsDesignMechanicalEngineer ? "#f8fafc" : "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d" }}>Date Signed *</label>
+                      <input type="text" required value={sameAsDesignMechanicalEngineer ? mechanicalEngineerSignedDate : mechSupervisorSignedDate} onChange={(e) => setMechSupervisorSignedDate(e.target.value)} disabled={sameAsDesignMechanicalEngineer} placeholder="e.g. Jan 08, 2026" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: sameAsDesignMechanicalEngineer ? "#f8fafc" : "white" }} />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #86efac" }}>
+                    <SignatureCreator
+                      value={sameAsDesignMechanicalEngineer ? mechanicalEngineerSignature : mechSupervisorSignature}
+                      onChange={setMechSupervisorSignature}
+                      label={`Supervisor E-Signature (Affixed over printed name: ${sameAsDesignMechanicalEngineer ? mechanicalEngineerName : mechSupervisorName})`}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* BOX 5: BUILDING OWNER */}
+                <div style={{ background: "#ffffff", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div>
+                    <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0f172a", textTransform: "uppercase", display: "block" }}>
+                      BOX 5: BUILDING OWNER
+                    </span>
+                    <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                      Applicant / Building Owner sign-off and Community Tax Certificate (CTC) details
+                    </span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem", marginTop: "10px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>Building Owner Name *</label>
+                      <input type="text" required value={applicantName} disabled style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#f8fafc", fontWeight: "700" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>Owner Address *</label>
+                      <input type="text" required value={`${applicantNoStreet}, ${applicantBarangay}, ${applicantMunicipality}, ${applicantProvince}`} disabled style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#f8fafc" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>C.T.C. / Gov ID No. *</label>
+                      <input type="text" required value={govIdNo} onChange={(e) => setGovIdNo(e.target.value)} placeholder="e.g. CTC-2026-00192" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>Date Issued *</label>
+                      <input type="text" required value={govIdDateIssued} onChange={(e) => setGovIdDateIssued(e.target.value)} placeholder="e.g. Jan 08, 2026" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>Place Issued *</label>
+                      <input type="text" required value={govIdPlaceIssued} onChange={(e) => setGovIdPlaceIssued(e.target.value)} placeholder="e.g. Sto. Tomas, Pampanga" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                    <SignatureCreator
+                      value={applicantSignature}
+                      onChange={setApplicantSignature}
+                      label={`Building Owner E-Signature (Affixed over printed name: ${applicantName})`}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* BOX 6: WITH MY CONSENT: LOT OWNER */}
+                <div style={{ background: "#ffffff", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                    <div>
+                      <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0f172a", textTransform: "uppercase", display: "block" }}>
+                        BOX 6: WITH MY CONSENT: LOT OWNER
+                      </span>
+                      <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                        Consent of the registered lot owner if different from the building owner / applicant
+                      </span>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "700", color: "#2563eb", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={lotOwnerConsent}
+                        onChange={(e) => setLotOwnerConsent(e.target.checked)}
+                        style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                      />
+                      Include Box 6: With My Consent (Lot Owner)
+                    </label>
+                  </div>
+
+                  {lotOwnerConsent && (
+                    <div style={{ marginTop: "1rem", paddingTop: "0.85rem", borderTop: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>Lot Owner Full Name *</label>
+                          <input type="text" required value={lotOwnerName} onChange={(e) => setLotOwnerName(e.target.value)} placeholder="e.g. DAVE SICAT" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white", fontWeight: "700" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>Date Signed *</label>
+                          <input type="text" required value={lotOwnerSignedDate} onChange={(e) => setLotOwnerSignedDate(e.target.value)} placeholder="e.g. Jan 08, 2026" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>Lot Owner Address *</label>
+                          <input type="text" required value={lotOwnerAddress} onChange={(e) => setLotOwnerAddress(e.target.value)} placeholder="e.g. 105 Sitio Visitas, Sto. Tomas, Pampanga" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>C.T.C. / Gov ID No. *</label>
+                          <input type="text" required value={lotOwnerGovIdNo} onChange={(e) => setLotOwnerGovIdNo(e.target.value)} placeholder="e.g. PRC-ID-00987654" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>Date Issued *</label>
+                          <input type="text" required value={lotOwnerGovIdDateIssued} onChange={(e) => setLotOwnerGovIdDateIssued(e.target.value)} placeholder="e.g. Jan 10, 2024" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155" }}>Place Issued *</label>
+                          <input type="text" required value={lotOwnerGovIdPlaceIssued} onChange={(e) => setLotOwnerGovIdPlaceIssued(e.target.value)} placeholder="e.g. Sto. Tomas" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }} />
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                        <SignatureCreator
+                          value={lotOwnerSignature}
+                          onChange={setLotOwnerSignature}
+                          label={`Lot Owner E-Signature (Affixed over printed name: ${lotOwnerName})`}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
