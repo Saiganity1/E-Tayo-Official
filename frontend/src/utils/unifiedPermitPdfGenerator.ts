@@ -2214,28 +2214,6 @@ export async function generateSanitaryPermitPdf(data: UnifiedPermitFormData): Pr
   }
   drawText1(mpName.toUpperCase(), 355.0, 148.0, 8.0, true);
 
-  // Page 2: Credentials
-  if (doc.getPageCount() > 1) {
-    const p2 = doc.getPage(1);
-    const drawText2 = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false) => {
-      if (!text) return;
-      let clean = safeText(text).trim();
-      p2.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
-    };
-
-    drawText2(mpName.toUpperCase(), 120, 810.0, 8.5, true);
-    drawText2(data.masterPlumberPRC || "PRC-0012984", 420, 810.0, 7.5, false);
-    drawText2("Sto. Tomas, Pampanga", 120, 785.0, 7.5, false);
-    drawText2(data.masterPlumberPTR || "PTR-ST-2026-1102", 120, 760.0, 7.5, false);
-    drawText2("Jan 05, 2026", 320, 760.0, 7.5, false);
-    drawText2("Sto. Tomas", 450, 760.0, 7.5, false);
-    drawText2(data.masterPlumberTIN || "112-984-550-000", 120, 735.0, 7.5, false);
-
-    // Applicant signature
-    drawText2((data.applicantName || "PAUL PAYUMO").toUpperCase(), 120, 685.0, 8.5, true);
-    drawText2(data.govIdNo || "CTC-2026-00192", 120, 660.0, 7.5, false);
-  }
-
   return await doc.saveAsBase64({ dataUri: false });
 }
 
