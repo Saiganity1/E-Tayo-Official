@@ -6,9 +6,6 @@ import { Globe, MapPin, Clock, Mail, Phone, ShieldCheck, ExternalLink, ChevronRi
 export default function Footer() {
   return (
     <footer className="etayo-white-footer">
-      {/* Subtle Top Government Accent Bar */}
-      <div className="footer-top-accent-bar" />
-
       {/* Main Content Grid */}
       <div className="footer-container">
         <div className="footer-grid">
@@ -160,7 +157,7 @@ export default function Footer() {
             <span>© {new Date().getFullYear()} Republic of the Philippines • Municipality of Sto. Tomas, Pampanga.</span>
           </div>
           <div className="copy-right">
-            <span>Powered by <strong>e-Tayo</strong> Unified Digital Permitting &amp; Licensing System</span>
+            <span>Powered by <strong>Niceone Solutions</strong></span>
           </div>
         </div>
       </div>
@@ -168,20 +165,13 @@ export default function Footer() {
       <style jsx>{`
         .etayo-white-footer {
           width: 100%;
-          background: #f8fafc;
+          background: #ffffff;
           color: #334155;
           font-family: inherit;
           margin-top: auto;
           position: relative;
           z-index: 10;
           border-top: 1px solid #e2e8f0;
-        }
-
-        /* Top Government Accent Line */
-        .footer-top-accent-bar {
-          height: 4px;
-          width: 100%;
-          background: linear-gradient(90deg, #15803d 0%, #16a34a 35%, #059669 70%, #0d9488 100%);
         }
 
         /* Container */
@@ -249,7 +239,7 @@ export default function Footer() {
         .district-tag {
           font-size: 0.85rem;
           font-weight: 700;
-          color: #15803d;
+          color: #2563eb;
           letter-spacing: 0.01em;
         }
 
@@ -265,18 +255,18 @@ export default function Footer() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: #ecfdf5;
-          border: 1px solid #a7f3d0;
+          background: #f8fafc;
+          border: 1px solid #cbd5e1;
           padding: 6px 12px;
           border-radius: 8px;
           font-size: 0.78rem;
-          color: #065f46;
+          color: #334155;
           font-weight: 600;
           width: fit-content;
         }
 
         .badge-icon {
-          color: #059669;
+          color: #2563eb;
           flex-shrink: 0;
         }
 
@@ -293,7 +283,7 @@ export default function Footer() {
         .heading-line {
           width: 32px;
           height: 2.5px;
-          background: #16a34a;
+          background: #2563eb;
           border-radius: 2px;
           margin-bottom: 1.25rem;
         }
@@ -325,7 +315,7 @@ export default function Footer() {
         }
 
         .list-icon {
-          color: #16a34a;
+          color: #2563eb;
           flex-shrink: 0;
         }
 
@@ -357,26 +347,26 @@ export default function Footer() {
           gap: 12px;
           padding: 10px 14px;
           background: #ffffff;
-          border: 1.5px solid #bbf7d0;
+          border: 1.5px solid #e2e8f0;
           border-radius: 10px;
           text-decoration: none;
           margin-bottom: 1.25rem;
           transition: all 0.2s ease;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
         }
 
         .official-portal-link:hover {
-          border-color: #16a34a;
-          background: #f0fdf4;
+          border-color: #2563eb;
+          background: #f8fafc;
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(22, 163, 74, 0.12);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
         }
 
         .portal-icon-wrap {
           width: 36px;
           height: 36px;
-          background: #dcfce7;
-          color: #15803d;
+          background: #eff6ff;
+          color: #2563eb;
           border-radius: 8px;
           display: flex;
           align-items: center;
@@ -394,7 +384,7 @@ export default function Footer() {
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: #15803d;
+          color: #2563eb;
         }
 
         .portal-url {
@@ -407,7 +397,7 @@ export default function Footer() {
         }
 
         .ext-icon {
-          color: #16a34a;
+          color: #3b82f6;
         }
 
         /* Contact Details */
@@ -427,14 +417,14 @@ export default function Footer() {
         }
 
         .info-icon {
-          color: #16a34a;
+          color: #2563eb;
           flex-shrink: 0;
           margin-top: 2px;
         }
 
         /* Bottom Legal Strip */
         .footer-bottom-strip {
-          background: #f1f5f9;
+          background: #f8fafc;
           border-top: 1px solid #e2e8f0;
           padding: 1.25rem 3.5rem;
           font-size: 0.83rem;
@@ -452,7 +442,7 @@ export default function Footer() {
         }
 
         .copy-right strong {
-          color: #334155;
+          color: #0f172a;
         }
 
         /* Responsive Breakpoints */
