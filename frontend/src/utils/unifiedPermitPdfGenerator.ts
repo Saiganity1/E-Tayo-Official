@@ -72,6 +72,7 @@ export interface UnifiedPermitFormData {
   natureOthers?: string;
   occupancyClass: string;
   occupancyClassificationDetail?: string;
+  occupancyOthers?: string;
   proposedStoreys: string;
   numberOfUnits?: string;
   proposedStartDate?: string;
@@ -121,8 +122,17 @@ export interface UnifiedPermitFormData {
   lightingOutletsCount?: string;
   convenienceOutletsCount?: string;
   acuOutletsCount?: string;
+  cookingUnitOutletsCount?: string;
+  rangeOutletsCount?: string;
   waterHeaterOutletsCount?: string;
+  waterPumpOutletsCount?: string;
   groundingSpec?: string;
+  // Equipment / Wiring Devices details (Box 1)
+  toggleSwitchCount?: string;
+  bellBuzzerCount?: string;
+  pushButtonsCount?: string;
+  faDetectorCount?: string;
+  otherWiringDevicesCount?: string;
 
   // Sanitary / Plumbing Permit details
   waterSupplySource?: string;
@@ -275,6 +285,29 @@ export interface UnifiedPermitFormData {
   electricalEngineerPTRIssued?: string;
   electricalEngineerPTRIssuedAt?: string;
   electricalEngineerTIN?: string;
+  electricalEngineerSignedDate?: string;
+  electricalEngineerSignature?: string;
+
+  // Electrical Contractor details (Box 3)
+  electricalContractorName?: string;
+  electricalContractorPcab?: string;
+  electricalContractorAddress?: string;
+  electricalContractorTel?: string;
+
+  // Person In-Charge of Installation (Box 4)
+  sameAsDesignElectricalEngineer?: boolean;
+  installationInChargeRole?: "PEE" | "REE" | "RME";
+  installationInChargeName?: string;
+  installationInChargeAddress?: string;
+  installationInChargePRC?: string;
+  installationInChargePRCValidity?: string;
+  installationInChargeTel?: string;
+  installationInChargePTR?: string;
+  installationInChargePTRIssued?: string;
+  installationInChargePTRIssuedAt?: string;
+  installationInChargeTIN?: string;
+  installationInChargeSignedDate?: string;
+  installationInChargeSignature?: string;
 
   masterPlumberName?: string;
   masterPlumberAddress?: string;
@@ -1474,11 +1507,26 @@ export async function generateElectricalPermitPdf(data: UnifiedPermitFormData): 
     p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
   };
 
-  // Header: APPLICATION NO. & DATE APPLICATION FILED inside boxes
-  drawText(data.applicationNo || "APP-2026-6636", 75, 755.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 410, 755.0, 8, false);
-  drawText(data.proposedStartDate || "Sep 17, 2026", 75, 741.0, 7.5, false);
-  drawText(data.expectedCompletionDate || "WITHIN 180 DAYS", 410, 741.0, 7.5, false);
+  // Header: APPLICATION NO. & DATE APPLICATION FILED inside boxes, and Dates above underlines
+  const appNo = safeText(data.applicationNo || "APP-2026-6636").trim();
+  const appNoW = fontBold.widthOfTextAtSize(appNo, 8.5);
+  const appNoX = 98.5 - (appNoW / 2);
+  drawText(appNo, appNoX, 782.5, 8.5, true);
+
+  const fileDate = safeText(data.submissionDate || "Sep 17, 2026").trim();
+  const fileDateW = fontRegular.widthOfTextAtSize(fileDate, 8.0);
+  const fileDateX = 487.75 - (fileDateW / 2);
+  drawText(fileDate, fileDateX, 782.5, 8.0, false);
+
+  const startDate = safeText(data.proposedStartDate || "Sep 17, 2026").trim();
+  const startW = fontRegular.widthOfTextAtSize(startDate, 7.5);
+  const startX = 96.25 - (startW / 2);
+  drawText(startDate, startX, 762.0, 7.5, false);
+
+  const expDate = safeText(data.expectedCompletionDate || "WITHIN 180 DAYS").trim();
+  const expDateW = fontRegular.widthOfTextAtSize(expDate, 7.5);
+  const expDateX = 488.875 - (expDateW / 2);
+  drawText(expDate, expDateX, 762.0, 7.5, false);
 
   // Box 1
   const { lastName, firstName, mi, middleName } = parseApplicantName(data);
@@ -1498,32 +1546,275 @@ export async function generateElectricalPermitPdf(data: UnifiedPermitFormData): 
   drawText(data.barangay || "Poblacion", 330, 648.0, 7.5, true, 18);
   drawText("Sto. Tomas, Pampanga", 420, 648.0, 7.5, true, 20);
 
-  // Scope & Occupancy
-  drawCheck(49, 624.0); // [X] New Installation
-  drawCheck(31, 594.0); // [X] A. Residential Dwelling
+  // Scope of Work
+  const scopeNorm = (data.scopeOfWork || "").toLowerCase();
+  const scopeDetails = (data.scopeOfWorkDetails || data.scopeOthers || "").trim();
+
+  if (scopeNorm.includes("annual")) {
+    drawCheck(52.0, 619.0); // [X] Annual Inspection
+  } else if (scopeNorm.includes("addition")) {
+    drawCheck(207.0, 634.0); // [X] Addition Of
+    if (scopeDetails) drawText(scopeDetails, 270.0, 635.5, 7.0, false, 25);
+  } else if (scopeNorm.includes("repair")) {
+    drawCheck(207.0, 626.0); // [X] Repair Of
+    if (scopeDetails) drawText(scopeDetails, 260.0, 627.5, 7.0, false, 25);
+  } else if (scopeNorm.includes("remov") || scopeNorm.includes("mov")) {
+    drawCheck(207.0, 618.0); // [X] Removal Of
+    if (scopeDetails) drawText(scopeDetails, 270.0, 619.5, 7.0, false, 25);
+  } else if (scopeNorm.includes("other") || scopeNorm.includes("renov") || scopeNorm.includes("alter") || scopeNorm.includes("erect") || scopeNorm.includes("conver") || scopeNorm.includes("rais") || scopeNorm.includes("demoli") || scopeNorm.includes("accessor")) {
+    if (scopeNorm.includes("other")) {
+      drawCheck(363.0, 634.0); // [X] Others (Specify)
+      if (scopeDetails) drawText(scopeDetails, 450.0, 633.0, 7.0, false, 25);
+    } else {
+      drawCheck(52.0, 627.0); // [X] New Installation
+    }
+  } else {
+    // Default: New Installation
+    drawCheck(52.0, 627.0);
+  }
+
+  // Type of Occupancy (NBC Form E-01)
+  const rawOcc = (data.occupancyClassificationDetail || data.occupancyClass || data.projectType?.category || "").trim();
+  const occNorm = rawOcc.toUpperCase();
+
+  if (
+    occNorm.startsWith("A.") ||
+    occNorm.includes("RESIDENTIAL DWELLING") ||
+    occNorm.includes("SINGLE FAMILY") ||
+    occNorm.includes("DUPLEX") ||
+    occNorm.includes("GROUP A") ||
+    occNorm === "RESIDENTIAL"
+  ) {
+    drawCheck(31.5, 594.0); // [X] A. Residential Dwelling
+  } else if (
+    occNorm.startsWith("B.") ||
+    occNorm.includes("HOTEL") ||
+    occNorm.includes("APARTMENT") ||
+    occNorm.includes("TOWNHOUSE") ||
+    occNorm.includes("DORMITORY") ||
+    occNorm.includes("GROUP B")
+  ) {
+    drawCheck(31.5, 586.0); // [X] B. Residential, Hotel, Apartment
+  } else if (
+    occNorm.startsWith("C.") ||
+    occNorm.includes("EDUCATION") ||
+    (occNorm.includes("RECREATION") && !occNorm.includes("ASSEMBLY")) ||
+    occNorm.includes("SCHOOL") ||
+    occNorm.includes("CHURCH") ||
+    occNorm.includes("GROUP C")
+  ) {
+    drawCheck(31.5, 578.0); // [X] C. Education and Recreation
+  } else if (
+    occNorm.startsWith("D.") ||
+    occNorm.includes("INSTITUTIONAL") ||
+    occNorm.includes("HOSPITAL") ||
+    occNorm.includes("MEDICAL") ||
+    occNorm.includes("HOME FOR THE AGED") ||
+    occNorm.includes("GOVERNMENT OFFICE") ||
+    occNorm.includes("GROUP D")
+  ) {
+    drawCheck(31.5, 569.0); // [X] D. Institutional
+  } else if (
+    occNorm.startsWith("K.") ||
+    occNorm.includes("ASSEMBLY OTHER THAN") ||
+    occNorm.includes("< 1,000") ||
+    occNorm.includes("< 1000") ||
+    occNorm.includes("THEATER") ||
+    occNorm.includes("AUDITORIUM") ||
+    occNorm.includes("GROUP H")
+  ) {
+    drawCheck(205.5, 569.5); // [X] K. Assembly Other Than Group I
+  } else if (
+    occNorm.startsWith("E.") ||
+    occNorm.includes("1000 OR MORE") ||
+    occNorm.includes("1,000 OR MORE") ||
+    occNorm.includes("1000+") ||
+    occNorm.includes("1,000+") ||
+    occNorm.includes("COLISEUM") ||
+    occNorm.includes("CONVENTION CENTER") ||
+    occNorm.startsWith("GROUP I")
+  ) {
+    drawCheck(373.5, 594.0); // [X] E. Assembly Occupant Load 1000 or More
+  } else if (
+    occNorm.startsWith("F.") ||
+    occNorm.includes("ACCESSORY") ||
+    occNorm.includes("CARPORT") ||
+    occNorm.includes("GARAGE") ||
+    occNorm.includes("SWIMMING POOL") ||
+    occNorm.includes("GROUP J")
+  ) {
+    drawCheck(373.5, 586.0); // [X] F. Accessory
+  } else if (
+    occNorm.startsWith("H.") ||
+    occNorm.includes("BUSINESS") ||
+    occNorm.includes("MERCANTILE") ||
+    occNorm.includes("COMMERCIAL") ||
+    occNorm.includes("BANK") ||
+    occNorm.includes("STORE") ||
+    occNorm.includes("RETAIL") ||
+    occNorm.includes("MALL") ||
+    occNorm.includes("DINING") ||
+    occNorm.includes("SHOP") ||
+    occNorm.startsWith("GROUP E")
+  ) {
+    drawCheck(205.5, 594.0); // [X] H. Business and Mercantile
+  } else if (
+    occNorm.startsWith("I.") ||
+    occNorm.startsWith("GROUP F") ||
+    (occNorm.includes("INDUSTRIAL") && !occNorm.includes("STORAGE") && !occNorm.includes("HAZARDOUS")) ||
+    occNorm.includes("FACTORY") ||
+    occNorm.includes("PLANT")
+  ) {
+    drawCheck(205.5, 585.5); // [X] I. Industrial
+  } else if (
+    occNorm.startsWith("J.") ||
+    occNorm.startsWith("GROUP G") ||
+    occNorm.includes("STORAGE") ||
+    occNorm.includes("HAZARDOUS") ||
+    occNorm.includes("WAREHOUSE") ||
+    occNorm.includes("FLAMMABLE")
+  ) {
+    drawCheck(205.5, 577.5); // [X] J. Storage and Hazardous
+  } else if (
+    occNorm.startsWith("G.") ||
+    occNorm.includes("OTHER") ||
+    occNorm.includes("SPECIFY")
+  ) {
+    drawCheck(374.0, 578.0); // [X] G. Others (Specify)
+    const occDetail = data.occupancyOthers || (occNorm.includes("SPECIFY") || occNorm.includes("OTHER") ? "" : rawOcc);
+    if (occDetail) {
+      drawText(occDetail.toUpperCase(), 470.0, 580.0, 7.5, false, 25);
+    }
+  } else {
+    // Default fallback: A. Residential Dwelling
+    drawCheck(31.5, 594.0);
+  }
 
   // Number of Outlets
-  drawText(data.lightingOutletsCount || "24", 32, 547.5, 7.5, true);
-  drawText(data.convenienceOutletsCount || "18", 32, 536.0, 7.5, true);
-  drawText(data.acuOutletsCount || "3", 32, 524.5, 7.5, true);
-  drawText("1", 190, 547.5, 7.5, true); // Cooking unit
-  drawText(data.waterHeaterOutletsCount || "2", 190, 536.0, 7.5, true); // Water heater
+  const drawCenteredOn = (val: string | undefined | null, cx: number, y: number) => {
+    if (!val && val !== "0") return;
+    const s = String(val).trim();
+    if (!s) return;
+    const w = fontBold.widthOfTextAtSize(s, 7.5);
+    drawText(s, cx - (w / 2), y, 7.5, true);
+  };
+
+  drawCenteredOn(data.lightingOutletsCount || "28", 40.5, 547.5);
+  drawCenteredOn(data.convenienceOutletsCount || "24", 40.5, 539.5);
+  drawCenteredOn(data.acuOutletsCount || "4", 40.5, 531.5);
+  drawCenteredOn(data.cookingUnitOutletsCount || data.rangeOutletsCount || "1", 199.0, 547.5);
+  drawCenteredOn(data.waterHeaterOutletsCount || "2", 199.0, 539.5);
+  drawCenteredOn(data.waterPumpOutletsCount || "1", 199.0, 531.5);
+
+  // Number of Equipment / Wiring Devices
+  drawCenteredOn(data.toggleSwitchCount || "15", 308.2, 547.5);
+  drawCenteredOn(data.bellBuzzerCount || "1", 308.2, 539.5);
+  drawCenteredOn(data.pushButtonsCount || "1", 308.2, 531.5);
+  drawCenteredOn(data.faDetectorCount || "2", 440.7, 547.5);
+  drawCenteredOn(data.otherWiringDevicesCount || "1", 440.7, 539.5);
 
   // Box 2: Professional Electrical Engineer
-  const peeName = data.electricalEngineerName || "Engr. Danilo Reyes, PEE";
-  drawText(peeName.toUpperCase(), 45, 486.0, 8.5, true);
-  drawText(data.electricalEngineerPRC || "PRC-0033421", 375, 486.0, 7.5, false);
-  drawText(data.electricalEngineerPRCValidity || "2028-12-31", 480, 486.0, 7.5, false);
-  drawText("Sto. Tomas, Pampanga", 45, 458.0, 7.5, false);
-  drawText("0917-555-4321", 375, 458.0, 7.5, false);
-  drawText(data.electricalEngineerPTR || "PTR-ST-2026-4412", 45, 438.0, 7.5, false);
-  // DATE ISSUED - contains date only
-  const rawPeePtrDate = data.electricalEngineerPTRIssued || "Jan 05, 2026";
+  const peeName = (data.electricalEngineerName || "Engr. Danilo Reyes, PEE").trim();
+  const peeUpper = peeName.toUpperCase();
+  drawText(peeUpper, 45, 488.0, 8.5, true);
+
+  // PRC REG. NO. & VALIDITY
+  const rawPrc = data.electricalEngineerPRC || "0033421";
+  const cleanPrc = rawPrc.replace(/^[A-Za-z-]+/g, "").trim() || rawPrc;
+  drawText(cleanPrc, 375, 488.0, 7.5, false);
+  drawText(data.electricalEngineerPRCValidity || "2028-11-30", 480, 488.0, 7.5, false);
+
+  // ADDRESS & TEL./FAX NO.
+  const peeAddress = data.electricalEngineerAddress || "Sto. Tomas, Pampanga";
+  drawText(peeAddress, 45, 460.0, 7.5, false, 40);
+  drawText(data.electricalEngineerTel || data.applicantPhone || "0917-555-4321", 375, 460.0, 7.5, false);
+
+  // ROW 3: P.T.R NO., DATE ISSUED, PLACE ISSUED
+  drawText(data.electricalEngineerPTR || "PTR-ST-443322", 45, 439.5, 7.5, false);
+  const rawPeePtrDate = data.electricalEngineerPTRIssued || "Jan 12, 2026";
   const peePtrDateOnly = rawPeePtrDate.includes("/") ? rawPeePtrDate.split("/")[1].trim() : rawPeePtrDate;
-  drawText(peePtrDateOnly, 200, 438.0, 7.5, false);
-  drawText("Sto. Tomas", 375, 438.0, 7.5, false);
-  drawText(peeName.toUpperCase(), 45, 412.0, 8.5, true);
-  drawText(data.electricalEngineerTIN || "334-219-880-000", 375, 412.0, 7.5, false);
+  // Place DATE ISSUED comfortably inside cell [203.1, 365.1]
+  drawText(peePtrDateOnly, 215, 439.5, 7.5, false);
+  drawText(data.electricalEngineerPTRIssuedAt || "Sto. Tomas", 375, 439.5, 7.5, false);
+
+  // ROW 4: SIGNATURE, DATE ISSUED, T.I.N
+  // Center printed name under signature space in cell [23.4, 203.1] (cx = 113.25)
+  const peeNameW = fontBold.widthOfTextAtSize(peeUpper, 8.0);
+  const peeNameX = 113.25 - (peeNameW / 2);
+  drawText(peeUpper, peeNameX, 412.0, 8.0, true);
+
+  if (data.electricalEngineerSignature) {
+    await embedSignatureImage(doc, p1, data.electricalEngineerSignature, 113.25 - 55, 411.0, 110, 24);
+  }
+
+  const peeSignDate = data.electricalEngineerSignedDate || data.submissionDate || peePtrDateOnly;
+  drawText(peeSignDate, 215, 412.0, 7.5, false);
+  drawText(data.electricalEngineerTIN || "456-789-012-000", 375, 412.0, 7.5, false);
+
+  // Box 3: Electrical Contractor (200 Ampere Main and Above)
+  const contractorName = (data.electricalContractorName || "VOLTMAX ELECTRICAL SERVICES & CONTRACTING INC.").trim();
+  if (contractorName && contractorName !== "N/A" && contractorName !== "NONE") {
+    drawText(contractorName.toUpperCase(), 45, 370.5, 8.0, true);
+    drawText(data.electricalContractorPcab || "PCAB-EL-2026-9811", 280, 370.5, 7.5, false);
+    drawText(data.electricalContractorAddress || "San Fernando, Pampanga", 45, 342.5, 7.5, false, 40);
+    drawText(data.electricalContractorTel || "0918-777-8899", 375, 342.5, 7.5, false);
+  }
+
+  // Box 4: Person In-Charge of Installation
+  const isSameEE = data.sameAsDesignElectricalEngineer ?? false;
+  const inChargeRole = isSameEE ? "PEE" : (data.installationInChargeRole || "PEE");
+  const inChargeName = (isSameEE ? (data.electricalEngineerName || "Engr. Danilo Reyes, PEE") : (data.installationInChargeName || data.electricalEngineerName || "Engr. Danilo Reyes, PEE")).trim();
+  const inChargeAddress = isSameEE ? (data.electricalEngineerAddress || "Sto. Tomas, Pampanga") : (data.installationInChargeAddress || data.electricalEngineerAddress || "Sto. Tomas, Pampanga");
+  const inChargeRawPrc = isSameEE ? (data.electricalEngineerPRC || "0033421") : (data.installationInChargePRC || data.electricalEngineerPRC || "0033421");
+  const inChargeCleanPrc = inChargeRawPrc.replace(/^[A-Za-z-]+/g, "").trim() || inChargeRawPrc;
+  const inChargeValidity = isSameEE ? (data.electricalEngineerPRCValidity || "2028-11-30") : (data.installationInChargePRCValidity || data.electricalEngineerPRCValidity || "2028-11-30");
+  const inChargeTel = isSameEE ? (data.electricalEngineerTel || data.applicantPhone || "0917-555-4321") : (data.installationInChargeTel || data.electricalEngineerTel || data.applicantPhone || "0917-555-4321");
+  const inChargePTR = isSameEE ? (data.electricalEngineerPTR || "PTR-ST-443322") : (data.installationInChargePTR || data.electricalEngineerPTR || "PTR-ST-443322");
+  const inChargeRawPtrDate = isSameEE ? (data.electricalEngineerPTRIssued || "Jan 12, 2026") : (data.installationInChargePTRIssued || data.electricalEngineerPTRIssued || "Jan 12, 2026");
+  const inChargePtrDateOnly = inChargeRawPtrDate.includes("/") ? inChargeRawPtrDate.split("/")[1].trim() : inChargeRawPtrDate;
+  const inChargePTRIssuedAt = isSameEE ? (data.electricalEngineerPTRIssuedAt || "Sto. Tomas") : (data.installationInChargePTRIssuedAt || data.electricalEngineerPTRIssuedAt || "Sto. Tomas");
+  const inChargeTIN = isSameEE ? (data.electricalEngineerTIN || "456-789-012-000") : (data.installationInChargeTIN || data.electricalEngineerTIN || "456-789-012-000");
+  const inChargeSignedDate = isSameEE 
+    ? (data.electricalEngineerSignedDate || data.submissionDate || inChargePtrDateOnly) 
+    : (data.installationInChargeSignedDate || data.submissionDate || inChargePtrDateOnly);
+  const inChargeSignature = isSameEE ? data.electricalEngineerSignature : data.installationInChargeSignature;
+
+  // Header Checkboxes
+  const roleUpper = inChargeRole.toUpperCase();
+  if (roleUpper.includes("MASTER") || roleUpper === "RME") {
+    drawCheck(392.3, 316.5); // [X] Registered Master Electrician
+  } else if ((roleUpper.includes("REGISTERED") && !roleUpper.includes("MASTER")) || roleUpper === "REE") {
+    drawCheck(202.8, 316.5); // [X] Registered Electrical Engineer
+  } else {
+    drawCheck(27.5, 316.5);  // [X] Professional Electrical Engineer
+  }
+
+  // Row 1: NAME, PRC REG NO., VALIDITY
+  const inChargeNameUpper = inChargeName.toUpperCase();
+  drawText(inChargeNameUpper, 45.0, 272.5, 8.5, true, 40);
+  drawText(inChargeCleanPrc, 375.0, 272.5, 7.5, false);
+  drawText(inChargeValidity, 495.0, 272.5, 7.5, false);
+
+  // Row 2: ADDRESS, TEL/FAX NO.
+  drawText(inChargeAddress, 45.0, 244.5, 7.5, false, 40);
+  drawText(inChargeTel, 375.0, 244.5, 7.5, false);
+
+  // Row 3: P.T.R NO., DATE ISSUED, PLACE ISSUED
+  drawText(inChargePTR, 45.0, 216.5, 7.5, false);
+  drawText(inChargePtrDateOnly, 215.0, 216.5, 7.5, false);
+  drawText(inChargePTRIssuedAt, 375.0, 216.5, 7.5, false);
+
+  // Row 4: SIGNATURE, DATE SIGNED, T.I.N
+  const inChargeW = fontBold.widthOfTextAtSize(inChargeNameUpper, 8.0);
+  const inChargeX = 111.0 - (inChargeW / 2);
+  drawText(inChargeNameUpper, inChargeX, 186.5, 8.0, true);
+
+  if (inChargeSignature) {
+    await embedSignatureImage(doc, p1, inChargeSignature, 111.0 - 55, 185.5, 110, 24);
+  }
+
+  drawText(inChargeSignedDate, 215.0, 186.5, 7.5, false);
+  drawText(inChargeTIN, 375.0, 186.5, 7.5, false);
 
   // Box 5: Owner
   if (data.applicantSignature) {

@@ -304,6 +304,10 @@ export default function TechnicalPermitFormsStep({
   // ==========================================
   // 5. ELECTRICAL PERMIT (EP) FIELDS
   // ==========================================
+  const [electricalScopeOfWork, setElectricalScopeOfWork] = useState("New Installation");
+  const [electricalScopeDetails, setElectricalScopeDetails] = useState("");
+  const [electricalOccupancy, setElectricalOccupancy] = useState("A. RESIDENTIAL DWELLING");
+  const [electricalOccupancyOthers, setElectricalOccupancyOthers] = useState("");
   const [electricalVoltage, setElectricalVoltage] = useState("230V, Single-Phase, 2-Wire, 60 Hz AC");
   const [mainBreaker, setMainBreaker] = useState("60A, 2-Pole, 240V, 10 kAIC Molded Case Circuit Breaker (MCCB)");
   const [electricalConnectedLoad, setElectricalConnectedLoad] = useState(
@@ -317,6 +321,12 @@ export default function TechnicalPermitFormsStep({
   const [acuOutletsCount, setAcuOutletsCount] = useState("3");
   const [rangeOutletsCount, setRangeOutletsCount] = useState("1");
   const [waterHeaterOutletsCount, setWaterHeaterOutletsCount] = useState("2");
+  const [waterPumpOutletsCount, setWaterPumpOutletsCount] = useState("1");
+  const [toggleSwitchCount, setToggleSwitchCount] = useState("12");
+  const [bellBuzzerCount, setBellBuzzerCount] = useState("1");
+  const [pushButtonsCount, setPushButtonsCount] = useState("1");
+  const [faDetectorCount, setFaDetectorCount] = useState("2");
+  const [otherWiringDevicesCount, setOtherWiringDevicesCount] = useState("1");
   const [electricalEngineerName, setElectricalEngineerName] = useState("Engr. Danilo Reyes, PEE");
   const [electricalEngineerPRC, setElectricalEngineerPRC] = useState("PRC-PEE-0033421");
   const [electricalEngineerPRCValidity, setElectricalEngineerPRCValidity] = useState("2027-09-30");
@@ -324,6 +334,26 @@ export default function TechnicalPermitFormsStep({
   const [electricalEngineerPTR, setElectricalEngineerPTR] = useState("PTR-ST-2026-4412");
   const [electricalEngineerPTRIssued, setElectricalEngineerPTRIssued] = useState("Sto. Tomas, Pampanga");
   const [electricalEngineerTIN, setElectricalEngineerTIN] = useState("456-789-012-000");
+  const [electricalEngineerSignature, setElectricalEngineerSignature] = useState<string>("");
+  const [electricalContractorName, setElectricalContractorName] = useState("VOLTMAX ELECTRICAL SERVICES & CONTRACTING INC.");
+  const [electricalContractorPcab, setElectricalContractorPcab] = useState("PCAB-EL-2026-9811");
+  const [electricalContractorAddress, setElectricalContractorAddress] = useState("San Fernando, Pampanga");
+  const [electricalContractorTel, setElectricalContractorTel] = useState("0918-777-8899");
+
+  // Box 4: Person In-Charge of Installation
+  const [sameAsDesignElectricalEngineer, setSameAsDesignElectricalEngineer] = useState(false);
+  const [installationInChargeRole, setInstallationInChargeRole] = useState<"PEE" | "REE" | "RME">("PEE");
+  const [installationInChargeName, setInstallationInChargeName] = useState("Engr. Edgar C. Mendoza, REE");
+  const [installationInChargeAddress, setInstallationInChargeAddress] = useState("Sto. Tomas, Pampanga");
+  const [installationInChargePRC, setInstallationInChargePRC] = useState("PRC-REE-0045678");
+  const [installationInChargePRCValidity, setInstallationInChargePRCValidity] = useState("2028-08-20");
+  const [installationInChargeTel, setInstallationInChargeTel] = useState("0917-888-1234");
+  const [installationInChargePTR, setInstallationInChargePTR] = useState("PTR-ST-2026-5566");
+  const [installationInChargePTRIssued, setInstallationInChargePTRIssued] = useState("Jan 14, 2026");
+  const [installationInChargePTRIssuedAt, setInstallationInChargePTRIssuedAt] = useState("Sto. Tomas, Pampanga");
+  const [installationInChargeTIN, setInstallationInChargeTIN] = useState("345-678-901-000");
+  const [installationInChargeSignedDate, setInstallationInChargeSignedDate] = useState("Jan 15, 2026");
+  const [installationInChargeSignature, setInstallationInChargeSignature] = useState<string>("");
 
   // ==========================================
   // 6. SANITARY / PLUMBING PERMIT (PL) FIELDS
@@ -668,6 +698,12 @@ export default function TechnicalPermitFormsStep({
         convenienceOutletsCount,
         acuOutletsCount,
         waterHeaterOutletsCount,
+        waterPumpOutletsCount,
+        toggleSwitchCount,
+        bellBuzzerCount,
+        pushButtonsCount,
+        faDetectorCount,
+        otherWiringDevicesCount,
         groundingSpec,
         waterSupplySource,
         sewageSystem,
@@ -771,6 +807,11 @@ export default function TechnicalPermitFormsStep({
         govIdPlaceIssued,
         civilEngineerSignature,
         civilEngineerSignedDate,
+        electricalEngineerSignature,
+        electricalContractorName,
+        electricalContractorPcab,
+        electricalContractorAddress,
+        electricalContractorTel,
         supervisorCivilEngineerSignature,
         supervisorCivilEngineerSignedDate,
         lotOwnerConsent,
@@ -805,7 +846,44 @@ export default function TechnicalPermitFormsStep({
             const b64 = await generateStructuralPermitPdf(payload);
             formUrl = `data:application/pdf;base64,${b64}`;
           } else if (key === "electricalPermit") {
-            const b64 = await generateElectricalPermitPdf(payload);
+            const epPayload: UnifiedPermitFormData = {
+              ...payload,
+              scopeOfWork: electricalScopeOfWork || payload.scopeOfWork,
+              scopeOfWorkDetails: electricalScopeDetails || payload.scopeOfWorkDetails,
+              occupancyClassificationDetail: electricalOccupancy || occupancyClass,
+              occupancyOthers: electricalOccupancyOthers,
+              lightingOutletsCount,
+              convenienceOutletsCount,
+              acuOutletsCount,
+              cookingUnitOutletsCount: rangeOutletsCount,
+              rangeOutletsCount,
+              waterHeaterOutletsCount,
+              waterPumpOutletsCount,
+              toggleSwitchCount,
+              bellBuzzerCount,
+              pushButtonsCount,
+              faDetectorCount,
+              otherWiringDevicesCount,
+              electricalEngineerSignature,
+              electricalContractorName,
+              electricalContractorPcab,
+              electricalContractorAddress,
+              electricalContractorTel,
+              sameAsDesignElectricalEngineer,
+              installationInChargeRole,
+              installationInChargeName,
+              installationInChargeAddress,
+              installationInChargePRC,
+              installationInChargePRCValidity,
+              installationInChargeTel,
+              installationInChargePTR,
+              installationInChargePTRIssued,
+              installationInChargePTRIssuedAt,
+              installationInChargeTIN,
+              installationInChargeSignedDate,
+              installationInChargeSignature,
+            };
+            const b64 = await generateElectricalPermitPdf(epPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           } else if (key === "sanitaryPermit") {
             const b64 = await generateSanitaryPermitPdf(payload);
@@ -2034,19 +2112,22 @@ export default function TechnicalPermitFormsStep({
                         style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }}
                       >
                         <option value="New Construction">New Construction</option>
-                        <option value="Erection">Erection</option>
+                        <option value="New Installation">New Installation</option>
+                        <option value="Annual Inspection">Annual Inspection</option>
                         <option value="Addition">Addition</option>
+                        <option value="Repair">Repair</option>
+                        <option value="Removal">Removal</option>
+                        <option value="Erection">Erection</option>
                         <option value="Alteration">Alteration</option>
                         <option value="Renovation">Renovation</option>
                         <option value="Conversion">Conversion</option>
-                        <option value="Repair">Repair</option>
                         <option value="Moving">Moving</option>
                         <option value="Raising">Raising</option>
                         <option value="Demolition">Demolition</option>
                         <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                         <option value="Others">Others (Specify)</option>
                       </select>
-                      {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+                      {["Addition", "Repair", "Removal", "Renovation", "Conversion", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
                         <div style={{ marginTop: "8px" }}>
                           <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
                             Specify {scopeOfWork} Details (Prints on Form Underline) *
@@ -2501,19 +2582,22 @@ export default function TechnicalPermitFormsStep({
                       style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }}
                     >
                       <option value="New Construction">New Construction</option>
-                      <option value="Erection">Erection</option>
+                      <option value="New Installation">New Installation</option>
+                      <option value="Annual Inspection">Annual Inspection</option>
                       <option value="Addition">Addition</option>
+                      <option value="Repair">Repair</option>
+                      <option value="Removal">Removal</option>
+                      <option value="Erection">Erection</option>
                       <option value="Alteration">Alteration</option>
                       <option value="Renovation">Renovation</option>
                       <option value="Conversion">Conversion</option>
-                      <option value="Repair">Repair</option>
                       <option value="Moving">Moving</option>
                       <option value="Raising">Raising</option>
                       <option value="Demolition">Demolition</option>
                       <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                       <option value="Others">Others (Specify)</option>
                     </select>
-                    {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+                    {["Addition", "Repair", "Removal", "Renovation", "Conversion", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
                       <div style={{ marginTop: "8px" }}>
                         <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
                           Specify {scopeOfWork} Details (Prints on Form Underline) *
@@ -3271,6 +3355,82 @@ export default function TechnicalPermitFormsStep({
                   </div>
                 </div>
 
+                {/* Section 0: Scope of Work & Type of Occupancy (NBC Form E-01 Box 1) */}
+                <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#1e40af", textTransform: "uppercase" }}>
+                    Scope of Work & Type of Occupancy (Box 1)
+                  </span>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "10px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                        Scope of Work *
+                      </label>
+                      <select
+                        value={electricalScopeOfWork}
+                        onChange={(e) => setElectricalScopeOfWork(e.target.value)}
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff" }}
+                      >
+                        <option value="New Installation">New Installation</option>
+                        <option value="Annual Inspection">Annual Inspection</option>
+                        <option value="Addition">Addition</option>
+                        <option value="Repair">Repair</option>
+                        <option value="Removal">Removal</option>
+                        <option value="Others">Others (Specify)</option>
+                      </select>
+                      {["Addition", "Repair", "Removal", "Others"].some(k => electricalScopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+                        <div style={{ marginTop: "6px" }}>
+                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b", marginBottom: "2px" }}>
+                            Specify {electricalScopeOfWork} Details (Printed on Form Underline)
+                          </label>
+                          <input
+                            type="text"
+                            value={electricalScopeDetails}
+                            onChange={(e) => setElectricalScopeDetails(e.target.value)}
+                            placeholder={`e.g. Details for ${electricalScopeOfWork}`}
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                        Type of Occupancy (NBC Form E-01) *
+                      </label>
+                      <select
+                        value={electricalOccupancy}
+                        onChange={(e) => setElectricalOccupancy(e.target.value)}
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1.5px solid #93c5fd", fontSize: "0.88rem", background: "#f0f9ff", color: "#1e3a8a", fontWeight: "700" }}
+                      >
+                        <option value="A. RESIDENTIAL DWELLING">A. RESIDENTIAL DWELLING</option>
+                        <option value="B. RESIDENTIAL, HOTEL, APARTMENT">B. RESIDENTIAL, HOTEL, APARTMENT</option>
+                        <option value="C. EDUCATION AND RECREATION">C. EDUCATION AND RECREATION</option>
+                        <option value="D. INSTITUTIONAL">D. INSTITUTIONAL</option>
+                        <option value="H. BUSINESS AND MERCANTILE">H. BUSINESS AND MERCANTILE</option>
+                        <option value="I. INDUSTRIAL">I. INDUSTRIAL</option>
+                        <option value="J. STORAGE AND HAZARDOUS">J. STORAGE AND HAZARDOUS</option>
+                        <option value="K. ASSEMBLY OTHER THAN GROUP I">K. ASSEMBLY OTHER THAN GROUP I</option>
+                        <option value="E. ASSEMBLY OCCUPANT LOAD 1000 OR MORE">E. ASSEMBLY OCCUPANT LOAD 1000 OR MORE</option>
+                        <option value="F. ACCESSORY">F. ACCESSORY</option>
+                        <option value="G. OTHERS (SPECIFY)">G. OTHERS (SPECIFY)</option>
+                      </select>
+                      {electricalOccupancy.includes("OTHERS") && (
+                        <div style={{ marginTop: "6px" }}>
+                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b", marginBottom: "2px" }}>
+                            Specify Other Occupancy (Printed on Form Underline)
+                          </label>
+                          <input
+                            type="text"
+                            value={electricalOccupancyOthers}
+                            onChange={(e) => setElectricalOccupancyOthers(e.target.value)}
+                            placeholder="e.g. SPECIAL WORKSHOP / DATA CENTER"
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Section A: Service Entrance & Main Distribution */}
                 <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
                   <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#1e40af", textTransform: "uppercase" }}>
@@ -3330,6 +3490,38 @@ export default function TechnicalPermitFormsStep({
                       <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Water Heater Outlets *</label>
                       <input type="number" required value={waterHeaterOutletsCount} onChange={(e) => setWaterHeaterOutletsCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
                     </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Water Pump Outlets *</label>
+                      <input type="number" required value={waterPumpOutletsCount} onChange={(e) => setWaterPumpOutletsCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "1.25rem", paddingTop: "1rem", borderTop: "1px dashed #cbd5e1" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#1e40af", textTransform: "uppercase" }}>
+                      Box 1: Number of Equipment / Wiring Devices
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "1rem", marginTop: "10px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Toggle Switch *</label>
+                        <input type="number" required value={toggleSwitchCount} onChange={(e) => setToggleSwitchCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Bell / Buzzer *</label>
+                        <input type="number" required value={bellBuzzerCount} onChange={(e) => setBellBuzzerCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Push Buttons *</label>
+                        <input type="number" required value={pushButtonsCount} onChange={(e) => setPushButtonsCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>FA Detector *</label>
+                        <input type="number" required value={faDetectorCount} onChange={(e) => setFaDetectorCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Others (See Attached List) *</label>
+                        <input type="number" required value={otherWiringDevicesCount} onChange={(e) => setOtherWiringDevicesCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -3364,6 +3556,249 @@ export default function TechnicalPermitFormsStep({
                       <input type="text" required value={electricalEngineerPTRIssued} onChange={(e) => setElectricalEngineerPTRIssued(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
                     </div>
                   </div>
+
+                  <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                    <SignatureCreator
+                      value={electricalEngineerSignature}
+                      onChange={setElectricalEngineerSignature}
+                      label={`Electrical Engineer E-Signature (Box 2 - ${electricalEngineerName || "Professional Electrical Engineer"})`}
+                    />
+                  </div>
+                </div>
+
+                {/* Section D: Electrical Contractor (Box 3) */}
+                <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#1e40af", textTransform: "uppercase" }}>
+                      Box 3: Electrical Contractor (200 Ampere Main and Above)
+                    </span>
+                    <span style={{ fontSize: "0.68rem", fontWeight: "600", color: "#64748b", background: "#f1f5f9", padding: "2px 8px", borderRadius: "4px" }}>
+                      Special Electrical • PCAB Licensed
+                    </span>
+                  </div>
+                  <p style={{ margin: "0 0 10px 0", fontSize: "0.76rem", color: "#64748b" }}>
+                    Required for installations with 200A main circuit breaker and above.
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.85rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#334155", fontWeight: "600", marginBottom: "4px" }}>Contractor Name / Firm</label>
+                      <input type="text" value={electricalContractorName} onChange={(e) => setElectricalContractorName(e.target.value)} placeholder="VOLTMAX ELECTRICAL SERVICES & CONTRACTING INC." style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#334155", fontWeight: "600", marginBottom: "4px" }}>PCAB Lic. No. (Special Electrical)</label>
+                      <input type="text" value={electricalContractorPcab} onChange={(e) => setElectricalContractorPcab(e.target.value)} placeholder="PCAB-EL-2026-9811" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.85rem", marginTop: "10px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#334155", fontWeight: "600", marginBottom: "4px" }}>Contractor Business Address</label>
+                      <input type="text" value={electricalContractorAddress} onChange={(e) => setElectricalContractorAddress(e.target.value)} placeholder="San Fernando, Pampanga" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", color: "#334155", fontWeight: "600", marginBottom: "4px" }}>Tel. / Fax No.</label>
+                      <input type="text" value={electricalContractorTel} onChange={(e) => setElectricalContractorTel(e.target.value)} placeholder="0918-777-8899" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section E: Box 4: Person In-Charge of Installation */}
+                <div style={{ background: "#ffffff", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <div>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#0f172a", textTransform: "uppercase" }}>
+                        BOX 4: PERSON IN-CHARGE OF INSTALLATION
+                      </span>
+                      <p style={{ margin: "2px 0 0 0", fontSize: "0.74rem", color: "#64748b" }}>
+                        Professional in-charge of electrical installation (PEE, REE, or RME)
+                      </p>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "700", color: "#2563eb", cursor: "pointer" }}>
+                      <input 
+                        type="checkbox" 
+                        checked={sameAsDesignElectricalEngineer} 
+                        onChange={(e) => setSameAsDesignElectricalEngineer(e.target.checked)} 
+                        style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                      />
+                      Same as Design Professional (Box 2)
+                    </label>
+                  </div>
+
+                  {!sameAsDesignElectricalEngineer ? (
+                    <div style={{ marginTop: "1rem", paddingTop: "0.85rem", borderTop: "1px solid #e2e8f0" }}>
+                      {/* Classification Radio Buttons */}
+                      <div style={{ marginBottom: "1rem", padding: "10px 12px", borderRadius: "8px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#1e293b", marginBottom: "6px" }}>
+                          Professional Classification (Form E-01 Box 4 Checkboxes)
+                        </label>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "1.25rem" }}>
+                          <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                            <input
+                              type="radio"
+                              name="installationInChargeRoleStep"
+                              value="PEE"
+                              checked={installationInChargeRole === "PEE"}
+                              onChange={() => setInstallationInChargeRole("PEE")}
+                              style={{ accentColor: "#2563eb" }}
+                            />
+                            <span>PROFESSIONAL ELECTRICAL ENGINEER</span>
+                          </label>
+                          <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                            <input
+                              type="radio"
+                              name="installationInChargeRoleStep"
+                              value="REE"
+                              checked={installationInChargeRole === "REE"}
+                              onChange={() => setInstallationInChargeRole("REE")}
+                              style={{ accentColor: "#2563eb" }}
+                            />
+                            <span>REGISTERED ELECTRICAL ENGINEER</span>
+                          </label>
+                          <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "600", color: "#334155", cursor: "pointer" }}>
+                            <input
+                              type="radio"
+                              name="installationInChargeRoleStep"
+                              value="RME"
+                              checked={installationInChargeRole === "RME"}
+                              onChange={() => setInstallationInChargeRole("RME")}
+                              style={{ accentColor: "#2563eb" }}
+                            />
+                            <span>REGISTERED MASTER ELECTRICIAN (&lt;600V &amp; 500kVA)</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.85rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Full Name (Signature Over Printed Name) *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={installationInChargeName} 
+                            onChange={(e) => setInstallationInChargeName(e.target.value)} 
+                            placeholder="e.g. ENGR. EDGAR C. MENDOZA, REE"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white", fontWeight: "700" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>PRC Reg No. *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={installationInChargePRC} 
+                            onChange={(e) => setInstallationInChargePRC(e.target.value)} 
+                            placeholder="e.g. 0045678"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>PRC Validity *</label>
+                          <input 
+                            type="date" 
+                            required 
+                            value={installationInChargePRCValidity} 
+                            onChange={(e) => setInstallationInChargePRCValidity(e.target.value)} 
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1.2fr", gap: "0.85rem", marginTop: "0.85rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Address *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={installationInChargeAddress} 
+                            onChange={(e) => setInstallationInChargeAddress(e.target.value)} 
+                            placeholder="e.g. Sto. Tomas, Pampanga"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Tel / Fax No. *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={installationInChargeTel} 
+                            onChange={(e) => setInstallationInChargeTel(e.target.value)} 
+                            placeholder="e.g. 0917-888-1234"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.85rem", marginTop: "0.85rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>P.T.R No. *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={installationInChargePTR} 
+                            onChange={(e) => setInstallationInChargePTR(e.target.value)} 
+                            placeholder="e.g. PTR-ST-2026-5566"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Issued *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={installationInChargePTRIssued} 
+                            onChange={(e) => setInstallationInChargePTRIssued(e.target.value)} 
+                            placeholder="e.g. Jan 14, 2026"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Place Issued *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={installationInChargePTRIssuedAt} 
+                            onChange={(e) => setInstallationInChargePTRIssuedAt(e.target.value)} 
+                            placeholder="e.g. Sto. Tomas, Pampanga"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>Date Signed *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={installationInChargeSignedDate} 
+                            onChange={(e) => setInstallationInChargeSignedDate(e.target.value)} 
+                            placeholder="e.g. Jan 15, 2026"
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: "0.85rem" }}>
+                        <label style={{ display: "block", fontSize: "0.78rem", color: "#475569" }}>T.I.N *</label>
+                        <input 
+                          type="text" 
+                          required 
+                          value={installationInChargeTIN} 
+                          onChange={(e) => setInstallationInChargeTIN(e.target.value)} 
+                          placeholder="e.g. 345-678-901-000"
+                          style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} 
+                        />
+                      </div>
+
+                      <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                        <SignatureCreator
+                          value={installationInChargeSignature}
+                          onChange={setInstallationInChargeSignature}
+                          label={`Person In-Charge of Installation E-Signature (Box 4 - ${installationInChargeName || "Person In-Charge"})`}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: "0.75rem", padding: "10px 14px", borderRadius: "8px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", fontSize: "0.82rem" }}>
+                      Using identical credentials and signature from Box 2 (Design Professional: {electricalEngineerName || "Professional Electrical Engineer"}).
+                    </div>
+                  )}
                 </div>
               </div>
             )}

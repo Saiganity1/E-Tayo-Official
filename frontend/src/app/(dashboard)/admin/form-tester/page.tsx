@@ -136,6 +136,8 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   projectNature: "New Development",
   natureOthers: "",
   occupancyClass: "RESIDENTIAL",
+  occupancyClassificationDetail: "Group A - Residential (Single)",
+  occupancyOthers: "",
   proposedStoreys: "2",
   numberOfUnits: "1",
   proposedStartDate: "2026-10-01",
@@ -204,7 +206,15 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   lightingOutletsCount: "28",
   convenienceOutletsCount: "24",
   acuOutletsCount: "4",
+  cookingUnitOutletsCount: "1",
   waterHeaterOutletsCount: "2",
+  waterPumpOutletsCount: "1",
+  // Equipment / Wiring Devices (Box 1)
+  toggleSwitchCount: "15",
+  bellBuzzerCount: "1",
+  pushButtonsCount: "1",
+  faDetectorCount: "2",
+  otherWiringDevicesCount: "1",
   groundingSpec: "16mm dia. x 3.0m Copper Clad Ground Rod with #8 AWG Bare Copper Wire",
 
   // Plumbing
@@ -335,6 +345,26 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   electricalEngineerPTRIssued: "Jan 12, 2026",
   electricalEngineerPTRIssuedAt: "Sto. Tomas",
   electricalEngineerTIN: "456-789-012-000",
+  electricalEngineerSignature: "",
+  electricalContractorName: "VOLTMAX ELECTRICAL SERVICES & CONTRACTING INC.",
+  electricalContractorPcab: "PCAB-EL-2026-9811",
+  electricalContractorAddress: "San Fernando, Pampanga",
+  electricalContractorTel: "0918-777-8899",
+
+  // Box 4: Person In-Charge of Installation
+  sameAsDesignElectricalEngineer: false,
+  installationInChargeRole: "PEE" as "PEE" | "REE" | "RME",
+  installationInChargeName: "ENGR. EDGAR C. MENDOZA, REE",
+  installationInChargeAddress: "Sto. Tomas, Pampanga",
+  installationInChargePRC: "0045678",
+  installationInChargePRCValidity: "2028-08-20",
+  installationInChargeTel: "0917-888-1234",
+  installationInChargePTR: "PTR-ST-556677",
+  installationInChargePTRIssued: "Jan 14, 2026",
+  installationInChargePTRIssuedAt: "Sto. Tomas",
+  installationInChargeTIN: "345-678-901-000",
+  installationInChargeSignedDate: "Jan 15, 2026",
+  installationInChargeSignature: "",
 
   masterPlumberName: "ENGR. DARIO K. AQUINO, RMP",
   masterPlumberAddress: "Sto. Tomas, Pampanga",
@@ -2606,19 +2636,22 @@ export default function FormTestingStudio() {
                         style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
                       >
                         <option value="New Construction">New Construction</option>
-                        <option value="Erection">Erection</option>
+                        <option value="New Installation">New Installation</option>
+                        <option value="Annual Inspection">Annual Inspection</option>
                         <option value="Addition">Addition</option>
+                        <option value="Repair">Repair</option>
+                        <option value="Removal">Removal</option>
+                        <option value="Erection">Erection</option>
                         <option value="Alteration">Alteration</option>
                         <option value="Renovation">Renovation</option>
                         <option value="Conversion">Conversion</option>
-                        <option value="Repair">Repair</option>
                         <option value="Moving">Moving</option>
                         <option value="Raising">Raising</option>
                         <option value="Demolition">Demolition</option>
                         <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                         <option value="Others">Others (Specify)</option>
                       </select>
-                      {["Renovation", "Conversion", "Repair", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => (formData.scopeOfWork || "").toLowerCase().includes(k.toLowerCase())) && (
+                      {["Addition", "Repair", "Removal", "Renovation", "Conversion", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => (formData.scopeOfWork || "").toLowerCase().includes(k.toLowerCase())) && (
                         <div style={{ marginTop: "6px" }}>
                           <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b", marginBottom: "2px" }}>
                             Specify {formData.scopeOfWork} Details (Printed on Form Underline)
@@ -2637,81 +2670,149 @@ export default function FormTestingStudio() {
                       )}
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                        Occupancy Classification Detail (NBCP Rule VII)
-                      </label>
-                      <select
-                        value={formData.occupancyClassificationDetail || "Group A - Residential (Single)"}
-                        onChange={e => handleFieldChange("occupancyClassificationDetail", e.target.value)}
-                        style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#1e293b", fontWeight: "600" }}
-                      >
-                        <optgroup label="GROUP A: RESIDENTIAL (DWELLINGS)">
-                          <option value="Group A - Residential (Single)">Group A - Single Family Dwelling</option>
-                          <option value="Group A - Residential (Duplex)">Group A - Duplex</option>
-                          <option value="Group A - Residential (R-1, R-2)">Group A - Residential R-1, R-2</option>
-                          <option value="Group A - Residential (Others)">Group A - Others</option>
-                        </optgroup>
-                        <optgroup label="GROUP B: RESIDENTIAL">
-                          <option value="Group B - Hotel / Motel">Group B - Hotel / Motel</option>
-                          <option value="Group B - Townhouse">Group B - Townhouse</option>
-                          <option value="Group B - Dormitory / Boardinghouse">Group B - Dormitory / Boardinghouse</option>
-                          <option value="Group B - Residential R-3, R-4, R-5">Group B - Residential R-3, R-4, R-5</option>
-                          <option value="Group B - Others">Group B - Others</option>
-                        </optgroup>
-                        <optgroup label="GROUP C: EDUCATIONAL & RECREATIONAL">
-                          <option value="Group C - School Building">Group C - School Building</option>
-                          <option value="Group C - School Auditorium / Gymnasium">Group C - School Auditorium / Gymnasium</option>
-                          <option value="Group C - Civic Center / Clubhouse">Group C - Civic Center / Clubhouse</option>
-                          <option value="Group C - Church, Mosque, Temple, Chapel">Group C - Church, Mosque, Temple, Chapel</option>
-                          <option value="Group C - Others">Group C - Others</option>
-                        </optgroup>
-                      <optgroup label="GROUP D: INSTITUTIONAL">
-                        <option value="Group D - Hospital / Medical Facility">Group D - Hospital / Medical Facility</option>
-                        <option value="Group D - Home for the Aged">Group D - Home for the Aged</option>
-                        <option value="Group D - Government Office">Group D - Government Office</option>
-                        <option value="Group D - Others">Group D - Others</option>
-                      </optgroup>
-                      <optgroup label="GROUP E: COMMERCIAL">
-                        <option value="Group E - Bank / Financial">Group E - Bank / Financial</option>
-                        <option value="Group E - Store / Retail">Group E - Store / Retail</option>
-                        <option value="Group E - Shopping Center / Mall">Group E - Shopping Center / Mall</option>
-                        <option value="Group E - Drinking / Dining Establishment">Group E - Drinking / Dining Establishment</option>
-                        <option value="Group E - Shop (Tailoring, Salon, etc.)">Group E - Shop (Tailoring, Salon, etc.)</option>
-                        <option value="Group E - Others">Group E - Others</option>
-                      </optgroup>
-                      <optgroup label="GROUP F: LIGHT INDUSTRIAL">
-                        <option value="Group F - Factory / Plant (Incombustible)">Group F - Factory / Plant (Incombustible)</option>
-                        <option value="Group F - Others">Group F - Others</option>
-                      </optgroup>
-                      <optgroup label="GROUP G: MEDIUM INDUSTRIAL">
-                        <option value="Group G - Storage / Warehouse (Hazardous)">Group G - Storage / Warehouse (Hazardous)</option>
-                        <option value="Group G - Factory (Hazardous / Flammable)">Group G - Factory (Hazardous / Flammable)</option>
-                        <option value="Group G - Others">Group G - Others</option>
-                      </optgroup>
-                      <optgroup label="GROUP H: ASSEMBLY (< 1,000)">
-                        <option value="Group H - Theater / Auditorium (< 1,000)">Group H - Theater / Auditorium (&lt; 1,000)</option>
-                        <option value="Group H - Convention Hall / Bleacher (< 1,000)">Group H - Convention Hall / Bleacher (&lt; 1,000)</option>
-                        <option value="Group H - Others (< 1,000)">Group H - Others (&lt; 1,000)</option>
-                      </optgroup>
-                      <optgroup label="GROUP I: ASSEMBLY (1,000 OR MORE)">
-                        <option value="Group I - Coliseum / Sports Complex (1,000+)">Group I - Coliseum / Sports Complex (1,000+)</option>
-                        <option value="Group I - Convention Center (1,000+)">Group I - Convention Center (1,000+)</option>
-                        <option value="Group I - Others (1,000+)">Group I - Others (1,000+)</option>
-                      </optgroup>
-                      <optgroup label="GROUP J: (J-1) AGRICULTURAL">
-                        <option value="Group J-1 - Barn / Granary / Poultry House">Group J-1 - Barn / Granary / Poultry House</option>
-                        <option value="Group J-1 - Piggery / Grain Mill / Silo">Group J-1 - Piggery / Grain Mill / Silo</option>
-                        <option value="Group J-1 - Others">Group J-1 - Others</option>
-                      </optgroup>
-                      <optgroup label="GROUP J: (J-2) ACCESSORIES">
-                        <option value="Group J-2 - Private Carport / Garage">Group J-2 - Private Carport / Garage</option>
-                        <option value="Group J-2 - Swimming Pool">Group J-2 - Swimming Pool</option>
-                        <option value="Group J-2 - Fence over 1.80m">Group J-2 - Fence over 1.80m</option>
-                        <option value="Group J-2 - Steel / Concrete Tank">Group J-2 - Steel / Concrete Tank</option>
-                        <option value="Group J-2 - Others">Group J-2 - Others</option>
-                      </optgroup>
-                    </select>
-                  </div>
+                      {selectedForm.id === "EP" ? (
+                        <>
+                          <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#1e40af", marginBottom: "4px" }}>
+                            Type of Occupancy (NBC Form E-01 Box 1)
+                          </label>
+                          <select
+                            value={(() => {
+                              const cur = formData.occupancyClassificationDetail || "";
+                              if ([
+                                "A. RESIDENTIAL DWELLING",
+                                "B. RESIDENTIAL, HOTEL, APARTMENT",
+                                "C. EDUCATION AND RECREATION",
+                                "D. INSTITUTIONAL",
+                                "H. BUSINESS AND MERCANTILE",
+                                "I. INDUSTRIAL",
+                                "J. STORAGE AND HAZARDOUS",
+                                "K. ASSEMBLY OTHER THAN GROUP I",
+                                "E. ASSEMBLY OCCUPANT LOAD 1000 OR MORE",
+                                "F. ACCESSORY",
+                                "G. OTHERS (SPECIFY)"
+                              ].includes(cur)) return cur;
+                              const u = cur.toUpperCase();
+                              if (u.includes("GROUP B") || u.includes("HOTEL") || u.includes("APARTMENT") || u.includes("TOWNHOUSE") || u.includes("DORMITORY")) return "B. RESIDENTIAL, HOTEL, APARTMENT";
+                              if (u.includes("GROUP C") || u.includes("SCHOOL") || u.includes("CHURCH") || (u.includes("RECREATION") && !u.includes("ASSEMBLY"))) return "C. EDUCATION AND RECREATION";
+                              if (u.includes("GROUP D") || u.includes("HOSPITAL") || u.includes("INSTITUTIONAL") || u.includes("MEDICAL")) return "D. INSTITUTIONAL";
+                              if (u.includes("GROUP E") || u.includes("COMMERCIAL") || u.includes("BANK") || u.includes("STORE") || u.includes("RETAIL") || u.includes("BUSINESS") || u.includes("MERCANTILE")) return "H. BUSINESS AND MERCANTILE";
+                              if (u.includes("GROUP F") || (u.includes("INDUSTRIAL") && !u.includes("STORAGE") && !u.includes("HAZARDOUS"))) return "I. INDUSTRIAL";
+                              if (u.includes("GROUP G") || u.includes("STORAGE") || u.includes("HAZARDOUS") || u.includes("WAREHOUSE")) return "J. STORAGE AND HAZARDOUS";
+                              if (u.includes("GROUP H") || u.includes("< 1,000") || u.includes("< 1000") || u.includes("THEATER") || u.includes("AUDITORIUM")) return "K. ASSEMBLY OTHER THAN GROUP I";
+                              if (u.includes("GROUP I") || u.includes("1000") || u.includes("1,000") || u.includes("COLISEUM") || u.includes("CONVENTION CENTER")) return "E. ASSEMBLY OCCUPANT LOAD 1000 OR MORE";
+                              if (u.includes("GROUP J") || u.includes("ACCESSORY") || u.includes("CARPORT") || u.includes("GARAGE") || u.includes("SWIMMING POOL")) return "F. ACCESSORY";
+                              if (u.includes("OTHER") || u.includes("SPECIFY")) return "G. OTHERS (SPECIFY)";
+                              return "A. RESIDENTIAL DWELLING";
+                            })()}
+                            onChange={e => handleFieldChange("occupancyClassificationDetail", e.target.value)}
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1.5px solid #93c5fd", fontSize: "0.85rem", background: "#f0f9ff", color: "#1e3a8a", fontWeight: "700" }}
+                          >
+                            <option value="A. RESIDENTIAL DWELLING">A. RESIDENTIAL DWELLING</option>
+                            <option value="B. RESIDENTIAL, HOTEL, APARTMENT">B. RESIDENTIAL, HOTEL, APARTMENT</option>
+                            <option value="C. EDUCATION AND RECREATION">C. EDUCATION AND RECREATION</option>
+                            <option value="D. INSTITUTIONAL">D. INSTITUTIONAL</option>
+                            <option value="H. BUSINESS AND MERCANTILE">H. BUSINESS AND MERCANTILE</option>
+                            <option value="I. INDUSTRIAL">I. INDUSTRIAL</option>
+                            <option value="J. STORAGE AND HAZARDOUS">J. STORAGE AND HAZARDOUS</option>
+                            <option value="K. ASSEMBLY OTHER THAN GROUP I">K. ASSEMBLY OTHER THAN GROUP I</option>
+                            <option value="E. ASSEMBLY OCCUPANT LOAD 1000 OR MORE">E. ASSEMBLY OCCUPANT LOAD 1000 OR MORE</option>
+                            <option value="F. ACCESSORY">F. ACCESSORY</option>
+                            <option value="G. OTHERS (SPECIFY)">G. OTHERS (SPECIFY)</option>
+                          </select>
+                          {((formData.occupancyClassificationDetail || "").includes("OTHER") || (formData.occupancyClassificationDetail || "").includes("SPECIFY")) && (
+                            <div style={{ marginTop: "6px" }}>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b", marginBottom: "2px" }}>
+                                Specify Others Occupancy (Printed on Form Underline)
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.occupancyOthers || ""}
+                                onChange={e => handleFieldChange("occupancyOthers", e.target.value)}
+                                placeholder="e.g. SPECIAL WORKSHOP / DATA CENTER"
+                                style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                              />
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
+                            Occupancy Classification Detail (NBCP Rule VII)
+                          </label>
+                          <select
+                            value={formData.occupancyClassificationDetail || "Group A - Residential (Single)"}
+                            onChange={e => handleFieldChange("occupancyClassificationDetail", e.target.value)}
+                            style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#1e293b", fontWeight: "600" }}
+                          >
+                            <optgroup label="GROUP A: RESIDENTIAL (DWELLINGS)">
+                              <option value="Group A - Residential (Single)">Group A - Single Family Dwelling</option>
+                              <option value="Group A - Residential (Duplex)">Group A - Duplex</option>
+                              <option value="Group A - Residential (R-1, R-2)">Group A - Residential R-1, R-2</option>
+                              <option value="Group A - Residential (Others)">Group A - Others</option>
+                            </optgroup>
+                            <optgroup label="GROUP B: RESIDENTIAL">
+                              <option value="Group B - Hotel / Motel">Group B - Hotel / Motel</option>
+                              <option value="Group B - Townhouse">Group B - Townhouse</option>
+                              <option value="Group B - Dormitory / Boardinghouse">Group B - Dormitory / Boardinghouse</option>
+                              <option value="Group B - Residential R-3, R-4, R-5">Group B - Residential R-3, R-4, R-5</option>
+                              <option value="Group B - Others">Group B - Others</option>
+                            </optgroup>
+                            <optgroup label="GROUP C: EDUCATIONAL & RECREATIONAL">
+                              <option value="Group C - School Building">Group C - School Building</option>
+                              <option value="Group C - School Auditorium / Gymnasium">Group C - School Auditorium / Gymnasium</option>
+                              <option value="Group C - Civic Center / Clubhouse">Group C - Civic Center / Clubhouse</option>
+                              <option value="Group C - Church, Mosque, Temple, Chapel">Group C - Church, Mosque, Temple, Chapel</option>
+                              <option value="Group C - Others">Group C - Others</option>
+                            </optgroup>
+                            <optgroup label="GROUP D: INSTITUTIONAL">
+                              <option value="Group D - Hospital / Medical Facility">Group D - Hospital / Medical Facility</option>
+                              <option value="Group D - Home for the Aged">Group D - Home for the Aged</option>
+                              <option value="Group D - Government Office">Group D - Government Office</option>
+                              <option value="Group D - Others">Group D - Others</option>
+                            </optgroup>
+                            <optgroup label="GROUP E: COMMERCIAL">
+                              <option value="Group E - Bank / Financial">Group E - Bank / Financial</option>
+                              <option value="Group E - Store / Retail">Group E - Store / Retail</option>
+                              <option value="Group E - Shopping Center / Mall">Group E - Shopping Center / Mall</option>
+                              <option value="Group E - Drinking / Dining Establishment">Group E - Drinking / Dining Establishment</option>
+                              <option value="Group E - Shop (Tailoring, Salon, etc.)">Group E - Shop (Tailoring, Salon, etc.)</option>
+                              <option value="Group E - Others">Group E - Others</option>
+                            </optgroup>
+                            <optgroup label="GROUP F: LIGHT INDUSTRIAL">
+                              <option value="Group F - Factory / Plant (Incombustible)">Group F - Factory / Plant (Incombustible)</option>
+                              <option value="Group F - Others">Group F - Others</option>
+                            </optgroup>
+                            <optgroup label="GROUP G: MEDIUM INDUSTRIAL">
+                              <option value="Group G - Storage / Warehouse (Hazardous)">Group G - Storage / Warehouse (Hazardous)</option>
+                              <option value="Group G - Factory (Hazardous / Flammable)">Group G - Factory (Hazardous / Flammable)</option>
+                              <option value="Group G - Others">Group G - Others</option>
+                            </optgroup>
+                            <optgroup label="GROUP H: ASSEMBLY (< 1,000)">
+                              <option value="Group H - Theater / Auditorium (< 1,000)">Group H - Theater / Auditorium (&lt; 1,000)</option>
+                              <option value="Group H - Convention Hall / Bleacher (< 1,000)">Group H - Convention Hall / Bleacher (&lt; 1,000)</option>
+                              <option value="Group H - Others (< 1,000)">Group H - Others (&lt; 1,000)</option>
+                            </optgroup>
+                            <optgroup label="GROUP I: ASSEMBLY (1,000 OR MORE)">
+                              <option value="Group I - Coliseum / Sports Complex (1,000+)">Group I - Coliseum / Sports Complex (1,000+)</option>
+                              <option value="Group I - Convention Center (1,000+)">Group I - Convention Center (1,000+)</option>
+                              <option value="Group I - Others (1,000+)">Group I - Others (1,000+)</option>
+                            </optgroup>
+                            <optgroup label="GROUP J: (J-1) AGRICULTURAL">
+                              <option value="Group J-1 - Barn / Granary / Poultry House">Group J-1 - Barn / Granary / Poultry House</option>
+                              <option value="Group J-1 - Piggery / Grain Mill / Silo">Group J-1 - Piggery / Grain Mill / Silo</option>
+                              <option value="Group J-1 - Others">Group J-1 - Others</option>
+                            </optgroup>
+                            <optgroup label="GROUP J: (J-2) ACCESSORIES">
+                              <option value="Group J-2 - Private Carport / Garage">Group J-2 - Private Carport / Garage</option>
+                              <option value="Group J-2 - Swimming Pool">Group J-2 - Swimming Pool</option>
+                              <option value="Group J-2 - Fence over 1.80m">Group J-2 - Fence over 1.80m</option>
+                              <option value="Group J-2 - Steel / Concrete Tank">Group J-2 - Steel / Concrete Tank</option>
+                              <option value="Group J-2 - Others">Group J-2 - Others</option>
+                            </optgroup>
+                          </select>
+                        </>
+                      )}
+                    </div>
                 </div>
               )}
 
@@ -3183,22 +3284,174 @@ export default function FormTestingStudio() {
 
 
                   {selectedForm.id === "EP" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Connected Load</label>
-                        <input type="text" value={formData.electricalConnectedLoad || ""} onChange={e => handleFieldChange("electricalConnectedLoad", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Connected Load</label>
+                          <input type="text" value={formData.electricalConnectedLoad || ""} onChange={e => handleFieldChange("electricalConnectedLoad", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Service Voltage</label>
+                          <input type="text" value={formData.electricalVoltage || ""} onChange={e => handleFieldChange("electricalVoltage", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Main Breaker</label>
+                          <input type="text" value={formData.mainBreaker || ""} onChange={e => handleFieldChange("mainBreaker", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Branch Circuits Count</label>
+                          <input type="text" value={formData.branchCircuitsCount || ""} onChange={e => handleFieldChange("branchCircuitsCount", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Service Voltage</label>
-                        <input type="text" value={formData.electricalVoltage || ""} onChange={e => handleFieldChange("electricalVoltage", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Schedule of Outlets (Box 1: Number of Outlets) */}
+                      <div style={{ padding: "0.85rem 1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #e2e8f0" }}>
+                        <div style={{ fontSize: "0.74rem", fontWeight: "800", color: "#1e40af", textTransform: "uppercase", marginBottom: "0.6rem" }}>
+                          Box 1: Number of Outlets
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              Lighting Outlets (LIGHT)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.lightingOutletsCount || ""}
+                              onChange={e => handleFieldChange("lightingOutletsCount", e.target.value)}
+                              placeholder="28"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              Convenience (CONVENIENCE/RECEPTACLE)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.convenienceOutletsCount || ""}
+                              onChange={e => handleFieldChange("convenienceOutletsCount", e.target.value)}
+                              placeholder="24"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              Aircon Outlets (SPO, AIRCON)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.acuOutletsCount || ""}
+                              onChange={e => handleFieldChange("acuOutletsCount", e.target.value)}
+                              placeholder="4"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              Cooking Unit (SPO, COOKING UNIT)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.cookingUnitOutletsCount || ""}
+                              onChange={e => handleFieldChange("cookingUnitOutletsCount", e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              Water Heater (SPO, WATER HEATER)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.waterHeaterOutletsCount || ""}
+                              onChange={e => handleFieldChange("waterHeaterOutletsCount", e.target.value)}
+                              placeholder="2"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              Water Pump (SPO, WATER PUMP)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.waterPumpOutletsCount || ""}
+                              onChange={e => handleFieldChange("waterPumpOutletsCount", e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Main Breaker</label>
-                        <input type="text" value={formData.mainBreaker || ""} onChange={e => handleFieldChange("mainBreaker", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Branch Circuits Count</label>
-                        <input type="text" value={formData.branchCircuitsCount || ""} onChange={e => handleFieldChange("branchCircuitsCount", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Schedule of Equipment / Wiring Devices (Box 1: Number of Equipment/Wiring Devices) */}
+                      <div style={{ padding: "0.85rem 1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #e2e8f0" }}>
+                        <div style={{ fontSize: "0.74rem", fontWeight: "800", color: "#1e40af", textTransform: "uppercase", marginBottom: "0.6rem" }}>
+                          Box 1: Number of Equipment / Wiring Devices
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              Toggle Switch (TOGGGLE SWITCH)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.toggleSwitchCount || ""}
+                              onChange={e => handleFieldChange("toggleSwitchCount", e.target.value)}
+                              placeholder="15"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              Bell / Buzzer (BELL/BUZZER)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.bellBuzzerCount || ""}
+                              onChange={e => handleFieldChange("bellBuzzerCount", e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              Push Buttons (PUSH BUTTONS)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.pushButtonsCount || ""}
+                              onChange={e => handleFieldChange("pushButtonsCount", e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              FA Detector (FA DETECTOR)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.faDetectorCount || ""}
+                              onChange={e => handleFieldChange("faDetectorCount", e.target.value)}
+                              placeholder="2"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                              Others (SEE ATTACHED LIST)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.otherWiringDevicesCount || ""}
+                              onChange={e => handleFieldChange("otherWiringDevicesCount", e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -3802,6 +4055,197 @@ export default function FormTestingStudio() {
                             <input type="text" value={formData.electricalEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("electricalEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
+
+                        {(selectedForm.id === "EP" || selectedForm.id === "TSC") && (
+                          <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                            <SignatureCreator
+                              value={formData.electricalEngineerSignature}
+                              onChange={sig => handleFieldChange("electricalEngineerSignature", sig)}
+                              label={`Electrical Engineer E-Signature (Box 2 - ${formData.electricalEngineerName || "Professional Electrical Engineer"})`}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Box 3: Electrical Contractor (200 Ampere Main and Above) */}
+                    {(selectedForm.id === "EP" || selectedForm.id === "TSC") && (
+                      <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#b45309" }}>
+                            Box 3: Electrical Contractor (200 Ampere Main and Above)
+                          </span>
+                          <span style={{ fontSize: "0.68rem", fontWeight: "600", color: "#64748b", background: "#f1f5f9", padding: "2px 8px", borderRadius: "4px" }}>
+                            Special Electrical • PCAB Licensed
+                          </span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1.4fr", gap: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Contractor Name / Firm</label>
+                            <input 
+                              type="text" 
+                              value={formData.electricalContractorName || ""} 
+                              onChange={e => handleFieldChange("electricalContractorName", e.target.value)} 
+                              placeholder="VOLTMAX ELECTRICAL SERVICES & CONTRACTING INC."
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} 
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PCAB Lic. No. (Special Electrical)</label>
+                            <input 
+                              type="text" 
+                              value={formData.electricalContractorPcab || ""} 
+                              onChange={e => handleFieldChange("electricalContractorPcab", e.target.value)} 
+                              placeholder="PCAB-EL-2026-9811"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} 
+                            />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1.4fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Contractor Business Address</label>
+                            <input 
+                              type="text" 
+                              value={formData.electricalContractorAddress || ""} 
+                              onChange={e => handleFieldChange("electricalContractorAddress", e.target.value)} 
+                              placeholder="San Fernando, Pampanga"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} 
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Tel. / Fax No.</label>
+                            <input 
+                              type="text" 
+                              value={formData.electricalContractorTel || ""} 
+                              onChange={e => handleFieldChange("electricalContractorTel", e.target.value)} 
+                              placeholder="0918-777-8899"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Box 4: Person In-Charge of Installation */}
+                    {(selectedForm.id === "EP" || selectedForm.id === "TSC") && (
+                      <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#b45309" }}>
+                            Box 4: PERSON IN-CHARGE OF INSTALLATION
+                          </span>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#334155", cursor: "pointer" }}>
+                            <input 
+                              type="checkbox" 
+                              checked={!!formData.sameAsDesignElectricalEngineer} 
+                              onChange={e => handleFieldChange("sameAsDesignElectricalEngineer", e.target.checked)} 
+                            />
+                            Same as Design Professional (Box 2)
+                          </label>
+                        </div>
+
+                        {!formData.sameAsDesignElectricalEngineer ? (
+                          <>
+                            {/* Professional Role Radio */}
+                            <div style={{ marginTop: "0.6rem", padding: "8px 10px", borderRadius: "8px", background: "#fffbeb", border: "1px solid #fef3c7" }}>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#92400e", marginBottom: "4px" }}>
+                                Professional Classification
+                              </label>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+                                <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.76rem", fontWeight: "600", color: "#78350f", cursor: "pointer" }}>
+                                  <input
+                                    type="radio"
+                                    name="installationInChargeRole"
+                                    value="PEE"
+                                    checked={formData.installationInChargeRole === "PEE" || !formData.installationInChargeRole}
+                                    onChange={() => handleFieldChange("installationInChargeRole", "PEE")}
+                                    style={{ accentColor: "#b45309" }}
+                                  />
+                                  <span>PROFESSIONAL ELECTRICAL ENGINEER</span>
+                                </label>
+                                <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.76rem", fontWeight: "600", color: "#78350f", cursor: "pointer" }}>
+                                  <input
+                                    type="radio"
+                                    name="installationInChargeRole"
+                                    value="REE"
+                                    checked={formData.installationInChargeRole === "REE"}
+                                    onChange={() => handleFieldChange("installationInChargeRole", "REE")}
+                                    style={{ accentColor: "#b45309" }}
+                                  />
+                                  <span>REGISTERED ELECTRICAL ENGINEER</span>
+                                </label>
+                                <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.76rem", fontWeight: "600", color: "#78350f", cursor: "pointer" }}>
+                                  <input
+                                    type="radio"
+                                    name="installationInChargeRole"
+                                    value="RME"
+                                    checked={formData.installationInChargeRole === "RME"}
+                                    onChange={() => handleFieldChange("installationInChargeRole", "RME")}
+                                    style={{ accentColor: "#b45309" }}
+                                  />
+                                  <span>REGISTERED MASTER ELECTRICIAN (&lt;600V &amp; 500kVA)</span>
+                                </label>
+                              </div>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
+                                <input type="text" value={formData.installationInChargeName || ""} onChange={e => handleFieldChange("installationInChargeName", e.target.value)} placeholder="ENGR. EDGAR C. MENDOZA, REE" style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
+                                <input type="text" value={formData.installationInChargeAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("installationInChargeAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC Reg No.</label>
+                                <input type="text" value={formData.installationInChargePRC || ""} onChange={e => handleFieldChange("installationInChargePRC", e.target.value)} placeholder="0045678" style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
+                                <input type="text" value={formData.installationInChargePRCValidity || "2028-08-20"} onChange={e => handleFieldChange("installationInChargePRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Tel / Fax No.</label>
+                                <input type="text" value={formData.installationInChargeTel || "0917-888-1234"} onChange={e => handleFieldChange("installationInChargeTel", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>P.T.R No.</label>
+                                <input type="text" value={formData.installationInChargePTR || ""} onChange={e => handleFieldChange("installationInChargePTR", e.target.value)} placeholder="PTR-ST-556677" style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                                <input type="text" value={formData.installationInChargePTRIssued || "Jan 14, 2026"} onChange={e => handleFieldChange("installationInChargePTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Place Issued</label>
+                                <input type="text" value={formData.installationInChargePTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("installationInChargePTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Signed</label>
+                                <input type="text" value={formData.installationInChargeSignedDate || "Jan 15, 2026"} onChange={e => handleFieldChange("installationInChargeSignedDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                              </div>
+                            </div>
+                            <div style={{ marginTop: "0.5rem" }}>
+                              <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>T.I.N</label>
+                              <input type="text" value={formData.installationInChargeTIN || "345-678-901-000"} onChange={e => handleFieldChange("installationInChargeTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            </div>
+                            <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                              <SignatureCreator
+                                value={formData.installationInChargeSignature}
+                                onChange={sig => handleFieldChange("installationInChargeSignature", sig)}
+                                label={`Person In-Charge of Installation E-Signature (Box 4 - ${formData.installationInChargeName || "Person In-Charge"})`}
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ marginTop: "0.5rem", padding: "8px 12px", borderRadius: "8px", background: "#fef3c7", border: "1px solid #fde68a", color: "#92400e", fontSize: "0.76rem" }}>
+                            Using identical credentials and signature from Box 2 (Design Professional: {formData.electricalEngineerName || "Professional Electrical Engineer"}).
+                          </div>
+                        )}
                       </div>
                     )}
 
