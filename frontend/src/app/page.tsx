@@ -24,10 +24,10 @@ export default function Home() {
 
   return (
     <main className="landing-page">
-      <header className="glass-panel header-nav">
-        <div className="container nav-container">
-          <Link href="/" className="logo-group" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
-            <Image src="/logo.png" alt="eTAYO" width={140} height={44} style={{ height: "38px", width: "auto", objectFit: "contain" }} priority />
+      <header className="header-nav">
+        <div className="nav-container">
+          <Link href="/" className="logo-group" style={{ textDecoration: "none", display: "flex", alignItems: "center", marginBottom: 0 }}>
+            <Image src="/logo.png" alt="eTAYO" width={140} height={44} style={{ height: "40px", width: "auto", objectFit: "contain" }} priority />
           </Link>
           <nav className="nav-links">
             <Link href="/applicant/track" className="nav-link">Application Status</Link>
@@ -83,21 +83,33 @@ export default function Home() {
 
         .header-nav {
           position: fixed;
-          top: 1.5rem;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 90%;
-          max-width: 1200px;
+          top: 0;
+          left: 0;
+          right: 0;
+          width: 100%;
           z-index: 50;
           padding: 0;
-          border-radius: 99px; /* Pill shape for modern look */
+          border-radius: 0;
+          border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+          background: rgba(255, 255, 255, 0.92);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
         }
         
         .nav-container {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 0.75rem 1.5rem;
+          padding: 0.85rem 3.5rem;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 900px) {
+          .nav-container {
+            padding: 0.75rem 1.5rem;
+          }
         }
 
         .nav-links {
@@ -118,7 +130,7 @@ export default function Home() {
         }
 
         .hero-section {
-          padding-top: 12rem;
+          padding-top: 8.5rem;
           padding-bottom: 8rem;
           text-align: center;
           position: relative;
