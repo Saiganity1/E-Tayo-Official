@@ -273,7 +273,7 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   plumbingStartDate: "2026-10-01",
   plumbingInstallationCost: "100,000.00",
   plumbingCompletionDate: "",
-  plumbingPreparedBy: "Engr. Jose Mendoza, RMP",
+  plumbingPreparedBy: "",
 
   // Mechanical
   machineryType: "Inverter Split-Type Air Conditioning System (4 Units)",
@@ -4048,9 +4048,9 @@ export default function FormTestingStudio() {
                               </label>
                               <input
                                 type="text"
-                                value={formData.plumbingPreparedBy || formData.masterPlumberName || "Engr. Jose Mendoza, RMP"}
+                                value={formData.plumbingPreparedBy || formData.masterPlumberName || ""}
                                 onChange={e => handleFieldChange("plumbingPreparedBy", e.target.value)}
-                                placeholder="Engr. Jose Mendoza, RMP"
+                                placeholder="e.g. Engr. Jose Mendoza, RMP"
                                 style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
                               />
                             </div>

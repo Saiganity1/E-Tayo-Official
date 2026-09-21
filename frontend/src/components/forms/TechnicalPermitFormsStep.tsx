@@ -382,7 +382,7 @@ export default function TechnicalPermitFormsStep({
   const [plumbingStartDate, setPlumbingStartDate] = useState("2026-10-01");
   const [plumbingInstallationCost, setPlumbingInstallationCost] = useState("100,000.00");
   const [plumbingCompletionDate, setPlumbingCompletionDate] = useState("2026-11-15");
-  const [plumbingPreparedBy, setPlumbingPreparedBy] = useState("Engr. Jose Mendoza, RMP");
+  const [plumbingPreparedBy, setPlumbingPreparedBy] = useState("");
 
   // Fixtures schedule - Column 1
   const [waterClosetsCount, setWaterClosetsCount] = useState("4");
@@ -433,13 +433,13 @@ export default function TechnicalPermitFormsStep({
     waterBoilerCount, drinkingFountainCount, barSinkCount, sodaFountainCount,
     laboratorySinkCount, sterilizerCount, swimmingPoolCount, othersFixtureCount
   ].reduce((acc, val) => acc + (parseInt(val || "0", 10) || 0), 0);
-  const [masterPlumberName, setMasterPlumberName] = useState("Engr. Jose Mendoza, RMP");
-  const [masterPlumberPRC, setMasterPlumberPRC] = useState("PRC-MP-0012984");
-  const [masterPlumberPRCValidity, setMasterPlumberPRCValidity] = useState("2028-03-12");
-  const [masterPlumberNAMPAP, setMasterPlumberNAMPAP] = useState("NAMPAP-2026-3390");
-  const [masterPlumberPTR, setMasterPlumberPTR] = useState("PTR-ST-2026-1188");
-  const [masterPlumberPTRIssued, setMasterPlumberPTRIssued] = useState("Sto. Tomas, Pampanga");
-  const [masterPlumberTIN, setMasterPlumberTIN] = useState("567-890-123-000");
+  const [masterPlumberName, setMasterPlumberName] = useState("");
+  const [masterPlumberPRC, setMasterPlumberPRC] = useState("");
+  const [masterPlumberPRCValidity, setMasterPlumberPRCValidity] = useState("");
+  const [masterPlumberNAMPAP, setMasterPlumberNAMPAP] = useState("");
+  const [masterPlumberPTR, setMasterPlumberPTR] = useState("");
+  const [masterPlumberPTRIssued, setMasterPlumberPTRIssued] = useState("");
+  const [masterPlumberTIN, setMasterPlumberTIN] = useState("");
 
   // ==========================================
   // 7. FIRE SAFETY / BFP CLEARANCE (FSEC) FIELDS
@@ -4836,7 +4836,7 @@ export default function TechnicalPermitFormsStep({
                           type="text"
                           value={plumbingPreparedBy}
                           onChange={e => setPlumbingPreparedBy(e.target.value)}
-                          placeholder="Engr. Jose Mendoza, RMP"
+                          placeholder="e.g. Engr. Jose Mendoza, RMP"
                           style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
                         />
                       </div>

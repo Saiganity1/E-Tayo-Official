@@ -2208,11 +2208,10 @@ export async function generateSanitaryPermitPdf(data: UnifiedPermitFormData): Pr
     drawText1(rawComp, 105.0, 211.5, 7.5, false);
   }
 
-  const mpName = safeText(data.plumbingPreparedBy || data.masterPlumberName || "Engr. Jose Mendoza, RMP").trim();
+  const mpName = safeText(data.plumbingPreparedBy || data.masterPlumberName || "").trim();
   if (mpName) {
     drawText1(mpName, 395.0, 211.5, 7.5, true);
   }
-  drawText1(mpName.toUpperCase(), 355.0, 148.0, 8.0, true);
 
   return await doc.saveAsBase64({ dataUri: false });
 }

@@ -127,8 +127,8 @@ export default function UnifiedProjectGoogleForm({
   const [installationInChargeTIN, setInstallationInChargeTIN] = useState("345-678-901-000");
   const [installationInChargeSignedDate, setInstallationInChargeSignedDate] = useState("Jan 15, 2026");
   const [installationInChargeSignature, setInstallationInChargeSignature] = useState<string>("");
-  const [masterPlumberName, setMasterPlumberName] = useState("Engr. Jose Mendoza");
-  const [masterPlumberPRC, setMasterPlumberPRC] = useState("PRC-0012984");
+  const [masterPlumberName, setMasterPlumberName] = useState("");
+  const [masterPlumberPRC, setMasterPlumberPRC] = useState("");
   const [mechanicalEngineerName, setMechanicalEngineerName] = useState("Engr. Antonio Gomez, PME");
   const [mechanicalEngineerPRC, setMechanicalEngineerPRC] = useState("PRC-PME-0021489");
   const [electronicsEngineerName, setElectronicsEngineerName] = useState("Engr. Carlos Lim, PECE");
