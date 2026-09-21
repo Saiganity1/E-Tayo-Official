@@ -1,7 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { Globe, MapPin, Clock, Mail, Phone, ShieldCheck, ExternalLink, ChevronRight } from "lucide-react";
+import { Globe, MapPin, Clock, Mail, Phone, ExternalLink, ChevronRight } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -40,11 +39,6 @@ export default function Footer() {
             <p className="footer-lead-text">
               The official online regulatory and permitting platform of the Municipality of Sto. Tomas, Pampanga. Streamlining building permits, locational clearances, and occupancy approvals for residents and businesses.
             </p>
-
-            <div className="compliance-badge">
-              <ShieldCheck size={16} className="badge-icon" />
-              <span>Compliant with RA 11032 (Ease of Doing Business Act)</span>
-            </div>
           </div>
 
           {/* Column 2: About Us (What is e-Tayo) */}
@@ -239,7 +233,7 @@ export default function Footer() {
         .district-tag {
           font-size: 0.85rem;
           font-weight: 700;
-          color: #2563eb;
+          color: #0f172a;
           letter-spacing: 0.01em;
         }
 
@@ -247,27 +241,7 @@ export default function Footer() {
           font-size: 0.88rem;
           line-height: 1.65;
           color: #475569;
-          margin: 0 0 1.25rem 0;
-        }
-
-        /* Compliance Badge */
-        .compliance-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          background: #f8fafc;
-          border: 1px solid #cbd5e1;
-          padding: 6px 12px;
-          border-radius: 8px;
-          font-size: 0.78rem;
-          color: #334155;
-          font-weight: 600;
-          width: fit-content;
-        }
-
-        .badge-icon {
-          color: #2563eb;
-          flex-shrink: 0;
+          margin: 0;
         }
 
         /* Headings */
@@ -283,7 +257,7 @@ export default function Footer() {
         .heading-line {
           width: 32px;
           height: 2.5px;
-          background: #2563eb;
+          background: #0f172a;
           border-radius: 2px;
           margin-bottom: 1.25rem;
         }
@@ -315,7 +289,7 @@ export default function Footer() {
         }
 
         .list-icon {
-          color: #2563eb;
+          color: #0f172a;
           flex-shrink: 0;
         }
 
@@ -356,17 +330,17 @@ export default function Footer() {
         }
 
         .official-portal-link:hover {
-          border-color: #2563eb;
+          border-color: #0f172a;
           background: #f8fafc;
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
         }
 
         .portal-icon-wrap {
           width: 36px;
           height: 36px;
-          background: #eff6ff;
-          color: #2563eb;
+          background: #f1f5f9;
+          color: #0f172a;
           border-radius: 8px;
           display: flex;
           align-items: center;
@@ -384,7 +358,7 @@ export default function Footer() {
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: #2563eb;
+          color: #0f172a;
         }
 
         .portal-url {
@@ -397,7 +371,7 @@ export default function Footer() {
         }
 
         .ext-icon {
-          color: #3b82f6;
+          color: #0f172a;
         }
 
         /* Contact Details */
@@ -417,7 +391,7 @@ export default function Footer() {
         }
 
         .info-icon {
-          color: #2563eb;
+          color: #0f172a;
           flex-shrink: 0;
           margin-top: 2px;
         }
