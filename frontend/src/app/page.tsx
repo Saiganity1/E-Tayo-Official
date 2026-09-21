@@ -50,9 +50,16 @@ export default function Home() {
       </header>
 
       <section className="hero-section">
-        <div className="hero-background"></div>
+        <div className="hero-bg-wrapper">
+          <div className="hero-bg-image"></div>
+          <div className="hero-bg-overlay"></div>
+          <div className="hero-bg-glow"></div>
+        </div>
         <div className="container hero-container animate-fade-in-up">
-          <div className="hero-badge">OFFICE OF THE BUILDING OFFICIAL</div>
+          <div className="hero-badge">
+            <span className="badge-pulse"></span>
+            OFFICE OF THE BUILDING OFFICIAL
+          </div>
           <h2 className="hero-title">eTAYO TOMASINO</h2>
           <p className="hero-subtitle">
             A Geospatially Enabled Permit Management and Building Monitoring System for the Local Government Unit of Sto. Tomas, Pampanga.
@@ -150,61 +157,128 @@ export default function Home() {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding-top: 4.5rem;
-          padding-bottom: 2.5rem;
+          padding-top: 5rem;
+          padding-bottom: 3rem;
           text-align: center;
           position: relative;
           overflow: hidden;
           box-sizing: border-box;
         }
 
-        .hero-background {
+        .hero-bg-wrapper {
           position: absolute;
-          top: -50%;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 200%;
-          height: 150%;
-          background: radial-gradient(circle at center, rgba(37, 99, 235, 0.08) 0%, transparent 60%);
-          z-index: -1;
+          inset: 0;
+          overflow: hidden;
+          z-index: 0;
           pointer-events: none;
         }
 
+        .hero-bg-image {
+          position: absolute;
+          inset: -35px;
+          background-image: url('/sto-tomas-hall.jpg');
+          background-size: cover;
+          background-position: center 35%;
+          animation: slowZoom 24s ease-in-out infinite alternate;
+          will-change: transform;
+          filter: contrast(1.08) brightness(0.92);
+        }
+
+        @keyframes slowZoom {
+          0% {
+            transform: scale(1) translate3d(0, 0, 0);
+          }
+          100% {
+            transform: scale(1.08) translate3d(0, -12px, 0);
+          }
+        }
+
+        .hero-bg-overlay {
+          position: absolute;
+          inset: 0;
+          background: 
+            linear-gradient(180deg, rgba(0, 56, 168, 0.76) 0%, rgba(2, 22, 66, 0.88) 100%),
+            radial-gradient(circle at 50% 30%, rgba(0, 56, 168, 0.55) 0%, rgba(1, 15, 48, 0.92) 80%);
+        }
+
+        .hero-bg-glow {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 50% 45%, rgba(0, 56, 168, 0.4) 0%, transparent 65%);
+          animation: ambientPulse 8s ease-in-out infinite alternate;
+          will-change: opacity;
+        }
+
+        @keyframes ambientPulse {
+          0% {
+            opacity: 0.65;
+          }
+          100% {
+            opacity: 0.95;
+          }
+        }
+
         .hero-container {
+          position: relative;
+          z-index: 1;
           display: flex;
           flex-direction: column;
           align-items: center;
-          max-width: 920px;
+          max-width: 960px;
           padding: 0 1.5rem;
         }
 
         .hero-badge {
-          background: rgba(37, 99, 235, 0.1);
-          color: var(--color-primary);
-          padding: 0.5rem 1.35rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.65rem;
+          background: rgba(255, 255, 255, 0.14);
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.32);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          padding: 0.55rem 1.45rem;
           border-radius: var(--radius-pill);
           font-weight: 800;
           font-size: 0.88rem;
-          letter-spacing: 0.07em;
+          letter-spacing: 0.08em;
           text-transform: uppercase;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1.6rem;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .badge-pulse {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: #60a5fa;
+          box-shadow: 0 0 10px #60a5fa;
+          display: inline-block;
+          animation: dotBlink 2s ease-in-out infinite;
+        }
+
+        @keyframes dotBlink {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.85); }
         }
 
         .hero-title {
           font-size: clamp(3rem, 6.5vw, 4.8rem);
           font-weight: 900;
           line-height: 1.1;
-          color: var(--text-primary);
-          margin-bottom: 1.35rem;
+          color: #ffffff;
+          margin-bottom: 1.4rem;
           letter-spacing: -0.03em;
+          text-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
         }
 
         .hero-subtitle {
           font-size: 1.2rem;
-          color: var(--text-secondary);
-          max-width: 780px;
-          margin-bottom: 2.5rem;
+          color: #f1f5f9;
+          max-width: 800px;
+          margin-bottom: 2.75rem;
           line-height: 1.65;
+          text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
         }
 
         .hero-actions {
@@ -212,6 +286,36 @@ export default function Home() {
           gap: 1.25rem;
           justify-content: center;
           flex-wrap: wrap;
+        }
+
+        .hero-actions .btn-primary {
+          background: linear-gradient(135deg, #2563eb 0%, #0038A8 100%);
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          box-shadow: 0 10px 30px rgba(0, 56, 168, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+          transition: all var(--transition-fast);
+        }
+
+        .hero-actions .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 35px rgba(0, 56, 168, 0.7);
+          background: linear-gradient(135deg, #3b82f6 0%, #002e8c 100%);
+        }
+
+        .hero-actions .btn-secondary {
+          background: #ffffff;
+          color: #0038A8;
+          font-weight: 700;
+          border: 1px solid #ffffff;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+          transition: all var(--transition-fast);
+        }
+
+        .hero-actions .btn-secondary:hover {
+          background: #f8fafc;
+          color: #002575;
+          transform: translateY(-2px);
+          box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
         }
 
         .btn-large {
