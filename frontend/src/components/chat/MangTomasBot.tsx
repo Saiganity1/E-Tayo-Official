@@ -20,9 +20,25 @@ const QUICK_PROMPTS = [
   "Ano ang required setbacks sa residential?"
 ];
 
-export default function MangTomasBot() {
+interface MangTomasBotProps {
+  externalOpen?: boolean;
+  setExternalOpen?: (open: boolean) => void;
+  hideFab?: boolean;
+}
+
+export default function MangTomasBot({
+  externalOpen,
+  setExternalOpen,
+  hideFab = false,
+}: MangTomasBotProps = {}) {
   const { applications } = usePermitContext();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setIsOpen = (open: boolean) => {
+    setInternalOpen(open);
+    if (setExternalOpen) setExternalOpen(open);
+  };
   const [inputText, setInputText] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -142,7 +158,7 @@ export default function MangTomasBot() {
   return (
     <>
       {/* Floating Action Button */}
-      {!isOpen && (
+      {!isOpen && !hideFab && (
         <button
           onClick={() => setIsOpen(true)}
           className="mang-tomas-fab"

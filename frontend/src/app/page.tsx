@@ -5,15 +5,35 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Footer from "../components/layout/Footer";
+import MangTomasBot from "../components/chat/MangTomasBot";
 
 export default function Home() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
   const [showLoginAlert, setShowLoginAlert] = useState(false);
+
+  // Floating Action Widgets state
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     setIsLoggedIn(!!localStorage.getItem("token"));
+  }, []);
+
+  // Track scroll progress for the circular back to top button
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setScrollProgress(progress);
+      setShowBackToTop(scrollTop > 60);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const handleApplyClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -94,6 +114,70 @@ export default function Home() {
 
       {/* Official Municipal Footer */}
       <Footer />
+
+      {/* Floating Action Buttons: FAQ / Mang Tomas & Back to Top */}
+      <div className="floating-widgets-dock">
+        {/* Button: Message or FAQ that links to Mang Tomas */}
+        <button
+          type="button"
+          onClick={() => setIsChatOpen((prev) => !prev)}
+          className="dock-circle-btn msg-fab"
+          aria-label="Ask Mang Tomas FAQ & Virtual Assistant"
+          title="Ask Mang Tomas AI / FAQ"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3C6.5 3 2 6.8 2 11.5C2 14.2 3.4 16.6 5.6 18.1C5.4 19.3 4.8 20.6 3.7 21.6C3.5 21.8 3.6 22.2 3.9 22.2C5.8 22.2 7.7 21.3 9 20.3C10 20.7 11 20.9 12 20.9C17.5 20.9 22 17.1 22 12.4C22 7.7 17.5 3 12 3Z" fill="#000000"/>
+            <circle cx="8" cy="12" r="1.5" fill="#ffffff"/>
+            <circle cx="12" cy="12" r="1.5" fill="#ffffff"/>
+            <circle cx="16" cy="12" r="1.5" fill="#ffffff"/>
+          </svg>
+          <span className="dock-tooltip">Ask Mang Tomas (FAQ & AI)</span>
+        </button>
+
+        {/* Button: Back to Top with Circular Scroll Progress */}
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className={`dock-circle-btn back-to-top-fab ${showBackToTop ? "is-visible" : ""}`}
+          aria-label="Scroll back to top"
+          title="Back to Top"
+        >
+          <svg className="scroll-progress-svg" width="50" height="50" viewBox="0 0 50 50">
+            {/* Background ring */}
+            <circle
+              cx="25"
+              cy="25"
+              r="21.5"
+              fill="none"
+              stroke="#e2e8f0"
+              strokeWidth="2.75"
+            />
+            {/* Active progress ring */}
+            <circle
+              cx="25"
+              cy="25"
+              r="21.5"
+              fill="none"
+              stroke="#000000"
+              strokeWidth="2.75"
+              strokeDasharray={135.09}
+              strokeDashoffset={135.09 - (scrollProgress / 100) * 135.09}
+              strokeLinecap="round"
+              style={{
+                transform: "rotate(-90deg)",
+                transformOrigin: "50% 50%",
+                transition: "stroke-dashoffset 0.1s ease-out"
+              }}
+            />
+          </svg>
+          <svg className="chevron-up-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="18 15 12 9 6 15" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Mang Tomas Virtual Assistant / FAQ Dialog */}
+      <MangTomasBot externalOpen={isChatOpen} setExternalOpen={setIsChatOpen} hideFab={true} />
 
       {/* Landing page specific layout classes that extend the global CSS */}
       <style jsx global>{`
@@ -322,6 +406,113 @@ export default function Home() {
           padding: 1rem 2.25rem;
           font-size: 1.1rem;
           border-radius: 14px;
+        }
+
+        /* Floating Action Widgets (FAQ / Mang Tomas & Back to Top) */
+        .floating-widgets-dock {
+          position: fixed;
+          bottom: 26px;
+          right: 26px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          z-index: 9999;
+        }
+
+        .dock-circle-btn {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          position: relative;
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.25s ease;
+          padding: 0;
+          outline: none;
+        }
+
+        .dock-circle-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+        }
+
+        .dock-circle-btn:active {
+          transform: translateY(0) scale(0.96);
+        }
+
+        .dock-tooltip {
+          position: absolute;
+          right: calc(100% + 12px);
+          top: 50%;
+          transform: translateY(-50%) translateX(6px);
+          background: #0f172a;
+          color: #ffffff;
+          font-size: 0.78rem;
+          font-weight: 700;
+          padding: 6px 12px;
+          border-radius: 8px;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.2s ease, transform 0.2s ease;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+        }
+
+        .dock-tooltip::after {
+          content: '';
+          position: absolute;
+          left: 100%;
+          top: 50%;
+          transform: translateY(-50%);
+          border-width: 5px 0 5px 6px;
+          border-style: solid;
+          border-color: transparent transparent transparent #0f172a;
+        }
+
+        .dock-circle-btn:hover .dock-tooltip {
+          opacity: 1;
+          transform: translateY(-50%) translateX(0);
+        }
+
+        .back-to-top-fab {
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transform: translateY(8px);
+          transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s;
+        }
+
+        .back-to-top-fab.is-visible {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transform: translateY(0);
+        }
+
+        .back-to-top-fab.is-visible:hover {
+          transform: translateY(-2px);
+        }
+
+        .scroll-progress-svg {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+        }
+
+        .chevron-up-icon {
+          position: relative;
+          z-index: 1;
+          transition: transform 0.2s ease;
+        }
+
+        .back-to-top-fab:hover .chevron-up-icon {
+          transform: translateY(-2px);
         }
       `}</style>
     </main>
