@@ -358,17 +358,81 @@ export default function TechnicalPermitFormsStep({
   // ==========================================
   // 6. SANITARY / PLUMBING PERMIT (PL) FIELDS
   // ==========================================
+  const [sanitaryScopeOfWork, setSanitaryScopeOfWork] = useState<"NEW INSTALLATION" | "ADDITION OF" | "REPAIR OF" | "REMOVAL OF" | "OTHERS">("NEW INSTALLATION");
+  const [sanitaryScopeDetails, setSanitaryScopeDetails] = useState("");
+  const [sanitaryScopeOthersAction, setSanitaryScopeOthersAction] = useState("");
+  const [sanitaryScopeOthersTarget, setSanitaryScopeOthersTarget] = useState("");
   const [waterSupplySource, setWaterSupplySource] = useState("Sto. Tomas Water District (Municipal Waterworks Main)");
   const [sewageSystem, setSewageSystem] = useState("Individual 3-Chamber Reinforced Concrete Septic Tank with Leaching Field");
   const [septicTankDimensions, setSepticTankDimensions] = useState("2.40m Length x 1.20m Width x 1.50m Liquid Depth");
   const [waterPipesMaterial, setWaterPipesMaterial] = useState("PPR-PN20 (Polypropylene Random Copolymer) Heat-Fusion Welded");
   const [wastePipesMaterial, setWastePipesMaterial] = useState("uPVC Series 1000 Sanitary Pipe with Solvent Cement Joints");
-  const [waterClosetsCount, setWaterClosetsCount] = useState("3");
-  const [lavatoriesCount, setLavatoriesCount] = useState("3");
-  const [kitchenSinksCount, setKitchenSinksCount] = useState("1");
+
+  // Water Supply & System Supply / Disposal (NBC Form P-01 Box 1 Bottom)
+  const [waterSupplyType, setWaterSupplyType] = useState<"SHALLOW WELL" | "DEEPWELL & PUMP SET" | "CITY/MUNICIPAL WATER SYSTEM" | "OTHERS">("CITY/MUNICIPAL WATER SYSTEM");
+  const [waterSupplyOthers, setWaterSupplyOthers] = useState("");
+  const [wasteWaterTreatmentPlant, setWasteWaterTreatmentPlant] = useState(false);
+  const [septicVaultImhoffTank, setSepticVaultImhoffTank] = useState(true);
+  const [subsurfaceSandFilter, setSubsurfaceSandFilter] = useState(false);
+  const [sanitarySewerConnection, setSanitarySewerConnection] = useState(false);
+  const [surfaceDrainage, setSurfaceDrainage] = useState(false);
+  const [streetCanal, setStreetCanal] = useState(false);
+  const [waterCourse, setWaterCourse] = useState(false);
+  const [plumbingTotalArea, setPlumbingTotalArea] = useState(floorArea || "185.50");
+  const [plumbingStartDate, setPlumbingStartDate] = useState("2026-10-01");
+  const [plumbingInstallationCost, setPlumbingInstallationCost] = useState("100,000.00");
+  const [plumbingCompletionDate, setPlumbingCompletionDate] = useState("2026-11-15");
+  const [plumbingPreparedBy, setPlumbingPreparedBy] = useState("Engr. Jose Mendoza, RMP");
+
+  // Fixtures schedule - Column 1
+  const [waterClosetsCount, setWaterClosetsCount] = useState("4");
+  const [floorDrainsCount, setFloorDrainsCount] = useState("5");
+  const [lavatoriesCount, setLavatoriesCount] = useState("4");
+  const [kitchenSinksCount, setKitchenSinksCount] = useState("2");
+  const [faucetsCount, setFaucetsCount] = useState("6");
   const [showersCount, setShowersCount] = useState("3");
-  const [floorDrainsCount, setFloorDrainsCount] = useState("4");
-  const [faucetsCount, setFaucetsCount] = useState("3");
+  const [waterMeterCount, setWaterMeterCount] = useState("");
+  const [greaseTrapCount, setGreaseTrapCount] = useState("");
+  const [bathTubsCount, setBathTubsCount] = useState("");
+  const [slopSinkCount, setSlopSinkCount] = useState("");
+  const [urinalCount, setUrinalCount] = useState("");
+  const [airConditioningCount, setAirConditioningCount] = useState("");
+  const [waterTankCount, setWaterTankCount] = useState("");
+
+  // Fixtures schedule - Column 2
+  const [bidetCount, setBidetCount] = useState("");
+  const [laundryTraysCount, setLaundryTraysCount] = useState("");
+  const [dentalCuspidorCount, setDentalCuspidorCount] = useState("");
+  const [electricalHeaterCount, setElectricalHeaterCount] = useState("");
+  const [waterBoilerCount, setWaterBoilerCount] = useState("");
+  const [drinkingFountainCount, setDrinkingFountainCount] = useState("");
+  const [barSinkCount, setBarSinkCount] = useState("");
+  const [sodaFountainCount, setSodaFountainCount] = useState("");
+  const [laboratorySinkCount, setLaboratorySinkCount] = useState("");
+  const [sterilizerCount, setSterilizerCount] = useState("");
+  const [swimmingPoolCount, setSwimmingPoolCount] = useState("");
+  const [othersFixtureCount, setOthersFixtureCount] = useState("");
+  const [othersFixtureName, setOthersFixtureName] = useState("");
+
+  // Fixture Installation Status Map (new vs existing, defaults to "new")
+  const [fixtureStatusMap, setFixtureStatusMap] = useState<Record<string, "new" | "existing">>({});
+
+  // System Checkboxes
+  const [waterDistributionSystem, setWaterDistributionSystem] = useState(true);
+  const [sanitarySewerSystem, setSanitarySewerSystem] = useState(true);
+  const [stormDrainageSystem, setStormDrainageSystem] = useState(false);
+
+  const leftFixturesTotal = [
+    waterClosetsCount, floorDrainsCount, lavatoriesCount, kitchenSinksCount,
+    faucetsCount, showersCount, waterMeterCount, greaseTrapCount, bathTubsCount,
+    slopSinkCount, urinalCount, airConditioningCount, waterTankCount
+  ].reduce((acc, val) => acc + (parseInt(val || "0", 10) || 0), 0);
+
+  const rightFixturesTotal = [
+    bidetCount, laundryTraysCount, dentalCuspidorCount, electricalHeaterCount,
+    waterBoilerCount, drinkingFountainCount, barSinkCount, sodaFountainCount,
+    laboratorySinkCount, sterilizerCount, swimmingPoolCount, othersFixtureCount
+  ].reduce((acc, val) => acc + (parseInt(val || "0", 10) || 0), 0);
   const [masterPlumberName, setMasterPlumberName] = useState("Engr. Jose Mendoza, RMP");
   const [masterPlumberPRC, setMasterPlumberPRC] = useState("PRC-MP-0012984");
   const [masterPlumberPRCValidity, setMasterPlumberPRCValidity] = useState("2028-03-12");
@@ -580,6 +644,7 @@ export default function TechnicalPermitFormsStep({
     setLotOwnerGovIdDateIssued(prev => prev || "Jan 12, 2026");
     setLotOwnerGovIdPlaceIssued(prev => prev || "Sto. Tomas, Pampanga");
     setLotOwnerSignedDate(prev => prev || "Jan 08, 2026");
+    setSanitaryScopeOfWork(prev => prev || "NEW INSTALLATION");
 
     setNotification("Auto-populated official Sto. Tomas NBCP engineering standards. You can inspect or modify any field.");
     setTimeout(() => setNotification(null), 4000);
@@ -705,6 +770,13 @@ export default function TechnicalPermitFormsStep({
         faDetectorCount,
         otherWiringDevicesCount,
         groundingSpec,
+        // Sanitary / Plumbing Scope of Work (NBC Form P-01)
+        sanitaryScopeOfWork,
+        sanitaryScopeDetails: sanitaryScopeOfWork === "OTHERS"
+          ? `${sanitaryScopeOthersAction || ""} OF ${sanitaryScopeOthersTarget || ""}`.trim()
+          : sanitaryScopeDetails,
+        sanitaryScopeOthersAction,
+        sanitaryScopeOthersTarget,
         waterSupplySource,
         sewageSystem,
         septicTankDimensions,
@@ -716,6 +788,44 @@ export default function TechnicalPermitFormsStep({
         showersCount,
         floorDrainsCount,
         faucetsCount,
+        waterMeterCount,
+        greaseTrapCount,
+        bathTubsCount,
+        slopSinkCount,
+        urinalCount,
+        airConditioningCount,
+        waterTankCount,
+        bidetCount,
+        laundryTraysCount,
+        dentalCuspidorCount,
+        electricalHeaterCount,
+        waterBoilerCount,
+        drinkingFountainCount,
+        barSinkCount,
+        sodaFountainCount,
+        laboratorySinkCount,
+        sterilizerCount,
+        swimmingPoolCount,
+        othersFixtureCount,
+        othersFixtureName,
+        fixtureStatusMap,
+        waterDistributionSystem,
+        sanitarySewerSystem,
+        stormDrainageSystem,
+        waterSupplyType,
+        waterSupplyOthers,
+        wasteWaterTreatmentPlant,
+        septicVaultImhoffTank,
+        subsurfaceSandFilter,
+        sanitarySewerConnection,
+        surfaceDrainage,
+        streetCanal,
+        waterCourse,
+        plumbingTotalArea,
+        plumbingStartDate,
+        plumbingInstallationCost,
+        plumbingCompletionDate,
+        plumbingPreparedBy,
         machineryType,
         machineryBrand,
         machineryCapacity,
@@ -886,7 +996,46 @@ export default function TechnicalPermitFormsStep({
             const b64 = await generateElectricalPermitPdf(epPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           } else if (key === "sanitaryPermit") {
-            const b64 = await generateSanitaryPermitPdf(payload);
+            const plPayload: UnifiedPermitFormData = {
+              ...payload,
+              sanitaryScopeOfWork,
+              sanitaryScopeDetails: sanitaryScopeOfWork === "OTHERS"
+                ? `${sanitaryScopeOthersAction || ""} OF ${sanitaryScopeOthersTarget || ""}`.trim()
+                : sanitaryScopeDetails,
+              sanitaryScopeOthersAction,
+              sanitaryScopeOthersTarget,
+              waterClosetsCount,
+              lavatoriesCount,
+              kitchenSinksCount,
+              showersCount,
+              floorDrainsCount,
+              faucetsCount,
+              waterMeterCount,
+              greaseTrapCount,
+              bathTubsCount,
+              slopSinkCount,
+              urinalCount,
+              airConditioningCount,
+              waterTankCount,
+              bidetCount,
+              laundryTraysCount,
+              dentalCuspidorCount,
+              electricalHeaterCount,
+              waterBoilerCount,
+              drinkingFountainCount,
+              barSinkCount,
+              sodaFountainCount,
+              laboratorySinkCount,
+              sterilizerCount,
+              swimmingPoolCount,
+              othersFixtureCount,
+              othersFixtureName,
+              fixtureStatusMap,
+              waterDistributionSystem,
+              sanitarySewerSystem,
+              stormDrainageSystem,
+            };
+            const b64 = await generateSanitaryPermitPdf(plPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           } else if (key === "mechanicalPermit") {
             const b64 = await generateMechanicalPermitPdf(payload);
@@ -3822,97 +3971,896 @@ export default function TechnicalPermitFormsStep({
                   </div>
                 </div>
 
-                {/* Section A: Water & Sewage Systems */}
+                {/* Section A: Scope of Work (NBC Form P-01 Box 1) */}
                 <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase" }}>
-                    Water Source, Waste Disposal, & Septic Tank Dimensions
-                  </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                    <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                      Scope of Work (NBC Form P-01 Box 1)
+                    </span>
+                    <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: "600" }}>
+                      Select the applicable sanitary / plumbing scope
+                    </span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                    {[
+                      { id: "NEW INSTALLATION", label: "New Installation", desc: "Complete plumbing/sanitary installation" },
+                      { id: "ADDITION OF", label: "Addition Of", desc: "Add fixtures or extended piping" },
+                      { id: "REPAIR OF", label: "Repair Of", desc: "Restoration of existing fixtures/pipes" },
+                      { id: "REMOVAL OF", label: "Removal Of", desc: "Dismantling or decommissioning" },
+                      { id: "OTHERS", label: "Others (Specify)", desc: "Custom plumbing action / system" },
+                    ].map((opt) => {
+                      const isSelected = sanitaryScopeOfWork === opt.id;
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() => setSanitaryScopeOfWork(opt.id as any)}
+                          style={{
+                            cursor: "pointer",
+                            padding: "10px 12px",
+                            borderRadius: "10px",
+                            border: isSelected ? "2px solid #0891b2" : "1px solid #e2e8f0",
+                            background: isSelected ? "#ecfeff" : "#f8fafc",
+                            boxShadow: isSelected ? "0 2px 8px rgba(8, 145, 178, 0.12)" : "none",
+                            transition: "all 0.15s ease",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "2px",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <input
+                              type="radio"
+                              name="sanitaryScopeRadio"
+                              checked={isSelected}
+                              onChange={() => setSanitaryScopeOfWork(opt.id as any)}
+                              style={{ accentColor: "#0891b2", cursor: "pointer" }}
+                            />
+                            <span style={{ fontSize: "0.85rem", fontWeight: isSelected ? "700" : "600", color: isSelected ? "#0e7490" : "#334155" }}>
+                              {opt.label}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", color: isSelected ? "#155e75" : "#64748b", marginLeft: "22px" }}>
+                            {opt.desc}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Dynamic specification inputs for Addition, Repair, Removal */}
+                  {(sanitaryScopeOfWork === "ADDITION OF" || sanitaryScopeOfWork === "REPAIR OF" || sanitaryScopeOfWork === "REMOVAL OF") && (
+                    <div className="animate-fade-in-up" style={{ background: "#f0fdfa", border: "1px solid #99f6e4", borderRadius: "8px", padding: "10px 12px", marginTop: "10px" }}>
+                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#0f766e", marginBottom: "4px" }}>
+                        Specify {sanitaryScopeOfWork === "ADDITION OF" ? "Addition Of" : sanitaryScopeOfWork === "REPAIR OF" ? "Repair Of" : "Removal Of"} (Prints on Official Form Underline) *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={sanitaryScopeDetails}
+                        onChange={(e) => setSanitaryScopeDetails(e.target.value)}
+                        placeholder={
+                          sanitaryScopeOfWork === "ADDITION OF"
+                            ? "e.g., 2 Water Closets, 1 Lavatory & Septic Line"
+                            : sanitaryScopeOfWork === "REPAIR OF"
+                            ? "e.g., Main Soil Pipe & Drainage Traps"
+                            : "e.g., Obsolete Galvanized Iron Water Pipes"
+                        }
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Dynamic specification input for Others (Specify) */}
+                  {sanitaryScopeOfWork === "OTHERS" && (
+                    <div className="animate-fade-in-up" style={{ background: "#f0fdfa", border: "1px solid #99f6e4", borderRadius: "8px", padding: "10px 12px", marginTop: "10px" }}>
+                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#0f766e", marginBottom: "6px" }}>
+                        Specify Others: [Action / Scope] OF [System / Component] (Prints on Form Underlines) *
+                      </label>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 32px 1fr", alignItems: "center", gap: "8px" }}>
+                        <div>
+                          <input
+                            type="text"
+                            required
+                            value={sanitaryScopeOthersAction}
+                            onChange={(e) => setSanitaryScopeOthersAction(e.target.value)}
+                            placeholder="e.g., UPGRADING / RETROFITTING"
+                            style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                          />
+                          <span style={{ fontSize: "0.7rem", color: "#64748b" }}>Action (1st underline)</span>
+                        </div>
+                        <div style={{ textAlign: "center", fontWeight: "800", color: "#0f766e", fontSize: "0.85rem" }}>
+                          OF
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            required
+                            value={sanitaryScopeOthersTarget}
+                            onChange={(e) => setSanitaryScopeOthersTarget(e.target.value)}
+                            placeholder="e.g., GREASE TRAP & SEWER"
+                            style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                          />
+                          <span style={{ fontSize: "0.7rem", color: "#64748b" }}>Component / System (2nd underline)</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+
+
+                {/* Section C: FIXTURES TO BE INSTALLED Schedule (NBC Form P-01 Box 1) */}
+                <div style={{ background: "#ffffff", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Potable Water Supply Source *</label>
-                      <input type="text" required value={waterSupplySource} onChange={(e) => setWaterSupplySource(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "0.88rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                          FIXTURES TO BE INSTALLED
+                        </span>
+                        <span style={{ fontSize: "0.68rem", fontWeight: "700", background: "#ecfeff", color: "#0891b2", border: "1px solid #a5f3fc", padding: "2px 8px", borderRadius: "4px" }}>
+                          NBC Form P-01 Box 1
+                        </span>
+                      </div>
+                      <p style={{ margin: "2px 0 0 0", fontSize: "0.75rem", color: "#64748b" }}>
+                        Specify quantities, select New or Existing fixtures, and verify plumbing & drainage distribution systems
+                      </p>
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Sewage Disposal System *</label>
-                      <input type="text" required value={sewageSystem} onChange={(e) => setSewageSystem(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                      <span style={{ fontSize: "0.76rem", fontWeight: "700", color: "#0891b2", background: "#ecfeff", border: "1px solid #a5f3fc", padding: "4px 12px", borderRadius: "999px" }}>
+                        Total Fixtures: {leftFixturesTotal + rightFixturesTotal} Units
+                      </span>
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Septic Tank Dimensions (L x W x D) *</label>
-                      <input type="text" required value={septicTankDimensions} onChange={(e) => setSepticTankDimensions(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                  </div>
+
+                  {/* Two-Column Fixtures Schedule Grid matching official form */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "1rem" }}>
+                    
+                    {/* LEFT COLUMN TABLE (Core Sanitary Fixtures) */}
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: "8px", overflow: "hidden", background: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+                      {/* Official Table Header */}
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "48px 65px 65px 1fr",
+                        background: "#f1f5f9",
+                        borderBottom: "1.5px solid #cbd5e1",
+                        padding: "6px 8px",
+                        fontSize: "0.68rem",
+                        fontWeight: "800",
+                        color: "#334155",
+                        textAlign: "center",
+                        alignItems: "center"
+                      }}>
+                        <span>QTY</span>
+                        <span style={{ lineHeight: "1.15" }}>NEW<br/>FIXTURES</span>
+                        <span style={{ lineHeight: "1.15" }}>EXISTING<br/>FIXTURES</span>
+                        <span style={{ textAlign: "left", paddingLeft: "8px" }}>KIND OF FIXTURES</span>
+                      </div>
+
+                      {/* Left Column Fixture Rows */}
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        {[
+                          { key: "waterClosetsCount", label: "Water Closet", val: waterClosetsCount, setVal: setWaterClosetsCount },
+                          { key: "floorDrainsCount", label: "Floor Drain", val: floorDrainsCount, setVal: setFloorDrainsCount },
+                          { key: "lavatoriesCount", label: "Lavatories", val: lavatoriesCount, setVal: setLavatoriesCount },
+                          { key: "kitchenSinksCount", label: "Kitchen Sink", val: kitchenSinksCount, setVal: setKitchenSinksCount },
+                          { key: "faucetsCount", label: "Faucet", val: faucetsCount, setVal: setFaucetsCount },
+                          { key: "showersCount", label: "Shower Head", val: showersCount, setVal: setShowersCount },
+                          { key: "waterMeterCount", label: "Water Meter", val: waterMeterCount, setVal: setWaterMeterCount },
+                          { key: "greaseTrapCount", label: "Grease Trap", val: greaseTrapCount, setVal: setGreaseTrapCount },
+                          { key: "bathTubsCount", label: "Bath Tubs", val: bathTubsCount, setVal: setBathTubsCount },
+                          { key: "slopSinkCount", label: "Slop Sink", val: slopSinkCount, setVal: setSlopSinkCount },
+                          { key: "urinalCount", label: "Urinal", val: urinalCount, setVal: setUrinalCount },
+                          { key: "airConditioningCount", label: "Air Conditioning Unit", val: airConditioningCount, setVal: setAirConditioningCount },
+                          { key: "waterTankCount", label: "Water Tank/Reservoir", val: waterTankCount, setVal: setWaterTankCount },
+                        ].map((fix, idx) => {
+                          const status = fixtureStatusMap[fix.key] || "new";
+                          const qtyNum = parseInt(fix.val, 10) || 0;
+                          const hasQty = qtyNum > 0;
+                          const isNew = hasQty && status === "new";
+                          const isExist = hasQty && status === "existing";
+
+                          return (
+                            <div
+                              key={fix.key}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "48px 65px 65px 1fr",
+                                alignItems: "center",
+                                padding: "4px 8px",
+                                borderBottom: idx < 12 ? "1px solid #f1f5f9" : "none",
+                                background: hasQty ? "#ecfeff33" : (idx % 2 === 0 ? "#f8fafc" : "#ffffff"),
+                                transition: "background 0.15s ease",
+                              }}
+                            >
+                              {/* QTY Input */}
+                              <div style={{ display: "flex", justifyContent: "center" }}>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={fix.val}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    fix.setVal(v);
+                                    if ((parseInt(v, 10) || 0) > 0 && !fixtureStatusMap[fix.key]) {
+                                      setFixtureStatusMap(prev => ({ ...prev, [fix.key]: "new" }));
+                                    }
+                                  }}
+                                  placeholder="—"
+                                  style={{
+                                    width: "42px",
+                                    height: "26px",
+                                    padding: "2px 4px",
+                                    textAlign: "center",
+                                    fontWeight: hasQty ? "800" : "500",
+                                    fontSize: "0.82rem",
+                                    border: hasQty ? "1.5px solid #0891b2" : "1px solid #cbd5e1",
+                                    borderRadius: "4px",
+                                    background: hasQty ? "#ffffff" : "#ffffff",
+                                    color: hasQty ? "#0e7490" : "#64748b",
+                                    outline: "none"
+                                  }}
+                                />
+                              </div>
+
+                              {/* NEW FIXTURES Checkbox [X] */}
+                              <div style={{ display: "flex", justifyContent: "center" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (isNew) {
+                                      setFixtureStatusMap(prev => {
+                                        const c = { ...prev };
+                                        delete c[fix.key];
+                                        return c;
+                                      });
+                                    } else {
+                                      setFixtureStatusMap(prev => ({ ...prev, [fix.key]: "new" }));
+                                      if (!hasQty) fix.setVal("1");
+                                    }
+                                  }}
+                                  title={`Mark ${fix.label} as New Fixture`}
+                                  style={{
+                                    width: "20px",
+                                    height: "20px",
+                                    borderRadius: "4px",
+                                    border: isNew ? "2px solid #0891b2" : "1.5px solid #cbd5e1",
+                                    background: isNew ? "#0891b2" : "#ffffff",
+                                    color: isNew ? "#ffffff" : "transparent",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "0.75rem",
+                                    fontWeight: "900",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    lineHeight: 1,
+                                    transition: "all 0.15s ease"
+                                  }}
+                                >
+                                  {isNew ? "X" : ""}
+                                </button>
+                              </div>
+
+                              {/* EXISTING FIXTURES Checkbox [X] */}
+                              <div style={{ display: "flex", justifyContent: "center" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (isExist) {
+                                      setFixtureStatusMap(prev => {
+                                        const c = { ...prev };
+                                        delete c[fix.key];
+                                        return c;
+                                      });
+                                    } else {
+                                      setFixtureStatusMap(prev => ({ ...prev, [fix.key]: "existing" }));
+                                      if (!hasQty) fix.setVal("1");
+                                    }
+                                  }}
+                                  title={`Mark ${fix.label} as Existing Fixture`}
+                                  style={{
+                                    width: "20px",
+                                    height: "20px",
+                                    borderRadius: "4px",
+                                    border: isExist ? "2px solid #d97706" : "1.5px solid #cbd5e1",
+                                    background: isExist ? "#d97706" : "#ffffff",
+                                    color: isExist ? "#ffffff" : "transparent",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "0.75rem",
+                                    fontWeight: "900",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    lineHeight: 1,
+                                    transition: "all 0.15s ease"
+                                  }}
+                                >
+                                  {isExist ? "X" : ""}
+                                </button>
+                              </div>
+
+                              {/* KIND OF FIXTURES Label */}
+                              <div style={{ paddingLeft: "8px" }}>
+                                <span style={{
+                                  fontSize: "0.75rem",
+                                  fontWeight: hasQty ? "700" : "500",
+                                  color: hasQty ? "#0f172a" : "#475569",
+                                  letterSpacing: "0.02em"
+                                }}>
+                                  [ ] {fix.label.toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Left Column Total Row (Row 13) */}
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "48px 65px 65px 1fr",
+                        alignItems: "center",
+                        padding: "6px 8px",
+                        background: "#f1f5f9",
+                        borderTop: "1.5px solid #cbd5e1",
+                        fontSize: "0.75rem",
+                        fontWeight: "800",
+                        color: "#0e7490"
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "center" }}>
+                          <span style={{
+                            borderBottom: "2px solid #0891b2",
+                            paddingBottom: "1px",
+                            minWidth: "32px",
+                            textAlign: "center"
+                          }}>
+                            {leftFixturesTotal}
+                          </span>
+                        </div>
+                        <span></span>
+                        <span></span>
+                        <span style={{ paddingLeft: "8px", textTransform: "uppercase", color: "#334155" }}>
+                          TOTAL
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Potable Water Pipes Material *</label>
-                      <input type="text" required value={waterPipesMaterial} onChange={(e) => setWaterPipesMaterial(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+
+                    {/* RIGHT COLUMN TABLE (Specialized Fixtures) */}
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: "8px", overflow: "hidden", background: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+                      {/* Official Table Header */}
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "48px 65px 65px 1fr",
+                        background: "#f1f5f9",
+                        borderBottom: "1.5px solid #cbd5e1",
+                        padding: "6px 8px",
+                        fontSize: "0.68rem",
+                        fontWeight: "800",
+                        color: "#334155",
+                        textAlign: "center",
+                        alignItems: "center"
+                      }}>
+                        <span>QTY</span>
+                        <span style={{ lineHeight: "1.15" }}>NEW<br/>FIXTURES</span>
+                        <span style={{ lineHeight: "1.15" }}>EXISTING<br/>FIXTURES</span>
+                        <span style={{ textAlign: "left", paddingLeft: "8px" }}>KIND OF FIXTURES</span>
+                      </div>
+
+                      {/* Right Column Fixture Rows */}
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        {[
+                          { key: "bidetCount", label: "Bidette", val: bidetCount, setVal: setBidetCount },
+                          { key: "laundryTraysCount", label: "Laundry Trays", val: laundryTraysCount, setVal: setLaundryTraysCount },
+                          { key: "dentalCuspidorCount", label: "Dental Cuspidor", val: dentalCuspidorCount, setVal: setDentalCuspidorCount },
+                          { key: "electricalHeaterCount", label: "Electrical Heater", val: electricalHeaterCount, setVal: setElectricalHeaterCount },
+                          { key: "waterBoilerCount", label: "Water Boiler", val: waterBoilerCount, setVal: setWaterBoilerCount },
+                          { key: "drinkingFountainCount", label: "Drinking Fountain", val: drinkingFountainCount, setVal: setDrinkingFountainCount },
+                          { key: "barSinkCount", label: "Bar Sink", val: barSinkCount, setVal: setBarSinkCount },
+                          { key: "sodaFountainCount", label: "Soda Fountainsink", val: sodaFountainCount, setVal: setSodaFountainCount },
+                          { key: "laboratorySinkCount", label: "Laboratory Sink", val: laboratorySinkCount, setVal: setLaboratorySinkCount },
+                          { key: "sterilizerCount", label: "Sterilizer", val: sterilizerCount, setVal: setSterilizerCount },
+                          { key: "swimmingPoolCount", label: "Swimming Pool", val: swimmingPoolCount, setVal: setSwimmingPoolCount },
+                          { key: "othersFixtureCount", label: "Others (Specify)", val: othersFixtureCount, setVal: setOthersFixtureCount },
+                        ].map((fix, idx) => {
+                          const status = fixtureStatusMap[fix.key] || "new";
+                          const qtyNum = parseInt(fix.val, 10) || 0;
+                          const hasQty = qtyNum > 0;
+                          const isNew = hasQty && status === "new";
+                          const isExist = hasQty && status === "existing";
+
+                          return (
+                            <div
+                              key={fix.key}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "48px 65px 65px 1fr",
+                                alignItems: "center",
+                                padding: "4px 8px",
+                                borderBottom: idx < 11 ? "1px solid #f1f5f9" : "none",
+                                background: hasQty ? "#ecfeff33" : (idx % 2 === 0 ? "#f8fafc" : "#ffffff"),
+                                transition: "background 0.15s ease",
+                              }}
+                            >
+                              {/* QTY Input */}
+                              <div style={{ display: "flex", justifyContent: "center" }}>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={fix.val}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    fix.setVal(v);
+                                    if ((parseInt(v, 10) || 0) > 0 && !fixtureStatusMap[fix.key]) {
+                                      setFixtureStatusMap(prev => ({ ...prev, [fix.key]: "new" }));
+                                    }
+                                  }}
+                                  placeholder="—"
+                                  style={{
+                                    width: "42px",
+                                    height: "26px",
+                                    padding: "2px 4px",
+                                    textAlign: "center",
+                                    fontWeight: hasQty ? "800" : "500",
+                                    fontSize: "0.82rem",
+                                    border: hasQty ? "1.5px solid #0891b2" : "1px solid #cbd5e1",
+                                    borderRadius: "4px",
+                                    background: hasQty ? "#ffffff" : "#ffffff",
+                                    color: hasQty ? "#0e7490" : "#64748b",
+                                    outline: "none"
+                                  }}
+                                />
+                              </div>
+
+                              {/* NEW FIXTURES Checkbox [X] */}
+                              <div style={{ display: "flex", justifyContent: "center" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (isNew) {
+                                      setFixtureStatusMap(prev => {
+                                        const c = { ...prev };
+                                        delete c[fix.key];
+                                        return c;
+                                      });
+                                    } else {
+                                      setFixtureStatusMap(prev => ({ ...prev, [fix.key]: "new" }));
+                                      if (!hasQty) fix.setVal("1");
+                                    }
+                                  }}
+                                  title={`Mark ${fix.label} as New Fixture`}
+                                  style={{
+                                    width: "20px",
+                                    height: "20px",
+                                    borderRadius: "4px",
+                                    border: isNew ? "2px solid #0891b2" : "1.5px solid #cbd5e1",
+                                    background: isNew ? "#0891b2" : "#ffffff",
+                                    color: isNew ? "#ffffff" : "transparent",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "0.75rem",
+                                    fontWeight: "900",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    lineHeight: 1,
+                                    transition: "all 0.15s ease"
+                                  }}
+                                >
+                                  {isNew ? "X" : ""}
+                                </button>
+                              </div>
+
+                              {/* EXISTING FIXTURES Checkbox [X] */}
+                              <div style={{ display: "flex", justifyContent: "center" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (isExist) {
+                                      setFixtureStatusMap(prev => {
+                                        const c = { ...prev };
+                                        delete c[fix.key];
+                                        return c;
+                                      });
+                                    } else {
+                                      setFixtureStatusMap(prev => ({ ...prev, [fix.key]: "existing" }));
+                                      if (!hasQty) fix.setVal("1");
+                                    }
+                                  }}
+                                  title={`Mark ${fix.label} as Existing Fixture`}
+                                  style={{
+                                    width: "20px",
+                                    height: "20px",
+                                    borderRadius: "4px",
+                                    border: isExist ? "2px solid #d97706" : "1.5px solid #cbd5e1",
+                                    background: isExist ? "#d97706" : "#ffffff",
+                                    color: isExist ? "#ffffff" : "transparent",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "0.75rem",
+                                    fontWeight: "900",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    lineHeight: 1,
+                                    transition: "all 0.15s ease"
+                                  }}
+                                >
+                                  {isExist ? "X" : ""}
+                                </button>
+                              </div>
+
+                              {/* KIND OF FIXTURES Label */}
+                              <div style={{ paddingLeft: "8px" }}>
+                                <span style={{
+                                  fontSize: "0.75rem",
+                                  fontWeight: hasQty ? "700" : "500",
+                                  color: hasQty ? "#0f172a" : "#475569",
+                                  letterSpacing: "0.02em"
+                                }}>
+                                  [ ] {fix.label.toUpperCase()}
+                                </span>
+                                {fix.key === "othersFixtureCount" && (
+                                  <input
+                                    type="text"
+                                    value={othersFixtureName}
+                                    onChange={(e) => setOthersFixtureName(e.target.value)}
+                                    placeholder="Specify custom fixture (e.g. Foot Basin)"
+                                    style={{
+                                      display: "block",
+                                      width: "95%",
+                                      marginTop: "3px",
+                                      padding: "2px 6px",
+                                      borderRadius: "4px",
+                                      border: "1px solid #cbd5e1",
+                                      fontSize: "0.7rem",
+                                      background: "#ffffff"
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Right Column Total Row (Row 13) */}
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "48px 65px 65px 1fr",
+                        alignItems: "center",
+                        padding: "6px 8px",
+                        background: "#f1f5f9",
+                        borderTop: "1.5px solid #cbd5e1",
+                        fontSize: "0.75rem",
+                        fontWeight: "800",
+                        color: "#0e7490"
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "center" }}>
+                          <span style={{
+                            borderBottom: "2px solid #0891b2",
+                            paddingBottom: "1px",
+                            minWidth: "32px",
+                            textAlign: "center"
+                          }}>
+                            {rightFixturesTotal}
+                          </span>
+                        </div>
+                        <span></span>
+                        <span></span>
+                        <span style={{ paddingLeft: "8px", textTransform: "uppercase", color: "#334155" }}>
+                          TOTAL
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ gridColumn: "span 2" }}>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Sanitary Waste & Vent Pipes Material *</label>
-                      <input type="text" required value={wastePipesMaterial} onChange={(e) => setWastePipesMaterial(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+
+                  </div>
+
+                  {/* Bottom Distribution Systems matching official form */}
+                  <div style={{
+                    marginTop: "1.25rem",
+                    padding: "10px 14px",
+                    background: "#f8fafc",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px"
+                  }}>
+                    <span style={{ fontSize: "0.74rem", fontWeight: "800", color: "#0f766e", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                      Plumbing & Drainage Distribution Systems:
+                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", userSelect: "none" }}>
+                        <input
+                          type="checkbox"
+                          checked={waterDistributionSystem}
+                          onChange={(e) => setWaterDistributionSystem(e.target.checked)}
+                          style={{ width: "17px", height: "17px", accentColor: "#0891b2", cursor: "pointer" }}
+                        />
+                        <span style={{ fontSize: "0.8rem", fontWeight: waterDistributionSystem ? "700" : "600", color: waterDistributionSystem ? "#0f766e" : "#334155" }}>
+                          WATER DISTRIBUTION SYSTEM
+                        </span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", userSelect: "none" }}>
+                        <input
+                          type="checkbox"
+                          checked={sanitarySewerSystem}
+                          onChange={(e) => setSanitarySewerSystem(e.target.checked)}
+                          style={{ width: "17px", height: "17px", accentColor: "#0891b2", cursor: "pointer" }}
+                        />
+                        <span style={{ fontSize: "0.8rem", fontWeight: sanitarySewerSystem ? "700" : "600", color: sanitarySewerSystem ? "#0f766e" : "#334155" }}>
+                          SANITARY SEWER SYSTEM
+                        </span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", userSelect: "none" }}>
+                        <input
+                          type="checkbox"
+                          checked={stormDrainageSystem}
+                          onChange={(e) => setStormDrainageSystem(e.target.checked)}
+                          style={{ width: "17px", height: "17px", accentColor: "#0891b2", cursor: "pointer" }}
+                        />
+                        <span style={{ fontSize: "0.8rem", fontWeight: stormDrainageSystem ? "700" : "600", color: stormDrainageSystem ? "#0f766e" : "#334155" }}>
+                          STORM DRAINAGE SYSTEM
+                        </span>
+                      </label>
                     </div>
                   </div>
                 </div>
 
-                {/* Section B: Plumbing Fixture Schedule */}
-                <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase" }}>
-                    Plumbing Fixture Counts Schedule (Units)
-                  </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "1rem", marginTop: "10px" }}>
+                {/* Section C: Water Supply, System Supply / Disposal, & Installation Details (NBC Form P-01 Box 1 Bottom) */}
+                <div style={{ background: "#ffffff", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Water Closets *</label>
-                      <input type="number" required value={waterClosetsCount} onChange={(e) => setWaterClosetsCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Lavatories *</label>
-                      <input type="number" required value={lavatoriesCount} onChange={(e) => setLavatoriesCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Kitchen Sinks *</label>
-                      <input type="number" required value={kitchenSinksCount} onChange={(e) => setKitchenSinksCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Shower Units *</label>
-                      <input type="number" required value={showersCount} onChange={(e) => setShowersCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Floor Drains *</label>
-                      <input type="number" required value={floorDrainsCount} onChange={(e) => setFloorDrainsCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Faucets / Bibbs *</label>
-                      <input type="number" required value={faucetsCount} onChange={(e) => setFaucetsCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "0.88rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                          WATER SUPPLY & SYSTEM SUPPLY / DISPOSAL
+                        </span>
+                        <span style={{ fontSize: "0.68rem", fontWeight: "700", background: "#ecfeff", color: "#0891b2", border: "1px solid #a5f3fc", padding: "2px 8px", borderRadius: "4px" }}>
+                          NBC Form P-01 Box 1
+                        </span>
+                      </div>
+                      <p style={{ margin: "2px 0 0 0", fontSize: "0.75rem", color: "#64748b" }}>
+                        Select water source, system supply / sewage disposal, drainage outfall, and installation timeline & cost
+                      </p>
                     </div>
                   </div>
-                </div>
 
-                {/* Section C: Master Plumber Credentials */}
-                <div style={{ background: "#ecfeff", border: "1.5px solid #a5f3fc", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase" }}>
-                    Box 2: Design Professional: Registered Master Plumber / Sanitary Engineer
-                  </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem", marginTop: "10px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#155e75" }}>Plumber Full Name *</label>
-                      <input type="text" required value={masterPlumberName} onChange={(e) => setMasterPlumberName(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                  {/* Two-Column Grid: Water Supply (Left) & System Supply (Right) */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1rem", marginBottom: "1.25rem" }}>
+                    
+                    {/* WATER SUPPLY PANEL */}
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "12px", background: "#f8fafc" }}>
+                      <div style={{ borderBottom: "1.5px solid #cbd5e1", paddingBottom: "6px", marginBottom: "10px" }}>
+                        <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                          WATER SUPPLY
+                        </span>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {[
+                          { id: "SHALLOW WELL", label: "SHALLOW WELL" },
+                          { id: "DEEPWELL & PUMP SET", label: "DEEPWELL & PUMP SET" },
+                          { id: "CITY/MUNICIPAL WATER SYSTEM", label: "CITY/MUNICIPAL WATER SYSTEM" },
+                          { id: "OTHERS", label: "OTHERS" },
+                        ].map(opt => {
+                          const isSelected = waterSupplyType === opt.id;
+                          return (
+                            <div key={opt.id}>
+                              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.78rem", fontWeight: isSelected ? "700" : "600", color: isSelected ? "#0e7490" : "#475569" }}>
+                                <input
+                                  type="radio"
+                                  name="waterSupplyTypeRadio"
+                                  checked={isSelected}
+                                  onChange={() => setWaterSupplyType(opt.id as any)}
+                                  style={{ accentColor: "#0891b2", width: "16px", height: "16px", cursor: "pointer" }}
+                                />
+                                [ ] {opt.label}
+                              </label>
+                              {opt.id === "OTHERS" && isSelected && (
+                                <input
+                                  type="text"
+                                  value={waterSupplyOthers}
+                                  onChange={e => setWaterSupplyOthers(e.target.value)}
+                                  placeholder="Specify other water supply (e.g. Rainwater Catchment / Spring)"
+                                  style={{ marginTop: "4px", marginLeft: "24px", width: "calc(100% - 24px)", padding: "4px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem", background: "#ffffff" }}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#155e75" }}>PRC License No. *</label>
-                      <input type="text" required value={masterPlumberPRC} onChange={(e) => setMasterPlumberPRC(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+
+                    {/* SYSTEM SUPPLY / DISPOSAL PANEL */}
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "12px", background: "#f8fafc" }}>
+                      <div style={{ borderBottom: "1.5px solid #cbd5e1", paddingBottom: "6px", marginBottom: "10px" }}>
+                        <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#334155", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                          SYSTEM SUPPLY / DISPOSAL
+                        </span>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                        {/* Left Sub-column: Treatment & Vault */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.74rem", fontWeight: wasteWaterTreatmentPlant ? "700" : "500", color: wasteWaterTreatmentPlant ? "#0e7490" : "#475569" }}>
+                            <input
+                              type="checkbox"
+                              checked={wasteWaterTreatmentPlant}
+                              onChange={e => setWasteWaterTreatmentPlant(e.target.checked)}
+                              style={{ accentColor: "#0891b2" }}
+                            />
+                            [ ] WASTE WATER TREATMENT PLANT
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.74rem", fontWeight: septicVaultImhoffTank ? "700" : "500", color: septicVaultImhoffTank ? "#0e7490" : "#475569" }}>
+                            <input
+                              type="checkbox"
+                              checked={septicVaultImhoffTank}
+                              onChange={e => setSepticVaultImhoffTank(e.target.checked)}
+                              style={{ accentColor: "#0891b2" }}
+                            />
+                            [X] SEPTIC VAULT/IMHOFF TANK
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.74rem", fontWeight: subsurfaceSandFilter ? "700" : "500", color: subsurfaceSandFilter ? "#0e7490" : "#475569" }}>
+                            <input
+                              type="checkbox"
+                              checked={subsurfaceSandFilter}
+                              onChange={e => setSubsurfaceSandFilter(e.target.checked)}
+                              style={{ accentColor: "#0891b2" }}
+                            />
+                            [ ] SUBSURFACE SAND FILTER
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.74rem", fontWeight: sanitarySewerConnection ? "700" : "500", color: sanitarySewerConnection ? "#0e7490" : "#475569" }}>
+                            <input
+                              type="checkbox"
+                              checked={sanitarySewerConnection}
+                              onChange={e => setSanitarySewerConnection(e.target.checked)}
+                              style={{ accentColor: "#0891b2" }}
+                            />
+                            [ ] SANITARY SEWER CONNECTION
+                          </label>
+                        </div>
+
+                        {/* Right Sub-column: Drainage Outfall */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.74rem", fontWeight: surfaceDrainage ? "700" : "500", color: surfaceDrainage ? "#0e7490" : "#475569" }}>
+                            <input
+                              type="checkbox"
+                              checked={surfaceDrainage}
+                              onChange={e => setSurfaceDrainage(e.target.checked)}
+                              style={{ accentColor: "#0891b2" }}
+                            />
+                            [ ] SURFACE DRAINAGE
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.74rem", fontWeight: streetCanal ? "700" : "500", color: streetCanal ? "#0e7490" : "#475569" }}>
+                            <input
+                              type="checkbox"
+                              checked={streetCanal}
+                              onChange={e => setStreetCanal(e.target.checked)}
+                              style={{ accentColor: "#0891b2" }}
+                            />
+                            [ ] STREET CANAL
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.74rem", fontWeight: waterCourse ? "700" : "500", color: waterCourse ? "#0e7490" : "#475569" }}>
+                            <input
+                              type="checkbox"
+                              checked={waterCourse}
+                              onChange={e => setWaterCourse(e.target.checked)}
+                              style={{ accentColor: "#0891b2" }}
+                            />
+                            [ ] WATER COURSE
+                          </label>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#155e75" }}>PRC Validity Date *</label>
-                      <input type="date" required value={masterPlumberPRCValidity} onChange={(e) => setMasterPlumberPRCValidity(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+
+                  </div>
+
+                  {/* BUILDING SPECIFICATIONS & INSTALLATION DETAILS */}
+                  <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px", marginBottom: "1rem" }}>
+                    <span style={{ fontSize: "0.74rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                      Building Specifications & Installation Schedule
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                          Number of Storeys of Building *
+                        </label>
+                        <input
+                          type="text"
+                          value={proposedStoreys}
+                          onChange={e => setProposedStoreys(e.target.value)}
+                          placeholder="2"
+                          style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                          Total Area of Building/Subdivision (SQ. M.) *
+                        </label>
+                        <input
+                          type="text"
+                          value={plumbingTotalArea}
+                          onChange={e => setPlumbingTotalArea(e.target.value)}
+                          placeholder="185.50"
+                          style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                          Proposed Date Start of Installation *
+                        </label>
+                        <input
+                          type="date"
+                          value={plumbingStartDate}
+                          onChange={e => setPlumbingStartDate(e.target.value)}
+                          style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                          Total Cost of Installation (PHP) *
+                        </label>
+                        <input
+                          type="text"
+                          value={plumbingInstallationCost}
+                          onChange={e => setPlumbingInstallationCost(e.target.value)}
+                          placeholder="100,000.00"
+                          style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                          Expected Date of Completion *
+                        </label>
+                        <input
+                          type="date"
+                          value={plumbingCompletionDate}
+                          onChange={e => setPlumbingCompletionDate(e.target.value)}
+                          style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                          Prepared By (Professional / Installer) *
+                        </label>
+                        <input
+                          type="text"
+                          value={plumbingPreparedBy}
+                          onChange={e => setPlumbingPreparedBy(e.target.value)}
+                          placeholder="Engr. Jose Mendoza, RMP"
+                          style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#155e75" }}>NAMPAP Membership No. *</label>
-                      <input type="text" required value={masterPlumberNAMPAP} onChange={(e) => setMasterPlumberNAMPAP(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#155e75" }}>PTR Number *</label>
-                      <input type="text" required value={masterPlumberPTR} onChange={(e) => setMasterPlumberPTR(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", color: "#155e75" }}>Place Issued *</label>
-                      <input type="text" required value={masterPlumberPTRIssued} onChange={(e) => setMasterPlumberPTRIssued(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "white" }} />
+                  </div>
+
+                  {/* Septic Tank & Piping Material Specs */}
+                  <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px" }}>
+                    <span style={{ fontSize: "0.74rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                      Septic Tank Dimensions & Piping Material Specifications
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Septic Tank Dimensions (L x W x D) *</label>
+                        <input type="text" required value={septicTankDimensions} onChange={(e) => setSepticTankDimensions(e.target.value)} style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Potable Water Pipes Material *</label>
+                        <input type="text" required value={waterPipesMaterial} onChange={(e) => setWaterPipesMaterial(e.target.value)} style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }} />
+                      </div>
+                      <div style={{ gridColumn: "span 2" }}>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Sanitary Waste & Vent Pipes Material *</label>
+                        <input type="text" required value={wastePipesMaterial} onChange={(e) => setWastePipesMaterial(e.target.value)} style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }} />
+                      </div>
                     </div>
                   </div>
                 </div>

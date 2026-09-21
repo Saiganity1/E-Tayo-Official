@@ -8,9 +8,15 @@ export interface UnifiedPermitFormData {
   structuralPermitNo?: string;
   electricalPermitNo?: string;
   plumbingPermitNo?: string;
+  sanitaryPermitNo?: string;
   mechanicalPermitNo?: string;
   electronicsPermitNo?: string;
   buildingPermitNo?: string;
+  status?: string;
+  isApproved?: boolean;
+  dateIssued?: string;
+  approvalDate?: string;
+  permitIssuedDate?: string;
   locationalClearanceRef: string;
   projectType: ProjectTypeItem;
 
@@ -135,6 +141,10 @@ export interface UnifiedPermitFormData {
   otherWiringDevicesCount?: string;
 
   // Sanitary / Plumbing Permit details
+  sanitaryScopeOfWork?: string;
+  sanitaryScopeDetails?: string;
+  sanitaryScopeOthersAction?: string;
+  sanitaryScopeOthersTarget?: string;
   waterSupplySource?: string;
   sewageSystem?: string;
   septicTankDimensions?: string;
@@ -146,6 +156,49 @@ export interface UnifiedPermitFormData {
   showersCount?: string;
   floorDrainsCount?: string;
   faucetsCount?: string;
+  waterMeterCount?: string;
+  greaseTrapCount?: string;
+  bathTubsCount?: string;
+  slopSinkCount?: string;
+  urinalCount?: string;
+  airConditioningCount?: string;
+  waterTankCount?: string;
+
+  bidetCount?: string;
+  laundryTraysCount?: string;
+  dentalCuspidorCount?: string;
+  electricalHeaterCount?: string;
+  waterBoilerCount?: string;
+  drinkingFountainCount?: string;
+  barSinkCount?: string;
+  sodaFountainCount?: string;
+  laboratorySinkCount?: string;
+  sterilizerCount?: string;
+  swimmingPoolCount?: string;
+  othersFixtureCount?: string;
+  othersFixtureName?: string;
+
+  fixtureStatusMap?: Record<string, "new" | "existing">;
+
+  waterDistributionSystem?: boolean;
+  sanitarySewerSystem?: boolean;
+  stormDrainageSystem?: boolean;
+
+  // Water Supply & System Supply / Disposal (NBC Form P-01 Box 1 Bottom)
+  waterSupplyType?: "SHALLOW WELL" | "DEEPWELL & PUMP SET" | "CITY/MUNICIPAL WATER SYSTEM" | "OTHERS";
+  waterSupplyOthers?: string;
+  wasteWaterTreatmentPlant?: boolean;
+  septicVaultImhoffTank?: boolean;
+  subsurfaceSandFilter?: boolean;
+  sanitarySewerConnection?: boolean;
+  surfaceDrainage?: boolean;
+  streetCanal?: boolean;
+  waterCourse?: boolean;
+  plumbingTotalArea?: string;
+  plumbingStartDate?: string;
+  plumbingInstallationCost?: string;
+  plumbingCompletionDate?: string;
+  plumbingPreparedBy?: string;
 
   // Locational Clearance specific details (Boxes 11, 12, 13, 14, 15, 16, 17)
   rightOverLand?: string;
@@ -285,6 +338,8 @@ export interface UnifiedPermitFormData {
   electricalEngineerPTRIssued?: string;
   electricalEngineerPTRIssuedAt?: string;
   electricalEngineerTIN?: string;
+  electricalEngineerTel?: string;
+  applicantCtcNo?: string;
   electricalEngineerSignedDate?: string;
   electricalEngineerSignature?: string;
 
@@ -1868,9 +1923,78 @@ export async function generateSanitaryPermitPdf(data: UnifiedPermitFormData): Pr
     p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
   };
 
-  // Header: APPLICATION NO. in box
-  drawText1(data.applicationNo || "APP-2026-6636", 75, 824.0, 8.5, true);
-  drawText1(data.submissionDate || "Sep 17, 2026", 100, 792.0, 8, false);
+  // Header: APPLICATION NO. centered inside the grid of boxes [19.75, 199.9], y = 810.0 to 827.3
+  const appNo = safeText(data.applicationNo || "APP-2026-6636").trim();
+  const appNoW = fontBold.widthOfTextAtSize(appNo, 8.5);
+  const appNoX = 109.8 - (appNoW / 2);
+  drawText1(appNo, appNoX, 815.5, 8.5, true);
+
+  // DATE OF APPLICATION centered above the underline [24.0, 203.4], y = 794.2
+  const fileDate = safeText(data.submissionDate || "Sep 17, 2026").trim();
+  const fileDateW = fontRegular.widthOfTextAtSize(fileDate, 8.0);
+  const fileDateX = 113.7 - (fileDateW / 2);
+  drawText1(fileDate, fileDateX, 797.0, 8.0, false);
+
+  // Header Right: PERMIT NO. (11 individual boxes) and DATE ISSUED (above underline at y = 794.7)
+  // Auto-generated and rendered when the permit is approved by Admin / Building Official, or in preview
+  const isApprovedOrIssued =
+    data.isApproved === true ||
+    data.status === "approved" ||
+    data.status === "released" ||
+    Boolean(data.permitIssuedDate) ||
+    Boolean(data.dateIssued) ||
+    Boolean(data.sanitaryPermitNo) ||
+    Boolean(data.plumbingPermitNo) ||
+    (Boolean(data.permitNo) && !data.permitNo?.startsWith("AP-") && !data.permitNo?.startsWith("BP-") && !data.permitNo?.startsWith("EP-")) ||
+    (!data.status); // Default to preview if no submission status is provided (e.g. Form Tester)
+
+  if (isApprovedOrIssued) {
+    const cleanSeq = safeText(data.applicationNo || "2026-6636")
+      .replace(/^(APP|UNIFIED|PERMIT|DOC)[\s\-#:]*(TEST-)?/i, "")
+      .trim() || "2026-6636";
+
+    let rawPermitNo = (
+      data.sanitaryPermitNo ||
+      data.plumbingPermitNo ||
+      (data.permitNo && !data.permitNo.startsWith("AP-") && !data.permitNo.startsWith("BP-") && !data.permitNo.startsWith("EP-") ? data.permitNo : "") ||
+      `P-${cleanSeq}`
+    ).trim();
+
+    // If formatted like SP-2026-6636 (12 chars), adapt cleanly to the 11 boxes as P-2026-6636
+    if (rawPermitNo.length > 11 && rawPermitNo.toUpperCase().startsWith("SP-")) {
+      rawPermitNo = "P-" + rawPermitNo.slice(3);
+    }
+
+    // 11 segmented boxes under PERMIT NO.
+    const permitChars = rawPermitNo.slice(0, 11).split("");
+    const permitBoxLefts = [373.20, 391.90, 408.45, 426.45, 444.45, 462.45, 480.45, 498.45, 516.45, 534.45, 552.45];
+    const permitBoxWidths = [18.70, 16.55, 18.00, 18.00, 18.00, 18.00, 18.00, 18.00, 18.00, 18.00, 18.00];
+
+    permitBoxLefts.forEach((bLeft, idx) => {
+      if (idx < permitChars.length) {
+        const char = permitChars[idx];
+        const charW = fontBold.widthOfTextAtSize(char, 8.5);
+        const charX = bLeft + (permitBoxWidths[idx] - charW) / 2;
+        p1.drawText(char, { x: charX, y: 817.5, size: 8.5, font: fontBold, color: darkNavy });
+      }
+    });
+
+    // DATE ISSUED centered above the underline [378.95, 570.35], y = 794.7
+    const rawIssuedDate = safeText(
+      data.permitIssuedDate ||
+      data.dateIssued ||
+      data.approvalDate ||
+      (data.status === "approved" || data.status === "released" || data.isApproved
+        ? (data.submissionDate || "Sep 22, 2026")
+        : "Sep 22, 2026")
+    ).trim();
+
+    if (rawIssuedDate) {
+      const issuedW = fontRegular.widthOfTextAtSize(rawIssuedDate, 8.0);
+      const issuedX = 474.65 - (issuedW / 2);
+      drawText1(rawIssuedDate, issuedX, 797.0, 8.0, false);
+    }
+  }
 
   // Box 1
   const { lastName, firstName, mi, middleName } = parseApplicantName(data);
@@ -1890,36 +2014,195 @@ export async function generateSanitaryPermitPdf(data: UnifiedPermitFormData): Pr
   drawText1(data.barangay || "Poblacion", 260, 691.5, 7.5, true, 18);
   drawText1("Sto. Tomas, Pampanga", 360, 691.5, 7.5, true, 20);
 
-  // Scope: NEW INSTALLATION
-  drawCheck1(40, 666.0); // [X] New Installation
+  // Scope of Work (NBC Form P-01)
+  const rawScope = (data.sanitaryScopeOfWork || data.scopeOfWork || "NEW INSTALLATION").toUpperCase();
+  const scopeDetails = safeText(data.sanitaryScopeDetails || data.scopeOfWorkDetails || "").trim();
+
+  if (rawScope.includes("ADDITION")) {
+    drawCheck1(211.5, 677.5); // [X] ADDITION OF
+    if (scopeDetails) drawText1(scopeDetails, 282.0, 678.5, 7.5, true, 20);
+  } else if (rawScope.includes("REPAIR")) {
+    drawCheck1(211.5, 665.5); // [X] REPAIR OF
+    if (scopeDetails) drawText1(scopeDetails, 273.0, 667.0, 7.5, true, 22);
+  } else if (rawScope.includes("REMOVAL")) {
+    drawCheck1(211.5, 653.5); // [X] REMOVAL OF
+    if (scopeDetails) drawText1(scopeDetails, 283.0, 655.0, 7.5, true, 20);
+  } else if (rawScope.includes("OTHER")) {
+    drawCheck1(435.5, 665.5); // [X] OTHERS (SPECIFY)
+    let action = safeText(data.sanitaryScopeOthersAction || "").trim();
+    let target = safeText(data.sanitaryScopeOthersTarget || "").trim();
+    if (!action && scopeDetails) {
+      if (scopeDetails.toUpperCase().includes(" OF ")) {
+        const parts = scopeDetails.split(/ of /i);
+        action = parts[0].trim();
+        target = parts.slice(1).join(" of ").trim();
+      } else {
+        action = scopeDetails;
+      }
+    }
+    if (action) drawText1(action.toUpperCase(), 446.0, 667.0, 6.5, true, 12);
+    if (target) drawText1(target.toUpperCase(), 521.0, 667.0, 6.5, true, 10);
+  } else {
+    // Default: NEW INSTALLATION
+    drawCheck1(40.0, 666.0); // [X] NEW INSTALLATION
+  }
+
   drawCheck1(40, 624.0); // [X] Residential
 
-  // Fixtures: moved slightly higher (+4px)
-  drawText1(data.waterClosetsCount || "3", 35, 532.0, 7.5, true);
-  drawCheck1(80, 532.0);
-  drawText1(data.floorDrainsCount || "3", 35, 520.0, 7.5, true);
-  drawCheck1(80, 520.0);
-  drawText1(data.lavatoriesCount || "3", 35, 508.0, 7.5, true);
-  drawCheck1(80, 508.0);
-  drawText1(data.kitchenSinksCount || "1", 35, 496.0, 7.5, true);
-  drawCheck1(80, 496.0);
-  drawText1(data.faucetsCount || "4", 35, 484.0, 7.5, true);
-  drawCheck1(80, 484.0);
-  drawText1(data.showersCount || "2", 35, 472.0, 7.5, true);
-  drawCheck1(80, 472.0);
+  // FIXTURES TO BE INSTALLED Schedule (NBC Form P-01 Box 1)
+  const col1Rows: { key: keyof UnifiedPermitFormData; label: string; defaultQty?: string }[] = [
+    { key: "waterClosetsCount", label: "WATER CLOSET", defaultQty: "4" },
+    { key: "floorDrainsCount", label: "FLOOR DRAIN", defaultQty: "5" },
+    { key: "lavatoriesCount", label: "LAVATORIES", defaultQty: "4" },
+    { key: "kitchenSinksCount", label: "KITCHEN SINK", defaultQty: "2" },
+    { key: "faucetsCount", label: "FAUCET", defaultQty: "6" },
+    { key: "showersCount", label: "SHOWER HEAD", defaultQty: "3" },
+    { key: "waterMeterCount", label: "WATER METER" },
+    { key: "greaseTrapCount", label: "GREASE TRAP" },
+    { key: "bathTubsCount", label: "BATH TUBS" },
+    { key: "slopSinkCount", label: "SLOP SINK" },
+    { key: "urinalCount", label: "URINAL" },
+    { key: "airConditioningCount", label: "AIR CONDITIONING UNIT" },
+    { key: "waterTankCount", label: "WATER TANK/RESERVOIR" },
+  ];
 
-  // Water supply & septic
-  drawCheck1(35, 348.0); // [X] City / Municipal Water System
-  drawCheck1(219, 348.0); // [X] Waste / Sewer
-  drawCheck1(210, 306.0); // [X] Septic Vault
+  const col2Rows: { key: keyof UnifiedPermitFormData; label: string }[] = [
+    { key: "bidetCount", label: "BIDETTE" },
+    { key: "laundryTraysCount", label: "LAUNDRY TRAYS" },
+    { key: "dentalCuspidorCount", label: "DENTAL CUSPIDOR" },
+    { key: "electricalHeaterCount", label: "ELECTRICAL HEATER" },
+    { key: "waterBoilerCount", label: "WATER BOILER" },
+    { key: "drinkingFountainCount", label: "DRINKING FOUNTAIN" },
+    { key: "barSinkCount", label: "BAR SINK" },
+    { key: "sodaFountainCount", label: "SODA FOUNTAINSINK" },
+    { key: "laboratorySinkCount", label: "LABORATORY SINK" },
+    { key: "sterilizerCount", label: "STERILIZER" },
+    { key: "swimmingPoolCount", label: "SWIMMING POOL" },
+    { key: "othersFixtureCount", label: "OTHERS (SPECIFY)" },
+  ];
 
-  drawText1(data.proposedStoreys || "2", 190, 270.0, 7.5, true);
-  drawText1(`${data.floorArea || "120"} SQ. M.`, 430, 265.0, 7.5, true);
-  drawText1(data.proposedStartDate || "Sep 17, 2026", 180, 248.0, 7.5, false);
-  drawText1(`PHP ${data.costPlumbing ? String(data.costPlumbing).replace(/PHP/gi, "").trim() : "50,000.00"}`, 410, 234.0, 7.5, true);
+  const colY = [534.5, 522.5, 510.5, 498.5, 486.5, 474.5, 462.5, 450.5, 438.5, 426.5, 414.5, 402.5, 390.5];
 
-  const mpName = data.masterPlumberName || "Engr. Jose Mendoza, MP";
-  drawText1(mpName.toUpperCase(), 355, 148.0, 8, true);
+  let leftTotal = 0;
+  col1Rows.forEach((row, idx) => {
+    const rawVal = data[row.key] as string | undefined;
+    const qtyStr = safeText(rawVal || (row.defaultQty ? row.defaultQty : "")).trim();
+    if (qtyStr && parseInt(qtyStr, 10) > 0) {
+      const qtyNum = parseInt(qtyStr, 10);
+      leftTotal += qtyNum;
+      const y = colY[idx];
+      const qtyW = fontBold.widthOfTextAtSize(qtyStr, 7.5);
+      p1.drawText(qtyStr, { x: 38.7 - qtyW / 2, y, size: 7.5, font: fontBold, color: darkNavy });
+      const isExisting = data.fixtureStatusMap?.[row.key as string] === "existing";
+      drawCheck1(isExisting ? 131.0 : 78.7, y);
+    }
+  });
+
+  if (leftTotal > 0) {
+    const totalStr = String(leftTotal);
+    const totW = fontBold.widthOfTextAtSize(totalStr, 7.5);
+    p1.drawText(totalStr, { x: 38.7 - totW / 2, y: 378.5, size: 7.5, font: fontBold, color: darkNavy });
+  }
+
+  let rightTotal = 0;
+  col2Rows.forEach((row, idx) => {
+    const rawVal = data[row.key] as string | undefined;
+    const qtyStr = safeText(rawVal || "").trim();
+    if (qtyStr && parseInt(qtyStr, 10) > 0) {
+      const qtyNum = parseInt(qtyStr, 10);
+      rightTotal += qtyNum;
+      const y = colY[idx];
+      const qtyW = fontBold.widthOfTextAtSize(qtyStr, 7.5);
+      p1.drawText(qtyStr, { x: 326.7 - qtyW / 2, y, size: 7.5, font: fontBold, color: darkNavy });
+      const isExisting = data.fixtureStatusMap?.[row.key as string] === "existing";
+      drawCheck1(isExisting ? 426.2 : 368.7, y);
+
+      if (row.key === "othersFixtureCount" && data.othersFixtureName) {
+        drawText1(safeText(data.othersFixtureName), 488.0, y, 6.5, true, 18);
+      }
+    }
+  });
+
+  if (rightTotal > 0) {
+    const totalStr = String(rightTotal);
+    const totW = fontBold.widthOfTextAtSize(totalStr, 7.5);
+    p1.drawText(totalStr, { x: 326.7 - totW / 2, y: 378.5, size: 7.5, font: fontBold, color: darkNavy });
+  }
+
+  // Distribution & Sewer Systems
+  if (data.waterDistributionSystem !== false) {
+    drawCheck1(34.3, 356.5); // [X] WATER DISTRIBUTION SYSTEM
+  }
+  if (data.sanitarySewerSystem !== false) {
+    drawCheck1(218.5, 356.5); // [X] SANITARY SEWER SYTEM
+  }
+  if (data.stormDrainageSystem === true) {
+    drawCheck1(420.5, 356.5); // [X] STORM DRAINAGE SYSTEM
+  }
+
+  // WATER SUPPLY (NBC Form P-01 Box 1)
+  const waterType = data.waterSupplyType || "CITY/MUNICIPAL WATER SYSTEM";
+  if (waterType === "SHALLOW WELL") {
+    drawCheck1(36.0, 322.0); // [X] SHALLOW WELL
+  } else if (waterType === "DEEPWELL & PUMP SET") {
+    drawCheck1(36.0, 310.1); // [X] DEEPWELL & PUMP SET
+  } else if (waterType === "CITY/MUNICIPAL WATER SYSTEM") {
+    drawCheck1(36.0, 296.5); // [X] CITY/MUNICIPAL WATER SYSTEM
+  } else if (waterType === "OTHERS") {
+    drawCheck1(36.0, 284.6); // [X] OTHERS
+    if (data.waterSupplyOthers) {
+      drawText1(safeText(data.waterSupplyOthers), 85.0, 285.5, 6.5, true, 20);
+    }
+  }
+
+  // SYSTEM SUPPLY / DISPOSAL (NBC Form P-01 Box 1)
+  if (data.wasteWaterTreatmentPlant === true) {
+    drawCheck1(212.0, 322.0); // [X] WASTE WATER TREATMENT PLANT
+  }
+  if (data.septicVaultImhoffTank !== false) {
+    drawCheck1(212.0, 310.1); // [X] SEPTIC VAULT/IMHOFF TANK (Default: checked)
+  }
+  if (data.subsurfaceSandFilter === true) {
+    drawCheck1(212.0, 296.5); // [X] SUBSURFACE SAND FILTER
+  }
+  if (data.sanitarySewerConnection === true) {
+    drawCheck1(212.0, 284.6); // [X] SANITARY SEWER CONNECTION
+  }
+  if (data.surfaceDrainage === true) {
+    drawCheck1(401.0, 310.1); // [X] SURFACE DRAINAGE
+  }
+  if (data.streetCanal === true) {
+    drawCheck1(401.0, 296.5); // [X] STREET CANAL
+  }
+  if (data.waterCourse === true) {
+    drawCheck1(401.0, 284.6); // [X] WATER COURSE
+  }
+
+  // Building & Project Specs (Underlines at y = 261, 237, 209)
+  const storeysVal = safeText(data.proposedStoreys || "2").trim();
+  drawText1(storeysVal, 192.0, 263.5, 7.5, true);
+
+  const rawArea = safeText(data.plumbingTotalArea || data.floorArea || "185.50").trim();
+  const cleanArea = rawArea.replace(/SQ\.?\s*M\.?/gi, "").trim();
+  drawText1(cleanArea, 420.0, 263.5, 7.5, true);
+
+  const rawStart = safeText(data.plumbingStartDate || data.proposedStartDate || "2026-10-01").trim();
+  drawText1(rawStart, 148.0, 239.5, 7.5, false);
+
+  const rawCost = safeText(data.plumbingInstallationCost || data.costPlumbing || "100,000.00").trim();
+  const cleanCost = rawCost.replace(/PHP/gi, "").replace(/P/gi, "").trim();
+  drawText1(cleanCost, 415.0, 239.5, 7.5, true);
+
+  const rawComp = safeText(data.plumbingCompletionDate || data.expectedCompletionDate || "").trim();
+  if (rawComp) {
+    drawText1(rawComp, 105.0, 211.5, 7.5, false);
+  }
+
+  const mpName = safeText(data.plumbingPreparedBy || data.masterPlumberName || "Engr. Jose Mendoza, RMP").trim();
+  if (mpName) {
+    drawText1(mpName, 395.0, 211.5, 7.5, true);
+  }
+  drawText1(mpName.toUpperCase(), 355.0, 148.0, 8.0, true);
 
   // Page 2: Credentials
   if (doc.getPageCount() > 1) {

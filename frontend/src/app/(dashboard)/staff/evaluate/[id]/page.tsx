@@ -299,12 +299,20 @@ export default function StaffEvaluatePage() {
           || PROJECT_TYPES_MATRIX[0];
 
         const cleanSeq = app.id ? app.id.replace(/^[A-Za-z]+-/i, "") : "2026-0001";
+        const issuedDate = (app as any).permitIssuedDate || (app as any).dateIssued || (app.status === "approved" || app.status === "released" ? (app.dateApproved || app.dateSubmitted || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined);
         const formData: UnifiedPermitFormData = {
           applicationNo: app.id,
+          status: app.status,
+          isApproved: app.status === "approved" || app.status === "released",
           buildingPermitNo: (app as any).buildingPermitNo || (pTypeObj.matrix?.buildingPermit === 'required' || !pTypeObj ? `BP-${cleanSeq}` : undefined),
           permitNo: (app as any).permitNo || `AP-${cleanSeq}`,
           architecturalPermitNo: (app as any).architecturalPermitNo || `AP-${cleanSeq}`,
           structuralPermitNo: (app as any).structuralPermitNo || `SP-${cleanSeq}`,
+          sanitaryPermitNo: (app as any).sanitaryPermitNo || (app.status === "approved" || app.status === "released" ? `P-${cleanSeq}` : undefined),
+          plumbingPermitNo: (app as any).plumbingPermitNo || (app.status === "approved" || app.status === "released" ? `P-${cleanSeq}` : undefined),
+          permitIssuedDate: issuedDate,
+          dateIssued: issuedDate,
+          approvalDate: (app as any).approvalDate || (app as any).dateApproved,
           locationalClearanceRef: (app as any).locationalClearanceRef || "LC-2026-9307",
           projectType: pTypeObj,
           applicantName: app.applicantName || "Paul Payumo",
@@ -659,9 +667,16 @@ export default function StaffEvaluatePage() {
       },
     ];
 
+    const cleanSeq = app.id ? app.id.replace(/^[A-Za-z]+-/i, "") : "2026-0001";
+    const issuedDateFormatted = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
     const updatedApp = {
       ...app,
       status: "approved" as const,
+      dateApproved: app.dateApproved || issuedDateFormatted,
+      dateIssued: (app as any).dateIssued || issuedDateFormatted,
+      permitIssuedDate: (app as any).permitIssuedDate || issuedDateFormatted,
+      sanitaryPermitNo: (app as any).sanitaryPermitNo || `P-${cleanSeq}`,
+      plumbingPermitNo: (app as any).plumbingPermitNo || `P-${cleanSeq}`,
       trackingSteps: updatedTracking,
       historyLog: updatedHistory,
       remarks: decisionNotes,

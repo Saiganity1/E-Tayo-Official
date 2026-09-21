@@ -229,6 +229,51 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   showersCount: "3",
   floorDrainsCount: "5",
   faucetsCount: "6",
+  waterMeterCount: "",
+  greaseTrapCount: "",
+  bathTubsCount: "",
+  slopSinkCount: "",
+  urinalCount: "",
+  airConditioningCount: "",
+  waterTankCount: "",
+  bidetCount: "",
+  laundryTraysCount: "",
+  dentalCuspidorCount: "",
+  electricalHeaterCount: "",
+  waterBoilerCount: "",
+  drinkingFountainCount: "",
+  barSinkCount: "",
+  sodaFountainCount: "",
+  laboratorySinkCount: "",
+  sterilizerCount: "",
+  swimmingPoolCount: "",
+  othersFixtureCount: "",
+  othersFixtureName: "",
+  fixtureStatusMap: {
+    waterClosetsCount: "new",
+    floorDrainsCount: "new",
+    lavatoriesCount: "new",
+    kitchenSinksCount: "new",
+    faucetsCount: "new",
+    showersCount: "new",
+  },
+  waterDistributionSystem: true,
+  sanitarySewerSystem: true,
+  stormDrainageSystem: false,
+  waterSupplyType: "CITY/MUNICIPAL WATER SYSTEM",
+  waterSupplyOthers: "",
+  wasteWaterTreatmentPlant: false,
+  septicVaultImhoffTank: true,
+  subsurfaceSandFilter: false,
+  sanitarySewerConnection: false,
+  surfaceDrainage: false,
+  streetCanal: false,
+  waterCourse: false,
+  plumbingTotalArea: "185.50",
+  plumbingStartDate: "2026-10-01",
+  plumbingInstallationCost: "100,000.00",
+  plumbingCompletionDate: "",
+  plumbingPreparedBy: "Engr. Jose Mendoza, RMP",
 
   // Mechanical
   machineryType: "Inverter Split-Type Air Conditioning System (4 Units)",
@@ -399,6 +444,8 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   // Box 3 & Box 4: Owner E-Signature & Government ID
   govIdDateIssued: "Jan 10, 2024",
   govIdPlaceIssued: "Sto. Tomas",
+  dateIssued: "Sep 22, 2026",
+  permitIssuedDate: "Sep 22, 2026",
   applicantSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih0p4xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
   representativeSignature: "",
   lotOwnerConsent: true,
@@ -426,7 +473,7 @@ const getAutoPermitNumber = (formId: string, applicationNo?: string): string => 
     case "AP": return `AP-${yearSeq}`;
     case "SP": return `SP-${yearSeq}`;
     case "EP": return `EP-${yearSeq}`;
-    case "PL": return `PP-${yearSeq}`;
+    case "PL": return `P-${yearSeq}`;
     case "MP": return `MP-${yearSeq}`;
     case "EL": return `EL-${yearSeq}`;
     case "BP": return `BP-${yearSeq}`;
@@ -3457,25 +3504,562 @@ export default function FormTestingStudio() {
                   )}
 
                   {selectedForm.id === "PL" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div style={{ gridColumn: "span 2" }}>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Scope of Work (NBC Form P-01)</label>
+                        <select
+                          value={formData.sanitaryScopeOfWork || "NEW INSTALLATION"}
+                          onChange={e => handleFieldChange("sanitaryScopeOfWork", e.target.value)}
+                          style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                        >
+                          <option value="NEW INSTALLATION">NEW INSTALLATION</option>
+                          <option value="ADDITION OF">ADDITION OF</option>
+                          <option value="REPAIR OF">REPAIR OF</option>
+                          <option value="REMOVAL OF">REMOVAL OF</option>
+                          <option value="OTHERS">OTHERS (SPECIFY)</option>
+                        </select>
+                      </div>
+                      {["ADDITION OF", "REPAIR OF", "REMOVAL OF"].includes(formData.sanitaryScopeOfWork || "") && (
+                        <div style={{ gridColumn: "span 2" }}>
+                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b" }}>Specify Scope Details</label>
+                          <input
+                            type="text"
+                            value={formData.sanitaryScopeDetails || ""}
+                            onChange={e => handleFieldChange("sanitaryScopeDetails", e.target.value)}
+                            placeholder="e.g. 2 Water Closets & Septic Line"
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
+                        </div>
+                      )}
+                      {(formData.sanitaryScopeOfWork === "OTHERS") && (
+                        <>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b" }}>Others Action</label>
+                            <input
+                              type="text"
+                              value={formData.sanitaryScopeOthersAction || ""}
+                              onChange={e => handleFieldChange("sanitaryScopeOthersAction", e.target.value)}
+                              placeholder="e.g. UPGRADING"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b" }}>Others OF System</label>
+                            <input
+                              type="text"
+                              value={formData.sanitaryScopeOthersTarget || ""}
+                              onChange={e => handleFieldChange("sanitaryScopeOthersTarget", e.target.value)}
+                              placeholder="e.g. GREASE TRAP"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                        </>
+                      )}
                       <div>
                         <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Water Source</label>
                         <input type="text" value={formData.waterSupplySource || ""} onChange={e => handleFieldChange("waterSupplySource", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
                       </div>
                       <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Sewage System</label>
+                        <input type="text" value={formData.sewageSystem || ""} onChange={e => handleFieldChange("sewageSystem", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                      </div>
+                      <div style={{ gridColumn: "span 2" }}>
                         <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Septic Tank Dimensions</label>
                         <input type="text" value={formData.septicTankDimensions || ""} onChange={e => handleFieldChange("septicTankDimensions", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Water Closets Count</label>
-                        <input type="text" value={formData.waterClosetsCount || ""} onChange={e => handleFieldChange("waterClosetsCount", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                    </div>
+
+                    {/* FIXTURES TO BE INSTALLED Schedule (NBC Form P-01 Box 1) */}
+                    <div style={{ marginTop: "1rem", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "12px", background: "#ffffff" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                          FIXTURES TO BE INSTALLED (NBC Form P-01 Box 1)
+                        </span>
+                        <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#0891b2", background: "#ecfeff", border: "1px solid #a5f3fc", padding: "2px 8px", borderRadius: "999px" }}>
+                          Total: {
+                            [
+                              "waterClosetsCount", "floorDrainsCount", "lavatoriesCount", "kitchenSinksCount", "faucetsCount", "showersCount",
+                              "waterMeterCount", "greaseTrapCount", "bathTubsCount", "slopSinkCount", "urinalCount", "airConditioningCount", "waterTankCount",
+                              "bidetCount", "laundryTraysCount", "dentalCuspidorCount", "electricalHeaterCount", "waterBoilerCount", "drinkingFountainCount",
+                              "barSinkCount", "sodaFountainCount", "laboratorySinkCount", "sterilizerCount", "swimmingPoolCount", "othersFixtureCount"
+                            ].reduce((acc, k) => acc + (parseInt((formData as any)[k] || "0", 10) || 0), 0)
+                          } Units
+                        </span>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Kitchen Sinks Count</label>
-                        <input type="text" value={formData.kitchenSinksCount || ""} onChange={e => handleFieldChange("kitchenSinksCount", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                        {/* LEFT COLUMN */}
+                        <div style={{ border: "1px solid #cbd5e1", borderRadius: "6px", overflow: "hidden" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "44px 58px 58px 1fr", background: "#f1f5f9", borderBottom: "1px solid #cbd5e1", padding: "4px 6px", fontSize: "0.65rem", fontWeight: "800", color: "#334155", textAlign: "center", alignItems: "center" }}>
+                            <span>QTY</span>
+                            <span style={{ lineHeight: "1.1" }}>NEW<br/>FIX.</span>
+                            <span style={{ lineHeight: "1.1" }}>EXIST.<br/>FIX.</span>
+                            <span style={{ textAlign: "left", paddingLeft: "6px" }}>KIND OF FIXTURES</span>
+                          </div>
+                          <div>
+                            {([
+                              { key: "waterClosetsCount", label: "WATER CLOSET" },
+                              { key: "floorDrainsCount", label: "FLOOR DRAIN" },
+                              { key: "lavatoriesCount", label: "LAVATORIES" },
+                              { key: "kitchenSinksCount", label: "KITCHEN SINK" },
+                              { key: "faucetsCount", label: "FAUCET" },
+                              { key: "showersCount", label: "SHOWER HEAD" },
+                              { key: "waterMeterCount", label: "WATER METER" },
+                              { key: "greaseTrapCount", label: "GREASE TRAP" },
+                              { key: "bathTubsCount", label: "BATH TUBS" },
+                              { key: "slopSinkCount", label: "SLOP SINK" },
+                              { key: "urinalCount", label: "URINAL" },
+                              { key: "airConditioningCount", label: "AIR CONDITIONING UNIT" },
+                              { key: "waterTankCount", label: "WATER TANK/RESERVOIR" },
+                            ] as { key: keyof UnifiedPermitFormData; label: string }[]).map((fix, idx) => {
+                              const val = (formData as any)[fix.key] || "";
+                              const qtyNum = parseInt(val, 10) || 0;
+                              const hasQty = qtyNum > 0;
+                              const status = formData.fixtureStatusMap?.[fix.key] || (hasQty ? "new" : "");
+                              const isNew = hasQty && status === "new";
+                              const isExist = hasQty && status === "existing";
+
+                              return (
+                                <div key={fix.key} style={{ display: "grid", gridTemplateColumns: "44px 58px 58px 1fr", alignItems: "center", padding: "3px 6px", borderBottom: idx < 12 ? "1px solid #f1f5f9" : "none", background: hasQty ? "#ecfeff33" : (idx % 2 === 0 ? "#f8fafc" : "#ffffff") }}>
+                                  <div style={{ display: "flex", justifyContent: "center" }}>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={val}
+                                      onChange={e => {
+                                        const v = e.target.value;
+                                        handleFieldChange(fix.key, v);
+                                        if ((parseInt(v, 10) || 0) > 0 && !formData.fixtureStatusMap?.[fix.key]) {
+                                          handleFieldChange("fixtureStatusMap", { ...(formData.fixtureStatusMap || {}), [fix.key]: "new" });
+                                        }
+                                      }}
+                                      placeholder="—"
+                                      style={{ width: "38px", height: "24px", padding: "1px 2px", textAlign: "center", fontWeight: hasQty ? "800" : "500", fontSize: "0.78rem", border: hasQty ? "1.5px solid #0891b2" : "1px solid #cbd5e1", borderRadius: "4px" }}
+                                    />
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "center" }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newMap = { ...(formData.fixtureStatusMap || {}) };
+                                        if (isNew) {
+                                          delete newMap[fix.key];
+                                        } else {
+                                          newMap[fix.key] = "new";
+                                          if (!hasQty) handleFieldChange(fix.key, "1");
+                                        }
+                                        handleFieldChange("fixtureStatusMap", newMap);
+                                      }}
+                                      style={{ width: "18px", height: "18px", borderRadius: "3px", border: isNew ? "1.5px solid #0891b2" : "1px solid #cbd5e1", background: isNew ? "#0891b2" : "#ffffff", color: isNew ? "#ffffff" : "transparent", fontSize: "0.7rem", fontWeight: "900", cursor: "pointer", padding: 0 }}
+                                    >
+                                      {isNew ? "X" : ""}
+                                    </button>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "center" }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newMap = { ...(formData.fixtureStatusMap || {}) };
+                                        if (isExist) {
+                                          delete newMap[fix.key];
+                                        } else {
+                                          newMap[fix.key] = "existing";
+                                          if (!hasQty) handleFieldChange(fix.key, "1");
+                                        }
+                                        handleFieldChange("fixtureStatusMap", newMap);
+                                      }}
+                                      style={{ width: "18px", height: "18px", borderRadius: "3px", border: isExist ? "1.5px solid #d97706" : "1px solid #cbd5e1", background: isExist ? "#d97706" : "#ffffff", color: isExist ? "#ffffff" : "transparent", fontSize: "0.7rem", fontWeight: "900", cursor: "pointer", padding: 0 }}
+                                    >
+                                      {isExist ? "X" : ""}
+                                    </button>
+                                  </div>
+                                  <span style={{ fontSize: "0.72rem", fontWeight: hasQty ? "700" : "500", color: hasQty ? "#0f172a" : "#64748b", paddingLeft: "6px" }}>
+                                    [ ] {fix.label}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "44px 58px 58px 1fr", alignItems: "center", padding: "5px 6px", background: "#f1f5f9", borderTop: "1px solid #cbd5e1", fontSize: "0.72rem", fontWeight: "800", color: "#0e7490" }}>
+                            <span style={{ textAlign: "center", borderBottom: "1.5px solid #0891b2" }}>
+                              {["waterClosetsCount", "floorDrainsCount", "lavatoriesCount", "kitchenSinksCount", "faucetsCount", "showersCount", "waterMeterCount", "greaseTrapCount", "bathTubsCount", "slopSinkCount", "urinalCount", "airConditioningCount", "waterTankCount"].reduce((acc, k) => acc + (parseInt((formData as any)[k] || "0", 10) || 0), 0)}
+                            </span>
+                            <span></span>
+                            <span></span>
+                            <span style={{ paddingLeft: "6px", color: "#334155" }}>TOTAL</span>
+                          </div>
+                        </div>
+
+                        {/* RIGHT COLUMN */}
+                        <div style={{ border: "1px solid #cbd5e1", borderRadius: "6px", overflow: "hidden" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "44px 58px 58px 1fr", background: "#f1f5f9", borderBottom: "1px solid #cbd5e1", padding: "4px 6px", fontSize: "0.65rem", fontWeight: "800", color: "#334155", textAlign: "center", alignItems: "center" }}>
+                            <span>QTY</span>
+                            <span style={{ lineHeight: "1.1" }}>NEW<br/>FIX.</span>
+                            <span style={{ lineHeight: "1.1" }}>EXIST.<br/>FIX.</span>
+                            <span style={{ textAlign: "left", paddingLeft: "6px" }}>KIND OF FIXTURES</span>
+                          </div>
+                          <div>
+                            {([
+                              { key: "bidetCount", label: "BIDETTE" },
+                              { key: "laundryTraysCount", label: "LAUNDRY TRAYS" },
+                              { key: "dentalCuspidorCount", label: "DENTAL CUSPIDOR" },
+                              { key: "electricalHeaterCount", label: "ELECTRICAL HEATER" },
+                              { key: "waterBoilerCount", label: "WATER BOILER" },
+                              { key: "drinkingFountainCount", label: "DRINKING FOUNTAIN" },
+                              { key: "barSinkCount", label: "BAR SINK" },
+                              { key: "sodaFountainCount", label: "SODA FOUNTAINSINK" },
+                              { key: "laboratorySinkCount", label: "LABORATORY SINK" },
+                              { key: "sterilizerCount", label: "STERILIZER" },
+                              { key: "swimmingPoolCount", label: "SWIMMING POOL" },
+                              { key: "othersFixtureCount", label: "OTHERS (SPECIFY)" },
+                            ] as { key: keyof UnifiedPermitFormData; label: string }[]).map((fix, idx) => {
+                              const val = (formData as any)[fix.key] || "";
+                              const qtyNum = parseInt(val, 10) || 0;
+                              const hasQty = qtyNum > 0;
+                              const status = formData.fixtureStatusMap?.[fix.key] || (hasQty ? "new" : "");
+                              const isNew = hasQty && status === "new";
+                              const isExist = hasQty && status === "existing";
+
+                              return (
+                                <div key={fix.key} style={{ display: "grid", gridTemplateColumns: "44px 58px 58px 1fr", alignItems: "center", padding: "3px 6px", borderBottom: idx < 11 ? "1px solid #f1f5f9" : "none", background: hasQty ? "#ecfeff33" : (idx % 2 === 0 ? "#f8fafc" : "#ffffff") }}>
+                                  <div style={{ display: "flex", justifyContent: "center" }}>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={val}
+                                      onChange={e => {
+                                        const v = e.target.value;
+                                        handleFieldChange(fix.key, v);
+                                        if ((parseInt(v, 10) || 0) > 0 && !formData.fixtureStatusMap?.[fix.key]) {
+                                          handleFieldChange("fixtureStatusMap", { ...(formData.fixtureStatusMap || {}), [fix.key]: "new" });
+                                        }
+                                      }}
+                                      placeholder="—"
+                                      style={{ width: "38px", height: "24px", padding: "1px 2px", textAlign: "center", fontWeight: hasQty ? "800" : "500", fontSize: "0.78rem", border: hasQty ? "1.5px solid #0891b2" : "1px solid #cbd5e1", borderRadius: "4px" }}
+                                    />
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "center" }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newMap = { ...(formData.fixtureStatusMap || {}) };
+                                        if (isNew) {
+                                          delete newMap[fix.key];
+                                        } else {
+                                          newMap[fix.key] = "new";
+                                          if (!hasQty) handleFieldChange(fix.key, "1");
+                                        }
+                                        handleFieldChange("fixtureStatusMap", newMap);
+                                      }}
+                                      style={{ width: "18px", height: "18px", borderRadius: "3px", border: isNew ? "1.5px solid #0891b2" : "1px solid #cbd5e1", background: isNew ? "#0891b2" : "#ffffff", color: isNew ? "#ffffff" : "transparent", fontSize: "0.7rem", fontWeight: "900", cursor: "pointer", padding: 0 }}
+                                    >
+                                      {isNew ? "X" : ""}
+                                    </button>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "center" }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newMap = { ...(formData.fixtureStatusMap || {}) };
+                                        if (isExist) {
+                                          delete newMap[fix.key];
+                                        } else {
+                                          newMap[fix.key] = "existing";
+                                          if (!hasQty) handleFieldChange(fix.key, "1");
+                                        }
+                                        handleFieldChange("fixtureStatusMap", newMap);
+                                      }}
+                                      style={{ width: "18px", height: "18px", borderRadius: "3px", border: isExist ? "1.5px solid #d97706" : "1px solid #cbd5e1", background: isExist ? "#d97706" : "#ffffff", color: isExist ? "#ffffff" : "transparent", fontSize: "0.7rem", fontWeight: "900", cursor: "pointer", padding: 0 }}
+                                    >
+                                      {isExist ? "X" : ""}
+                                    </button>
+                                  </div>
+                                  <div style={{ paddingLeft: "6px" }}>
+                                    <span style={{ fontSize: "0.72rem", fontWeight: hasQty ? "700" : "500", color: hasQty ? "#0f172a" : "#64748b" }}>
+                                      [ ] {fix.label}
+                                    </span>
+                                    {fix.key === "othersFixtureCount" && (
+                                      <input
+                                        type="text"
+                                        value={formData.othersFixtureName || ""}
+                                        onChange={e => handleFieldChange("othersFixtureName", e.target.value)}
+                                        placeholder="Specify name"
+                                        style={{ display: "block", width: "95%", marginTop: "2px", padding: "1px 4px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.68rem" }}
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "44px 58px 58px 1fr", alignItems: "center", padding: "5px 6px", background: "#f1f5f9", borderTop: "1px solid #cbd5e1", fontSize: "0.72rem", fontWeight: "800", color: "#0e7490" }}>
+                            <span style={{ textAlign: "center", borderBottom: "1.5px solid #0891b2" }}>
+                              {["bidetCount", "laundryTraysCount", "dentalCuspidorCount", "electricalHeaterCount", "waterBoilerCount", "drinkingFountainCount", "barSinkCount", "sodaFountainCount", "laboratorySinkCount", "sterilizerCount", "swimmingPoolCount", "othersFixtureCount"].reduce((acc, k) => acc + (parseInt((formData as any)[k] || "0", 10) || 0), 0)}
+                            </span>
+                            <span></span>
+                            <span></span>
+                            <span style={{ paddingLeft: "6px", color: "#334155" }}>TOTAL</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Systems Checkboxes */}
+                      <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid #e2e8f0", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "14px" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "700", color: "#334155", cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.waterDistributionSystem !== false}
+                            onChange={e => handleFieldChange("waterDistributionSystem", e.target.checked)}
+                            style={{ accentColor: "#0891b2" }}
+                          />
+                          WATER DISTRIBUTION SYSTEM
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "700", color: "#334155", cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.sanitarySewerSystem !== false}
+                            onChange={e => handleFieldChange("sanitarySewerSystem", e.target.checked)}
+                            style={{ accentColor: "#0891b2" }}
+                          />
+                          SANITARY SEWER SYSTEM
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: "700", color: "#334155", cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.stormDrainageSystem === true}
+                            onChange={e => handleFieldChange("stormDrainageSystem", e.target.checked)}
+                            style={{ accentColor: "#0891b2" }}
+                          />
+                          STORM DRAINAGE SYSTEM
+                        </label>
+                      </div>
+
+                      {/* WATER SUPPLY & SYSTEM SUPPLY / DISPOSAL (NBC Form P-01 Box 1 Bottom) */}
+                      <div style={{ marginTop: "12px", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "12px", background: "#ffffff" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                          <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                            WATER SUPPLY & SYSTEM SUPPLY / DISPOSAL
+                          </span>
+                          <span style={{ fontSize: "0.68rem", fontWeight: "700", background: "#ecfeff", color: "#0891b2", border: "1px solid #a5f3fc", padding: "2px 8px", borderRadius: "4px" }}>
+                            NBC Form P-01 Box 1
+                          </span>
+                        </div>
+
+                        {/* Two-Column Grid: Water Supply (Left) & System Supply (Right) */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: "10px", marginBottom: "12px" }}>
+                          
+                          {/* WATER SUPPLY */}
+                          <div style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "10px", background: "#f8fafc" }}>
+                            <div style={{ borderBottom: "1px solid #cbd5e1", paddingBottom: "4px", marginBottom: "8px" }}>
+                              <span style={{ fontSize: "0.74rem", fontWeight: "800", color: "#334155", textTransform: "uppercase" }}>
+                                WATER SUPPLY
+                              </span>
+                            </div>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                              {[
+                                { id: "SHALLOW WELL", label: "SHALLOW WELL" },
+                                { id: "DEEPWELL & PUMP SET", label: "DEEPWELL & PUMP SET" },
+                                { id: "CITY/MUNICIPAL WATER SYSTEM", label: "CITY/MUNICIPAL WATER SYSTEM" },
+                                { id: "OTHERS", label: "OTHERS" },
+                              ].map(opt => {
+                                const isSelected = (formData.waterSupplyType || "CITY/MUNICIPAL WATER SYSTEM") === opt.id;
+                                return (
+                                  <div key={opt.id}>
+                                    <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.74rem", fontWeight: isSelected ? "700" : "500", color: isSelected ? "#0e7490" : "#475569" }}>
+                                      <input
+                                        type="radio"
+                                        name="adminWaterSupplyRadio"
+                                        checked={isSelected}
+                                        onChange={() => handleFieldChange("waterSupplyType", opt.id)}
+                                        style={{ accentColor: "#0891b2", cursor: "pointer" }}
+                                      />
+                                      [ ] {opt.label}
+                                    </label>
+                                    {opt.id === "OTHERS" && isSelected && (
+                                      <input
+                                        type="text"
+                                        value={formData.waterSupplyOthers || ""}
+                                        onChange={e => handleFieldChange("waterSupplyOthers", e.target.value)}
+                                        placeholder="Specify water supply"
+                                        style={{ marginTop: "4px", marginLeft: "20px", width: "calc(100% - 20px)", padding: "3px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.72rem", background: "#ffffff" }}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* SYSTEM SUPPLY / DISPOSAL */}
+                          <div style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "10px", background: "#f8fafc" }}>
+                            <div style={{ borderBottom: "1px solid #cbd5e1", paddingBottom: "4px", marginBottom: "8px" }}>
+                              <span style={{ fontSize: "0.74rem", fontWeight: "800", color: "#334155", textTransform: "uppercase" }}>
+                                SYSTEM SUPPLY / DISPOSAL
+                              </span>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData.wasteWaterTreatmentPlant ? "700" : "500", color: formData.wasteWaterTreatmentPlant ? "#0e7490" : "#475569" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.wasteWaterTreatmentPlant === true}
+                                    onChange={e => handleFieldChange("wasteWaterTreatmentPlant", e.target.checked)}
+                                    style={{ accentColor: "#0891b2" }}
+                                  />
+                                  [ ] WASTE WATER TREATMENT PLANT
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData.septicVaultImhoffTank !== false ? "700" : "500", color: formData.septicVaultImhoffTank !== false ? "#0e7490" : "#475569" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.septicVaultImhoffTank !== false}
+                                    onChange={e => handleFieldChange("septicVaultImhoffTank", e.target.checked)}
+                                    style={{ accentColor: "#0891b2" }}
+                                  />
+                                  [X] SEPTIC VAULT/IMHOFF TANK
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData.subsurfaceSandFilter ? "700" : "500", color: formData.subsurfaceSandFilter ? "#0e7490" : "#475569" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.subsurfaceSandFilter === true}
+                                    onChange={e => handleFieldChange("subsurfaceSandFilter", e.target.checked)}
+                                    style={{ accentColor: "#0891b2" }}
+                                  />
+                                  [ ] SUBSURFACE SAND FILTER
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData.sanitarySewerConnection ? "700" : "500", color: formData.sanitarySewerConnection ? "#0e7490" : "#475569" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.sanitarySewerConnection === true}
+                                    onChange={e => handleFieldChange("sanitarySewerConnection", e.target.checked)}
+                                    style={{ accentColor: "#0891b2" }}
+                                  />
+                                  [ ] SANITARY SEWER CONNECTION
+                                </label>
+                              </div>
+
+                              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData.surfaceDrainage ? "700" : "500", color: formData.surfaceDrainage ? "#0e7490" : "#475569" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.surfaceDrainage === true}
+                                    onChange={e => handleFieldChange("surfaceDrainage", e.target.checked)}
+                                    style={{ accentColor: "#0891b2" }}
+                                  />
+                                  [ ] SURFACE DRAINAGE
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData.streetCanal ? "700" : "500", color: formData.streetCanal ? "#0e7490" : "#475569" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.streetCanal === true}
+                                    onChange={e => handleFieldChange("streetCanal", e.target.checked)}
+                                    style={{ accentColor: "#0891b2" }}
+                                  />
+                                  [ ] STREET CANAL
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.72rem", fontWeight: formData.waterCourse ? "700" : "500", color: formData.waterCourse ? "#0e7490" : "#475569" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.waterCourse === true}
+                                    onChange={e => handleFieldChange("waterCourse", e.target.checked)}
+                                    style={{ accentColor: "#0891b2" }}
+                                  />
+                                  [ ] WATER COURSE
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* BUILDING SPECIFICATIONS & INSTALLATION SCHEDULE */}
+                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                          <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#0e7490", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                            Building Specifications & Installation Schedule
+                          </span>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                                Number of Storeys of Building *
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.proposedStoreys ?? "2"}
+                                onChange={e => handleFieldChange("proposedStoreys", e.target.value)}
+                                placeholder="2"
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                                Total Area of Building/Subdivision (SQ. M.) *
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.plumbingTotalArea || formData.floorArea || "185.50"}
+                                onChange={e => handleFieldChange("plumbingTotalArea", e.target.value)}
+                                placeholder="185.50"
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                                Proposed Date Start of Installation *
+                              </label>
+                              <input
+                                type="date"
+                                value={formData.plumbingStartDate || formData.proposedStartDate || "2026-10-01"}
+                                onChange={e => handleFieldChange("plumbingStartDate", e.target.value)}
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                                Total Cost of Installation (PHP) *
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.plumbingInstallationCost || formData.costPlumbing || "100,000.00"}
+                                onChange={e => handleFieldChange("plumbingInstallationCost", e.target.value)}
+                                placeholder="100,000.00"
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                                Expected Date of Completion
+                              </label>
+                              <input
+                                type="date"
+                                value={formData.plumbingCompletionDate || ""}
+                                onChange={e => handleFieldChange("plumbingCompletionDate", e.target.value)}
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                                Prepared By (Professional / Installer) *
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.plumbingPreparedBy || formData.masterPlumberName || "Engr. Jose Mendoza, RMP"}
+                                onChange={e => handleFieldChange("plumbingPreparedBy", e.target.value)}
+                                placeholder="Engr. Jose Mendoza, RMP"
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
                   {selectedForm.id === "MP" && (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
@@ -4246,51 +4830,6 @@ export default function FormTestingStudio() {
                             Using identical credentials and signature from Box 2 (Design Professional: {formData.electricalEngineerName || "Professional Electrical Engineer"}).
                           </div>
                         )}
-                      </div>
-                    )}
-
-                    {/* Master Plumber */}
-                    {selectedForm.id === "PL" && (
-                      <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0369a1" }}>Master Plumber / Sanitary Engineer</span>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Full Name</label>
-                            <input type="text" value={formData.masterPlumberName || ""} onChange={e => handleFieldChange("masterPlumberName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
-                            <input type="text" value={formData.masterPlumberAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("masterPlumberAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
-                            <input type="text" value={formData.masterPlumberPRC || ""} onChange={e => handleFieldChange("masterPlumberPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
-                            <input type="text" value={formData.masterPlumberPRCValidity || "2028-01-25"} onChange={e => handleFieldChange("masterPlumberPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
-                            <input type="text" value={formData.masterPlumberTIN || "567-890-123-000"} onChange={e => handleFieldChange("masterPlumberTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
-                            <input type="text" value={formData.masterPlumberPTR || ""} onChange={e => handleFieldChange("masterPlumberPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
-                            <input type="text" value={formData.masterPlumberPTRIssued || "Jan 15, 2026"} onChange={e => handleFieldChange("masterPlumberPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
-                            <input type="text" value={formData.masterPlumberPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("masterPlumberPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
-                          </div>
-                        </div>
                       </div>
                     )}
 

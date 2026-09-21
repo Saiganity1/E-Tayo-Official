@@ -138,12 +138,20 @@ export default function ApplicationTrackDetail() {
       || PROJECT_TYPES_MATRIX[0];
 
     const cleanSeq = appData?.id ? appData.id.replace(/^[A-Za-z]+-/i, "") : "2026-6636";
+    const issuedDate = (appData as any)?.permitIssuedDate || (appData as any)?.dateIssued || (appData?.status === "approved" || appData?.status === "released" ? (appData?.dateApproved || appData?.dateSubmitted || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined);
     const formData: UnifiedPermitFormData = {
       applicationNo: appData?.id || "APP-2026-6636",
+      status: appData?.status,
+      isApproved: appData?.status === "approved" || appData?.status === "released",
       buildingPermitNo: appData?.buildingPermitNo || (pTypeObj.matrix?.buildingPermit === 'required' || !pTypeObj ? `BP-${cleanSeq}` : undefined),
       permitNo: appData?.permitNo || `AP-${cleanSeq}`,
       architecturalPermitNo: appData?.architecturalPermitNo || `AP-${cleanSeq}`,
       structuralPermitNo: appData?.structuralPermitNo || `SP-${cleanSeq}`,
+      sanitaryPermitNo: (appData as any)?.sanitaryPermitNo || (appData?.status === "approved" || appData?.status === "released" ? `P-${cleanSeq}` : undefined),
+      plumbingPermitNo: (appData as any)?.plumbingPermitNo || (appData?.status === "approved" || appData?.status === "released" ? `P-${cleanSeq}` : undefined),
+      permitIssuedDate: issuedDate,
+      dateIssued: issuedDate,
+      approvalDate: (appData as any)?.approvalDate || (appData as any)?.dateApproved,
       locationalClearanceRef: appData?.locationalClearanceRef || "LC-2026-9307",
       projectType: pTypeObj,
       applicantName: appData?.applicantName || "Paul Payumo",
