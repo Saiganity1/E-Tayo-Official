@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Shield,
   Key,
@@ -636,12 +637,11 @@ export default function AdminApp() {
       {/* Top Application Bar */}
       <header style={{ background: "#1e1b4b", color: "white", padding: "0.85rem 1.75rem", borderBottom: "1px solid #312e81", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ width: "38px", height: "38px", background: "linear-gradient(135deg, #7c3aed, #4f46e5)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 10px rgba(124, 58, 237, 0.4)" }}>
-            <Shield size={20} color="white" />
+          <div style={{ background: "#ffffff", padding: "5px 10px", borderRadius: "8px", display: "flex", alignItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+            <Image src="/logo.png" alt="eTAYO" width={95} height={30} style={{ height: "26px", width: "auto", objectFit: "contain" }} priority />
           </div>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "1.1rem", fontWeight: "800", letterSpacing: "-0.02em" }}>e-Tayo</span>
               <span style={{ background: "#7c3aed", color: "white", fontSize: "0.68rem", fontWeight: "800", padding: "2px 7px", borderRadius: "999px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 SuperAdmin
               </span>

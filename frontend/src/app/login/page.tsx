@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Lock, Mail, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
 
@@ -101,9 +102,10 @@ export default function LoginPage() {
           <ArrowRight size={18} style={{ transform: "rotate(180deg)" }} /> Back to Home
         </Link>
         <div className="login-card animate-fade-in-up">
-          <div className="logo-group">
-            <div className="logo-icon"></div>
-            <h2 className="logo-text">e-Tayo</h2>
+          <div className="logo-group" style={{ display: "flex", justifyContent: "center", marginBottom: "2rem" }}>
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center" }}>
+              <Image src="/logo.png" alt="eTAYO" width={160} height={50} style={{ height: "44px", width: "auto", objectFit: "contain" }} priority />
+            </Link>
           </div>
           
           <div className="form-header">

@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   title: "e-Tayo | Government Permit Portal",
   description: "Secure and fast application for building, locational, and occupancy permits.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/logo-mark.png",
+    shortcut: "/logo-mark.png",
+    apple: "/logo-mark.png",
+  },
 };
 
 export const viewport: Viewport = {

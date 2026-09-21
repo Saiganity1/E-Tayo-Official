@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -25,10 +26,9 @@ export default function Home() {
     <main className="landing-page">
       <header className="glass-panel header-nav">
         <div className="container nav-container">
-          <div className="logo-group">
-            <div className="logo-icon"></div>
-            <h1 className="logo-text">e-Tayo</h1>
-          </div>
+          <Link href="/" className="logo-group" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+            <Image src="/logo.png" alt="eTAYO" width={140} height={44} style={{ height: "38px", width: "auto", objectFit: "contain" }} priority />
+          </Link>
           <nav className="nav-links">
             <Link href="/applicant/track" className="nav-link">Application Status</Link>
             <Link href="/login" className="btn-secondary">Log In</Link>

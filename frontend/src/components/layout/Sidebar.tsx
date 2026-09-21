@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
   Building2, Home, PlusCircle, Search, FileCheck, 
@@ -93,10 +94,9 @@ export default function Sidebar() {
 
       <aside className={`sidebar ${isOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <div className="logo-group">
-            <div className="logo-icon"></div>
-            <h1 className="logo-text">e-Tayo</h1>
-          </div>
+          <Link href="/" className="logo-group" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <Image src="/logo.png" alt="eTAYO" width={125} height={40} style={{ height: "34px", width: "auto", objectFit: "contain" }} priority />
+          </Link>
           <button className="close-btn" onClick={() => setIsOpen(false)}>
             <X size={20} />
           </button>
