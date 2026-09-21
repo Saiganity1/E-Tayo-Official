@@ -94,8 +94,8 @@ export default function Sidebar() {
 
       <aside className={`sidebar ${isOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <Link href="/" className="logo-group" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-            <Image src="/logo.png" alt="eTAYO" width={125} height={40} style={{ height: "34px", width: "auto", objectFit: "contain" }} priority />
+          <Link href="/" className="logo-group" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', cursor: 'pointer' }} title="Bumalik sa Homepage">
+            <Image src="/logo.png" alt="eTAYO" width={125} height={40} style={{ height: "34px", width: "auto", objectFit: "contain", cursor: "pointer" }} priority />
           </Link>
           <button className="close-btn" onClick={() => setIsOpen(false)}>
             <X size={20} />

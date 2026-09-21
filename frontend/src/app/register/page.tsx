@@ -105,8 +105,8 @@ export default function RegisterPage() {
         </Link>
         <div className="login-card animate-fade-in-up">
           <div className="logo-group" style={{ display: "flex", justifyContent: "center", marginBottom: "2rem" }}>
-            <Link href="/" style={{ display: "inline-flex", alignItems: "center" }}>
-              <Image src="/logo.png" alt="eTAYO" width={160} height={50} style={{ height: "44px", width: "auto", objectFit: "contain" }} priority />
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center", cursor: "pointer" }} title="Bumalik sa Homepage">
+              <Image src="/logo.png" alt="eTAYO" width={160} height={50} style={{ height: "44px", width: "auto", objectFit: "contain", cursor: "pointer" }} priority />
             </Link>
           </div>
           

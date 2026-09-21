@@ -26,8 +26,19 @@ export default function Home() {
     <main className="landing-page">
       <header className="header-nav">
         <div className="nav-container">
-          <Link href="/" className="logo-group" style={{ textDecoration: "none", display: "flex", alignItems: "center", marginBottom: 0 }}>
-            <Image src="/logo.png" alt="eTAYO" width={140} height={44} style={{ height: "40px", width: "auto", objectFit: "contain" }} priority />
+          <Link 
+            href="/" 
+            className="logo-group" 
+            style={{ textDecoration: "none", display: "flex", alignItems: "center", marginBottom: 0, cursor: "pointer" }}
+            onClick={(e) => {
+              if (typeof window !== "undefined" && window.location.pathname === "/") {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+            title="Bumalik sa Homepage"
+          >
+            <Image src="/logo.png" alt="eTAYO" width={140} height={44} style={{ height: "40px", width: "auto", objectFit: "contain", cursor: "pointer" }} priority />
           </Link>
           <nav className="nav-links">
             <Link href="/applicant/track" className="nav-link">Application Status</Link>

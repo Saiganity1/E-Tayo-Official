@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Shield,
   Key,
@@ -637,9 +638,11 @@ export default function AdminApp() {
       {/* Top Application Bar */}
       <header style={{ background: "#1e1b4b", color: "white", padding: "0.85rem 1.75rem", borderBottom: "1px solid #312e81", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ background: "#ffffff", padding: "5px 10px", borderRadius: "8px", display: "flex", alignItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
-            <Image src="/logo.png" alt="eTAYO" width={95} height={30} style={{ height: "26px", width: "auto", objectFit: "contain" }} priority />
-          </div>
+          <Link href="/" title="Bumalik sa Homepage" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+            <div style={{ background: "#ffffff", padding: "5px 10px", borderRadius: "8px", display: "flex", alignItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.2)", cursor: "pointer", transition: "transform 0.15s ease" }}>
+              <Image src="/logo.png" alt="eTAYO" width={95} height={30} style={{ height: "26px", width: "auto", objectFit: "contain", cursor: "pointer" }} priority />
+            </div>
+          </Link>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ background: "#7c3aed", color: "white", fontSize: "0.68rem", fontWeight: "800", padding: "2px 7px", borderRadius: "999px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
