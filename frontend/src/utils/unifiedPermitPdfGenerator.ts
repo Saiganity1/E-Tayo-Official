@@ -1923,11 +1923,21 @@ export async function generateSanitaryPermitPdf(data: UnifiedPermitFormData): Pr
     p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
   };
 
-  // Header: APPLICATION NO. centered inside the grid of boxes [19.75, 199.9], y = 810.0 to 827.3
-  const appNo = safeText(data.applicationNo || "APP-2026-6636").trim();
-  const appNoW = fontBold.widthOfTextAtSize(appNo, 8.5);
-  const appNoX = 109.8 - (appNoW / 2);
-  drawText1(appNo, appNoX, 815.5, 8.5, true);
+  // Header: APPLICATION NO. in 10 individual segmented boxes [19.75, 199.9]
+  const rawAppNo = safeText(data.applicationNo || "2026-0001").trim();
+  const cleanAppNo = rawAppNo.replace(/^(APP|UNIFIED|PERMIT|DOC)[\s#:\-]*(TEST[\s#:\-]*)?/i, "").trim() || rawAppNo;
+  const appChars = cleanAppNo.slice(0, 10).split("");
+  const appBoxLefts = [19.75, 38.45, 57.20, 75.95, 91.00, 105.95, 124.80, 143.55, 162.30, 181.05];
+  const appBoxWidths = [18.70, 18.75, 18.75, 15.05, 14.95, 18.85, 18.75, 18.75, 18.75, 18.85];
+
+  appBoxLefts.forEach((bLeft, idx) => {
+    if (idx < appChars.length) {
+      const char = appChars[idx];
+      const charW = fontBold.widthOfTextAtSize(char, 8.5);
+      const charX = bLeft + (appBoxWidths[idx] - charW) / 2;
+      p1.drawText(char, { x: charX, y: 816.5, size: 8.5, font: fontBold, color: darkNavy });
+    }
+  });
 
   // DATE OF APPLICATION centered above the underline [24.0, 203.4], y = 794.2
   const fileDate = safeText(data.submissionDate || "Sep 17, 2026").trim();
