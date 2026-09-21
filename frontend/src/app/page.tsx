@@ -52,10 +52,10 @@ export default function Home() {
       <section className="hero-section">
         <div className="hero-background"></div>
         <div className="container hero-container animate-fade-in-up">
-          <div className="hero-badge">Modernizing Local Governance</div>
-          <h2 className="hero-title">Streamlining Your Building & Occupancy Permits</h2>
+          <div className="hero-badge">OFFICE OF THE BUILDING OFFICIAL</div>
+          <h2 className="hero-title">eTAYO TOMASINO</h2>
           <p className="hero-subtitle">
-            The official fast, secure, and accessible portal for Locational Clearances, Building Permits, and Occupancy Certificates. Track your progress in real-time.
+            A Geospatially Enabled Permit Management and Building Monitoring System for the Local Government Unit of Sto. Tomas, Pampanga.
           </p>
           <div className="hero-actions">
             <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary btn-large">Start New Application</Link>
@@ -145,11 +145,16 @@ export default function Home() {
         }
 
         .hero-section {
-          padding-top: 8.5rem;
-          padding-bottom: 8rem;
+          min-height: calc(100vh - 65px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding-top: 5rem;
+          padding-bottom: 3.5rem;
           text-align: center;
           position: relative;
           overflow: hidden;
+          box-sizing: border-box;
         }
 
         .hero-background {
@@ -168,35 +173,36 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          max-width: 800px;
+          max-width: 860px;
+          padding: 0 1.5rem;
         }
 
         .hero-badge {
           background: rgba(37, 99, 235, 0.1);
           color: var(--color-primary);
-          padding: 0.5rem 1rem;
+          padding: 0.45rem 1.15rem;
           border-radius: var(--radius-pill);
-          font-weight: 700;
-          font-size: 0.85rem;
-          letter-spacing: 0.05em;
+          font-weight: 800;
+          font-size: 0.82rem;
+          letter-spacing: 0.06em;
           text-transform: uppercase;
-          margin-bottom: 2rem;
+          margin-bottom: 1.25rem;
         }
 
         .hero-title {
-          font-size: 4rem;
-          font-weight: 800;
-          line-height: 1.1;
+          font-size: clamp(2.4rem, 5vw, 3.75rem);
+          font-weight: 900;
+          line-height: 1.15;
           color: var(--text-primary);
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
           letter-spacing: -0.03em;
         }
 
         .hero-subtitle {
-          font-size: 1.25rem;
+          font-size: 1.08rem;
           color: var(--text-secondary);
-          max-width: 600px;
-          margin-bottom: 3rem;
+          max-width: 720px;
+          margin-bottom: 2rem;
           line-height: 1.6;
         }
 
@@ -204,11 +210,12 @@ export default function Home() {
           display: flex;
           gap: 1rem;
           justify-content: center;
+          flex-wrap: wrap;
         }
 
         .btn-large {
-          padding: 1rem 2rem;
-          font-size: 1.1rem;
+          padding: 0.85rem 1.85rem;
+          font-size: 1.02rem;
         }
       `}</style>
     </main>
