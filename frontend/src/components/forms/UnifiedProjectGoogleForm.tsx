@@ -738,10 +738,10 @@ export default function UnifiedProjectGoogleForm({
                     <option value="G. OTHERS (SPECIFY)">G. OTHERS (SPECIFY)</option>
                   </optgroup>
                   <optgroup label="GROUP A: RESIDENTIAL (DWELLINGS)">
-                    <option value="Group A - Residential (Single)">Group A - Single Family Dwelling</option>
-                    <option value="Group A - Residential (Duplex)">Group A - Duplex</option>
-                    <option value="Group A - Residential (R-1, R-2)">Group A - Residential R-1, R-2</option>
-                    <option value="Group A - Residential (Others)">Group A - Others</option>
+                    <option value="Group A - Single Family Dwelling">Group A - Single Family Dwelling</option>
+                    <option value="Group A - Duplex">Group A - Duplex</option>
+                    <option value="Group A - Residential R-1, R-2">Group A - Residential R-1, R-2</option>
+                    <option value="Group A - Others">Group A - Others</option>
                   </optgroup>
                   <optgroup label="GROUP B: RESIDENTIAL">
                     <option value="Group B - Hotel / Motel">Group B - Hotel / Motel</option>
@@ -1080,14 +1080,14 @@ export default function UnifiedProjectGoogleForm({
                 <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                 <option value="Others">Others (Specify)</option>
               </select>
-              {["Addition", "Repair", "Removal", "Renovation", "Conversion", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+              {(scopeOfWork || "").toLowerCase().includes("other") && (
                 <div style={{ marginTop: "8px" }}>
                   <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
-                    Specify {scopeOfWork} Details (Prints on Form Underline) *
+                    Specify Other Scope of Work (Prints on Form Underline) *
                   </label>
                   <input
                     type="text"
-                    placeholder={`e.g. Details for ${scopeOfWork}`}
+                    placeholder="e.g. Details for other scope of work"
                     value={scopeOfWorkDetails}
                     onChange={(e) => setScopeOfWorkDetails(e.target.value)}
                     style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }}

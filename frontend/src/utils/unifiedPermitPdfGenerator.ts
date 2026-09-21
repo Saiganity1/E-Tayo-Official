@@ -715,7 +715,7 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   else drawCheck(36.5, 639.5); // Default: New Construction
 
   // Box 4: Use / Character of Occupancy
-  const occ = (data.occupancyClass || data.projectType?.category || "Group A - Residential (Single)").toLowerCase();
+  const occ = (data.occupancyClassificationDetail || data.occupancyClass || data.projectType?.category || "Group A - Single Family Dwelling").toLowerCase();
   if (occ.includes("group b") || occ.includes("hotel") || occ.includes("motel") || occ.includes("townhouse") || occ.includes("dormitory")) {
     drawCheck(36.0, 556.1); // Group B Residential
     if (occ.includes("townhouse")) drawCheck(128.4, 548.2);
@@ -750,8 +750,9 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   }
 
   // Box 5: Physical Specs & Cost Breakdown
-  const occName = (data.occupancyClass || data.projectType?.name || "Single-Detached House").toUpperCase();
-  drawText(occName, 115, 426.0, 6.8, true, 20);
+  const occName = resolveOccupancyDetailText(data);
+  const occBox5Size = occName.length > 25 ? 5.2 : occName.length > 18 ? 5.8 : 6.5;
+  drawText(occName, 115, 426.0, occBox5Size, true, 32);
 
   // Format clean project cost number (placed after pre-printed TOTAL ESTIMATED COST: P)
   const cleanCost = String(data.projectCost || "1,500,000.00").replace(/PHP/gi, "").trim();
@@ -870,6 +871,40 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   }
 
   return await doc.saveAsBase64({ dataUri: false });
+}
+
+export function resolveOccupancyDetailText(data: Partial<UnifiedPermitFormData>): string {
+  const detail = (data.occupancyClassificationDetail || "").trim();
+  const others = (data.occupancyOthers || "").trim();
+
+  if (others && (/OTHER/i.test(detail) || !detail)) {
+    return others.toUpperCase();
+  }
+
+  if (detail) {
+    const u = detail.toUpperCase();
+    if (/Group A - Residential \(Single\)/i.test(detail) || /Group A - Single Family Dwelling/i.test(detail)) return "GROUP A - SINGLE FAMILY DWELLING";
+    if (/Group A - Residential \(Duplex\)/i.test(detail) || /Group A - Duplex/i.test(detail)) return "GROUP A - DUPLEX";
+    if (/Group A - Residential \(R-1, R-2\)/i.test(detail) || /Group A - Residential R-1, R-2/i.test(detail)) return "GROUP A - RESIDENTIAL R-1, R-2";
+    if (/Group A - Residential \(Others\)/i.test(detail) || /Group A - Others/i.test(detail)) return others ? others.toUpperCase() : "GROUP A - RESIDENTIAL (OTHERS)";
+    if (u === "A. RESIDENTIAL DWELLING") return "GROUP A - SINGLE FAMILY DWELLING";
+    if (u === "B. RESIDENTIAL, HOTEL, APARTMENT") return "GROUP B - RESIDENTIAL, HOTEL, APARTMENT";
+    if (u === "C. EDUCATION AND RECREATION") return "GROUP C - EDUCATION & RECREATION";
+    if (u === "D. INSTITUTIONAL") return "GROUP D - INSTITUTIONAL";
+    if (u === "H. BUSINESS AND MERCANTILE") return "GROUP E - BUSINESS & MERCANTILE";
+    if (u === "I. INDUSTRIAL") return "GROUP F - INDUSTRIAL";
+    if (u === "J. STORAGE AND HAZARDOUS") return "GROUP G - STORAGE & HAZARDOUS";
+    if (u === "K. ASSEMBLY OTHER THAN GROUP I") return "GROUP H - ASSEMBLY (< 1,000)";
+    if (u === "E. ASSEMBLY OCCUPANT LOAD 1000 OR MORE") return "GROUP I - ASSEMBLY (1,000+)";
+    if (u === "F. ACCESSORY") return "GROUP J - ACCESSORY";
+    if (u.includes("OTHERS") && others) return others.toUpperCase();
+    return detail.toUpperCase();
+  }
+
+  if (others) return others.toUpperCase();
+
+  const occ = (data.occupancyClass || data.projectType?.category || "RESIDENTIAL").trim();
+  return occ.toUpperCase();
 }
 
 function getNormalizedOccupancyText(raw?: string, category?: string): string {
@@ -1063,9 +1098,11 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
   const formWidth = fontBold.widthOfTextAtSize(formOfOwnershipText, 8);
   p1.drawText(formOfOwnershipText, { x: 286 - formWidth / 2, y: 708.0, size: 8, font: fontBold, color: darkNavy });
 
-  const occText = getNormalizedOccupancyText(data.occupancyClass, data.projectType?.category);
-  const occWidth = fontBold.widthOfTextAtSize(occText, 8);
-  p1.drawText(occText, { x: 450 - occWidth / 2, y: 708.0, size: 8, font: fontBold, color: darkNavy });
+  const occText = resolveOccupancyDetailText(data);
+  const occFontSize = occText.length > 36 ? 6.2 : occText.length > 28 ? 7.0 : 7.5;
+  const occWidth = fontBold.widthOfTextAtSize(occText, occFontSize);
+  const occX = Math.max(372, 475 - occWidth / 2);
+  p1.drawText(occText, { x: occX, y: 708.0, size: occFontSize, font: fontBold, color: darkNavy });
 
   // Address (Applicant Address)
   const addr = parseApplicantAddress(data);
@@ -1395,9 +1432,11 @@ export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): 
   const spFormWidth = fontBold.widthOfTextAtSize(spFormText, 8);
   p1.drawText(spFormText, { x: 275 - spFormWidth / 2, y: 615.0, size: 8, font: fontBold, color: darkNavy });
 
-  const spOccText = getNormalizedOccupancyText(data.occupancyClass, data.projectType?.category);
-  const spOccWidth = fontBold.widthOfTextAtSize(spOccText, 8);
-  p1.drawText(spOccText, { x: 440 - spOccWidth / 2, y: 615.0, size: 8, font: fontBold, color: darkNavy });
+  const spOccText = resolveOccupancyDetailText(data);
+  const spOccFontSize = spOccText.length > 36 ? 6.2 : spOccText.length > 28 ? 7.0 : 7.5;
+  const spOccWidth = fontBold.widthOfTextAtSize(spOccText, spOccFontSize);
+  const spOccX = Math.max(368, 470 - spOccWidth / 2);
+  p1.drawText(spOccText, { x: spOccX, y: 615.0, size: spOccFontSize, font: fontBold, color: darkNavy });
 
   // Address
   const spAddr = parseApplicantAddress(data);
@@ -2363,8 +2402,14 @@ export async function generateMechanicalPermitPdf(data: UnifiedPermitFormData): 
     drawText("N/A", 35, 635.0, 7.5, false);
   }
   const formOfOwnershipText = (data.formOfOwnership || "INDIVIDUAL / OWNER").toUpperCase();
-  drawText(formOfOwnershipText, 240, 635.0, 8, false, 25);
-  drawText((data.projectType?.category || "Residential").toUpperCase(), 430, 635.0, 8, false, 25);
+  const formWidth = fontBold.widthOfTextAtSize(formOfOwnershipText, 8);
+  p1.drawText(formOfOwnershipText, { x: 275 - formWidth / 2, y: 635.0, size: 8, font: fontBold, color: darkNavy });
+
+  const occText = resolveOccupancyDetailText(data);
+  const occFontSize = occText.length > 36 ? 6.2 : occText.length > 28 ? 7.0 : 7.5;
+  const occWidth = fontBold.widthOfTextAtSize(occText, occFontSize);
+  const occX = Math.max(372, 475 - occWidth / 2);
+  p1.drawText(occText, { x: occX, y: 635.0, size: occFontSize, font: fontBold, color: darkNavy });
 
   // Address: Line 1 (NO., STREET, TEL FAX NO.) baseline y = 621.0
   const addr = parseApplicantAddress(data);
@@ -2641,9 +2686,11 @@ export async function generateElectronicsPermitPdf(data: UnifiedPermitFormData):
   const bpFormWidth = fontBold.widthOfTextAtSize(bpFormText, 8);
   p1.drawText(bpFormText, { x: 260 - bpFormWidth / 2, y: 638.0, size: 8, font: fontBold, color: darkNavy });
 
-  const bpOccText = getNormalizedOccupancyText(data.occupancyClass, data.projectType?.category);
-  const bpOccWidth = fontBold.widthOfTextAtSize(bpOccText, 8);
-  p1.drawText(bpOccText, { x: 440 - bpOccWidth / 2, y: 638.0, size: 8, font: fontBold, color: darkNavy });
+  const bpOccText = resolveOccupancyDetailText(data);
+  const bpOccFontSize = bpOccText.length > 36 ? 6.2 : bpOccText.length > 28 ? 7.0 : 7.5;
+  const bpOccWidth = fontBold.widthOfTextAtSize(bpOccText, bpOccFontSize);
+  const bpOccX = Math.max(368, 470 - bpOccWidth / 2);
+  p1.drawText(bpOccText, { x: bpOccX, y: 638.0, size: bpOccFontSize, font: fontBold, color: darkNavy });
 
   // Address (Applicant Address)
   const bpAddr = parseApplicantAddress(data);
@@ -3420,7 +3467,7 @@ export async function generateCertificateOfOccupancyPdf(data: UnifiedPermitFormD
   // Project details & Occupancy: moved higher onto underlines
   drawText((data.projectName || "DELA CRUZ TWO-STOREY RESIDENCE").toUpperCase(), 140, 410.0, 8.5, true);
   drawText(`${data.projectAddress || ""}, Brgy. ${data.barangay || "Poblacion"}, Sto. Tomas, Pampanga`, 140, 380.0, 7.5, false, 55);
-  drawText((data.occupancyClass || data.projectType?.category || "Group A - Residential").toUpperCase(), 260, 348.0, 8, true);
+  drawText(resolveOccupancyDetailText(data), 285, 363.0, 7.5, true, 45);
 
   // Dates & Costs: moved higher onto underlines
   drawText(data.proposedStartDate || "Oct 01, 2026", 140, 318.0, 7.5, false);
@@ -3479,7 +3526,13 @@ export async function generateCertificateOfCompletionPdf(data: UnifiedPermitForm
 
   // LOCATION OF CONSTRUCTION & USE on underline
   drawText(`${data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd."}, Brgy. ${data.barangay || "Poblacion"}`, 150, 640.0, 7.5, false, 55);
-  drawText((data.occupancyClass || data.projectType?.category || "Residential").toUpperCase(), 200, 626.0, 8, true);
+  const occDetail = resolveOccupancyDetailText(data);
+  const charOnly = occDetail.replace(/^GROUP\s+[A-Z0-9\-]+\s*-\s*/i, "");
+  drawText(charOnly, 228, 632.5, 7.5, true, 28);
+  const groupMatch = occDetail.match(/GROUP\s+([A-Z0-9\-]+)/i);
+  if (groupMatch) {
+    drawText(groupMatch[1], 480, 632.5, 7.5, true);
+  }
 
   // Dates & Floor Area / Cost on underline
   drawText(data.proposedStartDate || "Oct 01, 2026", 120, 572.0, 7.5, false);

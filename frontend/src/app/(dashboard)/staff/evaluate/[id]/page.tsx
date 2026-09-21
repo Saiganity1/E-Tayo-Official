@@ -336,6 +336,8 @@ export default function StaffEvaluatePage() {
           projectCost: (app as any).projectCost || (app.estimatedFees ? `${app.estimatedFees * 500}` : "1,500,000.00"),
           scopeOfWork: (app as any).scopeOfWork || "New Construction",
           occupancyClass: (app as any).occupancyClass || "RESIDENTIAL",
+          occupancyClassificationDetail: (app as any).occupancyClassificationDetail || (app as any).occupancyRuleVII || "Group A - Single Family Dwelling",
+          occupancyOthers: (app as any).occupancyOthers || "",
           proposedStoreys: (app as any).proposedStoreys || "2",
           numberOfUnits: (app as any).numberOfUnits || "1",
           proposedStartDate: app.dateSubmitted || new Date().toLocaleDateString(),

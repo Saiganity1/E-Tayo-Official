@@ -175,6 +175,8 @@ export default function ApplicationTrackDetail() {
       projectCost: appData?.projectCost || (appData?.estimatedFees ? `${appData.estimatedFees * 500}` : "1,500,000.00"),
       scopeOfWork: appData?.scopeOfWork || "New Construction",
       occupancyClass: appData?.occupancyClass || "Group A - Residential",
+      occupancyClassificationDetail: (appData as any)?.occupancyClassificationDetail || (appData as any)?.occupancyRuleVII || "Group A - Single Family Dwelling",
+      occupancyOthers: (appData as any)?.occupancyOthers || "",
       proposedStoreys: appData?.proposedStoreys || "2",
       numberOfUnits: appData?.numberOfUnits || "1",
       proposedStartDate: appData?.dateSubmitted || new Date().toLocaleDateString(),

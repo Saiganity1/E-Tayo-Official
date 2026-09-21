@@ -185,7 +185,9 @@ export default function TechnicalPermitFormsStep({
       ? "INSTITUTIONAL"
       : "RESIDENTIAL"
   );
-  const [occupancyRuleVII, setOccupancyRuleVII] = useState("Group A - Residential Dwellings (Single-Detached / Duplex)");
+  const [occupancyRuleVII, setOccupancyRuleVII] = useState("Group A - Single Family Dwelling");
+  const [occupancyClassificationDetail, setOccupancyClassificationDetail] = useState("Group A - Single Family Dwelling");
+  const [occupancyOthers, setOccupancyOthers] = useState("");
   const [buildingFootprint, setBuildingFootprint] = useState("120");
   const [buildingHeight, setBuildingHeight] = useState("6.8");
   const [proposedStoreys, setProposedStoreys] = useState(
@@ -767,6 +769,8 @@ export default function TechnicalPermitFormsStep({
         fireCodeEmergencyLights,
         fireCodeOthers,
         occupancyClass,
+        occupancyClassificationDetail: occupancyClassificationDetail || occupancyRuleVII || occupancyClass,
+        occupancyOthers,
         proposedStoreys,
         numberOfUnits,
         proposedStartDate,
@@ -1049,8 +1053,8 @@ export default function TechnicalPermitFormsStep({
               ...payload,
               scopeOfWork: electricalScopeOfWork || payload.scopeOfWork,
               scopeOfWorkDetails: electricalScopeDetails || payload.scopeOfWorkDetails,
-              occupancyClassificationDetail: electricalOccupancy || occupancyClass,
-              occupancyOthers: electricalOccupancyOthers,
+              occupancyClassificationDetail: electricalOccupancy || occupancyClassificationDetail || occupancyClass,
+              occupancyOthers: electricalOccupancyOthers || occupancyOthers,
               lightingOutletsCount,
               convenienceOutletsCount,
               acuOutletsCount,
@@ -1904,6 +1908,115 @@ export default function TechnicalPermitFormsStep({
                   <span style={{ display: "block", fontSize: "0.68rem", color: "#64748b", marginTop: "3px" }}>
                     National Building Code classification
                   </span>
+
+                  {/* OCCUPANCY CLASSIFICATION DETAIL (NBCP RULE VII) */}
+                  <div style={{ marginTop: "10px" }}>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "900", color: "#1e40af", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.3px" }}>
+                      Occupancy Classification Detail (NBCP Rule VII)
+                    </label>
+                    <select
+                      value={occupancyClassificationDetail}
+                      onChange={(e) => {
+                        setOccupancyClassificationDetail(e.target.value);
+                        setOccupancyRuleVII(e.target.value);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "7px",
+                        border: "1.5px solid #93c5fd",
+                        fontSize: "0.85rem",
+                        background: "#ffffff",
+                        color: "#1e293b",
+                        fontWeight: "600"
+                      }}
+                    >
+                      <optgroup label="GROUP A: RESIDENTIAL (DWELLINGS)">
+                        <option value="Group A - Single Family Dwelling">Group A - Single Family Dwelling</option>
+                        <option value="Group A - Duplex">Group A - Duplex</option>
+                        <option value="Group A - Residential R-1, R-2">Group A - Residential R-1, R-2</option>
+                        <option value="Group A - Others">Group A - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP B: RESIDENTIAL">
+                        <option value="Group B - Hotel / Motel">Group B - Hotel / Motel</option>
+                        <option value="Group B - Townhouse">Group B - Townhouse</option>
+                        <option value="Group B - Dormitory / Boardinghouse">Group B - Dormitory / Boardinghouse</option>
+                        <option value="Group B - Residential R-3, R-4, R-5">Group B - Residential R-3, R-4, R-5</option>
+                        <option value="Group B - Others">Group B - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP C: EDUCATIONAL & RECREATIONAL">
+                        <option value="Group C - School Building">Group C - School Building</option>
+                        <option value="Group C - School Auditorium / Gymnasium">Group C - School Auditorium / Gymnasium</option>
+                        <option value="Group C - Civic Center / Clubhouse">Group C - Civic Center / Clubhouse</option>
+                        <option value="Group C - Church, Mosque, Temple, Chapel">Group C - Church, Mosque, Temple, Chapel</option>
+                        <option value="Group C - Others">Group C - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP D: INSTITUTIONAL">
+                        <option value="Group D - Hospital / Medical Facility">Group D - Hospital / Medical Facility</option>
+                        <option value="Group D - Home for the Aged">Group D - Home for the Aged</option>
+                        <option value="Group D - Government Office">Group D - Government Office</option>
+                        <option value="Group D - Others">Group D - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP E: COMMERCIAL">
+                        <option value="Group E - Bank / Financial">Group E - Bank / Financial</option>
+                        <option value="Group E - Store / Retail">Group E - Store / Retail</option>
+                        <option value="Group E - Shopping Center / Mall">Group E - Shopping Center / Mall</option>
+                        <option value="Group E - Drinking / Dining Establishment">Group E - Drinking / Dining Establishment</option>
+                        <option value="Group E - Shop (Tailoring, Salon, etc.)">Group E - Shop (Tailoring, Salon, etc.)</option>
+                        <option value="Group E - Others">Group E - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP F: LIGHT INDUSTRIAL">
+                        <option value="Group F - Factory / Plant (Incombustible)">Group F - Factory / Plant (Incombustible)</option>
+                        <option value="Group F - Others">Group F - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP G: MEDIUM INDUSTRIAL">
+                        <option value="Group G - Storage / Warehouse (Hazardous)">Group G - Storage / Warehouse (Hazardous)</option>
+                        <option value="Group G - Factory (Hazardous / Flammable)">Group G - Factory (Hazardous / Flammable)</option>
+                        <option value="Group G - Others">Group G - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP H: ASSEMBLY (< 1,000)">
+                        <option value="Group H - Theater / Auditorium (< 1,000)">Group H - Theater / Auditorium (&lt; 1,000)</option>
+                        <option value="Group H - Convention Hall / Bleacher (< 1,000)">Group H - Convention Hall / Bleacher (&lt; 1,000)</option>
+                        <option value="Group H - Others (< 1,000)">Group H - Others (&lt; 1,000)</option>
+                      </optgroup>
+                      <optgroup label="GROUP I: ASSEMBLY (1,000 OR MORE)">
+                        <option value="Group I - Coliseum / Sports Complex (1,000+)">Group I - Coliseum / Sports Complex (1,000+)</option>
+                        <option value="Group I - Convention Center (1,000+)">Group I - Convention Center (1,000+)</option>
+                        <option value="Group I - Others (1,000+)">Group I - Others (1,000+)</option>
+                      </optgroup>
+                      <optgroup label="GROUP J: (J-1) AGRICULTURAL">
+                        <option value="Group J-1 - Barn / Granary / Poultry House">Group J-1 - Barn / Granary / Poultry House</option>
+                        <option value="Group J-1 - Piggery / Grain Mill / Silo">Group J-1 - Piggery / Grain Mill / Silo</option>
+                        <option value="Group J-1 - Others">Group J-1 - Others</option>
+                      </optgroup>
+                      <optgroup label="GROUP J: (J-2) ACCESSORIES">
+                        <option value="Group J-2 - Private Carport / Garage">Group J-2 - Private Carport / Garage</option>
+                        <option value="Group J-2 - Swimming Pool">Group J-2 - Swimming Pool</option>
+                        <option value="Group J-2 - Fence over 1.80m">Group J-2 - Fence over 1.80m</option>
+                        <option value="Group J-2 - Steel / Concrete Tank">Group J-2 - Steel / Concrete Tank</option>
+                        <option value="Group J-2 - Others">Group J-2 - Others</option>
+                      </optgroup>
+                    </select>
+                    {occupancyClassificationDetail.includes("Others") && (
+                      <input
+                        type="text"
+                        placeholder="Specify detailed occupancy..."
+                        value={occupancyOthers}
+                        onChange={(e) => setOccupancyOthers(e.target.value)}
+                        style={{
+                          width: "100%",
+                          marginTop: "5px",
+                          padding: "6px 9px",
+                          borderRadius: "6px",
+                          border: "1.5px solid #93c5fd",
+                          fontSize: "0.82rem",
+                          fontWeight: "700",
+                          color: "#0f172a",
+                          background: "#f0f9ff"
+                        }}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -2365,14 +2478,14 @@ export default function TechnicalPermitFormsStep({
                         <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                         <option value="Others">Others (Specify)</option>
                       </select>
-                      {["Addition", "Repair", "Removal", "Renovation", "Conversion", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+                      {(scopeOfWork || "").toLowerCase().includes("other") && (
                         <div style={{ marginTop: "8px" }}>
                           <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
-                            Specify {scopeOfWork} Details (Prints on Form Underline) *
+                            Specify Other Scope of Work (Prints on Form Underline) *
                           </label>
                           <input
                             type="text"
-                            placeholder={`e.g., Specific ${scopeOfWork} details or structure type`}
+                            placeholder="e.g., Specific details for other scope of work"
                             value={scopeOfWorkDetails}
                             onChange={(e) => setScopeOfWorkDetails(e.target.value)}
                             style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "white" }}
@@ -2835,14 +2948,14 @@ export default function TechnicalPermitFormsStep({
                       <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                       <option value="Others">Others (Specify)</option>
                     </select>
-                    {["Addition", "Repair", "Removal", "Renovation", "Conversion", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => scopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+                    {(scopeOfWork || "").toLowerCase().includes("other") && (
                       <div style={{ marginTop: "8px" }}>
                         <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
-                          Specify {scopeOfWork} Details (Prints on Form Underline) *
+                          Specify Other Scope of Work (Prints on Form Underline) *
                         </label>
                         <input
                           type="text"
-                          placeholder={`Specify details for ${scopeOfWork}`}
+                          placeholder="Specify details for other scope of work"
                           value={scopeOfWorkDetails}
                           onChange={(e) => setScopeOfWorkDetails(e.target.value)}
                           style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "white" }}
@@ -5102,7 +5215,7 @@ export default function TechnicalPermitFormsStep({
                     })}
                   </div>
 
-                  {mechanicalScopeOfWork !== "New Construction" && (
+                  {(mechanicalScopeOfWork || "").toLowerCase().includes("other") && (
                     <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px dashed #e2e8f0" }}>
                       <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
                         Specify Scope Details (Printed on Official Form Underline)
@@ -5111,7 +5224,7 @@ export default function TechnicalPermitFormsStep({
                         type="text"
                         value={mechanicalScopeDetails}
                         onChange={(e) => setMechanicalScopeDetails(e.target.value)}
-                        placeholder={`e.g. Details for ${mechanicalScopeOfWork}`}
+                        placeholder="e.g. Specific details for other mechanical scope"
                         style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
                       />
                     </div>

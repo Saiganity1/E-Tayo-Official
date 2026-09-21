@@ -136,7 +136,7 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   projectNature: "New Development",
   natureOthers: "",
   occupancyClass: "RESIDENTIAL",
-  occupancyClassificationDetail: "Group A - Residential (Single)",
+  occupancyClassificationDetail: "Group A - Single Family Dwelling",
   occupancyOthers: "",
   proposedStoreys: "2",
   numberOfUnits: "1",
@@ -2744,10 +2744,10 @@ export default function FormTestingStudio() {
                         <option value="Accessory Building / Structure">Accessory Building / Structure</option>
                         <option value="Others">Others (Specify)</option>
                       </select>
-                      {["Addition", "Repair", "Removal", "Renovation", "Conversion", "Moving", "Raising", "Demolition", "Accessory", "Other"].some(k => (formData.scopeOfWork || "").toLowerCase().includes(k.toLowerCase())) && (
+                      {(formData.scopeOfWork || "").toLowerCase().includes("other") && (
                         <div style={{ marginTop: "6px" }}>
                           <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b", marginBottom: "2px" }}>
-                            Specify {formData.scopeOfWork} Details (Printed on Form Underline)
+                            Specify Other Scope of Work (Printed on Form Underline)
                           </label>
                           <input
                             type="text"
@@ -2756,7 +2756,7 @@ export default function FormTestingStudio() {
                               handleFieldChange("scopeOfWorkDetails", e.target.value);
                               handleFieldChange("scopeOthers", e.target.value);
                             }}
-                            placeholder={`e.g. Details for ${formData.scopeOfWork}`}
+                            placeholder="e.g. Specific details for other scope of work"
                             style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
                           />
                         </div>
@@ -2833,15 +2833,15 @@ export default function FormTestingStudio() {
                             Occupancy Classification Detail (NBCP Rule VII)
                           </label>
                           <select
-                            value={formData.occupancyClassificationDetail || "Group A - Residential (Single)"}
+                            value={formData.occupancyClassificationDetail || "Group A - Single Family Dwelling"}
                             onChange={e => handleFieldChange("occupancyClassificationDetail", e.target.value)}
                             style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#1e293b", fontWeight: "600" }}
                           >
                             <optgroup label="GROUP A: RESIDENTIAL (DWELLINGS)">
-                              <option value="Group A - Residential (Single)">Group A - Single Family Dwelling</option>
-                              <option value="Group A - Residential (Duplex)">Group A - Duplex</option>
-                              <option value="Group A - Residential (R-1, R-2)">Group A - Residential R-1, R-2</option>
-                              <option value="Group A - Residential (Others)">Group A - Others</option>
+                              <option value="Group A - Single Family Dwelling">Group A - Single Family Dwelling</option>
+                              <option value="Group A - Duplex">Group A - Duplex</option>
+                              <option value="Group A - Residential R-1, R-2">Group A - Residential R-1, R-2</option>
+                              <option value="Group A - Others">Group A - Others</option>
                             </optgroup>
                             <optgroup label="GROUP B: RESIDENTIAL">
                               <option value="Group B - Hotel / Motel">Group B - Hotel / Motel</option>
@@ -4145,18 +4145,20 @@ export default function FormTestingStudio() {
                         </select>
                       </div>
 
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>
-                          Scope Details (Prints on Form Underline)
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.mechanicalScopeDetails || formData.scopeOfWorkDetails || ""}
-                          onChange={e => handleFieldChange("mechanicalScopeDetails", e.target.value)}
-                          placeholder="e.g. Specific details or machinery location"
-                          style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
-                        />
-                      </div>
+                      {(formData.mechanicalScopeOfWork || "").toLowerCase().includes("other") && (
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>
+                            Scope Details (Prints on Form Underline)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.mechanicalScopeDetails || formData.scopeOfWorkDetails || ""}
+                            onChange={e => handleFieldChange("mechanicalScopeDetails", e.target.value)}
+                            placeholder="e.g. Specific details for other mechanical scope"
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                          />
+                        </div>
+                      )}
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                         <div>
