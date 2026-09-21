@@ -1816,13 +1816,31 @@ export async function generateElectricalPermitPdf(data: UnifiedPermitFormData): 
   drawText(inChargeSignedDate, 215.0, 186.5, 7.5, false);
   drawText(inChargeTIN, 375.0, 186.5, 7.5, false);
 
-  // Box 5: Owner
+  // Box 5: Owner / Authorized Representative
+  const ownerNameUpper = (data.applicantName || "JUAN DELA CRUZ").toUpperCase();
+  const ownerNameW = fontBold.widthOfTextAtSize(ownerNameUpper, 8.5);
+  const ownerNameX = 111.0 - (ownerNameW / 2);
+  drawText(ownerNameUpper, ownerNameX, 128.0, 8.5, true);
+
+  // Signature inside SIGNATURE box [198.6, 311.1] (cx = 254.85)
   if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 45, 145.0, 110, 30);
+    await embedSignatureImage(doc, p1, data.applicantSignature, 207.5, 112.0, 95, 36);
   }
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 45, 145.0, 8.5, true);
-  drawText(data.applicantTIN || "000-123-456-000", 340, 145.0, 7.5, false);
-  drawText(data.govIdNo || "CTC-2026-00192", 445, 138.0, 7.5, false);
+
+  // T.I.N inside T.I.N box [311.1, 405.6] (cx = 358.35)
+  const ownerTin = (data.applicantTIN || "123-456-789-000").trim();
+  const ownerTinW = fontRegular.widthOfTextAtSize(ownerTin, 7.5);
+  const ownerTinX = 358.35 - (ownerTinW / 2);
+  drawText(ownerTin, ownerTinX, 128.0, 7.5, false);
+
+  // CTC NO., DATE ISSUED, PLACE ISSUED comfortably above each underline
+  const ctcNo = data.govIdNo || data.applicantCtcNo || "CTC-2026-00192";
+  const ctcDate = data.govIdDateIssued || data.applicantSignedDate || data.submissionDate || "Jan 10, 2026";
+  const ctcPlace = data.govIdPlaceIssued || "Sto. Tomas, Pampanga";
+
+  drawText(ctcNo, 452.0, 144.0, 7.5, false);
+  drawText(ctcDate, 472.0, 134.5, 7.5, false);
+  drawText(ctcPlace, 475.0, 125.5, 7.5, false);
 
   return await doc.saveAsBase64({ dataUri: false });
 }
