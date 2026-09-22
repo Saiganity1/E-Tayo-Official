@@ -89,12 +89,16 @@ export default function RegisterPage() {
   return (
     <div className="login-layout">
       <div className="login-visual animate-fade-in">
+        <div className="login-bg-wrapper">
+          <div className="login-bg-image"></div>
+          <div className="login-bg-overlay"></div>
+          <div className="login-bg-glow"></div>
+        </div>
         <div className="visual-content">
-          <div className="visual-icon"><ShieldCheck size={48} /></div>
+          <div className="visual-icon"><ShieldCheck size={38} /></div>
           <h1>Join e-Tayo</h1>
           <p>Create an account to apply for permits, track your progress, and securely communicate with city staff.</p>
         </div>
-        <div className="visual-overlay"></div>
       </div>
 
       <div className="login-form-container" style={{ position: "relative" }}>

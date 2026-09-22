@@ -86,13 +86,16 @@ export default function LoginPage() {
   return (
     <div className="login-layout">
       <div className="login-visual animate-fade-in">
+        <div className="login-bg-wrapper">
+          <div className="login-bg-image"></div>
+          <div className="login-bg-overlay"></div>
+          <div className="login-bg-glow"></div>
+        </div>
         <div className="visual-content">
-          <div className="visual-icon"><ShieldCheck size={48} /></div>
+          <div className="visual-icon"><ShieldCheck size={38} /></div>
           <h1>Secure Portal Access</h1>
           <p>e-Tayo ensures your data is protected with enterprise-grade security protocols.</p>
-
         </div>
-        <div className="visual-overlay"></div>
       </div>
 
       <div className="login-form-container" style={{ position: "relative" }}>
