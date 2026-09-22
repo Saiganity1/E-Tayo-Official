@@ -254,10 +254,31 @@ export interface UnifiedPermitFormData {
   funicular?: boolean;
   mechanicalPreparedBy?: string;
 
-  // Electronics details
+  // Electronics details (NBC Form EL-01)
+  electronicsScopeOfWork?: string;
+  electronicsScopeOthers?: string;
   telecomScope?: string;
   cctvScope?: string;
   fdasScope?: string;
+  catvScope?: string;
+
+  // Box 2 Nature of Installation Checkboxes
+  telecomSystem?: boolean;
+  broadcastingSystem?: boolean;
+  televisionSystem?: boolean;
+  itSystem?: boolean;
+  securityAlarmSystem?: boolean;
+  anyOtherElectronics?: boolean;
+  anyOtherElectronicsSpecify?: string;
+  electronicsAlarmSystem?: boolean;
+  soundCommSystem?: boolean;
+  centralizedClockSystem?: boolean;
+  soundSystem?: boolean;
+  electronicsControlConveyor?: boolean;
+  computerProcessControls?: boolean;
+  buildingAutomationManagement?: boolean;
+  buildingWiringFiberOptic?: boolean;
+  electronicsPreparedBy?: string;
 
   // Fire / BFP details
   numberOfExits?: string;
@@ -431,6 +452,7 @@ export interface UnifiedPermitFormData {
   applicantGovIdDateIssued?: string;
   applicantGovIdPlaceIssued?: string;
 
+  // Box 3: Professional Electronics Engineer (PECE)
   electronicsEngineerName?: string;
   electronicsEngineerAddress?: string;
   electronicsEngineerPRC?: string;
@@ -440,6 +462,22 @@ export interface UnifiedPermitFormData {
   electronicsEngineerPTRIssued?: string;
   electronicsEngineerPTRIssuedAt?: string;
   electronicsEngineerTIN?: string;
+  electronicsEngineerSignedDate?: string;
+  electronicsEngineerSignature?: string;
+
+  // Box 4: Supervisor In-Charge of Electronics Works
+  sameAsDesignElectronicsEngineer?: boolean;
+  electronicsSupervisorRole?: "PECE" | "ECE";
+  electronicsSupervisorName?: string;
+  electronicsSupervisorAddress?: string;
+  electronicsSupervisorPRC?: string;
+  electronicsSupervisorPRCValidity?: string;
+  electronicsSupervisorPTR?: string;
+  electronicsSupervisorPTRDate?: string;
+  electronicsSupervisorPTRIssuedAt?: string;
+  electronicsSupervisorTIN?: string;
+  electronicsSupervisorSignedDate?: string;
+  electronicsSupervisorSignature?: string;
 
   // Active form checkboxes selected
   activePermitForms?: (keyof PermitFormMatrix)[];
@@ -516,6 +554,7 @@ function safeText(str: string | undefined | null): string {
 function parseApplicantName(
   input: UnifiedPermitFormData | string | undefined | null
 ): { lastName: string; firstName: string; middleName: string; mi: string } {
+  let nameStr: string = "";
   if (typeof input === "object" && input !== null) {
     if (input.applicantLastName || input.applicantFirstName) {
       const last = (input.applicantLastName || "").toUpperCase();
@@ -524,9 +563,11 @@ function parseApplicantName(
       const mi = mid ? (mid.endsWith(".") ? mid : mid[0] + ".") : "N/A";
       return { lastName: last, firstName: first, middleName: mid, mi };
     }
-    input = input.applicantName;
+    nameStr = input.applicantName || "";
+  } else {
+    nameStr = input || "";
   }
-  const parts = (input || "").trim().split(/\s+/).filter(Boolean);
+  const parts = nameStr.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return { lastName: "DELA CRUZ", firstName: "JUAN", middleName: "SANTOS", mi: "S." };
   if (parts.length === 1) return { lastName: parts[0].toUpperCase(), firstName: "", middleName: "", mi: "N/A" };
   if (parts.length === 2) return { lastName: parts[1].toUpperCase(), firstName: parts[0].toUpperCase(), middleName: "", mi: "N/A" };
@@ -2659,85 +2700,265 @@ export async function generateElectronicsPermitPdf(data: UnifiedPermitFormData):
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  const drawCheck = (x: number, y: number) => {
-    p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
+  const drawBoxCheck = (cx: number, cy: number) => {
+    const size = 7.0;
+    const w = fontBold.widthOfTextAtSize("X", size);
+    p1.drawText("X", { x: cx - w / 2, y: cy - 2.5, size, font: fontBold, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "APP-2026-6636", 50, 720.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 420, 720.0, 8, false);
+  // Header: APPLICATION NO. in 10 individual segmented boxes [18.33, 147.78]
+  const rawAppNo = safeText(data.applicationNo || "2026-0001").trim();
+  const cleanAppNo = rawAppNo.replace(/^(APP|UNIFIED|PERMIT|DOC|EL|ELP)[\s#:\-]*(TEST[\s#:\-]*)?/i, "").trim() || rawAppNo;
+  const appChars = cleanAppNo.slice(0, 10).split("");
+  const appBoxLefts = [18.33, 31.11, 43.89, 57.22, 70.00, 83.33, 96.11, 109.44, 122.78, 135.56];
+  const appBoxWidths = [12.78, 12.78, 13.33, 12.78, 13.33, 12.78, 13.33, 13.33, 12.78, 12.22];
 
-  // Box 1: Owner Row
+  appBoxLefts.forEach((bLeft, idx) => {
+    if (idx < appChars.length) {
+      const char = appChars[idx];
+      const charW = fontBold.widthOfTextAtSize(char, 9.0);
+      const charX = bLeft + (appBoxWidths[idx] - charW) / 2;
+      p1.drawText(char, { x: charX, y: 716.0, size: 9.0, font: fontBold, color: darkNavy });
+    }
+  });
+
+  // Header: ELP NO. (Electronics Permit No.) in individual segmented boxes (8 boxes)
+  // Auto-fillup: uses electronicsPermitNo, or non-AP/BP permitNo, or auto-derives from cleanAppNo
+  let rawElpNo = (
+    data.electronicsPermitNo ||
+    (data.permitNo && !data.permitNo.toUpperCase().startsWith("AP-") && !data.permitNo.toUpperCase().startsWith("BP-") && !data.permitNo.toUpperCase().startsWith("SP-") ? data.permitNo : "") ||
+    `ELP-${cleanAppNo}`
+  ).trim();
+
+  let cleanElpNo = rawElpNo.replace(/^(ELP|EL|APP|AP|UNIFIED|PERMIT|DOC|BP|SP|MP|PP)[\s#:\-]*(TEST[\s#:\-]*)?/i, "").trim() || rawElpNo;
+  if (cleanElpNo.length > 8 && cleanElpNo.includes("-")) {
+    cleanElpNo = cleanElpNo.replace(/-/g, "");
+  }
+  const elpChars = cleanElpNo.slice(0, 8).split("");
+  const elpBoxLefts = [246.67, 259.44, 272.78, 285.56, 298.33, 311.67, 324.44, 337.78];
+  const elpBoxWidths = [12.78, 13.33, 12.78, 12.78, 13.33, 12.78, 13.33, 13.33];
+  elpBoxLefts.forEach((bLeft, idx) => {
+    if (idx < elpChars.length) {
+      const char = elpChars[idx];
+      const charW = fontBold.widthOfTextAtSize(char, 9.0);
+      const charX = bLeft + (elpBoxWidths[idx] - charW) / 2;
+      p1.drawText(char, { x: charX, y: 716.0, size: 9.0, font: fontBold, color: darkNavy });
+    }
+  });
+
+  // Header: BUILDING PERMIT NO. in individual segmented boxes (12 boxes)
+  // Auto-filled: uses buildingPermitNo, or auto-derived from cleanAppNo
+  const isBpRequired = !data.projectType || data.projectType.matrix?.buildingPermit === 'required' || data.projectType.matrix?.buildingPermit === 'conditional';
+  const rawBpNo = (data.buildingPermitNo || (isBpRequired ? (data.applicationNo ? `BP-${cleanAppNo}` : "BP-2026-0001") : "")).trim();
+  if (rawBpNo) {
+    const cleanBpNo = rawBpNo.replace(/^(BP|APP|NBC)[\s#:\-]*(TEST[\s#:\-]*)?/i, "").trim() || rawBpNo;
+    const bpChars = cleanBpNo.slice(0, 12).split("");
+    const bpBoxLefts = [433.89, 446.11, 459.44, 472.22, 485.00, 498.33, 511.11, 525.00, 537.78, 551.11, 563.89, 576.11];
+    const bpBoxWidths = [12.22, 13.33, 12.78, 12.78, 13.33, 12.78, 13.89, 12.78, 13.33, 12.78, 12.22, 12.22];
+    bpBoxLefts.forEach((bLeft, idx) => {
+      if (idx < bpChars.length) {
+        const char = bpChars[idx];
+        const charW = fontBold.widthOfTextAtSize(char, 9.0);
+        const charX = bLeft + (bpBoxWidths[idx] - charW) / 2;
+        p1.drawText(char, { x: charX, y: 716.0, size: 9.0, font: fontBold, color: darkNavy });
+      }
+    });
+  }
+
+  // ==========================================
+  // BOX 1: OWNER / APPLICANT INFORMATION
+  // ==========================================
+  const drawCenteredText = (text: string | undefined | null, centerX: number, y: number, size: number = 8, isBold: boolean = false, maxW?: number) => {
+    if (!text) return;
+    let clean = safeText(text).trim();
+    if (maxW && clean.length > maxW) clean = clean.slice(0, maxW);
+    const font = isBold ? fontBold : fontRegular;
+    const w = font.widthOfTextAtSize(clean, size);
+    p1.drawText(clean, { x: centerX - w / 2, y, size, font, color: darkNavy });
+  };
+
+  // Row 1: LAST NAME, FIRST NAME, M.I., TIN
   const { lastName, firstName, mi, middleName } = parseApplicantName(data);
-  drawText(lastName, 160, 662.0, 8.5, true, 20);
-  drawText(firstName, 270, 662.0, 8.5, true, 20);
-  drawText(middleName || mi, 395, 662.0, 8, true);
-  // TIN placed in correct column
-  drawText(data.applicantTIN || "000-123-456-000", 475, 662.0, 8, false);
+  // LAST NAME: column [89, 278], center = 183.5, y = 667.0
+  drawCenteredText(lastName.toUpperCase(), 183.5, 667.0, 8.5, true, 22);
+  // FIRST NAME: column [278, 461], center = 369.5, y = 667.0
+  drawCenteredText(firstName.toUpperCase(), 369.5, 667.0, 8.5, true, 22);
+  // M.I.: column [461, 504], center = 482.5, y = 667.0
+  let miText = (mi || (middleName ? middleName.charAt(0) : "")).trim();
+  if (miText && !miText.endsWith(".") && miText.length <= 2) miText += ".";
+  drawCenteredText(miText.toUpperCase(), 482.5, 667.0, 8.0, true, 6);
+  // TIN: column [504, 592], center = 548.0, y = 667.0
+  drawCenteredText(data.applicantTIN || "000-123-456-000", 548.0, 667.0, 8.0, false, 18);
 
-  // Form of Ownership & For construction owned by
+  // Row 2: FOR CONSTRUCTION OWNED, FORM OF OWNERSHIP, USE OR CHARACTER OF OCCUPANCY
+  // Baseline y = 640.5
   const bpEnterprise = data.constructionOwnedByEnterprise || data.corporationName || data.enterpriseName || (data.formOfOwnership?.includes("INDIVIDUAL") ? "N/A" : "");
   if (bpEnterprise && bpEnterprise !== "N/A") {
-    drawText(bpEnterprise.toUpperCase(), 80, 638.0, 7.5, false, 25);
-  } else if (bpEnterprise === "N/A") {
-    drawText("N/A", 80, 638.0, 7.5, false);
+    drawText(bpEnterprise.toUpperCase(), 26.0, 640.5, 7.5, false, 28);
+  } else {
+    drawText("N/A (INDIVIDUAL)", 26.0, 640.5, 7.5, false);
   }
+
   const bpFormText = (data.formOfOwnership || "INDIVIDUAL / OWNER").toUpperCase();
-  const bpFormWidth = fontBold.widthOfTextAtSize(bpFormText, 8);
-  p1.drawText(bpFormText, { x: 260 - bpFormWidth / 2, y: 638.0, size: 8, font: fontBold, color: darkNavy });
+  drawCenteredText(bpFormText, 330.8, 640.5, 8.0, true, 26);
 
   const bpOccText = resolveOccupancyDetailText(data);
-  const bpOccFontSize = bpOccText.length > 36 ? 6.2 : bpOccText.length > 28 ? 7.0 : 7.5;
-  const bpOccWidth = fontBold.widthOfTextAtSize(bpOccText, bpOccFontSize);
-  const bpOccX = Math.max(368, 470 - bpOccWidth / 2);
-  p1.drawText(bpOccText, { x: bpOccX, y: 638.0, size: bpOccFontSize, font: fontBold, color: darkNavy });
+  const bpOccFontSize = bpOccText.length > 38 ? 6.2 : bpOccText.length > 28 ? 7.0 : 7.5;
+  drawCenteredText(bpOccText, 514.4, 640.5, bpOccFontSize, true, 42);
 
-  // Address (Applicant Address)
+  // Row 3: ADDRESS (Baseline y = 615.0 to sit BELOW the labels and avoid overlap)
   const bpAddr = parseApplicantAddress(data);
-  drawText(bpAddr.noStreet, 85, 620.0, 7.5, false, 25);
-  drawText(bpAddr.barangay, 200, 620.0, 7.5, false, 18);
-  drawText(bpAddr.municipality, 290, 620.0, 7.0, false, 25);
-  drawText(bpAddr.zipCode, 380, 620.0, 7.5, false);
-  drawContactAndEmail(p1, bpAddr.contactNo, bpAddr.email, 425, 620.0, fontBold, fontRegular, darkNavy);
+  drawText(bpAddr.noStreet, 88.0, 615.0, 7.5, false, 24);
+  drawText(bpAddr.barangay, 215.0, 615.0, 7.5, false, 20);
+  drawText(bpAddr.municipality, 318.0, 615.0, 7.0, false, 24);
+  drawCenteredText(bpAddr.zipCode || "2020", 456.7, 615.0, 7.5, false);
+  // TELEPHONE NO.: column [476.7, 592.2]
+  const contactPhone = bpAddr.contactNo || data.applicantPhone || "0917-123-4567";
+  drawText(contactPhone, 482.0, 615.0, 7.5, false, 16);
 
-  // Location of Construction: moved higher (+4px)
-  drawText(data.lotNo || "Lot 12", 155, 590.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 235, 590.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 325, 590.0, 7.5, true, 16);
-  drawText(data.taxDecNo || "TD-2026-0012", 450, 590.0, 7.5, false);
+  // Row 4: LOCATION OF CONSTRUCTION (Underlines at y = 598.33, Baseline y = 600.5)
+  const cleanLotNo = (data.lotNo || "12").replace(/^lot\s*/i, "").trim();
+  const cleanBlkNo = (data.blockNo || "4").replace(/^(blk|block)\s*/i, "").trim();
+  drawCenteredText(cleanLotNo, 176.7, 600.5, 7.5, true);
+  drawCenteredText(cleanBlkNo, 249.4, 600.5, 7.5, true);
+  drawCenteredText(data.tctNo || "TCT-889977-P", 363.3, 600.5, 7.5, true, 18);
+  drawCenteredText(data.taxDecNo || "TD-2026-004455", 525.6, 600.5, 7.5, false, 18);
 
-  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 65, 572.0, 7.5, false, 24);
-  drawText(data.barangay || "Poblacion", 230, 572.0, 7.5, true, 18);
-  drawText("Sto. Tomas, Pampanga", 420, 572.0, 7.5, true, 20);
+  // Row 5: PROJECT ADDRESS (Underlines at y = 578.89, Baseline y = 581.0)
+  const projStreet = (data.projectAddress || "Lot 12, Block 4, Sunset").trim();
+  drawText(projStreet, 55.0, 581.0, 7.5, false, 32);
+  drawText(data.barangay || "Poblacion", 250.0, 581.0, 7.5, true, 22);
+  drawText("Sto. Tomas, Pampanga", 476.0, 581.0, 7.5, true, 22);
 
-  // Scope: [X] New Installation (moved higher)
-  drawCheck(56, 534.0);
-
-  // Box 2: Nature of Works: moved higher (+4px)
-  drawCheck(46, 446.0); // Telecommunication
-  drawCheck(46, 390.0); // Security & Alarm
-  drawCheck(205, 446.0); // Electronics & Alarm
-  drawCheck(380, 390.0); // Building wiring / fiber optic
-
-  // Box 3: Professional Electronics Engineer: moved higher (+4px)
-  const peceName = data.electronicsEngineerName || "Engr. Fernando Ramos, PECE";
-  drawText(peceName.toUpperCase(), 60, 294.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 210, 294.0, 7.5, false);
-  drawText("Sto. Tomas, Pampanga", 60, 264.0, 7.5, false);
-  drawText(data.electronicsEngineerPRC || "PRC-0022891", 60, 246.0, 7.5, false);
-  drawText(data.electronicsEngineerPRCValidity || "2028-12-31", 175, 246.0, 7.5, false);
-  drawText(data.electronicsEngineerPTR || "PTR-ST-2026-9045", 60, 230.0, 7.5, false);
-  drawText(data.electronicsEngineerPTRIssued || "Jan 05, 2026", 175, 230.0, 7.5, false);
-  drawText("Sto. Tomas", 60, 212.0, 7.5, false);
-  drawText(data.electronicsEngineerTIN || "228-910-334-000", 175, 212.0, 7.5, false);
-
-  // Box 5: Owner
-  if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 60, 102.0, 110, 30);
+  // Row 6: SCOPE OF WORK CHECKBOXES
+  const scopeLower = (data.electronicsScopeOfWork || data.scopeOfWork || "new installation").toLowerCase();
+  if (scopeLower.includes("annual")) {
+    drawBoxCheck(223.3, 547.2);
+  } else if (scopeLower.includes("other")) {
+    drawBoxCheck(424.4, 547.2);
+    if (data.electronicsScopeOthers || data.scopeOfWorkDetails) {
+      drawText(data.electronicsScopeOthers || data.scopeOfWorkDetails, 490.0, 545.0, 7.5, false, 20);
+    }
+  } else {
+    // Default to NEW INSTALLATION
+    drawBoxCheck(34.4, 547.2);
   }
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 60, 102.0, 8.5, true);
-  drawText(data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga", 60, 64.0, 7.5, false);
-  drawText(data.govIdNo || "CTC-2026-00192", 60, 48.0, 7.5, false);
+
+  // ==========================================
+  // BOX 2: NATURE OF INSTALLATION WORKS/EQUIPMENT SYSTEM
+  // ==========================================
+  // Column 1 Checkboxes (cx = 34.4)
+  if (data.telecomSystem ?? true) drawBoxCheck(34.4, 492.2);
+  if (data.broadcastingSystem) drawBoxCheck(34.4, 480.6);
+  if (data.televisionSystem) drawBoxCheck(34.4, 468.9);
+  if (data.itSystem ?? true) drawBoxCheck(34.4, 457.8);
+  if (data.securityAlarmSystem ?? true) drawBoxCheck(34.4, 445.0);
+  if (data.anyOtherElectronics) {
+    drawBoxCheck(34.4, 434.4);
+    if (data.anyOtherElectronicsSpecify) {
+      drawText(data.anyOtherElectronicsSpecify, 95.0, 422.0, 7.0, false, 40);
+    }
+  }
+
+  // Column 2 Checkboxes (cx = 223.3)
+  if (data.electronicsAlarmSystem ?? true) drawBoxCheck(223.3, 492.2);
+  if (data.soundCommSystem) drawBoxCheck(223.3, 480.6);
+  if (data.centralizedClockSystem) drawBoxCheck(223.3, 468.9);
+  if (data.soundSystem) drawBoxCheck(223.3, 457.8);
+  if (data.electronicsControlConveyor) drawBoxCheck(223.3, 445.0);
+
+  // Column 3 Checkboxes (cx = 424.4)
+  if (data.computerProcessControls) drawBoxCheck(424.4, 492.2);
+  if (data.buildingAutomationManagement) drawBoxCheck(424.4, 468.9);
+  if (data.buildingWiringFiberOptic ?? true) drawBoxCheck(424.4, 445.0);
+
+  // Prepared By underline (baseline y = 387.0)
+  const preparedBy = data.electronicsPreparedBy || data.electronicsEngineerName || "Engr. Carlos Lim, PECE";
+  drawText(preparedBy, 82.0, 387.0, 8.0, true, 55);
+
+  // ==========================================
+  // BOX 3: DESIGN PROFESSIONAL (PECE)
+  // ==========================================
+  const peceName = (data.electronicsEngineerName || "Engr. Carlos Lim, PECE").toUpperCase();
+  if (data.electronicsEngineerSignature) {
+    await embedSignatureImage(doc, p1, data.electronicsEngineerSignature, 68.0, 308.5, 100, 28);
+  }
+  drawCenteredText(peceName, 117.5, 310.5, 7.5, true, 30);
+  drawText(data.electronicsEngineerSignedDate || data.submissionDate || "Jan 08, 2026", 232.0, 310.5, 7.5, false);
+
+  // Table lines
+  drawText(data.electronicsEngineerAddress || "Sto. Tomas, Pampanga", 55.0, 277.5, 7.5, false, 45);
+  drawText(data.electronicsEngineerPRC || "PRC-PECE-0038912", 55.0, 265.0, 7.5, false);
+  drawText(data.electronicsEngineerPRCValidity || "2028-08-20", 195.0, 265.0, 7.5, false);
+  drawText(data.electronicsEngineerPTR || "PTR-ST-2026-7782", 55.0, 252.5, 7.5, false);
+  drawText(data.electronicsEngineerPTRIssued || "Jan 05, 2026", 208.0, 252.5, 7.5, false);
+  drawText(data.electronicsEngineerPTRIssuedAt || "Sto. Tomas, Pampanga", 55.0, 240.0, 7.5, false, 22);
+  drawText(data.electronicsEngineerTIN || "789-012-345-000", 185.0, 240.0, 7.5, false);
+
+  // ==========================================
+  // BOX 4: SUPERVISOR IN-CHARGE (ECE / PECE)
+  // ==========================================
+  const sameAsDesign = Boolean(data.sameAsDesignElectronicsEngineer);
+  const supName = (sameAsDesign ? peceName : (data.electronicsSupervisorName || peceName)).toUpperCase();
+  const supSig = sameAsDesign ? (data.electronicsEngineerSignature || data.electronicsSupervisorSignature) : data.electronicsSupervisorSignature;
+
+  if (supSig) {
+    await embedSignatureImage(doc, p1, supSig, 360.0, 308.5, 100, 28);
+  }
+  drawCenteredText(supName, 410.8, 310.5, 7.5, true, 30);
+  drawText((sameAsDesign ? (data.electronicsEngineerSignedDate || data.submissionDate) : data.electronicsSupervisorSignedDate) || "Jan 08, 2026", 524.0, 310.5, 7.5, false);
+
+  const supAddr = sameAsDesign ? (data.electronicsEngineerAddress || "Sto. Tomas, Pampanga") : (data.electronicsSupervisorAddress || "Sto. Tomas, Pampanga");
+  const supPrc = sameAsDesign ? (data.electronicsEngineerPRC || "PRC-PECE-0038912") : (data.electronicsSupervisorPRC || "PRC-ECE-0045210");
+  const supPrcVal = sameAsDesign ? (data.electronicsEngineerPRCValidity || "2028-08-20") : (data.electronicsSupervisorPRCValidity || "2027-09-15");
+  const supPtr = sameAsDesign ? (data.electronicsEngineerPTR || "PTR-ST-2026-7782") : (data.electronicsSupervisorPTR || "PTR-ST-2026-8890");
+  const supPtrDate = sameAsDesign ? (data.electronicsEngineerPTRIssued || "Jan 05, 2026") : (data.electronicsSupervisorPTRDate || "Jan 08, 2026");
+  const supIssuedAt = sameAsDesign ? (data.electronicsEngineerPTRIssuedAt || "Sto. Tomas, Pampanga") : (data.electronicsSupervisorPTRIssuedAt || "Sto. Tomas, Pampanga");
+  const supTin = sameAsDesign ? (data.electronicsEngineerTIN || "789-012-345-000") : (data.electronicsSupervisorTIN || "345-678-901-000");
+
+  drawText(supAddr, 355.0, 277.5, 7.5, false, 45);
+  drawText(supPrc, 355.0, 265.0, 7.5, false);
+  drawText(supPrcVal, 485.0, 265.0, 7.5, false);
+  drawText(supPtr, 355.0, 252.5, 7.5, false);
+  drawText(supPtrDate, 498.0, 252.5, 7.5, false);
+  drawText(supIssuedAt, 355.0, 240.0, 7.5, false, 22);
+  drawText(supTin, 475.0, 240.0, 7.5, false);
+
+  // ==========================================
+  // BOX 5: BUILDING OWNER
+  // ==========================================
+  const ownerName = (data.applicantName || "JUAN DELA CRUZ").toUpperCase();
+  if (data.applicantSignature) {
+    await embedSignatureImage(doc, p1, data.applicantSignature, 123.0, 182.5, 100, 28);
+  }
+  drawCenteredText(ownerName, 173.0, 184.5, 8.5, true, 30);
+  drawText(data.applicantSignedDate || data.submissionDate || "Jan 08, 2026", 150.0, 165.0, 7.5, false);
+
+  const ownerAddr = data.applicantAddress || data.projectAddress || "123 Rizal St., Poblacion, Sto. Tomas, Pampanga";
+  drawText(ownerAddr, 60.0, 147.0, 7.5, false, 48);
+
+  drawText(data.govIdNo || "CTC-2026-00192", 24.0, 100.5, 7.5, false);
+  drawText(data.govIdDateIssued || data.applicantGovIdDateIssued || "Jan 08, 2026", 118.0, 100.5, 7.5, false);
+  drawText(data.govIdPlaceIssued || data.applicantGovIdPlaceIssued || "Sto. Tomas, Pampanga", 220.0, 100.5, 7.5, false, 28);
+
+  // ==========================================
+  // BOX 6: WITH MY CONSENT: LOT OWNER
+  // ==========================================
+  if (data.lotOwnerConsent) {
+    const lotName = (data.lotOwnerName || "DAVE SICAT").toUpperCase();
+    if (data.lotOwnerSignature) {
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 425.0, 182.5, 100, 28);
+    }
+    drawCenteredText(lotName, 475.0, 184.5, 8.5, true, 30);
+    drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", 454.0, 165.0, 7.5, false);
+
+    const lotAddr = data.lotOwnerAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga";
+    drawText(lotAddr, 355.0, 147.0, 7.5, false, 48);
+
+    drawText(data.lotOwnerGovIdNo || "PRC-ID-00987654", 328.0, 100.5, 7.5, false);
+    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 438.0, 100.5, 7.5, false);
+    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas, Pampanga", 535.0, 100.5, 7.5, false, 28);
+  }
 
   return await doc.saveAsBase64({ dataUri: false });
 }
