@@ -1036,6 +1036,50 @@ export function parseApplicantAddress(data: UnifiedPermitFormData): {
   return { noStreet, barangay, municipality, zipCode, contactNo, email };
 }
 
+function parseBox1AddressParts(data: UnifiedPermitFormData): {
+  no: string;
+  street: string;
+  barangay: string;
+  municipality: string;
+  zipCode: string;
+  phone: string;
+} {
+  const base = parseApplicantAddress(data);
+  let no = "";
+  let street = "";
+
+  const cleanNoStreet = (base.noStreet || data.applicantNoStreet || "").trim();
+  // Match leading number: e.g. "123", "123-A", "#123"
+  const m = cleanNoStreet.match(/^#?(\d+[-\w/]*)\s+(.+)$/i);
+  if (m) {
+    no = m[1].trim();
+    street = m[2].trim();
+  } else {
+    const mLot = cleanNoStreet.match(/^(lot\s+\d+[-\w]*[\s,]+(blk|block)?\s*\d*)\s*(.*)$/i);
+    if (mLot) {
+      no = mLot[1].trim();
+      street = mLot[3].trim() || cleanNoStreet;
+    } else if (/^\d+[-\w/]*$/.test(cleanNoStreet)) {
+      no = cleanNoStreet;
+      street = "";
+    } else {
+      no = "";
+      street = cleanNoStreet;
+    }
+  }
+
+  const barangay = (data.applicantBarangay || data.barangay || base.barangay || "Poblacion").trim();
+  let municipality = (data.applicantMunicipality || data.city || data.municipality || base.municipality || "Sto. Tomas").trim();
+  const province = (data.applicantProvince || "Pampanga").trim();
+  if (province && !municipality.toLowerCase().includes(province.toLowerCase())) {
+    municipality = `${municipality}, ${province}`;
+  }
+  const zipCode = (data.applicantZipCode || data.zipCode || base.zipCode || "2020").trim();
+  const phone = (data.applicantPhone || base.contactNo || "0917-123-4567").trim();
+
+  return { no, street, barangay, municipality, zipCode, phone };
+}
+
 function drawContactAndEmail(
   page: any,
   contactNo: string,
@@ -3376,11 +3420,17 @@ export async function generateDemolitionPermitPdf(data: UnifiedPermitFormData): 
   drawText((data.projectType?.category || data.occupancyClass || "RESIDENTIAL").toUpperCase(), 395.0, 574.0, 8.0, true, 24);
 
   // Box 1: Row 3 - Address, Telephone, Barangay, City/Municipality, Zip Code
-  drawText(data.applicantAddress || "123 Rizal St.", 145.0, 556.5, 7.0, false, 16);
-  drawText(data.applicantPhone || "0917-123-4567", 102.0, 547.4, 7.5, false, 16);
-  drawText(data.barangay || "Poblacion", 215.0, 546.0, 7.5, false, 18);
-  drawText(data.city || data.municipality || "Sto. Tomas, Pampanga", 320.0, 546.0, 7.5, false, 20);
-  drawText(data.zipCode || "2020", 450.0, 546.0, 7.5, false, 10);
+  const addr = parseBox1AddressParts(data);
+  if (addr.no) {
+    const noFontSize = addr.no.length > 5 ? 5.8 : addr.no.length > 3 ? 6.5 : 7.2;
+    drawText(addr.no, 93.0, 556.5, noFontSize, false, 8);
+  }
+  const streetFontSize = addr.street.length > 22 ? 5.8 : addr.street.length > 16 ? 6.5 : 7.2;
+  drawText(addr.street, 145.0, 556.5, streetFontSize, false, 28);
+  drawText(addr.phone, 102.0, 546.5, 7.5, false, 16);
+  drawText(addr.barangay, 215.0, 546.5, 7.5, false, 18);
+  drawText(addr.municipality, 320.0, 546.5, 7.5, false, 24);
+  drawText(addr.zipCode, 450.0, 546.5, 7.5, false, 10);
 
   // Box 1: Row 4 - Location of Demolition Works
   // Sub-row 1 (y = 531.3): LOT NO., BLK NO., TCT NO., TAX DEC. NO.
@@ -3556,11 +3606,17 @@ export async function generateFencingPermitPdf(data: UnifiedPermitFormData): Pro
   drawText((data.projectType?.category || data.occupancyClass || "RESIDENTIAL").toUpperCase(), 395.0, 574.0, 8.0, true, 24);
 
   // Box 1: Row 3 - Address, Telephone, Barangay, City/Municipality, Zip Code
-  drawText(data.applicantAddress || "123 Rizal St.", 145.0, 556.5, 7.0, false, 16);
-  drawText(data.applicantPhone || "0917-123-4567", 102.0, 547.4, 7.5, false, 16);
-  drawText(data.barangay || "Poblacion", 215.0, 546.0, 7.5, false, 18);
-  drawText(data.city || data.municipality || "Sto. Tomas, Pampanga", 320.0, 546.0, 7.5, false, 20);
-  drawText(data.zipCode || "2020", 450.0, 546.0, 7.5, false, 10);
+  const addr = parseBox1AddressParts(data);
+  if (addr.no) {
+    const noFontSize = addr.no.length > 5 ? 5.8 : addr.no.length > 3 ? 6.5 : 7.2;
+    drawText(addr.no, 93.0, 556.5, noFontSize, false, 8);
+  }
+  const streetFontSize = addr.street.length > 22 ? 5.8 : addr.street.length > 16 ? 6.5 : 7.2;
+  drawText(addr.street, 145.0, 556.5, streetFontSize, false, 28);
+  drawText(addr.phone, 102.0, 546.5, 7.5, false, 16);
+  drawText(addr.barangay, 215.0, 546.5, 7.5, false, 18);
+  drawText(addr.municipality, 320.0, 546.5, 7.5, false, 24);
+  drawText(addr.zipCode, 450.0, 546.5, 7.5, false, 10);
 
   // Box 1: Row 4 - Location of Fencing Works
   // Sub-row 1 (y = 531.3): LOT NO., BLK NO., TCT NO., TAX DEC. NO.
