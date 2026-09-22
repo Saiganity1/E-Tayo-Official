@@ -84,7 +84,14 @@ button {
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
-  background-color: var(--bg-main);
+  background-color: #02163b;
+  background-image: 
+    radial-gradient(circle at 10% 15%, rgba(0, 56, 168, 0.55) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(37, 99, 235, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(2, 22, 66, 0.7) 0%, transparent 65%),
+    linear-gradient(135deg, #021a4f 0%, #0038A8 48%, #03163d 100%);
+  background-attachment: fixed;
+  background-size: cover;
 }
 
 .dashboard-main {
@@ -603,7 +610,7 @@ button {
 .sidebar {
   width: 290px;
   height: 100vh;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
   color: var(--text-primary);
@@ -614,8 +621,8 @@ button {
   left: 0;
   z-index: 50;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  border-right: 1px solid rgba(255,255,255,0.8);
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.03);
+  border-right: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.12);
 }
 
 @media (max-width: 1024px) {
