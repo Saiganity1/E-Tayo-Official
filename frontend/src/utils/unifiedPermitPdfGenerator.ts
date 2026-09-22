@@ -909,26 +909,46 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   drawText(data.projectAddress || "LOT 12, BLOCK 4, SUNSET VALLEY SUBD.", 72, 208.0, 7.5, false, 45);
 
   // Gov't Issued ID No. - fit inside the cell (x=33 to x=150) so it never crosses the vertical line into "Date Issued"
-  const cleanGovId = safeText(data.govIdNo || "CTC-2026-00192").trim();
-  const govIdSize = fontRegular.widthOfTextAtSize(cleanGovId, 6.5) > 56 ? 5.8 : 6.5;
-  p1.drawText(cleanGovId, { x: 88, y: 194.5, size: govIdSize, font: fontRegular, color: darkNavy });
-  drawText(data.govIdDateIssued || "Jan 10, 2024", 175, 194.5, 7.0, false);
-  drawText(data.govIdPlaceIssued || "Sto. Tomas", 260, 194.5, 7.0, false);
+  const rawGovId = safeText(data.govIdNo || "CTC-2026-00192").trim();
+  let cleanGovId = rawGovId.replace(/^[a-zA-Z\s-]+/g, "").trim() || rawGovId;
+  if (cleanGovId.length > 9) cleanGovId = cleanGovId.slice(0, 9);
+  let govIdSize = cleanGovId.length > 8 ? 5.2 : cleanGovId.length > 6 ? 5.5 : 6.0;
+  p1.drawText(cleanGovId, { x: 88.0, y: 194.5, size: govIdSize, font: fontRegular, color: darkNavy });
+
+  const rawDate = safeText(data.govIdDateIssued || "Jan 10, 2024").trim();
+  let dateSize = 5.5;
+  const dateW = fontRegular.widthOfTextAtSize(rawDate, dateSize);
+  if (dateW > 34.0) dateSize = Math.max(4.5, dateSize * (34.0 / dateW));
+  p1.drawText(rawDate, { x: 168.0, y: 194.5, size: dateSize, font: fontRegular, color: darkNavy });
+
+  const rawPlace = safeText(data.govIdPlaceIssued || "Sto. Tomas").trim();
+  let placeSize = 5.8;
+  const placeW = fontRegular.widthOfTextAtSize(rawPlace, placeSize);
+  if (placeW > 36.0) placeSize = Math.max(4.5, placeSize * (36.0 / placeW));
+  p1.drawText(rawPlace, { x: 246.0, y: 194.5, size: placeSize, font: fontRegular, color: darkNavy });
 
   // Box 4: With My Consent: Lot Owner / Authorized Representative
   if (data.lotOwnerConsent || data.lotOwnerName) {
-    const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase();
+    const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase().trim();
+    const lotNameW = fontBold.widthOfTextAtSize(lotName, 8.5);
+    const lotNameX = Math.max(330.0, 422.5 - (lotNameW / 2));
+    drawText(lotName, lotNameX, 235.0, 8.5, true, 26);
+
     if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 345, 234.0, 110, 30);
+      const sigW = 100;
+      const sigH = 20;
+      const sigX = Math.max(330.0, 422.5 - sigW / 2);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 234.0, sigW, sigH);
     }
-    drawText(lotName, 345, 230.0, 8.5, true, 26);
-    drawText(data.submissionDate || "Sep 17, 2026", 522, 228.0, 7.5, false);
-    drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", 355, 208.0, 7.5, false, 45);
+
+    drawText(data.lotOwnerSignedDate || data.submissionDate || "Sep 17, 2026", 535.0, 234.5, 7.0, false);
+    drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", 355.0, 212.0, 7.5, false, 45);
+
     if (data.lotOwnerGovIdNo) {
-      const cleanLotGovId = safeText(data.lotOwnerGovIdNo).trim();
-      let lotGovIdSize = 5.5;
-      const w = fontRegular.widthOfTextAtSize(cleanLotGovId, lotGovIdSize);
-      if (w > 33.0) lotGovIdSize = Math.max(4.5, lotGovIdSize * (33.0 / w));
+      const rawLotGovId = safeText(data.lotOwnerGovIdNo).trim();
+      let cleanLotGovId = rawLotGovId.replace(/^[a-zA-Z\s-]+/g, "").trim() || rawLotGovId;
+      if (cleanLotGovId.length > 9) cleanLotGovId = cleanLotGovId.slice(0, 9);
+      let lotGovIdSize = cleanLotGovId.length > 8 ? 5.2 : cleanLotGovId.length > 6 ? 5.5 : 6.0;
       p1.drawText(cleanLotGovId, { x: 374.0, y: 194.5, size: lotGovIdSize, font: fontRegular, color: darkNavy });
     }
     if (data.lotOwnerGovIdDateIssued) {
@@ -1391,7 +1411,7 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
   drawText(supTIN, 485, 198.0, 7.5, false);
 
   // Box 5: Building Owner
-  const applicantUpper = (data.applicantName || "JUAN DELA CRUZ").toUpperCase();
+  const applicantUpper = (data.applicantName || "JUAN DELA CRUZ").toUpperCase().trim();
   const nameWidth = fontBold.widthOfTextAtSize(applicantUpper, 8.5);
   // Signature line is from x=73.6 to x=238.8, center is 156.2
   const nameX = 156.2 - (nameWidth / 2);
@@ -1399,11 +1419,14 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
 
   // Embed user's authentic E-Signature if provided
   if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 156.2 - 55, 106.0, 110, 32);
+    const sigW = 105;
+    const sigH = 26;
+    const sigX = Math.max(72.0, 156.2 - sigW / 2);
+    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 117.0, sigW, sigH);
   }
 
   // Date on line
-  drawText(data.submissionDate || data.govIdDateIssued || "Jan 08, 2026", 136.0, 89.5, 7.5, false);
+  drawText(data.submissionDate || data.govIdDateIssued || "Jan 08, 2026", 136.0, 89.0, 7.2, false);
 
   // Address - centered cleanly in cell between borders y=58.7 and y=72.4
   const rawAddr = safeText(data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga").trim();
@@ -1416,14 +1439,12 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
   p1.drawText(rawAddr, { x: 65.0, y: 63.5, size: addrSize, font: fontRegular, color: darkNavy });
 
   // C.T.C. No. - fit inside Column 1 (x=26.8 to 114.0) without overflowing into "Date Issued"
-  const cleanGovId = safeText(data.govIdNo || "CTC-2026-00192").trim();
-  let govIdSize = 6.8;
-  const maxGovIdW = 41.5;
-  const govIdW = fontRegular.widthOfTextAtSize(cleanGovId, govIdSize);
-  if (govIdW > maxGovIdW) {
-    govIdSize = Math.max(5.0, govIdSize * (maxGovIdW / govIdW));
-  }
-  p1.drawText(cleanGovId, { x: 68.0, y: 50.0, size: govIdSize, font: fontRegular, color: darkNavy });
+  const rawAppCtc = (data.applicantCtcNo || data.govIdNo || "00192847").trim();
+  let cleanAppCtc = rawAppCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+  if (!cleanAppCtc) cleanAppCtc = rawAppCtc;
+  if (cleanAppCtc.length > 9) cleanAppCtc = cleanAppCtc.slice(0, 9);
+  const appCtcFontSize = cleanAppCtc.length > 8 ? 5.5 : cleanAppCtc.length > 6 ? 6.0 : 6.5;
+  p1.drawText(cleanAppCtc, { x: 68.0, y: 50.0, size: appCtcFontSize, font: fontRegular, color: darkNavy });
 
   // Date Issued - fit inside Column 2 (x=114.5 to 201.6)
   const rawDateIssued = safeText(data.govIdDateIssued || "Jan 10, 2024").trim();
@@ -1447,16 +1468,19 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
 
   // Box 6: WITH MY CONSENT: LOT OWNER
   if (data.lotOwnerConsent || data.lotOwnerName) {
-    const lotUpper = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase();
+    const lotUpper = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase().trim();
     const lotNameW = fontBold.widthOfTextAtSize(lotUpper, 8.5);
-    const lotNameX = 433.4 - (lotNameW / 2);
+    const lotNameX = Math.max(345.0, 433.4 - (lotNameW / 2));
     drawText(lotUpper, lotNameX, 111.5, 8.5, true);
 
     if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 433.4 - 55, 106.0, 110, 32);
+      const sigW = 105;
+      const sigH = 26;
+      const sigX = Math.max(345.0, 433.4 - sigW / 2);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 117.0, sigW, sigH);
     }
 
-    drawText(data.submissionDate || "Jan 08, 2026", 413.0, 89.5, 7.5, false);
+    drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", 412.0, 89.0, 7.2, false);
 
     const rawLotAddr = safeText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas").trim();
     let lotAddrSize = 7.0;
@@ -1467,18 +1491,16 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
     }
     p1.drawText(rawLotAddr, { x: 345.0, y: 63.5, size: lotAddrSize, font: fontRegular, color: darkNavy });
 
-    const rawLotGovId = safeText(data.lotOwnerGovIdNo || "PRC-ID-00987654").trim();
-    if (rawLotGovId) {
-      let lotGovIdSize = 6.8;
-      const lotGovIdW = fontRegular.widthOfTextAtSize(rawLotGovId, lotGovIdSize);
-      if (lotGovIdW > 41.5) {
-        lotGovIdSize = Math.max(5.0, lotGovIdSize * (41.5 / lotGovIdW));
-      }
-      p1.drawText(rawLotGovId, { x: 347.0, y: 50.0, size: lotGovIdSize, font: fontRegular, color: darkNavy });
-    }
+    const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "00881923").trim();
+    let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+    if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
+    if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
+    const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
+    p1.drawText(cleanLotCtc, { x: 346.0, y: 50.0, size: lotCtcFontSize, font: fontRegular, color: darkNavy });
+
     const rawLotDate = safeText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024").trim();
     if (rawLotDate) {
-      drawText(rawLotDate, 435.5, 50.0, 6.5, false);
+      drawText(rawLotDate, 436.0, 50.0, 6.5, false);
     }
     const rawLotPlace = safeText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas").trim();
     if (rawLotPlace) {
@@ -1735,35 +1757,46 @@ export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): 
   const ownerAddr = data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga";
   drawText(ownerAddr, 75.0, 114.0, 7.5, false, 45);
 
-  drawText(data.govIdNo || "CTC-2026-00192", 30.0, 92.0, 7.0, false, 16);
-  drawText(data.govIdDateIssued || "Jan 10, 2026", 115.0, 92.0, 7.5, false, 14);
-  drawText(data.govIdPlaceIssued || "Sto. Tomas", 205.0, 92.0, 7.5, false, 15);
+  const rawAppCtc = (data.applicantCtcNo || data.govIdNo || "CTC-2026-00192").trim();
+  let cleanAppCtc = rawAppCtc.replace(/^[a-zA-Z\s-]+/g, "").trim() || rawAppCtc;
+  if (cleanAppCtc.length > 9) cleanAppCtc = cleanAppCtc.slice(0, 9);
+  const appCtcFontSize = cleanAppCtc.length > 8 ? 5.5 : cleanAppCtc.length > 6 ? 6.0 : 6.5;
+  drawText(cleanAppCtc, 55.0, 92.0, appCtcFontSize, false, 12);
+  drawText(data.govIdDateIssued || "Jan 10, 2026", 115.0, 92.0, 6.8, false, 14);
+  drawText(data.govIdPlaceIssued || "Sto. Tomas", 185.0, 92.0, 6.8, false, 15);
 
   // Box 6: WITH MY CONSENT: LOT OWNER
   if (data.lotOwnerConsent || data.lotOwnerName) {
-    const lotUpper = safeText(data.lotOwnerName || "MARIA CLARA DELA CRUZ").toUpperCase();
+    const lotUpper = safeText(data.lotOwnerName || "MARIA CLARA DELA CRUZ").toUpperCase().trim();
     const lotNameW = fontBold.widthOfTextAtSize(lotUpper, 8.5);
-    const lotNameX = 425.0 - (lotNameW / 2);
+    const lotNameX = Math.max(345.0, 420.0 - (lotNameW / 2));
     drawText(lotUpper, lotNameX, 157.0, 8.5, true);
 
     if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 425.0 - 55, 151.0, 110, 32);
+      const sigW = 100;
+      const sigH = 20;
+      const sigX = Math.max(345.0, 420.0 - sigW / 2);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 156.0, sigW, sigH);
     }
 
     const rawLotDate = data.lotOwnerSignedDate || rawOwnerDate;
-    drawText(rawLotDate, 405.0, 139.5, 7.5, false);
+    drawText(rawLotDate, 400.0, 136.5, 7.2, false);
 
     const lotAddr = safeText(data.lotOwnerAddress || data.projectAddress || "Sto. Tomas, Pampanga").trim();
-    drawText(lotAddr, 345.0, 116.5, 7.5, false, 45);
+    drawText(lotAddr, 350.0, 116.0, 7.5, false, 45);
 
-    const lotGovId = safeText(data.lotOwnerGovIdNo || "CTC-2026-00871").trim();
-    drawText(lotGovId, 305.0, 94.0, 7.5, false, 16);
+    const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "00871923").trim();
+    let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+    if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
+    if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
+    const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
+    drawText(cleanLotCtc, 340.0, 93.0, lotCtcFontSize, false, 12);
 
     const lotDate = safeText(data.lotOwnerGovIdDateIssued || "Jan 12, 2026").trim();
-    drawText(lotDate, 392.0, 94.0, 7.5, false, 14);
+    drawText(lotDate, 390.0, 93.0, 6.8, false, 14);
 
     const lotPlace = safeText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas").trim();
-    drawText(lotPlace, 475.0, 94.0, 7.5, false, 15);
+    drawText(lotPlace, 465.0, 93.0, 6.8, false, 15);
   }
 
   return await doc.saveAsBase64({ dataUri: false });
@@ -2744,41 +2777,65 @@ export async function generateMechanicalPermitPdf(data: UnifiedPermitFormData): 
   // ==========================================
   // BOX 5: BUILDING OWNER
   // ==========================================
-  const ownerName = safeText(data.applicantName || "JUAN DELA CRUZ").toUpperCase();
-  if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 100, 168.0, 110, 26);
-  }
+  const ownerName = safeText(data.applicantName || "JUAN DELA CRUZ").toUpperCase().trim();
   const ownerWidth = fontBold.widthOfTextAtSize(ownerName, 8.5);
-  drawText(ownerName, 156.0 - ownerWidth / 2, 176.5, 8.5, true);
-  drawText(data.submissionDate || "Jan 08, 2026", 135.0, 151.8, 7.5, false);
+  const ownerX = Math.max(50.0, 150.0 - ownerWidth / 2);
+  drawText(ownerName, ownerX, 172.5, 8.5, true);
+
+  if (data.applicantSignature) {
+    const sigW = 100;
+    const sigH = 20;
+    const sigX = Math.max(50.0, 150.0 - sigW / 2);
+    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 171.0, sigW, sigH);
+  }
+
+  drawText(data.submissionDate || "Jan 08, 2026", 180.0, 151.0, 7.5, false);
 
   // Address (cell y: 129.3 -> 148.2, label 'ADDRESS' at x: 28.8)
-  drawText(data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga", 75.0, 135.5, 7.5, false, 36);
+  drawText(data.applicantAddress || data.projectAddress || "Sto. Tomas, Pampanga", 70.0, 136.0, 7.5, false, 36);
 
   // C.T.C NO. (x: 23.4 -> 120.0), Date Issued (x: 120.0 -> 196.5), Place Issued (x: 196.5 -> 288.8)
-  drawText(data.applicantCtcNo || data.govIdNo || "CTC-2026-00192", 30.0, 113.5, 7.0, false, 16);
-  drawText(data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 08, 2026", 125.0, 113.5, 7.0, false, 14);
-  drawText(data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 202.0, 113.5, 7.0, false, 16);
+  const rawAppCtc = (data.applicantCtcNo || data.govIdNo || "CTC-2026-00192").trim();
+  let cleanAppCtc = rawAppCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+  if (!cleanAppCtc) cleanAppCtc = rawAppCtc;
+  if (cleanAppCtc.length > 9) cleanAppCtc = cleanAppCtc.slice(0, 9);
+  const appCtcFontSize = cleanAppCtc.length > 8 ? 5.5 : cleanAppCtc.length > 6 ? 6.0 : 6.5;
+  drawText(cleanAppCtc, 68.0, 117.0, appCtcFontSize, false, 9);
+
+  drawText(data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 08, 2026", 175.0, 117.0, 6.2, false, 12);
+  drawText(data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 253.0, 117.0, 6.2, false, 14);
 
   // ==========================================
   // BOX 6: WITH MY CONSENT: LOT OWNER
   // ==========================================
   if (data.lotOwnerConsent || data.lotOwnerName) {
-    const lotName = safeText(data.lotOwnerName || "DAVE SICAT").toUpperCase();
-    if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 390, 168.0, 110, 26);
-    }
+    const lotName = safeText(data.lotOwnerName || "DAVE SICAT").toUpperCase().trim();
     const lotWidth = fontBold.widthOfTextAtSize(lotName, 8.5);
-    drawText(lotName, 442.65 - lotWidth / 2, 176.5, 8.5, true);
-    drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", 425.0, 151.1, 7.5, false);
+    const lotX = Math.max(340.0, 451.5 - lotWidth / 2);
+    drawText(lotName, lotX, 172.5, 8.5, true);
+
+    if (data.lotOwnerSignature) {
+      const sigW = 100;
+      const sigH = 20;
+      const sigX = Math.max(340.0, 451.5 - sigW / 2);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 171.0, sigW, sigH);
+    }
+
+    drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", 422.0, 151.0, 7.5, false);
 
     // Address (cell y: 129.3 -> 148.2, label 'ADDRESS' at x: 313.0)
-    drawText(data.lotOwnerAddress || "105 Sitio Visitas, Sto. Tomas, Pampanga", 365.0, 135.5, 7.5, false, 48);
+    drawText(data.lotOwnerAddress || "105 Sitio Visitas, Sto. Tomas, Pampanga", 355.0, 136.0, 7.5, false, 48);
 
     // C.T.C NO. (x: 307.3 -> 404.1), Date Issued (x: 404.1 -> 480.6), Place Issued (x: 480.6 -> 578.0)
-    drawText(data.lotOwnerGovIdNo || "PRC-ID-00987654", 312.0, 113.5, 7.0, false, 16);
-    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 410.0, 113.5, 7.0, false, 14);
-    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 486.0, 113.5, 7.0, false, 16);
+    const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "PRC-ID-00987654").trim();
+    let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+    if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
+    if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
+    const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
+    drawText(cleanLotCtc, 354.0, 117.0, lotCtcFontSize, false, 9);
+
+    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 458.0, 117.0, 6.2, false, 12);
+    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 537.0, 117.0, 6.2, false, 14);
   }
 
   return await doc.saveAsBase64({ dataUri: false });
@@ -3028,37 +3085,55 @@ export async function generateElectronicsPermitPdf(data: UnifiedPermitFormData):
   // ==========================================
   // BOX 5: BUILDING OWNER
   // ==========================================
-  const ownerName = (data.applicantName || "JUAN DELA CRUZ").toUpperCase();
+  const ownerName = (data.applicantName || "JUAN DELA CRUZ").toUpperCase().trim();
   if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 123.0, 182.5, 100, 28);
+    const sigW = 100;
+    const sigH = 20;
+    const sigX = Math.max(45.0, 153.0 - sigW / 2);
+    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 180.0, sigW, sigH);
   }
-  drawCenteredText(ownerName, 173.0, 184.5, 8.5, true, 30);
-  drawText(data.applicantSignedDate || data.submissionDate || "Jan 08, 2026", 150.0, 165.0, 7.5, false);
+  drawCenteredText(ownerName, 153.0, 184.5, 8.5, true, 30);
+  drawText(data.applicantSignedDate || data.submissionDate || "Jan 08, 2026", 150.0, 162.0, 7.2, false);
 
   const ownerAddr = data.applicantAddress || data.projectAddress || "123 Rizal St., Poblacion, Sto. Tomas, Pampanga";
-  drawText(ownerAddr, 60.0, 147.0, 7.5, false, 48);
+  drawText(ownerAddr, 70.0, 140.0, 7.5, false, 48);
 
-  drawText(data.govIdNo || "CTC-2026-00192", 24.0, 100.5, 7.5, false);
-  drawText(data.govIdDateIssued || data.applicantGovIdDateIssued || "Jan 08, 2026", 118.0, 100.5, 7.5, false);
-  drawText(data.govIdPlaceIssued || data.applicantGovIdPlaceIssued || "Sto. Tomas, Pampanga", 220.0, 100.5, 7.5, false, 28);
+  const rawAppCtc = (data.applicantCtcNo || data.govIdNo || "CTC-2026-00192").trim();
+  let cleanAppCtc = rawAppCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+  if (!cleanAppCtc) cleanAppCtc = rawAppCtc;
+  if (cleanAppCtc.length > 9) cleanAppCtc = cleanAppCtc.slice(0, 9);
+  const appCtcFontSize = cleanAppCtc.length > 8 ? 5.5 : cleanAppCtc.length > 6 ? 6.0 : 6.5;
+  drawText(cleanAppCtc, 70.0, 101.0, appCtcFontSize, false, 9);
+
+  drawText(data.govIdDateIssued || data.applicantGovIdDateIssued || "Jan 08, 2026", 172.0, 101.0, 6.2, false, 12);
+  drawText(data.govIdPlaceIssued || data.applicantGovIdPlaceIssued || "Sto. Tomas", 262.0, 101.0, 6.2, false, 16);
 
   // ==========================================
   // BOX 6: WITH MY CONSENT: LOT OWNER
   // ==========================================
-  if (data.lotOwnerConsent) {
-    const lotName = (data.lotOwnerName || "DAVE SICAT").toUpperCase();
+  if (data.lotOwnerConsent || data.lotOwnerName) {
+    const lotName = safeText(data.lotOwnerName || "DAVE SICAT").toUpperCase().trim();
     if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 425.0, 182.5, 100, 28);
+      const sigW = 100;
+      const sigH = 20;
+      const sigX = Math.max(340.0, 450.0 - sigW / 2);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 180.0, sigW, sigH);
     }
-    drawCenteredText(lotName, 475.0, 184.5, 8.5, true, 30);
-    drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", 454.0, 165.0, 7.5, false);
+    drawCenteredText(lotName, 450.0, 184.5, 8.5, true, 30);
+    drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", 450.0, 162.0, 7.2, false);
 
     const lotAddr = data.lotOwnerAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga";
-    drawText(lotAddr, 355.0, 147.0, 7.5, false, 48);
+    drawText(lotAddr, 370.0, 140.0, 7.5, false, 48);
 
-    drawText(data.lotOwnerGovIdNo || "PRC-ID-00987654", 328.0, 100.5, 7.5, false);
-    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 438.0, 100.5, 7.5, false);
-    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas, Pampanga", 535.0, 100.5, 7.5, false, 28);
+    const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "PRC-ID-00987654").trim();
+    let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+    if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
+    if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
+    const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
+    drawText(cleanLotCtc, 370.0, 101.0, lotCtcFontSize, false, 9);
+
+    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 465.0, 101.0, 6.2, false, 12);
+    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 555.0, 101.0, 6.2, false, 16);
   }
 
   return await doc.saveAsBase64({ dataUri: false });
@@ -3517,29 +3592,61 @@ export async function generateDemolitionPermitPdf(data: UnifiedPermitFormData): 
 
   // Box 3: Applicant & With My Consent: Lot Owner
   // Left: Applicant
-  const appFullName = (data.applicantName || `${firstName} ${lastName}`).toUpperCase();
+  const appFullName = (data.applicantName || `${firstName} ${lastName}`).toUpperCase().trim();
+  const appNameW = fontBold.widthOfTextAtSize(appFullName, 8.0);
+  const appNameX = Math.max(70.0, 157.5 - appNameW / 2);
+  drawText(appFullName, appNameX, 290.0, 8.0, true, 26);
+
   if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 75, 292.0, 110, 26);
+    const sigW = 100;
+    const sigH = 20;
+    const sigX = Math.max(70.0, 157.5 - sigW / 2);
+    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 289.0, sigW, sigH);
   }
-  drawText(appFullName, 80.0, 288.0, 8.5, true, 28);
-  drawText(data.submissionDate || "Oct 01, 2026", 150.0, 268.5, 7.5, false, 16);
-  drawText(data.applicantAddress || "123 Rizal St., Poblacion, Sto. Tomas", 80.0, 254.7, 7.0, false, 36);
-  drawText(data.govIdNo || "CTC-2026-00192", 75.0, 239.0, 7.0, false, 14);
-  drawText(data.govIdDateIssued || "Jan 08, 2026", 155.0, 239.0, 7.0, false, 14);
-  drawText(data.govIdPlaceIssued || "Sto. Tomas", 245.0, 239.0, 7.0, false, 14);
+
+  drawText(data.submissionDate || data.applicantSignedDate || "Oct 01, 2026", 140.0, 269.0, 6.8, false, 14);
+
+  const appAddrSummary = `${addr.no ? addr.no + " " : ""}${addr.street || "123 Rizal St."}, ${addr.barangay || "Poblacion"}`.toUpperCase();
+  drawText(appAddrSummary, 75.0, 252.0, 6.8, false, 34);
+
+  const rawAppCtc = (data.applicantCtcNo || data.govIdNo || "00192847").trim();
+  let cleanAppCtc = rawAppCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+  if (!cleanAppCtc) cleanAppCtc = rawAppCtc;
+  if (cleanAppCtc.length > 9) cleanAppCtc = cleanAppCtc.slice(0, 9);
+  const appCtcFontSize = cleanAppCtc.length > 8 ? 5.5 : cleanAppCtc.length > 6 ? 6.0 : 6.5;
+  drawText(cleanAppCtc, 65.0, 227.0, appCtcFontSize, false, 9);
+
+  drawText(data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 08, 2026", 155.0, 227.0, 6.2, false, 12);
+  drawText(data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 245.0, 227.0, 6.2, false, 16);
 
   // Right: With My Consent (Lot Owner)
   if (data.lotOwnerConsent || data.lotOwnerName) {
-    const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase();
+    const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase().trim();
+    const lotNameW = fontBold.widthOfTextAtSize(lotName, 8.0);
+    const lotNameX = Math.max(355.0, 447.5 - lotNameW / 2);
+    drawText(lotName, lotNameX, 290.0, 8.0, true, 26);
+
     if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 345, 292.0, 110, 26);
+      const sigW = 100;
+      const sigH = 20;
+      const sigX = Math.max(355.0, 447.5 - sigW / 2);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 289.0, sigW, sigH);
     }
-    drawText(lotName, 350.0, 288.0, 8.5, true, 28);
-    drawText(data.submissionDate || "Oct 01, 2026", 425.0, 268.7, 7.5, false, 16);
-    drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", 350.0, 254.7, 7.0, false, 36);
-    drawText(data.lotOwnerGovIdNo || "PRC-ID-00987654", 345.0, 239.0, 7.0, false, 14);
-    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 430.0, 239.0, 7.0, false, 14);
-    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 515.0, 239.0, 7.0, false, 14);
+
+    drawText(data.lotOwnerSignedDate || data.submissionDate || "Oct 01, 2026", 425.0, 269.0, 6.8, false, 14);
+
+    const lotAddr = safeText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga").toUpperCase();
+    drawText(lotAddr, 375.0, 252.0, 6.8, false, 34);
+
+    const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "00881923").trim();
+    let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+    if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
+    if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
+    const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
+    drawText(cleanLotCtc, 360.0, 227.0, lotCtcFontSize, false, 9);
+
+    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 455.0, 227.0, 6.2, false, 12);
+    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 545.0, 227.0, 6.2, false, 16);
   }
 
   return await doc.saveAsBase64({ dataUri: false });
@@ -3710,59 +3817,59 @@ export async function generateFencingPermitPdf(data: UnifiedPermitFormData): Pro
   // Applicant
   const applicantFullName = (data.applicantName || `${firstName} ${lastName}`).toUpperCase().trim();
   const appNameW = fontBold.widthOfTextAtSize(applicantFullName, 8.0);
-  const appNameX = Math.max(72.0, 157.5 - appNameW / 2);
-  drawText(p1, applicantFullName, appNameX, 251.5, 8.0, true, 26);
+  const appNameX = Math.max(50.0, 146.5 - appNameW / 2);
+  drawText(p1, applicantFullName, appNameX, 252.5, 8.0, true, 26);
 
   if (data.applicantSignature) {
-    const sigW = 105;
-    const sigH = 26;
-    const sigX = Math.max(72.0, 157.5 - sigW / 2);
-    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 256.0, sigW, sigH);
+    const sigW = 100;
+    const sigH = 20;
+    const sigX = Math.max(50.0, 146.5 - sigW / 2);
+    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 251.0, sigW, sigH);
   }
 
-  drawText(p1, data.applicantSignedDate || data.submissionDate || "Sep 22, 2026", 143.0, 233.5, 6.8, false, 14);
+  drawText(p1, data.applicantSignedDate || data.submissionDate || "Sep 22, 2026", 135.0, 229.5, 6.8, false, 14);
 
   const appAddrSummary = `${addr.noStreet || "123 Rizal St."}, ${addr.barangay || "Poblacion"}`.toUpperCase();
-  drawText(p1, appAddrSummary, 68.0, 219.5, 6.8, false, 32);
+  drawText(p1, appAddrSummary, 70.0, 217.0, 6.8, false, 32);
 
   const rawCtc = (data.applicantCtcNo || data.govIdNo || "00192847").trim();
   let cleanCtc = rawCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
   if (!cleanCtc) cleanCtc = rawCtc;
   if (cleanCtc.length > 9) cleanCtc = cleanCtc.slice(0, 9);
   const ctcFontSize = cleanCtc.length > 8 ? 5.5 : cleanCtc.length > 6 ? 6.0 : 6.5;
-  drawText(p1, cleanCtc, 64.0, 205.0, ctcFontSize, false, 9);
+  drawText(p1, cleanCtc, 50.0, 202.0, ctcFontSize, false, 9);
 
-  drawText(p1, data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 08, 2026", 144.0, 205.0, 6.2, false, 12);
-  drawText(p1, data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 232.0, 205.0, 6.2, false, 16);
+  drawText(p1, data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 08, 2026", 115.0, 202.0, 6.2, false, 12);
+  drawText(p1, data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 195.0, 202.0, 6.2, false, 16);
 
   // Lot Owner (With My Consent)
   if (data.lotOwnerConsent || data.lotOwnerName) {
     const lotOwnerFullName = safeText(data.lotOwnerName || "DAVE SICAT").toUpperCase().trim();
     const lotNameW = fontBold.widthOfTextAtSize(lotOwnerFullName, 8.0);
-    const lotNameX = Math.max(346.0, 431.2 - lotNameW / 2);
-    drawText(p1, lotOwnerFullName, lotNameX, 251.5, 8.0, true, 26);
+    const lotNameX = Math.max(340.0, 436.5 - lotNameW / 2);
+    drawText(p1, lotOwnerFullName, lotNameX, 252.5, 8.0, true, 26);
 
     if (data.lotOwnerSignature) {
-      const sigW = 105;
-      const sigH = 26;
-      const sigX = Math.max(346.0, 431.2 - sigW / 2);
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 256.0, sigW, sigH);
+      const sigW = 100;
+      const sigH = 20;
+      const sigX = Math.max(340.0, 436.5 - sigW / 2);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 251.0, sigW, sigH);
     }
 
-    drawText(p1, data.lotOwnerSignedDate || data.submissionDate || "Sep 22, 2026", 417.0, 233.5, 6.8, false, 14);
+    drawText(p1, data.lotOwnerSignedDate || data.submissionDate || "Sep 22, 2026", 415.0, 229.5, 6.8, false, 14);
 
     const lotAddr = safeText(data.lotOwnerAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga").toUpperCase();
-    drawText(p1, lotAddr, 335.0, 219.5, 6.8, false, 32);
+    drawText(p1, lotAddr, 372.0, 217.0, 6.8, false, 32);
 
     const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "00881923").trim();
     let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
     if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
     if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
     const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
-    drawText(p1, cleanLotCtc, 334.0, 205.0, lotCtcFontSize, false, 9);
+    drawText(p1, cleanLotCtc, 320.0, 202.0, lotCtcFontSize, false, 9);
 
-    drawText(p1, data.lotOwnerGovIdDateIssued || "Jan 10, 2026", 414.0, 205.0, 6.2, false, 12);
-    drawText(p1, data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 500.0, 205.0, 6.2, false, 16);
+    drawText(p1, data.lotOwnerGovIdDateIssued || "Jan 10, 2026", 400.0, 202.0, 6.2, false, 12);
+    drawText(p1, data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 485.0, 202.0, 6.2, false, 16);
   }
 
   // ==========================================
@@ -3926,25 +4033,58 @@ export async function generateExcavationPermitPdf(data: UnifiedPermitFormData): 
   drawText(data.civilEngineerPRC || "PRC-0078923", 80, 245.0, 7.5, false);
   drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 80, 232.0, 7.5, false);
 
-  // Box 4: Building Owner Signature: moved higher (+5px)
+  // Box 4: Building Owner Signature & Lot Owner Consent
+  const appFullName = (data.applicantName || "JUAN DELA CRUZ").toUpperCase().trim();
+  const appNameW = fontBold.widthOfTextAtSize(appFullName, 8.5);
+  const appNameX = Math.max(50.0, 142.5 - appNameW / 2);
+  drawText(appFullName, appNameX, 145.0, 8.5, true);
+
   if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 80, 130.0, 110, 30);
+    const sigW = 100;
+    const sigH = 20;
+    const sigX = Math.max(50.0, 142.5 - sigW / 2);
+    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 143.0, sigW, sigH);
   }
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 130.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 80, 85.0, 7.5, false);
+
+  drawText(data.applicantSignedDate || data.submissionDate || "Sep 17, 2026", 118.0, 122.5, 7.5, false);
+  drawText(data.applicantAddress || data.projectAddress || "123 Rizal St., Poblacion", 70.0, 99.0, 7.5, false, 36);
+
+  const rawAppCtc = (data.applicantCtcNo || data.govIdNo || "CTC-2026-00192").trim();
+  let cleanAppCtc = rawAppCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+  if (!cleanAppCtc) cleanAppCtc = rawAppCtc;
+  if (cleanAppCtc.length > 9) cleanAppCtc = cleanAppCtc.slice(0, 9);
+  const appCtcFontSize = cleanAppCtc.length > 8 ? 5.5 : cleanAppCtc.length > 6 ? 6.0 : 6.5;
+  drawText(cleanAppCtc, 30.0, 65.0, appCtcFontSize, false, 9);
+
+  drawText(data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 08, 2026", 120.0, 65.0, 6.8, false, 12);
+  drawText(data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 215.0, 65.0, 6.8, false, 14);
 
   // Box 4 (Right): With My Consent (Lot Owner)
   if (data.lotOwnerConsent || data.lotOwnerName) {
-    const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase();
+    const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase().trim();
+    const lotNameW = fontBold.widthOfTextAtSize(lotName, 8.5);
+    const lotNameX = Math.max(340.0, 454.0 - lotNameW / 2);
+    drawText(lotName, lotNameX, 145.0, 8.5, true, 26);
+
     if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 380, 136.0, 110, 30);
+      const sigW = 100;
+      const sigH = 20;
+      const sigX = Math.max(340.0, 454.0 - sigW / 2);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 143.0, sigW, sigH);
     }
-    drawText(lotName, 380, 138.0, 8.5, true, 26);
-    drawText(data.submissionDate || "Sep 17, 2026", 435, 122.0, 7.5, false);
-    drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", 350, 103.0, 7.5, false, 40);
-    drawText(data.lotOwnerGovIdNo || "PRC-ID-00987654", 350, 82.0, 7.0, false);
-    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 435, 82.0, 7.0, false);
-    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 525, 82.0, 7.0, false);
+
+    drawText(data.lotOwnerSignedDate || data.submissionDate || "Sep 17, 2026", 418.0, 122.5, 7.5, false);
+    drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", 355.0, 99.0, 7.5, false, 40);
+
+    const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "00881923").trim();
+    let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+    if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
+    if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
+    const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
+    drawText(cleanLotCtc, 310.0, 65.0, lotCtcFontSize, false, 9);
+
+    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 440.0, 65.0, 6.8, false, 12);
+    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 526.0, 65.0, 6.8, false, 14);
   }
 
   return await doc.saveAsBase64({ dataUri: false });
@@ -4024,19 +4164,33 @@ export async function generateSignPermitPdf(data: UnifiedPermitFormData): Promis
   drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 200.0, 8.5, true);
   drawText(data.govIdNo || "CTC-2026-00192", 80, 173.0, 7.5, false);
 
-  // Page 2 Box 8: With My Consent (Lot Owner)
+  // Page 2 Box 7: With My Consent (Lot Owner)
   const p2 = doc.getPageCount() > 1 ? doc.getPage(1) : null;
   if (p2 && (data.lotOwnerConsent || data.lotOwnerName)) {
-    const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase();
+    const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase().trim();
+    const lotNameW = fontBold.widthOfTextAtSize(lotName, 8.5);
+    const lotNameX = Math.max(360.0, 455.0 - lotNameW / 2);
+    p2.drawText(lotName, { x: lotNameX, y: 865.5, size: 8.5, font: fontBold, color: darkNavy });
+
     if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p2, data.lotOwnerSignature, 380, 871.0, 110, 30);
+      const sigW = 100;
+      const sigH = 20;
+      const sigX = Math.max(360.0, 455.0 - sigW / 2);
+      await embedSignatureImage(doc, p2, data.lotOwnerSignature, sigX, 863.0, sigW, sigH);
     }
-    p2.drawText(lotName, { x: 380, y: 873.0, size: 8.5, font: fontBold, color: darkNavy });
-    p2.drawText(data.submissionDate || "Jan 08, 2026", { x: 435, y: 848.0, size: 7.5, font: fontRegular, color: darkNavy });
-    p2.drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", { x: 360, y: 830.0, size: 7.5, font: fontRegular, color: darkNavy });
-    p2.drawText(data.lotOwnerGovIdNo || "PRC-ID-00987654", { x: 360, y: 810.0, size: 7.0, font: fontRegular, color: darkNavy });
-    p2.drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", { x: 445, y: 810.0, size: 7.0, font: fontRegular, color: darkNavy });
-    p2.drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", { x: 530, y: 810.0, size: 7.0, font: fontRegular, color: darkNavy });
+
+    p2.drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", { x: 422.0, y: 845.0, size: 7.2, font: fontRegular, color: darkNavy });
+    p2.drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", { x: 380.0, y: 824.0, size: 7.2, font: fontRegular, color: darkNavy });
+
+    const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "PRC-ID-00987654").trim();
+    let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+    if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
+    if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
+    const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
+    p2.drawText(cleanLotCtc, { x: 325.0, y: 807.5, size: lotCtcFontSize, font: fontRegular, color: darkNavy });
+
+    p2.drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", { x: 405.0, y: 807.5, size: 6.2, font: fontRegular, color: darkNavy });
+    p2.drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", { x: 495.0, y: 807.5, size: 6.2, font: fontRegular, color: darkNavy });
   }
 
   return await doc.saveAsBase64({ dataUri: false });
