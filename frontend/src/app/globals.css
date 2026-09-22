@@ -1,7 +1,7 @@
 :root {
   /* Ultra-Premium Modern Palette */
-  --color-primary: #3b82f6;       
-  --color-primary-hover: #2563eb;
+  --color-primary: #0038A8;       
+  --color-primary-hover: #021a4f;
   --color-primary-light: #eff6ff;
   
   --color-secondary: #0f172a;     
@@ -38,7 +38,7 @@
   --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
   --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
   --shadow-lg: 0 20px 40px -5px rgba(0, 0, 0, 0.04), 0 10px 15px -5px rgba(0, 0, 0, 0.02);
-  --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.15);
+  --shadow-glow: 0 0 30px rgba(0, 56, 168, 0.2);
   
   /* Transitions */
   --transition-fast: 200ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -702,14 +702,14 @@ button {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, #0038A8, #021a4f);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 1.1rem;
   color: white;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 4px 10px rgba(0, 56, 168, 0.25);
 }
 
 .user-info {
@@ -1116,7 +1116,7 @@ button {
 }
 
 .status-badge.pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-.status-badge.under_review { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.status-badge.under_review { background: rgba(0, 56, 168, 0.1); color: #0038A8; }
 .status-badge.approved, .status-badge.released { background: rgba(16, 185, 129, 0.1); color: #10b981; }
 .status-badge.incomplete_requirements { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
 
@@ -1188,7 +1188,7 @@ button {
 .log-item.success { border-left-color: #10b981; }
 .log-item.warning { border-left-color: #f59e0b; }
 .log-item.error { border-left-color: #ef4444; }
-.log-item.info { border-left-color: #3b82f6; }
+.log-item.info { border-left-color: #0038A8; }
 
 .log-time {
   font-family: monospace;
@@ -1511,8 +1511,8 @@ button {
 }
 
 .chat-avatar.applicant-avatar {
-  background: #dbeafe;
-  color: #2563eb;
+  background: #eff6ff;
+  color: #0038A8;
 }
 
 .chat-avatar.staff-avatar {
@@ -1598,10 +1598,10 @@ button {
 }
 
 .message-bubble.me {
-  background: #3b82f6; /* Modern Blue */
+  background: #0038A8; /* Municipal Blue */
   color: #ffffff;
   border-radius: 18px 18px 4px 18px;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 56, 168, 0.2);
 }
 
 .message-bubble.them {
@@ -1651,11 +1651,11 @@ button {
 
 .chat-input:focus {
   background: #ffffff;
-  box-shadow: 0 0 0 2px #bfdbfe;
+  box-shadow: 0 0 0 2px rgba(0, 56, 168, 0.3);
 }
 
 .chat-send-btn {
-  background: #2563eb;
+  background: #0038A8;
   color: #ffffff;
   border: none;
   border-radius: 50%;
@@ -1669,7 +1669,7 @@ button {
 }
 
 .chat-send-btn:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: #021a4f;
   transform: scale(1.05);
 }
 

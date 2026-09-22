@@ -81,7 +81,7 @@ export default function DashboardLayout({
   if (isAuthorized === null) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#f8fafc", gap: "1rem" }}>
-        <div style={{ width: "40px", height: "40px", border: "4px solid #e2e8f0", borderTopColor: "#2563eb", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <div style={{ width: "40px", height: "40px", border: "4px solid #e2e8f0", borderTopColor: "#0038A8", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
         <p style={{ color: "#64748b", fontSize: "0.95rem", fontWeight: "600" }}>Verifying secure session...</p>
         <style dangerouslySetInnerHTML={{__html: `@keyframes spin { 100% { transform: rotate(360deg); } }`}} />
       </div>

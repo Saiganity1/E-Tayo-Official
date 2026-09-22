@@ -24,7 +24,7 @@ const MANG_TOMAS = {
   title: "Chief Permitting Officer",
   department: "Office of the Building Official (OBO)",
   email: "staff@etayo.gov.ph",
-  avatarBg: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+  avatarBg: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
   badge: "Official Permitting Staff",
   status: "Online",
   description: "Official municipal permitting desk for Locational Clearances, NBCP Building Permits, inspections, and requirements verification."
@@ -656,7 +656,7 @@ export default function ApplicantMessagesPage() {
                   height: "32px",
                   borderRadius: "8px",
                   background: "#eff6ff",
-                  color: "#2563eb",
+                  color: "#0038A8",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center"
@@ -682,7 +682,7 @@ export default function ApplicantMessagesPage() {
                   setShowStartModal(true);
                 }}
                 style={{
-                  background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                  background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                   color: "white",
                   border: "none",
                   borderRadius: "9px",
@@ -1160,7 +1160,7 @@ export default function ApplicantMessagesPage() {
                   type="button"
                   onClick={() => setShowStartModal(true)}
                   style={{
-                    background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                    background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                     color: "white",
                     border: "none",
                     borderRadius: "10px",
@@ -1171,7 +1171,7 @@ export default function ApplicantMessagesPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "6px",
-                    boxShadow: "0 4px 12px rgba(37, 99, 235, 0.25)"
+                    boxShadow: "0 4px 12px rgba(0, 56, 168, 0.35)"
                   }}
                 >
                   <Plus size={16} /> Start Conversation for Application
@@ -1227,11 +1227,11 @@ export default function ApplicantMessagesPage() {
                       padding: "0.85rem 1.15rem",
                       borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
                       background: isMe 
-                        ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" 
+                        ? "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)" 
                         : "#ffffff",
                       color: isMe ? "#ffffff" : "#1e293b",
                       border: isMe ? "none" : "1px solid #e2e8f0",
-                      boxShadow: isMe ? "0 4px 14px rgba(37, 99, 235, 0.22)" : "0 2px 8px rgba(0,0,0,0.03)",
+                      boxShadow: isMe ? "0 4px 14px rgba(0, 56, 168, 0.3)" : "0 2px 8px rgba(0,0,0,0.03)",
                       fontSize: "0.92rem",
                       lineHeight: "1.45"
                     }}>
@@ -1350,7 +1350,7 @@ export default function ApplicantMessagesPage() {
                   transition: "all 0.15s ease",
                   background: "#f8fafc"
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.background = "#ffffff"; }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#0038A8"; e.currentTarget.style.background = "#ffffff"; }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.background = "#f8fafc"; }}
               />
 
@@ -1359,7 +1359,7 @@ export default function ApplicantMessagesPage() {
                 type="submit"
                 disabled={isSending || (!inputMessage.trim() && !attachedFile)}
                 style={{
-                  background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                  background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                   color: "white",
                   border: "none",
                   borderRadius: "10px",
@@ -1370,7 +1370,7 @@ export default function ApplicantMessagesPage() {
                   justifyContent: "center",
                   cursor: (inputMessage.trim() || attachedFile) ? "pointer" : "not-allowed",
                   opacity: (inputMessage.trim() || attachedFile) ? 1 : 0.55,
-                  boxShadow: (inputMessage.trim() || attachedFile) ? "0 4px 12px rgba(37, 99, 235, 0.3)" : "none",
+                  boxShadow: (inputMessage.trim() || attachedFile) ? "0 4px 12px rgba(0, 56, 168, 0.4)" : "none",
                   transition: "all 0.15s ease",
                   flexShrink: 0
                 }}
@@ -1639,7 +1639,7 @@ export default function ApplicantMessagesPage() {
                 <button
                   type="submit"
                   style={{
-                    background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                    background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                     color: "white",
                     border: "none",
                     borderRadius: "10px",
@@ -1650,7 +1650,7 @@ export default function ApplicantMessagesPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "6px",
-                    boxShadow: "0 4px 12px rgba(37, 99, 235, 0.25)"
+                    boxShadow: "0 4px 12px rgba(0, 56, 168, 0.35)"
                   }}
                 >
                   <Send size={15} />

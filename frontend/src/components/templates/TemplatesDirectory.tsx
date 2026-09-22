@@ -101,14 +101,14 @@ export default function TemplatesDirectory({ role = "applicant" }: TemplatesDire
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+              background: "linear-gradient(135deg, #0038A8, #021a4f)",
               color: "white",
               padding: "9px 18px",
               borderRadius: "12px",
               fontWeight: "700",
               fontSize: "0.88rem",
               textDecoration: "none",
-              boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
+              boxShadow: "0 4px 14px rgba(0, 56, 168, 0.35)",
               transition: "all 0.2s ease"
             }}
           >

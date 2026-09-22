@@ -105,7 +105,7 @@ export default function Home() {
             
             <div style={{ display: "flex", gap: "12px" }}>
               <button onClick={() => setShowLoginAlert(false)} style={{ flex: 1, padding: "0.875rem", borderRadius: "14px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: "700", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.color = "#0f172a"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#64748b"; }}>Cancel</button>
-              <button onClick={() => router.push("/login")} style={{ flex: 1, padding: "0.875rem", borderRadius: "14px", border: "none", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "white", fontWeight: "700", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>Log In Now</button>
+              <button onClick={() => router.push("/login")} style={{ flex: 1, padding: "0.875rem", borderRadius: "14px", border: "none", background: "linear-gradient(135deg, #0038A8, #021a4f)", color: "white", fontWeight: "700", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 4px 12px rgba(0,56,168,0.35)" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>Log In Now</button>
             </div>
 
           </div>
@@ -373,7 +373,7 @@ export default function Home() {
         }
 
         .hero-actions .btn-primary {
-          background: linear-gradient(135deg, #2563eb 0%, #0038A8 100%);
+          background: linear-gradient(135deg, #0038A8 0%, #021a4f 100%);
           color: #ffffff;
           border: 1px solid rgba(255, 255, 255, 0.3);
           box-shadow: 0 10px 30px rgba(0, 56, 168, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
@@ -383,7 +383,7 @@ export default function Home() {
         .hero-actions .btn-primary:hover {
           transform: translateY(-2px);
           box-shadow: 0 14px 35px rgba(0, 56, 168, 0.7);
-          background: linear-gradient(135deg, #3b82f6 0%, #002e8c 100%);
+          background: linear-gradient(135deg, #0044cc 0%, #002575 100%);
         }
 
         .hero-actions .btn-secondary {

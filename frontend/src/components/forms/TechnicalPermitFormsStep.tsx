@@ -7718,7 +7718,7 @@ export default function TechnicalPermitFormsStep({
                         gap: "6px",
                         padding: "7px 14px",
                         borderRadius: "8px",
-                        background: isUploading ? "#94a3b8" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                        background: isUploading ? "#94a3b8" : "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                         color: "white",
                         fontSize: "0.8rem",
                         fontWeight: "700",

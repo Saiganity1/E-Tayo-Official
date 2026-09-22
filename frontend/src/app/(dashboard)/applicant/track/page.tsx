@@ -185,7 +185,7 @@ export default function ApplicationStatusPage() {
       case "pending":
         return { color: "#d97706", bg: "#fef3c7", border: "#f59e0b", icon: Clock, label: "Pending Review", step: 1 };
       case "under_review":
-        return { color: "#2563eb", bg: "#dbeafe", border: "#3b82f6", icon: Search, label: "Under Evaluation", step: 2 };
+        return { color: "#0038A8", bg: "#eff6ff", border: "#0038A8", icon: Search, label: "Under Evaluation", step: 2 };
       case "incomplete_requirements":
         return { color: "#dc2626", bg: "#fee2e2", border: "#ef4444", icon: AlertTriangle, label: "Action Required", step: 2 };
       case "approved":
@@ -216,24 +216,24 @@ export default function ApplicationStatusPage() {
               background: activeTab === "active" && statusFilter === "all" ? "linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)" : "#ffffff", 
               borderRadius: "18px", 
               padding: "1.25rem 1.4rem", 
-              border: activeTab === "active" && statusFilter === "all" ? "2px solid #2563eb" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "active" && statusFilter === "all" ? "0 8px 24px rgba(37, 99, 235, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)",
+              border: activeTab === "active" && statusFilter === "all" ? "2px solid #0038A8" : "1.5px solid #e2e8f0", 
+              boxShadow: activeTab === "active" && statusFilter === "all" ? "0 8px 24px rgba(0, 56, 168, 0.18)" : "0 2px 10px rgba(0,0,0,0.02)",
               cursor: "pointer",
               transition: "all 0.2s ease"
             }}
             title="Click to show all active applications"
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
-              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <FileText size={22} />
               </div>
-              <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#2563eb", background: "#dbeafe", padding: "2px 8px", borderRadius: "999px" }}>
+              <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#0038A8", background: "#eff6ff", padding: "2px 8px", borderRadius: "999px" }}>
                 Active
               </span>
             </div>
             <div>
               <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.activeTotal}</div>
-              <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "all" ? "#2563eb" : "#64748b", marginTop: "0.35rem" }}>
+              <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "all" ? "#0038A8" : "#64748b", marginTop: "0.35rem" }}>
                 Active Permits
               </div>
             </div>
@@ -246,24 +246,24 @@ export default function ApplicationStatusPage() {
               background: activeTab === "active" && statusFilter === "under_review" ? "linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)" : "#ffffff", 
               borderRadius: "18px", 
               padding: "1.25rem 1.4rem", 
-              border: activeTab === "active" && statusFilter === "under_review" ? "2px solid #2563eb" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "active" && statusFilter === "under_review" ? "0 8px 24px rgba(37, 99, 235, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)",
+              border: activeTab === "active" && statusFilter === "under_review" ? "2px solid #0038A8" : "1.5px solid #e2e8f0", 
+              boxShadow: activeTab === "active" && statusFilter === "under_review" ? "0 8px 24px rgba(0, 56, 168, 0.18)" : "0 2px 10px rgba(0,0,0,0.02)",
               cursor: "pointer",
               transition: "all 0.2s ease"
             }}
             title="Click to filter by Under Evaluation"
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
-              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#dbeafe", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Search size={22} />
               </div>
-              <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#1d4ed8", background: "#dbeafe", padding: "2px 8px", borderRadius: "999px" }}>
+              <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#0038A8", background: "#eff6ff", padding: "2px 8px", borderRadius: "999px" }}>
                 Review
               </span>
             </div>
             <div>
               <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.review}</div>
-              <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "under_review" ? "#2563eb" : "#64748b", marginTop: "0.35rem" }}>
+              <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "under_review" ? "#0038A8" : "#64748b", marginTop: "0.35rem" }}>
                 Under Evaluation
               </div>
             </div>
@@ -505,12 +505,12 @@ export default function ApplicationStatusPage() {
               height: "68px",
               borderRadius: "50%",
               background: "#eff6ff",
-              color: "#2563eb",
+              color: "#0038A8",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               margin: "0 auto 1.25rem auto",
-              boxShadow: "0 4px 12px rgba(37, 99, 235, 0.15)"
+              boxShadow: "0 4px 12px rgba(0, 56, 168, 0.2)"
             }}>
               <Lock size={32} />
             </div>
@@ -969,7 +969,7 @@ export default function ApplicationStatusPage() {
                       <Link
                         href={`/applicant/track/${app.id}`}
                         style={{
-                          background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                          background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                           color: "#ffffff",
                           padding: "7px 16px",
                           borderRadius: "10px",
@@ -979,7 +979,7 @@ export default function ApplicationStatusPage() {
                           display: "inline-flex",
                           alignItems: "center",
                           gap: "5px",
-                          boxShadow: "0 3px 10px rgba(37, 99, 235, 0.25)"
+                          boxShadow: "0 3px 10px rgba(0, 56, 168, 0.35)"
                         }}
                       >
                         <span>View Full Timeline</span>

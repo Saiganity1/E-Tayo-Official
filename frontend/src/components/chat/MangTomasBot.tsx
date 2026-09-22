@@ -244,7 +244,7 @@ export default function MangTomasBot({
           {messages.length <= 3 && !isThinking && (
             <div className="quick-prompts-container">
               <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Sparkles size={11} color="#2563eb" /> Suggested Inquiries:
+                <Sparkles size={11} color="#0038A8" /> Suggested Inquiries:
               </span>
               <div className="quick-prompts-scroll">
                 {QUICK_PROMPTS.map((prompt, idx) => (

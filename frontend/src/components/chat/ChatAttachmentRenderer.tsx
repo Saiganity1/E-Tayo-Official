@@ -180,8 +180,8 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
                   }
                 }}
                 style={{
-                  background: isMe ? "#ffffff" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                  color: isMe ? "#1d4ed8" : "#ffffff",
+                  background: isMe ? "#ffffff" : "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
+                  color: isMe ? "#0038A8" : "#ffffff",
                   border: "none",
                   borderRadius: "9px",
                   padding: "7px 14px",
@@ -446,7 +446,7 @@ export function AttachmentPreviewModal({ attachment, onClose }: AttachmentModalP
                     type="button"
                     onClick={handleDownload}
                     style={{
-                      background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                      background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                       color: "white",
                       border: "none",
                       padding: "10px 20px",
@@ -505,7 +505,7 @@ export function AttachmentPreviewModal({ attachment, onClose }: AttachmentModalP
                     type="button"
                     onClick={handleDownload}
                     style={{
-                      background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                      background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                       color: "white",
                       border: "none",
                       padding: "10px 20px",

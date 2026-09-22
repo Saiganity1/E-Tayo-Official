@@ -110,7 +110,7 @@ export default function ApplicationTrackDetail() {
   const getStatusDetails = (status: string) => {
     switch(status) {
       case "pending": return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", step: 1 };
-      case "under_review": return { color: "#3b82f6", bg: "rgba(59, 130, 246, 0.15)", icon: Search, label: "Under Evaluation", step: 2 };
+      case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Evaluation", step: 2 };
       case "incomplete_requirements": return { color: "#ef4444", bg: "rgba(239, 68, 68, 0.15)", icon: AlertTriangle, label: "Action Required", step: 2 };
       case "approved": return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved (Awaiting Payment)", step: 3 };
       case "released": return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle, label: "Permit Released", step: 4 };
@@ -461,7 +461,7 @@ export default function ApplicationTrackDetail() {
         badgeBg: "#dbeafe",
         badgeColor: "#1e40af",
         iconBg: "#eff6ff",
-        iconColor: "#2563eb",
+        iconColor: "#0038A8",
         iconType: "bp",
         isDriveBackup: isDrive
       });
@@ -498,7 +498,7 @@ export default function ApplicationTrackDetail() {
         badgeBg: "#dbeafe",
         badgeColor: "#1d4ed8",
         iconBg: "#eff6ff",
-        iconColor: "#2563eb",
+        iconColor: "#0038A8",
         iconType: "bp" as const
       },
       {
@@ -929,7 +929,7 @@ export default function ApplicationTrackDetail() {
                             color: "#334155"
                           }}
                         >
-                          <Eye size={13} color="#2563eb" /> View Document
+                          <Eye size={13} color="#0038A8" /> View Document
                         </button>
                         <button
                           type="button"
@@ -945,7 +945,7 @@ export default function ApplicationTrackDetail() {
                             alignItems: "center", 
                             gap: "5px", 
                             cursor: "pointer",
-                            background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                            background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                             border: "none",
                             borderRadius: "8px",
                             fontWeight: "700",
