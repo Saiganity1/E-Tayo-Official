@@ -1163,9 +1163,9 @@ export default function TechnicalPermitFormsStep({
         fencingScopeDetails,
         fencingType,
         fencingTypes,
-        fencingTypeOthers: fencingTypeOthers || fenceMaterial,
-        fencingTypeOthersLine2,
-        fencingTypeOthersLine3,
+        fencingTypeOthers: (fencingTypes.includes("OTHERS (Specify)") || fencingType.toLowerCase().includes("other")) ? (fencingTypeOthers || fenceMaterial) : "",
+        fencingTypeOthersLine2: (fencingTypes.includes("OTHERS (Specify)") || fencingType.toLowerCase().includes("other")) ? fencingTypeOthersLine2 : "",
+        fencingTypeOthersLine3: (fencingTypes.includes("OTHERS (Specify)") || fencingType.toLowerCase().includes("other")) ? fencingTypeOthersLine3 : "",
         fencingLength: fenceLength,
         fencingHeight: fenceHeight,
         fencingCost,
@@ -1354,9 +1354,9 @@ export default function TechnicalPermitFormsStep({
               fencingScopeDetails,
               fencingType,
               fencingTypes,
-              fencingTypeOthers: fencingTypeOthers || fenceMaterial,
-              fencingTypeOthersLine2,
-              fencingTypeOthersLine3,
+              fencingTypeOthers: (fencingTypes.includes("OTHERS (Specify)") || fencingType.toLowerCase().includes("other")) ? (fencingTypeOthers || fenceMaterial) : "",
+              fencingTypeOthersLine2: (fencingTypes.includes("OTHERS (Specify)") || fencingType.toLowerCase().includes("other")) ? fencingTypeOthersLine2 : "",
+              fencingTypeOthersLine3: (fencingTypes.includes("OTHERS (Specify)") || fencingType.toLowerCase().includes("other")) ? fencingTypeOthersLine3 : "",
               fencingLength: fenceLength,
               fencingHeight: fenceHeight,
               fencingCost,
@@ -6621,7 +6621,7 @@ export default function TechnicalPermitFormsStep({
                           <span style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#334155", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.03em" }}>
                             Measurements (Printed on Official Box 6 Underlines)
                           </span>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.2fr", gap: "0.85rem" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.85rem" }}>
                             <div>
                               <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
                                 Length in Meters (Underline 1) *
@@ -6652,21 +6652,6 @@ export default function TechnicalPermitFormsStep({
                                 <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "0.75rem", color: "#64748b", fontWeight: "700" }}>m</span>
                               </div>
                             </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
-                                Estimated Fencing Cost (PHP) *
-                              </label>
-                              <div style={{ position: "relative" }}>
-                                <input
-                                  type="text"
-                                  value={fencingCost}
-                                  onChange={(e) => setFencingCost(e.target.value)}
-                                  placeholder="e.g. 150,000.00"
-                                  style={{ width: "100%", padding: "8px 10px", paddingLeft: "26px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.86rem", fontWeight: "600", color: "#0f172a", background: "#f8fafc" }}
-                                />
-                                <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "0.75rem", color: "#64748b", fontWeight: "700" }}>₱</span>
-                              </div>
-                            </div>
                           </div>
                         </div>
 
@@ -6691,17 +6676,17 @@ export default function TechnicalPermitFormsStep({
                                 { id: "R.C. and BRICKS", label: "R.C. and BRICKS", desc: "Reinforced concrete framing with decorative brick masonry" },
                                 { id: "R.C. and INTERLINK/CYCLONE WIRE", label: "R.C. and INTERLINK/CYCLONE WIRE", desc: "R.C. or pipe framing with chain-link cyclone mesh" },
                               ].map((item) => {
-                                const checked = fencingTypes.includes(item.id) || (fencingTypes.length === 0 && fencingType === item.id);
+                                const checked = fencingTypes.includes(item.id);
+                                const toggleFencing = () => {
+                                  const next = checked
+                                    ? fencingTypes.filter((t) => t !== item.id)
+                                    : [...fencingTypes, item.id];
+                                  setFencingTypes(next);
+                                  setFencingType(next.join(", "));
+                                };
                                 return (
                                   <label
                                     key={item.id}
-                                    onClick={() => {
-                                      const next = checked
-                                        ? fencingTypes.filter((t) => t !== item.id)
-                                        : [...fencingTypes, item.id];
-                                      setFencingTypes(next);
-                                      setFencingType(next.join(", "));
-                                    }}
                                     style={{
                                       display: "flex",
                                       alignItems: "flex-start",
@@ -6712,12 +6697,13 @@ export default function TechnicalPermitFormsStep({
                                       background: checked ? "#eff6ff" : "#ffffff",
                                       cursor: "pointer",
                                       transition: "all 0.15s ease",
+                                      userSelect: "none",
                                     }}
                                   >
                                     <input
                                       type="checkbox"
                                       checked={checked}
-                                      readOnly
+                                      onChange={toggleFencing}
                                       style={{ marginTop: "2px", cursor: "pointer", accentColor: "#2563eb" }}
                                     />
                                     <div>
@@ -6740,17 +6726,17 @@ export default function TechnicalPermitFormsStep({
                                 { id: "R.C. BARBED WIRE", label: "R.C. BARBED WIRE", desc: "Security fence posts with multi-strand galvanized barbed wire" },
                                 { id: "OTHERS (Specify)", label: "OTHERS (Specify)", desc: "Custom perimeter fencing specifications (prints on 3 underlines)" },
                               ].map((item) => {
-                                const checked = fencingTypes.includes(item.id) || (fencingTypes.length === 0 && fencingType === item.id);
+                                const checked = fencingTypes.includes(item.id);
+                                const toggleFencing = () => {
+                                  const next = checked
+                                    ? fencingTypes.filter((t) => t !== item.id)
+                                    : [...fencingTypes, item.id];
+                                  setFencingTypes(next);
+                                  setFencingType(next.join(", "));
+                                };
                                 return (
                                   <label
                                     key={item.id}
-                                    onClick={() => {
-                                      const next = checked
-                                        ? fencingTypes.filter((t) => t !== item.id)
-                                        : [...fencingTypes, item.id];
-                                      setFencingTypes(next);
-                                      setFencingType(next.join(", "));
-                                    }}
                                     style={{
                                       display: "flex",
                                       alignItems: "flex-start",
@@ -6761,12 +6747,13 @@ export default function TechnicalPermitFormsStep({
                                       background: checked ? "#eff6ff" : "#ffffff",
                                       cursor: "pointer",
                                       transition: "all 0.15s ease",
+                                      userSelect: "none",
                                     }}
                                   >
                                     <input
                                       type="checkbox"
                                       checked={checked}
-                                      readOnly
+                                      onChange={toggleFencing}
                                       style={{ marginTop: "2px", cursor: "pointer", accentColor: "#2563eb" }}
                                     />
                                     <div>
@@ -7175,8 +7162,8 @@ export default function TechnicalPermitFormsStep({
                                 <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>C.T.C. / Gov ID No. *</label>
                                 <input
                                   type="text"
-                                  value={applicantCtcNo || "00192847"}
-                                  onChange={(e) => setApplicantCtcNo(e.target.value)}
+                                  value={govIdNo || "00192847"}
+                                  onChange={(e) => setGovIdNo(e.target.value)}
                                   style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
                                 />
                               </div>

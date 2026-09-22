@@ -4697,7 +4697,7 @@ export default function FormTestingStudio() {
                       )}
 
                       {/* Box 6 Measurements */}
-                      <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.65rem", background: "#f8fafc", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", background: "#f8fafc", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                         <div>
                           <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
                             Length in Meters (Underline 1) *
@@ -4722,18 +4722,6 @@ export default function FormTestingStudio() {
                             style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
                           />
                         </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
-                            Estimated Cost (PHP) *
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.fencingCost || ""}
-                            onChange={e => handleFieldChange("fencingCost", e.target.value)}
-                            placeholder="e.g. 150,000.00"
-                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
-                          />
-                        </div>
                       </div>
 
                       {/* Box 6: 8 Official Fencing Checkboxes */}
@@ -4754,16 +4742,20 @@ export default function FormTestingStudio() {
                               "R.C. and BRICKS",
                               "R.C. and INTERLINK/CYCLONE WIRE",
                             ].map(item => {
-                              const typesList: string[] = formData.fencingTypes || (formData.fencingType ? [formData.fencingType] : ["R.C. and CONC. HOLLOW BLOCKS"]);
+                              const typesList: string[] = Array.isArray(formData.fencingTypes)
+                                ? formData.fencingTypes
+                                : formData.fencingType
+                                ? formData.fencingType.split(",").map(s => s.trim()).filter(Boolean)
+                                : ["R.C. and CONC. HOLLOW BLOCKS"];
                               const checked = typesList.includes(item);
+                              const toggleItem = () => {
+                                const next = checked ? typesList.filter(t => t !== item) : [...typesList, item];
+                                handleFieldChange("fencingTypes", next);
+                                handleFieldChange("fencingType", next.join(", "));
+                              };
                               return (
                                 <label
                                   key={item}
-                                  onClick={() => {
-                                    const next = checked ? typesList.filter(t => t !== item) : [...typesList, item];
-                                    handleFieldChange("fencingTypes", next);
-                                    handleFieldChange("fencingType", next.join(", "));
-                                  }}
                                   style={{
                                     display: "flex",
                                     alignItems: "center",
@@ -4776,9 +4768,15 @@ export default function FormTestingStudio() {
                                     fontSize: "0.75rem",
                                     fontWeight: checked ? "700" : "500",
                                     color: checked ? "#1d4ed8" : "#334155",
+                                    userSelect: "none",
                                   }}
                                 >
-                                  <input type="checkbox" checked={checked} readOnly style={{ accentColor: "#2563eb", cursor: "pointer" }} />
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={toggleItem}
+                                    style={{ accentColor: "#2563eb", cursor: "pointer" }}
+                                  />
                                   <span>{item}</span>
                                 </label>
                               );
@@ -4792,16 +4790,20 @@ export default function FormTestingStudio() {
                               "R.C. BARBED WIRE",
                               "OTHERS (Specify)",
                             ].map(item => {
-                              const typesList: string[] = formData.fencingTypes || (formData.fencingType ? [formData.fencingType] : ["R.C. and CONC. HOLLOW BLOCKS"]);
+                              const typesList: string[] = Array.isArray(formData.fencingTypes)
+                                ? formData.fencingTypes
+                                : formData.fencingType
+                                ? formData.fencingType.split(",").map(s => s.trim()).filter(Boolean)
+                                : ["R.C. and CONC. HOLLOW BLOCKS"];
                               const checked = typesList.includes(item);
+                              const toggleItem = () => {
+                                const next = checked ? typesList.filter(t => t !== item) : [...typesList, item];
+                                handleFieldChange("fencingTypes", next);
+                                handleFieldChange("fencingType", next.join(", "));
+                              };
                               return (
                                 <label
                                   key={item}
-                                  onClick={() => {
-                                    const next = checked ? typesList.filter(t => t !== item) : [...typesList, item];
-                                    handleFieldChange("fencingTypes", next);
-                                    handleFieldChange("fencingType", next.join(", "));
-                                  }}
                                   style={{
                                     display: "flex",
                                     alignItems: "center",
@@ -4814,9 +4816,15 @@ export default function FormTestingStudio() {
                                     fontSize: "0.75rem",
                                     fontWeight: checked ? "700" : "500",
                                     color: checked ? "#1d4ed8" : "#334155",
+                                    userSelect: "none",
                                   }}
                                 >
-                                  <input type="checkbox" checked={checked} readOnly style={{ accentColor: "#2563eb", cursor: "pointer" }} />
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={toggleItem}
+                                    style={{ accentColor: "#2563eb", cursor: "pointer" }}
+                                  />
                                   <span>{item}</span>
                                 </label>
                               );

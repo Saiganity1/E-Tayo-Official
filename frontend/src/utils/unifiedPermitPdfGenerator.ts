@@ -3885,24 +3885,59 @@ export async function generateFencingPermitPdf(data: UnifiedPermitFormData): Pro
 
   // Type of Fencing (8 official checkboxes)
   // Gather all selected fencing types (supports array or string)
-  const rawTypes: string[] = [];
+  const rawList: string[] = [];
   if (Array.isArray(data.fencingTypes)) {
-    rawTypes.push(...data.fencingTypes);
+    rawList.push(...data.fencingTypes);
+  } else if (data.fencingType) {
+    rawList.push(...data.fencingType.split(","));
+  } else if ((data as any).fenceType) {
+    rawList.push(...((data as any).fenceType as string).split(","));
   }
-  if (data.fencingType) rawTypes.push(data.fencingType);
-  if ((data as any).fenceType) rawTypes.push((data as any).fenceType);
-  if (rawTypes.length === 0) rawTypes.push("R.C. and CONC. HOLLOW BLOCKS");
 
-  const typesJoined = rawTypes.join(" | ").toLowerCase();
+  // Trim and filter empty
+  const selectedTokens = rawList.map(s => (s || "").trim()).filter(Boolean);
 
-  const isIndigenous = typesJoined.includes("indigenous");
-  const isConcHollow = typesJoined.includes("hollow") || typesJoined.includes("chb") || (typesJoined.includes("conc.") && !typesJoined.includes("brick"));
-  const isBricks = typesJoined.includes("brick");
-  const isInterlink = typesJoined.includes("interlink") || typesJoined.includes("cyclone");
-  const isSteelMatting = typesJoined.includes("steel matting");
-  const isBarbedWire = typesJoined.includes("barbed wire");
-  const isRcOnly = (typesJoined.includes("reinforced concrete") || typesJoined === "r.c.") && !isConcHollow && !isBricks && !isInterlink && !isSteelMatting && !isBarbedWire;
-  const isOthers = typesJoined.includes("other") || Boolean((data.fencingTypeOthers && data.fencingTypeOthers.trim()) || data.fencingTypeOthersLine2 || data.fencingTypeOthersLine3);
+  // If fencingTypes is explicitly empty array or empty string, do not force default
+  const isExplicitlyEmpty = (Array.isArray(data.fencingTypes) && data.fencingTypes.length === 0 && !data.fencingType && !(data as any).fenceType) ||
+    (data.fencingType === "" && !Array.isArray(data.fencingTypes) && !(data as any).fenceType);
+
+  if (selectedTokens.length === 0 && !isExplicitlyEmpty && data.fencingTypes === undefined && data.fencingType === undefined) {
+    selectedTokens.push("R.C. and CONC. HOLLOW BLOCKS");
+  }
+
+  let isIndigenous = false;
+  let isRcOnly = false;
+  let isConcHollow = false;
+  let isBricks = false;
+  let isInterlink = false;
+  let isSteelMatting = false;
+  let isBarbedWire = false;
+  let isOthers = Boolean(
+    (data.fencingTypeOthers && data.fencingTypeOthers.trim()) ||
+    (data.fencingTypeOthersLine2 && data.fencingTypeOthersLine2.trim()) ||
+    (data.fencingTypeOthersLine3 && data.fencingTypeOthersLine3.trim())
+  );
+
+  for (const token of selectedTokens) {
+    const t = token.toLowerCase();
+    if (t.includes("indigenous")) {
+      isIndigenous = true;
+    } else if (t.includes("steel matting")) {
+      isSteelMatting = true;
+    } else if (t.includes("barbed wire")) {
+      isBarbedWire = true;
+    } else if (t.includes("interlink") || t.includes("cyclone")) {
+      isInterlink = true;
+    } else if (t.includes("brick")) {
+      isBricks = true;
+    } else if (t.includes("hollow") || t.includes("chb") || (t.includes("conc.") && !t.includes("reinforced concrete"))) {
+      isConcHollow = true;
+    } else if (t.includes("reinforced concrete") || t === "r.c." || t === "rc") {
+      isRcOnly = true;
+    } else if (t.includes("other")) {
+      isOthers = true;
+    }
+  }
 
   // Mark official checkboxes
   if (isIndigenous) drawCheck(p2, 160.0, 722.5);
@@ -3964,7 +3999,7 @@ export async function generateFencingPermitPdf(data: UnifiedPermitFormData): Pro
 
   // BOX 7: ASSESSED FEES
   drawText(p2, "150.00", 180, 456.0, 7.5, false);
-  const costNum = parseFloat((data.fencingCost || "150,000.00").replace(/[^0-9.]/g, "")) || 150000;
+  const costNum = parseFloat((data.fencingCost || (data as any).fenceCost || data.projectCost || "150,000.00").replace(/[^0-9.]/g, "")) || 150000;
   const fencingFee = (Math.max(300, costNum * 0.003)).toFixed(2);
   drawText(p2, fencingFee, 180, 438.0, 7.5, false);
   const totalFee = (150.00 + parseFloat(fencingFee)).toFixed(2);
