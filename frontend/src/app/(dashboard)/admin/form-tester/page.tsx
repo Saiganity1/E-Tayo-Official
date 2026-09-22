@@ -362,8 +362,14 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   demolitionSupervisorPhone: "0918-765-4321",
   demolitionSupervisorSignature: "",
 
-  // Fencing Permit
-  fencingType: "Reinforced Concrete / CHB with Decorative Steel Grills",
+  // Fencing Permit (NBC Form B-03)
+  fencingScopeOfWork: "New Construction",
+  fencingScopeDetails: "",
+  fencingType: "R.C. and CONC. HOLLOW BLOCKS",
+  fencingTypes: ["R.C. and CONC. HOLLOW BLOCKS"],
+  fencingTypeOthers: "",
+  fencingTypeOthersLine2: "",
+  fencingTypeOthersLine3: "",
   fencingLength: "45.00",
   fencingHeight: "2.20",
   fencingCost: "150,000.00",
@@ -4652,21 +4658,214 @@ export default function FormTestingStudio() {
                   {selectedForm.id === "FP" && (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                       <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Fencing Type & Materials</label>
-                        <input type="text" value={formData.fencingType || ""} onChange={e => handleFieldChange("fencingType", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>
+                          Scope of Work (NBC Form B-03 Box 1)
+                        </label>
+                        <select
+                          value={formData.fencingScopeOfWork || formData.scopeOfWork || "New Construction"}
+                          onChange={e => {
+                            handleFieldChange("fencingScopeOfWork", e.target.value);
+                            handleFieldChange("scopeOfWork", e.target.value);
+                          }}
+                          style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                        >
+                          <option value="New Construction">New Construction</option>
+                          <option value="Erection">Erection</option>
+                          <option value="Addition">Addition</option>
+                          <option value="Repair">Repair</option>
+                          <option value="Demolition">Demolition</option>
+                          <option value="Others">Others (Specify)</option>
+                        </select>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Total Fence Length (meters)</label>
-                        <input type="text" value={formData.fencingLength || ""} onChange={e => handleFieldChange("fencingLength", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {["Repair", "Demolition", "Other"].some(k => (formData.fencingScopeOfWork || "").toLowerCase().includes(k.toLowerCase())) && (
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>
+                            Specify Scope Details (Prints on Underline)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.fencingScopeDetails || formData.scopeOfWorkDetails || ""}
+                            onChange={e => {
+                              handleFieldChange("fencingScopeDetails", e.target.value);
+                              handleFieldChange("scopeOfWorkDetails", e.target.value);
+                            }}
+                            placeholder="e.g. Specific repair/demolition/custom scope"
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Box 6 Measurements */}
+                      <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.65rem", background: "#f8fafc", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                            Length in Meters (Underline 1) *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.fencingLength || ""}
+                            onChange={e => handleFieldChange("fencingLength", e.target.value)}
+                            placeholder="e.g. 45.00"
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                            Height in Meters (Underline 2) *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.fencingHeight || ""}
+                            onChange={e => handleFieldChange("fencingHeight", e.target.value)}
+                            placeholder="e.g. 2.20"
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                            Estimated Cost (PHP) *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.fencingCost || ""}
+                            onChange={e => handleFieldChange("fencingCost", e.target.value)}
+                            placeholder="e.g. 150,000.00"
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Fence Height (meters)</label>
-                        <input type="text" value={formData.fencingHeight || ""} onChange={e => handleFieldChange("fencingHeight", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Box 6: 8 Official Fencing Checkboxes */}
+                      <div style={{ gridColumn: "1 / -1", background: "#f8fafc", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#1e293b", textTransform: "uppercase" }}>
+                            Type of Fencing (NBC Form B-03 Box 6 Official Checkboxes)
+                          </label>
+                          <span style={{ fontSize: "0.68rem", color: "#64748b" }}>Multi-select supported</span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                          {/* Left Column (5 Checkboxes) */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                            {[
+                              "INDIGENOUS MATERIALS",
+                              "R.C. (Reinforced Concrete)",
+                              "R.C. and CONC. HOLLOW BLOCKS",
+                              "R.C. and BRICKS",
+                              "R.C. and INTERLINK/CYCLONE WIRE",
+                            ].map(item => {
+                              const typesList: string[] = formData.fencingTypes || (formData.fencingType ? [formData.fencingType] : ["R.C. and CONC. HOLLOW BLOCKS"]);
+                              const checked = typesList.includes(item);
+                              return (
+                                <label
+                                  key={item}
+                                  onClick={() => {
+                                    const next = checked ? typesList.filter(t => t !== item) : [...typesList, item];
+                                    handleFieldChange("fencingTypes", next);
+                                    handleFieldChange("fencingType", next.join(", "));
+                                  }}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    padding: "5px 8px",
+                                    borderRadius: "5px",
+                                    border: checked ? "1.5px solid #3b82f6" : "1px solid #cbd5e1",
+                                    background: checked ? "#eff6ff" : "#ffffff",
+                                    cursor: "pointer",
+                                    fontSize: "0.75rem",
+                                    fontWeight: checked ? "700" : "500",
+                                    color: checked ? "#1d4ed8" : "#334155",
+                                  }}
+                                >
+                                  <input type="checkbox" checked={checked} readOnly style={{ accentColor: "#2563eb", cursor: "pointer" }} />
+                                  <span>{item}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+
+                          {/* Right Column (3 Checkboxes) */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                            {[
+                              "R.C. STEEL MATTING",
+                              "R.C. BARBED WIRE",
+                              "OTHERS (Specify)",
+                            ].map(item => {
+                              const typesList: string[] = formData.fencingTypes || (formData.fencingType ? [formData.fencingType] : ["R.C. and CONC. HOLLOW BLOCKS"]);
+                              const checked = typesList.includes(item);
+                              return (
+                                <label
+                                  key={item}
+                                  onClick={() => {
+                                    const next = checked ? typesList.filter(t => t !== item) : [...typesList, item];
+                                    handleFieldChange("fencingTypes", next);
+                                    handleFieldChange("fencingType", next.join(", "));
+                                  }}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    padding: "5px 8px",
+                                    borderRadius: "5px",
+                                    border: checked ? "1.5px solid #3b82f6" : "1px solid #cbd5e1",
+                                    background: checked ? "#eff6ff" : "#ffffff",
+                                    cursor: "pointer",
+                                    fontSize: "0.75rem",
+                                    fontWeight: checked ? "700" : "500",
+                                    color: checked ? "#1d4ed8" : "#334155",
+                                  }}
+                                >
+                                  <input type="checkbox" checked={checked} readOnly style={{ accentColor: "#2563eb", cursor: "pointer" }} />
+                                  <span>{item}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Estimated Fencing Cost (PHP)</label>
-                        <input type="text" value={formData.fencingCost || ""} onChange={e => handleFieldChange("fencingCost", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
+
+                      {/* 3 Underline Lines for OTHERS (Specify) */}
+                      {((formData.fencingTypes || []).includes("OTHERS (Specify)") || (formData.fencingType || "").toLowerCase().includes("other") || Boolean(formData.fencingTypeOthers)) && (
+                        <div style={{ gridColumn: "1 / -1", background: "#f0fdf4", padding: "10px", borderRadius: "8px", border: "1.5px solid #86efac", display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#166534" }}>
+                            Official Underlines for OTHERS (Specify) • Page 2 Box 6
+                          </label>
+                          <div>
+                            <span style={{ fontSize: "0.7rem", color: "#374151" }}>Line 1 (Follows OTHERS (Specify) • max ~26 chars):</span>
+                            <input
+                              type="text"
+                              value={formData.fencingTypeOthers || ""}
+                              onChange={e => handleFieldChange("fencingTypeOthers", e.target.value)}
+                              placeholder="e.g. Decorative Metal Grille Panels"
+                              maxLength={35}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <span style={{ fontSize: "0.7rem", color: "#374151" }}>Line 2 (Full Underline 2 • max ~40 chars):</span>
+                            <input
+                              type="text"
+                              value={formData.fencingTypeOthersLine2 || ""}
+                              onChange={e => handleFieldChange("fencingTypeOthersLine2", e.target.value)}
+                              placeholder="e.g. with Reinforced Concrete Posts & Footing"
+                              maxLength={50}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "0.8rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <span style={{ fontSize: "0.7rem", color: "#374151" }}>Line 3 (Full Underline 3 • max ~40 chars):</span>
+                            <input
+                              type="text"
+                              value={formData.fencingTypeOthersLine3 || ""}
+                              onChange={e => handleFieldChange("fencingTypeOthersLine3", e.target.value)}
+                              placeholder="e.g. Anti-climb spearhead design"
+                              maxLength={50}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "0.8rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -4919,36 +5118,50 @@ export default function FormTestingStudio() {
                             <input type="text" value={formData.architectTIN || "234-567-890-000"} onChange={e => handleFieldChange("architectTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
+
+                        <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                          <SignatureCreator
+                            value={formData.fencingDesignerSignature || formData.architectSignature}
+                            onChange={sig => {
+                              handleFieldChange("architectSignature", sig);
+                              handleFieldChange("fencingDesignerSignature", sig);
+                            }}
+                            label={`Design Professional E-Signature (${formData.architectName || "Architect"})`}
+                          />
+                        </div>
                       </div>
                     )}
 
                     {/* Architect - Box 4: Supervisor / In-Charge of Architectural Works */}
-                    {selectedForm.id === "AP" && (
+                    {(selectedForm.id === "AP" || selectedForm.id === "FP") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#0284c7" }}>
-                            Box 4: SUPERVISOR / IN-CHARGE OF ARCHITECTURAL WORKS (Architect)
+                            {selectedForm.id === "FP" ? "Box 3: FULL-TIME INSPECTOR AND SUPERVISOR OF CONSTRUCTION WORKS" : "Box 4: SUPERVISOR / IN-CHARGE OF ARCHITECTURAL WORKS (Architect)"}
                           </span>
                           <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#334155", cursor: "pointer" }}>
                             <input 
                               type="checkbox" 
-                              checked={!!formData.sameAsDesignArchitect} 
-                              onChange={e => handleFieldChange("sameAsDesignArchitect", e.target.checked)} 
+                              checked={!!(formData.sameAsDesignArchitect || formData.sameAsDesignFencingSupervisor)} 
+                              onChange={e => {
+                                handleFieldChange("sameAsDesignArchitect", e.target.checked);
+                                handleFieldChange("sameAsDesignFencingSupervisor", e.target.checked);
+                              }} 
                             />
-                            Same as Design Professional (Box 3)
+                            Same as Design Professional
                           </label>
                         </div>
 
-                        {!formData.sameAsDesignArchitect ? (
+                        {!(formData.sameAsDesignArchitect || formData.sameAsDesignFencingSupervisor) ? (
                           <>
                             <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                               <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Supervisor Architect Full Name</label>
-                                <input type="text" value={formData.supervisorArchitectName || ""} onChange={e => handleFieldChange("supervisorArchitectName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Supervisor Full Name</label>
+                                <input type="text" value={formData.supervisorArchitectName || formData.fencingSupervisorName || ""} onChange={e => { handleFieldChange("supervisorArchitectName", e.target.value); handleFieldChange("fencingSupervisorName", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                               </div>
                               <div>
                                 <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Address</label>
-                                <input type="text" value={formData.supervisorArchitectAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("supervisorArchitectAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                <input type="text" value={formData.supervisorArchitectAddress || formData.fencingSupervisorAddress || "Sto. Tomas, Pampanga"} onChange={e => { handleFieldChange("supervisorArchitectAddress", e.target.value); handleFieldChange("fencingSupervisorAddress", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                               </div>
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -4964,35 +5177,46 @@ export default function FormTestingStudio() {
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                               <div>
                                 <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
-                                <input type="text" value={formData.supervisorArchitectPRC || ""} onChange={e => handleFieldChange("supervisorArchitectPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                <input type="text" value={formData.supervisorArchitectPRC || formData.fencingSupervisorPRC || ""} onChange={e => { handleFieldChange("supervisorArchitectPRC", e.target.value); handleFieldChange("fencingSupervisorPRC", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                               </div>
                               <div>
                                 <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC Validity</label>
-                                <input type="text" value={formData.supervisorArchitectPRCValidity || "2027-08-20"} onChange={e => handleFieldChange("supervisorArchitectPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                <input type="text" value={formData.supervisorArchitectPRCValidity || formData.fencingSupervisorPRCValidity || "2027-08-20"} onChange={e => { handleFieldChange("supervisorArchitectPRCValidity", e.target.value); handleFieldChange("fencingSupervisorPRCValidity", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                               </div>
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                               <div>
                                 <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
-                                <input type="text" value={formData.supervisorArchitectPTR || ""} onChange={e => handleFieldChange("supervisorArchitectPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                <input type="text" value={formData.supervisorArchitectPTR || formData.fencingSupervisorPTR || ""} onChange={e => { handleFieldChange("supervisorArchitectPTR", e.target.value); handleFieldChange("fencingSupervisorPTR", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                               </div>
                               <div>
                                 <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
-                                <input type="text" value={formData.supervisorArchitectPTRIssued || "Jan 10, 2026"} onChange={e => handleFieldChange("supervisorArchitectPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                <input type="text" value={formData.supervisorArchitectPTRIssued || formData.fencingSupervisorPTRIssued || "Jan 10, 2026"} onChange={e => { handleFieldChange("supervisorArchitectPTRIssued", e.target.value); handleFieldChange("fencingSupervisorPTRIssued", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                               </div>
                               <div>
                                 <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
-                                <input type="text" value={formData.supervisorArchitectPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("supervisorArchitectPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                <input type="text" value={formData.supervisorArchitectPTRIssuedAt || formData.fencingSupervisorPTRIssuedAt || "Sto. Tomas"} onChange={e => { handleFieldChange("supervisorArchitectPTRIssuedAt", e.target.value); handleFieldChange("fencingSupervisorPTRIssuedAt", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                               </div>
                               <div>
                                 <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
-                                <input type="text" value={formData.supervisorArchitectTIN || "345-678-901-000"} onChange={e => handleFieldChange("supervisorArchitectTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                                <input type="text" value={formData.supervisorArchitectTIN || formData.fencingSupervisorTIN || "345-678-901-000"} onChange={e => { handleFieldChange("supervisorArchitectTIN", e.target.value); handleFieldChange("fencingSupervisorTIN", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                               </div>
+                            </div>
+
+                            <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                              <SignatureCreator
+                                value={formData.fencingSupervisorSignature || formData.supervisorArchitectSignature}
+                                onChange={sig => {
+                                  handleFieldChange("supervisorArchitectSignature", sig);
+                                  handleFieldChange("fencingSupervisorSignature", sig);
+                                }}
+                                label={`Supervisor E-Signature (${formData.supervisorArchitectName || formData.fencingSupervisorName || "Supervisor"})`}
+                              />
                             </div>
                           </>
                         ) : (
                           <div style={{ marginTop: "0.5rem", padding: "8px 12px", borderRadius: "8px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", fontSize: "0.76rem" }}>
-                            Using identical credentials from Box 3 (Design Professional: {formData.architectName || "Architect"}).
+                            Using identical credentials and e-signature from Box 2 / Design Professional ({formData.architectName || formData.fencingDesignerName || "Architect"}).
                           </div>
                         )}
                       </div>

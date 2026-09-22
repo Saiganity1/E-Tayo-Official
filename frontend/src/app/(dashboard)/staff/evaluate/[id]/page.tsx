@@ -12,6 +12,7 @@ import {
   generateElectricalPermitPdf, 
   generateSanitaryPermitPdf,
   generateMechanicalPermitPdf,
+  generateFencingPermitPdf,
   UnifiedPermitFormData
 } from "../../../../../utils/unifiedPermitPdfGenerator";
 import { PROJECT_TYPES_MATRIX, ProjectTypeItem, PermitFormMatrix } from "../../../../../data/projectTypeMatrix";
@@ -439,6 +440,23 @@ export default function StaffEvaluatePage() {
           applicantGovIdPlaceIssued: (app as any).applicantGovIdPlaceIssued || (app as any).govIdPlaceIssued,
           applicantCtcNo: (app as any).applicantCtcNo || (app as any).govIdNo,
           lotOwnerSignedDate: (app as any).lotOwnerSignedDate,
+          fencingPermitNo: (app as any).fencingPermitNo,
+          fencingScopeOfWork: (app as any).fencingScopeOfWork,
+          fencingScopeDetails: (app as any).fencingScopeDetails,
+          fenceLength: (app as any).fenceLength,
+          fenceHeight: (app as any).fenceHeight,
+          fenceType: (app as any).fenceType,
+          fencingLength: (app as any).fencingLength || (app as any).fenceLength,
+          fencingHeight: (app as any).fencingHeight || (app as any).fenceHeight,
+          fencingType: (app as any).fencingType || (app as any).fenceType,
+          fencingTypes: (app as any).fencingTypes,
+          fencingTypeOthers: (app as any).fencingTypeOthers,
+          fencingTypeOthersLine2: (app as any).fencingTypeOthersLine2,
+          fencingTypeOthersLine3: (app as any).fencingTypeOthersLine3,
+          fenceCost: (app as any).fenceCost,
+          fencingCost: (app as any).fencingCost || (app as any).fenceCost,
+          fencingDesignerRole: (app as any).fencingDesignerRole,
+          fencingSupervisorRole: (app as any).fencingSupervisorRole,
           submissionDate: app.dateSubmitted || new Date().toLocaleDateString(),
         };
 
@@ -576,6 +594,33 @@ export default function StaffEvaluatePage() {
               type: "pdf",
               url: "/templates/MECHANICAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
               fileName: `${app.id}_Mechanical_Permit_MP.pdf`,
+              isOfficialForm: true,
+            });
+          }
+        }
+
+        // 6. Fencing Permit (FP)
+        if (pTypeObj.matrix?.fencingPermit === 'required' || pTypeObj.matrix?.fencingPermit === 'conditional' || (app as any).fencingPermitNo || (app as any).fenceLength || (app as any).fencingScopeOfWork) {
+          try {
+            const fenceB64 = await generateFencingPermitPdf(formData);
+            const fenceUrl = createBlobFromBase64(fenceB64);
+            docs.push({
+              id: "fencing-permit-tab",
+              title: "Official Fencing Permit Form (NBC Form B-03)",
+              tabLabel: "Fencing (FP)",
+              type: "pdf",
+              url: fenceUrl,
+              fileName: `${app.id}_Fencing_Permit_FP.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            docs.push({
+              id: "fencing-permit-tab",
+              title: "Official Fencing Permit Form (NBC Form B-03)",
+              tabLabel: "Fencing (FP)",
+              type: "pdf",
+              url: "/templates/FENCING-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+              fileName: `${app.id}_Fencing_Permit_FP.pdf`,
               isOfficialForm: true,
             });
           }

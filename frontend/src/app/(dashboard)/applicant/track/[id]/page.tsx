@@ -32,6 +32,7 @@ import {
   generateElectricalPermitPdf, 
   generateSanitaryPermitPdf,
   generateMechanicalPermitPdf,
+  generateFencingPermitPdf,
   UnifiedPermitFormData
 } from "../../../../../utils/unifiedPermitPdfGenerator";
 import { generateLocationalClearancePdf } from "../../../../../utils/locationalClearancePdfGenerator";
@@ -277,6 +278,23 @@ export default function ApplicationTrackDetail() {
       applicantGovIdPlaceIssued: (appData as any)?.applicantGovIdPlaceIssued || (appData as any)?.govIdPlaceIssued,
       applicantCtcNo: (appData as any)?.applicantCtcNo || (appData as any)?.govIdNo,
       lotOwnerSignedDate: (appData as any)?.lotOwnerSignedDate,
+      fencingPermitNo: (appData as any)?.fencingPermitNo,
+      fencingScopeOfWork: (appData as any)?.fencingScopeOfWork,
+      fencingScopeDetails: (appData as any)?.fencingScopeDetails,
+      fenceLength: (appData as any)?.fenceLength,
+      fenceHeight: (appData as any)?.fenceHeight,
+      fenceType: (appData as any)?.fenceType,
+      fencingLength: (appData as any)?.fencingLength || (appData as any)?.fenceLength,
+      fencingHeight: (appData as any)?.fencingHeight || (appData as any)?.fenceHeight,
+      fencingType: (appData as any)?.fencingType || (appData as any)?.fenceType,
+      fencingTypes: (appData as any)?.fencingTypes,
+      fencingTypeOthers: (appData as any)?.fencingTypeOthers,
+      fencingTypeOthersLine2: (appData as any)?.fencingTypeOthersLine2,
+      fencingTypeOthersLine3: (appData as any)?.fencingTypeOthersLine3,
+      fenceCost: (appData as any)?.fenceCost,
+      fencingCost: (appData as any)?.fencingCost || (appData as any)?.fenceCost,
+      fencingDesignerRole: (appData as any)?.fencingDesignerRole,
+      fencingSupervisorRole: (appData as any)?.fencingSupervisorRole,
       submissionDate: appData?.dateSubmitted || new Date().toLocaleDateString(),
     };
 
@@ -298,6 +316,9 @@ export default function ApplicationTrackDetail() {
         return `data:application/pdf;base64,${b64}`;
       } else if (doc.code === "BP") {
         const b64 = await generateBuildingPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "FP") {
+        const b64 = await generateFencingPermitPdf(formData);
         return `data:application/pdf;base64,${b64}`;
       } else if (doc.code === "LC" || doc.code === "LC-DOSSIER") {
         const b64 = await generateLocationalClearancePdf({

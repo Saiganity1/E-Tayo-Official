@@ -25,6 +25,7 @@ import {
   generateElectronicsPermitPdf,
   generateDemolitionPermitPdf,
   generateBfpApplicationPdf,
+  generateFencingPermitPdf,
   UnifiedPermitFormData 
 } from "../../utils/unifiedPermitPdfGenerator";
 import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
@@ -581,10 +582,39 @@ export default function TechnicalPermitFormsStep({
   const [electronicsSupervisorSignature, setElectronicsSupervisorSignature] = useState("");
 
   // ==========================================
-  // 10. ANCILLARY / SPECIAL PERMIT FIELDS
+  // 10. ANCILLARY / SPECIAL PERMIT FIELDS - FENCING PERMIT (NBC FORM B-03)
   // ==========================================
-  const [fenceLength, setFenceLength] = useState("45.0 meters");
-  const [fenceHeight, setFenceHeight] = useState("1.80 meters");
+  const [fencingScopeOfWork, setFencingScopeOfWork] = useState("New Construction");
+  const [fencingScopeDetails, setFencingScopeDetails] = useState("");
+  const [fencingType, setFencingType] = useState("R.C. and CONC. HOLLOW BLOCKS");
+  const [fencingTypes, setFencingTypes] = useState<string[]>(["R.C. and CONC. HOLLOW BLOCKS"]);
+  const [fencingTypeOthers, setFencingTypeOthers] = useState("");
+  const [fencingTypeOthersLine2, setFencingTypeOthersLine2] = useState("");
+  const [fencingTypeOthersLine3, setFencingTypeOthersLine3] = useState("");
+  const [fenceLength, setFenceLength] = useState("45.00");
+  const [fenceHeight, setFenceHeight] = useState("2.20");
+  const [fencingCost, setFencingCost] = useState("150,000.00");
+  const [fencingDesignerRole, setFencingDesignerRole] = useState<"architect" | "civilEngineer">("architect");
+  const [fencingDesignerName, setFencingDesignerName] = useState("ARCH. MARIA ELENA SANTOS, UAP");
+  const [fencingDesignerAddress, setFencingDesignerAddress] = useState("San Nicolas, Sto. Tomas, Pampanga");
+  const [fencingDesignerPRC, setFencingDesignerPRC] = useState("0045211");
+  const [fencingDesignerPRCValidity, setFencingDesignerPRCValidity] = useState("2027-11-15");
+  const [fencingDesignerPTR, setFencingDesignerPTR] = useState("PTR-ST-2026-004");
+  const [fencingDesignerPTRIssued, setFencingDesignerPTRIssued] = useState("Jan 08, 2026");
+  const [fencingDesignerPTRIssuedAt, setFencingDesignerPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
+  const [fencingDesignerTIN, setFencingDesignerTIN] = useState("456-789-012-000");
+  const [fencingDesignerSignature, setFencingDesignerSignature] = useState<string>("");
+
+  const [sameAsDesignFencingSupervisor, setSameAsDesignFencingSupervisor] = useState(true);
+  const [fencingSupervisorName, setFencingSupervisorName] = useState("ENGR. ROBERTO DIZON, CE");
+  const [fencingSupervisorAddress, setFencingSupervisorAddress] = useState("Poblacion, Sto. Tomas, Pampanga");
+  const [fencingSupervisorPRC, setFencingSupervisorPRC] = useState("0089123");
+  const [fencingSupervisorPRCValidity, setFencingSupervisorPRCValidity] = useState("2028-04-20");
+  const [fencingSupervisorPTR, setFencingSupervisorPTR] = useState("PTR-ST-2026-099");
+  const [fencingSupervisorPTRIssued, setFencingSupervisorPTRIssued] = useState("Jan 12, 2026");
+  const [fencingSupervisorPTRIssuedAt, setFencingSupervisorPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
+  const [fencingSupervisorTIN, setFencingSupervisorTIN] = useState("987-654-321-000");
+  const [fencingSupervisorSignature, setFencingSupervisorSignature] = useState<string>("");
   const [fenceMaterial, setFenceMaterial] = useState("Plastered Concrete Hollow Blocks with Decorative Steel Grille Panels");
   const [demolitionBuildingType, setDemolitionBuildingType] = useState("Single-Detached Two-Storey Residential Structure");
   const [demolitionArea, setDemolitionArea] = useState("180.00 sq.m.");
@@ -1129,7 +1159,36 @@ export default function TechnicalPermitFormsStep({
         lotOwnerGovIdDateIssued: lotOwnerConsent ? lotOwnerGovIdDateIssued : undefined,
         lotOwnerGovIdPlaceIssued: lotOwnerConsent ? lotOwnerGovIdPlaceIssued : undefined,
         lotOwnerSignedDate: lotOwnerConsent ? lotOwnerSignedDate : undefined,
-        lotOwnerSignature: lotOwnerConsent ? lotOwnerSignature : undefined,
+        fencingScopeOfWork,
+        fencingScopeDetails,
+        fencingType,
+        fencingTypes,
+        fencingTypeOthers: fencingTypeOthers || fenceMaterial,
+        fencingTypeOthersLine2,
+        fencingTypeOthersLine3,
+        fencingLength: fenceLength,
+        fencingHeight: fenceHeight,
+        fencingCost,
+        fencingDesignerRole,
+        fencingDesignerName,
+        fencingDesignerAddress,
+        fencingDesignerPRC,
+        fencingDesignerPRCValidity,
+        fencingDesignerPTR,
+        fencingDesignerPTRIssued,
+        fencingDesignerPTRIssuedAt,
+        fencingDesignerTIN,
+        fencingDesignerSignature,
+        fencingSupervisorRole: sameAsDesignFencingSupervisor ? "same" : undefined,
+        fencingSupervisorName: sameAsDesignFencingSupervisor ? fencingDesignerName : fencingSupervisorName,
+        fencingSupervisorAddress: sameAsDesignFencingSupervisor ? fencingDesignerAddress : fencingSupervisorAddress,
+        fencingSupervisorPRC: sameAsDesignFencingSupervisor ? fencingDesignerPRC : fencingSupervisorPRC,
+        fencingSupervisorPRCValidity: sameAsDesignFencingSupervisor ? fencingDesignerPRCValidity : fencingSupervisorPRCValidity,
+        fencingSupervisorPTR: sameAsDesignFencingSupervisor ? fencingDesignerPTR : fencingSupervisorPTR,
+        fencingSupervisorPTRIssued: sameAsDesignFencingSupervisor ? fencingDesignerPTRIssued : fencingSupervisorPTRIssued,
+        fencingSupervisorPTRIssuedAt: sameAsDesignFencingSupervisor ? fencingDesignerPTRIssuedAt : fencingSupervisorPTRIssuedAt,
+        fencingSupervisorTIN: sameAsDesignFencingSupervisor ? fencingDesignerTIN : fencingSupervisorTIN,
+        fencingSupervisorSignature: sameAsDesignFencingSupervisor ? fencingDesignerSignature : fencingSupervisorSignature,
         activePermitForms: mandatoryKeys,
         submissionDate
       };
@@ -1287,6 +1346,44 @@ export default function TechnicalPermitFormsStep({
           } else if (key === "fireBfpPermit") {
             // BFP has no blank PDF template — generate the application summary sheet from scratch
             const b64 = await generateBfpApplicationPdf(payload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "fencingPermit") {
+            const fpPayload: UnifiedPermitFormData = {
+              ...payload,
+              fencingScopeOfWork,
+              fencingScopeDetails,
+              fencingType,
+              fencingTypes,
+              fencingTypeOthers: fencingTypeOthers || fenceMaterial,
+              fencingTypeOthersLine2,
+              fencingTypeOthersLine3,
+              fencingLength: fenceLength,
+              fencingHeight: fenceHeight,
+              fencingCost,
+              fencingDesignerRole,
+              fencingDesignerName,
+              fencingDesignerAddress,
+              fencingDesignerPRC,
+              fencingDesignerPRCValidity,
+              fencingDesignerPTR,
+              fencingDesignerPTRIssued,
+              fencingDesignerPTRIssuedAt,
+              fencingDesignerTIN,
+              fencingDesignerSignature,
+              fencingSupervisorRole: sameAsDesignFencingSupervisor ? "same" : undefined,
+              fencingSupervisorName: sameAsDesignFencingSupervisor ? fencingDesignerName : fencingSupervisorName,
+              fencingSupervisorAddress: sameAsDesignFencingSupervisor ? fencingDesignerAddress : fencingSupervisorAddress,
+              fencingSupervisorPRC: sameAsDesignFencingSupervisor ? fencingDesignerPRC : fencingSupervisorPRC,
+              fencingSupervisorPRCValidity: sameAsDesignFencingSupervisor ? fencingDesignerPRCValidity : fencingSupervisorPRCValidity,
+              fencingSupervisorPTR: sameAsDesignFencingSupervisor ? fencingDesignerPTR : fencingSupervisorPTR,
+              fencingSupervisorPTRIssued: sameAsDesignFencingSupervisor ? fencingDesignerPTRIssued : fencingSupervisorPTRIssued,
+              fencingSupervisorPTRIssuedAt: sameAsDesignFencingSupervisor ? fencingDesignerPTRIssuedAt : fencingSupervisorPTRIssuedAt,
+              fencingSupervisorTIN: sameAsDesignFencingSupervisor ? fencingDesignerTIN : fencingSupervisorTIN,
+              fencingSupervisorSignature: sameAsDesignFencingSupervisor ? fencingDesignerSignature : fencingSupervisorSignature,
+              applicantSignature,
+              lotOwnerSignature: lotOwnerConsent ? lotOwnerSignature : undefined,
+            };
+            const b64 = await generateFencingPermitPdf(fpPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           }
         } catch (indivErr) {
@@ -6442,18 +6539,764 @@ export default function TechnicalPermitFormsStep({
 
                 <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
                   {activeTab === "fencingPermit" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.5fr", gap: "1rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Fence Length *</label>
-                        <input type="text" value={fenceLength} onChange={(e) => setFenceLength(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                    <div className="space-y-4">
+                      {/* Box 1: Scope of Work */}
+                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#1e293b", textTransform: "uppercase" }}>
+                            1. Scope of Work (NBC Form B-03 • Box 1)
+                          </span>
+                          <span style={{ fontSize: "0.7rem", background: "#ede9fe", color: "#6d28d9", padding: "2px 8px", borderRadius: "4px", fontWeight: "700" }}>
+                            Official Checkboxes
+                          </span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.5rem" }}>
+                          {[
+                            "New Construction",
+                            "Erection",
+                            "Addition",
+                            "Repair",
+                            "Demolition",
+                            "Others (Specify)"
+                          ].map((scope) => {
+                            const isSelected = fencingScopeOfWork === scope;
+                            return (
+                              <button
+                                key={scope}
+                                type="button"
+                                onClick={() => setFencingScopeOfWork(scope)}
+                                style={{
+                                  padding: "8px 12px",
+                                  borderRadius: "8px",
+                                  border: isSelected ? "2px solid #6366f1" : "1px solid #cbd5e1",
+                                  background: isSelected ? "#eef2ff" : "#ffffff",
+                                  color: isSelected ? "#4338ca" : "#334155",
+                                  fontWeight: isSelected ? "700" : "500",
+                                  fontSize: "0.82rem",
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  transition: "all 0.15s ease"
+                                }}
+                              >
+                                {scope}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {["Repair", "Demolition", "Other"].some(k => fencingScopeOfWork.toLowerCase().includes(k.toLowerCase())) && (
+                          <div style={{ marginTop: "10px" }}>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
+                              Specify {fencingScopeOfWork} Details (Printed on Form Underline) *
+                            </label>
+                            <input
+                              type="text"
+                              value={fencingScopeDetails}
+                              onChange={(e) => setFencingScopeDetails(e.target.value)}
+                              placeholder={`Specify details for ${fencingScopeOfWork}...`}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1.5px solid #93c5fd", fontSize: "0.84rem", background: "#f0f9ff" }}
+                            />
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Fence Height *</label>
-                        <input type="text" value={fenceHeight} onChange={(e) => setFenceHeight(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+
+                      {/* Box 6: Fencing Measurements & Official Type of Fencing (Page 2) */}
+                      <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.85rem", fontWeight: "800", color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                              2. Fencing Measurements & Type of Fencing (NBC Form B-03 • Box 6)
+                            </span>
+                            <p style={{ margin: "2px 0 0", fontSize: "0.72rem", color: "#64748b" }}>
+                              To be accomplished by the Design Professional (Architect or Civil Engineer)
+                            </p>
+                          </div>
+                          <span style={{ fontSize: "0.7rem", background: "#dbeafe", color: "#1e40af", padding: "3px 10px", borderRadius: "6px", fontWeight: "700" }}>
+                            Official Page 2 Box 6
+                          </span>
+                        </div>
+
+                        {/* Measurements Row */}
+                        <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "0.85rem", marginBottom: "1rem" }}>
+                          <span style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#334155", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.03em" }}>
+                            Measurements (Printed on Official Box 6 Underlines)
+                          </span>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.2fr", gap: "0.85rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
+                                Length in Meters (Underline 1) *
+                              </label>
+                              <div style={{ position: "relative" }}>
+                                <input
+                                  type="text"
+                                  value={fenceLength}
+                                  onChange={(e) => setFenceLength(e.target.value)}
+                                  placeholder="e.g. 45.00"
+                                  style={{ width: "100%", padding: "8px 10px", paddingRight: "36px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.86rem", fontWeight: "600", color: "#0f172a", background: "#f8fafc" }}
+                                />
+                                <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "0.75rem", color: "#64748b", fontWeight: "700" }}>m</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
+                                Height in Meters (Underline 2) *
+                              </label>
+                              <div style={{ position: "relative" }}>
+                                <input
+                                  type="text"
+                                  value={fenceHeight}
+                                  onChange={(e) => setFenceHeight(e.target.value)}
+                                  placeholder="e.g. 2.20"
+                                  style={{ width: "100%", padding: "8px 10px", paddingRight: "36px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.86rem", fontWeight: "600", color: "#0f172a", background: "#f8fafc" }}
+                                />
+                                <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "0.75rem", color: "#64748b", fontWeight: "700" }}>m</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
+                                Estimated Fencing Cost (PHP) *
+                              </label>
+                              <div style={{ position: "relative" }}>
+                                <input
+                                  type="text"
+                                  value={fencingCost}
+                                  onChange={(e) => setFencingCost(e.target.value)}
+                                  placeholder="e.g. 150,000.00"
+                                  style={{ width: "100%", padding: "8px 10px", paddingLeft: "26px", borderRadius: "6px", border: "1.5px solid #cbd5e1", fontSize: "0.86rem", fontWeight: "600", color: "#0f172a", background: "#f8fafc" }}
+                                />
+                                <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "0.75rem", color: "#64748b", fontWeight: "700" }}>₱</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Type of Fencing (Official 8 Checkboxes Grid) */}
+                        <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "0.85rem" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                            <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                              Type of Fencing (Official 8 Checkboxes in NBC Form B-03)
+                            </span>
+                            <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                              Select one or more applicable fencing types
+                            </span>
+                          </div>
+
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+                            {/* Left Column (5 Checkboxes) */}
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                              {[
+                                { id: "INDIGENOUS MATERIALS", label: "INDIGENOUS MATERIALS", desc: "Bamboo, wood, thatch, or local organic fencing" },
+                                { id: "R.C. (Reinforced Concrete)", label: "R.C. (Reinforced Concrete)", desc: "Full reinforced concrete posts and structural panels" },
+                                { id: "R.C. and CONC. HOLLOW BLOCKS", label: "R.C. and CONC. HOLLOW BLOCKS", desc: "Reinforced concrete columns/beams with CHB wall infill" },
+                                { id: "R.C. and BRICKS", label: "R.C. and BRICKS", desc: "Reinforced concrete framing with decorative brick masonry" },
+                                { id: "R.C. and INTERLINK/CYCLONE WIRE", label: "R.C. and INTERLINK/CYCLONE WIRE", desc: "R.C. or pipe framing with chain-link cyclone mesh" },
+                              ].map((item) => {
+                                const checked = fencingTypes.includes(item.id) || (fencingTypes.length === 0 && fencingType === item.id);
+                                return (
+                                  <label
+                                    key={item.id}
+                                    onClick={() => {
+                                      const next = checked
+                                        ? fencingTypes.filter((t) => t !== item.id)
+                                        : [...fencingTypes, item.id];
+                                      setFencingTypes(next);
+                                      setFencingType(next.join(", "));
+                                    }}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "flex-start",
+                                      gap: "8px",
+                                      padding: "7px 10px",
+                                      borderRadius: "6px",
+                                      border: checked ? "1.5px solid #3b82f6" : "1px solid #e2e8f0",
+                                      background: checked ? "#eff6ff" : "#ffffff",
+                                      cursor: "pointer",
+                                      transition: "all 0.15s ease",
+                                    }}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      readOnly
+                                      style={{ marginTop: "2px", cursor: "pointer", accentColor: "#2563eb" }}
+                                    />
+                                    <div>
+                                      <div style={{ fontSize: "0.78rem", fontWeight: checked ? "700" : "600", color: checked ? "#1d4ed8" : "#1e293b" }}>
+                                        {item.label}
+                                      </div>
+                                      <div style={{ fontSize: "0.68rem", color: "#64748b" }}>
+                                        {item.desc}
+                                      </div>
+                                    </div>
+                                  </label>
+                                );
+                              })}
+                            </div>
+
+                            {/* Right Column (3 Checkboxes + Underlines) */}
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                              {[
+                                { id: "R.C. STEEL MATTING", label: "R.C. STEEL MATTING", desc: "Reinforced frame with welded steel wire matting panels" },
+                                { id: "R.C. BARBED WIRE", label: "R.C. BARBED WIRE", desc: "Security fence posts with multi-strand galvanized barbed wire" },
+                                { id: "OTHERS (Specify)", label: "OTHERS (Specify)", desc: "Custom perimeter fencing specifications (prints on 3 underlines)" },
+                              ].map((item) => {
+                                const checked = fencingTypes.includes(item.id) || (fencingTypes.length === 0 && fencingType === item.id);
+                                return (
+                                  <label
+                                    key={item.id}
+                                    onClick={() => {
+                                      const next = checked
+                                        ? fencingTypes.filter((t) => t !== item.id)
+                                        : [...fencingTypes, item.id];
+                                      setFencingTypes(next);
+                                      setFencingType(next.join(", "));
+                                    }}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "flex-start",
+                                      gap: "8px",
+                                      padding: "7px 10px",
+                                      borderRadius: "6px",
+                                      border: checked ? "1.5px solid #3b82f6" : "1px solid #e2e8f0",
+                                      background: checked ? "#eff6ff" : "#ffffff",
+                                      cursor: "pointer",
+                                      transition: "all 0.15s ease",
+                                    }}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      readOnly
+                                      style={{ marginTop: "2px", cursor: "pointer", accentColor: "#2563eb" }}
+                                    />
+                                    <div>
+                                      <div style={{ fontSize: "0.78rem", fontWeight: checked ? "700" : "600", color: checked ? "#1d4ed8" : "#1e293b" }}>
+                                        {item.label}
+                                      </div>
+                                      <div style={{ fontSize: "0.68rem", color: "#64748b" }}>
+                                        {item.desc}
+                                      </div>
+                                    </div>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* OTHERS (Specify) 3 Underline Lines Inputs */}
+                        {(fencingTypes.includes("OTHERS (Specify)") || fencingType.toLowerCase().includes("other") || Boolean(fencingTypeOthers)) && (
+                          <div style={{ marginTop: "0.85rem", background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: "8px", padding: "0.85rem" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                              <span style={{ fontSize: "0.76rem", fontWeight: "700", color: "#166534", textTransform: "uppercase" }}>
+                                Official Box 6 Underlines for OTHERS (Specify)
+                              </span>
+                              <span style={{ fontSize: "0.68rem", background: "#dcfce7", color: "#15803d", padding: "2px 8px", borderRadius: "4px", fontWeight: "700" }}>
+                                3 Form Lines
+                              </span>
+                            </div>
+                            <p style={{ margin: "0 0 8px", fontSize: "0.7rem", color: "#15803d" }}>
+                              Printed directly across the three official specification underlines in Box 6 on Page 2:
+                            </p>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#374151", marginBottom: "2px" }}>
+                                  Line 1: Primary Custom Material (Follows OTHERS (Specify) • max ~26 chars) *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={fencingTypeOthers}
+                                  onChange={(e) => {
+                                    setFencingTypeOthers(e.target.value);
+                                    setFenceMaterial(e.target.value);
+                                  }}
+                                  placeholder="e.g. Decorative Metal Grille Panels"
+                                  maxLength={35}
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1.5px solid #86efac", fontSize: "0.82rem", background: "#ffffff" }}
+                                />
+                              </div>
+
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#374151", marginBottom: "2px" }}>
+                                  Line 2: Framing & Post Reinforcement (Full Underline 2 • max ~40 chars)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={fencingTypeOthersLine2}
+                                  onChange={(e) => setFencingTypeOthersLine2(e.target.value)}
+                                  placeholder="e.g. with Reinforced Concrete Posts & Footing"
+                                  maxLength={50}
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "0.82rem", background: "#ffffff" }}
+                                />
+                              </div>
+
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#374151", marginBottom: "2px" }}>
+                                  Line 3: Top Finishing / Security Specifications (Full Underline 3 • max ~40 chars)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={fencingTypeOthersLine3}
+                                  onChange={(e) => setFencingTypeOthersLine3(e.target.value)}
+                                  placeholder="e.g. Anti-climb spearhead design, 2-coat epoxy finish"
+                                  maxLength={50}
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "0.82rem", background: "#ffffff" }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Fencing Material Specifications *</label>
-                        <input type="text" value={fenceMaterial} onChange={(e) => setFenceMaterial(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+
+                      {/* Box 2: Design Professional, Plans and Specifications */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #6366f1", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#4338ca", textTransform: "uppercase", display: "block" }}>
+                              3. BOX 2: DESIGN PROFESSIONAL, PLANS AND SPECIFICATIONS
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Architect or Civil Engineer (Signed and Sealed Over Printed Name)
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ fontSize: "0.76rem", fontWeight: "600", color: "#475569", marginRight: "4px" }}>Profession:</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFencingDesignerRole("architect");
+                                setFencingDesignerName(architectName || "ARCH. MARIA ELENA SANTOS, UAP");
+                                setFencingDesignerAddress(architectAddress || "San Nicolas, Sto. Tomas, Pampanga");
+                                setFencingDesignerPRC(architectPRC || "0045211");
+                                setFencingDesignerPRCValidity(architectPRCValidity || "2027-11-15");
+                                setFencingDesignerPTR(architectPTR || "PTR-ST-2026-004");
+                                setFencingDesignerPTRIssued(architectPTRIssued || "Jan 08, 2026");
+                                setFencingDesignerPTRIssuedAt(architectPTRIssuedAt || "Sto. Tomas, Pampanga");
+                                setFencingDesignerTIN(architectTIN || "456-789-012-000");
+                              }}
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: "6px",
+                                border: fencingDesignerRole === "architect" ? "1.5px solid #4f46e5" : "1px solid #cbd5e1",
+                                background: fencingDesignerRole === "architect" ? "#e0e7ff" : "#ffffff",
+                                color: fencingDesignerRole === "architect" ? "#3730a3" : "#475569",
+                                fontWeight: fencingDesignerRole === "architect" ? "700" : "500",
+                                fontSize: "0.76rem",
+                                cursor: "pointer"
+                              }}
+                            >
+                              Architect
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFencingDesignerRole("civilEngineer");
+                                setFencingDesignerName(civilEngineerName || "ENGR. ROBERTO DIZON, CE");
+                                setFencingDesignerAddress(civilEngineerAddress || "San Nicolas, Sto. Tomas, Pampanga");
+                                setFencingDesignerPRC(civilEngineerPRC || "PRC-0045211");
+                                setFencingDesignerPRCValidity(civilEngineerPRCValidity || "2027-11-15");
+                                setFencingDesignerPTR(civilEngineerPTR || "PTR-ST-2026-004");
+                                setFencingDesignerPTRIssued(civilEngineerPTRIssued || "Jan 08, 2026");
+                                setFencingDesignerPTRIssuedAt(civilEngineerPTRIssuedAt || "Sto. Tomas, Pampanga");
+                                setFencingDesignerTIN(civilEngineerTIN || "456-789-012-000");
+                              }}
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: "6px",
+                                border: fencingDesignerRole === "civilEngineer" ? "1.5px solid #4f46e5" : "1px solid #cbd5e1",
+                                background: fencingDesignerRole === "civilEngineer" ? "#e0e7ff" : "#ffffff",
+                                color: fencingDesignerRole === "civilEngineer" ? "#3730a3" : "#475569",
+                                fontWeight: fencingDesignerRole === "civilEngineer" ? "700" : "500",
+                                fontSize: "0.76rem",
+                                cursor: "pointer"
+                              }}
+                            >
+                              Civil Engineer
+                            </button>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.65rem", marginBottom: "0.75rem" }}>
+                          <div style={{ gridColumn: "span 2" }}>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              {fencingDesignerRole === "civilEngineer" ? "Civil Engineer" : "Architect"} Full Name (Printed on Underline) *
+                            </label>
+                            <input
+                              type="text"
+                              value={fencingDesignerName}
+                              onChange={(e) => setFencingDesignerName(e.target.value)}
+                              placeholder="e.g. ARCH. MARIA ELENA SANTOS, UAP"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Professional Address *</label>
+                            <input
+                              type="text"
+                              value={fencingDesignerAddress}
+                              onChange={(e) => setFencingDesignerAddress(e.target.value)}
+                              placeholder="e.g. San Nicolas, Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC Registration No. *</label>
+                            <input
+                              type="text"
+                              value={fencingDesignerPRC}
+                              onChange={(e) => setFencingDesignerPRC(e.target.value)}
+                              placeholder="e.g. 0045211"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC Validity *</label>
+                            <input
+                              type="date"
+                              value={fencingDesignerPRCValidity}
+                              onChange={(e) => setFencingDesignerPRCValidity(e.target.value)}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR No. *</label>
+                            <input
+                              type="text"
+                              value={fencingDesignerPTR}
+                              onChange={(e) => setFencingDesignerPTR(e.target.value)}
+                              placeholder="e.g. PTR-ST-2026-004"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR Date Issued *</label>
+                            <input
+                              type="text"
+                              value={fencingDesignerPTRIssued}
+                              onChange={(e) => setFencingDesignerPTRIssued(e.target.value)}
+                              placeholder="e.g. Jan 08, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR Issued At *</label>
+                            <input
+                              type="text"
+                              value={fencingDesignerPTRIssuedAt}
+                              onChange={(e) => setFencingDesignerPTRIssuedAt(e.target.value)}
+                              placeholder="e.g. Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>TIN *</label>
+                            <input
+                              type="text"
+                              value={fencingDesignerTIN}
+                              onChange={(e) => setFencingDesignerTIN(e.target.value)}
+                              placeholder="e.g. 456-789-012-000"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* E-Signature Creator for Box 2 */}
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #c7d2fe" }}>
+                          <SignatureCreator
+                            value={fencingDesignerSignature}
+                            onChange={setFencingDesignerSignature}
+                            label={`Design Professional E-Signature (${fencingDesignerRole === "civilEngineer" ? "Civil Engineer" : "Architect"} - Affixed Over Printed Name: ${fencingDesignerName})`}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Box 3: Full-Time Inspector and Supervisor */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #059669", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#065f46", textTransform: "uppercase", display: "block" }}>
+                              4. BOX 3: FULL-TIME INSPECTOR AND SUPERVISOR OF CONSTRUCTION WORKS
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Architect or Civil Engineer In-Charge of Construction
+                            </span>
+                          </div>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "700", color: "#065f46", cursor: "pointer", background: "#ecfdf5", padding: "4px 10px", borderRadius: "6px", border: "1px solid #a7f3d0" }}>
+                            <input
+                              type="checkbox"
+                              checked={sameAsDesignFencingSupervisor}
+                              onChange={(e) => setSameAsDesignFencingSupervisor(e.target.checked)}
+                              style={{ accentColor: "#059669", width: "15px", height: "15px", cursor: "pointer" }}
+                            />
+                            <span>Same as Design Professional (Box 2)</span>
+                          </label>
+                        </div>
+
+                        {sameAsDesignFencingSupervisor ? (
+                          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "0.85rem", display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "#22c55e", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem", fontWeight: "bold" }}>✓</div>
+                            <div>
+                              <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#166534", display: "block" }}>
+                                Full Credentials & E-Signature Inherited from Box 2
+                              </span>
+                              <span style={{ fontSize: "0.76rem", color: "#15803d" }}>
+                                Supervisor: <strong>{fencingDesignerName}</strong> (PRC: {fencingDesignerPRC}, PTR: {fencingDesignerPTR}). Digital signature is synchronized automatically.
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.65rem", marginBottom: "0.75rem" }}>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                                  Supervisor Full Name (Printed on Underline) *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={fencingSupervisorName}
+                                  onChange={(e) => setFencingSupervisorName(e.target.value)}
+                                  placeholder="e.g. ENGR. ROBERTO DIZON, CE"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Address *</label>
+                                <input
+                                  type="text"
+                                  value={fencingSupervisorAddress}
+                                  onChange={(e) => setFencingSupervisorAddress(e.target.value)}
+                                  placeholder="e.g. Poblacion, Sto. Tomas, Pampanga"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC Registration No. *</label>
+                                <input
+                                  type="text"
+                                  value={fencingSupervisorPRC}
+                                  onChange={(e) => setFencingSupervisorPRC(e.target.value)}
+                                  placeholder="e.g. 0089123"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC Validity *</label>
+                                <input
+                                  type="date"
+                                  value={fencingSupervisorPRCValidity}
+                                  onChange={(e) => setFencingSupervisorPRCValidity(e.target.value)}
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR No. *</label>
+                                <input
+                                  type="text"
+                                  value={fencingSupervisorPTR}
+                                  onChange={(e) => setFencingSupervisorPTR(e.target.value)}
+                                  placeholder="e.g. PTR-ST-2026-099"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR Date Issued *</label>
+                                <input
+                                  type="text"
+                                  value={fencingSupervisorPTRIssued}
+                                  onChange={(e) => setFencingSupervisorPTRIssued(e.target.value)}
+                                  placeholder="e.g. Jan 12, 2026"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR Issued At *</label>
+                                <input
+                                  type="text"
+                                  value={fencingSupervisorPTRIssuedAt}
+                                  onChange={(e) => setFencingSupervisorPTRIssuedAt(e.target.value)}
+                                  placeholder="e.g. Sto. Tomas, Pampanga"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>TIN *</label>
+                                <input
+                                  type="text"
+                                  value={fencingSupervisorTIN}
+                                  onChange={(e) => setFencingSupervisorTIN(e.target.value)}
+                                  placeholder="e.g. 987-654-321-000"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #a7f3d0" }}>
+                              <SignatureCreator
+                                value={fencingSupervisorSignature}
+                                onChange={setFencingSupervisorSignature}
+                                label={`Full-Time Supervisor E-Signature (Affixed Over Printed Name: ${fencingSupervisorName})`}
+                                required
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Box 4: Building Owner / Applicant & Lot Owner Consent */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #0284c7", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ marginBottom: "12px" }}>
+                          <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase", display: "block" }}>
+                            5. BOX 4: TO BE ACCOMPLISHED BY THE APPLICANT & LOT OWNER
+                          </span>
+                          <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                            Owner authorization, community tax certificates (CTC), and consent signatures
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
+                          {/* Applicant Card */}
+                          <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "1rem" }}>
+                            <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                              Building Owner / Applicant (Left)
+                            </span>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Applicant Full Name</label>
+                                <input
+                                  type="text"
+                                  value={applicantName || "JUAN DELA CRUZ"}
+                                  disabled
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9", fontWeight: "700" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>C.T.C. / Gov ID No. *</label>
+                                <input
+                                  type="text"
+                                  value={applicantCtcNo || "00192847"}
+                                  onChange={(e) => setApplicantCtcNo(e.target.value)}
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Date Issued *</label>
+                                <input
+                                  type="text"
+                                  value={govIdDateIssued || "Jan 05, 2026"}
+                                  onChange={(e) => setGovIdDateIssued(e.target.value)}
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Place Issued *</label>
+                                <input
+                                  type="text"
+                                  value={govIdPlaceIssued || "Sto. Tomas"}
+                                  onChange={(e) => setGovIdPlaceIssued(e.target.value)}
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                              <SignatureCreator
+                                value={applicantSignature}
+                                onChange={setApplicantSignature}
+                                label={`Applicant E-Signature (Affixed over printed name: ${applicantName || 'Applicant'})`}
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          {/* Lot Owner Consent Card */}
+                          <div style={{ background: lotOwnerConsent ? "#f0fdf4" : "#f8fafc", border: lotOwnerConsent ? "1px solid #86efac" : "1px solid #cbd5e1", borderRadius: "10px", padding: "1rem", transition: "all 0.2s ease" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                              <span style={{ fontSize: "0.8rem", fontWeight: "800", color: lotOwnerConsent ? "#166534" : "#1e293b", textTransform: "uppercase" }}>
+                                With My Consent: Lot Owner (Right)
+                              </span>
+                              <label style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.74rem", fontWeight: "700", color: "#166534", cursor: "pointer" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={lotOwnerConsent}
+                                  onChange={(e) => setLotOwnerConsent(e.target.checked)}
+                                  style={{ accentColor: "#16a34a", width: "15px", height: "15px", cursor: "pointer" }}
+                                />
+                                <span>Consent Required</span>
+                              </label>
+                            </div>
+
+                            {lotOwnerConsent ? (
+                              <>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                                  <div style={{ gridColumn: "span 2" }}>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Lot Owner Full Name *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerName}
+                                      onChange={(e) => setLotOwnerName(e.target.value)}
+                                      placeholder="e.g. DAVE SICAT"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff", fontWeight: "700" }}
+                                    />
+                                  </div>
+                                  <div style={{ gridColumn: "span 2" }}>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Lot Owner Address *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerAddress}
+                                      onChange={(e) => setLotOwnerAddress(e.target.value)}
+                                      placeholder="e.g. 153 Sitio Visitas, Sto. Tomas, Pampanga"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>C.T.C. No. *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerGovIdNo}
+                                      onChange={(e) => setLotOwnerGovIdNo(e.target.value)}
+                                      placeholder="e.g. 00881923"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Date Issued *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerGovIdDateIssued}
+                                      onChange={(e) => setLotOwnerGovIdDateIssued(e.target.value)}
+                                      placeholder="e.g. Jan 10, 2026"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div style={{ gridColumn: "span 2" }}>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Place Issued *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerGovIdPlaceIssued}
+                                      onChange={(e) => setLotOwnerGovIdPlaceIssued(e.target.value)}
+                                      placeholder="e.g. Sto. Tomas"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #86efac" }}>
+                                  <SignatureCreator
+                                    value={lotOwnerSignature}
+                                    onChange={setLotOwnerSignature}
+                                    label={`Lot Owner E-Signature (Affixed over printed name: ${lotOwnerName || 'Lot Owner'})`}
+                                  />
+                                </div>
+                              </>
+                            ) : (
+                              <p style={{ fontSize: "0.78rem", color: "#64748b", margin: "1rem 0", fontStyle: "italic" }}>
+                                Enable consent if the applicant is not the registered owner of the lot or if co-owner consent is required.
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
