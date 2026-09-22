@@ -81,6 +81,8 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   permitNo: "AP-2026-0001",
   buildingPermitNo: "BP-2026-0001",
   electronicsPermitNo: "EL-2026-0001",
+  demolitionPermitNo: "DP-2026-0001",
+  withBuildingPermit: true,
   locationalClearanceRef: "LC-2026-9307",
   projectType: PROJECT_TYPES_MATRIX[0],
   applicantFirstName: "JUAN",
@@ -347,6 +349,18 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   demolitionArea: "180.00",
   demolitionStoreys: "2",
   demolitionScope: "Demolition of Old Dilapidated Structure Prior to New Construction",
+  demolitionStartDate: "2026-10-01",
+  demolitionCompletionDate: "2026-11-15",
+  demolitionSupervisorName: "Engr. Roberto Cruz, CE",
+  demolitionSupervisorPRC: "0078923",
+  demolitionSupervisorPRCValidity: "2028-11-20",
+  demolitionSupervisorPTR: "PTR-ST-2026-001",
+  demolitionSupervisorPTRIssued: "Jan 10, 2026",
+  demolitionSupervisorPTRIssuedAt: "Sto. Tomas",
+  demolitionSupervisorTIN: "456-789-012-000",
+  demolitionSupervisorAddress: "Sto. Tomas, Pampanga",
+  demolitionSupervisorPhone: "0918-765-4321",
+  demolitionSupervisorSignature: "",
 
   // Fencing Permit
   fencingType: "Reinforced Concrete / CHB with Decorative Steel Grills",
@@ -592,7 +606,7 @@ const getPermitNoLabel = (formId: string): string => {
 
 const isFormLinkedToBuildingPermit = (formId: string): boolean => {
   // Ancillary permits and certificates that connect to the master Building Permit No.
-  return ["AP", "SP", "EP", "PL", "MP", "EL", "CO", "CC", "CFEI"].includes(formId);
+  return ["AP", "SP", "EP", "PL", "MP", "EL", "DP", "CO", "CC", "CFEI"].includes(formId);
 };
 
 export default function FormTestingStudio() {
@@ -1046,7 +1060,8 @@ export default function FormTestingStudio() {
                   return {
                     ...prev,
                     permitNo: (!prev.permitNo || isOldPrefix) ? autoNo : prev.permitNo,
-                    electronicsPermitNo: form.id === "EL" ? (prev.electronicsPermitNo || autoNo) : prev.electronicsPermitNo
+                    electronicsPermitNo: form.id === "EL" ? (prev.electronicsPermitNo || autoNo) : prev.electronicsPermitNo,
+                    demolitionPermitNo: form.id === "DP" ? (prev.demolitionPermitNo || autoNo) : prev.demolitionPermitNo
                   };
                 });
               }}
@@ -1267,7 +1282,9 @@ export default function FormTestingStudio() {
                         }}
                       />
                       <span style={{ display: "block", fontSize: "0.7rem", color: "#64748b", marginTop: "3px" }}>
-                        Auto-gathered from project with Building Permit — mapped into the 10 official boxes
+                        {selectedForm.id === "DP"
+                          ? "Auto-gathered from project with Building Permit — mapped into the 8 official boxes of NBC Form B-08"
+                          : "Auto-gathered from project with Building Permit — mapped into the official boxes"}
                       </span>
                     </div>
                   )}
@@ -4495,22 +4512,136 @@ export default function FormTestingStudio() {
                   )}
 
                   {selectedForm.id === "DP" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Structure to Demolish</label>
-                        <input type="text" value={formData.demolitionBuildingType || ""} onChange={e => handleFieldChange("demolitionBuildingType", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      {/* Section 1: Accompanying Building Permit */}
+                      <div style={{
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        background: (formData.withBuildingPermit !== false && Boolean(formData.buildingPermitNo)) ? "#eff6ff" : "#f8fafc",
+                        border: (formData.withBuildingPermit !== false && Boolean(formData.buildingPermitNo)) ? "1.5px solid #93c5fd" : "1px solid #cbd5e1",
+                      }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: "700", fontSize: "0.8rem", color: "#1e293b" }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.withBuildingPermit !== false && Boolean(formData.buildingPermitNo)}
+                            onChange={e => {
+                              const checked = e.target.checked;
+                              handleFieldChange("withBuildingPermit", checked);
+                              if (checked && !formData.buildingPermitNo) {
+                                handleFieldChange("buildingPermitNo", getAutoPermitNumber("BP", formData.applicationNo));
+                              }
+                            }}
+                            style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                          />
+                          <span>Accompanying Building Permit (With Building Permit)</span>
+                        </label>
+                        <span style={{ display: "block", fontSize: "0.72rem", color: "#64748b", marginTop: "4px" }}>
+                          When enabled, automatically gathers the Building Permit number ({formData.buildingPermitNo || "BP-2026-0001"}) and inserts it into the 8 compartment boxes under <strong>BUILDING PERMIT NO.</strong> on NBC Form B-08.
+                        </span>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Demolition Area (sq.m.)</label>
-                        <input type="text" value={formData.demolitionArea || ""} onChange={e => handleFieldChange("demolitionArea", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Section 2: Box 1 Scope of Demolition Works */}
+                      <div style={{ padding: "0.9rem", borderRadius: "10px", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block", marginBottom: "0.5rem" }}>
+                          Box 1: Scope of Demolition Works
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Structure to Demolish</label>
+                            <input type="text" value={formData.demolitionBuildingType || ""} onChange={e => handleFieldChange("demolitionBuildingType", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Number of Storeys</label>
+                            <input type="text" value={formData.demolitionStoreys || ""} onChange={e => handleFieldChange("demolitionStoreys", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Demolition Area (sq.m.)</label>
+                            <input type="text" value={formData.demolitionArea || ""} onChange={e => handleFieldChange("demolitionArea", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Proposed Start Date</label>
+                            <input type="date" value={formData.demolitionStartDate || formData.proposedStartDate || "2026-10-01"} onChange={e => handleFieldChange("demolitionStartDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Expected Completion Date</label>
+                            <input type="date" value={formData.demolitionCompletionDate || formData.expectedCompletionDate || "2026-11-15"} onChange={e => handleFieldChange("demolitionCompletionDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Scope & Precautions</label>
+                          <input type="text" value={formData.demolitionScope || ""} onChange={e => handleFieldChange("demolitionScope", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Number of Storeys</label>
-                        <input type="text" value={formData.demolitionStoreys || ""} onChange={e => handleFieldChange("demolitionStoreys", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Scope & Precautions</label>
-                        <input type="text" value={formData.demolitionScope || ""} onChange={e => handleFieldChange("demolitionScope", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Section 3: Box 2 Full-Time Inspector and Supervisor of Demolition Works */}
+                      <div style={{ padding: "0.9rem", borderRadius: "10px", background: "#f0fdf4", border: "1.5px solid #86efac" }}>
+                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#14532d", textTransform: "uppercase", display: "block", marginBottom: "0.25rem" }}>
+                          Box 2: Full-Time Inspector and Supervisor of Demolition Works
+                        </span>
+                        <span style={{ fontSize: "0.72rem", color: "#166534", display: "block", marginBottom: "0.75rem" }}>
+                          Architect or Civil Engineer in charge of full-time demolition works & safety
+                        </span>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>Supervisor Full Name (with Title)</label>
+                            <input type="text" value={formData.demolitionSupervisorName || "Engr. Roberto Cruz, CE"} onChange={e => handleFieldChange("demolitionSupervisorName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem", fontWeight: "700" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>Address</label>
+                            <input type="text" value={formData.demolitionSupervisorAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("demolitionSupervisorAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>Telephone / Mobile</label>
+                            <input type="text" value={formData.demolitionSupervisorPhone || "0918-765-4321"} onChange={e => handleFieldChange("demolitionSupervisorPhone", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>PRC Registration No.</label>
+                            <input type="text" value={formData.demolitionSupervisorPRC || "0078923"} onChange={e => handleFieldChange("demolitionSupervisorPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>PRC Validity Date</label>
+                            <input type="text" value={formData.demolitionSupervisorPRCValidity || "2028-11-20"} onChange={e => handleFieldChange("demolitionSupervisorPRCValidity", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>TIN Number</label>
+                            <input type="text" value={formData.demolitionSupervisorTIN || "456-789-012-000"} onChange={e => handleFieldChange("demolitionSupervisorTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>PTR Number</label>
+                            <input type="text" value={formData.demolitionSupervisorPTR || "PTR-ST-2026-001"} onChange={e => handleFieldChange("demolitionSupervisorPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>Date Issued</label>
+                            <input type="text" value={formData.demolitionSupervisorPTRIssued || "Jan 10, 2026"} onChange={e => handleFieldChange("demolitionSupervisorPTRIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>Issued At</label>
+                            <input type="text" value={formData.demolitionSupervisorPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("demolitionSupervisorPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+
+                        {/* Supervisor E-Signature */}
+                        <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #86efac" }}>
+                          <SignatureCreator
+                            value={formData.demolitionSupervisorSignature || formData.civilEngineerSignature}
+                            onChange={sig => {
+                              handleFieldChange("demolitionSupervisorSignature", sig);
+                              handleFieldChange("civilEngineerSignature", sig);
+                            }}
+                            label={`Supervisor Seal & E-Signature (Affixed over printed name: ${formData.demolitionSupervisorName || "Engr. Roberto Cruz, CE"})`}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -4913,12 +5044,17 @@ export default function FormTestingStudio() {
                           </div>
                         </div>
 
-                        {selectedForm.id === "SP" && (
+                        {(selectedForm.id === "SP" || selectedForm.id === "DP") && (
                           <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
                             <SignatureCreator
-                              value={formData.civilEngineerSignature}
-                              onChange={sig => handleFieldChange("civilEngineerSignature", sig)}
-                              label={`Civil Engineer E-Signature (Box 3 - ${formData.civilEngineerName || "Civil Engineer"})`}
+                              value={formData.demolitionSupervisorSignature || formData.civilEngineerSignature}
+                              onChange={sig => {
+                                handleFieldChange("civilEngineerSignature", sig);
+                                handleFieldChange("demolitionSupervisorSignature", sig);
+                              }}
+                              label={selectedForm.id === "DP" 
+                                ? `Demolition Supervisor E-Signature (Box 2 - ${formData.demolitionSupervisorName || formData.civilEngineerName || "Engr. Roberto Cruz, CE"})`
+                                : `Civil Engineer E-Signature (Box 3 - ${formData.civilEngineerName || "Civil Engineer"})`}
                             />
                           </div>
                         )}

@@ -12,6 +12,29 @@ export interface UnifiedPermitFormData {
   mechanicalPermitNo?: string;
   electronicsPermitNo?: string;
   buildingPermitNo?: string;
+  bpNo?: string;
+  demolitionPermitNo?: string;
+  dpNo?: string;
+  demolitionBuildingType?: string;
+  demolitionArea?: string;
+  demolitionStoreys?: string;
+  demolitionScope?: string;
+  demolitionMethod?: string;
+  demolitionStartDate?: string;
+  demolitionCompletionDate?: string;
+  demolitionSupervisorName?: string;
+  demolitionSupervisorPRC?: string;
+  demolitionSupervisorPRCValidity?: string;
+  demolitionSupervisorPTR?: string;
+  demolitionSupervisorPTRIssued?: string;
+  demolitionSupervisorPTRIssuedAt?: string;
+  demolitionSupervisorTIN?: string;
+  demolitionSupervisorAddress?: string;
+  demolitionSupervisorPhone?: string;
+  demolitionSupervisorSignature?: string;
+  fencingPermitNo?: string;
+  fpNo?: string;
+  withBuildingPermit?: boolean;
   status?: string;
   isApproved?: boolean;
   dateIssued?: string;
@@ -3269,66 +3292,170 @@ export async function generateDemolitionPermitPdf(data: UnifiedPermitFormData): 
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header: Application No. inside box
-  drawText(data.applicationNo || "APP-2026-6636", 75, 676.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 430, 676.0, 8, false);
+  // Helper for drawing 1 character centered in compartment boxes
+  const drawCompartmentChars = (
+    value: string | undefined | null,
+    boxLefts: number[],
+    boxWidth: number,
+    baselineY: number,
+    fontSize: number = 9.0
+  ) => {
+    if (!value) return;
+    const cleanChars = safeText(value).replace(/\s+/g, "").split("");
+    boxLefts.forEach((bLeft, idx) => {
+      if (idx < cleanChars.length) {
+        const char = cleanChars[idx];
+        const charW = fontBold.widthOfTextAtSize(char, fontSize);
+        const charX = bLeft + (boxWidth - charW) / 2;
+        p1.drawText(char, { x: charX, y: baselineY, size: fontSize, font: fontBold, color: darkNavy });
+      }
+    });
+  };
 
-  // Box 1: Moved lower to sit on line
-  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
-  drawText(lastName, 160, 616.0, 8.5, true, 20);
-  drawText(firstName, 260, 616.0, 8.5, true, 22);
-  drawText(middleName || mi, 370, 616.0, 8, true);
-  drawText(data.applicantTIN || "000-123-456-000", 440, 616.0, 7.0, false);
-  drawText(data.formOfOwnership || "INDIVIDUAL", 210, 591.0, 8, false, 25);
-  drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 591.0, 8, false, 25);
+  // Header 1: APPLICATION NO. (10 boxes: x = 27.24 to 152.76, width = 12.60, baseline y = 661.0)
+  const appBoxLefts = [27.24, 39.84, 52.44, 65.04, 77.40, 90.00, 102.60, 115.20, 127.56, 140.16];
+  let cleanApp = safeText(data.applicationNo || "2026-0001")
+    .replace(/^APP-(TEST-)?/i, "")
+    .replace(/^UNIFIED-/i, "")
+    .replace(/\s+/g, "")
+    .trim();
+  if (cleanApp.length > 10) cleanApp = cleanApp.slice(0, 10);
+  drawCompartmentChars(cleanApp, appBoxLefts, 12.60, 661.0, 9.0);
 
-  // Address: moved lower
-  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 563.0, 7.5, false, 28);
-  drawText(data.barangay || "Poblacion", 250, 563.0, 7.5, false, 16);
-  drawText(data.applicantPhone || "0917-123-4567", 440, 563.0, 7.5, true);
-
-  // Location of Demolition
-  drawText(data.lotNo || "Lot 12", 160, 538.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 240, 538.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 320, 538.0, 7.5, true, 16);
-  drawText(data.taxDecNo || "TD-2026-0012", 440, 538.0, 7.5, false);
-
-  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 80, 519.0, 7.5, false, 24);
-  drawText(data.barangay || "Poblacion", 240, 519.0, 7.5, true, 20);
-
-  // Box 2: Demolition Details
-  const bldgType = data.demolitionBuildingType || data.projectType?.name || "Single-Detached Residential";
-  drawText(bldgType, 160, 480.0, 7.5, true, 36);
-  drawText(`${data.demolitionArea || data.floorArea || "180.00"} sq.m.`, 160, 460.0, 8, true);
-  drawText(data.demolitionStoreys || data.proposedStoreys || "2", 360, 460.0, 8, true);
-  drawText(data.proposedStartDate || "Oct 01, 2026", 160, 440.0, 7.5, false);
-  drawText(data.expectedCompletionDate || "Nov 15, 2026", 360, 440.0, 7.5, false);
-
-  // Box 3: Engineer - moved higher
-  const ceName = data.civilEngineerName || "Engr. Roberto Cruz, CE";
-  drawText(ceName.toUpperCase(), 100, 365.0, 8.5, true);
-  drawText(data.civilEngineerPRC || "PRC-0078923", 80, 340.0, 7.5, false);
-  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 80, 325.0, 7.5, false);
-
-  // Box 4: Applicant - moved higher
-  if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 80, 240.0, 110, 30);
+  // Header 2: DP NO (8 boxes: x = 240.72 to 341.16, width = 12.60, baseline y = 661.0)
+  // Automatically generated and filled when submitted
+  const dpBoxLefts = [240.72, 253.32, 265.92, 278.52, 290.76, 303.36, 315.96, 328.56];
+  const rawDp = data.demolitionPermitNo || data.dpNo || (data.permitNo?.startsWith("DP-") ? data.permitNo : `DP-${cleanApp}`);
+  let cleanDp = rawDp.replace(/^DP-/i, "").trim();
+  if (cleanDp.length > 8 && /^\d{4}-0\d{3}$/.test(cleanDp)) {
+    cleanDp = cleanDp.replace(/-0(\d{3})$/, '-$1');
+  } else if (cleanDp.length > 8) {
+    cleanDp = cleanDp.slice(0, 8);
   }
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 240.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 80, 210.0, 7.5, false);
+  drawCompartmentChars(cleanDp, dpBoxLefts, 12.60, 661.0, 9.0);
 
-  // Box 4 (Right): With My Consent (Lot Owner)
+  // Header 3: BUILDING PERMIT NO. (8 boxes: x = 465.96 to 566.52, width = 12.60, baseline y = 661.0)
+  // Gather building permit number when this demolition permit is submitted alongside or linked to a building permit
+  const isWithBuildingPermit = Boolean(
+    data.withBuildingPermit === true ||
+    (data.withBuildingPermit !== false && Boolean(data.buildingPermitNo || data.bpNo)) ||
+    (data.activePermitForms && data.activePermitForms.includes("buildingPermit")) ||
+    (data.projectType?.matrix?.buildingPermit === 'required' || data.projectType?.matrix?.buildingPermit === 'conditional')
+  );
+
+  const rawBp = isWithBuildingPermit
+    ? (data.buildingPermitNo || data.bpNo || (data.permitNo?.startsWith("BP-") ? data.permitNo : `BP-${cleanApp}`))
+    : undefined;
+
+  if (rawBp && isWithBuildingPermit) {
+    const bpBoxLefts = [465.96, 478.56, 491.16, 503.52, 516.12, 528.72, 541.32, 553.92];
+    let cleanBp = rawBp.replace(/^BP-/i, "").trim();
+    if (cleanBp.length > 8 && /^\d{4}-0\d{3}$/.test(cleanBp)) {
+      cleanBp = cleanBp.replace(/-0(\d{3})$/, '-$1');
+    } else if (cleanBp.length > 8) {
+      cleanBp = cleanBp.slice(0, 8);
+    }
+    drawCompartmentChars(cleanBp, bpBoxLefts, 12.60, 661.0, 9.0);
+  }
+
+  const drawCheck = (x: number, y: number) => {
+    p1.drawText("X", { x, y, size: 9, font: fontBold, color: darkNavy });
+  };
+
+  // Box 1: Row 1 - Owner / Applicant (Baseline y = 603.5, labels at y = 617.2, bottom border y = 597.23)
+  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
+  drawText(lastName, 160.0, 603.5, 8.5, true, 20);
+  drawText(firstName, 270.0, 603.5, 8.5, true, 22);
+  drawText(mi || (middleName ? middleName.slice(0, 1) + "." : ""), 445.0, 603.5, 8.5, true, 4);
+  drawText(data.applicantTIN || "000-123-456-000", 475.0, 603.5, 7.5, false, 18);
+
+  // Box 1: Row 2 - Enterprise, Form of Ownership, Use/Occupancy (Baseline y = 574.0, labels at y = 588.1, bottom border y = 565.98)
+  const entName = data.enterpriseName || data.constructionOwnedByEnterprise || (data.formOfOwnership?.includes("INDIVIDUAL") ? "N/A" : "");
+  drawText(entName, 35.0, 568.0, 7.5, false, 28);
+  drawText(data.formOfOwnership || "INDIVIDUAL / OWNER", 235.0, 574.0, 8.0, true, 24);
+  drawText((data.projectType?.category || data.occupancyClass || "RESIDENTIAL").toUpperCase(), 395.0, 574.0, 8.0, true, 24);
+
+  // Box 1: Row 3 - Address, Telephone, Barangay, City/Municipality, Zip Code
+  drawText(data.applicantAddress || "123 Rizal St.", 145.0, 556.5, 7.0, false, 16);
+  drawText(data.applicantPhone || "0917-123-4567", 102.0, 547.4, 7.5, false, 16);
+  drawText(data.barangay || "Poblacion", 215.0, 546.0, 7.5, false, 18);
+  drawText(data.city || data.municipality || "Sto. Tomas, Pampanga", 320.0, 546.0, 7.5, false, 20);
+  drawText(data.zipCode || "2020", 450.0, 546.0, 7.5, false, 10);
+
+  // Box 1: Row 4 - Location of Demolition Works
+  // Sub-row 1 (y = 531.3): LOT NO., BLK NO., TCT NO., TAX DEC. NO.
+  const cleanLot = safeText(data.lotNo || "12").replace(/^lot\s*/i, "");
+  const cleanBlk = safeText(data.blockNo || "4").replace(/^(blk|block)\s*/i, "");
+  drawText(cleanLot, 215.0, 531.3, 7.5, true, 8);
+  drawText(cleanBlk, 286.0, 531.3, 7.5, true, 8);
+  drawText(data.tctNo || "TCT-889977-P", 358.0, 531.3, 7.5, true, 16);
+  drawText(data.taxDecNo || "TD-2026-004455", 488.0, 531.3, 7.5, true, 16);
+
+  // Sub-row 2 (y = 517.5): STREET, BARANGAY, CITY/MUNICIPALITY OF
+  let streetVal = data.projectStreet || data.street;
+  if (!streetVal && data.projectAddress) {
+    streetVal = data.projectAddress.replace(/^(lot\s+\d+[\s,]+)?(blk|block)\s+\d+[\s,]+/i, "").trim();
+  }
+  drawText(streetVal || "Sunset Valley Subd.", 73.0, 517.5, 7.0, false, 20);
+  drawText(data.barangay || "Poblacion", 205.0, 517.5, 7.5, true, 24);
+  drawText((data.city || data.municipality || "STO. TOMAS, PAMPANGA").toUpperCase(), 440.0, 517.5, 7.5, true, 24);
+
+  // Box 1: Row 5 - Scope of Work (Check DEMOLITION box & place clean description on line)
+  drawCheck(46.0, 483.0);
+  const bldgType = data.demolitionBuildingType || data.projectType?.name || "Single-Detached Residential";
+  const storeys = data.demolitionStoreys || data.proposedStoreys;
+  const area = data.demolitionArea || data.floorArea;
+  let scopeDesc = bldgType;
+  if (storeys && area) {
+    scopeDesc = `${bldgType} (${storeys}-Storey, ${area} sq.m.)`;
+  } else if (storeys) {
+    scopeDesc = `${bldgType} (${storeys}-Storey)`;
+  } else if (area) {
+    scopeDesc = `${bldgType} (${area} sq.m.)`;
+  }
+  drawText(scopeDesc, 115.0, 482.0, 7.5, true, 55);
+
+  // Box 2: Full-Time Inspector and Supervisor of Demolition Works (Architect or Civil Engineer)
+  const supName = (data.demolitionSupervisorName || data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE").toUpperCase();
+  if (data.demolitionSupervisorSignature || data.civilEngineerSignature || data.engineerSignature) {
+    await embedSignatureImage(doc, p1, data.demolitionSupervisorSignature || data.civilEngineerSignature || data.engineerSignature, 65, 395.0, 110, 26);
+  }
+  drawText(supName, 70.0, 396.0, 8.5, true, 30);
+  drawText(data.submissionDate || data.proposedStartDate || data.demolitionStartDate || "Oct 01, 2026", 125.0, 368.5, 7.5, false, 16);
+  drawText(data.demolitionSupervisorAddress || data.civilEngineerAddress || "Sto. Tomas, Pampanga", 345.0, 415.8, 7.0, false, 28);
+  drawText(data.demolitionSupervisorPhone || data.applicantPhone || "0918-765-4321", 520.0, 415.8, 7.0, false, 15);
+  drawText(data.demolitionSupervisorPRC || data.civilEngineerPRC || "0078923", 345.0, 401.0, 7.5, false, 14);
+  drawText(data.demolitionSupervisorPRCValidity || data.civilEngineerPRCValidity || "2028-11-20", 480.0, 401.0, 7.5, false, 14);
+  drawText(data.demolitionSupervisorPTR || data.civilEngineerPTR || "PTR-ST-2026-001", 345.0, 386.5, 7.5, false, 18);
+  drawText(data.demolitionSupervisorPTRIssued || data.civilEngineerPTRIssued || "Jan 10, 2026", 495.0, 386.5, 7.5, false, 14);
+  drawText(data.demolitionSupervisorPTRIssuedAt || data.civilEngineerPTRIssuedAt || "Sto. Tomas", 345.0, 371.0, 7.5, false, 14);
+  drawText(data.demolitionSupervisorTIN || data.civilEngineerTIN || "456-789-012-000", 460.0, 371.0, 7.5, false, 18);
+
+  // Box 3: Applicant & With My Consent: Lot Owner
+  // Left: Applicant
+  const appFullName = (data.applicantName || `${firstName} ${lastName}`).toUpperCase();
+  if (data.applicantSignature) {
+    await embedSignatureImage(doc, p1, data.applicantSignature, 75, 292.0, 110, 26);
+  }
+  drawText(appFullName, 80.0, 288.0, 8.5, true, 28);
+  drawText(data.submissionDate || "Oct 01, 2026", 150.0, 268.5, 7.5, false, 16);
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion, Sto. Tomas", 80.0, 254.7, 7.0, false, 36);
+  drawText(data.govIdNo || "CTC-2026-00192", 75.0, 239.0, 7.0, false, 14);
+  drawText(data.govIdDateIssued || "Jan 08, 2026", 155.0, 239.0, 7.0, false, 14);
+  drawText(data.govIdPlaceIssued || "Sto. Tomas", 245.0, 239.0, 7.0, false, 14);
+
+  // Right: With My Consent (Lot Owner)
   if (data.lotOwnerConsent || data.lotOwnerName) {
     const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase();
     if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 375, 288.0, 110, 30);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 345, 292.0, 110, 26);
     }
-    drawText(lotName, 375, 290.0, 8.5, true, 26);
-    drawText(data.submissionDate || "Sep 17, 2026", 435, 273.0, 7.5, false);
-    drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", 350, 255.0, 7.5, false, 40);
-    drawText(data.lotOwnerGovIdNo || "PRC-ID-00987654", 345, 238.0, 7.0, false);
-    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 435, 238.0, 7.0, false);
-    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 525, 238.0, 7.0, false);
+    drawText(lotName, 350.0, 288.0, 8.5, true, 28);
+    drawText(data.submissionDate || "Oct 01, 2026", 425.0, 268.7, 7.5, false, 16);
+    drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", 350.0, 254.7, 7.0, false, 36);
+    drawText(data.lotOwnerGovIdNo || "PRC-ID-00987654", 345.0, 239.0, 7.0, false, 14);
+    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 430.0, 239.0, 7.0, false, 14);
+    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 515.0, 239.0, 7.0, false, 14);
   }
 
   return await doc.saveAsBase64({ dataUri: false });
@@ -3351,32 +3478,107 @@ export async function generateFencingPermitPdf(data: UnifiedPermitFormData): Pro
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header: Applicant No. inside box
-  drawText(data.applicationNo || "APP-2026-6636", 75, 676.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 430, 676.0, 8, false);
+  // Helper for drawing 1 character centered in compartment boxes
+  const drawCompartmentChars = (
+    value: string | undefined | null,
+    boxLefts: number[],
+    boxWidth: number,
+    baselineY: number,
+    fontSize: number = 9.0
+  ) => {
+    if (!value) return;
+    const cleanChars = safeText(value).replace(/\s+/g, "").split("");
+    boxLefts.forEach((bLeft, idx) => {
+      if (idx < cleanChars.length) {
+        const char = cleanChars[idx];
+        const charW = fontBold.widthOfTextAtSize(char, fontSize);
+        const charX = bLeft + (boxWidth - charW) / 2;
+        p1.drawText(char, { x: charX, y: baselineY, size: fontSize, font: fontBold, color: darkNavy });
+      }
+    });
+  };
 
-  // Box 1
+  // Header 1: APPLICATION NO. (10 boxes: x = 27.24 to 152.76, width = 12.60, baseline y = 661.0)
+  const appBoxLefts = [27.24, 39.84, 52.44, 65.04, 77.40, 90.00, 102.60, 115.20, 127.56, 140.16];
+  let cleanApp = safeText(data.applicationNo || "2026-0001")
+    .replace(/^APP-(TEST-)?/i, "")
+    .replace(/^UNIFIED-/i, "")
+    .replace(/\s+/g, "")
+    .trim();
+  if (cleanApp.length > 10) cleanApp = cleanApp.slice(0, 10);
+  drawCompartmentChars(cleanApp, appBoxLefts, 12.60, 661.0, 9.0);
+
+  // Header 2: FP NO (8 boxes: x = 240.72 to 341.16, width = 12.60, baseline y = 661.0)
+  const fpBoxLefts = [240.72, 253.32, 265.92, 278.52, 290.76, 303.36, 315.96, 328.56];
+  const rawFp = data.fencingPermitNo || data.fpNo || (data.permitNo?.startsWith("FP-") ? data.permitNo : `FP-${cleanApp}`);
+  let cleanFp = rawFp.replace(/^FP-/i, "").trim();
+  if (cleanFp.length > 8 && /^\d{4}-0\d{3}$/.test(cleanFp)) {
+    cleanFp = cleanFp.replace(/-0(\d{3})$/, '-$1');
+  } else if (cleanFp.length > 8) {
+    cleanFp = cleanFp.slice(0, 8);
+  }
+  drawCompartmentChars(cleanFp, fpBoxLefts, 12.60, 661.0, 9.0);
+
+  // Header 3: BUILDING PERMIT NO. (8 boxes: x = 464.40 to 565.00, width = 12.60, baseline y = 661.0)
+  const isWithBuildingPermit = Boolean(
+    data.withBuildingPermit === true ||
+    (data.withBuildingPermit !== false && Boolean(data.buildingPermitNo || data.bpNo)) ||
+    (data.activePermitForms && data.activePermitForms.includes("buildingPermit")) ||
+    (data.projectType?.matrix?.buildingPermit === 'required' || data.projectType?.matrix?.buildingPermit === 'conditional')
+  );
+
+  const rawBp = isWithBuildingPermit
+    ? (data.buildingPermitNo || data.bpNo || (data.permitNo?.startsWith("BP-") ? data.permitNo : `BP-${cleanApp}`))
+    : undefined;
+
+  if (rawBp && isWithBuildingPermit) {
+    const bpBoxLefts = [464.40, 477.00, 489.60, 502.60, 515.20, 527.80, 540.40, 553.00];
+    let cleanBp = rawBp.replace(/^BP-/i, "").trim();
+    if (cleanBp.length > 8 && /^\d{4}-0\d{3}$/.test(cleanBp)) {
+      cleanBp = cleanBp.replace(/-0(\d{3})$/, '-$1');
+    } else if (cleanBp.length > 8) {
+      cleanBp = cleanBp.slice(0, 8);
+    }
+    drawCompartmentChars(cleanBp, bpBoxLefts, 12.60, 661.0, 9.0);
+  }
+
+  // Box 1: Row 1 - Owner / Applicant (Baseline y = 603.5, labels at y = 617.2, bottom border y = 597.23)
   const { lastName, firstName, mi, middleName } = parseApplicantName(data);
-  drawText(lastName, 160, 618.0, 8.5, true, 20);
-  drawText(firstName, 260, 618.0, 8.5, true, 22);
-  drawText(middleName || mi, 370, 618.0, 8, true);
-  drawText(data.applicantTIN || "000-123-456-000", 440, 618.0, 7.5, false);
-  drawText(data.formOfOwnership || "INDIVIDUAL", 210, 591.0, 8, false, 25);
-  drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 591.0, 8, false, 25);
+  drawText(lastName, 160.0, 603.5, 8.5, true, 20);
+  drawText(firstName, 270.0, 603.5, 8.5, true, 22);
+  drawText(mi || (middleName ? middleName.slice(0, 1) + "." : ""), 445.0, 603.5, 8.5, true, 4);
+  drawText(data.applicantTIN || "000-123-456-000", 475.0, 603.5, 7.5, false, 18);
 
-  // Address
-  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 565.0, 7.5, false, 28);
-  drawText(data.barangay || "Poblacion", 250, 565.0, 7.5, false, 16);
-  drawText(data.applicantPhone || "0917-123-4567", 440, 565.0, 7.5, true);
+  // Box 1: Row 2 - Enterprise, Form of Ownership, Use/Occupancy (Baseline y = 574.0, labels at y = 588.1, bottom border y = 565.98)
+  const entName = data.enterpriseName || data.constructionOwnedByEnterprise || (data.formOfOwnership?.includes("INDIVIDUAL") ? "N/A" : "");
+  drawText(entName, 35.0, 568.0, 7.5, false, 28);
+  drawText(data.formOfOwnership || "INDIVIDUAL / OWNER", 235.0, 574.0, 8.0, true, 24);
+  drawText((data.projectType?.category || data.occupancyClass || "RESIDENTIAL").toUpperCase(), 395.0, 574.0, 8.0, true, 24);
 
-  // Location of Fencing
-  drawText(data.lotNo || "Lot 12", 160, 538.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 240, 538.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 320, 538.0, 7.5, true, 16);
-  drawText(data.taxDecNo || "TD-2026-0012", 440, 538.0, 7.5, false);
+  // Box 1: Row 3 - Address, Telephone, Barangay, City/Municipality, Zip Code
+  drawText(data.applicantAddress || "123 Rizal St.", 145.0, 556.5, 7.0, false, 16);
+  drawText(data.applicantPhone || "0917-123-4567", 102.0, 547.4, 7.5, false, 16);
+  drawText(data.barangay || "Poblacion", 215.0, 546.0, 7.5, false, 18);
+  drawText(data.city || data.municipality || "Sto. Tomas, Pampanga", 320.0, 546.0, 7.5, false, 20);
+  drawText(data.zipCode || "2020", 450.0, 546.0, 7.5, false, 10);
 
-  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 80, 519.0, 7.5, false, 24);
-  drawText(data.barangay || "Poblacion", 240, 519.0, 7.5, true, 20);
+  // Box 1: Row 4 - Location of Fencing Works
+  // Sub-row 1 (y = 531.3): LOT NO., BLK NO., TCT NO., TAX DEC. NO.
+  const cleanLot = safeText(data.lotNo || "12").replace(/^lot\s*/i, "");
+  const cleanBlk = safeText(data.blockNo || "4").replace(/^(blk|block)\s*/i, "");
+  drawText(cleanLot, 215.0, 531.3, 7.5, true, 8);
+  drawText(cleanBlk, 286.0, 531.3, 7.5, true, 8);
+  drawText(data.tctNo || "TCT-889977-P", 358.0, 531.3, 7.5, true, 16);
+  drawText(data.taxDecNo || "TD-2026-004455", 488.0, 531.3, 7.5, true, 16);
+
+  // Sub-row 2 (y = 517.5): STREET, BARANGAY, CITY/MUNICIPALITY OF
+  let streetVal = data.projectStreet || data.street;
+  if (!streetVal && data.projectAddress) {
+    streetVal = data.projectAddress.replace(/^(lot\s+\d+[\s,]+)?(blk|block)\s+\d+[\s,]+/i, "").trim();
+  }
+  drawText(streetVal || "Sunset Valley Subd.", 73.0, 517.5, 7.0, false, 20);
+  drawText(data.barangay || "Poblacion", 205.0, 517.5, 7.5, true, 24);
+  drawText((data.city || data.municipality || "STO. TOMAS, PAMPANGA").toUpperCase(), 440.0, 517.5, 7.5, true, 24);
 
   // Box 2: Fencing Specifications: moved higher (+5px)
   const fenceType = data.fencingType || "Reinforced Concrete / CHB with Decorative Steel Grills";

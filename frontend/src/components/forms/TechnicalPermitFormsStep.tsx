@@ -23,6 +23,7 @@ import {
   generateSanitaryPermitPdf,
   generateMechanicalPermitPdf,
   generateElectronicsPermitPdf,
+  generateDemolitionPermitPdf,
   generateBfpApplicationPdf,
   UnifiedPermitFormData 
 } from "../../utils/unifiedPermitPdfGenerator";
@@ -585,8 +586,32 @@ export default function TechnicalPermitFormsStep({
   const [fenceLength, setFenceLength] = useState("45.0 meters");
   const [fenceHeight, setFenceHeight] = useState("1.80 meters");
   const [fenceMaterial, setFenceMaterial] = useState("Plastered Concrete Hollow Blocks with Decorative Steel Grille Panels");
-  const [demolitionArea, setDemolitionArea] = useState("80.0 sq.m.");
-  const [demolitionMethod, setDemolitionMethod] = useState("Manual Disassembly & Hand-held Mechanical Tools with Debris Shute");
+  const [demolitionBuildingType, setDemolitionBuildingType] = useState("Single-Detached Two-Storey Residential Structure");
+  const [demolitionArea, setDemolitionArea] = useState("180.00 sq.m.");
+  const [demolitionStoreys, setDemolitionStoreys] = useState("2");
+  const [demolitionMethod, setDemolitionMethod] = useState("Manual Disassembly & Hand-held Mechanical Tools with Debris Chute");
+  const [demolitionStartDate, setDemolitionStartDate] = useState("2026-10-01");
+  const [demolitionCompletionDate, setDemolitionCompletionDate] = useState("2026-11-15");
+  const [demolitionWithBuildingPermit, setDemolitionWithBuildingPermit] = useState<boolean>(
+    mandatoryKeys.includes("buildingPermit") ||
+    projectType.matrix?.buildingPermit === "required" ||
+    projectType.matrix?.buildingPermit === "conditional"
+  );
+  const [demolitionBuildingPermitNo, setDemolitionBuildingPermitNo] = useState<string>("");
+
+  // Box 2: Full-Time Inspector and Supervisor of Demolition Works (Architect or Civil Engineer)
+  const [demolitionSupervisorRole, setDemolitionSupervisorRole] = useState<"CE" | "ARCH">("CE");
+  const [sameAsCivilEngineer, setSameAsCivilEngineer] = useState<boolean>(true);
+  const [demolitionSupervisorName, setDemolitionSupervisorName] = useState("Engr. Roberto Cruz, CE");
+  const [demolitionSupervisorPRC, setDemolitionSupervisorPRC] = useState("0078923");
+  const [demolitionSupervisorPRCValidity, setDemolitionSupervisorPRCValidity] = useState("2028-11-20");
+  const [demolitionSupervisorPTR, setDemolitionSupervisorPTR] = useState("PTR-ST-2026-001");
+  const [demolitionSupervisorPTRIssued, setDemolitionSupervisorPTRIssued] = useState("Jan 10, 2026");
+  const [demolitionSupervisorPTRIssuedAt, setDemolitionSupervisorPTRIssuedAt] = useState("Sto. Tomas");
+  const [demolitionSupervisorTIN, setDemolitionSupervisorTIN] = useState("456-789-012-000");
+  const [demolitionSupervisorAddress, setDemolitionSupervisorAddress] = useState("Sto. Tomas, Pampanga");
+  const [demolitionSupervisorPhone, setDemolitionSupervisorPhone] = useState("0918-765-4321");
+  const [demolitionSupervisorSignature, setDemolitionSupervisorSignature] = useState<string>("");
   const [excavationVolume, setExcavationVolume] = useState("65.0 cu.m.");
   const [signDimensions, setSignDimensions] = useState("1.20m Width x 0.80m Height");
   const [tempConnectionLoad, setTempConnectionLoad] = useState("5.0 kVA (Temporary Construction Power, 6 Months Duration)");
@@ -602,7 +627,10 @@ export default function TechnicalPermitFormsStep({
     if (mandatoryKeys.length > 0 && !mandatoryKeys.includes(activeTab)) {
       setActiveTab(mandatoryKeys[0]);
     }
-  }, [projectType]);
+    if (mandatoryKeys.includes("buildingPermit") || projectType.matrix?.buildingPermit === "required") {
+      setDemolitionWithBuildingPermit(true);
+    }
+  }, [projectType, mandatoryKeys]);
 
   // Check which mandatory keys have been satisfied (either uploaded or generated online)
   const satisfiedKeys = mandatoryKeys.filter((key) => Boolean(uploadedPermitDocs[key]));
@@ -761,6 +789,8 @@ export default function TechnicalPermitFormsStep({
         plumbingPermitNo: `PP-${currentYear}-${randomSeq}`,
         mechanicalPermitNo: `MP-${currentYear}-${randomSeq}`,
         electronicsPermitNo: `EL-${currentYear}-${randomSeq}`,
+        demolitionPermitNo: `DP-${currentYear}-${randomSeq}`,
+        dpNo: `DP-${currentYear}-${randomSeq}`,
         locationalClearanceRef: locationalClearanceRef || (isClearanceRequired ? "LC-VERIFIED" : "EXEMPT"),
         projectType,
         applicantName: compiledFullName,
@@ -1210,6 +1240,49 @@ export default function TechnicalPermitFormsStep({
             formUrl = `data:application/pdf;base64,${b64}`;
           } else if (key === "electronicsPermit") {
             const b64 = await generateElectronicsPermitPdf(payload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "demolitionPermit") {
+            const hasBp = demolitionWithBuildingPermit || mandatoryKeys.includes("buildingPermit");
+            const gatheredBpNo = hasBp
+              ? (demolitionBuildingPermitNo || payload.buildingPermitNo || buildingPermitNo)
+              : undefined;
+            const activeSupName = sameAsCivilEngineer ? civilEngineerName : demolitionSupervisorName;
+            const activeSupPRC = sameAsCivilEngineer ? civilEngineerPRC : demolitionSupervisorPRC;
+            const activeSupValidity = sameAsCivilEngineer ? civilEngineerPRCValidity : demolitionSupervisorPRCValidity;
+            const activeSupPTR = sameAsCivilEngineer ? civilEngineerPTR : demolitionSupervisorPTR;
+            const activeSupPTRIssued = sameAsCivilEngineer ? civilEngineerPTRIssued : demolitionSupervisorPTRIssued;
+            const activeSupPTRIssuedAt = sameAsCivilEngineer ? civilEngineerPTRIssuedAt : demolitionSupervisorPTRIssuedAt;
+            const activeSupTIN = sameAsCivilEngineer ? civilEngineerTIN : demolitionSupervisorTIN;
+            const activeSupAddress = sameAsCivilEngineer ? civilEngineerAddress : demolitionSupervisorAddress;
+            const activeSupPhone = sameAsCivilEngineer ? (applicantPhone || "0918-765-4321") : demolitionSupervisorPhone;
+            const activeSupSignature = sameAsCivilEngineer ? (civilEngineerSignature || demolitionSupervisorSignature) : demolitionSupervisorSignature;
+
+            const dpPayload: UnifiedPermitFormData = {
+              ...payload,
+              demolitionPermitNo: payload.demolitionPermitNo || `DP-${currentYear}-${randomSeq}`,
+              dpNo: payload.demolitionPermitNo || `DP-${currentYear}-${randomSeq}`,
+              demolitionBuildingType,
+              demolitionArea,
+              demolitionStoreys,
+              demolitionScope: demolitionMethod,
+              demolitionMethod,
+              demolitionStartDate,
+              demolitionCompletionDate,
+              demolitionSupervisorName: activeSupName,
+              demolitionSupervisorPRC: activeSupPRC,
+              demolitionSupervisorPRCValidity: activeSupValidity,
+              demolitionSupervisorPTR: activeSupPTR,
+              demolitionSupervisorPTRIssued: activeSupPTRIssued,
+              demolitionSupervisorPTRIssuedAt: activeSupPTRIssuedAt,
+              demolitionSupervisorTIN: activeSupTIN,
+              demolitionSupervisorAddress: activeSupAddress,
+              demolitionSupervisorPhone: activeSupPhone,
+              demolitionSupervisorSignature: activeSupSignature,
+              withBuildingPermit: hasBp,
+              buildingPermitNo: gatheredBpNo,
+              bpNo: gatheredBpNo,
+            };
+            const b64 = await generateDemolitionPermitPdf(dpPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           } else if (key === "fireBfpPermit") {
             // BFP has no blank PDF template — generate the application summary sheet from scratch
@@ -6386,14 +6459,228 @@ export default function TechnicalPermitFormsStep({
                   )}
 
                   {activeTab === "demolitionPermit" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Demolition Area *</label>
-                        <input type="text" value={demolitionArea} onChange={(e) => setDemolitionArea(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                      {/* Section 1: Scope of Demolition Works (Box 1) */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#0f172a", textTransform: "uppercase", display: "block", marginBottom: "0.75rem" }}>
+                          Box 1: Scope of Demolition Works & Specifications
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Structure / Building to Demolish *</label>
+                            <input type="text" value={demolitionBuildingType} onChange={(e) => setDemolitionBuildingType(e.target.value)} placeholder="e.g. Single-Detached Two-Storey Residential" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "600" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Number of Storeys *</label>
+                            <input type="text" value={demolitionStoreys} onChange={(e) => setDemolitionStoreys(e.target.value)} placeholder="e.g. 2" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Demolition Area *</label>
+                            <input type="text" value={demolitionArea} onChange={(e) => setDemolitionArea(e.target.value)} placeholder="e.g. 180.00 sq.m." style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }} />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Proposed Start Date *</label>
+                            <input type="date" value={demolitionStartDate} onChange={(e) => setDemolitionStartDate(e.target.value)} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Expected Completion Date *</label>
+                            <input type="date" value={demolitionCompletionDate} onChange={(e) => setDemolitionCompletionDate(e.target.value)} style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }} />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Demolition Methodology & Safety Plan *</label>
+                          <input type="text" value={demolitionMethod} onChange={(e) => setDemolitionMethod(e.target.value)} placeholder="e.g. Manual Disassembly & Hand-held Mechanical Tools with Debris Chute" style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }} />
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Demolition Methodology & Safety Plan *</label>
-                        <input type="text" value={demolitionMethod} onChange={(e) => setDemolitionMethod(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+
+                      {/* Section 2: Accompanying Building Permit */}
+                      <div style={{
+                        padding: "12px 14px",
+                        borderRadius: "10px",
+                        background: demolitionWithBuildingPermit ? "#eff6ff" : "#f8fafc",
+                        border: demolitionWithBuildingPermit ? "1.5px solid #93c5fd" : "1px solid #e2e8f0"
+                      }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: "600", fontSize: "0.85rem", color: "#1e293b" }}>
+                          <input
+                            type="checkbox"
+                            checked={demolitionWithBuildingPermit}
+                            onChange={(e) => setDemolitionWithBuildingPermit(e.target.checked)}
+                            style={{ width: "18px", height: "18px", accentColor: "#2563eb", cursor: "pointer" }}
+                          />
+                          <span>This Demolition Permit is submitted with / accompanied by a Building Permit</span>
+                        </label>
+                        {demolitionWithBuildingPermit && (
+                          <div style={{ marginTop: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", alignItems: "center" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#3b82f6", marginBottom: "3px" }}>
+                                Building Permit No. (Auto-gathered)
+                              </label>
+                              <input
+                                type="text"
+                                value={demolitionBuildingPermitNo || (mandatoryKeys.includes("buildingPermit") ? `BP-${new Date().getFullYear()}-0001` : "BP-2026-0001")}
+                                onChange={(e) => setDemolitionBuildingPermitNo(e.target.value)}
+                                placeholder="BP-2026-0001"
+                                style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.85rem", fontWeight: "700", background: "#ffffff", color: "#1d4ed8" }}
+                              />
+                            </div>
+                            <div style={{ fontSize: "0.75rem", color: "#475569" }}>
+                              Automatically gathered from the Building Permit application and inserted 1 character per compartment box into the 8 boxes of <strong>BUILDING PERMIT NO.</strong>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 3: BOX 2: FULL-TIME INSPECTOR AND SUPERVISOR OF DEMOLITION WORKS */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f0fdf4", border: "1.5px solid #86efac" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#14532d", textTransform: "uppercase", display: "block" }}>
+                              Box 2: Full-Time Inspector and Supervisor of Demolition Works
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#166534" }}>
+                              Licensed Architect or Civil Engineer in charge of full-time demolition safety & operations
+                            </span>
+                          </div>
+
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#166534", cursor: "pointer", background: "#dcfce7", padding: "4px 8px", borderRadius: "6px" }}>
+                            <input
+                              type="checkbox"
+                              checked={sameAsCivilEngineer}
+                              onChange={(e) => setSameAsCivilEngineer(e.target.checked)}
+                              style={{ accentColor: "#16a34a" }}
+                            />
+                            Same as Project Civil Engineer (Box 3)
+                          </label>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>Supervisor Full Name (with Title) *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineer ? civilEngineerName : demolitionSupervisorName}
+                              onChange={(e) => setDemolitionSupervisorName(e.target.value)}
+                              disabled={sameAsCivilEngineer}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", fontWeight: "700", background: sameAsCivilEngineer ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>Professional Address *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineer ? civilEngineerAddress : demolitionSupervisorAddress}
+                              onChange={(e) => setDemolitionSupervisorAddress(e.target.value)}
+                              disabled={sameAsCivilEngineer}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineer ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>Telephone / Mobile *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineer ? (applicantPhone || "0918-765-4321") : demolitionSupervisorPhone}
+                              onChange={(e) => setDemolitionSupervisorPhone(e.target.value)}
+                              disabled={sameAsCivilEngineer}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineer ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>PRC Registration No. *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineer ? civilEngineerPRC : demolitionSupervisorPRC}
+                              onChange={(e) => setDemolitionSupervisorPRC(e.target.value)}
+                              disabled={sameAsCivilEngineer}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineer ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>PRC Validity Date *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineer ? civilEngineerPRCValidity : demolitionSupervisorPRCValidity}
+                              onChange={(e) => setDemolitionSupervisorPRCValidity(e.target.value)}
+                              disabled={sameAsCivilEngineer}
+                              placeholder="YYYY-MM-DD"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineer ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>TIN Number *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineer ? civilEngineerTIN : demolitionSupervisorTIN}
+                              onChange={(e) => setDemolitionSupervisorTIN(e.target.value)}
+                              disabled={sameAsCivilEngineer}
+                              placeholder="000-000-000-000"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineer ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>PTR Number *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineer ? civilEngineerPTR : demolitionSupervisorPTR}
+                              onChange={(e) => setDemolitionSupervisorPTR(e.target.value)}
+                              disabled={sameAsCivilEngineer}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineer ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>Date Issued *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineer ? civilEngineerPTRIssued : demolitionSupervisorPTRIssued}
+                              onChange={(e) => setDemolitionSupervisorPTRIssued(e.target.value)}
+                              disabled={sameAsCivilEngineer}
+                              placeholder="e.g. Jan 10, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineer ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>Issued At *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineer ? civilEngineerPTRIssuedAt : demolitionSupervisorPTRIssuedAt}
+                              onChange={(e) => setDemolitionSupervisorPTRIssuedAt(e.target.value)}
+                              disabled={sameAsCivilEngineer}
+                              placeholder="e.g. Sto. Tomas"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineer ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* E-Signature */}
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #86efac" }}>
+                          <SignatureCreator
+                            value={sameAsCivilEngineer ? (civilEngineerSignature || demolitionSupervisorSignature) : demolitionSupervisorSignature}
+                            onChange={(sig) => {
+                              setDemolitionSupervisorSignature(sig);
+                              if (sameAsCivilEngineer) setCivilEngineerSignature(sig);
+                            }}
+                            label={`Supervisor Seal & E-Signature (Affixed over printed name: ${sameAsCivilEngineer ? civilEngineerName : demolitionSupervisorName})`}
+                            required
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
