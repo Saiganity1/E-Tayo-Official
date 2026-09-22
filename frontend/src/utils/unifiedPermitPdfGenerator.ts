@@ -3708,33 +3708,61 @@ export async function generateFencingPermitPdf(data: UnifiedPermitFormData): Pro
 
   // BOX 4: APPLICANT (LEFT) & LOT OWNER CONSENT (RIGHT)
   // Applicant
-  const applicantFullName = (data.applicantName || `${firstName} ${lastName}`).toUpperCase();
-  drawText(p1, applicantFullName, 80, 252.0, 7.5, true, 24);
-  drawText(p1, data.applicantSignedDate || data.submissionDate || "Sep 22, 2026", 146, 234.0, 6.8, false);
-  const appAddrSummary = `${addr.noStreet || "123 Rizal St."}, ${addr.barangay || "Poblacion"}`;
-  drawText(p1, appAddrSummary, 75, 219.0, 6.8, false, 30);
-  drawText(p1, data.applicantCtcNo || data.govIdNo || "00192847", 72, 205.5, 6.5, false, 12);
-  drawText(p1, data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 05, 2026", 145, 205.5, 6.5, false, 14);
-  drawText(p1, data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 232, 205.5, 6.5, false, 16);
+  const applicantFullName = (data.applicantName || `${firstName} ${lastName}`).toUpperCase().trim();
+  const appNameW = fontBold.widthOfTextAtSize(applicantFullName, 8.0);
+  const appNameX = Math.max(72.0, 157.5 - appNameW / 2);
+  drawText(p1, applicantFullName, appNameX, 251.5, 8.0, true, 26);
 
   if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 80, 250.0, 115, 26);
+    const sigW = 105;
+    const sigH = 26;
+    const sigX = Math.max(72.0, 157.5 - sigW / 2);
+    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 256.0, sigW, sigH);
   }
+
+  drawText(p1, data.applicantSignedDate || data.submissionDate || "Sep 22, 2026", 143.0, 233.5, 6.8, false, 14);
+
+  const appAddrSummary = `${addr.noStreet || "123 Rizal St."}, ${addr.barangay || "Poblacion"}`.toUpperCase();
+  drawText(p1, appAddrSummary, 68.0, 219.5, 6.8, false, 32);
+
+  const rawCtc = (data.applicantCtcNo || data.govIdNo || "00192847").trim();
+  let cleanCtc = rawCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+  if (!cleanCtc) cleanCtc = rawCtc;
+  if (cleanCtc.length > 9) cleanCtc = cleanCtc.slice(0, 9);
+  const ctcFontSize = cleanCtc.length > 8 ? 5.5 : cleanCtc.length > 6 ? 6.0 : 6.5;
+  drawText(p1, cleanCtc, 64.0, 205.0, ctcFontSize, false, 9);
+
+  drawText(p1, data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 08, 2026", 144.0, 205.0, 6.2, false, 12);
+  drawText(p1, data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 232.0, 205.0, 6.2, false, 16);
 
   // Lot Owner (With My Consent)
   if (data.lotOwnerConsent || data.lotOwnerName) {
-    const lotOwnerFullName = safeText(data.lotOwnerName || "DAVE SICAT").toUpperCase();
-    drawText(p1, lotOwnerFullName, 360, 252.0, 7.5, true, 24);
-    drawText(p1, data.lotOwnerSignedDate || data.submissionDate || "Sep 22, 2026", 420, 234.0, 6.8, false);
-    const lotAddr = safeText(data.lotOwnerAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga");
-    drawText(p1, lotAddr, 340, 219.0, 6.8, false, 30);
-    drawText(p1, data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "00881923", 338, 205.5, 6.5, false, 12);
-    drawText(p1, data.lotOwnerGovIdDateIssued || "Jan 10, 2026", 415, 205.5, 6.5, false, 14);
-    drawText(p1, data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 502, 205.5, 6.5, false, 16);
+    const lotOwnerFullName = safeText(data.lotOwnerName || "DAVE SICAT").toUpperCase().trim();
+    const lotNameW = fontBold.widthOfTextAtSize(lotOwnerFullName, 8.0);
+    const lotNameX = Math.max(346.0, 431.2 - lotNameW / 2);
+    drawText(p1, lotOwnerFullName, lotNameX, 251.5, 8.0, true, 26);
 
     if (data.lotOwnerSignature) {
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, 360, 250.0, 115, 26);
+      const sigW = 105;
+      const sigH = 26;
+      const sigX = Math.max(346.0, 431.2 - sigW / 2);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 256.0, sigW, sigH);
     }
+
+    drawText(p1, data.lotOwnerSignedDate || data.submissionDate || "Sep 22, 2026", 417.0, 233.5, 6.8, false, 14);
+
+    const lotAddr = safeText(data.lotOwnerAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga").toUpperCase();
+    drawText(p1, lotAddr, 335.0, 219.5, 6.8, false, 32);
+
+    const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "00881923").trim();
+    let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+    if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
+    if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
+    const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
+    drawText(p1, cleanLotCtc, 334.0, 205.0, lotCtcFontSize, false, 9);
+
+    drawText(p1, data.lotOwnerGovIdDateIssued || "Jan 10, 2026", 414.0, 205.0, 6.2, false, 12);
+    drawText(p1, data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 500.0, 205.0, 6.2, false, 16);
   }
 
   // ==========================================
