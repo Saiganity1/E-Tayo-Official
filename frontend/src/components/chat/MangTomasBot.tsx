@@ -286,9 +286,9 @@ export default function MangTomasBot({
           width: 60px;
           height: 60px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #1d4ed8, #2563eb);
+          background: linear-gradient(135deg, #0038A8, #002673);
           border: none;
-          box-shadow: 0 6px 20px rgba(29, 78, 216, 0.45);
+          box-shadow: 0 6px 20px rgba(0, 56, 168, 0.45);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -298,7 +298,7 @@ export default function MangTomasBot({
         }
         .mang-tomas-fab:hover {
           transform: scale(1.08);
-          box-shadow: 0 8px 25px rgba(29, 78, 216, 0.6);
+          box-shadow: 0 8px 25px rgba(0, 56, 168, 0.6);
         }
         .fab-tooltip {
           position: absolute;
@@ -349,7 +349,7 @@ export default function MangTomasBot({
         }
 
         .chat-header {
-          background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+          background: linear-gradient(135deg, #002673 0%, #0038A8 100%);
           padding: 16px 20px;
           display: flex;
           align-items: center;
@@ -450,7 +450,7 @@ export default function MangTomasBot({
           flex-shrink: 0;
         }
         .bot-bubble-avatar {
-          background: #1d4ed8;
+          background: #0038A8;
           color: white;
         }
 
@@ -478,7 +478,7 @@ export default function MangTomasBot({
           border: 1px solid #e2e8f0;
         }
         .user-bubble {
-          background: #2563eb;
+          background: #0038A8;
           color: white;
           border-bottom-right-radius: 4px;
         }
@@ -507,7 +507,7 @@ export default function MangTomasBot({
         .quick-prompt-btn {
           background: white;
           border: 1px solid #cbd5e1;
-          color: #1d4ed8;
+          color: #0038A8;
           padding: 4px 10px;
           border-radius: 999px;
           font-size: 0.75rem;
@@ -543,14 +543,14 @@ export default function MangTomasBot({
         }
         .chat-input:focus {
           background: white;
-          border-color: #2563eb;
+          border-color: #0038A8;
         }
 
         .chat-send-btn {
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          background: #2563eb;
+          background: #0038A8;
           color: white;
           border: none;
           display: flex;
@@ -561,7 +561,7 @@ export default function MangTomasBot({
           transition: transform 0.15s, background 0.15s;
         }
         .chat-send-btn:hover:not(:disabled) {
-          background: #1d4ed8;
+          background: #002673;
           transform: scale(1.05);
         }
         .chat-send-btn:disabled {
