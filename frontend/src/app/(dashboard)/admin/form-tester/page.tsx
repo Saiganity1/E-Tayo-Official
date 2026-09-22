@@ -1061,7 +1061,8 @@ export default function FormTestingStudio() {
                     ...prev,
                     permitNo: (!prev.permitNo || isOldPrefix) ? autoNo : prev.permitNo,
                     electronicsPermitNo: form.id === "EL" ? (prev.electronicsPermitNo || autoNo) : prev.electronicsPermitNo,
-                    demolitionPermitNo: form.id === "DP" ? (prev.demolitionPermitNo || autoNo) : prev.demolitionPermitNo
+                    demolitionPermitNo: form.id === "DP" ? (prev.demolitionPermitNo || autoNo) : prev.demolitionPermitNo,
+                    scopeOfWork: form.id === "DP" ? "Demolition" : (prev.scopeOfWork === "Demolition" ? "New Construction" : prev.scopeOfWork)
                   };
                 });
               }}
@@ -2783,50 +2784,52 @@ export default function FormTestingStudio() {
                     </div>
                   </div>
                 ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                        Scope of Work
-                      </label>
-                      <select
-                        value={formData.scopeOfWork}
-                        onChange={e => handleFieldChange("scopeOfWork", e.target.value)}
-                        style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
-                      >
-                        <option value="New Construction">New Construction</option>
-                        <option value="New Installation">New Installation</option>
-                        <option value="Annual Inspection">Annual Inspection</option>
-                        <option value="Addition">Addition</option>
-                        <option value="Repair">Repair</option>
-                        <option value="Removal">Removal</option>
-                        <option value="Erection">Erection</option>
-                        <option value="Alteration">Alteration</option>
-                        <option value="Renovation">Renovation</option>
-                        <option value="Conversion">Conversion</option>
-                        <option value="Moving">Moving</option>
-                        <option value="Raising">Raising</option>
-                        <option value="Demolition">Demolition</option>
-                        <option value="Accessory Building / Structure">Accessory Building / Structure</option>
-                        <option value="Others">Others (Specify)</option>
-                      </select>
-                      {(formData.scopeOfWork || "").toLowerCase().includes("other") && (
-                        <div style={{ marginTop: "6px" }}>
-                          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b", marginBottom: "2px" }}>
-                            Specify Other Scope of Work (Printed on Form Underline)
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.scopeOfWorkDetails || formData.scopeOthers || ""}
-                            onChange={e => {
-                              handleFieldChange("scopeOfWorkDetails", e.target.value);
-                              handleFieldChange("scopeOthers", e.target.value);
-                            }}
-                            placeholder="e.g. Specific details for other scope of work"
-                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
-                          />
-                        </div>
-                      )}
-                    </div>
+                  <div style={{ display: "grid", gridTemplateColumns: (selectedForm.id === "DP" || selectedForm.id === "CO" || selectedForm.id === "CC" || selectedForm.id === "CFEI") ? "1fr" : "1fr 1fr", gap: "0.75rem" }}>
+                    {selectedForm.id !== "DP" && selectedForm.id !== "CO" && selectedForm.id !== "CC" && selectedForm.id !== "CFEI" && (
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
+                          Scope of Work
+                        </label>
+                        <select
+                          value={formData.scopeOfWork}
+                          onChange={e => handleFieldChange("scopeOfWork", e.target.value)}
+                          style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                        >
+                          <option value="New Construction">New Construction</option>
+                          <option value="New Installation">New Installation</option>
+                          <option value="Annual Inspection">Annual Inspection</option>
+                          <option value="Addition">Addition</option>
+                          <option value="Repair">Repair</option>
+                          <option value="Removal">Removal</option>
+                          <option value="Erection">Erection</option>
+                          <option value="Alteration">Alteration</option>
+                          <option value="Renovation">Renovation</option>
+                          <option value="Conversion">Conversion</option>
+                          <option value="Moving">Moving</option>
+                          <option value="Raising">Raising</option>
+                          <option value="Demolition">Demolition</option>
+                          <option value="Accessory Building / Structure">Accessory Building / Structure</option>
+                          <option value="Others">Others (Specify)</option>
+                        </select>
+                        {(formData.scopeOfWork || "").toLowerCase().includes("other") && (
+                          <div style={{ marginTop: "6px" }}>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#64748b", marginBottom: "2px" }}>
+                              Specify Other Scope of Work (Printed on Form Underline)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.scopeOfWorkDetails || formData.scopeOthers || ""}
+                              onChange={e => {
+                                handleFieldChange("scopeOfWorkDetails", e.target.value);
+                                handleFieldChange("scopeOthers", e.target.value);
+                              }}
+                              placeholder="e.g. Specific details for other scope of work"
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div>
                       {selectedForm.id === "EP" ? (
                         <>
@@ -2895,7 +2898,7 @@ export default function FormTestingStudio() {
                       ) : (
                         <>
                           <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>
-                            Occupancy Classification Detail (NBCP Rule VII)
+                            {selectedForm.id === "DP" ? "Use or Character of Occupancy (NBC Form B-08 Box 1)" : "Occupancy Classification Detail (NBCP Rule VII)"}
                           </label>
                           <select
                             value={formData.occupancyClassificationDetail || "Group A - Single Family Dwelling"}
