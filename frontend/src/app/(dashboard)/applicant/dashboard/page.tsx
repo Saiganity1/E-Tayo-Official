@@ -121,7 +121,7 @@ export default function ApplicantDashboard() {
   const getStatusConfig = (status: string) => {
     switch(status) {
       case "pending": return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending", border: "#fcd34d" };
-      case "under_review": return { color: "#3b82f6", bg: "rgba(59, 130, 246, 0.15)", icon: Search, label: "Under Review", border: "#93c5fd" };
+      case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Review", border: "#0038A8" };
       case "approved": 
       case "released": return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved", border: "#6ee7b7" };
       case "incomplete_requirements": return { color: "#ef4444", bg: "rgba(239, 68, 68, 0.15)", icon: AlertTriangle, label: "Action Required", border: "#fca5a5" };
@@ -160,14 +160,15 @@ export default function ApplicantDashboard() {
         marginBottom: "2rem"
       }}>
         <div>
-          <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", background: "linear-gradient(90deg, #1d4ed8, #3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Applicant Dashboard</h1>
+          <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", color: "#0038A8" }}>Applicant Dashboard</h1>
           <p className="page-subtitle" style={{ fontSize: "1.1rem", marginTop: "0.5rem", color: "#475569" }}>Welcome back, <strong style={{color: "#1e293b"}}>{userName}</strong>! Here is an overview of your permit applications.</p>
         </div>
         <Link href="/applicant/apply" className="btn-primary" style={{
-          background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-          boxShadow: "0 4px 14px rgba(37, 99, 235, 0.4)",
+          background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
+          boxShadow: "0 4px 15px rgba(0, 56, 168, 0.4)",
           transform: "translateY(0)",
-          transition: "all 0.3s ease"
+          transition: "all 0.3s ease",
+          color: "#ffffff"
         }}>
           <Plus size={18} /> New Application
         </Link>
@@ -175,7 +176,7 @@ export default function ApplicantDashboard() {
 
       <section className="stats-grid">
         <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)", borderRadius: "18px", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}>
-          <div className="stat-icon" style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)", color: "#1d4ed8", boxShadow: "0 4px 10px rgba(29, 78, 216, 0.15)" }}>
+          <div className="stat-icon" style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)", color: "#0038A8", boxShadow: "0 4px 10px rgba(0, 56, 168, 0.2)" }}>
             <FileText size={24} />
           </div>
           <div className="stat-info">
