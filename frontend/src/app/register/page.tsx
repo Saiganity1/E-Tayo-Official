@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Lock, Mail, User, ShieldCheck, ArrowRight } from "lucide-react";
+import { Lock, Mail, User, ShieldCheck, ArrowLeft, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
   const [step, setStep] = useState<"details" | "verification">("details");
@@ -101,13 +101,19 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      <div className="login-form-container" style={{ position: "relative" }}>
-        
-        {/* Back Button */}
-        <Link href="/" style={{ position: "absolute", top: "2rem", left: "2rem", display: "flex", alignItems: "center", gap: "8px", color: "#64748b", textDecoration: "none", fontSize: "0.9rem", fontWeight: "600", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.color = "#0f172a"; e.currentTarget.style.transform = "translateX(-4px)"; }} onMouseLeave={(e) => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.transform = "translateX(0)"; }}>
-          <ArrowRight size={18} style={{ transform: "rotate(180deg)" }} /> Back to Home
-        </Link>
-        <div className="login-card animate-fade-in-up">
+      <div className="login-form-container">
+        <div className="login-card-wrapper animate-fade-in-up">
+          {/* Back to Home Button */}
+          <Link 
+            href="/" 
+            className="auth-back-btn" 
+            title="Bumalik sa Homepage"
+          >
+            <ArrowLeft size={16} />
+            <span>Back to Home</span>
+          </Link>
+
+          <div className="login-card">
           <div className="logo-group" style={{ display: "flex", justifyContent: "center", marginBottom: "2rem" }}>
             <Link href="/" style={{ display: "inline-flex", alignItems: "center", cursor: "pointer" }} title="Bumalik sa Homepage">
               <Image src="/logo.png" alt="eTAYO" width={160} height={50} style={{ height: "44px", width: "auto", objectFit: "contain", cursor: "pointer" }} priority />
@@ -233,6 +239,7 @@ export default function RegisterPage() {
               </div>
             </form>
           )}
+        </div>
         </div>
       </div>
 
