@@ -205,9 +205,12 @@ button {
   position: relative;
   z-index: 10;
   max-width: 620px;
-  padding: 3rem;
-  margin-top: 5rem;
-  transform: translateY(2.5rem);
+  width: 100%;
+  padding: 2rem 3rem 1.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 580px;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -230,30 +233,34 @@ button {
 }
 
 .visual-content h1 {
-  font-size: 4.5rem;
+  font-size: 4.25rem;
   font-weight: 850;
   line-height: 1.08;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
   color: #ffffff;
   letter-spacing: -0.04em;
   text-shadow: 0 4px 28px rgba(0, 0, 0, 0.6);
 }
 
 .visual-content p {
-  font-size: 1.45rem;
+  font-size: 1.35rem;
   color: #fff1f2;
-  margin-bottom: 3rem;
-  line-height: 1.7;
+  margin-bottom: 0;
+  line-height: 1.65;
   font-weight: 450;
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
 }
 
 @media (max-width: 1366px) {
+  .visual-content {
+    min-height: 540px;
+    padding: 1.5rem 2rem 1rem 2rem;
+  }
   .visual-content h1 {
-    font-size: 3.75rem;
+    font-size: 3.5rem;
   }
   .visual-content p {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
   }
 }
 
