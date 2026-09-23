@@ -207,7 +207,7 @@ export default function ApplicationStatusPage() {
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
           gap: "1.1rem",
-          marginBottom: "2rem"
+          marginBottom: "1.25rem"
         }}>
           {/* Card 1: Active Total */}
           <div 

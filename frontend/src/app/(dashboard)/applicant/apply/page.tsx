@@ -782,8 +782,8 @@ export default function ApplyPage() {
         border: "1px solid rgba(255, 255, 255, 0.9)",
         boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
         borderRadius: "20px",
-        padding: "2rem",
-        marginBottom: "2rem"
+        padding: "1.5rem 2rem",
+        marginBottom: "1rem"
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div>

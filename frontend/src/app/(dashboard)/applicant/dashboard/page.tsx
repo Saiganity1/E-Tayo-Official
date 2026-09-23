@@ -156,12 +156,12 @@ export default function ApplicantDashboard() {
         border: "1px solid rgba(255, 255, 255, 0.9)",
         boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
         borderRadius: "20px",
-        padding: "2rem",
-        marginBottom: "2rem"
+        padding: "1.5rem 2rem",
+        marginBottom: "1.25rem"
       }}>
         <div>
           <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", color: "#0038A8" }}>Applicant Dashboard</h1>
-          <p className="page-subtitle" style={{ fontSize: "1.1rem", marginTop: "0.5rem", color: "#475569" }}>Welcome back, <strong style={{color: "#1e293b"}}>{userName}</strong>! Here is an overview of your permit applications.</p>
+          <p className="page-subtitle" style={{ fontSize: "1.05rem", marginTop: "0.35rem", color: "#475569" }}>Welcome back, <strong style={{color: "#1e293b"}}>{userName}</strong>! Here is an overview of your permit applications.</p>
         </div>
         <Link href="/applicant/apply" className="btn-primary" style={{
           background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
@@ -174,7 +174,7 @@ export default function ApplicantDashboard() {
         </Link>
       </header>
 
-      <section className="stats-grid">
+      <section className="stats-grid" style={{ marginBottom: "1.25rem" }}>
         <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)", borderRadius: "18px", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}>
           <div className="stat-icon" style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)", color: "#0038A8", boxShadow: "0 4px 10px rgba(0, 56, 168, 0.2)" }}>
             <FileText size={24} />
@@ -204,8 +204,8 @@ export default function ApplicantDashboard() {
         </div>
       </section>
 
-      <section className="applications-section" style={{ marginTop: "2rem", background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", borderRadius: "24px", padding: "2rem", boxShadow: "0 12px 40px rgba(0,0,0,0.14)" }}>
-        <div className="section-header" style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+      <section className="applications-section" style={{ marginTop: "1.25rem", background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", borderRadius: "24px", padding: "1.5rem 2rem", boxShadow: "0 12px 40px rgba(0,0,0,0.14)" }}>
+        <div className="section-header" style={{ marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
             <h2 style={{ fontSize: "1.5rem", fontWeight: "700", color: "#1e293b", margin: 0 }}>Recent Applications</h2>
             {archivedCount > 0 && (

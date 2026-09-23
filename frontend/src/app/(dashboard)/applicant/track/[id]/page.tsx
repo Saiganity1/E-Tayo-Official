@@ -694,14 +694,14 @@ export default function ApplicationTrackDetail() {
 
   return (
     <div className="dashboard-page animate-fade-in-up">
-      <header className="page-header" style={{ marginBottom: "2rem" }}>
-        <button onClick={() => router.push("/applicant/track")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b", fontWeight: "600", marginBottom: "1rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem" }}>
+      <header className="page-header" style={{ marginBottom: "1.25rem" }}>
+        <button onClick={() => router.push("/applicant/track")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748b", fontWeight: "600", marginBottom: "0.75rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem" }}>
           <ChevronLeft size={16} /> Back to Tracker
         </button>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
           <div>
             <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", color: "#0f172a" }}>{appData.projectName}</h1>
-            <p className="page-subtitle" style={{ fontSize: "1.1rem", marginTop: "0.5rem", color: "#475569" }}>
+            <p className="page-subtitle" style={{ fontSize: "1.05rem", marginTop: "0.35rem", color: "#475569" }}>
               Tracking ID: <strong style={{color: "#1e293b"}}>{appData.id}</strong> • {appData.permitType.replace("_", " ")}
             </p>
           </div>
@@ -735,12 +735,12 @@ export default function ApplicationTrackDetail() {
         </div>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(380px, 480px)", gap: "2rem", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(380px, 480px)", gap: "1.25rem", alignItems: "start" }}>
         
         {/* Left Column: Timeline & Project Summary */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-          <div className="glass-panel" style={{ padding: "2.5rem", background: "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#1e293b", marginBottom: "2rem" }}>Application Timeline</h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          <div className="glass-panel" style={{ padding: "2rem", background: "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#1e293b", marginBottom: "1.25rem" }}>Application Timeline</h2>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "2rem", position: "relative" }}>
               {/* Connecting line */}

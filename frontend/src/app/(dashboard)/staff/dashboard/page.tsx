@@ -258,7 +258,7 @@ export default function StaffDashboard() {
   return (
     <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1380px", margin: "0 auto", paddingBottom: "4rem" }}>
       {/* HEADER */}
-      <header style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem" }}>
+      <header style={{ marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#eff6ff", padding: "4px 12px", borderRadius: "999px", fontSize: "0.8rem", fontWeight: "700", color: "#1d4ed8", marginBottom: "0.5rem" }}>
             <ShieldCheck size={14} /> Official Sto. Tomas Engineering Office

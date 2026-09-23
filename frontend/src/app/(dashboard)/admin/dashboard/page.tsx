@@ -124,7 +124,7 @@ export default function AdminDashboard() {
   return (
     <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1400px", margin: "0 auto", paddingBottom: "4rem" }}>
       {/* Page Header */}
-      <header className="page-header" style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+      <header className="page-header" style={{ marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <h1 className="page-title" style={{ fontSize: "2.25rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "0.75rem", margin: 0 }}>
             <Database size={32} color="#1d4ed8" /> Admin Portal
@@ -185,7 +185,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* Summary KPI Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.25rem", marginBottom: "2rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.25rem", marginBottom: "1.25rem" }}>
         <div style={{ background: "white", padding: "1.25rem 1.5rem", borderRadius: "18px", border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
             <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Audit Events</span>
