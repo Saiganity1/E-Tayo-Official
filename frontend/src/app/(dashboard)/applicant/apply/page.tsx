@@ -3129,7 +3129,7 @@ export default function ApplyPage() {
             }}>
               {/* ALERT HEADER */}
               <div style={{
-                background: "linear-gradient(135deg, #1e3a8a 0%, #312e81 100%)",
+                background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
                 color: "white",
                 padding: "1.25rem 1.75rem",
                 display: "flex",
@@ -3142,11 +3142,11 @@ export default function ApplyPage() {
                     width: "44px",
                     height: "44px",
                     borderRadius: "12px",
-                    background: "rgba(255, 255, 255, 0.15)",
+                    background: "#fef3c7",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    color: "#ffffff"
+                    color: "#b45309"
                   }}>
                     <FileCheck size={24} />
                   </div>
@@ -3155,14 +3155,16 @@ export default function ApplyPage() {
                       <span style={{
                         fontSize: "0.68rem",
                         fontWeight: "800",
-                        background: "rgba(255, 255, 255, 0.2)",
+                        background: "#fef3c7",
+                        color: "#b45309",
+                        border: "1px solid #fde68a",
                         padding: "2px 8px",
-                        borderRadius: "6px",
+                        borderRadius: "999px",
                         letterSpacing: "0.5px"
                       }}>
                         OFFICIAL PERMIT MATRIX BREAKDOWN
                       </span>
-                      <span style={{ fontSize: "0.75rem", color: "#cbd5e1" }}>
+                      <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
                         Santo Tomas OBO • PD 1096
                       </span>
                     </div>
@@ -3199,28 +3201,29 @@ export default function ApplyPage() {
               <div style={{ padding: "1.5rem 1.75rem", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 {/* STATUS SUMMARY BANNER */}
                 <div style={{
-                  background: "#f0f9ff",
-                  border: "1.5px solid #bae6fd",
+                  background: "#ffffff",
+                  border: "1.5px solid #e2e8f0",
                   borderRadius: "12px",
                   padding: "0.9rem 1.1rem",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
                   flexWrap: "wrap",
-                  gap: "0.75rem"
+                  gap: "0.75rem",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <Info size={18} color="#0284c7" style={{ flexShrink: 0 }} />
-                    <span style={{ fontSize: "0.86rem", color: "#0369a1", lineHeight: "1.4" }}>
+                    <Info size={18} color="#b45309" style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: "0.86rem", color: "#334155", lineHeight: "1.4" }}>
                       Under the Santo Tomas Municipal Permitting Matrix, the following engineering permits are required for this <strong>{selectedProjectType.category}</strong> project:
                     </span>
                   </div>
                   <div style={{ display: "flex", gap: "6px" }}>
-                    <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#15803d", background: "#dcfce7", border: "1px solid #86efac", padding: "3px 9px", borderRadius: "999px" }}>
-                      {mandatory.length} Mandatory
+                    <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#334155", background: "transparent", border: "1px solid #cbd5e1", padding: "2px 8px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                      <Check size={11} strokeWidth={2.5} color="#059669" /> {mandatory.length} Mandatory
                     </span>
                     {conditional.length > 0 && (
-                      <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#b45309", background: "#fef3c7", border: "1px solid #fde68a", padding: "3px 9px", borderRadius: "999px" }}>
+                      <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#475569", background: "transparent", border: "1px solid #cbd5e1", padding: "2px 8px", borderRadius: "5px" }}>
                         {conditional.length} Conditional
                       </span>
                     )}
@@ -3230,7 +3233,7 @@ export default function ApplyPage() {
                 {/* 1. MANDATORY PERMITS NEEDED */}
                 <div>
                   <h4 style={{ margin: "0 0 0.65rem 0", fontSize: "0.98rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "7px" }}>
-                    <CheckCircle2 size={18} color="#16a34a" />
+                    <CheckCircle2 size={18} color="#059669" />
                     Mandatory Permits for this Project ({mandatory.length} Required)
                   </h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
@@ -3238,23 +3241,37 @@ export default function ApplyPage() {
                       const Icon = p.icon;
                       return (
                         <div key={p.key} style={{
-                          background: "linear-gradient(135deg, #f8faff 0%, #eff6ff 100%)",
-                          border: "1.5px solid #bfdbfe",
+                          background: "#ffffff",
+                          border: "1.5px solid #e2e8f0",
                           borderRadius: "12px",
                           padding: "0.85rem 1rem",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
                           gap: "0.75rem",
-                          boxShadow: "0 2px 5px rgba(37, 99, 235, 0.04)"
-                        }}>
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                          transition: "all 0.15s ease"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = "#dc2626";
+                          e.currentTarget.style.outline = "2px solid #dc2626";
+                          e.currentTarget.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.15)";
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = "#e2e8f0";
+                          e.currentTarget.style.outline = "none";
+                          e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.02)";
+                          e.currentTarget.style.transform = "none";
+                        }}
+                        >
                           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                             <div style={{
                               width: "34px",
                               height: "34px",
                               borderRadius: "8px",
-                              background: "#dbeafe",
-                              color: "#1d4ed8",
+                              background: "#fef3c7",
+                              color: "#b45309",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -3264,7 +3281,7 @@ export default function ApplyPage() {
                             </div>
                             <div>
                               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: "#1e40af", color: "white" }}>
+                                <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a" }}>
                                   {p.code}
                                 </span>
                                 <span style={{ fontSize: "0.9rem", fontWeight: "800", color: "#0f172a" }}>
@@ -3286,16 +3303,19 @@ export default function ApplyPage() {
                                 style={{
                                   fontSize: "0.72rem",
                                   fontWeight: "700",
-                                  padding: "4px 10px",
+                                  padding: "4px 9px",
                                   borderRadius: "6px",
-                                  background: "#eff6ff",
-                                  color: "#2563eb",
-                                  border: "1px solid #bfdbfe",
+                                  background: "#fef3c7",
+                                  color: "#b45309",
+                                  border: "1px solid #fde68a",
                                   display: "inline-flex",
                                   alignItems: "center",
                                   gap: "4px",
-                                  textDecoration: "none"
+                                  textDecoration: "none",
+                                  transition: "all 0.15s ease"
                                 }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = "#d97706"; e.currentTarget.style.color = "#ffffff"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = "#fef3c7"; e.currentTarget.style.color = "#b45309"; }}
                                 title={`Download official ${p.label} PDF`}
                               >
                                 <Download size={12} /> Official PDF
@@ -3303,17 +3323,17 @@ export default function ApplyPage() {
                             )}
                             <span style={{
                               fontSize: "0.7rem",
-                              fontWeight: "800",
-                              padding: "3px 10px",
-                              borderRadius: "999px",
-                              background: "#dcfce7",
-                              color: "#15803d",
-                              border: "1px solid #86efac",
+                              fontWeight: "700",
+                              padding: "3px 8px",
+                              borderRadius: "5px",
+                              background: "transparent",
+                              color: "#334155",
+                              border: "1px solid #cbd5e1",
                               display: "inline-flex",
                               alignItems: "center",
                               gap: "4px"
                             }}>
-                              <Check size={11} strokeWidth={3} /> MANDATORY
+                              <Check size={11} strokeWidth={2.5} color="#059669" /> MANDATORY
                             </span>
                           </div>
                         </div>
@@ -3334,15 +3354,30 @@ export default function ApplyPage() {
                         const Icon = p.icon;
                         return (
                           <div key={p.key} style={{
-                            background: "linear-gradient(135deg, #fffdfa 0%, #fef8eb 100%)",
-                            border: "1.5px solid #fde68a",
+                            background: "#ffffff",
+                            border: "1.5px solid #e2e8f0",
                             borderRadius: "12px",
                             padding: "0.85rem 1rem",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
-                            gap: "0.75rem"
-                          }}>
+                            gap: "0.75rem",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                            transition: "all 0.15s ease"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = "#dc2626";
+                            e.currentTarget.style.outline = "2px solid #dc2626";
+                            e.currentTarget.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.15)";
+                            e.currentTarget.style.transform = "translateY(-1px)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = "#e2e8f0";
+                            e.currentTarget.style.outline = "none";
+                            e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.02)";
+                            e.currentTarget.style.transform = "none";
+                          }}
+                          >
                             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                               <div style={{
                                 width: "34px",
@@ -3359,14 +3394,14 @@ export default function ApplyPage() {
                               </div>
                               <div>
                                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                  <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: "#b45309", color: "white" }}>
+                                  <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a" }}>
                                     {p.code}
                                   </span>
                                   <span style={{ fontSize: "0.9rem", fontWeight: "800", color: "#0f172a" }}>
                                     {p.label}
                                   </span>
                                 </div>
-                                <div style={{ fontSize: "0.76rem", color: "#78350f", marginTop: "2px" }}>
+                                <div style={{ fontSize: "0.76rem", color: "#64748b", marginTop: "2px" }}>
                                   Condition: {p.condition}
                                 </div>
                               </div>
@@ -3381,16 +3416,19 @@ export default function ApplyPage() {
                                   style={{
                                     fontSize: "0.72rem",
                                     fontWeight: "700",
-                                    padding: "4px 10px",
+                                    padding: "4px 9px",
                                     borderRadius: "6px",
-                                    background: "#fffbeb",
+                                    background: "#fef3c7",
                                     color: "#b45309",
                                     border: "1px solid #fde68a",
                                     display: "inline-flex",
                                     alignItems: "center",
                                     gap: "4px",
-                                    textDecoration: "none"
+                                    textDecoration: "none",
+                                    transition: "all 0.15s ease"
                                   }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = "#d97706"; e.currentTarget.style.color = "#ffffff"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = "#fef3c7"; e.currentTarget.style.color = "#b45309"; }}
                                   title={`Download official ${p.label} PDF`}
                                 >
                                   <Download size={12} /> Official PDF
@@ -3398,12 +3436,12 @@ export default function ApplyPage() {
                               )}
                               <span style={{
                                 fontSize: "0.7rem",
-                                fontWeight: "800",
-                                padding: "3px 10px",
-                                borderRadius: "999px",
-                                background: "#fef3c7",
-                                color: "#b45309",
-                                border: "1px solid #fde68a"
+                                fontWeight: "700",
+                                padding: "3px 8px",
+                                borderRadius: "5px",
+                                background: "transparent",
+                                color: "#475569",
+                                border: "1px solid #cbd5e1"
                               }}>
                                 CONDITIONAL
                               </span>
@@ -3425,11 +3463,11 @@ export default function ApplyPage() {
                       {notRequired.map((p) => (
                         <span key={p.key} style={{
                           fontSize: "0.75rem",
-                          background: "#f1f5f9",
+                          background: "#ffffff",
                           color: "#64748b",
-                          border: "1px solid #e2e8f0",
+                          border: "1px solid #cbd5e1",
                           padding: "4px 10px",
-                          borderRadius: "8px",
+                          borderRadius: "6px",
                           display: "inline-flex",
                           alignItems: "center",
                           gap: "5px"
@@ -3444,7 +3482,7 @@ export default function ApplyPage() {
 
               {/* ALERT FOOTER ACTIONS */}
               <div style={{
-                background: "#f8fafc",
+                background: "#ffffff",
                 borderTop: "1px solid #e2e8f0",
                 padding: "1rem 1.75rem",
                 display: "flex",
@@ -3458,12 +3496,12 @@ export default function ApplyPage() {
                     type="button"
                     onClick={() => setShowAllTemplatesModal(true)}
                     style={{
-                      background: "#f1f5f9",
+                      background: "#ffffff",
                       border: "1.5px solid #cbd5e1",
                       color: "#334155",
-                      borderRadius: "10px",
-                      padding: "9px 14px",
-                      fontSize: "0.85rem",
+                      borderRadius: "8px",
+                      padding: "7px 14px",
+                      fontSize: "0.82rem",
                       fontWeight: "700",
                       cursor: "pointer",
                       display: "inline-flex",
@@ -3480,9 +3518,9 @@ export default function ApplyPage() {
                       background: "#ffffff",
                       border: "1.5px solid #cbd5e1",
                       color: "#475569",
-                      borderRadius: "10px",
-                      padding: "9px 14px",
-                      fontSize: "0.85rem",
+                      borderRadius: "8px",
+                      padding: "7px 14px",
+                      fontSize: "0.82rem",
                       fontWeight: "700",
                       cursor: "pointer",
                       display: "inline-flex",
@@ -3499,12 +3537,13 @@ export default function ApplyPage() {
                     type="button"
                     onClick={() => setShowRequirementsAlert(false)}
                     style={{
-                      background: "none",
-                      border: "none",
+                      background: "#f1f5f9",
+                      border: "1px solid #cbd5e1",
                       color: "#64748b",
-                      padding: "9px 14px",
-                      fontSize: "0.85rem",
-                      fontWeight: "600",
+                      borderRadius: "8px",
+                      padding: "7px 14px",
+                      fontSize: "0.82rem",
+                      fontWeight: "700",
                       cursor: "pointer"
                     }}
                   >
@@ -3518,21 +3557,24 @@ export default function ApplyPage() {
                       setShowUnifiedForm(true);
                     }}
                     style={{
-                      background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                      background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
                       color: "white",
-                      border: "none",
-                      borderRadius: "10px",
-                      padding: "9px 20px",
-                      fontSize: "0.88rem",
+                      border: "1.5px solid #dc2626",
+                      borderRadius: "8px",
+                      padding: "7px 16px",
+                      fontSize: "0.82rem",
                       fontWeight: "700",
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "6px",
-                      boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)"
+                      boxShadow: "0 2px 8px rgba(220, 38, 38, 0.35)",
+                      transition: "all 0.15s ease"
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
                   >
-                    <FileText size={16} /> Fill These Forms Online <ChevronRight size={16} />
+                    <FileText size={15} /> <span>Fill These Forms Online</span> <ChevronRight size={15} />
                   </button>
                 </div>
               </div>
