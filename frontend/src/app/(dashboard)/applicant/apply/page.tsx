@@ -1841,13 +1841,11 @@ export default function ApplyPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem" }}>
                   <div
                     className="project-card-item"
-                    onClick={() => setShowGoogleForm(true)}
                     style={{
                       border: "1.5px solid #e2e8f0",
                       background: "#ffffff",
                       borderRadius: "12px",
                       padding: "0.9rem 1.15rem",
-                      cursor: "pointer",
                       transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                       boxShadow: "0 1px 4px rgba(0,0,0,0.02)",
                       position: "relative",
