@@ -33,13 +33,13 @@ import {
 } from "../../../../data/projectTypeMatrix";
 
 const CATEGORY_THEMES: Record<string, { icon: any; color: string; bg: string; border: string; glow: string }> = {
-  All: { icon: Layers, color: "#0038A8", bg: "#eff6ff", border: "#bfdbfe", glow: "rgba(0, 56, 168, 0.2)" },
-  Residential: { icon: Home, color: "#0038A8", bg: "#eff6ff", border: "#bfdbfe", glow: "rgba(0, 56, 168, 0.2)" },
-  Commercial: { icon: Building2, color: "#0038A8", bg: "#eff6ff", border: "#bfdbfe", glow: "rgba(0, 56, 168, 0.2)" },
-  Industrial: { icon: Factory, color: "#0038A8", bg: "#eff6ff", border: "#bfdbfe", glow: "rgba(0, 56, 168, 0.2)" },
-  Institutional: { icon: Landmark, color: "#0038A8", bg: "#eff6ff", border: "#bfdbfe", glow: "rgba(0, 56, 168, 0.2)" },
-  "Ancillary & Alterations": { icon: Wrench, color: "#0038A8", bg: "#eff6ff", border: "#bfdbfe", glow: "rgba(0, 56, 168, 0.2)" },
-  "Utilities & Mechanical": { icon: Zap, color: "#0038A8", bg: "#eff6ff", border: "#bfdbfe", glow: "rgba(0, 56, 168, 0.2)" },
+  All: { icon: Layers, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
+  Residential: { icon: Home, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
+  Commercial: { icon: Building2, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
+  Industrial: { icon: Factory, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
+  Institutional: { icon: Landmark, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
+  "Ancillary & Alterations": { icon: Wrench, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
+  "Utilities & Mechanical": { icon: Zap, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
 };
 
 const PERMIT_ICONS: Record<keyof PermitFormMatrix, any> = {
@@ -1116,8 +1116,8 @@ export default function ApplyPage() {
               {/* SELECTED PROJECT TYPE BANNER (POSITIONED UNDER PROJECT COUNTER) */}
               {selectedProjectType && (
                 <div style={{
-                  background: "linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)",
-                  border: "1.5px solid #bfdbfe",
+                  background: "linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)",
+                  border: "1.5px solid #fecaca",
                   borderRadius: "10px",
                   padding: "8px 14px",
                   marginBottom: "0.85rem",
@@ -1126,15 +1126,15 @@ export default function ApplyPage() {
                   justifyContent: "space-between",
                   flexWrap: "wrap",
                   gap: "8px",
-                  boxShadow: "0 2px 6px rgba(0, 56, 168, 0.05)"
+                  boxShadow: "0 2px 6px rgba(220, 38, 38, 0.08)"
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <CheckCircle2 size={18} color="#0038A8" />
-                    <span style={{ fontSize: "0.84rem", color: "#0038A8", fontWeight: "700" }}>
-                      Selected: <strong style={{ color: "#021a4f" }}>{selectedProjectType.name}</strong>
+                    <CheckCircle2 size={18} color="#dc2626" />
+                    <span style={{ fontSize: "0.84rem", color: "#b91c1c", fontWeight: "700" }}>
+                      Selected: <strong style={{ color: "#7f1d1d" }}>{selectedProjectType.name}</strong>
                     </span>
                     {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
-                      <span style={{ fontSize: "0.72rem", background: "#0038A8", color: "#ffffff", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                      <span style={{ fontSize: "0.72rem", background: "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)", color: "#ffffff", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
                         Zoning Clearance Required
                       </span>
                     ) : (
@@ -1178,14 +1178,14 @@ export default function ApplyPage() {
                       onClick={() => setSelectedProjectType(p)}
                       className="project-card-item"
                       style={{
-                        border: isSelected ? "2px solid #0038A8" : "1.5px solid #e2e8f0",
-                        background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "#ffffff",
+                        border: isSelected ? "2px solid #dc2626" : "1.5px solid #e2e8f0",
+                        background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #fff5f5 100%)" : "#ffffff",
                         borderRadius: "12px",
                         padding: "0.9rem 1.15rem",
                         cursor: "pointer",
                         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                         boxShadow: isSelected 
-                          ? "0 6px 18px rgba(0, 56, 168, 0.14), 0 0 0 1px #0038A8" 
+                          ? "0 6px 18px rgba(220, 38, 38, 0.16), 0 0 0 1px #dc2626" 
                           : "0 1px 4px rgba(0,0,0,0.02)",
                         position: "relative",
                         display: "flex",
@@ -1202,9 +1202,9 @@ export default function ApplyPage() {
                             gap: "4px",
                             fontSize: "0.7rem",
                             fontWeight: "700",
-                            color: "#0038A8",
-                            background: "#eff6ff",
-                            border: "1px solid #bfdbfe",
+                            color: "#b91c1c",
+                            background: "#fef2f2",
+                            border: "1px solid #fecaca",
                             padding: "2px 8px",
                             borderRadius: "999px"
                           }}>
@@ -1242,7 +1242,7 @@ export default function ApplyPage() {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", marginTop: "0.2rem" }}>
                         {/* BADGES */}
                         <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", alignItems: "center", fontSize: "0.7rem", fontWeight: "700" }}>
-                          <span style={{ background: "#eff6ff", color: "#0038A8", border: "1px solid #bfdbfe", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                          <span style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
                             <Check size={11} strokeWidth={2.5} /> {reqCount} Mandatory
                           </span>
                           {condCount > 0 && (
@@ -1275,9 +1275,9 @@ export default function ApplyPage() {
                               setShowRequirementsAlert(true);
                             }}
                             style={{
-                              background: "#eff6ff",
-                              border: "1px solid #bfdbfe",
-                              color: "#0038A8",
+                              background: "#fef2f2",
+                              border: "1px solid #fecaca",
+                              color: "#b91c1c",
                               borderRadius: "6px",
                               cursor: "pointer",
                               fontSize: "0.72rem",
@@ -1288,8 +1288,8 @@ export default function ApplyPage() {
                               padding: "4px 9px",
                               transition: "all 0.15s ease"
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "#0038A8"; e.currentTarget.style.color = "#ffffff"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.color = "#0038A8"; }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "#dc2626"; e.currentTarget.style.color = "#ffffff"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.color = "#b91c1c"; }}
                             title="View Required Docs for this Project Type"
                           >
                             <Eye size={12} /> Required Docs
@@ -1308,7 +1308,7 @@ export default function ApplyPage() {
                               }
                             }}
                             style={{
-                              background: isSelected ? "linear-gradient(135deg, #0038A8 0%, #021a4f 100% )" : "#ffffff",
+                              background: isSelected ? "linear-gradient(135deg, #dc2626 0%, #991b1b 100% )" : "#ffffff",
                               border: isSelected ? "none" : "1.5px solid #cbd5e1",
                               color: isSelected ? "#ffffff" : "#1e293b",
                               borderRadius: "6px",
@@ -1319,13 +1319,13 @@ export default function ApplyPage() {
                               alignItems: "center",
                               gap: "4px",
                               padding: "5px 12px",
-                              boxShadow: isSelected ? "0 2px 8px rgba(0, 56, 168, 0.28)" : "none",
+                              boxShadow: isSelected ? "0 2px 8px rgba(220, 38, 38, 0.28)" : "none",
                               transition: "all 0.15s ease"
                             }}
                             onMouseEnter={(e) => {
                               if (!isSelected) {
-                                e.currentTarget.style.borderColor = "#0038A8";
-                                e.currentTarget.style.color = "#0038A8";
+                                e.currentTarget.style.borderColor = "#dc2626";
+                                e.currentTarget.style.color = "#dc2626";
                               }
                             }}
                             onMouseLeave={(e) => {
