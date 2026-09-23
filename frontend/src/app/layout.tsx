@@ -12,7 +12,7 @@ import { PermitProvider } from "../context/PermitContext";
 import { Viewport } from "next";
 
 export const metadata: Metadata = {
-  title: "e-Tayo | Government Permit Portal",
+  title: "eTAYO | Government Permit Portal",
   description: "Secure and fast application for building, locational, and occupancy permits.",
   manifest: "/manifest.json",
   icons: {

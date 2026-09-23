@@ -18,7 +18,7 @@ export const STO_TOMAS_MUNICIPAL_INFO = {
   office: "Office of the Municipal Engineer / Building Official (OBO)",
   zoningOffice: "Office of the Zoning Administrator / MPDC",
   fireStation: "Bureau of Fire Protection (BFP) - Sto. Tomas Fire Station",
-  portalName: "e-Tayo: Unified Municipal Permitting & Licensing System",
+  portalName: "eTAYO: Unified Municipal Permitting & Licensing System",
   workingHours: "Monday to Friday, 8:00 AM - 5:00 PM",
   location: "Municipal Hall, Poblacion, Sto. Tomas, Pampanga",
   contactNumber: "(045) 436-1234 / 0917-123-4567",
@@ -192,7 +192,7 @@ export const FAQ_DATABASE: FAQItem[] = [
     question: "Paano ko iche-check ang status ng aking permit application?",
     keywords: ["status", "check", "track", "nasaan", "follow up", "follow-up", "kamusta", "kumusta"],
     category: "tracking",
-    answer: "Maaari mong subaybayan ang iyong permit sa pamamagitan ng pagpunta sa **'Application Status'** o **'Track Applications'** sa sidebar menu ng e-Tayo portal. I-enter lamang ang iyong **Tracking ID** (halimbawa: `LC-2026-1841` o `APP-2026-9084`). Makikita mo roon ang bawat hakbang ng evaluation ng Municipal Engineers!"
+    answer: "Maaari mong subaybayan ang iyong permit sa pamamagitan ng pagpunta sa **'Application Status'** o **'Track Applications'** sa sidebar menu ng eTAYO portal. I-enter lamang ang iyong **Tracking ID** (halimbawa: `LC-2026-1841` o `APP-2026-9084`). Makikita mo roon ang bawat hakbang ng evaluation ng Municipal Engineers!"
   },
   {
     question: "Sino-sino ang mga propesyonal na kailangang pumirma sa mga plano?",
@@ -223,7 +223,7 @@ export function findKnowledgeBaseMatches(query: string, userApplications?: any[]
         return `${i + 1}. **${type}** (\`${app.id}\`) para sa *${app.projectName || "Project"}*\n   • **Status**: \`${status}\`\n   • **Lokasyon**: ${app.projectAddress || "Sto. Tomas, Pampanga"}`;
       }).join("\n\n");
 
-      return `Mabuhay! Chineck ko po ang inyong mga kasalukuyang permit applications sa Sto. Tomas e-Tayo system:\n\n${summaryList}\n\nKung may kailangan kayong linawin sa alinman sa mga ito, sabihin lamang po ang Application ID!`;
+      return `Mabuhay! Chineck ko po ang inyong mga kasalukuyang permit applications sa Sto. Tomas eTAYO system:\n\n${summaryList}\n\nKung may kailangan kayong linawin sa alinman sa mga ito, sabihin lamang po ang Application ID!`;
     }
 
     // Check if query mentions a specific application ID in the user's list

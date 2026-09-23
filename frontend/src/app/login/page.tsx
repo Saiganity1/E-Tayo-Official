@@ -94,16 +94,9 @@ export default function LoginPage() {
 
       <div className="login-visual animate-fade-in">
         <div className="visual-content">
-          <div className="visual-badge">
-            <Image src="/sto-tomas-logo.png" alt="Sto. Tomas Seal" width={34} height={34} style={{ objectFit: "contain" }} />
-            <div className="visual-badge-text">
-              <span>Republika ng Pilipinas</span>
-              <strong>Bayan ng Sto. Tomas, Pampanga</strong>
-            </div>
-          </div>
-          <div className="visual-icon"><ShieldCheck size={38} /></div>
+          <div className="visual-icon"><ShieldCheck size={44} /></div>
           <h1>Secure Portal Access</h1>
-          <p>e-Tayo ensures your data is protected with enterprise-grade security protocols.</p>
+          <p>eTAYO ensures your data is protected with enterprise-grade security protocols.</p>
         </div>
       </div>
 

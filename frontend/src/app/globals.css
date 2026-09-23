@@ -204,46 +204,11 @@ button {
 .visual-content {
   position: relative;
   z-index: 10;
-  max-width: 520px;
+  max-width: 620px;
   padding: 3rem;
   background: transparent;
   border: none;
   box-shadow: none;
-}
-
-.visual-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 18px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 9999px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-}
-
-.visual-badge-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
-}
-
-.visual-badge-text span {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #fecaca;
-  font-weight: 600;
-}
-
-.visual-badge-text strong {
-  font-size: 0.92rem;
-  color: #ffffff;
-  font-weight: 700;
-  letter-spacing: -0.01em;
 }
 
 .visual-icon {
@@ -252,33 +217,42 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 68px;
-  height: 68px;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 20px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  width: 76px;
+  height: 76px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 22px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 .visual-content h1 {
-  font-size: 3.5rem;
-  font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 1.5rem;
+  font-size: 4.5rem;
+  font-weight: 850;
+  line-height: 1.08;
+  margin-bottom: 1.75rem;
   color: #ffffff;
   letter-spacing: -0.04em;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.6);
 }
 
 .visual-content p {
-  font-size: 1.15rem;
-  color: #fecaca;
+  font-size: 1.45rem;
+  color: #fff1f2;
   margin-bottom: 3rem;
-  line-height: 1.65;
-  font-weight: 400;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  line-height: 1.7;
+  font-weight: 450;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 1366px) {
+  .visual-content h1 {
+    font-size: 3.75rem;
+  }
+  .visual-content p {
+    font-size: 1.25rem;
+  }
 }
 
 .login-form-container {

@@ -244,7 +244,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
       status: "info",
       action: "SYSTEM_STARTUP",
       user: "system@etayo.gov.ph",
-      message: "e-Tayo Municipal Online Permitting System operational",
+      message: "eTAYO Municipal Online Permitting System operational",
       details: "Spatial GIS mapping engine, PDF generation services, and database listeners initialized.",
       userEmail: "system@etayo.gov.ph"
     })

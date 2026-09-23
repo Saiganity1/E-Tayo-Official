@@ -165,7 +165,7 @@ export default function Sidebar() {
 
         <div className="sidebar-footer">
           <p>Sto. Tomas, Pampanga</p>
-          <small>© 2026 e-Tayo System</small>
+          <small>© 2026 eTAYO System</small>
         </div>
 
       </aside>

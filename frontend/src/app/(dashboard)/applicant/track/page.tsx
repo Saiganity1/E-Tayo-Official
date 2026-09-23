@@ -518,7 +518,7 @@ export default function ApplicationStatusPage() {
               Sign In to View Your Application History
             </h3>
             <p style={{ margin: "0 auto 1.75rem auto", color: "#64748b", fontSize: "0.95rem", maxWidth: "520px", lineHeight: "1.5" }}>
-              Personal applications and clearance certificates are strictly protected. Sign in with your registered e-Tayo account to securely view your permits, review notes, and approved documents.
+              Personal applications and clearance certificates are strictly protected. Sign in with your registered eTAYO account to securely view your permits, review notes, and approved documents.
             </p>
             <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
               <Link href="/login?redirect=/applicant/track" className="btn-primary" style={{ padding: "0.75rem 1.6rem", borderRadius: "12px", fontWeight: "700" }}>

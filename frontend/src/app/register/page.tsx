@@ -97,15 +97,8 @@ export default function RegisterPage() {
 
       <div className="login-visual animate-fade-in">
         <div className="visual-content">
-          <div className="visual-badge">
-            <Image src="/sto-tomas-logo.png" alt="Sto. Tomas Seal" width={34} height={34} style={{ objectFit: "contain" }} />
-            <div className="visual-badge-text">
-              <span>Republika ng Pilipinas</span>
-              <strong>Bayan ng Sto. Tomas, Pampanga</strong>
-            </div>
-          </div>
-          <div className="visual-icon"><ShieldCheck size={38} /></div>
-          <h1>Join e-Tayo</h1>
+          <div className="visual-icon"><ShieldCheck size={44} /></div>
+          <h1>Join eTAYO</h1>
           <p>Create an account to apply for permits, track your progress, and securely communicate with city staff.</p>
         </div>
       </div>

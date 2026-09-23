@@ -578,7 +578,7 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
           height: scaled.height,
         });
 
-        page2.drawText("e-Tayo Sto. Tomas Digital Permitting System • Official Vicinity Verification Annex", {
+        page2.drawText("eTAYO Sto. Tomas Digital Permitting System • Official Vicinity Verification Annex", {
           x: 50,
           y: 25,
           size: 7,

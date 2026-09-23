@@ -598,7 +598,7 @@ export default function AdminApp() {
               onClick={() => router.push("/")}
               style={{ background: "none", border: "none", color: "#64748b", fontSize: "0.85rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}
             >
-              <ArrowLeft size={14} /> Back to e-Tayo Portal
+              <ArrowLeft size={14} /> Back to eTAYO Portal
             </button>
           </div>
         </div>
@@ -884,7 +884,7 @@ export default function AdminApp() {
 
           <div style={{ padding: "1rem 1.25rem", background: "#f8fafc", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.82rem", color: "#64748b" }}>
             <span>Showing {filteredUsers.length} of {users.length} total registered accounts</span>
-            <span>Connected: Sto. Tomas e-Tayo Central Node</span>
+            <span>Connected: Sto. Tomas eTAYO Central Node</span>
           </div>
         </div>
       </main>
@@ -1151,7 +1151,7 @@ export default function AdminApp() {
                   <Plus size={20} color="#7c3aed" /> Register New User
                 </h2>
                 <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
-                  Directly provision an account into the e-Tayo database
+                  Directly provision an account into the eTAYO database
                 </p>
               </div>
               <button onClick={() => setIsCreateModalOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "1.2rem" }}>

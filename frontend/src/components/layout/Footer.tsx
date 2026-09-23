@@ -41,12 +41,12 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Column 2: About Us (What is e-Tayo) */}
+          {/* Column 2: About Us (What is eTAYO) */}
           <div className="footer-col col-about">
             <h3 className="footer-heading">ABOUT US</h3>
             <div className="heading-line" />
             <p className="about-text">
-              <strong>e-Tayo</strong> is the official digital municipal governance and online permitting portal of the <strong>Municipality of Sto. Tomas, Pampanga</strong>.
+              <strong>eTAYO</strong> is the official digital municipal governance and online permitting portal of the <strong>Municipality of Sto. Tomas, Pampanga</strong>.
             </p>
             <p className="about-text">
               Built to modernize local public service, it empowers citizens, architects, engineers, and property developers with a transparent, efficient, and 100% online gateway to apply for municipal permits without in-person queueing.
