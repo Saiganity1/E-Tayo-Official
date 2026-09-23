@@ -1116,8 +1116,8 @@ export default function ApplyPage() {
               {/* SELECTED PROJECT TYPE BANNER (POSITIONED UNDER PROJECT COUNTER) */}
               {selectedProjectType && (
                 <div style={{
-                  background: "linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)",
-                  border: "1.5px solid #fecaca",
+                  background: "#ffffff",
+                  border: "1.5px solid #cbd5e1",
                   borderRadius: "10px",
                   padding: "8px 14px",
                   marginBottom: "0.85rem",
@@ -1126,12 +1126,12 @@ export default function ApplyPage() {
                   justifyContent: "space-between",
                   flexWrap: "wrap",
                   gap: "8px",
-                  boxShadow: "0 2px 8px rgba(220, 38, 38, 0.1)"
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)"
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <CheckCircle2 size={18} color="#dc2626" />
-                    <span style={{ fontSize: "0.84rem", color: "#b91c1c", fontWeight: "700" }}>
-                      Selected: <strong style={{ color: "#7f1d1d" }}>{selectedProjectType.name}</strong>
+                    <CheckCircle2 size={18} color="#0f172a" />
+                    <span style={{ fontSize: "0.84rem", color: "#0f172a", fontWeight: "700" }}>
+                      Selected: <strong style={{ color: "#000000" }}>{selectedProjectType.name}</strong>
                     </span>
                     {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
                       <span style={{ fontSize: "0.72rem", background: "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)", color: "#ffffff", padding: "2px 8px", borderRadius: "999px", fontWeight: "700", boxShadow: "0 2px 6px rgba(220, 38, 38, 0.25)" }}>
