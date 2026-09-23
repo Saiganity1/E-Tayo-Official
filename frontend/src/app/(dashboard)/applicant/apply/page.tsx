@@ -1144,10 +1144,10 @@ export default function ApplyPage() {
                 className="project-cards-container"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))",
-                  gap: "1.1rem",
-                  padding: "6px 8px 16px 2px",
-                  marginBottom: "1.5rem",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                  gap: "0.75rem",
+                  padding: "4px 6px 12px 2px",
+                  marginBottom: "1rem",
                   maxHeight: "clamp(380px, 58vh, 600px)",
                   overflowY: "auto",
                   overscrollBehavior: "contain"
@@ -1169,13 +1169,13 @@ export default function ApplyPage() {
                       style={{
                         border: isSelected ? "2px solid #0038A8" : "1.5px solid #e2e8f0",
                         background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "#ffffff",
-                        borderRadius: "16px",
-                        padding: "1.2rem",
+                        borderRadius: "12px",
+                        padding: "0.85rem 1rem",
                         cursor: "pointer",
                         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                         boxShadow: isSelected 
-                          ? "0 8px 24px rgba(0, 56, 168, 0.18), 0 0 0 1px #0038A8" 
-                          : "0 2px 6px rgba(0,0,0,0.02)",
+                          ? "0 6px 18px rgba(0, 56, 168, 0.16), 0 0 0 1px #0038A8" 
+                          : "0 1px 4px rgba(0,0,0,0.02)",
                         position: "relative",
                         display: "flex",
                         flexDirection: "column",
@@ -1183,20 +1183,20 @@ export default function ApplyPage() {
                       }}
                     >
                       <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.65rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
                           <span style={{
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: "5px",
-                            fontSize: "0.72rem",
+                            gap: "4px",
+                            fontSize: "0.7rem",
                             fontWeight: "700",
                             color: "#0038A8",
                             background: "#eff6ff",
                             border: "1px solid #bfdbfe",
-                            padding: "2px 8px",
+                            padding: "1px 7px",
                             borderRadius: "999px"
                           }}>
-                            <CatIcon size={12} />
+                            <CatIcon size={11} />
                             {p.category}
                           </span>
 
@@ -1204,48 +1204,48 @@ export default function ApplyPage() {
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "4px",
-                            fontSize: "0.72rem",
+                            fontSize: "0.7rem",
                             color: "#64748b",
                             fontWeight: "500"
                           }}>
-                            <Clock size={12} /> {p.estimatedDays}
+                            <Clock size={11} /> {p.estimatedDays}
                           </span>
                         </div>
 
-                        <h4 style={{ margin: "0 0 0.35rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>
+                        <h4 style={{ margin: "0 0 0.2rem 0", fontSize: "0.98rem", fontWeight: "800", color: "#0f172a" }}>
                           {p.name}
                         </h4>
-                        <p style={{ margin: "0 0 0.85rem 0", fontSize: "0.82rem", color: "#64748b", lineHeight: "1.45", minHeight: "36px" }}>
+                        <p style={{ margin: "0 0 0.5rem 0", fontSize: "0.78rem", color: "#64748b", lineHeight: "1.35" }}>
                           {p.description}
                         </p>
                       </div>
 
                       <div>
-                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "0.85rem", fontSize: "0.72rem", fontWeight: "700" }}>
-                          <span style={{ background: "#eff6ff", color: "#0038A8", border: "1px solid #bfdbfe", padding: "3px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                            <Check size={12} strokeWidth={2.5} /> {reqCount} Mandatory
+                        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "0.6rem", fontSize: "0.7rem", fontWeight: "700" }}>
+                          <span style={{ background: "#eff6ff", color: "#0038A8", border: "1px solid #bfdbfe", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                            <Check size={11} strokeWidth={2.5} /> {reqCount} Mandatory
                           </span>
                           {condCount > 0 && (
-                            <span style={{ background: "#f8fafc", color: "#334155", border: "1px solid #cbd5e1", padding: "3px 8px", borderRadius: "6px" }}>
+                            <span style={{ background: "#f8fafc", color: "#334155", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px" }}>
                               {condCount} Conditional
                             </span>
                           )}
                           {p.matrix.zoningPermit === 'required' ? (
-                            <span style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", padding: "3px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <ShieldCheck size={12} /> LC Required
+                            <span style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                              <ShieldCheck size={11} /> LC Required
                             </span>
                           ) : p.matrix.zoningPermit === 'conditional' ? (
-                            <span style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", padding: "3px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <ShieldCheck size={12} /> LC Conditional
+                            <span style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                              <ShieldCheck size={11} /> LC Conditional
                             </span>
                           ) : (
-                            <span style={{ background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0", padding: "3px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <CheckCircle size={12} /> LC Exempt
+                            <span style={{ background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                              <CheckCircle size={11} /> LC Exempt
                             </span>
                           )}
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1257,21 +1257,21 @@ export default function ApplyPage() {
                               background: "#eff6ff",
                               border: "1px solid #bfdbfe",
                               color: "#0038A8",
-                              borderRadius: "8px",
+                              borderRadius: "6px",
                               cursor: "pointer",
-                              fontSize: "0.75rem",
+                              fontSize: "0.72rem",
                               fontWeight: "700",
                               display: "inline-flex",
                               alignItems: "center",
-                              gap: "5px",
-                              padding: "6px 11px",
+                              gap: "4px",
+                              padding: "4px 9px",
                               transition: "all 0.15s ease"
                             }}
                             onMouseEnter={(e) => { e.currentTarget.style.background = "#0038A8"; e.currentTarget.style.color = "#ffffff"; }}
                             onMouseLeave={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.color = "#0038A8"; }}
                             title="View Required Docs for this Project Type"
                           >
-                            <Eye size={13} /> Required Docs
+                            <Eye size={12} /> Required Docs
                           </button>
 
                           <button
@@ -1290,14 +1290,14 @@ export default function ApplyPage() {
                               background: isSelected ? "linear-gradient(135deg, #0038A8 0%, #021a4f 100% )" : "#ffffff",
                               border: isSelected ? "none" : "1.5px solid #cbd5e1",
                               color: isSelected ? "#ffffff" : "#1e293b",
-                              borderRadius: "8px",
+                              borderRadius: "6px",
                               cursor: "pointer",
-                              fontSize: "0.75rem",
+                              fontSize: "0.72rem",
                               fontWeight: "700",
                               display: "inline-flex",
                               alignItems: "center",
-                              gap: "5px",
-                              padding: "6px 14px",
+                              gap: "4px",
+                              padding: "5px 12px",
                               boxShadow: isSelected ? "0 2px 8px rgba(0, 56, 168, 0.28)" : "none",
                               transition: "all 0.15s ease"
                             }}
@@ -1316,7 +1316,7 @@ export default function ApplyPage() {
                             title="Select this Project Type and proceed"
                           >
                             <span>{isSelected ? "Selected" : "Select"}</span>
-                            <ChevronRight size={13} />
+                            <ChevronRight size={12} />
                           </button>
                         </div>
                       </div>
