@@ -1061,45 +1061,12 @@ export default function ApplyPage() {
                 </div>
               </div>
 
-              {/* SEARCH & CATEGORY FILTERS */}
-              <div style={{ marginBottom: "1.25rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-                <div style={{ position: "relative", maxWidth: "420px" }}>
-                  <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-                  <input
-                    type="text"
-                    placeholder="Search by project name (e.g. House, Warehouse, Clinic)..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px 9px 38px",
-                      borderRadius: "10px",
-                      border: "1.5px solid #cbd5e1",
-                      fontSize: "0.88rem",
-                      background: "#ffffff",
-                      color: "#0f172a",
-                      outline: "none",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
-                    }}
-                  />
-                  {searchQuery && (
-                    <button 
-                      type="button" 
-                      onClick={() => setSearchQuery("")}
-                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "1rem" }}
-                    >
-                      &times;
-                    </button>
-                  )}
-                </div>
-              </div>
-
               {/* STATUS BAR / COUNTER & SCROLL HINT */}
               <div style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                marginBottom: selectedProjectType ? "0.6rem" : "0.75rem",
+                marginBottom: "0.65rem",
                 padding: "0 4px",
                 fontSize: "0.82rem",
                 color: "rgba(255, 255, 255, 0.95)"
@@ -1113,7 +1080,7 @@ export default function ApplyPage() {
                 </span>
               </div>
 
-              {/* SELECTED PROJECT TYPE BANNER (POSITIONED UNDER PROJECT COUNTER) */}
+              {/* SELECTED PROJECT TYPE BANNER */}
               {selectedProjectType && (
                 <div style={{
                   background: "#ffffff",
@@ -1149,6 +1116,39 @@ export default function ApplyPage() {
                   </span>
                 </div>
               )}
+
+              {/* SEARCH BAR (UNDER SELECTED PROJECT TYPE) */}
+              <div style={{ marginBottom: "1rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                <div style={{ position: "relative", maxWidth: "420px" }}>
+                  <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                  <input
+                    type="text"
+                    placeholder="Search by project name (e.g. House, Warehouse, Clinic)..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "9px 12px 9px 38px",
+                      borderRadius: "10px",
+                      border: "1.5px solid #cbd5e1",
+                      fontSize: "0.88rem",
+                      background: "#ffffff",
+                      color: "#0f172a",
+                      outline: "none",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
+                    }}
+                  />
+                  {searchQuery && (
+                    <button 
+                      type="button" 
+                      onClick={() => setSearchQuery("")}
+                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "1rem" }}
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
+              </div>
 
               {/* 31 PROJECT TYPES VERTICAL RECTANGLE LIST */}
               <div 
