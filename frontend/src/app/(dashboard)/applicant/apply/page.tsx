@@ -1353,38 +1353,71 @@ export default function ApplyPage() {
           {/* STEP 2: LOCATIONAL CLEARANCE */}
           {currentStep === 2 && (
             <div className="step-pane animate-fade-in-up">
-              <div style={{ marginBottom: "1.75rem" }}>
+              <div style={{ marginBottom: "1.5rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
                   <span style={{
                     fontSize: "0.72rem",
                     fontWeight: "800",
-                    color: "#0038A8",
-                    background: "#eff6ff",
-                    border: "1px solid #bfdbfe",
+                    color: "#ffffff",
+                    background: "rgba(255, 255, 255, 0.2)",
+                    border: "1px solid rgba(255, 255, 255, 0.35)",
                     padding: "2px 8px",
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
                     STEP 2 OF 5
                   </span>
-                  <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
+                  <span style={{ fontSize: "0.82rem", color: "rgba(255, 255, 255, 0.85)", fontWeight: "600" }}>
                     Prerequisite Verification
                   </span>
                 </div>
-                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
-                  Locational Clearance
-                </h2>
-                <p style={{ margin: 0, color: "#475569", fontSize: "0.92rem", lineHeight: "1.5" }}>
-                  {isClearanceRequired ? (
-                    <>
-                      Under Sto. Tomas Municipal Permitting Matrix, permitting for <strong>{selectedProjectType.name}</strong> requires an approved <strong>Locational Clearance</strong> confirming zoning classification before completing the required technical permit forms.
-                    </>
-                  ) : (
-                    <>
-                      Under Sto. Tomas Municipal Ordinance, <strong>{selectedProjectType.name}</strong> is exempt from zoning and locational clearance requirements.
-                    </>
-                  )}
-                </p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+                  <div>
+                    <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#ffffff", margin: "0 0 0.35rem 0" }}>
+                      Locational Clearance
+                    </h2>
+                    <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.9)", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                      {isClearanceRequired ? (
+                        <>
+                          Under Sto. Tomas Municipal Permitting Matrix, permitting for <strong>{selectedProjectType?.name}</strong> requires an approved <strong>Locational Clearance</strong> confirming zoning classification before completing the required technical permit forms.
+                        </>
+                      ) : (
+                        <>
+                          Under Sto. Tomas Municipal Ordinance, <strong>{selectedProjectType?.name}</strong> is exempt from zoning and locational clearance requirements.
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <a
+                      href="/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: "#ffffff",
+                        border: "1.5px solid rgba(255, 255, 255, 0.9)",
+                        color: "#b45309",
+                        padding: "8px 16px",
+                        borderRadius: "12px",
+                        fontSize: "0.82rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+                        textDecoration: "none",
+                        transition: "all 0.15s ease"
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
+                    >
+                      <Download size={14} color="#b45309" />
+                      Official LC Template (PDF)
+                    </a>
+                  </div>
+                </div>
               </div>
 
               {/* LOCKED WARNING NOTIFICATION */}
@@ -1804,129 +1837,153 @@ export default function ApplyPage() {
                   </div>
                 </div>
               ) : (
-                /* CASE 3: CLEARANCE REQUIRED BUT NOT YET COMPLETED */
-                <div>
-                  <div style={{
-                    border: "1.5px solid #cbd5e1",
-                    background: "#ffffff",
-                    borderRadius: "20px",
-                    boxShadow: "0 10px 30px -10px rgba(0, 0, 0, 0.07)",
-                    overflow: "hidden"
-                  }}>
-                    {/* Card Header */}
-                    <div style={{
-                      background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-                      color: "white",
-                      padding: "1.75rem 2rem",
+                /* CASE 4: CLEARANCE REQUIRED BUT NOT YET COMPLETED - STEP 1 MATCHING RECTANGLE CARD */
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem" }}>
+                  <div
+                    className="project-card-item"
+                    onClick={() => setShowGoogleForm(true)}
+                    style={{
+                      border: "1.5px solid #e2e8f0",
+                      background: "#ffffff",
+                      borderRadius: "12px",
+                      padding: "0.9rem 1.15rem",
+                      cursor: "pointer",
+                      transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.02)",
+                      position: "relative",
                       display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: "1rem"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                        <div style={{
-                          width: "48px",
-                          height: "48px",
-                          borderRadius: "14px",
-                          background: "rgba(79, 70, 229, 0.25)",
-                          border: "1px solid rgba(129, 140, 248, 0.4)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#a5b4fc"
-                        }}>
-                          <ShieldCheck size={26} />
-                        </div>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
-                            <span style={{
-                              background: "#4f46e5",
-                              color: "white",
-                              fontSize: "0.72rem",
-                              fontWeight: "800",
-                              padding: "2px 8px",
-                              borderRadius: "4px",
-                              letterSpacing: "0.5px"
-                            }}>
-                              MANDATORY STAGE 1 PREREQUISITE
-                            </span>
-                            <span style={{ fontSize: "0.76rem", color: "#94a3b8", fontWeight: "600" }}>
-                              Sto. Tomas MPDO & Zoning Administration
-                            </span>
-                          </div>
-                          <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: "800" }}>
-                            Application for Locational Clearance
-                          </h3>
-                        </div>
-                      </div>
-
-                      <a
-                        href="/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
-                        download
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
+                      flexDirection: "column",
+                      gap: "0.45rem"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = "#dc2626";
+                      e.currentTarget.style.outline = "2px solid #dc2626";
+                      e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(220, 38, 38, 0.22)";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = "#e2e8f0";
+                      e.currentTarget.style.outline = "none";
+                      e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.02)";
+                      e.currentTarget.style.transform = "none";
+                    }}
+                  >
+                    {/* TOP ROW: CATEGORY + NAME & DURATION */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <span style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: "6px",
-                          padding: "8px 14px",
-                          borderRadius: "8px",
-                          background: "rgba(255, 255, 255, 0.12)",
-                          border: "1px solid rgba(255, 255, 255, 0.25)",
-                          color: "white",
-                          fontSize: "0.82rem",
+                          gap: "4px",
+                          fontSize: "0.7rem",
                           fontWeight: "700",
-                          textDecoration: "none"
-                        }}
-                      >
-                        <Download size={14} /> Download Official Form (PDF)
-                      </a>
+                          color: "#b45309",
+                          background: "#fef3c7",
+                          border: "1px solid #fde68a",
+                          padding: "2px 8px",
+                          borderRadius: "999px"
+                        }}>
+                          <MapPin size={11} />
+                          Zoning & Land Use
+                        </span>
+
+                        <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: "800", color: "#0f172a" }}>
+                          Application for Locational Clearance
+                        </h4>
+                      </div>
+
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontSize: "0.72rem",
+                        color: "#64748b",
+                        fontWeight: "600",
+                        background: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        padding: "2px 8px",
+                        borderRadius: "6px"
+                      }}>
+                        <Clock size={11} /> 5 – 7 days
+                      </span>
                     </div>
 
-                    {/* Card Body */}
-                    <div style={{ padding: "2rem" }}>
-                      <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "1rem",
-                        background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
-                        border: "1.5px solid #a7f3d0",
-                        borderRadius: "16px",
-                        padding: "1.5rem 1.75rem"
-                      }}>
-                        <div>
-                          <h4 style={{ margin: "0 0 0.35rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#065f46" }}>
-                            Ready to file your Locational Clearance?
-                          </h4>
-                          <p style={{ margin: 0, fontSize: "0.85rem", color: "#047857", lineHeight: "1.4" }}>
-                            Fill in applicant info, project nature, lot & building areas, land tenure, and valuation. Submitting generates your official clearance reference and automatically unlocks Step 3: Mapping.
-                          </p>
-                        </div>
+                    {/* MIDDLE: DESCRIPTION */}
+                    <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: "1.4" }}>
+                      Official Sto. Tomas MPDO zoning verification and land development approval for <strong>{selectedProjectType?.name}</strong>. Completing this form fulfills the mandatory Stage 1 prerequisite for municipal permit processing.
+                    </p>
+
+                    {/* BOTTOM ROW: BADGES & ACTION BUTTONS */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", marginTop: "0.2rem" }}>
+                      {/* BADGES (NO BACKGROUND / TRANSPARENT) */}
+                      <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", alignItems: "center", fontSize: "0.7rem", fontWeight: "700" }}>
+                        <span style={{ background: "transparent", color: "#334155", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                          <Check size={11} strokeWidth={2.5} color="#059669" /> 4 Required Attachments
+                        </span>
+                        <span style={{ background: "transparent", color: "#475569", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                          <ShieldCheck size={11} color="#d97706" /> Mandatory Stage 1
+                        </span>
+                        <span style={{ background: "transparent", color: "#64748b", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px" }}>
+                          Sto. Tomas MPDO
+                        </span>
+                      </div>
+
+                      {/* ACTION BUTTONS */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <a
+                          href="/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
+                          download
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            background: "#fef3c7",
+                            border: "1px solid #fde68a",
+                            color: "#b45309",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "0.72rem",
+                            fontWeight: "700",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            padding: "4px 9px",
+                            textDecoration: "none",
+                            transition: "all 0.15s ease"
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "#d97706"; e.currentTarget.style.color = "#ffffff"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "#fef3c7"; e.currentTarget.style.color = "#b45309"; }}
+                          title="Download Official Locational Clearance PDF Form"
+                        >
+                          <Download size={12} /> Download PDF
+                        </a>
 
                         <button
                           type="button"
-                          onClick={() => setShowGoogleForm(true)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowGoogleForm(true);
+                          }}
                           style={{
-                            background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "10px",
-                            padding: "12px 24px",
-                            fontSize: "0.92rem",
-                            fontWeight: "800",
+                            background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                            border: "1.5px solid #dc2626",
+                            color: "#ffffff",
+                            borderRadius: "6px",
                             cursor: "pointer",
+                            fontSize: "0.72rem",
+                            fontWeight: "700",
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: "8px",
-                            boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)"
+                            gap: "4px",
+                            padding: "5px 12px",
+                            boxShadow: "0 2px 8px rgba(220, 38, 38, 0.35)",
+                            transition: "all 0.15s ease"
                           }}
+                          title="Fill Locational Clearance Form Online"
                         >
-                          <FileText size={18} />
-                          <span>Fill Official Locational Clearance Online</span>
-                          <ChevronRight size={18} />
+                          <FileText size={12} />
+                          <span>Fill Form Online</span>
+                          <ChevronRight size={12} />
                         </button>
                       </div>
                     </div>
@@ -2871,9 +2928,34 @@ export default function ApplyPage() {
                 </button>
               ) : (
                 <button 
-                  className="btn-primary" 
+                  className="btn-primary btn-wizard-next" 
                   onClick={() => setShowGoogleForm(true)} 
-                  style={{ background: "linear-gradient(135deg, #059669 0%, #047857 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                  style={{ 
+                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                    color: "#ffffff",
+                    border: "1.5px solid transparent",
+                    boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    padding: "10px 22px", 
+                    borderRadius: "10px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#ffffff";
+                    e.currentTarget.style.color = "#d97706";
+                    e.currentTarget.style.borderColor = "#ffffff";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
+                    e.currentTarget.style.color = "#ffffff";
+                    e.currentTarget.style.borderColor = "transparent";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                  }}
                 >
                   <FileText size={18} />
                   <span>Fill Official Locational Clearance Online</span>
