@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { createPortal } from "react-dom";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { 
-  FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft, 
+  FileText, MapPin, Upload, CheckCircle, ChevronRight, ChevronLeft, ChevronDown, ChevronUp,
   Lock, ShieldCheck, AlertCircle, Check, Layers, Search, Sparkles, 
   Home, Building2, Factory, Landmark, Wrench, Zap, Clock, Copy, 
   ArrowRight, CheckCircle2, Shield, Droplets, Flame, Radio, FileCheck, X,
@@ -147,6 +147,15 @@ export default function ApplyPage() {
   const [newAppAlert, setNewAppAlert] = useState<string | null>(null);
   const [copiedRef, setCopiedRef] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({ [PROJECT_TYPES_MATRIX[0].id]: true });
+
+  const toggleExpand = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setExpandedIds(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
 
   const goToStep = useCallback((stepNumber: number) => {
     setCurrentStep(stepNumber);
@@ -1139,22 +1148,23 @@ export default function ApplyPage() {
                 </span>
               </div>
 
-              {/* 31 PROJECT TYPES GRID */}
+              {/* 31 PROJECT TYPES HORIZONTAL ACCORDION LIST */}
               <div 
                 className="project-cards-container"
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                  gap: "0.75rem",
-                  padding: "4px 6px 12px 2px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.55rem",
+                  padding: "4px 4px 12px 2px",
                   marginBottom: "1rem",
-                  maxHeight: "clamp(380px, 58vh, 600px)",
+                  maxHeight: "clamp(380px, 60vh, 650px)",
                   overflowY: "auto",
                   overscrollBehavior: "contain"
                 }}
               >
                 {filteredProjectTypes.map((p) => {
                   const isSelected = selectedProjectType?.id === p.id;
+                  const isExpanded = !!expandedIds[p.id];
                   const reqCount = getRequiredPermitForms(p).length;
                   const condCount = getConditionalPermitForms(p).length;
                   const theme = CATEGORY_THEMES[p.category] || CATEGORY_THEMES.Commercial;
@@ -1164,26 +1174,43 @@ export default function ApplyPage() {
                   return (
                     <div
                       key={p.id}
-                      onClick={() => setSelectedProjectType(p)}
                       className="project-card-item"
                       style={{
-                        border: isSelected ? "2px solid #0038A8" : "1.5px solid #e2e8f0",
-                        background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "#ffffff",
+                        border: isSelected 
+                          ? "2px solid #0038A8" 
+                          : isExpanded 
+                            ? "1.5px solid #93c5fd" 
+                            : "1.5px solid #e2e8f0",
+                        background: isSelected 
+                          ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" 
+                          : "#ffffff",
                         borderRadius: "12px",
-                        padding: "0.85rem 1rem",
-                        cursor: "pointer",
                         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                         boxShadow: isSelected 
-                          ? "0 6px 18px rgba(0, 56, 168, 0.16), 0 0 0 1px #0038A8" 
-                          : "0 1px 4px rgba(0,0,0,0.02)",
-                        position: "relative",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between"
+                          ? "0 4px 14px rgba(0, 56, 168, 0.12)" 
+                          : "0 1px 3px rgba(0,0,0,0.02)",
+                        overflow: "hidden"
                       }}
                     >
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                      {/* HORIZONTAL HEADER ROW */}
+                      <div
+                        onClick={() => {
+                          setSelectedProjectType(p);
+                          toggleExpand(p.id);
+                        }}
+                        style={{
+                          padding: "0.75rem 1rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "0.75rem",
+                          cursor: "pointer",
+                          userSelect: "none",
+                          background: isSelected ? "rgba(239, 246, 255, 0.5)" : "transparent"
+                        }}
+                      >
+                        {/* LEFT: CATEGORY BADGE & PROJECT DETAILS */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, minWidth: 0 }}>
                           <span style={{
                             display: "inline-flex",
                             alignItems: "center",
@@ -1193,133 +1220,195 @@ export default function ApplyPage() {
                             color: "#0038A8",
                             background: "#eff6ff",
                             border: "1px solid #bfdbfe",
-                            padding: "1px 7px",
-                            borderRadius: "999px"
+                            padding: "2px 8px",
+                            borderRadius: "999px",
+                            flexShrink: 0
                           }}>
                             <CatIcon size={11} />
                             {p.category}
                           </span>
 
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#0f172a" }}>
+                              {p.name}
+                            </h4>
+                            <p style={{ 
+                              margin: "2px 0 0 0", 
+                              fontSize: "0.78rem", 
+                              color: "#64748b", 
+                              lineHeight: "1.35",
+                              whiteSpace: isExpanded ? "normal" : "nowrap",
+                              overflow: isExpanded ? "visible" : "hidden",
+                              textOverflow: isExpanded ? "clip" : "ellipsis"
+                            }}>
+                              {p.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* RIGHT: DURATION & EXPAND/COLLAPSE ARROW */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
                           <span style={{
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "4px",
                             fontSize: "0.7rem",
                             color: "#64748b",
-                            fontWeight: "500"
+                            fontWeight: "600",
+                            background: "#f8fafc",
+                            border: "1px solid #e2e8f0",
+                            padding: "3px 8px",
+                            borderRadius: "6px"
                           }}>
                             <Clock size={11} /> {p.estimatedDays}
                           </span>
-                        </div>
-
-                        <h4 style={{ margin: "0 0 0.2rem 0", fontSize: "0.98rem", fontWeight: "800", color: "#0f172a" }}>
-                          {p.name}
-                        </h4>
-                        <p style={{ margin: "0 0 0.5rem 0", fontSize: "0.78rem", color: "#64748b", lineHeight: "1.35" }}>
-                          {p.description}
-                        </p>
-                      </div>
-
-                      <div>
-                        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "0.6rem", fontSize: "0.7rem", fontWeight: "700" }}>
-                          <span style={{ background: "#eff6ff", color: "#0038A8", border: "1px solid #bfdbfe", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                            <Check size={11} strokeWidth={2.5} /> {reqCount} Mandatory
-                          </span>
-                          {condCount > 0 && (
-                            <span style={{ background: "#f8fafc", color: "#334155", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px" }}>
-                              {condCount} Conditional
-                            </span>
-                          )}
-                          {p.matrix.zoningPermit === 'required' ? (
-                            <span style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <ShieldCheck size={11} /> LC Required
-                            </span>
-                          ) : p.matrix.zoningPermit === 'conditional' ? (
-                            <span style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <ShieldCheck size={11} /> LC Conditional
-                            </span>
-                          ) : (
-                            <span style={{ background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <CheckCircle size={11} /> LC Exempt
-                            </span>
-                          )}
-                        </div>
-
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedProjectType(p);
-                              setShowRequirementsAlert(true);
-                            }}
-                            style={{
-                              background: "#eff6ff",
-                              border: "1px solid #bfdbfe",
-                              color: "#0038A8",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              fontSize: "0.72rem",
-                              fontWeight: "700",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "4px",
-                              padding: "4px 9px",
-                              transition: "all 0.15s ease"
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "#0038A8"; e.currentTarget.style.color = "#ffffff"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.color = "#0038A8"; }}
-                            title="View Required Docs for this Project Type"
-                          >
-                            <Eye size={12} /> Required Docs
-                          </button>
 
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedProjectType(p);
-                              const pRequiresClearance = p.matrix.zoningPermit !== 'not_required';
-                              if (pRequiresClearance) {
-                                goToStep(2);
-                              } else {
-                                goToStep(3);
-                              }
-                            }}
+                            onClick={(e) => toggleExpand(p.id, e)}
                             style={{
-                              background: isSelected ? "linear-gradient(135deg, #0038A8 0%, #021a4f 100% )" : "#ffffff",
-                              border: isSelected ? "none" : "1.5px solid #cbd5e1",
-                              color: isSelected ? "#ffffff" : "#1e293b",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              fontSize: "0.72rem",
-                              fontWeight: "700",
                               display: "inline-flex",
                               alignItems: "center",
-                              gap: "4px",
-                              padding: "5px 12px",
-                              boxShadow: isSelected ? "0 2px 8px rgba(0, 56, 168, 0.28)" : "none",
-                              transition: "all 0.15s ease"
+                              justifyContent: "center",
+                              width: "28px",
+                              height: "28px",
+                              borderRadius: "6px",
+                              border: isExpanded ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
+                              background: isExpanded ? "#eff6ff" : "#ffffff",
+                              color: isExpanded ? "#0038A8" : "#64748b",
+                              cursor: "pointer",
+                              transition: "all 0.18s ease"
                             }}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.borderColor = "#0038A8";
-                                e.currentTarget.style.color = "#0038A8";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.borderColor = "#cbd5e1";
-                                e.currentTarget.style.color = "#1e293b";
-                              }
-                            }}
-                            title="Select this Project Type and proceed"
+                            title={isExpanded ? "Collapse details" : "Expand details"}
                           >
-                            <span>{isSelected ? "Selected" : "Select"}</span>
-                            <ChevronRight size={12} />
+                            <ChevronDown 
+                              size={15} 
+                              style={{ 
+                                transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", 
+                                transition: "transform 0.2s ease" 
+                              }} 
+                            />
                           </button>
                         </div>
                       </div>
+
+                      {/* EXPANDED FEATURES DRAWER */}
+                      {isExpanded && (
+                        <div 
+                          style={{
+                            padding: "0.65rem 1rem 0.75rem 1rem",
+                            borderTop: "1px dashed #cbd5e1",
+                            background: isSelected ? "rgba(239, 246, 255, 0.4)" : "#f8fafc",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            flexWrap: "wrap",
+                            gap: "8px"
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* REMAINING FEATURES / BADGES */}
+                          <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", alignItems: "center", fontSize: "0.7rem", fontWeight: "700" }}>
+                            <span style={{ background: "#eff6ff", color: "#0038A8", border: "1px solid #bfdbfe", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                              <Check size={11} strokeWidth={2.5} /> {reqCount} Mandatory
+                            </span>
+                            {condCount > 0 && (
+                              <span style={{ background: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px" }}>
+                                {condCount} Conditional
+                              </span>
+                            )}
+                            {p.matrix.zoningPermit === 'required' ? (
+                              <span style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                                <ShieldCheck size={11} /> LC Required
+                              </span>
+                            ) : p.matrix.zoningPermit === 'conditional' ? (
+                              <span style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                                <ShieldCheck size={11} /> LC Conditional
+                              </span>
+                            ) : (
+                              <span style={{ background: "#ffffff", color: "#64748b", border: "1px solid #e2e8f0", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                                <CheckCircle size={11} /> LC Exempt
+                              </span>
+                            )}
+                          </div>
+
+                          {/* ACTION BUTTONS */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProjectType(p);
+                                setShowRequirementsAlert(true);
+                              }}
+                              style={{
+                                background: "#ffffff",
+                                border: "1px solid #bfdbfe",
+                                color: "#0038A8",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.72rem",
+                                fontWeight: "700",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "4px 9px",
+                                transition: "all 0.15s ease"
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = "#0038A8"; e.currentTarget.style.color = "#ffffff"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#0038A8"; }}
+                              title="View Required Docs for this Project Type"
+                            >
+                              <Eye size={12} /> Required Docs
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProjectType(p);
+                                const pRequiresClearance = p.matrix.zoningPermit !== 'not_required';
+                                if (pRequiresClearance) {
+                                  goToStep(2);
+                                } else {
+                                  goToStep(3);
+                                }
+                              }}
+                              style={{
+                                background: isSelected ? "linear-gradient(135deg, #0038A8 0%, #021a4f 100% )" : "#ffffff",
+                                border: isSelected ? "none" : "1.5px solid #cbd5e1",
+                                color: isSelected ? "#ffffff" : "#1e293b",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.72rem",
+                                fontWeight: "700",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "5px 12px",
+                                boxShadow: isSelected ? "0 2px 8px rgba(0, 56, 168, 0.28)" : "none",
+                                transition: "all 0.15s ease"
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.borderColor = "#0038A8";
+                                  e.currentTarget.style.color = "#0038A8";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.borderColor = "#cbd5e1";
+                                  e.currentTarget.style.color = "#1e293b";
+                                }
+                              }}
+                              title="Select this Project Type and proceed"
+                            >
+                              <span>{isSelected ? "Selected" : "Select"}</span>
+                              <ChevronRight size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
