@@ -1443,15 +1443,18 @@ button {
   padding: 2.25rem 2rem;
   display: flex;
   flex-direction: column;
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: #ffffff;
 }
 
-.step-pane h2 {
+.wizard-content .step-pane h2 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
+  color: #ffffff !important;
 }
 
-.step-pane p {
-  color: var(--text-secondary);
+.wizard-content .step-pane p {
+  color: rgba(255, 255, 255, 0.9) !important;
   margin-bottom: 2rem;
 }
 

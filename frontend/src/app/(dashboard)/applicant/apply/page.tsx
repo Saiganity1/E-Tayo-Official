@@ -1010,25 +1010,25 @@ export default function ApplyPage() {
                   <span style={{
                     fontSize: "0.72rem",
                     fontWeight: "800",
-                    color: "#0038A8",
-                    background: "#eff6ff",
-                    border: "1px solid #bfdbfe",
+                    color: "#ffffff",
+                    background: "rgba(255, 255, 255, 0.2)",
+                    border: "1px solid rgba(255, 255, 255, 0.35)",
                     padding: "2px 8px",
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
                     STEP 1 OF 5
                   </span>
-                  <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
+                  <span style={{ fontSize: "0.82rem", color: "rgba(255, 255, 255, 0.85)", fontWeight: "600" }}>
                     Municipal Project Matrix
                   </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
                   <div>
-                    <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
+                    <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#ffffff", margin: "0 0 0.35rem 0" }}>
                       Project Type
                     </h2>
-                    <p style={{ margin: 0, color: "#475569", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                    <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.9)", fontSize: "0.92rem", lineHeight: "1.5" }}>
                       Select your specific project classification from the official Sto. Tomas 31-Project Type Matrix to determine required permits.
                     </p>
                   </div>
@@ -1038,8 +1038,8 @@ export default function ApplyPage() {
                       onClick={() => setShowAllTemplatesModal(true)}
                       style={{
                         background: "#ffffff",
-                        border: "1.5px solid #cbd5e1",
-                        color: "#0f172a",
+                        border: "1.5px solid rgba(255, 255, 255, 0.9)",
+                        color: "#991b1b",
                         padding: "8px 16px",
                         borderRadius: "12px",
                         fontSize: "0.82rem",
@@ -1048,13 +1048,13 @@ export default function ApplyPage() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "6px",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
                         transition: "all 0.15s ease"
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#0038A8"; e.currentTarget.style.color = "#0038A8"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#0f172a"; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
                     >
-                      <Download size={14} color="#0038A8" />
+                      <Download size={14} color="#991b1b" />
                       Official Templates (16 PDFs)
                     </button>
                   </div>
@@ -1102,12 +1102,12 @@ export default function ApplyPage() {
                 marginBottom: selectedProjectType ? "0.6rem" : "0.75rem",
                 padding: "0 4px",
                 fontSize: "0.82rem",
-                color: "#64748b"
+                color: "rgba(255, 255, 255, 0.9)"
               }}>
                 <span style={{ fontWeight: "600" }}>
-                  Showing <strong style={{ color: "#0f172a" }}>{filteredProjectTypes.length}</strong> project types
+                  Showing <strong style={{ color: "#ffffff" }}>{filteredProjectTypes.length}</strong> project types
                 </span>
-                <span style={{ fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "5px", color: "#0038A8", fontWeight: "700", background: "#eff6ff", border: "1px solid #bfdbfe", padding: "3px 10px", borderRadius: "999px" }}>
+                <span style={{ fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "5px", color: "#ffffff", fontWeight: "700", background: "rgba(255, 255, 255, 0.2)", border: "1px solid rgba(255, 255, 255, 0.35)", padding: "3px 10px", borderRadius: "999px" }}>
                   <span>Scroll to browse</span>
                   <span style={{ fontSize: "0.85rem" }}>↕</span>
                 </span>
