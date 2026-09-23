@@ -923,20 +923,6 @@ export default function ApplyPage() {
               );
             })}
           </ul>
-
-          <div style={{
-            marginTop: "2rem",
-            paddingTop: "1.25rem",
-            borderTop: "1px solid #e2e8f0",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            fontSize: "0.72rem",
-            color: "#94a3b8"
-          }}>
-            <Shield size={14} color="#94a3b8" />
-            <span>256-Bit SSL Encrypted Portal</span>
-          </div>
         </div>
 
         <div className="wizard-content">
