@@ -1118,57 +1118,6 @@ export default function ApplyPage() {
                     </button>
                   )}
                 </div>
-
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {(["All", "Residential", "Commercial", "Industrial", "Institutional", "Ancillary & Alterations", "Utilities & Mechanical"] as (ProjectCategory | "All")[]).map((cat) => {
-                    const isActive = selectedCategory === cat;
-                    const theme = cat === "All" 
-                      ? CATEGORY_THEMES.All 
-                      : (CATEGORY_THEMES[cat] || CATEGORY_THEMES.Commercial);
-                    const CategoryIcon = theme.icon;
-                    const count = cat === "All" 
-                      ? PROJECT_TYPES_MATRIX.length 
-                      : PROJECT_TYPES_MATRIX.filter(p => p.category === cat).length;
-
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setSelectedCategory(cat)}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "7px",
-                          padding: "7px 14px",
-                          borderRadius: "999px",
-                          fontSize: "0.82rem",
-                          fontWeight: "700",
-                          border: isActive ? "1.5px solid #0038A8" : "1px solid #cbd5e1",
-                          background: isActive 
-                            ? "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)" 
-                            : "#ffffff",
-                          color: isActive ? "#ffffff" : "#1e293b",
-                          cursor: "pointer",
-                          transition: "all 0.18s ease",
-                          boxShadow: isActive ? "0 4px 12px rgba(0, 56, 168, 0.28)" : "0 1px 3px rgba(0,0,0,0.02)"
-                        }}
-                      >
-                        <CategoryIcon size={15} color={isActive ? "#ffffff" : "#0038A8"} />
-                        <span>{cat}</span>
-                        <span style={{
-                          fontSize: "0.72rem",
-                          fontWeight: "800",
-                          background: isActive ? "rgba(255,255,255,0.25)" : "#eff6ff",
-                          color: isActive ? "#ffffff" : "#0038A8",
-                          padding: "1px 6px",
-                          borderRadius: "999px"
-                        }}>
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
 
               {/* STATUS BAR / COUNTER & SCROLL HINT */}
@@ -1183,7 +1132,6 @@ export default function ApplyPage() {
               }}>
                 <span style={{ fontWeight: "600" }}>
                   Showing <strong style={{ color: "#0f172a" }}>{filteredProjectTypes.length}</strong> project types
-                  {selectedCategory !== "All" && ` · ${selectedCategory}`}
                 </span>
                 <span style={{ fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "5px", color: "#0038A8", fontWeight: "700", background: "#eff6ff", border: "1px solid #bfdbfe", padding: "3px 10px", borderRadius: "999px" }}>
                   <span>Scroll to browse</span>
