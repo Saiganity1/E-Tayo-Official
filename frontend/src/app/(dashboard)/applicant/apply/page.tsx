@@ -1082,16 +1082,16 @@ export default function ApplyPage() {
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)"
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <CheckCircle2 size={18} color="#0f172a" />
-                    <span style={{ fontSize: "0.84rem", color: "#0f172a", fontWeight: "700" }}>
-                      Selected: <strong style={{ color: "#000000" }}>{selectedProjectType.name}</strong>
+                    <CheckCircle2 size={18} color="#dc2626" />
+                    <span style={{ fontSize: "0.84rem", color: "#dc2626", fontWeight: "700" }}>
+                      Selected: <strong style={{ color: "#b91c1c" }}>{selectedProjectType.name}</strong>
                     </span>
                     {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
-                      <span style={{ fontSize: "0.72rem", background: "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)", color: "#ffffff", padding: "2px 8px", borderRadius: "999px", fontWeight: "700", boxShadow: "0 2px 6px rgba(220, 38, 38, 0.25)" }}>
+                      <span style={{ fontSize: "0.72rem", background: "transparent", color: "#475569", border: "1px solid #cbd5e1", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
                         Zoning Clearance Required
                       </span>
                     ) : (
-                      <span style={{ fontSize: "0.72rem", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                      <span style={{ fontSize: "0.72rem", background: "transparent", color: "#64748b", border: "1px solid #cbd5e1", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
                         Zoning Exempt
                       </span>
                     )}
