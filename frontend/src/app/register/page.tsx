@@ -97,7 +97,6 @@ export default function RegisterPage() {
 
       <div className="login-visual animate-fade-in">
         <div className="visual-content">
-          <div className="visual-icon"><ShieldCheck size={44} /></div>
           <h1>Join eTAYO</h1>
           <p>Create an account to apply for permits, track your progress, and securely communicate with city staff.</p>
         </div>

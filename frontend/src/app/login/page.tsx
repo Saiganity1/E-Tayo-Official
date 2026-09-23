@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Lock, Mail, ArrowLeft, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
+import { Lock, Mail, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
 
 export default function LoginPage() {
@@ -94,7 +94,6 @@ export default function LoginPage() {
 
       <div className="login-visual animate-fade-in">
         <div className="visual-content">
-          <div className="visual-icon"><ShieldCheck size={44} /></div>
           <h1>Secure Portal Access</h1>
           <p>eTAYO ensures your data is protected with enterprise-grade security protocols.</p>
         </div>
