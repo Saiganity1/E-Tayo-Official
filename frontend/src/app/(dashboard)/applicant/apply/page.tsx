@@ -1194,9 +1194,9 @@ export default function ApplyPage() {
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) {
-                          e.currentTarget.style.borderColor = "#0038A8";
-                          e.currentTarget.style.outline = "2px solid #0038A8";
-                          e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(0, 56, 168, 0.22)";
+                          e.currentTarget.style.borderColor = "#dc2626";
+                          e.currentTarget.style.outline = "2px solid #dc2626";
+                          e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(220, 38, 38, 0.22)";
                           e.currentTarget.style.transform = "translateY(-2px)";
                         }
                       }}
@@ -1340,8 +1340,8 @@ export default function ApplyPage() {
                             }}
                             onMouseEnter={(e) => {
                               if (!isSelected) {
-                                e.currentTarget.style.borderColor = "#0038A8";
-                                e.currentTarget.style.color = "#0038A8";
+                                e.currentTarget.style.borderColor = "#dc2626";
+                                e.currentTarget.style.color = "#dc2626";
                               }
                             }}
                             onMouseLeave={(e) => {
