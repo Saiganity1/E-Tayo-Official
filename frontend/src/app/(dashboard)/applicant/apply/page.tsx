@@ -1150,16 +1150,16 @@ export default function ApplyPage() {
                 </div>
               )}
 
-              {/* 31 PROJECT TYPES GRID */}
+              {/* 31 PROJECT TYPES VERTICAL RECTANGLE LIST */}
               <div 
                 className="project-cards-container"
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                  display: "flex",
+                  flexDirection: "column",
                   gap: "0.75rem",
-                  padding: "4px 6px 12px 2px",
+                  padding: "4px 4px 14px 2px",
                   marginBottom: "1rem",
-                  maxHeight: "clamp(380px, 58vh, 600px)",
+                  maxHeight: "clamp(380px, 60vh, 650px)",
                   overflowY: "auto",
                   overscrollBehavior: "contain"
                 }}
@@ -1181,20 +1181,21 @@ export default function ApplyPage() {
                         border: isSelected ? "2px solid #0038A8" : "1.5px solid #e2e8f0",
                         background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "#ffffff",
                         borderRadius: "12px",
-                        padding: "0.85rem 1rem",
+                        padding: "0.9rem 1.15rem",
                         cursor: "pointer",
                         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                         boxShadow: isSelected 
-                          ? "0 6px 18px rgba(0, 56, 168, 0.16), 0 0 0 1px #0038A8" 
+                          ? "0 6px 18px rgba(0, 56, 168, 0.14), 0 0 0 1px #0038A8" 
                           : "0 1px 4px rgba(0,0,0,0.02)",
                         position: "relative",
                         display: "flex",
                         flexDirection: "column",
-                        justifyContent: "space-between"
+                        gap: "0.45rem"
                       }}
                     >
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                      {/* TOP ROW: CATEGORY + NAME & DURATION */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <span style={{
                             display: "inline-flex",
                             alignItems: "center",
@@ -1204,35 +1205,43 @@ export default function ApplyPage() {
                             color: "#0038A8",
                             background: "#eff6ff",
                             border: "1px solid #bfdbfe",
-                            padding: "1px 7px",
+                            padding: "2px 8px",
                             borderRadius: "999px"
                           }}>
                             <CatIcon size={11} />
                             {p.category}
                           </span>
 
-                          <span style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            fontSize: "0.7rem",
-                            color: "#64748b",
-                            fontWeight: "500"
-                          }}>
-                            <Clock size={11} /> {p.estimatedDays}
-                          </span>
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: "800", color: "#0f172a" }}>
+                            {p.name}
+                          </h4>
                         </div>
 
-                        <h4 style={{ margin: "0 0 0.2rem 0", fontSize: "0.98rem", fontWeight: "800", color: "#0f172a" }}>
-                          {p.name}
-                        </h4>
-                        <p style={{ margin: "0 0 0.5rem 0", fontSize: "0.78rem", color: "#64748b", lineHeight: "1.35" }}>
-                          {p.description}
-                        </p>
+                        <span style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          fontSize: "0.72rem",
+                          color: "#64748b",
+                          fontWeight: "600",
+                          background: "#f8fafc",
+                          border: "1px solid #e2e8f0",
+                          padding: "2px 8px",
+                          borderRadius: "6px"
+                        }}>
+                          <Clock size={11} /> {p.estimatedDays}
+                        </span>
                       </div>
 
-                      <div>
-                        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "0.6rem", fontSize: "0.7rem", fontWeight: "700" }}>
+                      {/* MIDDLE: DESCRIPTION */}
+                      <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: "1.4" }}>
+                        {p.description}
+                      </p>
+
+                      {/* BOTTOM ROW: BADGES & ACTION BUTTONS */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", marginTop: "0.2rem" }}>
+                        {/* BADGES */}
+                        <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", alignItems: "center", fontSize: "0.7rem", fontWeight: "700" }}>
                           <span style={{ background: "#eff6ff", color: "#0038A8", border: "1px solid #bfdbfe", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
                             <Check size={11} strokeWidth={2.5} /> {reqCount} Mandatory
                           </span>
@@ -1256,7 +1265,8 @@ export default function ApplyPage() {
                           )}
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
+                        {/* ACTION BUTTONS */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <button
                             type="button"
                             onClick={(e) => {
