@@ -33,13 +33,13 @@ import {
 } from "../../../../data/projectTypeMatrix";
 
 const CATEGORY_THEMES: Record<string, { icon: any; color: string; bg: string; border: string; glow: string }> = {
-  All: { icon: Layers, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
-  Residential: { icon: Home, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
-  Commercial: { icon: Building2, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
-  Industrial: { icon: Factory, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
-  Institutional: { icon: Landmark, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
-  "Ancillary & Alterations": { icon: Wrench, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
-  "Utilities & Mechanical": { icon: Zap, color: "#dc2626", bg: "#fef2f2", border: "#fecaca", glow: "rgba(220, 38, 38, 0.2)" },
+  All: { icon: Layers, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
+  Residential: { icon: Home, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
+  Commercial: { icon: Building2, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
+  Industrial: { icon: Factory, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
+  Institutional: { icon: Landmark, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
+  "Ancillary & Alterations": { icon: Wrench, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
+  "Utilities & Mechanical": { icon: Zap, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
 };
 
 const PERMIT_ICONS: Record<keyof PermitFormMatrix, any> = {
@@ -1039,7 +1039,7 @@ export default function ApplyPage() {
                       style={{
                         background: "#ffffff",
                         border: "1.5px solid rgba(255, 255, 255, 0.9)",
-                        color: "#991b1b",
+                        color: "#b45309",
                         padding: "8px 16px",
                         borderRadius: "12px",
                         fontSize: "0.82rem",
@@ -1054,7 +1054,7 @@ export default function ApplyPage() {
                       onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
                     >
-                      <Download size={14} color="#991b1b" />
+                      <Download size={14} color="#b45309" />
                       Official Templates (16 PDFs)
                     </button>
                   </div>
@@ -1102,12 +1102,12 @@ export default function ApplyPage() {
                 marginBottom: selectedProjectType ? "0.6rem" : "0.75rem",
                 padding: "0 4px",
                 fontSize: "0.82rem",
-                color: "rgba(255, 255, 255, 0.9)"
+                color: "rgba(255, 255, 255, 0.95)"
               }}>
                 <span style={{ fontWeight: "600" }}>
                   Showing <strong style={{ color: "#ffffff" }}>{filteredProjectTypes.length}</strong> project types
                 </span>
-                <span style={{ fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "5px", color: "#ffffff", fontWeight: "700", background: "rgba(255, 255, 255, 0.2)", border: "1px solid rgba(255, 255, 255, 0.35)", padding: "3px 10px", borderRadius: "999px" }}>
+                <span style={{ fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "5px", color: "#ffffff", fontWeight: "700", background: "rgba(0, 0, 0, 0.15)", border: "1px solid rgba(255, 255, 255, 0.4)", padding: "3px 10px", borderRadius: "999px" }}>
                   <span>Scroll to browse</span>
                   <span style={{ fontSize: "0.85rem" }}>↕</span>
                 </span>
@@ -1116,8 +1116,8 @@ export default function ApplyPage() {
               {/* SELECTED PROJECT TYPE BANNER (POSITIONED UNDER PROJECT COUNTER) */}
               {selectedProjectType && (
                 <div style={{
-                  background: "linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)",
-                  border: "1.5px solid #fecaca",
+                  background: "linear-gradient(135deg, #fffbeb 0%, #ffffff 100%)",
+                  border: "1.5px solid #fde68a",
                   borderRadius: "10px",
                   padding: "8px 14px",
                   marginBottom: "0.85rem",
@@ -1126,15 +1126,15 @@ export default function ApplyPage() {
                   justifyContent: "space-between",
                   flexWrap: "wrap",
                   gap: "8px",
-                  boxShadow: "0 2px 6px rgba(220, 38, 38, 0.08)"
+                  boxShadow: "0 2px 8px rgba(217, 119, 6, 0.12)"
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <CheckCircle2 size={18} color="#dc2626" />
-                    <span style={{ fontSize: "0.84rem", color: "#b91c1c", fontWeight: "700" }}>
-                      Selected: <strong style={{ color: "#7f1d1d" }}>{selectedProjectType.name}</strong>
+                    <CheckCircle2 size={18} color="#d97706" />
+                    <span style={{ fontSize: "0.84rem", color: "#b45309", fontWeight: "700" }}>
+                      Selected: <strong style={{ color: "#78350f" }}>{selectedProjectType.name}</strong>
                     </span>
                     {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
-                      <span style={{ fontSize: "0.72rem", background: "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)", color: "#ffffff", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                      <span style={{ fontSize: "0.72rem", background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", color: "#ffffff", padding: "2px 8px", borderRadius: "999px", fontWeight: "700", boxShadow: "0 2px 6px rgba(217, 119, 6, 0.25)" }}>
                         Zoning Clearance Required
                       </span>
                     ) : (
@@ -1178,14 +1178,14 @@ export default function ApplyPage() {
                       onClick={() => setSelectedProjectType(p)}
                       className="project-card-item"
                       style={{
-                        border: isSelected ? "2px solid #dc2626" : "1.5px solid #e2e8f0",
-                        background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #fff5f5 100%)" : "#ffffff",
+                        border: isSelected ? "2px solid #d97706" : "1.5px solid #e2e8f0",
+                        background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)" : "#ffffff",
                         borderRadius: "12px",
                         padding: "0.9rem 1.15rem",
                         cursor: "pointer",
                         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                         boxShadow: isSelected 
-                          ? "0 6px 18px rgba(220, 38, 38, 0.16), 0 0 0 1px #dc2626" 
+                          ? "0 6px 18px rgba(217, 119, 6, 0.18), 0 0 0 1px #d97706" 
                           : "0 1px 4px rgba(0,0,0,0.02)",
                         position: "relative",
                         display: "flex",
@@ -1202,9 +1202,9 @@ export default function ApplyPage() {
                             gap: "4px",
                             fontSize: "0.7rem",
                             fontWeight: "700",
-                            color: "#b91c1c",
-                            background: "#fef2f2",
-                            border: "1px solid #fecaca",
+                            color: "#b45309",
+                            background: "#fef3c7",
+                            border: "1px solid #fde68a",
                             padding: "2px 8px",
                             borderRadius: "999px"
                           }}>
@@ -1242,7 +1242,7 @@ export default function ApplyPage() {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", marginTop: "0.2rem" }}>
                         {/* BADGES */}
                         <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", alignItems: "center", fontSize: "0.7rem", fontWeight: "700" }}>
-                          <span style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                          <span style={{ background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
                             <Check size={11} strokeWidth={2.5} /> {reqCount} Mandatory
                           </span>
                           {condCount > 0 && (
@@ -1251,11 +1251,11 @@ export default function ApplyPage() {
                             </span>
                           )}
                           {p.matrix.zoningPermit === 'required' ? (
-                            <span style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                            <span style={{ background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
                               <ShieldCheck size={11} /> LC Required
                             </span>
                           ) : p.matrix.zoningPermit === 'conditional' ? (
-                            <span style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                            <span style={{ background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
                               <ShieldCheck size={11} /> LC Conditional
                             </span>
                           ) : (
@@ -1275,9 +1275,9 @@ export default function ApplyPage() {
                               setShowRequirementsAlert(true);
                             }}
                             style={{
-                              background: "#fef2f2",
-                              border: "1px solid #fecaca",
-                              color: "#b91c1c",
+                              background: "#fef3c7",
+                              border: "1px solid #fde68a",
+                              color: "#b45309",
                               borderRadius: "6px",
                               cursor: "pointer",
                               fontSize: "0.72rem",
@@ -1288,8 +1288,8 @@ export default function ApplyPage() {
                               padding: "4px 9px",
                               transition: "all 0.15s ease"
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "#dc2626"; e.currentTarget.style.color = "#ffffff"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.color = "#b91c1c"; }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "#d97706"; e.currentTarget.style.color = "#ffffff"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "#fef3c7"; e.currentTarget.style.color = "#b45309"; }}
                             title="View Required Docs for this Project Type"
                           >
                             <Eye size={12} /> Required Docs
@@ -1308,7 +1308,7 @@ export default function ApplyPage() {
                               }
                             }}
                             style={{
-                              background: isSelected ? "linear-gradient(135deg, #dc2626 0%, #991b1b 100% )" : "#ffffff",
+                              background: isSelected ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" : "#ffffff",
                               border: isSelected ? "none" : "1.5px solid #cbd5e1",
                               color: isSelected ? "#ffffff" : "#1e293b",
                               borderRadius: "6px",
@@ -1319,13 +1319,13 @@ export default function ApplyPage() {
                               alignItems: "center",
                               gap: "4px",
                               padding: "5px 12px",
-                              boxShadow: isSelected ? "0 2px 8px rgba(220, 38, 38, 0.28)" : "none",
+                              boxShadow: isSelected ? "0 2px 8px rgba(217, 119, 6, 0.28)" : "none",
                               transition: "all 0.15s ease"
                             }}
                             onMouseEnter={(e) => {
                               if (!isSelected) {
-                                e.currentTarget.style.borderColor = "#dc2626";
-                                e.currentTarget.style.color = "#dc2626";
+                                e.currentTarget.style.borderColor = "#d97706";
+                                e.currentTarget.style.color = "#d97706";
                               }
                             }}
                             onMouseLeave={(e) => {
