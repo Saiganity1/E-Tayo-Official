@@ -778,40 +778,21 @@ export default function ApplyPage() {
 
   return (
     <div className="wizard-page animate-fade-in-up">
-      <header className="page-header" style={{ marginBottom: "1.25rem" }}>
+      <header className="page-header" style={{ 
+        background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(255, 255, 255, 0.9)",
+        boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
+        borderRadius: "20px",
+        padding: "2rem",
+        marginBottom: "2rem"
+      }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.4rem" }}>
-              <span style={{
-                background: "linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)",
-                color: "white",
-                padding: "3px 10px",
-                borderRadius: "6px",
-                fontSize: "0.72rem",
-                fontWeight: "800",
-                letterSpacing: "0.5px",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px"
-              }}>
-                <Landmark size={12} />
-                LGU SANTO TOMAS, PAMPANGA
-              </span>
-              <span style={{
-                fontSize: "0.75rem",
-                color: "#64748b",
-                fontWeight: "600",
-                display: "flex",
-                alignItems: "center",
-                gap: "4px"
-              }}>
-                • Office of the Local Building Official (OBO)
-              </span>
-            </div>
-            <h1 className="page-title" style={{ fontSize: "1.85rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0", letterSpacing: "-0.02em" }}>
+            <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", color: "#0038A8", margin: "0 0 0.4rem 0", letterSpacing: "-0.02em" }}>
               New Permit Application
             </h1>
-            <p className="page-subtitle" style={{ margin: 0, color: "#64748b", fontSize: "0.92rem" }}>
+            <p className="page-subtitle" style={{ margin: 0, color: "#475569", fontSize: "1.05rem" }}>
               Official unified digital permitting workflow compliant with National Building Code of the Philippines (PD 1096).
             </p>
           </div>
@@ -820,25 +801,25 @@ export default function ApplyPage() {
             <button
               type="button"
               onClick={() => setShowNewAppModal(true)}
+              className="btn-primary"
               style={{
-                background: "#ffffff",
-                border: "1.5px solid #cbd5e1",
-                color: "#1e293b",
-                padding: "8px 16px",
+                background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
+                boxShadow: "0 4px 15px rgba(0, 56, 168, 0.4)",
+                transform: "translateY(0)",
+                transition: "all 0.3s ease",
+                color: "#ffffff",
+                padding: "10px 20px",
                 borderRadius: "14px",
                 fontWeight: "700",
-                fontSize: "0.85rem",
+                fontSize: "0.9rem",
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
-                transition: "all 0.15s ease"
+                gap: "8px",
+                border: "none"
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.color = "#2563eb"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#1e293b"; }}
             >
-              <Plus size={16} color="#2563eb" />
+              <Plus size={18} color="#ffffff" />
               <span>Create New Application</span>
             </button>
           </div>
