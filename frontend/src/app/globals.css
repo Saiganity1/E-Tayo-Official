@@ -1325,18 +1325,23 @@ button {
 }
 
 .project-card-item {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), outline 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .project-card-item:hover {
   transform: translateY(-2px);
-  border-color: #f59e0b !important;
-  box-shadow: 0 8px 24px -4px rgba(245, 158, 11, 0.28) !important;
+  outline: 2px solid #0038A8 !important;
+  outline-offset: 0px;
+  border-color: #0038A8 !important;
+  box-shadow: 0 8px 24px -4px rgba(0, 56, 168, 0.25) !important;
 }
 
-.btn-launch-unified:hover {
+.btn-wizard-next:hover {
+  background: #ffffff !important;
+  color: #d97706 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(217, 119, 6, 0.42) !important;
 }
 
 .glass-panel {

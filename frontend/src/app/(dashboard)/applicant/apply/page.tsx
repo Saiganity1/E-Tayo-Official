@@ -1116,8 +1116,8 @@ export default function ApplyPage() {
               {/* SELECTED PROJECT TYPE BANNER (POSITIONED UNDER PROJECT COUNTER) */}
               {selectedProjectType && (
                 <div style={{
-                  background: "linear-gradient(135deg, #fffbeb 0%, #ffffff 100%)",
-                  border: "1.5px solid #fde68a",
+                  background: "linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)",
+                  border: "1.5px solid #fecaca",
                   borderRadius: "10px",
                   padding: "8px 14px",
                   marginBottom: "0.85rem",
@@ -1126,15 +1126,15 @@ export default function ApplyPage() {
                   justifyContent: "space-between",
                   flexWrap: "wrap",
                   gap: "8px",
-                  boxShadow: "0 2px 8px rgba(217, 119, 6, 0.12)"
+                  boxShadow: "0 2px 8px rgba(220, 38, 38, 0.1)"
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <CheckCircle2 size={18} color="#d97706" />
-                    <span style={{ fontSize: "0.84rem", color: "#b45309", fontWeight: "700" }}>
-                      Selected: <strong style={{ color: "#78350f" }}>{selectedProjectType.name}</strong>
+                    <CheckCircle2 size={18} color="#dc2626" />
+                    <span style={{ fontSize: "0.84rem", color: "#b91c1c", fontWeight: "700" }}>
+                      Selected: <strong style={{ color: "#7f1d1d" }}>{selectedProjectType.name}</strong>
                     </span>
                     {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
-                      <span style={{ fontSize: "0.72rem", background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", color: "#ffffff", padding: "2px 8px", borderRadius: "999px", fontWeight: "700", boxShadow: "0 2px 6px rgba(217, 119, 6, 0.25)" }}>
+                      <span style={{ fontSize: "0.72rem", background: "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)", color: "#ffffff", padding: "2px 8px", borderRadius: "999px", fontWeight: "700", boxShadow: "0 2px 6px rgba(220, 38, 38, 0.25)" }}>
                         Zoning Clearance Required
                       </span>
                     ) : (
@@ -1178,19 +1178,35 @@ export default function ApplyPage() {
                       onClick={() => setSelectedProjectType(p)}
                       className="project-card-item"
                       style={{
-                        border: isSelected ? "2px solid #d97706" : "1.5px solid #e2e8f0",
-                        background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)" : "#ffffff",
+                        border: isSelected ? "2px solid #dc2626" : "1.5px solid #e2e8f0",
+                        background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #fff5f5 100%)" : "#ffffff",
                         borderRadius: "12px",
                         padding: "0.9rem 1.15rem",
                         cursor: "pointer",
                         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                         boxShadow: isSelected 
-                          ? "0 6px 18px rgba(217, 119, 6, 0.18), 0 0 0 1px #d97706" 
+                          ? "0 6px 18px rgba(220, 38, 38, 0.18), 0 0 0 1px #dc2626" 
                           : "0 1px 4px rgba(0,0,0,0.02)",
                         position: "relative",
                         display: "flex",
                         flexDirection: "column",
                         gap: "0.45rem"
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.borderColor = "#0038A8";
+                          e.currentTarget.style.outline = "2px solid #0038A8";
+                          e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(0, 56, 168, 0.22)";
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.borderColor = "#e2e8f0";
+                          e.currentTarget.style.outline = "none";
+                          e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.02)";
+                          e.currentTarget.style.transform = "none";
+                        }
                       }}
                     >
                       {/* TOP ROW: CATEGORY + NAME & DURATION */}
@@ -1240,27 +1256,27 @@ export default function ApplyPage() {
 
                       {/* BOTTOM ROW: BADGES & ACTION BUTTONS */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", marginTop: "0.2rem" }}>
-                        {/* BADGES */}
+                        {/* BADGES (NO BACKGROUND / TRANSPARENT) */}
                         <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", alignItems: "center", fontSize: "0.7rem", fontWeight: "700" }}>
-                          <span style={{ background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                            <Check size={11} strokeWidth={2.5} /> {reqCount} Mandatory
+                          <span style={{ background: "transparent", color: "#334155", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                            <Check size={11} strokeWidth={2.5} color="#059669" /> {reqCount} Mandatory
                           </span>
                           {condCount > 0 && (
-                            <span style={{ background: "#f8fafc", color: "#334155", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px" }}>
+                            <span style={{ background: "transparent", color: "#475569", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px" }}>
                               {condCount} Conditional
                             </span>
                           )}
                           {p.matrix.zoningPermit === 'required' ? (
-                            <span style={{ background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <ShieldCheck size={11} /> LC Required
+                            <span style={{ background: "transparent", color: "#475569", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                              <ShieldCheck size={11} color="#d97706" /> LC Required
                             </span>
                           ) : p.matrix.zoningPermit === 'conditional' ? (
-                            <span style={{ background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <ShieldCheck size={11} /> LC Conditional
+                            <span style={{ background: "transparent", color: "#475569", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                              <ShieldCheck size={11} color="#d97706" /> LC Conditional
                             </span>
                           ) : (
-                            <span style={{ background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <CheckCircle size={11} /> LC Exempt
+                            <span style={{ background: "transparent", color: "#64748b", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                              <CheckCircle size={11} color="#059669" /> LC Exempt
                             </span>
                           )}
                         </div>
@@ -1308,8 +1324,8 @@ export default function ApplyPage() {
                               }
                             }}
                             style={{
-                              background: isSelected ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" : "#ffffff",
-                              border: isSelected ? "none" : "1.5px solid #cbd5e1",
+                              background: isSelected ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)" : "#ffffff",
+                              border: isSelected ? "1.5px solid #dc2626" : "1.5px solid #cbd5e1",
                               color: isSelected ? "#ffffff" : "#1e293b",
                               borderRadius: "6px",
                               cursor: "pointer",
@@ -1319,13 +1335,13 @@ export default function ApplyPage() {
                               alignItems: "center",
                               gap: "4px",
                               padding: "5px 12px",
-                              boxShadow: isSelected ? "0 2px 8px rgba(217, 119, 6, 0.28)" : "none",
+                              boxShadow: isSelected ? "0 2px 8px rgba(220, 38, 38, 0.35)" : "none",
                               transition: "all 0.15s ease"
                             }}
                             onMouseEnter={(e) => {
                               if (!isSelected) {
-                                e.currentTarget.style.borderColor = "#d97706";
-                                e.currentTarget.style.color = "#d97706";
+                                e.currentTarget.style.borderColor = "#0038A8";
+                                e.currentTarget.style.color = "#0038A8";
                               }
                             }}
                             onMouseLeave={(e) => {
@@ -2765,18 +2781,68 @@ export default function ApplyPage() {
             {currentStep === 1 ? (
               isClearanceRequired && !isClearancePassed ? (
                 <button 
-                  className="btn-primary" 
+                  className="btn-primary btn-wizard-next" 
                   onClick={() => goToStep(2)}
-                  style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                  style={{ 
+                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                    color: "#ffffff",
+                    border: "1.5px solid transparent",
+                    boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    padding: "10px 22px", 
+                    borderRadius: "10px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#ffffff";
+                    e.currentTarget.style.color = "#d97706";
+                    e.currentTarget.style.borderColor = "#ffffff";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
+                    e.currentTarget.style.color = "#ffffff";
+                    e.currentTarget.style.borderColor = "transparent";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                  }}
                 >
                   <span>Next: Locational Clearance</span>
                   <ChevronRight size={18} />
                 </button>
               ) : (
                 <button 
-                  className="btn-primary" 
+                  className="btn-primary btn-wizard-next" 
                   onClick={() => goToStep(3)}
-                  style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                  style={{ 
+                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                    color: "#ffffff",
+                    border: "1.5px solid transparent",
+                    boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    padding: "10px 22px", 
+                    borderRadius: "10px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#ffffff";
+                    e.currentTarget.style.color = "#d97706";
+                    e.currentTarget.style.borderColor = "#ffffff";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
+                    e.currentTarget.style.color = "#ffffff";
+                    e.currentTarget.style.borderColor = "transparent";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                  }}
                 >
                   <span>Next: Required Permit Forms</span>
                   <ChevronRight size={18} />
@@ -2785,9 +2851,34 @@ export default function ApplyPage() {
             ) : currentStep === 2 ? (
               isClearancePassed ? (
                 <button 
-                  className="btn-primary" 
+                  className="btn-primary btn-wizard-next" 
                   onClick={() => goToStep(3)}
-                  style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                  style={{ 
+                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                    color: "#ffffff",
+                    border: "1.5px solid transparent",
+                    boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    padding: "10px 22px", 
+                    borderRadius: "10px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#ffffff";
+                    e.currentTarget.style.color = "#d97706";
+                    e.currentTarget.style.borderColor = "#ffffff";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
+                    e.currentTarget.style.color = "#ffffff";
+                    e.currentTarget.style.borderColor = "transparent";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                  }}
                 >
                   <span>Next: Required Permit Forms</span>
                   <ChevronRight size={18} />
@@ -2805,18 +2896,68 @@ export default function ApplyPage() {
               )
             ) : currentStep === 3 ? (
               <button 
-                className="btn-primary" 
+                className="btn-primary btn-wizard-next" 
                 onClick={() => goToStep(4)}
-                style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                style={{ 
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                  color: "#ffffff",
+                  border: "1.5px solid transparent",
+                  boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "8px", 
+                  padding: "10px 22px", 
+                  borderRadius: "10px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.color = "#d97706";
+                  e.currentTarget.style.borderColor = "#ffffff";
+                  e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
+                  e.currentTarget.style.color = "#ffffff";
+                  e.currentTarget.style.borderColor = "transparent";
+                  e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                }}
               >
                 <span>Next: Mapping</span>
                 <ChevronRight size={18} />
               </button>
             ) : currentStep === 4 ? (
               <button 
-                className="btn-primary" 
+                className="btn-primary btn-wizard-next" 
                 onClick={() => goToStep(5)}
-                style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                style={{ 
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                  color: "#ffffff",
+                  border: "1.5px solid transparent",
+                  boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "8px", 
+                  padding: "10px 22px", 
+                  borderRadius: "10px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.color = "#d97706";
+                  e.currentTarget.style.borderColor = "#ffffff";
+                  e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
+                  e.currentTarget.style.color = "#ffffff";
+                  e.currentTarget.style.borderColor = "transparent";
+                  e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                }}
               >
                 <span>Next: Review & Submit</span>
                 <ChevronRight size={18} />
