@@ -85,13 +85,22 @@ export default function LoginPage() {
 
   return (
     <div className="login-layout">
+      {/* Full-Page Background: Sto. Tomas Municipal Hall with Red Palette Overlay */}
+      <div className="login-bg-wrapper">
+        <div className="login-bg-image"></div>
+        <div className="login-bg-overlay"></div>
+        <div className="login-bg-glow"></div>
+      </div>
+
       <div className="login-visual animate-fade-in">
-        <div className="login-bg-wrapper">
-          <div className="login-bg-image"></div>
-          <div className="login-bg-overlay"></div>
-          <div className="login-bg-glow"></div>
-        </div>
         <div className="visual-content">
+          <div className="visual-badge">
+            <Image src="/sto-tomas-logo.png" alt="Sto. Tomas Seal" width={34} height={34} style={{ objectFit: "contain" }} />
+            <div className="visual-badge-text">
+              <span>Republika ng Pilipinas</span>
+              <strong>Bayan ng Sto. Tomas, Pampanga</strong>
+            </div>
+          </div>
           <div className="visual-icon"><ShieldCheck size={38} /></div>
           <h1>Secure Portal Access</h1>
           <p>e-Tayo ensures your data is protected with enterprise-grade security protocols.</p>
