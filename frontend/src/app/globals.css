@@ -1329,14 +1329,14 @@ button {
 }
 
 .project-card-item:hover {
-  transform: translateY(-3px);
-  border-color: #818cf8 !important;
-  box-shadow: 0 10px 24px -4px rgba(99, 102, 241, 0.16) !important;
+  transform: translateY(-2px);
+  border-color: #f59e0b !important;
+  box-shadow: 0 8px 24px -4px rgba(245, 158, 11, 0.28) !important;
 }
 
 .btn-launch-unified:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.42) !important;
+  box-shadow: 0 8px 24px rgba(217, 119, 6, 0.42) !important;
 }
 
 .glass-panel {

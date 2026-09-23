@@ -2767,7 +2767,7 @@ export default function ApplyPage() {
                 <button 
                   className="btn-primary" 
                   onClick={() => goToStep(2)}
-                  style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                  style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
                 >
                   <span>Next: Locational Clearance</span>
                   <ChevronRight size={18} />
@@ -2776,7 +2776,7 @@ export default function ApplyPage() {
                 <button 
                   className="btn-primary" 
                   onClick={() => goToStep(3)}
-                  style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                  style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
                 >
                   <span>Next: Required Permit Forms</span>
                   <ChevronRight size={18} />
@@ -2787,7 +2787,7 @@ export default function ApplyPage() {
                 <button 
                   className="btn-primary" 
                   onClick={() => goToStep(3)}
-                  style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                  style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
                 >
                   <span>Next: Required Permit Forms</span>
                   <ChevronRight size={18} />
@@ -2807,7 +2807,7 @@ export default function ApplyPage() {
               <button 
                 className="btn-primary" 
                 onClick={() => goToStep(4)}
-                style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
               >
                 <span>Next: Mapping</span>
                 <ChevronRight size={18} />
@@ -2816,7 +2816,7 @@ export default function ApplyPage() {
               <button 
                 className="btn-primary" 
                 onClick={() => goToStep(5)}
-                style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
+                style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 22px", borderRadius: "10px" }}
               >
                 <span>Next: Review & Submit</span>
                 <ChevronRight size={18} />
@@ -2828,8 +2828,8 @@ export default function ApplyPage() {
                   onClick={() => setShowUnifiedForm(true)} 
                   style={{
                     background: "#ffffff",
-                    border: "1.5px solid #c7d2fe",
-                    color: "#4338ca",
+                    border: "1.5px solid #fde68a",
+                    color: "#b45309",
                     padding: "9px 18px",
                     borderRadius: "10px",
                     fontWeight: "700",
