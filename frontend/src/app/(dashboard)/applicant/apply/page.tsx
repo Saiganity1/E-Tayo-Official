@@ -1057,32 +1057,6 @@ export default function ApplyPage() {
                       <Download size={14} color="#0038A8" />
                       Official Templates (16 PDFs)
                     </button>
-
-                    {selectedProjectType && (
-                      <div style={{
-                        background: "linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)",
-                        border: "1.5px solid #bfdbfe",
-                        borderRadius: "12px",
-                        padding: "8px 14px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px"
-                      }}>
-                        <CheckCircle2 size={18} color="#0038A8" />
-                        <span style={{ fontSize: "0.84rem", color: "#0038A8", fontWeight: "700" }}>
-                          Selected: <strong style={{ color: "#021a4f" }}>{selectedProjectType.name}</strong>
-                        </span>
-                        {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
-                          <span style={{ fontSize: "0.72rem", background: "#0038A8", color: "#ffffff", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
-                            Zoning Clearance Required
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: "0.72rem", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
-                            Zoning Exempt
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1125,7 +1099,7 @@ export default function ApplyPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                marginBottom: "0.75rem",
+                marginBottom: selectedProjectType ? "0.6rem" : "0.75rem",
                 padding: "0 4px",
                 fontSize: "0.82rem",
                 color: "#64748b"
@@ -1138,6 +1112,43 @@ export default function ApplyPage() {
                   <span style={{ fontSize: "0.85rem" }}>↕</span>
                 </span>
               </div>
+
+              {/* SELECTED PROJECT TYPE BANNER (POSITIONED UNDER PROJECT COUNTER) */}
+              {selectedProjectType && (
+                <div style={{
+                  background: "linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)",
+                  border: "1.5px solid #bfdbfe",
+                  borderRadius: "10px",
+                  padding: "8px 14px",
+                  marginBottom: "0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  boxShadow: "0 2px 6px rgba(0, 56, 168, 0.05)"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <CheckCircle2 size={18} color="#0038A8" />
+                    <span style={{ fontSize: "0.84rem", color: "#0038A8", fontWeight: "700" }}>
+                      Selected: <strong style={{ color: "#021a4f" }}>{selectedProjectType.name}</strong>
+                    </span>
+                    {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
+                      <span style={{ fontSize: "0.72rem", background: "#0038A8", color: "#ffffff", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                        Zoning Clearance Required
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "0.72rem", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                        Zoning Exempt
+                      </span>
+                    )}
+                  </div>
+
+                  <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: "600" }}>
+                    Estimated Duration: <strong style={{ color: "#0f172a" }}>{selectedProjectType.estimatedDays}</strong>
+                  </span>
+                </div>
+              )}
 
               {/* 31 PROJECT TYPES GRID */}
               <div 
