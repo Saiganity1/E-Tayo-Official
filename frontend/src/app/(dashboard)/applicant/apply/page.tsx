@@ -1164,14 +1164,16 @@ export default function ApplyPage() {
                       onClick={() => setSelectedProjectType(p)}
                       className="project-card-item"
                       style={{
-                        border: isSelected ? "2px solid #2563eb" : "1.5px solid #e2e8f0",
-                        background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "#ffffff",
+                        border: isSelected ? "2px solid #1d4ed8" : "1.5px solid #e2e8f0",
+                        background: isSelected 
+                          ? "linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)" 
+                          : "#ffffff",
                         borderRadius: "12px",
                         padding: "0.9rem 1.15rem",
                         cursor: "pointer",
                         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                         boxShadow: isSelected 
-                          ? "0 6px 18px rgba(37, 99, 235, 0.18), 0 0 0 1px #2563eb" 
+                          ? "0 10px 25px -4px rgba(37, 99, 235, 0.4), 0 0 0 1px #1d4ed8" 
                           : "0 1px 4px rgba(0,0,0,0.02)",
                         position: "relative",
                         display: "flex",
@@ -1204,9 +1206,9 @@ export default function ApplyPage() {
                             gap: "4px",
                             fontSize: "0.7rem",
                             fontWeight: "700",
-                            color: "#b45309",
-                            background: "#fef3c7",
-                            border: "1px solid #fde68a",
+                            color: isSelected ? "#ffffff" : "#b45309",
+                            background: isSelected ? "rgba(255, 255, 255, 0.2)" : "#fef3c7",
+                            border: isSelected ? "1px solid rgba(255, 255, 255, 0.35)" : "1px solid #fde68a",
                             padding: "2px 8px",
                             borderRadius: "999px"
                           }}>
@@ -1214,7 +1216,7 @@ export default function ApplyPage() {
                             {p.category}
                           </span>
 
-                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: "800", color: "#0f172a" }}>
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: "800", color: isSelected ? "#ffffff" : "#0f172a" }}>
                             {p.name}
                           </h4>
                         </div>
@@ -1224,10 +1226,10 @@ export default function ApplyPage() {
                           alignItems: "center",
                           gap: "4px",
                           fontSize: "0.72rem",
-                          color: "#64748b",
+                          color: isSelected ? "#ffffff" : "#64748b",
                           fontWeight: "600",
-                          background: "#f8fafc",
-                          border: "1px solid #e2e8f0",
+                          background: isSelected ? "rgba(255, 255, 255, 0.18)" : "#f8fafc",
+                          border: isSelected ? "1px solid rgba(255, 255, 255, 0.3)" : "1px solid #e2e8f0",
                           padding: "2px 8px",
                           borderRadius: "6px"
                         }}>
@@ -1236,33 +1238,75 @@ export default function ApplyPage() {
                       </div>
 
                       {/* MIDDLE: DESCRIPTION */}
-                      <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: "1.4" }}>
+                      <p style={{ margin: 0, fontSize: "0.8rem", color: isSelected ? "rgba(255, 255, 255, 0.9)" : "#64748b", lineHeight: "1.4" }}>
                         {p.description}
                       </p>
 
                       {/* BOTTOM ROW: BADGES & ACTION BUTTONS */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", marginTop: "0.2rem" }}>
-                        {/* BADGES (NO BACKGROUND / TRANSPARENT) */}
+                        {/* BADGES */}
                         <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", alignItems: "center", fontSize: "0.7rem", fontWeight: "700" }}>
-                          <span style={{ background: "transparent", color: "#334155", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                            <Check size={11} strokeWidth={2.5} color="#059669" /> {reqCount} Mandatory
+                          <span style={{
+                            background: isSelected ? "rgba(255, 255, 255, 0.18)" : "transparent",
+                            color: isSelected ? "#ffffff" : "#334155",
+                            border: isSelected ? "1px solid rgba(255, 255, 255, 0.35)" : "1px solid #cbd5e1",
+                            padding: "2px 7px",
+                            borderRadius: "5px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "3px"
+                          }}>
+                            <Check size={11} strokeWidth={2.5} color={isSelected ? "#86efac" : "#059669"} /> {reqCount} Mandatory
                           </span>
                           {condCount > 0 && (
-                            <span style={{ background: "transparent", color: "#475569", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px" }}>
+                            <span style={{
+                              background: isSelected ? "rgba(255, 255, 255, 0.18)" : "transparent",
+                              color: isSelected ? "#ffffff" : "#475569",
+                              border: isSelected ? "1px solid rgba(255, 255, 255, 0.35)" : "1px solid #cbd5e1",
+                              padding: "2px 7px",
+                              borderRadius: "5px"
+                            }}>
                               {condCount} Conditional
                             </span>
                           )}
                           {p.matrix.zoningPermit === 'required' ? (
-                            <span style={{ background: "transparent", color: "#475569", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <ShieldCheck size={11} color="#d97706" /> LC Required
+                            <span style={{
+                              background: isSelected ? "rgba(255, 255, 255, 0.18)" : "transparent",
+                              color: isSelected ? "#ffffff" : "#475569",
+                              border: isSelected ? "1px solid rgba(255, 255, 255, 0.35)" : "1px solid #cbd5e1",
+                              padding: "2px 7px",
+                              borderRadius: "5px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "3px"
+                            }}>
+                              <ShieldCheck size={11} color={isSelected ? "#fde047" : "#d97706"} /> LC Required
                             </span>
                           ) : p.matrix.zoningPermit === 'conditional' ? (
-                            <span style={{ background: "transparent", color: "#475569", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <ShieldCheck size={11} color="#d97706" /> LC Conditional
+                            <span style={{
+                              background: isSelected ? "rgba(255, 255, 255, 0.18)" : "transparent",
+                              color: isSelected ? "#ffffff" : "#475569",
+                              border: isSelected ? "1px solid rgba(255, 255, 255, 0.35)" : "1px solid #cbd5e1",
+                              padding: "2px 7px",
+                              borderRadius: "5px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "3px"
+                            }}>
+                              <ShieldCheck size={11} color={isSelected ? "#fde047" : "#d97706"} /> LC Conditional
                             </span>
                           ) : (
-                            <span style={{ background: "transparent", color: "#64748b", border: "1px solid #cbd5e1", padding: "2px 7px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                              <CheckCircle size={11} color="#059669" /> LC Exempt
+                            <span style={{
+                              background: isSelected ? "rgba(255, 255, 255, 0.18)" : "transparent",
+                              color: isSelected ? "#ffffff" : "#64748b",
+                              border: isSelected ? "1px solid rgba(255, 255, 255, 0.35)" : "1px solid #cbd5e1",
+                              padding: "2px 7px",
+                              borderRadius: "5px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "3px"
+                            }}>
+                              <CheckCircle size={11} color={isSelected ? "#86efac" : "#059669"} /> LC Exempt
                             </span>
                           )}
                         </div>
@@ -1277,9 +1321,9 @@ export default function ApplyPage() {
                               setShowRequirementsAlert(true);
                             }}
                             style={{
-                              background: "#fef3c7",
-                              border: "1px solid #fde68a",
-                              color: "#b45309",
+                              background: isSelected ? "rgba(255, 255, 255, 0.2)" : "#fef3c7",
+                              border: isSelected ? "1px solid rgba(255, 255, 255, 0.4)" : "1px solid #fde68a",
+                              color: isSelected ? "#ffffff" : "#b45309",
                               borderRadius: "6px",
                               cursor: "pointer",
                               fontSize: "0.72rem",
@@ -1290,8 +1334,24 @@ export default function ApplyPage() {
                               padding: "4px 9px",
                               transition: "all 0.15s ease"
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "#d97706"; e.currentTarget.style.color = "#ffffff"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "#fef3c7"; e.currentTarget.style.color = "#b45309"; }}
+                            onMouseEnter={(e) => {
+                              if (isSelected) {
+                                e.currentTarget.style.background = "#ffffff";
+                                e.currentTarget.style.color = "#1d4ed8";
+                              } else {
+                                e.currentTarget.style.background = "#d97706";
+                                e.currentTarget.style.color = "#ffffff";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (isSelected) {
+                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+                                e.currentTarget.style.color = "#ffffff";
+                              } else {
+                                e.currentTarget.style.background = "#fef3c7";
+                                e.currentTarget.style.color = "#b45309";
+                              }
+                            }}
                             title="View Required Docs for this Project Type"
                           >
                             <Eye size={12} /> Required Docs
@@ -1310,30 +1370,34 @@ export default function ApplyPage() {
                               }
                             }}
                             style={{
-                              background: isSelected ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" : "#ffffff",
-                              border: isSelected ? "1.5px solid #2563eb" : "1.5px solid #cbd5e1",
-                              color: isSelected ? "#ffffff" : "#1e293b",
+                              background: isSelected ? "#ffffff" : "#ffffff",
+                              border: isSelected ? "1.5px solid #ffffff" : "1.5px solid #cbd5e1",
+                              color: isSelected ? "#1d4ed8" : "#1e293b",
                               borderRadius: "6px",
                               cursor: "pointer",
                               fontSize: "0.72rem",
-                              fontWeight: "700",
+                              fontWeight: "800",
                               display: "inline-flex",
                               alignItems: "center",
                               gap: "4px",
                               padding: "5px 12px",
-                              boxShadow: isSelected ? "0 2px 8px rgba(37, 99, 235, 0.35)" : "none",
+                              boxShadow: isSelected ? "0 2px 8px rgba(0, 0, 0, 0.18)" : "none",
                               transition: "all 0.15s ease"
                             }}
                             onMouseEnter={(e) => {
                               if (!isSelected) {
                                 e.currentTarget.style.borderColor = "#2563eb";
                                 e.currentTarget.style.color = "#2563eb";
+                              } else {
+                                e.currentTarget.style.background = "#f8fafc";
                               }
                             }}
                             onMouseLeave={(e) => {
                               if (!isSelected) {
                                 e.currentTarget.style.borderColor = "#cbd5e1";
                                 e.currentTarget.style.color = "#1e293b";
+                              } else {
+                                e.currentTarget.style.background = "#ffffff";
                               }
                             }}
                             title="Select this Project Type and proceed"
