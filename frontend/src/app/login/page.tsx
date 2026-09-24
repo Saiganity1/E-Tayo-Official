@@ -57,7 +57,7 @@ export default function LoginPage() {
         destination = "/staff/dashboard";
       } else if (data.role === "ROLE_ADMIN" || data.role === "ROLE_SUPERADMIN") {
         role = "admin";
-        destination = "/admin/dashboard";
+        destination = "/admin/evaluations";
       }
 
       setUserRole(role);

@@ -6,7 +6,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
   Building2, Home, PlusCircle, Search, FileCheck, 
-  MessageSquare, ShieldAlert, Map, X, Menu, Settings, LogOut, Users, ClipboardList, FileText
+  MessageSquare, ShieldAlert, Map, X, Menu, Settings, LogOut, Users, ClipboardList, FileText,
+  Shield, CheckSquare
 } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
 import NotificationBell from "./NotificationBell";
@@ -54,9 +55,10 @@ export default function Sidebar() {
         ];
       case "admin":
         return [
-          { href: "/admin/dashboard", label: "Admin Portal", icon: ShieldAlert },
+          { href: "/admin/evaluations", label: "Staff Evaluations", icon: FileCheck },
+          { href: "/admin/security", label: "Security & Auth", icon: Shield },
           { href: "/admin/form-tester", label: "Form Testing Studio", icon: ClipboardList },
-          { href: "/staff/dashboard", label: "Review Workspaces", icon: FileCheck },
+          { href: "/staff/dashboard", label: "Review Workspaces", icon: CheckSquare },
           { href: "/staff/templates", label: "Official Forms", icon: FileText },
           { href: "/admin/users", label: "Applicants Management", icon: Users },
           { href: "/admin/staff", label: "Staff Management", icon: ShieldAlert },

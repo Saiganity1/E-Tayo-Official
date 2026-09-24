@@ -124,12 +124,25 @@ export default function AdminDashboard() {
   return (
     <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1400px", margin: "0 auto", paddingBottom: "4rem" }}>
       {/* Page Header */}
-      <header className="page-header" style={{ marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+      <header className="page-header" style={{ 
+        background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(255, 255, 255, 0.9)",
+        boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
+        borderRadius: "20px",
+        padding: "1.25rem 1.75rem",
+        marginBottom: "1.25rem", 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center", 
+        flexWrap: "wrap", 
+        gap: "1rem" 
+      }}>
         <div>
-          <h1 className="page-title" style={{ fontSize: "2.25rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "0.75rem", margin: 0 }}>
-            <Database size={32} color="#1d4ed8" /> Admin Portal
+          <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", display: "flex", alignItems: "center", gap: "0.75rem", margin: 0 }}>
+            <Database size={30} color="#0038A8" /> Admin Portal
           </h1>
-          <p className="page-subtitle" style={{ fontSize: "1.05rem", color: "#64748b", margin: "0.4rem 0 0 0" }}>
+          <p className="page-subtitle" style={{ fontSize: "0.95rem", color: "#475569", margin: "0.35rem 0 0 0" }}>
             Real-time audit trails of staff evaluations, applicant updates, and security logs.
           </p>
         </div>
