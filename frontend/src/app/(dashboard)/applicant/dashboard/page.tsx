@@ -149,15 +149,14 @@ export default function ApplicantDashboard() {
   }
 
   return (
-    <div className="dashboard-page animate-fade-in-up">
+    <div className="dashboard-page animate-fade-in-up" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <header className="page-header" style={{ 
         background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
         backdropFilter: "blur(20px)",
         border: "1px solid rgba(255, 255, 255, 0.9)",
         boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
         borderRadius: "20px",
-        padding: "1.5rem 2rem",
-        marginBottom: "1.25rem"
+        padding: "1.25rem 1.75rem"
       }}>
         <div>
           <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", color: "#0038A8" }}>Applicant Dashboard</h1>
@@ -174,8 +173,8 @@ export default function ApplicantDashboard() {
         </Link>
       </header>
 
-      <section className="stats-grid" style={{ marginBottom: "1.25rem" }}>
-        <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)", borderRadius: "18px", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}>
+      <section className="stats-grid" style={{ gap: "1rem" }}>
+        <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)", borderRadius: "18px", padding: "1.25rem 1.5rem", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}>
           <div className="stat-icon" style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)", color: "#0038A8", boxShadow: "0 4px 10px rgba(0, 56, 168, 0.2)" }}>
             <FileText size={24} />
           </div>
@@ -184,7 +183,7 @@ export default function ApplicantDashboard() {
             <span className="stat-label" style={{ fontWeight: "600", color: "#64748b" }}>Total Applications</span>
           </div>
         </div>
-        <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)", borderRadius: "18px", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}>
+        <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)", borderRadius: "18px", padding: "1.25rem 1.5rem", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}>
           <div className="stat-icon" style={{ background: "linear-gradient(135deg, #fffbeb, #fef3c7)", color: "#d97706", boxShadow: "0 4px 10px rgba(245, 158, 11, 0.15)" }}>
             <Clock size={24} />
           </div>
@@ -193,7 +192,7 @@ export default function ApplicantDashboard() {
             <span className="stat-label" style={{ fontWeight: "600", color: "#64748b" }}>Pending</span>
           </div>
         </div>
-        <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)", borderRadius: "18px", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}>
+        <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)", borderRadius: "18px", padding: "1.25rem 1.5rem", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}>
           <div className="stat-icon" style={{ background: "linear-gradient(135deg, #f0fdf4, #dcfce7)", color: "#059669", boxShadow: "0 4px 10px rgba(16, 185, 129, 0.15)" }}>
             <CheckCircle2 size={24} />
           </div>
@@ -204,7 +203,7 @@ export default function ApplicantDashboard() {
         </div>
       </section>
 
-      <section className="applications-section" style={{ marginTop: "1.25rem", background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", borderRadius: "24px", padding: "1.5rem 2rem", boxShadow: "0 12px 40px rgba(0,0,0,0.14)" }}>
+      <section className="applications-section" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", borderRadius: "24px", padding: "1.5rem 2rem", boxShadow: "0 12px 40px rgba(0,0,0,0.14)" }}>
         <div className="section-header" style={{ marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
             <h2 style={{ fontSize: "1.5rem", fontWeight: "700", color: "#1e293b", margin: 0 }}>Recent Applications</h2>
