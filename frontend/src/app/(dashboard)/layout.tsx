@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "../../components/layout/Sidebar";
 import Footer from "../../components/layout/Footer";
 import MangTomasBot from "../../components/chat/MangTomasBot";
+import BackToTop from "../../components/layout/BackToTop";
 import { usePermitContext } from "../../context/PermitContext";
 import { ShieldAlert } from "lucide-react";
 
@@ -111,6 +112,9 @@ export default function DashboardLayout({
       
       {/* Render the chat bot only for applicants */}
       {userRole === "applicant" && <MangTomasBot />}
+
+      {/* Floating Back to Top Button with scroll progress */}
+      <BackToTop hasChatBot={userRole === "applicant"} />
     </div>
   );
 }
