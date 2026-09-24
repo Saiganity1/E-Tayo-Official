@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, Check, Trash2, Inbox } from "lucide-react";
+import { Bell, Check, Inbox } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 
@@ -9,7 +9,9 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -29,13 +31,27 @@ export default function NotificationBell() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current && !buttonRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleToggle = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 8,
+        left: rect.left,
+      });
+    }
+    setIsOpen(prev => !prev);
+  };
 
   const fetchNotifications = async (email: string) => {
     try {
@@ -101,10 +117,11 @@ export default function NotificationBell() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="notification-bell-container" ref={dropdownRef}>
-      <button 
+    <div className="notification-bell-container">
+      <button
+        ref={buttonRef}
         className="notification-trigger"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         aria-label="Notifications"
       >
         <Bell size={20} />
@@ -114,7 +131,11 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="notification-dropdown">
+        <div
+          ref={dropdownRef}
+          className="notification-dropdown"
+          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+        >
           <div className="notification-header">
             <h3>Notifications</h3>
             {unreadCount > 0 && (
@@ -123,7 +144,7 @@ export default function NotificationBell() {
               </button>
             )}
           </div>
-          
+
           <div className="notification-list">
             {notifications.length === 0 ? (
               <div className="notification-empty">
@@ -132,8 +153,8 @@ export default function NotificationBell() {
               </div>
             ) : (
               notifications.map((notif) => (
-                <div 
-                  key={notif.id} 
+                <div
+                  key={notif.id}
                   className={`notification-item ${!notif.read ? 'unread' : ''}`}
                   onClick={() => handleNotificationClick(notif)}
                 >
