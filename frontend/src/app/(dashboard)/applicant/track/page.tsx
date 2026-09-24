@@ -223,16 +223,13 @@ export default function ApplicationStatusPage() {
             }}
             title="Click to show all active applications"
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
+            <div style={{ marginBottom: "0.75rem" }}>
               <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <FileText size={22} />
               </div>
-              <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#0038A8", background: "#eff6ff", padding: "2px 8px", borderRadius: "999px" }}>
-                Active
-              </span>
             </div>
             <div>
-              <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.activeTotal}</div>
+              <div style={{ fontSize: "3rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.activeTotal}</div>
               <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "all" ? "#0038A8" : "#64748b", marginTop: "0.35rem" }}>
                 Active Permits
               </div>
@@ -253,16 +250,13 @@ export default function ApplicationStatusPage() {
             }}
             title="Click to filter by Under Evaluation"
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
+            <div style={{ marginBottom: "0.75rem" }}>
               <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Search size={22} />
               </div>
-              <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#0038A8", background: "#eff6ff", padding: "2px 8px", borderRadius: "999px" }}>
-                Review
-              </span>
             </div>
             <div>
-              <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.review}</div>
+              <div style={{ fontSize: "3rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.review}</div>
               <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "under_review" ? "#0038A8" : "#64748b", marginTop: "0.35rem" }}>
                 Under Evaluation
               </div>
@@ -283,16 +277,13 @@ export default function ApplicationStatusPage() {
             }}
             title="Click to filter by Approved & Released"
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
+            <div style={{ marginBottom: "0.75rem" }}>
               <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#d1fae5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <CheckCircle2 size={22} />
               </div>
-              <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#15803d", background: "#dcfce7", padding: "2px 8px", borderRadius: "999px" }}>
-                Approved
-              </span>
             </div>
             <div>
-              <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.approved}</div>
+              <div style={{ fontSize: "3rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.approved}</div>
               <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "approved" ? "#059669" : "#64748b", marginTop: "0.35rem" }}>
                 Approved & Released
               </div>
@@ -313,16 +304,13 @@ export default function ApplicationStatusPage() {
             }}
             title="Click to filter by Action Required"
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
+            <div style={{ marginBottom: "0.75rem" }}>
               <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <AlertTriangle size={22} />
               </div>
-              <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#b91c1c", background: "#fee2e2", padding: "2px 8px", borderRadius: "999px" }}>
-                Attention
-              </span>
             </div>
             <div>
-              <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.action}</div>
+              <div style={{ fontSize: "3rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.action}</div>
               <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "incomplete_requirements" ? "#dc2626" : "#64748b", marginTop: "0.35rem" }}>
                 Action Required
               </div>
@@ -343,16 +331,13 @@ export default function ApplicationStatusPage() {
             }}
             title="Click to view Archived applications"
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
+            <div style={{ marginBottom: "0.75rem" }}>
               <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#f5f3ff", color: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Archive size={22} />
               </div>
-              <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#6d28d9", background: "#ede9fe", padding: "2px 8px", borderRadius: "999px" }}>
-                Storage
-              </span>
             </div>
             <div>
-              <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.archivedTotal}</div>
+              <div style={{ fontSize: "3rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.archivedTotal}</div>
               <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "archived" ? "#7c3aed" : "#64748b", marginTop: "0.35rem" }}>
                 Archived Permits
               </div>
