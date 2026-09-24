@@ -376,81 +376,57 @@ export default function LocationalClearanceGoogleForm({
             <div style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: "flex-end",
               flexWrap: "wrap",
-              gap: "1rem",
+              gap: "0.75rem",
               borderTop: "1px solid #e2e8f0",
               paddingTop: "1.5rem"
             }}>
-              <a
-                href="/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "7px",
-                  padding: "10px 18px",
-                  borderRadius: "10px",
-                  background: "#f8fafc",
-                  border: "1.5px solid #cbd5e1",
-                  color: "#334155",
-                  fontSize: "0.88rem",
-                  fontWeight: "700",
-                  textDecoration: "none"
-                }}
-              >
-                <Download size={16} /> Download Official Municipal PDF Form
-              </a>
-
-              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-                {onCancel && (
-                  <button
-                    type="button"
-                    onClick={onCancel}
-                    style={{
-                      background: "#f1f5f9",
-                      border: "none",
-                      color: "#475569",
-                      padding: "11px 18px",
-                      borderRadius: "10px",
-                      fontSize: "0.9rem",
-                      fontWeight: "700",
-                      cursor: "pointer"
-                    }}
-                  >
-                    Close
-                  </button>
-                )}
+              {onCancel && (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (onSuccessWithRef) {
-                      onSuccessWithRef(submittedAppId);
-                    } else if (onCancel) {
-                      onCancel();
-                    }
-                  }}
+                  onClick={onCancel}
                   style={{
-                    background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-                    color: "white",
+                    background: "#f1f5f9",
                     border: "none",
-                    padding: "11px 22px",
+                    color: "#475569",
+                    padding: "11px 18px",
                     borderRadius: "10px",
-                    fontSize: "0.92rem",
-                    fontWeight: "800",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    boxShadow: "0 4px 14px rgba(15, 23, 42, 0.3)"
+                    fontSize: "0.9rem",
+                    fontWeight: "700",
+                    cursor: "pointer"
                   }}
                 >
-                  <span>Return to Application (Wait for Admin Approval)</span>
-                  <ChevronRight size={18} />
+                  Close
                 </button>
-              </div>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (onSuccessWithRef) {
+                    onSuccessWithRef(submittedAppId);
+                  } else if (onCancel) {
+                    onCancel();
+                  }
+                }}
+                style={{
+                  background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+                  color: "white",
+                  border: "none",
+                  padding: "11px 22px",
+                  borderRadius: "10px",
+                  fontSize: "0.92rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 14px rgba(15, 23, 42, 0.3)"
+                }}
+              >
+                <span>Return to Application (Wait for Admin Approval)</span>
+                <ChevronRight size={18} />
+              </button>
             </div>
           </div>
         </div>
