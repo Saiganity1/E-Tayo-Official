@@ -19,16 +19,19 @@ import {
   ParsedAttachment 
 } from "../../../../components/chat/ChatAttachmentRenderer";
 
-const MANG_TOMAS = {
-  name: "Mang Tomas",
-  title: "Chief Permitting Officer",
+const OBO_ADMIN = {
+  name: "OBO Admin",
+  title: "Building Official Staff",
   department: "Office of the Building Official (OBO)",
   email: "staff@etayo.gov.ph",
   avatarBg: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
-  badge: "Official Permitting Staff",
+  badge: "Official OBO Staff",
   status: "Online",
-  description: "Official municipal permitting desk for Locational Clearances, NBCP Building Permits, inspections, and requirements verification."
+  description: "Official Office of the Building Official desk for real-time consultation on your permit applications."
 };
+
+// Keep MANG_TOMAS as alias so existing send/receive logic is unchanged
+const MANG_TOMAS = OBO_ADMIN;
 
 const QUICK_INQUIRIES = [
   {
@@ -229,13 +232,13 @@ export default function ApplicantMessagesPage() {
   const conversationThreads = useMemo(() => {
     const threadMap: Record<string, ConversationThread> = {};
 
-    // 1. General Helpdesk thread (always available)
+    // 1. General OBO Admin thread (always available)
     threadMap["general"] = {
       id: "general",
-      title: "General Permitting Desk",
-      subtitle: "Sto. Tomas OBO Consultation",
+      title: "OBO Admin Desk",
+      subtitle: "Office of the Building Official",
       isGeneral: true,
-      lastMessage: "Welcome to Mang Tomas Permitting Helpdesk",
+      lastMessage: "Welcome to the OBO Permitting Helpdesk",
       lastTimestamp: undefined
     };
 
@@ -311,7 +314,29 @@ export default function ApplicantMessagesPage() {
     }
 
     return list;
-  }, [applications, messages, userCreatedThreadIds, activeThreadId, searchQuery, knownAppIds]);
+  }, [applications, messages, userCreatedThreadIds, activeThreadId, searchQuery, knownAppIds, currentUserEmail]);
+
+  // Filter threads: only show this user's own applications (not other applicants)
+  const myConversationThreads = useMemo(() => {
+    return conversationThreads.filter(thread => {
+      if (thread.isGeneral) return true; // always show general/OBO Admin desk
+      // Only show application threads that belong to the current user
+      const app = (applications || []).find(a => a.id === thread.id);
+      if (app) {
+        // Match by applicantEmail if available, otherwise trust PermitContext scope
+        if (app.applicantEmail && currentUserEmail) {
+          return app.applicantEmail === currentUserEmail;
+        }
+        return true; // PermitContext already filters by user
+      }
+      // Threads from messages: only if the current user is sender or recipient
+      const threadMessages = messages.filter(m => {
+        const tid = getMessageThreadId(m);
+        return tid === thread.id && (m.senderEmail === currentUserEmail || m.recipientEmail === currentUserEmail);
+      });
+      return threadMessages.length > 0 || userCreatedThreadIds.includes(thread.id);
+    });
+  }, [conversationThreads, applications, messages, currentUserEmail, userCreatedThreadIds]);
 
   // Current active thread object
   const activeThread = useMemo(() => {
@@ -558,7 +583,7 @@ export default function ApplicantMessagesPage() {
               Messages & Helpdesk
             </h1>
             <p className="page-subtitle" style={{ margin: 0, color: "#64748b", fontSize: "0.92rem" }}>
-              Categorized real-time consultation with Mang Tomas (Municipal Permitting Officer) per permit application.
+              Real-time consultation with the OBO Admin per permit application. Mang Tomas is available for FAQs &amp; general guidance.
             </p>
           </div>
 
@@ -665,10 +690,10 @@ export default function ApplicantMessagesPage() {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: "800", color: "#0f172a" }}>
-                    Inquiries
+                    My Conversations
                   </h3>
                   <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
-                    {conversationThreads.length} {conversationThreads.length === 1 ? "thread" : "threads"}
+                    {myConversationThreads.length} {myConversationThreads.length === 1 ? "thread" : "threads"}
                   </span>
                 </div>
               </div>
@@ -737,7 +762,7 @@ export default function ApplicantMessagesPage() {
 
           {/* Conversation List */}
           <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
-            {conversationThreads.map(thread => {
+            {myConversationThreads.map(thread => {
               const isActive = thread.id === activeThreadId;
               const formattedTime = thread.lastTimestamp 
                 ? format(new Date(thread.lastTimestamp), "h:mm a") 
@@ -880,7 +905,7 @@ export default function ApplicantMessagesPage() {
                 width: "44px",
                 height: "44px",
                 borderRadius: "12px",
-                background: MANG_TOMAS.avatarBg,
+                background: OBO_ADMIN.avatarBg,
                 color: "white",
                 display: "flex",
                 alignItems: "center",
