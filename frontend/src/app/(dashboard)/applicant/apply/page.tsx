@@ -3271,35 +3271,33 @@ export default function ApplyPage() {
                     {mandatory.map((p) => {
                       return (
                         <div key={p.key} style={{
-                          background: "#fef3c7",
-                          border: "1.5px solid #fde68a",
+                          background: "linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)",
+                          border: "1.5px solid #1d4ed8",
                           borderRadius: "12px",
                           padding: "0.85rem 1.1rem",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
                           gap: "0.75rem",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                          boxShadow: "0 4px 12px rgba(37, 99, 235, 0.2)",
                           transition: "all 0.15s ease"
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = "#fcd34d";
                           e.currentTarget.style.outline = "none";
-                          e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.15)";
+                          e.currentTarget.style.boxShadow = "0 6px 18px rgba(37, 99, 235, 0.35)";
                           e.currentTarget.style.transform = "translateY(-1px)";
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = "#fde68a";
                           e.currentTarget.style.outline = "none";
-                          e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.02)";
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(37, 99, 235, 0.2)";
                           e.currentTarget.style.transform = "none";
                         }}
                         >
                           <div>
-                            <h5 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#0f172a" }}>
+                            <h5 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#ffffff" }}>
                               {p.label}
                             </h5>
-                            <div style={{ fontSize: "0.78rem", color: "#78350f", marginTop: "2px" }}>
+                            <div style={{ fontSize: "0.78rem", color: "rgba(255, 255, 255, 0.9)", marginTop: "2px" }}>
                               {p.desc}
                             </div>
                           </div>
@@ -3313,19 +3311,20 @@ export default function ApplyPage() {
                                 style={{
                                   fontSize: "0.72rem",
                                   fontWeight: "700",
-                                  padding: "4px 9px",
+                                  padding: "4px 10px",
                                   borderRadius: "6px",
                                   background: "#ffffff",
-                                  color: "#b45309",
-                                  border: "1px solid #fde68a",
+                                  color: "#1d4ed8",
+                                  border: "1px solid #ffffff",
                                   display: "inline-flex",
                                   alignItems: "center",
                                   gap: "4px",
                                   textDecoration: "none",
-                                  transition: "all 0.15s ease"
+                                  transition: "all 0.15s ease",
+                                  boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)"
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = "#d97706"; e.currentTarget.style.color = "#ffffff"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#b45309"; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; }}
                                 title={`Download official ${p.label} PDF`}
                               >
                                 <Download size={12} /> Official PDF
@@ -3336,14 +3335,14 @@ export default function ApplyPage() {
                               fontWeight: "700",
                               padding: "3px 8px",
                               borderRadius: "5px",
-                              background: "#ffffff",
-                              color: "#334155",
-                              border: "1px solid #cbd5e1",
+                              background: "rgba(255, 255, 255, 0.2)",
+                              color: "#ffffff",
+                              border: "1px solid rgba(255, 255, 255, 0.35)",
                               display: "inline-flex",
                               alignItems: "center",
                               gap: "4px"
                             }}>
-                              <Check size={11} strokeWidth={2.5} color="#059669" /> MANDATORY
+                              <Check size={11} strokeWidth={2.5} color="#86efac" /> MANDATORY
                             </span>
                           </div>
                         </div>
@@ -3363,35 +3362,33 @@ export default function ApplyPage() {
                       {conditional.map((p) => {
                         return (
                           <div key={p.key} style={{
-                            background: "#fef3c7",
-                            border: "1.5px solid #fde68a",
+                            background: "linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)",
+                            border: "1.5px solid #1d4ed8",
                             borderRadius: "12px",
                             padding: "0.85rem 1.1rem",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
                             gap: "0.75rem",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                            boxShadow: "0 4px 12px rgba(37, 99, 235, 0.2)",
                             transition: "all 0.15s ease"
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = "#fcd34d";
                             e.currentTarget.style.outline = "none";
-                            e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.15)";
+                            e.currentTarget.style.boxShadow = "0 6px 18px rgba(37, 99, 235, 0.35)";
                             e.currentTarget.style.transform = "translateY(-1px)";
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = "#fde68a";
                             e.currentTarget.style.outline = "none";
-                            e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.02)";
+                            e.currentTarget.style.boxShadow = "0 4px 12px rgba(37, 99, 235, 0.2)";
                             e.currentTarget.style.transform = "none";
                           }}
                           >
                             <div>
-                              <h5 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#0f172a" }}>
+                              <h5 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#ffffff" }}>
                                 {p.label}
                               </h5>
-                              <div style={{ fontSize: "0.78rem", color: "#78350f", marginTop: "2px" }}>
+                              <div style={{ fontSize: "0.78rem", color: "rgba(255, 255, 255, 0.9)", marginTop: "2px" }}>
                                 Condition: {p.condition}
                               </div>
                             </div>
@@ -3405,19 +3402,20 @@ export default function ApplyPage() {
                                   style={{
                                     fontSize: "0.72rem",
                                     fontWeight: "700",
-                                    padding: "4px 9px",
+                                    padding: "4px 10px",
                                     borderRadius: "6px",
                                     background: "#ffffff",
-                                    color: "#b45309",
-                                    border: "1px solid #fde68a",
+                                    color: "#1d4ed8",
+                                    border: "1px solid #ffffff",
                                     display: "inline-flex",
                                     alignItems: "center",
                                     gap: "4px",
                                     textDecoration: "none",
-                                    transition: "all 0.15s ease"
+                                    transition: "all 0.15s ease",
+                                    boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)"
                                   }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = "#d97706"; e.currentTarget.style.color = "#ffffff"; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#b45309"; }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; }}
                                   title={`Download official ${p.label} PDF`}
                                 >
                                   <Download size={12} /> Official PDF
@@ -3428,9 +3426,9 @@ export default function ApplyPage() {
                                 fontWeight: "700",
                                 padding: "3px 8px",
                                 borderRadius: "5px",
-                                background: "#ffffff",
-                                color: "#475569",
-                                border: "1px solid #cbd5e1"
+                                background: "rgba(255, 255, 255, 0.2)",
+                                color: "#ffffff",
+                                border: "1px solid rgba(255, 255, 255, 0.35)"
                               }}>
                                 CONDITIONAL
                               </span>
