@@ -469,32 +469,17 @@ export default function LocationalClearanceGoogleForm({
       }}>
         {/* OFFICIAL MUNICIPAL HEADER */}
         <div style={{
-          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-          color: "white",
+          background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+          color: "#1e1a00",
           padding: "2rem 2.25rem",
           position: "relative"
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.35rem" }}>
-                <span style={{
-                  background: "rgba(255, 255, 255, 0.18)",
-                  padding: "3px 9px",
-                  borderRadius: "6px",
-                  fontSize: "0.72rem",
-                  fontWeight: "800",
-                  letterSpacing: "0.5px"
-                }}>
-                  REPUBLIC OF THE PHILIPPINES
-                </span>
-                <span style={{ fontSize: "0.78rem", color: "#94a3b8", fontWeight: "600" }}>
-                  MUNICIPALITY OF STO. TOMAS, PAMPANGA
-                </span>
-              </div>
-              <h1 style={{ margin: "0.25rem 0 0.35rem 0", fontSize: "1.55rem", fontWeight: "900", letterSpacing: "-0.01em" }}>
+              <h1 style={{ margin: "0 0 0.35rem 0", fontSize: "1.55rem", fontWeight: "900", letterSpacing: "-0.01em", color: "#1e1a00" }}>
                 APPLICATION FOR LOCATIONAL CLEARANCE
               </h1>
-              <p style={{ margin: 0, fontSize: "0.86rem", color: "#cbd5e1" }}>
+              <p style={{ margin: 0, fontSize: "0.86rem", color: "#78350f", fontWeight: "600" }}>
                 Office of the Local Zoning Administrator · Municipal Planning and Development Office (MPDO)
               </p>
             </div>
@@ -510,9 +495,9 @@ export default function LocationalClearanceGoogleForm({
                 gap: "6px",
                 padding: "8px 14px",
                 borderRadius: "8px",
-                background: "rgba(255, 255, 255, 0.12)",
-                border: "1px solid rgba(255, 255, 255, 0.25)",
-                color: "white",
+                background: "rgba(0, 0, 0, 0.12)",
+                border: "1px solid rgba(0, 0, 0, 0.2)",
+                color: "#1e1a00",
                 fontSize: "0.8rem",
                 fontWeight: "700",
                 textDecoration: "none"
