@@ -3193,7 +3193,7 @@ export default function ApplyPage() {
             }}>
               {/* ALERT HEADER */}
               <div style={{
-                background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+                background: "linear-gradient(135deg, #1e40af 0%, #2563eb 100%)",
                 color: "white",
                 padding: "1.25rem 1.75rem",
                 display: "flex",
@@ -3201,48 +3201,15 @@ export default function ApplyPage() {
                 justifyContent: "space-between",
                 gap: "1rem"
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                  <div style={{
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "12px",
-                    background: "#fef3c7",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#b45309"
-                  }}>
-                    <FileCheck size={24} />
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
-                      <span style={{
-                        fontSize: "0.68rem",
-                        fontWeight: "800",
-                        background: "#fef3c7",
-                        color: "#b45309",
-                        border: "1px solid #fde68a",
-                        padding: "2px 8px",
-                        borderRadius: "999px",
-                        letterSpacing: "0.5px"
-                      }}>
-                        OFFICIAL PERMIT MATRIX BREAKDOWN
-                      </span>
-                      <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                        Santo Tomas OBO • PD 1096
-                      </span>
-                    </div>
-                    <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: "800", letterSpacing: "-0.01em" }}>
-                      Permits Needed for {selectedProjectType.name}
-                    </h3>
-                  </div>
-                </div>
+                <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: "800", letterSpacing: "-0.01em", color: "#ffffff" }}>
+                  Permits Needed for {selectedProjectType.name}
+                </h3>
 
                 <button
                   type="button"
                   onClick={() => setShowRequirementsAlert(false)}
                   style={{
-                    background: "rgba(255, 255, 255, 0.15)",
+                    background: "rgba(255, 255, 255, 0.18)",
                     border: "none",
                     color: "white",
                     width: "34px",
@@ -3254,8 +3221,8 @@ export default function ApplyPage() {
                     cursor: "pointer",
                     transition: "all 0.15s ease"
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.25)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.18)"; }}
                 >
                   <X size={18} />
                 </button>
@@ -3277,7 +3244,7 @@ export default function ApplyPage() {
                   boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <Info size={18} color="#b45309" style={{ flexShrink: 0 }} />
+                    <Info size={18} color="#2563eb" style={{ flexShrink: 0 }} />
                     <span style={{ fontSize: "0.86rem", color: "#334155", lineHeight: "1.4" }}>
                       Under the Santo Tomas Municipal Permitting Matrix, the following engineering permits are required for this <strong>{selectedProjectType.category}</strong> project:
                     </span>
@@ -3302,13 +3269,12 @@ export default function ApplyPage() {
                   </h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
                     {mandatory.map((p) => {
-                      const Icon = p.icon;
                       return (
                         <div key={p.key} style={{
-                          background: "#ffffff",
-                          border: "1.5px solid #e2e8f0",
+                          background: "#fef3c7",
+                          border: "1.5px solid #fde68a",
                           borderRadius: "12px",
-                          padding: "0.85rem 1rem",
+                          padding: "0.85rem 1.1rem",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
@@ -3317,44 +3283,24 @@ export default function ApplyPage() {
                           transition: "all 0.15s ease"
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = "#cbd5e1";
+                          e.currentTarget.style.borderColor = "#fcd34d";
                           e.currentTarget.style.outline = "none";
-                          e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 0, 0, 0.06)";
+                          e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.15)";
                           e.currentTarget.style.transform = "translateY(-1px)";
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = "#e2e8f0";
+                          e.currentTarget.style.borderColor = "#fde68a";
                           e.currentTarget.style.outline = "none";
                           e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.02)";
                           e.currentTarget.style.transform = "none";
                         }}
                         >
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                            <div style={{
-                              width: "34px",
-                              height: "34px",
-                              borderRadius: "8px",
-                              background: "#fef3c7",
-                              color: "#b45309",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0
-                            }}>
-                              <Icon size={18} />
-                            </div>
-                            <div>
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a" }}>
-                                  {p.code}
-                                </span>
-                                <span style={{ fontSize: "0.9rem", fontWeight: "800", color: "#0f172a" }}>
-                                  {p.label}
-                                </span>
-                              </div>
-                              <div style={{ fontSize: "0.76rem", color: "#64748b", marginTop: "2px" }}>
-                                {p.desc}
-                              </div>
+                          <div>
+                            <h5 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#0f172a" }}>
+                              {p.label}
+                            </h5>
+                            <div style={{ fontSize: "0.78rem", color: "#78350f", marginTop: "2px" }}>
+                              {p.desc}
                             </div>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
@@ -3369,7 +3315,7 @@ export default function ApplyPage() {
                                   fontWeight: "700",
                                   padding: "4px 9px",
                                   borderRadius: "6px",
-                                  background: "#fef3c7",
+                                  background: "#ffffff",
                                   color: "#b45309",
                                   border: "1px solid #fde68a",
                                   display: "inline-flex",
@@ -3379,7 +3325,7 @@ export default function ApplyPage() {
                                   transition: "all 0.15s ease"
                                 }}
                                 onMouseEnter={(e) => { e.currentTarget.style.background = "#d97706"; e.currentTarget.style.color = "#ffffff"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = "#fef3c7"; e.currentTarget.style.color = "#b45309"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#b45309"; }}
                                 title={`Download official ${p.label} PDF`}
                               >
                                 <Download size={12} /> Official PDF
@@ -3390,7 +3336,7 @@ export default function ApplyPage() {
                               fontWeight: "700",
                               padding: "3px 8px",
                               borderRadius: "5px",
-                              background: "transparent",
+                              background: "#ffffff",
                               color: "#334155",
                               border: "1px solid #cbd5e1",
                               display: "inline-flex",
@@ -3415,13 +3361,12 @@ export default function ApplyPage() {
                     </h4>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
                       {conditional.map((p) => {
-                        const Icon = p.icon;
                         return (
                           <div key={p.key} style={{
-                            background: "#ffffff",
-                            border: "1.5px solid #e2e8f0",
+                            background: "#fef3c7",
+                            border: "1.5px solid #fde68a",
                             borderRadius: "12px",
-                            padding: "0.85rem 1rem",
+                            padding: "0.85rem 1.1rem",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
@@ -3430,44 +3375,24 @@ export default function ApplyPage() {
                             transition: "all 0.15s ease"
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = "#cbd5e1";
+                            e.currentTarget.style.borderColor = "#fcd34d";
                             e.currentTarget.style.outline = "none";
-                            e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 0, 0, 0.06)";
+                            e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.15)";
                             e.currentTarget.style.transform = "translateY(-1px)";
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = "#e2e8f0";
+                            e.currentTarget.style.borderColor = "#fde68a";
                             e.currentTarget.style.outline = "none";
                             e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.02)";
                             e.currentTarget.style.transform = "none";
                           }}
                           >
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                              <div style={{
-                                width: "34px",
-                                height: "34px",
-                                borderRadius: "8px",
-                                background: "#fef3c7",
-                                color: "#b45309",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                flexShrink: 0
-                              }}>
-                                <Icon size={18} />
-                              </div>
-                              <div>
-                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                  <span style={{ fontSize: "0.68rem", fontWeight: "800", padding: "2px 6px", borderRadius: "4px", background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a" }}>
-                                    {p.code}
-                                  </span>
-                                  <span style={{ fontSize: "0.9rem", fontWeight: "800", color: "#0f172a" }}>
-                                    {p.label}
-                                  </span>
-                                </div>
-                                <div style={{ fontSize: "0.76rem", color: "#64748b", marginTop: "2px" }}>
-                                  Condition: {p.condition}
-                                </div>
+                            <div>
+                              <h5 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#0f172a" }}>
+                                {p.label}
+                              </h5>
+                              <div style={{ fontSize: "0.78rem", color: "#78350f", marginTop: "2px" }}>
+                                Condition: {p.condition}
                               </div>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
@@ -3482,7 +3407,7 @@ export default function ApplyPage() {
                                     fontWeight: "700",
                                     padding: "4px 9px",
                                     borderRadius: "6px",
-                                    background: "#fef3c7",
+                                    background: "#ffffff",
                                     color: "#b45309",
                                     border: "1px solid #fde68a",
                                     display: "inline-flex",
@@ -3492,7 +3417,7 @@ export default function ApplyPage() {
                                     transition: "all 0.15s ease"
                                   }}
                                   onMouseEnter={(e) => { e.currentTarget.style.background = "#d97706"; e.currentTarget.style.color = "#ffffff"; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = "#fef3c7"; e.currentTarget.style.color = "#b45309"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#b45309"; }}
                                   title={`Download official ${p.label} PDF`}
                                 >
                                   <Download size={12} /> Official PDF
@@ -3503,7 +3428,7 @@ export default function ApplyPage() {
                                 fontWeight: "700",
                                 padding: "3px 8px",
                                 borderRadius: "5px",
-                                background: "transparent",
+                                background: "#ffffff",
                                 color: "#475569",
                                 border: "1px solid #cbd5e1"
                               }}>
