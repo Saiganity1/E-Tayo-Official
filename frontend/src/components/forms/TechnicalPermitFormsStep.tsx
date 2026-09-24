@@ -6,7 +6,8 @@ import {
   CheckCircle2, AlertCircle, Download, Upload, Trash2, Check, 
   ArrowRight, Sparkles, Building, ChevronRight, Info, Eye, 
   Clock, ShieldCheck, ChevronLeft, Lock, Award, Hammer, Compass,
-  Sliders, UserCheck, RefreshCw, FileCheck, Home, CheckSquare, Plus, ExternalLink, User
+  Sliders, UserCheck, RefreshCw, FileCheck, Home, CheckSquare, Plus, ExternalLink, User,
+  BookmarkCheck, Save
 } from "lucide-react";
 import { 
   ProjectTypeItem, 
@@ -30,6 +31,79 @@ import {
 } from "../../utils/unifiedPermitPdfGenerator";
 import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
 import SignatureCreator from "../common/SignatureCreator";
+
+export const FORM_OFFICIAL_DETAILS: Record<string, { officialTitle: string; nbcCode: string; icon: any; color: string; desc: string }> = {
+  buildingPermit: {
+    officialTitle: "UNIFIED APPLICATION FORM FOR BUILDING PERMIT",
+    nbcCode: "NBC FORM NO. B-01",
+    icon: Building,
+    color: "#2563eb",
+    desc: "Primary DPWH permit application covering structural footprint, occupancy classification, and scope of work."
+  },
+  architecturalPermit: {
+    officialTitle: "ARCHITECTURAL PERMIT APPLICATION",
+    nbcCode: "NBC FORM NO. A-01",
+    icon: Layers,
+    color: "#7c3aed",
+    desc: "Architectural plans, building elevations, spatial layout, and Registered Architect sign-off."
+  },
+  civilStructuralPermit: {
+    officialTitle: "CIVIL / STRUCTURAL PERMIT APPLICATION",
+    nbcCode: "NBC FORM NO. S-01",
+    icon: Hammer,
+    color: "#0f766e",
+    desc: "Structural calculations, foundation, seismic/wind analysis, and Civil Engineer sign-off."
+  },
+  electricalPermit: {
+    officialTitle: "ELECTRICAL PERMIT APPLICATION",
+    nbcCode: "NBC FORM NO. E-01",
+    icon: Zap,
+    color: "#d97706",
+    desc: "Load computations, single-line diagrams, branch circuits, and Professional Electrical Engineer sign-off."
+  },
+  sanitaryPermit: {
+    officialTitle: "SANITARY / PLUMBING PERMIT APPLICATION",
+    nbcCode: "NBC FORM NO. P-01",
+    icon: Droplets,
+    color: "#0284c7",
+    desc: "Potable water supply, wastewater drainage, septic tank layout, and Master Plumber sign-off."
+  },
+  fireBfpPermit: {
+    officialTitle: "BUREAU OF FIRE PROTECTION (BFP) CLEARANCE",
+    nbcCode: "BFP FSEC / FSIC",
+    icon: Flame,
+    color: "#dc2626",
+    desc: "Official Bureau of Fire Protection Clearance — No fillup form required. Please upload your BFP Clearance certificate."
+  },
+  mechanicalPermit: {
+    officialTitle: "MECHANICAL PERMIT APPLICATION",
+    nbcCode: "NBC FORM NO. M-01",
+    icon: Wrench,
+    color: "#4f46e5",
+    desc: "HVAC, elevators, generators, mechanical ventilation, and Professional Mechanical Engineer sign-off."
+  },
+  electronicsPermit: {
+    officialTitle: "ELECTRONICS PERMIT APPLICATION",
+    nbcCode: "NBC FORM NO. EL-01",
+    icon: Radio,
+    color: "#059669",
+    desc: "CCTV, structured cabling, fire alarm wiring, and Professional Electronics Engineer sign-off."
+  },
+  fencingPermit: {
+    officialTitle: "FENCING PERMIT APPLICATION",
+    nbcCode: "NBC FORM NO. F-01",
+    icon: Home,
+    color: "#475569",
+    desc: "Perimeter fencing, retaining walls, and property boundary structures."
+  },
+  demolitionPermit: {
+    officialTitle: "DEMOLITION PERMIT APPLICATION",
+    nbcCode: "NBC FORM NO. D-01",
+    icon: Hammer,
+    color: "#b91c1c",
+    desc: "Safe demolition plan, structural dismantling sequence, and safety measures."
+  }
+};
 
 interface TechnicalPermitFormsStepProps {
   projectType: ProjectTypeItem;
@@ -90,6 +164,7 @@ export default function TechnicalPermitFormsStep({
   const [activeTab, setActiveTab] = useState<keyof PermitFormMatrix>(
     mandatoryKeys[0] || "buildingPermit"
   );
+  const activeMeta = PERMIT_FORM_METADATA[activeTab];
   const [showMatrixGuide, setShowMatrixGuide] = useState(false);
 
   // ==========================================
@@ -652,6 +727,17 @@ export default function TechnicalPermitFormsStep({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
+  // Completed forms tracking with localStorage persistence
+  const [completedForms, setCompletedForms] = useState<Record<string, boolean>>(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(`etayo_completed_forms_${projectType.id}`);
+        if (saved) return JSON.parse(saved);
+      }
+    } catch (e) {}
+    return {};
+  });
+
   // Sync active tab if projectType changes
   useEffect(() => {
     if (mandatoryKeys.length > 0 && !mandatoryKeys.includes(activeTab)) {
@@ -662,9 +748,114 @@ export default function TechnicalPermitFormsStep({
     }
   }, [projectType, mandatoryKeys]);
 
-  // Check which mandatory keys have been satisfied (either uploaded or generated online)
-  const satisfiedKeys = mandatoryKeys.filter((key) => Boolean(uploadedPermitDocs[key]));
-  const areAllMandatorySatisfied = mandatoryKeys.every((key) => Boolean(uploadedPermitDocs[key]));
+  // Digital technical permits handled directly by the municipal online portal
+  const digitalMandatoryKeys = mandatoryKeys.filter((k) => k !== "fireBfpPermit");
+
+  // A form is satisfied if:
+  // - for fireBfpPermit: user has uploaded the BFP Clearance (FSEC) file
+  // - for digital permits: user has completed the online form OR attached a signed copy
+  const isFormSatisfied = (key: string) => {
+    if (key === "fireBfpPermit") {
+      return Boolean(uploadedPermitDocs["fireBfpPermit"]);
+    }
+    return Boolean(uploadedPermitDocs[key] || completedForms[key]);
+  };
+
+  const satisfiedKeys = mandatoryKeys.filter(isFormSatisfied);
+  const areAllMandatorySatisfied = mandatoryKeys.length > 0 && mandatoryKeys.every(isFormSatisfied);
+
+  // Save draft answers to localStorage
+  const handleSaveDraft = () => {
+    try {
+      const draft = {
+        projectName,
+        streetAddress,
+        barangay,
+        projectCost,
+        lotNo,
+        blockNo,
+        tctNo,
+        taxDecNo,
+        scopeOfWork,
+        scopeOfWorkDetails,
+        occupancyClass,
+        occupancyClassificationDetail,
+        occupancyOthers,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(`etayo_permit_form_draft_${projectType.id}`, JSON.stringify(draft));
+    } catch (e) {}
+  };
+
+  // Restore draft answers from localStorage on mount
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(`etayo_permit_form_draft_${projectType.id}`);
+        if (saved) {
+          const draft = JSON.parse(saved);
+          if (draft.projectName && !projectName) setProjectName(draft.projectName);
+          if (draft.streetAddress && !streetAddress) setStreetAddress(draft.streetAddress);
+          if (draft.barangay && !barangay) setBarangay(draft.barangay);
+          if (draft.projectCost && !projectCost) setProjectCost(draft.projectCost);
+          if (draft.lotNo) setLotNo(draft.lotNo);
+          if (draft.blockNo) setBlockNo(draft.blockNo);
+          if (draft.tctNo) setTctNo(draft.tctNo);
+          if (draft.taxDecNo) setTaxDecNo(draft.taxDecNo);
+          if (draft.scopeOfWork) setScopeOfWork(draft.scopeOfWork);
+          if (draft.scopeOfWorkDetails) setScopeOfWorkDetails(draft.scopeOfWorkDetails);
+        }
+      }
+    } catch (e) {}
+  }, [projectType.id]);
+
+  // Submit single form handler
+  const handleSubmitSingleForm = (tabKey: string) => {
+    if (tabKey === "fireBfpPermit") {
+      if (!uploadedPermitDocs["fireBfpPermit"]) {
+        setNotification("Please attach your issued Fire / BFP Clearance (FSEC) file before submitting.");
+        return;
+      }
+    }
+
+    setCompletedForms((prev) => {
+      const next = { ...prev, [tabKey]: true };
+      try {
+        localStorage.setItem(`etayo_completed_forms_${projectType.id}`, JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    handleSaveDraft();
+
+    const formMeta = PERMIT_FORM_METADATA[tabKey];
+    const formLabel = formMeta?.label || tabKey;
+    setNotification(`✓ Form "${formLabel}" completed and submitted successfully!`);
+
+    // Auto-advance to next incomplete tab if any
+    const nextIncomplete = mandatoryKeys.find(
+      (k) => k !== tabKey && !isFormSatisfied(k)
+    );
+    if (nextIncomplete) {
+      setTimeout(() => {
+        setActiveTab(nextIncomplete);
+      }, 500);
+    }
+  };
+
+  // Answer Later handler
+  const handleAnswerLater = () => {
+    handleSaveDraft();
+    setNotification("✓ Progress Saved! Your answers and attached files have been safely saved. You can resume this application anytime from Existing Application.");
+  };
+
+  // Auto-dismiss notification
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   // Synchronize Box 1 & 2 land title and permit boundary fields from clearanceApp or Sto. Tomas defaults
   useEffect(() => {
@@ -1200,6 +1391,14 @@ export default function TechnicalPermitFormsStep({
       // Populate uploadedPermitDocs for each mandatory key with its individual filled PDF
       const newDocs: Record<string, any> = { ...uploadedPermitDocs };
       for (const key of mandatoryKeys) {
+        if (key === "fireBfpPermit") {
+          // Fire / BFP Clearance is an external certificate from the Bureau of Fire Protection — retain user's uploaded file if present
+          if (uploadedPermitDocs["fireBfpPermit"]) {
+            newDocs["fireBfpPermit"] = uploadedPermitDocs["fireBfpPermit"];
+          }
+          continue;
+        }
+
         const meta = PERMIT_FORM_METADATA[key];
         let formUrl = dataUrl;
         try {
@@ -1343,10 +1542,6 @@ export default function TechnicalPermitFormsStep({
             };
             const b64 = await generateDemolitionPermitPdf(dpPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
-          } else if (key === "fireBfpPermit") {
-            // BFP has no blank PDF template — generate the application summary sheet from scratch
-            const b64 = await generateBfpApplicationPdf(payload);
-            formUrl = `data:application/pdf;base64,${b64}`;
           } else if (key === "fencingPermit") {
             const fpPayload: UnifiedPermitFormData = {
               ...payload,
@@ -1401,7 +1596,7 @@ export default function TechnicalPermitFormsStep({
 
       setUploadedPermitDocs(newDocs);
       setNotification(
-        `All ${mandatoryKeys.length} official permit forms for ${projectType.name} have been compiled and verified with complete engineering specifications. You are cleared to proceed to Step 4: Mapping.`
+        `All ${digitalMandatoryKeys.length} official digital engineering permits for ${projectType.name} have been compiled and verified with complete specifications. You are cleared to proceed to Step 4: Mapping.`
       );
     } catch (err: any) {
       console.error("Error generating forms:", err);
@@ -1697,7 +1892,7 @@ export default function TechnicalPermitFormsStep({
               {mandatoryKeys.map((key) => {
                 const meta = PERMIT_FORM_METADATA[key];
                 const isSelected = activeTab === key;
-                const isDone = Boolean(uploadedPermitDocs[key]);
+                const isDone = isFormSatisfied(key);
 
                 return (
                   <button
@@ -1705,65 +1900,219 @@ export default function TechnicalPermitFormsStep({
                     type="button"
                     onClick={() => setActiveTab(key)}
                     style={{
-                      padding: "8px 14px",
+                      padding: "9px 16px",
                       borderRadius: "10px",
-                      border: isSelected ? "1.5px solid #4f46e5" : "1px solid #e2e8f0",
-                      background: isSelected ? "#eef2ff" : "#f8fafc",
-                      color: isSelected ? "#4338ca" : "#475569",
+                      border: isSelected ? "2px solid #3730a3" : "1.5px solid #cbd5e1",
+                      background: isSelected ? "#3730a3" : "#f8fafc",
+                      color: isSelected ? "#ffffff" : "#475569",
                       fontWeight: isSelected ? "800" : "600",
-                      fontSize: "0.84rem",
+                      fontSize: "0.85rem",
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: "7px",
+                      gap: "8px",
                       whiteSpace: "nowrap",
-                      transition: "all 0.15s ease"
+                      transition: "all 0.15s ease",
+                      boxShadow: isSelected ? "0 4px 14px rgba(55, 48, 163, 0.3)" : "none"
                     }}
                   >
                     <span style={{
-                      fontSize: "0.68rem",
-                      fontWeight: "800",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      background: isSelected ? "#4338ca" : "#94a3b8",
+                      fontSize: "0.7rem",
+                      fontWeight: "900",
+                      padding: "2px 7px",
+                      borderRadius: "5px",
+                      background: isSelected ? "rgba(255, 255, 255, 0.25)" : "#64748b",
                       color: "white"
                     }}>
                       {meta.code}
                     </span>
                     <span>{meta.label}</span>
-                    {isDone && <CheckCircle2 size={15} color="#16a34a" />}
+                    {isDone && <CheckCircle2 size={16} color={isSelected ? "#86efac" : "#16a34a"} />}
                   </button>
                 );
               })}
             </div>
-
-            <button
-              type="button"
-              onClick={handleAutoFillDefaults}
-              style={{
-                background: "#f8fafc",
-                border: "1px solid #cbd5e1",
-                color: "#475569",
-                borderRadius: "8px",
-                padding: "6px 12px",
-                fontSize: "0.78rem",
-                fontWeight: "700",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px"
-              }}
-              title="Populate standard municipal National Building Code compliant engineering defaults"
-            >
-              <RefreshCw size={13} color="#4f46e5" />
-              <span>Auto-Fill Sto. Tomas Standards</span>
-            </button>
           </div>
 
+          {/* CURRENT ACTIVE FORM TITLE & INSTRUCTION */}
+          {activeMeta && (() => {
+            const formDetail = FORM_OFFICIAL_DETAILS[activeTab] || {
+              officialTitle: `${activeMeta.label.toUpperCase()} APPLICATION`,
+              nbcCode: `NBC FORM ${activeMeta.code}`,
+              icon: FileText,
+              color: "#4f46e5",
+              desc: activeMeta.desc
+            };
+            const FormIcon = formDetail.icon;
+            const currentFormIndex = mandatoryKeys.indexOf(activeTab) + 1;
+            const isCompleted = isFormSatisfied(activeTab);
+
+            return (
+              <div style={{
+                background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%)",
+                borderRadius: "16px",
+                padding: "1.25rem 1.5rem",
+                marginBottom: "1.5rem",
+                color: "#ffffff",
+                boxShadow: "0 6px 20px rgba(15, 23, 42, 0.2)",
+                border: "1.5px solid #4338ca",
+                position: "relative",
+                overflow: "hidden"
+              }}>
+                {/* Background decorative glow */}
+                <div style={{
+                  position: "absolute",
+                  top: "-50px",
+                  right: "-50px",
+                  width: "160px",
+                  height: "160px",
+                  borderRadius: "50%",
+                  background: activeTab === "fireBfpPermit" ? "rgba(225, 29, 72, 0.25)" : "rgba(99, 102, 241, 0.25)",
+                  filter: "blur(40px)",
+                  pointerEvents: "none"
+                }} />
+
+                <div style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "14px",
+                  position: "relative",
+                  zIndex: 1
+                }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
+                    <div style={{
+                      width: "50px",
+                      height: "50px",
+                      borderRadius: "12px",
+                      background: activeTab === "fireBfpPermit" ? "#ffe4e6" : "#e0e7ff",
+                      color: activeTab === "fireBfpPermit" ? "#e11d48" : "#4338ca",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      marginTop: "2px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                    }}>
+                      <FormIcon size={26} />
+                    </div>
+
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                        <span style={{
+                          fontSize: "0.7rem",
+                          fontWeight: "900",
+                          padding: "3px 9px",
+                          borderRadius: "6px",
+                          background: activeTab === "fireBfpPermit" ? "#e11d48" : "#6366f1",
+                          color: "white",
+                          letterSpacing: "0.5px"
+                        }}>
+                          {activeTab === "fireBfpPermit" ? "CERTIFICATE UPLOAD ONLY" : `CURRENTLY ANSWERING: FORM ${currentFormIndex} OF ${mandatoryKeys.length}`}
+                        </span>
+                        <span style={{
+                          fontSize: "0.74rem",
+                          fontWeight: "800",
+                          color: "#c7d2fe",
+                          background: "rgba(255, 255, 255, 0.12)",
+                          padding: "2px 8px",
+                          borderRadius: "4px"
+                        }}>
+                          {formDetail.nbcCode}
+                        </span>
+                        <span style={{
+                          fontSize: "0.72rem",
+                          fontWeight: "700",
+                          color: "#94a3b8"
+                        }}>
+                          MUNICIPALITY OF STO. TOMAS, PAMPANGA
+                        </span>
+                      </div>
+
+                      <h2 style={{
+                        margin: 0,
+                        fontSize: "1.35rem",
+                        fontWeight: "900",
+                        color: "#ffffff",
+                        letterSpacing: "-0.01em",
+                        lineHeight: 1.2
+                      }}>
+                        {formDetail.officialTitle}
+                      </h2>
+
+                      <p style={{ margin: "6px 0 0 0", fontSize: "0.84rem", color: "#cbd5e1", maxWidth: "750px", lineHeight: 1.4 }}>
+                        {formDetail.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Form Status Badge */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    {isCompleted ? (
+                      <div style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "#14532d",
+                        border: "1.5px solid #22c55e",
+                        color: "#86efac",
+                        padding: "7px 14px",
+                        borderRadius: "999px",
+                        fontSize: "0.82rem",
+                        fontWeight: "800",
+                        boxShadow: "0 2px 8px rgba(34, 197, 94, 0.25)"
+                      }}>
+                        <CheckCircle2 size={16} /> Completed & Verified
+                      </div>
+                    ) : (
+                      <div style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "rgba(245, 158, 11, 0.15)",
+                        border: "1.5px solid #f59e0b",
+                        color: "#fde68a",
+                        padding: "7px 14px",
+                        borderRadius: "999px",
+                        fontSize: "0.82rem",
+                        fontWeight: "800"
+                      }}>
+                        <Clock size={16} /> In Progress (Draft Saved)
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sub-strip reminder for Box 1 / Box 2 auto-sync */}
+                {activeTab !== "fireBfpPermit" && (
+                  <div style={{
+                    marginTop: "12px",
+                    paddingTop: "10px",
+                    borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "0.76rem",
+                    color: "#a5b4fc"
+                  }}>
+                    <Info size={14} style={{ flexShrink: 0 }} />
+                    <span>
+                      <strong>Auto-Sync Active:</strong> Box 1 (Owner/Applicant) and Box 2 (Project Location) details below will automatically synchronize across all your permit forms ({mandatoryKeys.map(k => PERMIT_FORM_METADATA[k]?.code).filter(c => c !== "FSEC").join(", ")}).
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <form onSubmit={handleGenerateDigitalForms}>
-            {/* ============================================================== */}
-            {/* BOX 1: OWNER / APPLICANT & ENTERPRISE DETAILS (Universal)       */}
-            {/* ============================================================== */}
+            {/* Universal NBC Universal Details (Hidden when on Fire / BFP Clearance) */}
+            {activeTab !== "fireBfpPermit" && (
+              <>
+                {/* ============================================================== */}
+                {/* BOX 1: OWNER / APPLICANT & ENTERPRISE DETAILS (Universal)       */}
+                {/* ============================================================== */}
             <div style={{
               background: "#ffffff",
               border: "1.5px solid #cbd5e1",
@@ -1785,8 +2134,8 @@ export default function TechnicalPermitFormsStep({
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <div style={{
-                    width: "36px",
-                    height: "36px",
+                    width: "38px",
+                    height: "38px",
                     borderRadius: "10px",
                     background: "#eef2ff",
                     color: "#4f46e5",
@@ -1799,22 +2148,22 @@ export default function TechnicalPermitFormsStep({
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
                       <span style={{
-                        fontSize: "0.68rem",
+                        fontSize: "0.7rem",
                         fontWeight: "800",
-                        color: "#4338ca",
+                        color: "#3730a3",
                         background: "#e0e7ff",
-                        padding: "2px 7px",
-                        borderRadius: "4px",
+                        padding: "2px 8px",
+                        borderRadius: "5px",
                         letterSpacing: "0.4px"
                       }}>
-                        NBC FORM A-01 / S-01 / B-01 • BOX 1
+                        {FORM_OFFICIAL_DETAILS[activeTab]?.nbcCode || activeMeta?.code} • BOX 1
                       </span>
-                      <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: "600" }}>
-                        Owner & Enterprise Information
+                      <span style={{ fontSize: "0.75rem", color: "#475569", fontWeight: "700" }}>
+                        {activeMeta?.label} — Owner & Enterprise Information
                       </span>
                     </div>
-                    <h4 style={{ margin: 0, fontSize: "0.98rem", fontWeight: "800", color: "#0f172a" }}>
-                      BOX 1: OWNER / APPLICANT (TO BE ACCOMPLISHED IN PRINT)
+                    <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "900", color: "#0f172a" }}>
+                      BOX 1: OWNER / APPLICANT (TO BE ACCOMPLISHED IN PRINT) — {activeMeta?.label.toUpperCase()}
                     </h4>
                   </div>
                 </div>
@@ -2526,11 +2875,40 @@ export default function TechnicalPermitFormsStep({
               padding: "1.25rem",
               marginBottom: "1.5rem"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "1rem" }}>
-                <Building size={18} color="#4f46e5" />
-                <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#1e293b" }}>
-                  BOX 2: Project Identification & Land Title Boundaries
-                </h4>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
+                <div style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "10px",
+                  background: "#eef2ff",
+                  color: "#4f46e5",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
+                  <Building size={18} />
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
+                    <span style={{
+                      fontSize: "0.7rem",
+                      fontWeight: "800",
+                      color: "#3730a3",
+                      background: "#e0e7ff",
+                      padding: "2px 8px",
+                      borderRadius: "5px",
+                      letterSpacing: "0.4px"
+                    }}>
+                      {FORM_OFFICIAL_DETAILS[activeTab]?.nbcCode || activeMeta?.code} • BOX 2
+                    </span>
+                    <span style={{ fontSize: "0.75rem", color: "#475569", fontWeight: "700" }}>
+                      {activeMeta?.label} — Project Location & Boundaries
+                    </span>
+                  </div>
+                  <h4 style={{ margin: 0, fontSize: "1.02rem", fontWeight: "900", color: "#0f172a" }}>
+                    BOX 2: PROJECT IDENTIFICATION & LOCATION — {activeMeta?.label.toUpperCase()}
+                  </h4>
+                </div>
               </div>
 
               <div style={{
@@ -2672,6 +3050,8 @@ export default function TechnicalPermitFormsStep({
                 </div>
               </div>
             </div>
+          </>
+        )}
 
             {/* ========================================== */}
             {/* TAB 1: BUILDING PERMIT (BP)                */}
@@ -5319,64 +5699,218 @@ export default function TechnicalPermitFormsStep({
             {/* ========================================== */}
             {activeTab === "fireBfpPermit" && (
               <div className="animate-fade-in-up">
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#fff1f2", color: "#e11d48", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Flame size={22} />
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.25rem" }}>
+                  <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "#fff1f2", color: "#e11d48", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(225, 29, 72, 0.15)" }}>
+                    <Flame size={24} />
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: "800", color: "#0f172a" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontSize: "0.7rem", fontWeight: "800", color: "#9f1239", background: "#ffe4e6", padding: "2px 8px", borderRadius: "4px" }}>
+                        EXTERNAL BFP REQUIREMENT
+                      </span>
+                      <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: "600" }}>
+                        Republic Act No. 9514 (Fire Code of the Philippines)
+                      </span>
+                    </div>
+                    <h3 style={{ margin: "2px 0 0 0", fontSize: "1.2rem", fontWeight: "800", color: "#0f172a" }}>
                       Fire Safety Evaluation Clearance (FSEC / BFP)
                     </h3>
-                    <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b" }}>
-                      Bureau of Fire Protection compliance, RA 9514 life-safety, means of egress, and fire suppression systems
-                    </p>
                   </div>
                 </div>
 
-                {/* Section A: Egress & Life Safety */}
-                <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#be123c", textTransform: "uppercase" }}>
-                    Means of Egress & Architectural Fire Resistance (RA 9514)
-                  </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1rem", marginTop: "10px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Independent Exit Doors *</label>
-                      <input type="text" required value={numberOfExits} onChange={(e) => setNumberOfExits(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Exit Door Clear Opening *</label>
-                      <input type="text" required value={exitDoorWidth} onChange={(e) => setExitDoorWidth(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Exit Stairway & Handrail Specs *</label>
-                      <input type="text" required value={stairSpecs} onChange={(e) => setStairSpecs(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Firewall / Party Wall Specifications *</label>
-                      <input type="text" required value={firewallSpecs} onChange={(e) => setFirewallSpecs(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                {/* Official BFP Notice Box */}
+                <div style={{
+                  background: "#fff1f2",
+                  border: "1.5px solid #fecdd3",
+                  borderRadius: "14px",
+                  padding: "1.1rem 1.25rem",
+                  marginBottom: "1.5rem"
+                }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                    <Info size={20} color="#e11d48" style={{ flexShrink: 0, marginTop: "2px" }} />
+                    <div style={{ fontSize: "0.86rem", color: "#881337", lineHeight: "1.5" }}>
+                      <strong>Official Bureau of Fire Protection Notice:</strong> The Municipality of Sto. Tomas does not process an online fillable form for Fire Safety clearances. In accordance with the Fire Code of the Philippines (RA 9514), the <strong>Fire Safety Evaluation Clearance (FSEC)</strong> is issued directly by the Bureau of Fire Protection (BFP).
+                      <div style={{ marginTop: "6px", color: "#9f1239", fontSize: "0.82rem" }}>
+                        Please attach your issued Fire Safety Evaluation Clearance certificate or official BFP receipt below. <em>(You can attach this here or during Step 5 review before final submission).</em>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Section B: Fire Fighting Equipment */}
-                <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#be123c", textTransform: "uppercase" }}>
-                    Fire Suppression & Life-Safety Equipment (BFP Santo Tomas)
-                  </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "1rem", marginTop: "10px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Portable Fire Extinguishers *</label>
-                      <input type="text" required value={fireExtinguisherSpecs} onChange={(e) => setFireExtinguisherSpecs(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                {/* Upload Status Card */}
+                {uploadedPermitDocs["fireBfpPermit"] ? (
+                  <div style={{
+                    background: "#f0fdf4",
+                    border: "1.5px solid #86efac",
+                    borderRadius: "14px",
+                    padding: "1.25rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: "1rem"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "#dcfce7", color: "#166534", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <CheckCircle2 size={24} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "0.75rem", fontWeight: "800", color: "#166534", textTransform: "uppercase" }}>
+                          ✓ BFP Clearance Attached
+                        </div>
+                        <div style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a" }}>
+                          {uploadedPermitDocs["fireBfpPermit"].fileName}
+                        </div>
+                        <div style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                          File size: {uploadedPermitDocs["fireBfpPermit"].fileSize} • Uploaded at {uploadedPermitDocs["fireBfpPermit"].uploadedAt}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Emergency Lights Count *</label>
-                      <input type="number" required value={emergencyLightsCount} onChange={(e) => setEmergencyLightsCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Smoke Detectors Count *</label>
-                      <input type="number" required value={smokeDetectorsCount} onChange={(e) => setSmokeDetectorsCount(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <label style={{
+                        padding: "8px 14px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        background: "#ffffff",
+                        color: "#334155",
+                        fontSize: "0.8rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px"
+                      }}>
+                        <Upload size={14} /> Replace File
+                        <input
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          onChange={(e) => handleFileUpload("fireBfpPermit", e)}
+                          style={{ display: "none" }}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDoc("fireBfpPermit")}
+                        style={{
+                          background: "#fee2e2",
+                          border: "1px solid #fca5a5",
+                          color: "#dc2626",
+                          borderRadius: "8px",
+                          padding: "8px 14px",
+                          cursor: "pointer",
+                          fontSize: "0.8rem",
+                          fontWeight: "700",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        <Trash2 size={14} /> Remove
+                      </button>
                     </div>
                   </div>
+                ) : (
+                  <div style={{
+                    border: "2px dashed #fca5a5",
+                    borderRadius: "16px",
+                    padding: "2.5rem 1.5rem",
+                    textAlign: "center",
+                    background: "#fff1f2",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.75rem"
+                  }}>
+                    <div style={{ width: "54px", height: "54px", borderRadius: "50%", background: "#ffe4e6", color: "#e11d48", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Flame size={28} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "1.05rem", fontWeight: "800", color: "#0f172a", marginBottom: "4px" }}>
+                        Attach Issued Fire / BFP Clearance (FSEC)
+                      </div>
+                      <div style={{ fontSize: "0.84rem", color: "#64748b", maxWidth: "460px" }}>
+                        Attach your scanned certificate, official endorsement, or evaluation document issued by Bureau of Fire Protection Santo Tomas.
+                      </div>
+                    </div>
+
+                    <label style={{
+                      marginTop: "0.5rem",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "10px 22px",
+                      borderRadius: "10px",
+                      background: "linear-gradient(135deg, #e11d48 0%, #be123c 100%)",
+                      color: "white",
+                      fontSize: "0.88rem",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      boxShadow: "0 4px 12px rgba(225, 29, 72, 0.25)",
+                      transition: "all 0.15s ease"
+                    }}>
+                      <Upload size={16} />
+                      <span>Attach FSEC File</span>
+                      <input
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        onChange={(e) => handleFileUpload("fireBfpPermit", e)}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+
+                    <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>
+                      Supported formats: PDF, PNG, JPG, JPEG (up to 25MB)
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit Form (Fire / BFP Clearance) Action Button */}
+                <div style={{
+                  marginTop: "1.5rem",
+                  paddingTop: "1.25rem",
+                  borderTop: "1.5px solid #fecdd3",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "1rem"
+                }}>
+                  <div>
+                    <span style={{ fontSize: "0.85rem", color: "#64748b" }}>
+                      {uploadedPermitDocs["fireBfpPermit"]
+                        ? "BFP Clearance document is attached and ready to submit."
+                        : "Attach your issued BFP Clearance (FSEC) file above to complete this requirement."}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSubmitSingleForm("fireBfpPermit")}
+                    disabled={!uploadedPermitDocs["fireBfpPermit"]}
+                    style={{
+                      background: uploadedPermitDocs["fireBfpPermit"]
+                        ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
+                        : "#94a3b8",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "11px 24px",
+                      fontSize: "0.92rem",
+                      fontWeight: "800",
+                      cursor: uploadedPermitDocs["fireBfpPermit"] ? "pointer" : "not-allowed",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      boxShadow: uploadedPermitDocs["fireBfpPermit"] ? "0 4px 14px rgba(5, 150, 105, 0.35)" : "none",
+                      transition: "all 0.15s ease"
+                    }}
+                  >
+                    <CheckCircle2 size={17} />
+                    <span>Submit Form (Fire / BFP Clearance)</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -7539,71 +8073,75 @@ export default function TechnicalPermitFormsStep({
               </div>
             )}
 
-            {/* ACTION BAR AT BOTTOM OF FORM */}
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "1rem",
-              marginTop: "1.75rem",
-              paddingTop: "1.25rem",
-              borderTop: "1.5px solid #e2e8f0"
-            }}>
-              <div>
-                <p style={{ margin: 0, fontSize: "0.84rem", color: "#64748b" }}>
-                  Ready to compile? This will synchronize all official boxes across all {mandatoryKeys.length} required permit forms.
-                </p>
-              </div>
+            {/* ACTION BAR AT BOTTOM OF FORM (For technical permit forms) */}
+            {activeTab !== "fireBfpPermit" && (
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "1rem",
+                marginTop: "1.75rem",
+                paddingTop: "1.25rem",
+                borderTop: "1.5px solid #e2e8f0"
+              }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: "0.86rem", color: "#475569", fontWeight: "600" }}>
+                    Finished filling out this section? Click below to save your entries and record this permit as completed.
+                  </p>
+                </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                {generatedPdfBlob && (
-                  <a
-                    href={generatedPdfBlob}
-                    download={`${projectType.name.replace(/\s+/g, '_')}_Official_Permit_Package.pdf`}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => handleSubmitSingleForm(activeTab)}
                     style={{
-                      padding: "10px 18px",
+                      background: isFormSatisfied(activeTab)
+                        ? "linear-gradient(135deg, #15803d 0%, #166534 100%)"
+                        : "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                      color: "white",
+                      border: "none",
                       borderRadius: "10px",
-                      background: "#f1f5f9",
-                      border: "1.5px solid #cbd5e1",
-                      color: "#334155",
-                      fontSize: "0.88rem",
-                      fontWeight: "700",
+                      padding: "12px 26px",
+                      fontSize: "0.95rem",
+                      fontWeight: "900",
+                      cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: "6px",
-                      textDecoration: "none"
+                      gap: "8px",
+                      boxShadow: "0 4px 16px rgba(5, 150, 105, 0.4)",
+                      transition: "all 0.15s ease"
                     }}
                   >
-                    <Download size={16} color="#4f46e5" />
-                    <span>Download Dossier PDF</span>
-                  </a>
-                )}
+                    <CheckCircle2 size={18} />
+                    <span>Submit Form ({activeMeta?.label || "Current Form"})</span>
+                  </button>
 
-                <button
-                  type="submit"
-                  disabled={isGenerating}
-                  style={{
-                    background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "10px",
-                    padding: "11px 24px",
-                    fontSize: "0.92rem",
-                    fontWeight: "800",
-                    cursor: isGenerating ? "wait" : "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    boxShadow: "0 4px 14px rgba(79, 70, 229, 0.35)",
-                    transition: "all 0.15s ease"
-                  }}
-                >
-                  <Sparkles size={16} />
-                  <span>{isGenerating ? "Compiling Official Dossier..." : "Save & Generate Official Forms"}</span>
-                </button>
+                  {generatedPdfBlob && (
+                    <a
+                      href={generatedPdfBlob}
+                      download={`${projectType.name.replace(/\s+/g, '_')}_Official_Permit_Package.pdf`}
+                      style={{
+                        padding: "10px 18px",
+                        borderRadius: "10px",
+                        background: "#f1f5f9",
+                        border: "1.5px solid #cbd5e1",
+                        color: "#334155",
+                        fontSize: "0.88rem",
+                        fontWeight: "700",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        textDecoration: "none"
+                      }}
+                    >
+                      <Download size={16} color="#4f46e5" />
+                      <span>Download Dossier PDF</span>
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </form>
         </div>
       )}
@@ -7733,64 +8271,121 @@ export default function TechnicalPermitFormsStep({
       {/* STEP NAVIGATION FOOTER */}
       <div style={{
         display: "flex",
-        justifyContent: "space-between",
+        justifyContent: "flex-end",
         alignItems: "center",
         borderTop: "1px solid #e2e8f0",
         paddingTop: "1.25rem",
-        marginTop: "1.5rem"
+        marginTop: "1.5rem",
+        flexWrap: "wrap",
+        gap: "1rem"
       }}>
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            padding: "10px 20px",
-            borderRadius: "10px",
-            border: "1px solid #cbd5e1",
-            background: "#ffffff",
-            color: "#475569",
-            fontWeight: "700",
-            fontSize: "0.88rem",
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px"
-          }}
-        >
-          <ChevronLeft size={18} />
-          <span>Back to Locational Clearance</span>
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={handleAnswerLater}
+            style={{
+              padding: "11px 22px",
+              borderRadius: "10px",
+              border: "1.5px solid #cbd5e1",
+              background: "#ffffff",
+              color: "#334155",
+              fontWeight: "800",
+              fontSize: "0.9rem",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
+              transition: "all 0.15s ease"
+            }}
+            title="Save your responses and uploaded files to complete later"
+          >
+            <BookmarkCheck size={18} color="#4f46e5" />
+            <span>Answer Later</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={onProceedToMapping}
-          disabled={!areAllMandatorySatisfied}
-          style={{
-            padding: "11px 24px",
-            borderRadius: "10px",
-            border: "none",
-            background: areAllMandatorySatisfied 
-              ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" 
-              : "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)",
-            color: "white",
-            fontWeight: "800",
-            fontSize: "0.92rem",
-            cursor: areAllMandatorySatisfied ? "pointer" : "not-allowed",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            boxShadow: areAllMandatorySatisfied ? "0 4px 14px rgba(16, 185, 129, 0.35)" : "none",
-            opacity: areAllMandatorySatisfied ? 1 : 0.8
-          }}
-          title={areAllMandatorySatisfied ? "Proceed to site mapping" : "Please complete or generate the required permit forms above first"}
-        >
-          <span>
-            {areAllMandatorySatisfied 
-              ? "Proceed to Step 4: Mapping" 
-              : `Step 4: Mapping (${mandatoryKeys.length - satisfiedKeys.length} Forms Pending)`}
-          </span>
-          {areAllMandatorySatisfied ? <ChevronRight size={18} /> : <Lock size={16} />}
-        </button>
+          {areAllMandatorySatisfied ? (
+            <button
+              type="button"
+              onClick={onProceedToMapping}
+              style={{
+                padding: "11px 24px",
+                borderRadius: "10px",
+                border: "none",
+                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                color: "white",
+                fontWeight: "800",
+                fontSize: "0.92rem",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: "0 4px 14px rgba(16, 185, 129, 0.35)",
+                transition: "all 0.15s ease"
+              }}
+            >
+              <span>Proceed to Step 4: Mapping</span>
+              <ChevronRight size={18} />
+            </button>
+          ) : (
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "10px 18px",
+              borderRadius: "10px",
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              color: "#64748b",
+              fontSize: "0.85rem",
+              fontWeight: "700"
+            }}>
+              <Lock size={15} color="#94a3b8" />
+              <span>Step 4: Mapping ({mandatoryKeys.length - satisfiedKeys.length} Forms Pending Completion)</span>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* FLOATING NOTIFICATION TOAST */}
+      {notification && (
+        <div style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          zIndex: 9999,
+          background: "#0f172a",
+          color: "#ffffff",
+          padding: "14px 20px",
+          borderRadius: "12px",
+          boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          fontSize: "0.88rem",
+          fontWeight: "700",
+          maxWidth: "460px",
+          border: "1px solid #334155",
+          animation: "fadeIn 0.2s ease"
+        }}>
+          <CheckCircle2 size={20} color="#10b981" style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, lineHeight: "1.4" }}>{notification}</span>
+          <button
+            type="button"
+            onClick={() => setNotification(null)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#94a3b8",
+              cursor: "pointer",
+              padding: "2px 6px",
+              fontSize: "1rem"
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* PERMIT MATRIX GUIDE MODAL */}
       <PermitMatrixGuideModal

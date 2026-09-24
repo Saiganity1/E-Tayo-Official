@@ -13,11 +13,23 @@ import { usePermitContext } from "../../context/PermitContext";
 import NotificationBell from "./NotificationBell";
 
 export default function Sidebar() {
-  const { userRole, setUserRole } = usePermitContext();
+  const { userRole, setUserRole, applications } = usePermitContext();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
   const [userName, setUserName] = useState("");
+  const [approvedClearanceRef, setApprovedClearanceRef] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("etayo_active_clearance_ref");
+      if (stored && stored !== "EXEMPT") return stored;
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const refParam = params.get("clearanceRef");
+        if (refParam && refParam !== "EXEMPT") return refParam;
+      } catch (e) {}
+    }
+    return null;
+  });
   
   React.useEffect(() => {
     try {
@@ -31,20 +43,78 @@ export default function Sidebar() {
     }
   }, []);
 
+  React.useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const refParam = params.get("clearanceRef");
+        if (refParam && refParam !== "EXEMPT") {
+          setApprovedClearanceRef(refParam);
+          localStorage.setItem("etayo_active_clearance_ref", refParam);
+        }
+      }
+
+      let list = applications || [];
+      if (list.length === 0 && typeof window !== "undefined") {
+        const cached = localStorage.getItem("etayo_cached_applications");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) list = parsed;
+        }
+      }
+
+      const approved = list.find(
+        (app: any) =>
+          (app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
+          (app.status?.toLowerCase() === "approved" || app.status?.toLowerCase() === "released")
+      );
+
+      if (approved) {
+        setApprovedClearanceRef(approved.id);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("etayo_active_clearance_ref", approved.id);
+        }
+      } else if (typeof window !== "undefined") {
+        const storedRef = localStorage.getItem("etayo_active_clearance_ref");
+        if (storedRef && storedRef !== "EXEMPT") {
+          setApprovedClearanceRef(storedRef);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [applications]);
+
   const getNavItems = () => {
     switch (userRole) {
       case "public":
         return [
           { href: "/", label: "Home", icon: Home },
         ];
-      case "applicant":
+      case "applicant": {
+        const approvedApp = (applications || []).find(
+          (app: any) =>
+            (app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
+            (app.status?.toLowerCase() === "approved" || app.status?.toLowerCase() === "released")
+        );
+        const clearanceRef = approvedApp?.id || approvedClearanceRef;
+
         return [
           { href: "/applicant/dashboard", label: "Dashboard", icon: Home },
           { href: "/applicant/apply", label: "New Application", icon: PlusCircle },
           { href: "/applicant/track", label: "Application Status", icon: ClipboardList },
+          ...(clearanceRef ? [
+            {
+              href: `/applicant/apply?clearanceRef=${encodeURIComponent(clearanceRef)}&step=3`,
+              label: "Existing Application",
+              icon: FileCheck,
+              badge: "Stage 2"
+            }
+          ] : []),
           { href: "/applicant/map", label: "Map", icon: Map },
           { href: "/applicant/messages", label: "Messages", icon: MessageSquare, badge: 3 },
         ];
+      }
       case "staff":
         return [
           { href: "/staff/dashboard", label: "Review Hub", icon: FileCheck },
@@ -122,7 +192,11 @@ export default function Sidebar() {
         <nav className="sidebar-nav">
           <div className="nav-label">Main Menu</div>
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = item.label === "Existing Application"
+              ? (pathname === "/applicant/apply" && typeof window !== "undefined" && window.location.search.includes("clearanceRef"))
+              : (item.href === "/applicant/apply"
+                  ? (pathname === "/applicant/apply" && (typeof window === "undefined" || !window.location.search.includes("clearanceRef")))
+                  : pathname === item.href);
             const Icon = item.icon;
             return (
               <Link 

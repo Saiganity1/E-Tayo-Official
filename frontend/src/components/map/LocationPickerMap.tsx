@@ -60,12 +60,16 @@ export function getZoneForPoint(lng: number, lat: number) {
 
   // 1. Direct containment check
   for (const feature of barangayFeatures) {
-    const coords = feature.geometry.type === 'Polygon'
-      ? feature.geometry.coordinates[0]
-      : feature.geometry.coordinates[0][0];
-
-    if (isPointInPolygon([lng, lat], coords)) {
-      return feature.properties;
+    if (feature.geometry.type === 'Polygon') {
+      if (isPointInPolygon([lng, lat], feature.geometry.coordinates[0])) {
+        return feature.properties;
+      }
+    } else if (feature.geometry.type === 'MultiPolygon') {
+      for (const polyCoords of feature.geometry.coordinates) {
+        if (isPointInPolygon([lng, lat], polyCoords[0])) {
+          return feature.properties;
+        }
+      }
     }
   }
 
@@ -74,14 +78,18 @@ export function getZoneForPoint(lng: number, lat: number) {
   let minDistance = Infinity;
 
   for (const feature of barangayFeatures) {
-    const coords = feature.geometry.type === 'Polygon'
-      ? feature.geometry.coordinates[0]
-      : feature.geometry.coordinates[0][0];
+    const polyRings = feature.geometry.type === 'Polygon'
+      ? [feature.geometry.coordinates[0]]
+      : feature.geometry.coordinates.map((c: any) => c[0]);
 
-    const dist = minDistanceToPolygon([lng, lat], coords);
-    if (dist < minDistance) {
-      minDistance = dist;
-      closestFeature = feature;
+    for (const ring of polyRings) {
+      if (ring && ring.length > 0) {
+        const dist = minDistanceToPolygon([lng, lat], ring);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestFeature = feature;
+        }
+      }
     }
   }
 

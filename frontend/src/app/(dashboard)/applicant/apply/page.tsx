@@ -9,7 +9,7 @@ import {
   Home, Building2, Factory, Landmark, Wrench, Zap, Clock, Copy, 
   ArrowRight, CheckCircle2, Shield, Droplets, Flame, Radio, FileCheck, X,
   BadgeCheck, Info, Compass, Eye, Printer, Download, FileUp, Trash2, Paperclip, AlertTriangle,
-  RefreshCw, Plus, RotateCcw
+  RefreshCw, Plus, RotateCcw, BookmarkCheck
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -325,6 +325,15 @@ export default function ApplyPage() {
       (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name)))
     );
   }, [userClearances, selectedProjectType]);
+
+  // Persist active clearance reference to localStorage so Sidebar dynamically shows "Existing Application"
+  useEffect(() => {
+    if (activeClearanceRef && activeClearanceRef !== "EXEMPT") {
+      try {
+        localStorage.setItem("etayo_active_clearance_ref", activeClearanceRef);
+      } catch (e) {}
+    }
+  }, [activeClearanceRef]);
 
   // Auto-sync project type to match approved locational clearance (when an explicit clearance reference is loaded)
   useEffect(() => {
@@ -2874,7 +2883,7 @@ export default function ApplyPage() {
 
           {/* WIZARD ACTIONS BAR */}
           <div className="wizard-actions">
-            {currentStep > 1 && (
+            {currentStep > 1 && currentStep !== 3 && (
               <button 
                 className="btn-outline" 
                 onClick={() => goToStep(currentStep - 1)} 
@@ -3030,37 +3039,41 @@ export default function ApplyPage() {
               )
             ) : currentStep === 3 ? (
               <button 
-                className="btn-primary btn-wizard-next" 
-                onClick={() => goToStep(4)}
+                type="button"
+                className="btn-wizard-back" 
+                onClick={() => {
+                  try {
+                    localStorage.setItem("etayo_draft_saved_notice", "Your permit form answers have been safely saved as a draft. You can continue answering anytime.");
+                  } catch (e) {}
+                  router.push("/applicant/dashboard");
+                }}
                 style={{ 
-                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
-                  color: "#ffffff",
-                  border: "1.5px solid transparent",
-                  boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                  background: "#ffffff", 
+                  color: "#334155",
+                  border: "1.5px solid #cbd5e1",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)", 
                   display: "flex", 
                   alignItems: "center", 
                   gap: "8px", 
                   padding: "10px 22px", 
                   borderRadius: "10px",
-                  fontWeight: "700",
+                  fontWeight: "800",
+                  fontSize: "0.9rem",
                   cursor: "pointer",
                   transition: "all 0.2s ease"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#ffffff";
-                  e.currentTarget.style.color = "#d97706";
-                  e.currentTarget.style.borderColor = "#ffffff";
-                  e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                  e.currentTarget.style.background = "#f8fafc";
+                  e.currentTarget.style.borderColor = "#94a3b8";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
-                  e.currentTarget.style.color = "#ffffff";
-                  e.currentTarget.style.borderColor = "transparent";
-                  e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#cbd5e1";
                 }}
+                title="Save draft answers and return to dashboard to answer later"
               >
-                <span>Next: Mapping</span>
-                <ChevronRight size={18} />
+                <BookmarkCheck size={18} color="#4f46e5" />
+                <span>Answer Later</span>
               </button>
             ) : currentStep === 4 ? (
               <button 
