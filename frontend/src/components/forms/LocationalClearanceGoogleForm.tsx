@@ -470,16 +470,16 @@ export default function LocationalClearanceGoogleForm({
         {/* OFFICIAL MUNICIPAL HEADER */}
         <div style={{
           background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-          color: "#1e1a00",
+          color: "#ffffff",
           padding: "2rem 2.25rem",
           position: "relative"
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
             <div>
-              <h1 style={{ margin: "0 0 0.35rem 0", fontSize: "1.55rem", fontWeight: "900", letterSpacing: "-0.01em", color: "#1e1a00" }}>
+              <h1 style={{ margin: "0 0 0.35rem 0", fontSize: "1.55rem", fontWeight: "900", letterSpacing: "-0.01em", color: "#ffffff" }}>
                 APPLICATION FOR LOCATIONAL CLEARANCE
               </h1>
-              <p style={{ margin: 0, fontSize: "0.86rem", color: "#78350f", fontWeight: "600" }}>
+              <p style={{ margin: 0, fontSize: "0.86rem", color: "rgba(255, 255, 255, 0.88)", fontWeight: "600" }}>
                 Office of the Local Zoning Administrator · Municipal Planning and Development Office (MPDO)
               </p>
             </div>
@@ -495,9 +495,9 @@ export default function LocationalClearanceGoogleForm({
                 gap: "6px",
                 padding: "8px 14px",
                 borderRadius: "8px",
-                background: "rgba(0, 0, 0, 0.12)",
-                border: "1px solid rgba(0, 0, 0, 0.2)",
-                color: "#1e1a00",
+                background: "rgba(255, 255, 255, 0.2)",
+                border: "1px solid rgba(255, 255, 255, 0.45)",
+                color: "#ffffff",
                 fontSize: "0.8rem",
                 fontWeight: "700",
                 textDecoration: "none"
