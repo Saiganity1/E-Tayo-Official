@@ -3570,8 +3570,11 @@ export default function ApplyPage() {
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: "6px"
+                      gap: "6px",
+                      transition: "all 0.15s ease"
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.color = "#2563eb"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#334155"; }}
                   >
                     <Download size={14} /> All 16 Templates
                   </button>
@@ -3589,8 +3592,11 @@ export default function ApplyPage() {
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: "6px"
+                      gap: "6px",
+                      transition: "all 0.15s ease"
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.color = "#2563eb"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#475569"; }}
                   >
                     <Printer size={15} /> Print Permit List
                   </button>
@@ -3608,8 +3614,11 @@ export default function ApplyPage() {
                       padding: "7px 14px",
                       fontSize: "0.82rem",
                       fontWeight: "700",
-                      cursor: "pointer"
+                      cursor: "pointer",
+                      transition: "all 0.15s ease"
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; e.currentTarget.style.color = "#0f172a"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#64748b"; }}
                   >
                     Close Alert
                   </button>
@@ -3621,9 +3630,9 @@ export default function ApplyPage() {
                       setShowUnifiedForm(true);
                     }}
                     style={{
-                      background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                      background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                       color: "white",
-                      border: "1.5px solid #dc2626",
+                      border: "1.5px solid #2563eb",
                       borderRadius: "8px",
                       padding: "7px 16px",
                       fontSize: "0.82rem",
@@ -3632,11 +3641,17 @@ export default function ApplyPage() {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "6px",
-                      boxShadow: "0 2px 8px rgba(220, 38, 38, 0.35)",
+                      boxShadow: "0 2px 8px rgba(37, 99, 235, 0.35)",
                       transition: "all 0.15s ease"
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(37, 99, 235, 0.45)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "none";
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(37, 99, 235, 0.35)";
+                    }}
                   >
                     <FileText size={15} /> <span>Fill These Forms Online</span> <ChevronRight size={15} />
                   </button>
