@@ -31,6 +31,7 @@ import {
   getConditionalPermitForms,
   getPermitFormTemplate
 } from "../../../../data/projectTypeMatrix";
+import { STO_TOMAS_BARANGAYS } from "../../../../data/stoTomasGeoJSON";
 
 const CATEGORY_THEMES: Record<string, { icon: any; color: string; bg: string; border: string; glow: string }> = {
   All: { icon: Layers, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
@@ -2129,6 +2130,9 @@ export default function ApplyPage() {
                   
                   <div>
                     <LocationPickerMap 
+                      selectedBarangay={barangay}
+                      initialLat={latitude ? parseFloat(latitude) : undefined}
+                      initialLng={longitude ? parseFloat(longitude) : undefined}
                       onLocationChange={async (lat, lng, zone) => {
                         setLatitude(lat.toFixed(6));
                         setLongitude(lng.toFixed(6));
@@ -2166,7 +2170,7 @@ export default function ApplyPage() {
                             {detectedZone.code || "ZONE"}
                           </span>
                           <span style={{ fontWeight: "700", color: "#166534", fontSize: "0.95rem" }}>
-                            {detectedZone.name}
+                            {detectedZone.name || detectedZone.zoneType || (detectedZone.barangay ? `Brgy. ${detectedZone.barangay}` : "Zoning Compliant")}
                           </span>
                         </div>
                         <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "#15803d" }}>
@@ -2203,7 +2207,7 @@ export default function ApplyPage() {
                       onChange={e => setBarangay(e.target.value)}
                       style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
                     >
-                      {["San Bartolome", "Moras Dela Paz", "Poblacion", "San Matias", "San Vicente", "Santa Cruz", "Santa Ines", "Santo Nino"].map(b => (
+                      {STO_TOMAS_BARANGAYS.map(b => (
                         <option key={b} value={b}>Brgy. {b}</option>
                       ))}
                     </select>
