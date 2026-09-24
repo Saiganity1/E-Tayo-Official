@@ -1082,9 +1082,9 @@ export default function ApplyPage() {
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)"
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <CheckCircle2 size={18} color="#dc2626" />
-                    <span style={{ fontSize: "0.84rem", color: "#dc2626", fontWeight: "700" }}>
-                      Selected: <strong style={{ color: "#b91c1c" }}>{selectedProjectType.name}</strong>
+                    <CheckCircle2 size={18} color="#2563eb" />
+                    <span style={{ fontSize: "0.84rem", color: "#2563eb", fontWeight: "700" }}>
+                      Selected: <strong style={{ color: "#1d4ed8" }}>{selectedProjectType.name}</strong>
                     </span>
                     {selectedProjectType.matrix.zoningPermit !== 'not_required' ? (
                       <span style={{ fontSize: "0.72rem", background: "transparent", color: "#475569", border: "1px solid #cbd5e1", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
@@ -1164,14 +1164,14 @@ export default function ApplyPage() {
                       onClick={() => setSelectedProjectType(p)}
                       className="project-card-item"
                       style={{
-                        border: isSelected ? "2px solid #dc2626" : "1.5px solid #e2e8f0",
-                        background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #fff5f5 100%)" : "#ffffff",
+                        border: isSelected ? "2px solid #2563eb" : "1.5px solid #e2e8f0",
+                        background: isSelected ? "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)" : "#ffffff",
                         borderRadius: "12px",
                         padding: "0.9rem 1.15rem",
                         cursor: "pointer",
                         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                         boxShadow: isSelected 
-                          ? "0 6px 18px rgba(220, 38, 38, 0.18), 0 0 0 1px #dc2626" 
+                          ? "0 6px 18px rgba(37, 99, 235, 0.18), 0 0 0 1px #2563eb" 
                           : "0 1px 4px rgba(0,0,0,0.02)",
                         position: "relative",
                         display: "flex",
@@ -1180,9 +1180,9 @@ export default function ApplyPage() {
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) {
-                          e.currentTarget.style.borderColor = "#dc2626";
-                          e.currentTarget.style.outline = "2px solid #dc2626";
-                          e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(220, 38, 38, 0.22)";
+                          e.currentTarget.style.borderColor = "#2563eb";
+                          e.currentTarget.style.outline = "2px solid #2563eb";
+                          e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(37, 99, 235, 0.22)";
                           e.currentTarget.style.transform = "translateY(-2px)";
                         }
                       }}
@@ -1310,8 +1310,8 @@ export default function ApplyPage() {
                               }
                             }}
                             style={{
-                              background: isSelected ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)" : "#ffffff",
-                              border: isSelected ? "1.5px solid #dc2626" : "1.5px solid #cbd5e1",
+                              background: isSelected ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" : "#ffffff",
+                              border: isSelected ? "1.5px solid #2563eb" : "1.5px solid #cbd5e1",
                               color: isSelected ? "#ffffff" : "#1e293b",
                               borderRadius: "6px",
                               cursor: "pointer",
@@ -1321,13 +1321,13 @@ export default function ApplyPage() {
                               alignItems: "center",
                               gap: "4px",
                               padding: "5px 12px",
-                              boxShadow: isSelected ? "0 2px 8px rgba(220, 38, 38, 0.35)" : "none",
+                              boxShadow: isSelected ? "0 2px 8px rgba(37, 99, 235, 0.35)" : "none",
                               transition: "all 0.15s ease"
                             }}
                             onMouseEnter={(e) => {
                               if (!isSelected) {
-                                e.currentTarget.style.borderColor = "#dc2626";
-                                e.currentTarget.style.color = "#dc2626";
+                                e.currentTarget.style.borderColor = "#2563eb";
+                                e.currentTarget.style.color = "#2563eb";
                               }
                             }}
                             onMouseLeave={(e) => {
@@ -1854,9 +1854,9 @@ export default function ApplyPage() {
                       gap: "0.45rem"
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "#dc2626";
-                      e.currentTarget.style.outline = "2px solid #dc2626";
-                      e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(220, 38, 38, 0.22)";
+                      e.currentTarget.style.borderColor = "#2563eb";
+                      e.currentTarget.style.outline = "2px solid #2563eb";
+                      e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(37, 99, 235, 0.22)";
                       e.currentTarget.style.transform = "translateY(-2px)";
                     }}
                     onMouseLeave={(e) => {
@@ -1963,8 +1963,8 @@ export default function ApplyPage() {
                             setShowGoogleForm(true);
                           }}
                           style={{
-                            background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
-                            border: "1.5px solid #dc2626",
+                            background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                            border: "1.5px solid #2563eb",
                             color: "#ffffff",
                             borderRadius: "6px",
                             cursor: "pointer",
@@ -1974,7 +1974,7 @@ export default function ApplyPage() {
                             alignItems: "center",
                             gap: "4px",
                             padding: "5px 12px",
-                            boxShadow: "0 2px 8px rgba(220, 38, 38, 0.35)",
+                            boxShadow: "0 2px 8px rgba(37, 99, 235, 0.35)",
                             transition: "all 0.15s ease"
                           }}
                           title="Fill Locational Clearance Form Online"
