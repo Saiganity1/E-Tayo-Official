@@ -1325,15 +1325,14 @@ button {
 }
 
 .project-card-item {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), outline 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .project-card-item:hover {
   transform: translateY(-2px);
-  outline: 2px solid #2563eb !important;
-  outline-offset: 0px;
-  border-color: #2563eb !important;
-  box-shadow: 0 8px 24px -4px rgba(37, 99, 235, 0.22) !important;
+  outline: none !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08) !important;
 }
 
 .btn-wizard-next:hover {

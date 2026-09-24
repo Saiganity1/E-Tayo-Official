@@ -1182,9 +1182,9 @@ export default function ApplyPage() {
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) {
-                          e.currentTarget.style.borderColor = "#2563eb";
-                          e.currentTarget.style.outline = "2px solid #2563eb";
-                          e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(37, 99, 235, 0.22)";
+                          e.currentTarget.style.borderColor = "#cbd5e1";
+                          e.currentTarget.style.outline = "none";
+                          e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(0, 0, 0, 0.08)";
                           e.currentTarget.style.transform = "translateY(-2px)";
                         }
                       }}
@@ -1918,9 +1918,9 @@ export default function ApplyPage() {
                       gap: "0.45rem"
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "#2563eb";
-                      e.currentTarget.style.outline = "2px solid #2563eb";
-                      e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(37, 99, 235, 0.22)";
+                      e.currentTarget.style.borderColor = "#cbd5e1";
+                      e.currentTarget.style.outline = "none";
+                      e.currentTarget.style.boxShadow = "0 8px 24px -4px rgba(0, 0, 0, 0.08)";
                       e.currentTarget.style.transform = "translateY(-2px)";
                     }}
                     onMouseLeave={(e) => {
@@ -3317,9 +3317,9 @@ export default function ApplyPage() {
                           transition: "all 0.15s ease"
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = "#dc2626";
-                          e.currentTarget.style.outline = "2px solid #dc2626";
-                          e.currentTarget.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.15)";
+                          e.currentTarget.style.borderColor = "#cbd5e1";
+                          e.currentTarget.style.outline = "none";
+                          e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 0, 0, 0.06)";
                           e.currentTarget.style.transform = "translateY(-1px)";
                         }}
                         onMouseLeave={(e) => {
@@ -3430,9 +3430,9 @@ export default function ApplyPage() {
                             transition: "all 0.15s ease"
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = "#dc2626";
-                            e.currentTarget.style.outline = "2px solid #dc2626";
-                            e.currentTarget.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.15)";
+                            e.currentTarget.style.borderColor = "#cbd5e1";
+                            e.currentTarget.style.outline = "none";
+                            e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 0, 0, 0.06)";
                             e.currentTarget.style.transform = "translateY(-1px)";
                           }}
                           onMouseLeave={(e) => {
