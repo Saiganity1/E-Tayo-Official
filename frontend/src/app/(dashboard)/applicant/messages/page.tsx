@@ -556,7 +556,15 @@ export default function ApplicantMessagesPage() {
   return (
     <div className="dashboard-page animate-fade-in-up" style={{ minHeight: "calc(100vh - 80px)", display: "flex", flexDirection: "column" }}>
       {/* PAGE HEADER */}
-      <header className="page-header" style={{ marginBottom: "1.25rem" }}>
+      <header className="page-header" style={{ 
+        background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(255, 255, 255, 0.9)",
+        boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
+        borderRadius: "20px",
+        padding: "1.25rem 1.75rem",
+        marginBottom: "1.25rem"
+      }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.35rem" }}>
@@ -579,10 +587,10 @@ export default function ApplicantMessagesPage() {
                 • Office of the Building Official (OBO)
               </span>
             </div>
-            <h1 className="page-title" style={{ fontSize: "1.85rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.25rem 0", letterSpacing: "-0.02em" }}>
+            <h1 className="page-title" style={{ fontSize: "1.85rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", margin: "0 0 0.25rem 0", letterSpacing: "-0.02em" }}>
               Messages & Helpdesk
             </h1>
-            <p className="page-subtitle" style={{ margin: 0, color: "#64748b", fontSize: "0.92rem" }}>
+            <p className="page-subtitle" style={{ margin: 0, color: "#475569", fontSize: "0.92rem" }}>
               Real-time consultation with the OBO Admin per permit application. Mang Tomas is available for FAQs &amp; general guidance.
             </p>
           </div>
