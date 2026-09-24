@@ -205,8 +205,8 @@ export default function ApplicationStatusPage() {
       {isLoggedIn && (
         <section style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-          gap: "1.1rem",
+          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+          gap: "0.75rem",
           marginBottom: "1.25rem"
         }}>
           {/* Card 1: Active Total */}
@@ -214,8 +214,8 @@ export default function ApplicationStatusPage() {
             onClick={() => { setActiveTab("active"); setStatusFilter("all"); }}
             style={{ 
               background: activeTab === "active" && statusFilter === "all" ? "linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)" : "#ffffff", 
-              borderRadius: "18px", 
-              padding: "1.25rem 1.4rem", 
+              borderRadius: "16px", 
+              padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "all" ? "2px solid #0038A8" : "1.5px solid #e2e8f0", 
               boxShadow: activeTab === "active" && statusFilter === "all" ? "0 8px 24px rgba(0, 56, 168, 0.18)" : "0 2px 10px rgba(0,0,0,0.02)",
               cursor: "pointer",
@@ -223,14 +223,14 @@ export default function ApplicationStatusPage() {
             }}
             title="Click to show all active applications"
           >
-            <div style={{ marginBottom: "0.75rem" }}>
-              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <FileText size={22} />
+            <div style={{ marginBottom: "0.55rem" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <FileText size={19} />
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "3rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.activeTotal}</div>
-              <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "all" ? "#0038A8" : "#64748b", marginTop: "0.35rem" }}>
+              <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.activeTotal}</div>
+              <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "all" ? "#0038A8" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 Active Permits
               </div>
             </div>
@@ -241,8 +241,8 @@ export default function ApplicationStatusPage() {
             onClick={() => { setActiveTab("active"); setStatusFilter("under_review"); }}
             style={{ 
               background: activeTab === "active" && statusFilter === "under_review" ? "linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)" : "#ffffff", 
-              borderRadius: "18px", 
-              padding: "1.25rem 1.4rem", 
+              borderRadius: "16px", 
+              padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "under_review" ? "2px solid #0038A8" : "1.5px solid #e2e8f0", 
               boxShadow: activeTab === "active" && statusFilter === "under_review" ? "0 8px 24px rgba(0, 56, 168, 0.18)" : "0 2px 10px rgba(0,0,0,0.02)",
               cursor: "pointer",
@@ -250,14 +250,14 @@ export default function ApplicationStatusPage() {
             }}
             title="Click to filter by Under Evaluation"
           >
-            <div style={{ marginBottom: "0.75rem" }}>
-              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Search size={22} />
+            <div style={{ marginBottom: "0.55rem" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Search size={19} />
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "3rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.review}</div>
-              <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "under_review" ? "#0038A8" : "#64748b", marginTop: "0.35rem" }}>
+              <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.review}</div>
+              <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "under_review" ? "#0038A8" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 Under Evaluation
               </div>
             </div>
@@ -268,8 +268,8 @@ export default function ApplicationStatusPage() {
             onClick={() => { setActiveTab("active"); setStatusFilter("approved"); }}
             style={{ 
               background: activeTab === "active" && statusFilter === "approved" ? "linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)" : "#ffffff", 
-              borderRadius: "18px", 
-              padding: "1.25rem 1.4rem", 
+              borderRadius: "16px", 
+              padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "approved" ? "2px solid #059669" : "1.5px solid #e2e8f0", 
               boxShadow: activeTab === "active" && statusFilter === "approved" ? "0 8px 24px rgba(5, 150, 105, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)",
               cursor: "pointer",
@@ -277,14 +277,14 @@ export default function ApplicationStatusPage() {
             }}
             title="Click to filter by Approved & Released"
           >
-            <div style={{ marginBottom: "0.75rem" }}>
-              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#d1fae5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <CheckCircle2 size={22} />
+            <div style={{ marginBottom: "0.55rem" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#d1fae5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <CheckCircle2 size={19} />
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "3rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.approved}</div>
-              <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "approved" ? "#059669" : "#64748b", marginTop: "0.35rem" }}>
+              <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.approved}</div>
+              <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "approved" ? "#059669" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 Approved & Released
               </div>
             </div>
@@ -295,8 +295,8 @@ export default function ApplicationStatusPage() {
             onClick={() => { setActiveTab("active"); setStatusFilter("incomplete_requirements"); }}
             style={{ 
               background: activeTab === "active" && statusFilter === "incomplete_requirements" ? "linear-gradient(135deg, #fef2f2 0%, #ffffff 100%)" : "#ffffff", 
-              borderRadius: "18px", 
-              padding: "1.25rem 1.4rem", 
+              borderRadius: "16px", 
+              padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "incomplete_requirements" ? "2px solid #dc2626" : "1.5px solid #e2e8f0", 
               boxShadow: activeTab === "active" && statusFilter === "incomplete_requirements" ? "0 8px 24px rgba(220, 38, 38, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)",
               cursor: "pointer",
@@ -304,14 +304,14 @@ export default function ApplicationStatusPage() {
             }}
             title="Click to filter by Action Required"
           >
-            <div style={{ marginBottom: "0.75rem" }}>
-              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <AlertTriangle size={22} />
+            <div style={{ marginBottom: "0.55rem" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <AlertTriangle size={19} />
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "3rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.action}</div>
-              <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "incomplete_requirements" ? "#dc2626" : "#64748b", marginTop: "0.35rem" }}>
+              <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.action}</div>
+              <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "incomplete_requirements" ? "#dc2626" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 Action Required
               </div>
             </div>
@@ -322,8 +322,8 @@ export default function ApplicationStatusPage() {
             onClick={() => { setActiveTab("archived"); setStatusFilter("all"); }}
             style={{ 
               background: activeTab === "archived" ? "linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%)" : "#ffffff", 
-              borderRadius: "18px", 
-              padding: "1.25rem 1.4rem", 
+              borderRadius: "16px", 
+              padding: "1rem 1.1rem", 
               border: activeTab === "archived" ? "2px solid #7c3aed" : "1.5px solid #e2e8f0", 
               boxShadow: activeTab === "archived" ? "0 8px 24px rgba(124, 58, 237, 0.15)" : "0 2px 10px rgba(0,0,0,0.02)",
               cursor: "pointer",
@@ -331,14 +331,14 @@ export default function ApplicationStatusPage() {
             }}
             title="Click to view Archived applications"
           >
-            <div style={{ marginBottom: "0.75rem" }}>
-              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#f5f3ff", color: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Archive size={22} />
+            <div style={{ marginBottom: "0.55rem" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#f5f3ff", color: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Archive size={19} />
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "3rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.archivedTotal}</div>
-              <div style={{ fontSize: "0.82rem", fontWeight: "700", color: activeTab === "archived" ? "#7c3aed" : "#64748b", marginTop: "0.35rem" }}>
+              <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.archivedTotal}</div>
+              <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "archived" ? "#7c3aed" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 Archived Permits
               </div>
             </div>
