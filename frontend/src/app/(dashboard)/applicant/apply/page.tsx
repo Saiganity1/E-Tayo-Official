@@ -3232,7 +3232,7 @@ export default function ApplyPage() {
               <div style={{ padding: "1.5rem 1.75rem", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 {/* STATUS SUMMARY BANNER */}
                 <div style={{
-                  background: "#ffffff",
+                  background: "#f8fafc",
                   border: "1.5px solid #e2e8f0",
                   borderRadius: "12px",
                   padding: "0.9rem 1.1rem",
@@ -3250,11 +3250,11 @@ export default function ApplyPage() {
                     </span>
                   </div>
                   <div style={{ display: "flex", gap: "6px" }}>
-                    <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#334155", background: "transparent", border: "1px solid #cbd5e1", padding: "2px 8px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                      <Check size={11} strokeWidth={2.5} color="#059669" /> {mandatory.length} Mandatory
+                    <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#1d4ed8", background: "#eff6ff", border: "1px solid #bfdbfe", padding: "2px 8px", borderRadius: "5px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                      <Check size={11} strokeWidth={2.5} color="#2563eb" /> {mandatory.length} Mandatory
                     </span>
                     {conditional.length > 0 && (
-                      <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#475569", background: "transparent", border: "1px solid #cbd5e1", padding: "2px 8px", borderRadius: "5px" }}>
+                      <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#475569", background: "#ffffff", border: "1px solid #cbd5e1", padding: "2px 8px", borderRadius: "5px" }}>
                         {conditional.length} Conditional
                       </span>
                     )}
@@ -3264,7 +3264,7 @@ export default function ApplyPage() {
                 {/* 1. MANDATORY PERMITS NEEDED */}
                 <div>
                   <h4 style={{ margin: "0 0 0.65rem 0", fontSize: "0.98rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "7px" }}>
-                    <CheckCircle2 size={18} color="#059669" />
+                    <CheckCircle2 size={18} color="#2563eb" />
                     Mandatory Permits for this Project ({mandatory.length} Required)
                   </h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
@@ -3311,7 +3311,7 @@ export default function ApplyPage() {
                                 style={{
                                   fontSize: "0.72rem",
                                   fontWeight: "700",
-                                  padding: "4px 10px",
+                                  padding: "5px 11px",
                                   borderRadius: "6px",
                                   background: "#ffffff",
                                   color: "#1d4ed8",
@@ -3321,23 +3321,23 @@ export default function ApplyPage() {
                                   gap: "4px",
                                   textDecoration: "none",
                                   transition: "all 0.15s ease",
-                                  boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)"
+                                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.12)"
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.color = "#1e40af"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#1d4ed8"; }}
                                 title={`Download official ${p.label} PDF`}
                               >
-                                <Download size={12} /> Official PDF
+                                <Download size={12} color="#1d4ed8" /> Official PDF
                               </a>
                             )}
                             <span style={{
                               fontSize: "0.7rem",
                               fontWeight: "700",
-                              padding: "3px 8px",
-                              borderRadius: "5px",
-                              background: "rgba(255, 255, 255, 0.2)",
+                              padding: "4px 9px",
+                              borderRadius: "6px",
+                              background: "rgba(255, 255, 255, 0.22)",
                               color: "#ffffff",
-                              border: "1px solid rgba(255, 255, 255, 0.35)",
+                              border: "1px solid rgba(255, 255, 255, 0.4)",
                               display: "inline-flex",
                               alignItems: "center",
                               gap: "4px"
@@ -3355,7 +3355,7 @@ export default function ApplyPage() {
                 {conditional.length > 0 && (
                   <div>
                     <h4 style={{ margin: "0 0 0.65rem 0", fontSize: "0.98rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "7px" }}>
-                      <AlertCircle size={18} color="#d97706" />
+                      <AlertCircle size={18} color="#2563eb" />
                       Conditional Permits ({conditional.length} Depending on Scope)
                     </h4>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
@@ -3402,7 +3402,7 @@ export default function ApplyPage() {
                                   style={{
                                     fontSize: "0.72rem",
                                     fontWeight: "700",
-                                    padding: "4px 10px",
+                                    padding: "5px 11px",
                                     borderRadius: "6px",
                                     background: "#ffffff",
                                     color: "#1d4ed8",
@@ -3412,23 +3412,23 @@ export default function ApplyPage() {
                                     gap: "4px",
                                     textDecoration: "none",
                                     transition: "all 0.15s ease",
-                                    boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)"
+                                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.12)"
                                   }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.color = "#1e40af"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#1d4ed8"; }}
                                   title={`Download official ${p.label} PDF`}
                                 >
-                                  <Download size={12} /> Official PDF
+                                  <Download size={12} color="#1d4ed8" /> Official PDF
                                 </a>
                               )}
                               <span style={{
                                 fontSize: "0.7rem",
                                 fontWeight: "700",
-                                padding: "3px 8px",
-                                borderRadius: "5px",
-                                background: "rgba(255, 255, 255, 0.2)",
+                                padding: "4px 9px",
+                                borderRadius: "6px",
+                                background: "rgba(255, 255, 255, 0.22)",
                                 color: "#ffffff",
-                                border: "1px solid rgba(255, 255, 255, 0.35)"
+                                border: "1px solid rgba(255, 255, 255, 0.4)"
                               }}>
                                 CONDITIONAL
                               </span>
@@ -3450,7 +3450,7 @@ export default function ApplyPage() {
                       {notRequired.map((p) => (
                         <span key={p.key} style={{
                           fontSize: "0.75rem",
-                          background: "#ffffff",
+                          background: "#f8fafc",
                           color: "#64748b",
                           border: "1px solid #cbd5e1",
                           padding: "4px 10px",
@@ -3459,7 +3459,7 @@ export default function ApplyPage() {
                           alignItems: "center",
                           gap: "5px"
                         }}>
-                          <strong>{p.code}</strong>: {p.label} (Not Required)
+                          <strong style={{ color: "#1e40af" }}>{p.code}</strong>: {p.label} (Not Required)
                         </span>
                       ))}
                     </div>
@@ -3485,7 +3485,7 @@ export default function ApplyPage() {
                     style={{
                       background: "#ffffff",
                       border: "1.5px solid #cbd5e1",
-                      color: "#334155",
+                      color: "#1e293b",
                       borderRadius: "8px",
                       padding: "7px 14px",
                       fontSize: "0.82rem",
@@ -3496,8 +3496,8 @@ export default function ApplyPage() {
                       gap: "6px",
                       transition: "all 0.15s ease"
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.color = "#2563eb"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#334155"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.color = "#2563eb"; e.currentTarget.style.background = "#eff6ff"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#1e293b"; e.currentTarget.style.background = "#ffffff"; }}
                   >
                     <Download size={14} /> All 16 Templates
                   </button>
@@ -3507,7 +3507,7 @@ export default function ApplyPage() {
                     style={{
                       background: "#ffffff",
                       border: "1.5px solid #cbd5e1",
-                      color: "#475569",
+                      color: "#1e293b",
                       borderRadius: "8px",
                       padding: "7px 14px",
                       fontSize: "0.82rem",
@@ -3518,8 +3518,8 @@ export default function ApplyPage() {
                       gap: "6px",
                       transition: "all 0.15s ease"
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.color = "#2563eb"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#475569"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.color = "#2563eb"; e.currentTarget.style.background = "#eff6ff"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#1e293b"; e.currentTarget.style.background = "#ffffff"; }}
                   >
                     <Printer size={15} /> Print Permit List
                   </button>
@@ -3532,7 +3532,7 @@ export default function ApplyPage() {
                     style={{
                       background: "#f1f5f9",
                       border: "1px solid #cbd5e1",
-                      color: "#64748b",
+                      color: "#475569",
                       borderRadius: "8px",
                       padding: "7px 14px",
                       fontSize: "0.82rem",
@@ -3541,7 +3541,7 @@ export default function ApplyPage() {
                       transition: "all 0.15s ease"
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; e.currentTarget.style.color = "#0f172a"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#64748b"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#475569"; }}
                   >
                     Close Alert
                   </button>
