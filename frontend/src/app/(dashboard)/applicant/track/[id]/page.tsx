@@ -928,13 +928,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         </div>
       </header>
 
-      {/* Main Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(380px, 500px)", gap: "1.25rem", alignItems: "start" }}>
-        
-        {/* Left Column: Timeline & Project Summary */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-          
-          {/* Toast Notification */}
+      {/* Toast Notification */}
+      {/* Toast Notification */}
           {toastMsg && (
             <div style={{
               background: toastMsg.type === "success" ? "#ecfdf5" : "#eff6ff",
@@ -947,14 +942,16 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        marginBottom: "1.25rem"
             }}>
               <CheckCircle2 size={18} />
               <span>{toastMsg.text}</span>
             </div>
           )}
 
-          {/* ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
+      {/* Standalone Top Card: ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
+      {/* ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
           {appData?.status === "approved" && !isActuallyReleased && (
             <div style={{
               background: (appData as any).userConfirmedPayment
@@ -963,7 +960,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               border: `1.5px solid ${(appData as any).userConfirmedPayment ? "#86efac" : "#fde68a"}`,
               borderRadius: "20px",
               padding: "1.4rem",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)"
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)",
+        marginBottom: "1.5rem"
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flex: 1, minWidth: "260px" }}>
@@ -1088,14 +1086,16 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             </div>
           )}
 
-          {/* PERMIT OFFICIALLY RELEASED BANNER */}
+      {/* Standalone Top Card: PERMIT OFFICIALLY RELEASED BANNER */}
+      {/* PERMIT OFFICIALLY RELEASED BANNER */}
           {(appData?.status === "released" || isActuallyReleased) && (
             <div style={{
               background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
               border: "1.5px solid #86efac",
               borderRadius: "20px",
               padding: "1.4rem",
-              boxShadow: "0 4px 16px rgba(16, 185, 129, 0.08)"
+              boxShadow: "0 4px 16px rgba(16, 185, 129, 0.08)",
+        marginBottom: "1.5rem"
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
                 <div style={{
@@ -1136,15 +1136,69 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             </div>
           )}
 
-          {/* Application Timeline Card */}
-          <div className="glass-panel" style={{ 
-            padding: "1.75rem 2rem", 
-            background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", 
-            borderRadius: "24px", 
-            border: "1px solid rgba(255,255,255,0.9)", 
-            boxShadow: "0 10px 35px rgba(0,0,0,0.06)" 
-          }}>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "#1e293b", marginBottom: "1.25rem" }}>
+      {/* Unified Application Details & Documents Card */}
+      <div className="glass-panel" style={{ 
+        padding: "2rem", 
+        background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", 
+        borderRadius: "24px", 
+        border: "1px solid rgba(255,255,255,0.9)", 
+        boxShadow: "0 10px 35px rgba(0,0,0,0.06)" 
+      }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(380px, 500px)", gap: "2.5rem", alignItems: "start" }}>
+          
+          {/* Left Column: Project Information (Top) & Timeline (Bottom) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+            
+            {/* 1. Project Information */}
+            <div>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "#1e293b", marginBottom: "1.25rem" }}>
+              Project Information
+            </h2>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+              <div>
+                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Applicant</span>
+                <span style={{ color: "#0f172a", fontWeight: "700", fontSize: "0.95rem" }}>
+                  {typeof appData.applicantName === 'string' ? appData.applicantName : "Applicant"}
+                </span>
+              </div>
+
+              <div>
+                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date Submitted</span>
+                <span style={{ color: "#0f172a", fontWeight: "700", fontSize: "0.95rem" }}>
+                  {appData.dateSubmitted || "Recorded"}
+                </span>
+              </div>
+
+              <div>
+                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Project Type</span>
+                <span style={{ color: "#1e40af", fontWeight: "700", fontSize: "0.92rem", background: "#eff6ff", padding: "2px 8px", borderRadius: "6px", display: "inline-block", marginTop: "2px" }}>
+                  {typeof appData.projectType === "object" ? appData.projectType?.name : (appData.projectType || "Locational Clearance")}
+                </span>
+              </div>
+
+              <div>
+                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Zoning Clearance</span>
+                <span style={{ color: "#15803d", fontWeight: "700", fontSize: "0.92rem", background: "#f0fdf4", padding: "2px 8px", borderRadius: "6px", display: "inline-block", marginTop: "2px" }}>
+                  {typeof appData.locationalClearanceRef === 'string' ? appData.locationalClearanceRef : "LC-APPROVED"}
+                </span>
+              </div>
+
+              <div style={{ gridColumn: "1 / -1" }}>
+                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Site Address</span>
+                <span style={{ color: "#334155", fontWeight: "600", fontSize: "0.92rem" }}>
+                  {typeof appData.projectAddress === 'string' ? appData.projectAddress : (appData.location?.address || "Sto. Tomas, Pampanga")}
+                </span>
+              </div>
+            </div>
+            </div>
+
+            {/* Subtle Section Divider */}
+            <div style={{ height: "1px", background: "#e2e8f0" }} />
+
+            {/* 2. Application Progress Timeline */}
+            <div>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "#1e293b", marginBottom: "1.25rem" }}>
               Application Progress Timeline
             </h2>
             
@@ -1188,68 +1242,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                 );
               })}
             </div>
-          </div>
-
-          {/* Project Details Card */}
-          <div className="glass-panel" style={{ 
-            padding: "1.75rem 2rem", 
-            background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", 
-            borderRadius: "24px", 
-            border: "1px solid rgba(255,255,255,0.9)", 
-            boxShadow: "0 10px 35px rgba(0,0,0,0.06)" 
-          }}>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "#1e293b", marginBottom: "1.25rem" }}>
-              Project Information
-            </h2>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
-              <div>
-                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Applicant</span>
-                <span style={{ color: "#0f172a", fontWeight: "700", fontSize: "0.95rem" }}>
-                  {typeof appData.applicantName === 'string' ? appData.applicantName : "Applicant"}
-                </span>
-              </div>
-
-              <div>
-                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date Submitted</span>
-                <span style={{ color: "#0f172a", fontWeight: "700", fontSize: "0.95rem" }}>
-                  {appData.dateSubmitted || "Recorded"}
-                </span>
-              </div>
-
-              <div>
-                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Project Type</span>
-                <span style={{ color: "#1e40af", fontWeight: "700", fontSize: "0.92rem", background: "#eff6ff", padding: "2px 8px", borderRadius: "6px", display: "inline-block", marginTop: "2px" }}>
-                  {typeof appData.projectType === "object" ? appData.projectType?.name : (appData.projectType || "Locational Clearance")}
-                </span>
-              </div>
-
-              <div>
-                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Zoning Clearance</span>
-                <span style={{ color: "#15803d", fontWeight: "700", fontSize: "0.92rem", background: "#f0fdf4", padding: "2px 8px", borderRadius: "6px", display: "inline-block", marginTop: "2px" }}>
-                  {typeof appData.locationalClearanceRef === 'string' ? appData.locationalClearanceRef : "LC-APPROVED"}
-                </span>
-              </div>
-
-              <div style={{ gridColumn: "1 / -1" }}>
-                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Site Address</span>
-                <span style={{ color: "#334155", fontWeight: "600", fontSize: "0.92rem" }}>
-                  {typeof appData.projectAddress === 'string' ? appData.projectAddress : (appData.location?.address || "Sto. Tomas, Pampanga")}
-                </span>
-              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Right Column: All Official Technical Permit Forms & Attachments */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-          <div className="glass-panel" style={{ 
-            padding: "1.75rem 2rem", 
-            background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", 
-            borderRadius: "24px", 
-            border: "1px solid rgba(255,255,255,0.9)", 
-            boxShadow: "0 10px 35px rgba(0,0,0,0.06)" 
-          }}>
+          </div>
+
+          {/* Right Column: Submitted Forms & Attachments */}
+          <div style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: "2rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.5rem" }}>
               <div>
                 <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
@@ -1369,8 +1367,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               <p style={{ color: "#64748b", fontSize: "0.95rem" }}>No files attached to this application.</p>
             )}
           </div>
+
         </div>
       </div>
+
 
       {/* CANCEL CONFIRMATION MODAL */}
       {showCancelModal && (
