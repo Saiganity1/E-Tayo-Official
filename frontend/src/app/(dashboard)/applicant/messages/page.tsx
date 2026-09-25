@@ -13,7 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
 import { usePermitContext } from "../../../../context/PermitContext";
-import { dispatchPermitMessage } from "../../../../utils/permitMessaging";
+import { dispatchPermitMessage, ensureApplicationConversationMessages } from "../../../../utils/permitMessaging";
 import { 
   MessageBubbleContent, 
   AttachmentPreviewModal, 
@@ -172,13 +172,14 @@ export default function ApplicantMessagesPage() {
           const merged = [...apiData];
           localMsgs.forEach((lm: any) => {
             if (
-              (lm.recipientEmail === email || lm.senderEmail === email) &&
+              (lm.recipientEmail === email || lm.senderEmail === email || !lm.recipientEmail || lm.recipientEmail === "applicant@etayo.gov.ph") &&
               !merged.some((m: any) => m.id === lm.id || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
             ) {
               merged.push(lm);
             }
           });
-          setMessages(merged);
+          const finalized = ensureApplicationConversationMessages(applications || [], email, merged);
+          setMessages(finalized);
         };
 
         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/messages/history?user1=${email}&user2=${MANG_TOMAS.email}`)
@@ -269,6 +270,20 @@ export default function ApplicantMessagesPage() {
     }
   }, [initialRef, currentUserEmail]);
 
+  // Synchronize official notices and payment messages for any approved applications
+  useEffect(() => {
+    if (applications && applications.length > 0) {
+      setMessages(prev => {
+        const email = currentUserEmail || "applicant@etayo.gov.ph";
+        const synced = ensureApplicationConversationMessages(applications, email, prev);
+        if (synced.length !== prev.length) {
+          return synced;
+        }
+        return prev;
+      });
+    }
+  }, [applications, currentUserEmail]);
+
   // Auto-scroll to latest message in active thread
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -290,12 +305,20 @@ export default function ApplicantMessagesPage() {
 
     // 2. Discover all application threads from applications context or userCreatedThreadIds
     (applications || []).forEach(app => {
+      const isApproved = app.status === "approved" || app.status === "released" || Boolean((app as any).orderOfPaymentNo);
+      const defaultLastMsg = app.status === "released"
+        ? "🎉 Official Permits Released"
+        : isApproved
+          ? `💰 Order of Payment: PHP ${((app as any).assessedFees || 3795).toLocaleString()} issued`
+          : "Application filed and queued";
+
       threadMap[app.id] = {
         id: app.id,
         title: app.projectName || "Locational Clearance",
         subtitle: app.id,
         permitType: app.permitType === "locational_clearance" ? "Locational Clearance" : "Building Permit (PD 1096)",
         status: app.status,
+        lastMessage: defaultLastMsg,
         isGeneral: false
       };
     });
@@ -401,8 +424,16 @@ export default function ApplicantMessagesPage() {
 
   // Filter messages for active thread
   const activeThreadMessages = useMemo(() => {
-    return messages.filter(msg => getMessageThreadId(msg) === activeThreadId);
-  }, [messages, activeThreadId]);
+    const threadMsgs = messages.filter(msg => getMessageThreadId(msg) === activeThreadId);
+    if (threadMsgs.length === 0 && activeApp && (activeApp.status === "approved" || activeApp.status === "released" || Boolean((activeApp as any).orderOfPaymentNo))) {
+      const email = currentUserEmail || "applicant@etayo.gov.ph";
+      const synthesized = ensureApplicationConversationMessages([activeApp], email, []);
+      if (synthesized.length > 0) {
+        return synthesized;
+      }
+    }
+    return threadMsgs;
+  }, [messages, activeThreadId, activeApp, currentUserEmail]);
 
   // Send message handler
   const handleSendMessage = (contentToSend?: string) => {
@@ -1443,19 +1474,20 @@ export default function ApplicantMessagesPage() {
                 >
                   {!isMe && (
                     <div style={{
-                      width: "34px",
-                      height: "34px",
-                      borderRadius: "10px",
-                      background: MANG_TOMAS.avatarBg,
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "12px",
+                      background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                       color: "white",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       marginRight: "9px",
                       flexShrink: 0,
-                      marginTop: "3px"
+                      marginTop: "3px",
+                      boxShadow: "0 2px 8px rgba(0, 56, 168, 0.25)"
                     }}>
-                      <Landmark size={18} />
+                      <Building2 size={18} />
                     </div>
                   )}
 
@@ -1466,8 +1498,8 @@ export default function ApplicantMessagesPage() {
                     alignItems: isMe ? "flex-end" : "flex-start"
                   }}>
                     {!isMe && (
-                      <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "700", marginBottom: "3px", marginLeft: "4px" }}>
-                        Mang Tomas • OBO
+                      <span style={{ fontSize: "0.74rem", color: "#475569", fontWeight: "800", marginBottom: "3px", marginLeft: "4px" }}>
+                        {msg.actualSender || "OBO Admin • Municipal Building Official"}
                       </span>
                     )}
 

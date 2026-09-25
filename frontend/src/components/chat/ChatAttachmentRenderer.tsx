@@ -100,9 +100,9 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
       {cleanText && (
-        <p style={{ margin: 0, wordBreak: "break-word" }}>
+        <div style={{ margin: 0, wordBreak: "break-word", whiteSpace: "pre-wrap", lineHeight: "1.55" }}>
           {renderTextWithTrackingLinks(cleanText)}
-        </p>
+        </div>
       )}
 
       {attachments.length > 0 && (

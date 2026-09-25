@@ -17,6 +17,7 @@ import {
   AttachmentPreviewModal, 
   ParsedAttachment 
 } from "../../../../components/chat/ChatAttachmentRenderer";
+import { ensureApplicationConversationMessages } from "../../../../utils/permitMessaging";
 
 // Canned official municipal responses for fast staff dispatch
 const CANNED_RESPONSES = [
@@ -230,18 +231,50 @@ export default function AdminMessagesPage() {
   useEffect(() => {
     if (applicantEmail) {
       const staffInbox = "staff@etayo.gov.ph";
+      const mergeWithLocal = (apiData: any[]) => {
+        let localMsgs: any[] = [];
+        try {
+          const raw = localStorage.getItem("etayo_messages_history");
+          if (raw) localMsgs = JSON.parse(raw);
+        } catch (e) {}
+        const merged = [...apiData];
+        localMsgs.forEach((lm: any) => {
+          if (
+            (lm.recipientEmail === applicantEmail || lm.senderEmail === applicantEmail || !lm.recipientEmail || lm.recipientEmail === "applicant@etayo.gov.ph") &&
+            !merged.some((m: any) => m.id === lm.id || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
+          ) {
+            merged.push(lm);
+          }
+        });
+        const finalized = ensureApplicationConversationMessages(applications || [], applicantEmail, merged);
+        setMessages(finalized);
+        setActiveThreadId("all"); // Reset filter to all messages on contact switch
+      };
+
       fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/messages/history?user1=${staffInbox}&user2=${applicantEmail}`)
         .then(res => res.json())
         .then(data => {
-          setMessages(Array.isArray(data) ? data : []);
-          setActiveThreadId("all"); // Reset filter to all messages on contact switch
+          mergeWithLocal(Array.isArray(data) ? data : []);
         })
         .catch(err => {
           console.error("Failed to load history", err);
-          setMessages([]);
+          mergeWithLocal([]);
         });
     }
   }, [applicantEmail]);
+
+  // Synchronize official notices and payment messages for any approved applications
+  useEffect(() => {
+    if (applications && applications.length > 0 && applicantEmail) {
+      setMessages(prev => {
+        const synced = ensureApplicationConversationMessages(applications, applicantEmail, prev);
+        if (synced.length !== prev.length) {
+          return synced;
+        }
+        return prev;
+      });
+    }
+  }, [applications, applicantEmail]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -393,12 +426,20 @@ export default function AdminMessagesPage() {
 
   // Filter messages according to activeThreadId
   const filteredMessages = useMemo(() => {
-    if (activeThreadId === "all") return messages;
-    return messages.filter(msg => {
+    let threadMsgs = activeThreadId === "all" ? messages : messages.filter(msg => {
       const msgThread = getMessageThreadId(msg);
       return msgThread === activeThreadId;
     });
-  }, [messages, activeThreadId]);
+
+    if (activeThreadId !== "all" && threadMsgs.length === 0) {
+      const activeApp = (applications || []).find(a => a.id === activeThreadId);
+      if (activeApp && (activeApp.status === "approved" || activeApp.status === "released" || Boolean((activeApp as any).orderOfPaymentNo))) {
+        const synthesized = ensureApplicationConversationMessages([activeApp], applicantEmail || "applicant@etayo.gov.ph", []);
+        if (synthesized.length > 0) return synthesized;
+      }
+    }
+    return threadMsgs;
+  }, [messages, activeThreadId, applications, applicantEmail]);
 
   // Filter contacts list by search and category
   const filteredContacts = useMemo(() => {

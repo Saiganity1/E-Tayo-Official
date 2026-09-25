@@ -12,7 +12,7 @@ import Link from "next/link";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
 import { usePermitContext } from "../../../../context/PermitContext";
-import { dispatchPermitMessage } from "../../../../utils/permitMessaging";
+import { dispatchPermitMessage, ensureApplicationConversationMessages } from "../../../../utils/permitMessaging";
 import { 
   MessageBubbleContent, 
   AttachmentPreviewModal, 
@@ -253,7 +253,8 @@ export default function StaffMessagesPage() {
             merged.push(lm);
           }
         });
-        setMessages(merged);
+        const finalized = ensureApplicationConversationMessages(applications || [], applicantEmail, merged);
+        setMessages(finalized);
         setActiveThreadId("all");
       };
 
@@ -279,6 +280,19 @@ export default function StaffMessagesPage() {
       return () => window.removeEventListener("etayo_new_message", handleCustomMsg);
     }
   }, [applicantEmail]);
+
+  // Synchronize official notices and payment messages for any approved applications
+  useEffect(() => {
+    if (applications && applications.length > 0 && applicantEmail) {
+      setMessages(prev => {
+        const synced = ensureApplicationConversationMessages(applications, applicantEmail, prev);
+        if (synced.length !== prev.length) {
+          return synced;
+        }
+        return prev;
+      });
+    }
+  }, [applications, applicantEmail]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -483,12 +497,20 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
 
   // Filter messages according to activeThreadId
   const filteredMessages = useMemo(() => {
-    if (activeThreadId === "all") return messages;
-    return messages.filter(msg => {
+    let threadMsgs = activeThreadId === "all" ? messages : messages.filter(msg => {
       const msgThread = getMessageThreadId(msg);
       return msgThread === activeThreadId;
     });
-  }, [messages, activeThreadId]);
+
+    if (activeThreadId !== "all" && threadMsgs.length === 0) {
+      const activeApp = (applications || []).find(a => a.id === activeThreadId);
+      if (activeApp && (activeApp.status === "approved" || activeApp.status === "released" || Boolean((activeApp as any).orderOfPaymentNo))) {
+        const synthesized = ensureApplicationConversationMessages([activeApp], applicantEmail || "applicant@etayo.gov.ph", []);
+        if (synthesized.length > 0) return synthesized;
+      }
+    }
+    return threadMsgs;
+  }, [messages, activeThreadId, applications, applicantEmail]);
 
   // Filter contacts list by search and category
   const filteredContacts = useMemo(() => {

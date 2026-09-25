@@ -1093,6 +1093,7 @@ export default function StaffEvaluatePage() {
         applicationId: app.id,
         recipientEmail: app.applicantEmail || "applicant@etayo.gov.ph",
         senderEmail: staffEmail,
+        actualSender: "Engr. Gilbert Cruz, Municipal Building Official",
         content: `[Ref: ${app.id} - ${app.projectName || (isBuildingPermit ? "Building Permit" : "Locational Clearance")}]
 🏛️ OFFICIAL NOTICE: APPLICATION APPROVED & ORDER OF PAYMENT ISSUED
 
@@ -1100,16 +1101,17 @@ Dear ${applicantLabel},
 
 Your application (${app.id}) has been formally APPROVED by the ${isBuildingPermit ? "Office of the Building Official (OBO)" : "Municipal Planning & Development Office (MPDO)"}.
 
+💰 Assessed Regulatory Fee: ${assessedFormatted}
 📄 Order of Payment Reference: ${orderOfPaymentNo}
-💰 Total Assessed Regulatory Amount: ${assessedFormatted}
 
 Payment Channels:
 1. Municipal Treasury Office (Ground Floor, Sto. Tomas Municipal Hall, Pampanga)
 2. Landbank Link.BizPortal / GCash (Sto. Tomas Municipal LGU Trust Fund)
 
-Next Step:
-Please settle the assessed regulatory fee and click "Confirm Payment Sent" on your Permit Tracking Dashboard.
-Once payment is verified by the municipal cashier, your official permit documents will be IMMEDIATELY RELEASED.`,
+Action Required:
+Please settle the assessed regulatory fee of ${assessedFormatted} and reply directly in this conversation with a photo or screenshot of your Official Receipt (OR) or payment confirmation.
+
+Once we inspect your receipt picture in this conversation, we will click "Confirmed Payment" to officially release your permits.`,
       });
     } catch (e) {
       console.warn("Could not dispatch approval message", e);
