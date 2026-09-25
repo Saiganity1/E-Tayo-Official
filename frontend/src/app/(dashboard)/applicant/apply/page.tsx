@@ -3194,25 +3194,6 @@ export default function ApplyPage() {
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
                 <button 
-                  type="button"
-                  onClick={() => setShowUnifiedForm(true)} 
-                  style={{
-                    background: "#ffffff",
-                    border: "1.5px solid #fde68a",
-                    color: "#b45309",
-                    padding: "9px 18px",
-                    borderRadius: "10px",
-                    fontWeight: "700",
-                    fontSize: "0.88rem",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px"
-                  }}
-                >
-                  <FileText size={16} /> Open Unified Form (Google Form Style)
-                </button>
-                <button 
                   className="btn-primary" 
                   onClick={handleSubmitApplication}
                   style={{

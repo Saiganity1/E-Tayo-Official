@@ -7,7 +7,7 @@ import {
   ArrowRight, Sparkles, Building, ChevronRight, Info, Eye, 
   Clock, ShieldCheck, ChevronLeft, Lock, Award, Hammer, Compass,
   Sliders, UserCheck, RefreshCw, FileCheck, Home, CheckSquare, Plus, ExternalLink, User,
-  BookmarkCheck, Save
+  Save
 } from "lucide-react";
 import { 
   ProjectTypeItem, 
@@ -877,11 +877,6 @@ export default function TechnicalPermitFormsStep({
     onProceedToMapping();
   };
 
-  // Answer Later handler
-  const handleAnswerLater = () => {
-    handleSaveDraft();
-    setNotification("✓ Progress Saved! Your answers and attached files have been safely saved. You can resume this application anytime from Existing Application.");
-  };
 
   // Auto-dismiss notification
   useEffect(() => {
@@ -8314,29 +8309,6 @@ export default function TechnicalPermitFormsStep({
         gap: "1rem"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-          <button
-            type="button"
-            onClick={handleAnswerLater}
-            style={{
-              padding: "11px 22px",
-              borderRadius: "10px",
-              border: "1.5px solid #cbd5e1",
-              background: "#ffffff",
-              color: "#334155",
-              fontWeight: "800",
-              fontSize: "0.9rem",
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
-              transition: "all 0.15s ease"
-            }}
-            title="Save your responses and uploaded files to complete later"
-          >
-            <BookmarkCheck size={18} color="#4f46e5" />
-            <span>Answer Later</span>
-          </button>
 
           {areAllMandatorySatisfied ? (
             <button
