@@ -6,13 +6,14 @@ import {
   Search, Paperclip, Sparkles, FileText, ChevronRight, Phone, Info, 
   AlertCircle, X, HelpCircle, Building2, Flame, MapPin, CheckCheck, 
   RefreshCw, BadgeCheck, Compass, ExternalLink, Plus, MessageSquarePlus,
-  Layers, Filter, ArrowLeft
+  Layers, Filter, ArrowLeft, CreditCard, Receipt, Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
 import { usePermitContext } from "../../../../context/PermitContext";
+import { dispatchPermitMessage } from "../../../../utils/permitMessaging";
 import { 
   MessageBubbleContent, 
   AttachmentPreviewModal, 
@@ -78,7 +79,7 @@ export default function ApplicantMessagesPage() {
   const searchParams = useSearchParams();
   const initialRef = searchParams.get("ref");
   
-  const { applications } = usePermitContext();
+  const { applications, updateApplication } = usePermitContext();
 
   const [messages, setMessages] = useState<any[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -90,16 +91,30 @@ export default function ApplicantMessagesPage() {
   const [isSending, setIsSending] = useState(false);
 
   // Categorized Conversation State
-  const [activeThreadId, setActiveThreadId] = useState<string>("general");
+  const [activeThreadId, setActiveThreadId] = useState<string>(initialRef || "general");
   const [searchQuery, setSearchQuery] = useState("");
-  const [userCreatedThreadIds, setUserCreatedThreadIds] = useState<string[]>([]);
+  const [userCreatedThreadIds, setUserCreatedThreadIds] = useState<string[]>(initialRef ? [initialRef] : []);
   const [showStartModal, setShowStartModal] = useState(false);
   const [modalSelectedAppId, setModalSelectedAppId] = useState<string>("");
   const [modalInitialMessage, setModalInitialMessage] = useState<string>("");
 
+  // Payment Receipt Upload in Chat State
+  const [receiptModalFile, setReceiptModalFile] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [receiptRefInput, setReceiptRefInput] = useState("");
+  const [isSubmittingReceipt, setIsSubmittingReceipt] = useState(false);
+
   const stompClient = useRef<Client | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const receiptFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Synchronize initialRef from deep links (e.g. /applicant/messages?ref=LC-2026-9307)
+  useEffect(() => {
+    if (initialRef) {
+      setActiveThreadId(initialRef);
+      setUserCreatedThreadIds(prev => prev.includes(initialRef) ? prev : [...prev, initialRef]);
+    }
+  }, [initialRef]);
 
   // Known application IDs for smart parsing
   const knownAppIds = useMemo(() => {
@@ -584,6 +599,66 @@ export default function ApplicantMessagesPage() {
       .catch(err => console.error("Upload error", err));
   };
 
+  const handleReceiptPhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setReceiptModalFile({ name: file.name, dataUrl });
+      try {
+        localStorage.setItem(`att_${file.name}`, dataUrl);
+      } catch (err) {}
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleSendReceiptMessage = async () => {
+    if (!receiptModalFile) return;
+    setIsSubmittingReceipt(true);
+    try {
+      const assessedAmt = ((activeApp as any)?.assessedFees || 3795).toLocaleString();
+      const opNo = (activeApp as any)?.orderOfPaymentNo || "OP-2026";
+      const orRef = receiptRefInput.trim() || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+
+      const receiptMsgContent = `[Ref: ${activeThreadId} - Payment Receipt] Official payment settled for ${activeThreadId} (Order of Payment Ref: ${opNo}, Amount: PHP ${assessedAmt}).\nOfficial Receipt / Reference: ${orRef}.\nAttached is the photo of my payment receipt for municipal verification.\n[Attachment: ${receiptModalFile.name}|${receiptModalFile.dataUrl}]`;
+
+      // 1. Dispatch message
+      await dispatchPermitMessage({
+        applicationId: activeThreadId,
+        recipientEmail: MANG_TOMAS.email,
+        senderEmail: currentUserEmail,
+        content: receiptMsgContent
+      });
+
+      // 2. Cache receipt in localStorage for fast lookup across pages
+      try {
+        localStorage.setItem(`etayo_receipt_${activeThreadId}`, receiptModalFile.dataUrl);
+        localStorage.setItem(`att_${receiptModalFile.name}`, receiptModalFile.dataUrl);
+      } catch (e) {}
+
+      // 3. Update application in context
+      if (updateApplication && activeApp) {
+        await updateApplication({
+          ...activeApp,
+          userConfirmedPayment: true,
+          paymentProofUrl: receiptModalFile.dataUrl,
+          paymentProofFileName: receiptModalFile.name,
+          paymentReference: orRef,
+          datePaymentSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+        } as any);
+      }
+
+      setReceiptModalFile(null);
+      setReceiptRefInput("");
+    } catch (err) {
+      console.error("Error sending receipt", err);
+    } finally {
+      setIsSubmittingReceipt(false);
+    }
+  };
+
   return (
     <div className="dashboard-page animate-fade-in-up" style={{ minHeight: "calc(100vh - 80px)", display: "flex", flexDirection: "column" }}>
       {/* PAGE HEADER */}
@@ -1062,6 +1137,115 @@ export default function ApplicantMessagesPage() {
             </div>
           </div>
 
+          {/* ORDER OF PAYMENT & SETTLEMENT ACTION BANNER */}
+          {activeApp && activeApp.status === "approved" && (
+            <div style={{
+              padding: "10px 1.5rem",
+              background: (activeApp as any).userConfirmedPayment
+                ? "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)"
+                : "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+              borderBottom: `1.5px solid ${(activeApp as any).userConfirmedPayment ? "#86efac" : "#fde68a"}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "10px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{
+                  width: "38px",
+                  height: "38px",
+                  borderRadius: "10px",
+                  background: (activeApp as any).userConfirmedPayment ? "#dcfce7" : "#fef3c7",
+                  color: (activeApp as any).userConfirmedPayment ? "#16a34a" : "#d97706",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0
+                }}>
+                  <CreditCard size={18} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.86rem", fontWeight: "800", color: (activeApp as any).userConfirmedPayment ? "#166534" : "#92400e" }}>
+                    Order of Payment: PHP {((activeApp as any).assessedFees || 3795).toLocaleString()} · {(activeApp as any).orderOfPaymentNo || "OP-2026"}
+                  </div>
+                  <div style={{ fontSize: "0.76rem", color: (activeApp as any).userConfirmedPayment ? "#15803d" : "#78350f" }}>
+                    {(activeApp as any).userConfirmedPayment
+                      ? "✓ Receipt photo submitted in this conversation. Awaiting municipal admin verification to release permit."
+                      : "Application Approved! Settle regulatory fees and send a photo of your receipt in this chat."}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => receiptFileInputRef.current?.click()}
+                  style={{
+                    background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                    color: "white",
+                    border: "none",
+                    padding: "7px 15px",
+                    borderRadius: "9px",
+                    fontSize: "0.82rem",
+                    fontWeight: "800",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)"
+                  }}
+                >
+                  <ImageIcon size={15} />
+                  <span>{(activeApp as any).userConfirmedPayment ? "Send New Receipt Photo" : "📷 Upload Receipt Photo"}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeApp && activeApp.status === "released" && (
+            <div style={{
+              padding: "10px 1.5rem",
+              background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
+              borderBottom: "1.5px solid #86efac",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "10px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <CheckCircle2 size={20} color="#16a34a" />
+                <div>
+                  <div style={{ fontSize: "0.86rem", fontWeight: "800", color: "#166534" }}>
+                    🎉 Permit Officially Released — Permitting Complete!
+                  </div>
+                  <div style={{ fontSize: "0.76rem", color: "#15803d" }}>
+                    Official Receipt: <strong>{(activeApp as any).officialReceiptNo || "Verified"}</strong>. Step 4 (Permit Release) is complete!
+                  </div>
+                </div>
+              </div>
+              <Link
+                href={`/applicant/track/${encodeURIComponent(activeApp.id)}`}
+                style={{
+                  background: "#16a34a",
+                  color: "white",
+                  padding: "5px 12px",
+                  borderRadius: "8px",
+                  fontSize: "0.78rem",
+                  fontWeight: "700",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px"
+                }}
+              >
+                <span>View Downloads</span>
+                <ExternalLink size={12} />
+              </Link>
+            </div>
+          )}
+
           {/* QUICK INQUIRY CHIPS CAROUSEL */}
           <div style={{
             padding: "8px 1.5rem",
@@ -1394,6 +1578,35 @@ export default function ApplicantMessagesPage() {
                 <Paperclip size={18} />
               </button>
 
+              {/* Dedicated Receipt Photo Button */}
+              {activeApp && activeApp.status === "approved" && (
+                <button
+                  type="button"
+                  onClick={() => receiptFileInputRef.current?.click()}
+                  title="Upload & Send Payment Receipt Photo in Conversation"
+                  style={{
+                    background: "#ecfdf5",
+                    border: "1.5px solid #86efac",
+                    color: "#166534",
+                    padding: "0 12px",
+                    height: "42px",
+                    borderRadius: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "0.82rem",
+                    fontWeight: "800",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    flexShrink: 0,
+                    boxShadow: "0 2px 6px rgba(16, 185, 129, 0.15)"
+                  }}
+                >
+                  <Receipt size={16} color="#16a34a" />
+                  <span>Send Receipt Photo</span>
+                </button>
+              )}
+
               {/* Main Input Text */}
               <input
                 type="text"
@@ -1722,6 +1935,137 @@ export default function ApplicantMessagesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* RECEIPT CONFIRMATION MODAL */}
+      {receiptModalFile && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(15, 23, 42, 0.65)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 99999,
+          padding: "1rem"
+        }}>
+          <div style={{
+            background: "white",
+            borderRadius: "20px",
+            width: "100%",
+            maxWidth: "500px",
+            padding: "1.75rem",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            border: "1px solid #e2e8f0"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Receipt size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: "800", color: "#0f172a" }}>
+                    Send Payment Receipt Photo
+                  </h3>
+                  <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                    Attach proof of payment to this conversation for admin review
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReceiptModalFile(null)}
+                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Photo Preview Container */}
+            <div style={{
+              background: "#0f172a",
+              borderRadius: "14px",
+              overflow: "hidden",
+              marginBottom: "1.25rem",
+              border: "1.5px solid #cbd5e1",
+              maxHeight: "260px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}>
+              <img
+                src={receiptModalFile.dataUrl}
+                alt="Selected Receipt"
+                style={{ width: "100%", maxHeight: "260px", objectFit: "contain", display: "block" }}
+              />
+            </div>
+
+            {/* Reference Input */}
+            <div style={{ marginBottom: "1.25rem" }}>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                Official Receipt (OR) / GCash Reference No:
+              </label>
+              <input
+                type="text"
+                value={receiptRefInput}
+                onChange={(e) => setReceiptRefInput(e.target.value)}
+                placeholder="e.g. OR-2026-94812 or GCash 001928374"
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  borderRadius: "10px",
+                  border: "1.5px solid #cbd5e1",
+                  fontSize: "0.9rem",
+                  color: "#0f172a",
+                  fontWeight: "700"
+                }}
+              />
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setReceiptModalFile(null)}
+                style={{
+                  background: "#f1f5f9",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "10px",
+                  padding: "8px 16px",
+                  fontSize: "0.88rem",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  color: "#475569"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSendReceiptMessage}
+                disabled={isSubmittingReceipt}
+                style={{
+                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "8px 20px",
+                  fontSize: "0.9rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)"
+                }}
+              >
+                <Send size={16} />
+                <span>{isSubmittingReceipt ? "Sending Receipt..." : "Send Receipt Photo"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

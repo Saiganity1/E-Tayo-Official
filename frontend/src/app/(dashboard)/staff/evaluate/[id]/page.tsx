@@ -1989,6 +1989,52 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
                           Assessed Amount: <strong>PHP {((app as any).assessedFees || totalFees).toLocaleString()}</strong>
                           <br />
                           <span style={{ color: "#166534", fontWeight: "700" }}>✓ Ready for cashier sign-off and permit paper release.</span>
+                          {/* Receipt Photo Preview if available */}
+                          {(() => {
+                            const rPhoto = (app as any).paymentProofUrl || (typeof window !== "undefined" ? localStorage.getItem("etayo_receipt_" + app.id) : null);
+                            if (!rPhoto) return null;
+                            return (
+                              <div style={{ marginTop: "8px" }}>
+                                <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#166534", display: "block", marginBottom: "4px" }}>
+                                  Applicant Submitted Receipt Photo:
+                                </span>
+                                <div
+                                  onClick={() => window.open(rPhoto, "_blank")}
+                                  style={{
+                                    borderRadius: "10px",
+                                    overflow: "hidden",
+                                    border: "1.5px solid #86efac",
+                                    background: "#0f172a",
+                                    maxHeight: "150px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    position: "relative"
+                                  }}
+                                  title="Click to view full receipt photo"
+                                >
+                                  <img src={rPhoto} alt="Receipt Proof" style={{ width: "100%", maxHeight: "150px", objectFit: "contain", display: "block" }} />
+                                  <div style={{
+                                    position: "absolute",
+                                    bottom: "4px",
+                                    right: "4px",
+                                    background: "rgba(0,0,0,0.75)",
+                                    color: "white",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px",
+                                    fontSize: "0.68rem",
+                                    fontWeight: "700",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "3px"
+                                  }}>
+                                    <Eye size={10} /> View Photo
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </>
                       ) : (
                         <>
@@ -2026,8 +2072,8 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
                         transition: "all 0.2s ease"
                       }}
                     >
-                      <CreditCard size={18} />
-                      <span>Payment Complete & Release Permit</span>
+                      <CheckCircle2 size={18} />
+                      <span>Confirmed Payment &amp; Release Permit</span>
                     </button>
                   ) : app.status === "released" ? (
                     <div style={{
@@ -2556,6 +2602,53 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
                 </span>
               </div>
             </div>
+
+            {/* Receipt Photo Preview if available */}
+            {(() => {
+              const rImg = (app as any).paymentProofUrl || (typeof window !== "undefined" ? localStorage.getItem("etayo_receipt_" + app.id) : null);
+              if (!rImg) return null;
+              return (
+                <div style={{ marginBottom: "1.25rem" }}>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                    Applicant Submitted Receipt Photo:
+                  </label>
+                  <div
+                    onClick={() => window.open(rImg, "_blank")}
+                    style={{
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                      border: "1.5px solid #cbd5e1",
+                      background: "#0f172a",
+                      maxHeight: "200px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      position: "relative"
+                    }}
+                    title="Click to view full receipt"
+                  >
+                    <img src={rImg} alt="Receipt Preview" style={{ width: "100%", maxHeight: "200px", objectFit: "contain", display: "block" }} />
+                    <div style={{
+                      position: "absolute",
+                      bottom: "6px",
+                      right: "6px",
+                      background: "rgba(0,0,0,0.75)",
+                      color: "white",
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      fontSize: "0.72rem",
+                      fontWeight: "700",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}>
+                      <Eye size={12} /> Click to View Full Image
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Form Fields */}
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>

@@ -35,7 +35,9 @@ export function parseMessageAttachments(rawContent: string): ParsedMessage {
     // If no URL in string, check if cached in localStorage
     if (!fileUrl && typeof window !== "undefined") {
       try {
-        const cached = localStorage.getItem(`att_${fileName}`) || localStorage.getItem(`chat_att_${fileName}`);
+        const cached = localStorage.getItem(`att_${fileName}`) || 
+                       localStorage.getItem(`chat_att_${fileName}`) ||
+                       localStorage.getItem(`etayo_receipt_${fileName}`);
         if (cached) {
           fileUrl = cached;
         }
@@ -43,7 +45,7 @@ export function parseMessageAttachments(rawContent: string): ParsedMessage {
     }
 
     const ext = fileName.split('.').pop()?.toLowerCase() || "";
-    const isImage = ["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext);
+    const isImage = ["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext) || fileUrl.startsWith("data:image/");
     const isPdf = ext === "pdf";
     const isDoc = ["doc", "docx", "txt"].includes(ext);
 
@@ -105,23 +107,79 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
 
       {attachments.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: cleanText ? "8px" : "0" }}>
-          {attachments.map((att, idx) => (
-            <div
-              key={idx}
-              className="chat-attachment-card"
-              style={{
-                background: isMe ? "rgba(255, 255, 255, 0.18)" : "#f8fafc",
-                border: isMe ? "1px solid rgba(255, 255, 255, 0.35)" : "1.5px solid #e2e8f0",
-                borderRadius: "14px",
-                padding: "10px 12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "12px",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-                maxWidth: "100%"
-              }}
-            >
+          {attachments.map((att, idx) => {
+            const hasImageUrl = att.isImage && Boolean(att.fileUrl);
+            return (
+              <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {hasImageUrl && (
+                  <div
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (onOpenAttachment) onOpenAttachment(att);
+                      else if (att.fileUrl) window.open(att.fileUrl, "_blank");
+                    }}
+                    style={{
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      border: isMe ? "1.5px solid rgba(255, 255, 255, 0.45)" : "1.5px solid #cbd5e1",
+                      background: "#0f172a",
+                      maxHeight: "240px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "relative",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.12)"
+                    }}
+                    title="Click to view full image / receipt"
+                  >
+                    <img
+                      src={att.fileUrl}
+                      alt={att.fileName}
+                      style={{
+                        width: "100%",
+                        maxHeight: "240px",
+                        objectFit: "contain",
+                        display: "block"
+                      }}
+                    />
+                    <div style={{
+                      position: "absolute",
+                      bottom: "6px",
+                      right: "6px",
+                      background: "rgba(15, 23, 42, 0.75)",
+                      backdropFilter: "blur(4px)",
+                      color: "white",
+                      padding: "3px 8px",
+                      borderRadius: "6px",
+                      fontSize: "0.72rem",
+                      fontWeight: "700",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      pointerEvents: "none"
+                    }}>
+                      <Eye size={12} /> View Full Receipt Photo
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  className="chat-attachment-card"
+                  style={{
+                    background: isMe ? "rgba(255, 255, 255, 0.18)" : "#f8fafc",
+                    border: isMe ? "1px solid rgba(255, 255, 255, 0.35)" : "1.5px solid #e2e8f0",
+                    borderRadius: "14px",
+                    padding: "10px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+                    maxWidth: "100%"
+                  }}
+                >
               <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                 <div style={{
                   width: "38px",
@@ -202,7 +260,9 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
                 <span>Open</span>
               </button>
             </div>
-          ))}
+          </div>
+        );
+      })}
         </div>
       )}
     </div>

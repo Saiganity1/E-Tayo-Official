@@ -28,7 +28,9 @@ import {
   CreditCard,
   Receipt,
   Banknote,
-  X
+  X,
+  Send,
+  Camera
 } from "lucide-react";
 import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
 import Link from "next/link";
@@ -69,6 +71,7 @@ export default function ApplicationTrackDetail() {
   const [paymentRefInput, setPaymentRefInput] = useState("");
   const [paymentMethodInput, setPaymentMethodInput] = useState("Municipal Treasury Cashier (On-site)");
   const [paymentNotesInput, setPaymentNotesInput] = useState("");
+  const [paymentReceiptFile, setPaymentReceiptFile] = useState<{ name: string; dataUrl: string } | null>(null);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "info" } | null>(null);
 
@@ -76,7 +79,15 @@ export default function ApplicationTrackDetail() {
     if (!appData) return;
     setIsSubmittingPayment(true);
     const refNo = paymentRefInput.trim() || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
-    const assessedAmountStr = `PHP ${(appData.assessedFees || 3795).toLocaleString()}`;
+    const assessedAmountStr = `PHP ${((appData as any).assessedFees || 3795).toLocaleString()}`;
+
+    // Cache receipt photo locally for instant preview across tabs and admin evaluation
+    if (paymentReceiptFile) {
+      try {
+        localStorage.setItem(`etayo_receipt_${appData.id}`, paymentReceiptFile.dataUrl);
+        localStorage.setItem(`att_${paymentReceiptFile.name}`, paymentReceiptFile.dataUrl);
+      } catch (e) {}
+    }
 
     const updatedApp = {
       ...appData,
@@ -84,6 +95,8 @@ export default function ApplicationTrackDetail() {
       paymentStatus: "awaiting_verification" as const,
       paymentReference: refNo,
       paymentMethod: paymentMethodInput,
+      paymentProofUrl: paymentReceiptFile?.dataUrl || (appData as any).paymentProofUrl,
+      paymentProofFileName: paymentReceiptFile?.name || (appData as any).paymentProofFileName,
       paymentDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
       paymentNotes: paymentNotesInput,
       historyLog: [
@@ -92,7 +105,7 @@ export default function ApplicationTrackDetail() {
           date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
           action: "Payment Confirmation Submitted",
           actor: appData.applicantName || "Applicant",
-          details: `Payment submitted under reference ${refNo} via ${paymentMethodInput}. Assessed: ${assessedAmountStr}. Awaiting municipal cashier sign-off.`
+          details: `Payment submitted under reference ${refNo} via ${paymentMethodInput}. Assessed: ${assessedAmountStr}.${paymentReceiptFile ? " Receipt photo attached." : ""} Awaiting municipal cashier sign-off.`
         }
       ]
     };
@@ -100,22 +113,23 @@ export default function ApplicationTrackDetail() {
     setAppData(updatedApp);
     await updateApplication(updatedApp as any);
 
-    // Notify staff desk
+    // Notify staff desk directly in the chat conversation thread
     try {
+      const attachmentClause = paymentReceiptFile ? `\n[Attachment: ${paymentReceiptFile.name}|${paymentReceiptFile.dataUrl}]` : "";
       await dispatchPermitMessage({
         applicationId: appData.id,
         recipientEmail: "staff@etayo.gov.ph",
         senderEmail: appData.applicantEmail || "applicant@etayo.gov.ph",
         content: `[Ref: ${appData.id} - ${appData.projectName || "Permit Application"}]
-💳 PAYMENT CONFIRMATION SUBMITTED BY APPLICANT
+💳 PAYMENT CONFIRMATION & RECEIPT SUBMITTED BY APPLICANT
 
 The applicant has submitted payment confirmation for Order of Payment ${appData.orderOfPaymentNo || 'OP-2026'}.
 Amount: ${assessedAmountStr}
 Official Receipt / Reference: ${refNo}
 Payment Channel: ${paymentMethodInput}
-${paymentNotesInput ? `Applicant Remarks: ${paymentNotesInput}` : ""}
+${paymentNotesInput ? `Applicant Remarks: ${paymentNotesInput}\n` : ""}${attachmentClause}
 
-Action Required: Please inspect and click "Payment Complete & Release Permit" on the Evaluation Page to officially release the permit papers.`,
+Action Required: Please inspect the receipt photo and click "Confirmed Payment" on the Evaluation Page or in Messages to officially release the permit papers.`,
       });
     } catch (e) {
       console.warn("Could not dispatch payment confirmation message", e);
@@ -123,7 +137,8 @@ Action Required: Please inspect and click "Payment Complete & Release Permit" on
 
     setIsSubmittingPayment(false);
     setShowPaymentModal(false);
-    setToastMsg({ text: "Payment confirmation submitted! Municipal cashier notified.", type: "success" });
+    setPaymentReceiptFile(null);
+    setToastMsg({ text: "Payment confirmation & receipt submitted! Municipal cashier notified.", type: "success" });
     setTimeout(() => setToastMsg(null), 3800);
   };
 
@@ -975,30 +990,55 @@ Action Required: Please inspect and click "Payment Complete & Release Permit" on
                 </div>
 
                 {!(appData as any).userConfirmedPayment ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentRefInput(`OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
-                      setShowPaymentModal(true);
-                    }}
-                    style={{
-                      background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                      color: "white",
-                      border: "none",
-                      padding: "10px 20px",
-                      borderRadius: "10px",
-                      fontWeight: "800",
-                      fontSize: "0.9rem",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
-                    }}
-                  >
-                    <CreditCard size={16} />
-                    <span>Confirm Payment Sent</span>
-                  </button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <Link
+                      href={`/applicant/messages?ref=${appData.id}`}
+                      style={{
+                        background: "#ffffff",
+                        color: "#059669",
+                        border: "1.5px solid #10b981",
+                        padding: "9px 16px",
+                        borderRadius: "10px",
+                        fontWeight: "800",
+                        fontSize: "0.88rem",
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      <Send size={15} />
+                      <span>Send Receipt on Messages</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentRefInput(`OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
+                        setPaymentReceiptFile(null);
+                        setShowPaymentModal(true);
+                      }}
+                      style={{
+                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                        color: "white",
+                        border: "none",
+                        padding: "10px 20px",
+                        borderRadius: "10px",
+                        fontWeight: "800",
+                        fontSize: "0.9rem",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
+                      }}
+                    >
+                      <CreditCard size={16} />
+                      <span>Confirm Payment Sent</span>
+                    </button>
+                  </div>
                 ) : (
                   <div style={{
                     background: "#dcfce7",
@@ -1500,7 +1540,10 @@ Action Required: Please inspect and click "Payment Complete & Release Permit" on
               </div>
               <button
                 type="button"
-                onClick={() => setShowPaymentModal(false)}
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setPaymentReceiptFile(null);
+                }}
                 style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
               >
                 <X size={20} />
@@ -1573,6 +1616,92 @@ Action Required: Please inspect and click "Payment Complete & Release Permit" on
               </div>
 
               <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                  Upload Receipt Photo / Proof of Settlement: <span style={{ color: "#059669" }}>(Sent to Chat &amp; Admin)</span>
+                </label>
+                {paymentReceiptFile ? (
+                  <div style={{
+                    position: "relative",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    border: "1.5px solid #86efac",
+                    background: "#f0fdf4",
+                    padding: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px"
+                  }}>
+                    <img
+                      src={paymentReceiptFile.dataUrl}
+                      alt="Receipt preview"
+                      style={{ width: "72px", height: "72px", objectFit: "cover", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "0.86rem", fontWeight: "800", color: "#166534", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {paymentReceiptFile.name}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "#15803d", marginTop: "2px" }}>
+                        ✓ Photo attached. Will be sent directly into the message conversation for the admin to inspect and confirm.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentReceiptFile(null)}
+                      style={{
+                        background: "#fee2e2",
+                        border: "1px solid #fca5a5",
+                        color: "#b91c1c",
+                        borderRadius: "8px",
+                        padding: "6px 12px",
+                        fontSize: "0.76rem",
+                        fontWeight: "700",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <label style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    padding: "1rem",
+                    borderRadius: "12px",
+                    border: "2px dashed #94a3b8",
+                    background: "#f8fafc",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#059669", fontWeight: "800", fontSize: "0.88rem" }}>
+                      <Camera size={18} />
+                      <span>Take Photo or Upload Official Receipt / Screenshot</span>
+                    </div>
+                    <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                      JPG, PNG receipt picture from Municipal Treasury, GCash, or Landbank
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setPaymentReceiptFile({ name: file.name, dataUrl: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = "";
+                      }}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div>
                 <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "5px" }}>
                   Notes / Payment Remarks (Optional):
                 </label>
@@ -1597,7 +1726,10 @@ Action Required: Please inspect and click "Payment Complete & Release Permit" on
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
                 type="button"
-                onClick={() => setShowPaymentModal(false)}
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setPaymentReceiptFile(null);
+                }}
                 style={{
                   background: "#f1f5f9",
                   border: "1px solid #cbd5e1",
