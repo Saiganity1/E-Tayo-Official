@@ -247,9 +247,11 @@ export default function Sidebar() {
               </Link>
             );
           })}
-          
+        </nav>
+
+        <div className="sidebar-bottom">
           {userRole !== "public" && (
-            <>
+            <div className="sidebar-signout-container">
               <div className="nav-divider"></div>
               
               <Link 
@@ -269,13 +271,13 @@ export default function Sidebar() {
                   <span>Sign Out</span>
                 </div>
               </Link>
-            </>
+            </div>
           )}
-        </nav>
 
-        <div className="sidebar-footer">
-          <p>Sto. Tomas, Pampanga</p>
-          <small>© 2026 eTAYO System</small>
+          <div className="sidebar-footer">
+            <p>Sto. Tomas, Pampanga</p>
+            <small>© 2026 eTAYO System</small>
+          </div>
         </div>
 
       </aside>
