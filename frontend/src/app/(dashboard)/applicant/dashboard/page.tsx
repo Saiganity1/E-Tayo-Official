@@ -405,51 +405,103 @@ export default function ApplicantDashboard() {
       {/* KPI Stats Cards */}
       <section className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem" }}>
         {/* Card 1: Project Dossiers */}
-        <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", borderRadius: "18px", padding: "1.25rem 1.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+        <div style={{ 
+          background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", 
+          backdropFilter: "blur(20px)", 
+          border: "1px solid rgba(255,255,255,0.9)", 
+          boxShadow: "0 10px 30px rgba(0,0,0,0.06)", 
+          borderRadius: "18px", 
+          padding: "1.25rem 1.5rem",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          minHeight: "135px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", width: "100%", gap: "0.5rem" }}>
             <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Project Dossiers</span>
-            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Building2 size={19} />
             </div>
           </div>
-          <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a" }}>{stats.dossiersCount}</div>
-          <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Active project sites</span>
+          <div>
+            <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1.1 }}>{stats.dossiersCount}</div>
+            <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px" }}>Active project sites</div>
+          </div>
         </div>
 
         {/* Card 2: Total Application Forms */}
-        <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", borderRadius: "18px", padding: "1.25rem 1.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+        <div style={{ 
+          background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", 
+          backdropFilter: "blur(20px)", 
+          border: "1px solid rgba(255,255,255,0.9)", 
+          boxShadow: "0 10px 30px rgba(0,0,0,0.06)", 
+          borderRadius: "18px", 
+          padding: "1.25rem 1.5rem",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          minHeight: "135px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", width: "100%", gap: "0.5rem" }}>
             <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total Forms</span>
-            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#f8fafc", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#f8fafc", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <FileText size={19} />
             </div>
           </div>
-          <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a" }}>{stats.total}</div>
-          <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Clearance & permit forms</span>
+          <div>
+            <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1.1 }}>{stats.total}</div>
+            <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px" }}>Clearance & permit forms</div>
+          </div>
         </div>
 
         {/* Card 3: Pending Review */}
-        <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", borderRadius: "18px", padding: "1.25rem 1.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+        <div style={{ 
+          background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", 
+          backdropFilter: "blur(20px)", 
+          border: "1px solid rgba(255,255,255,0.9)", 
+          boxShadow: "0 10px 30px rgba(0,0,0,0.06)", 
+          borderRadius: "18px", 
+          padding: "1.25rem 1.5rem",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          minHeight: "135px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", width: "100%", gap: "0.5rem" }}>
             <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#d97706", textTransform: "uppercase", letterSpacing: "0.5px" }}>Under Review</span>
-            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#fffbeb", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#fffbeb", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Clock size={19} />
             </div>
           </div>
-          <div style={{ fontSize: "2rem", fontWeight: "900", color: "#d97706" }}>{stats.pending}</div>
-          <span style={{ fontSize: "0.8rem", color: "#d97706", fontWeight: "600" }}>Awaiting municipal evaluation</span>
+          <div>
+            <div style={{ fontSize: "2rem", fontWeight: "900", color: "#d97706", lineHeight: 1.1 }}>{stats.pending}</div>
+            <div style={{ fontSize: "0.8rem", color: "#d97706", fontWeight: "600", marginTop: "4px" }}>Awaiting municipal evaluation</div>
+          </div>
         </div>
 
         {/* Card 4: Approved & Released */}
-        <div className="stat-card" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", borderRadius: "18px", padding: "1.25rem 1.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+        <div style={{ 
+          background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", 
+          backdropFilter: "blur(20px)", 
+          border: "1px solid rgba(255,255,255,0.9)", 
+          boxShadow: "0 10px 30px rgba(0,0,0,0.06)", 
+          borderRadius: "18px", 
+          padding: "1.25rem 1.5rem",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          minHeight: "135px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", width: "100%", gap: "0.5rem" }}>
             <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#059669", textTransform: "uppercase", letterSpacing: "0.5px" }}>Approved & Released</span>
-            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#f0fdf4", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#f0fdf4", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <CheckCircle2 size={19} />
             </div>
           </div>
-          <div style={{ fontSize: "2rem", fontWeight: "900", color: "#059669" }}>{stats.approved}</div>
-          <span style={{ fontSize: "0.8rem", color: "#059669", fontWeight: "600" }}>Clearances & permits granted</span>
+          <div>
+            <div style={{ fontSize: "2rem", fontWeight: "900", color: "#059669", lineHeight: 1.1 }}>{stats.approved}</div>
+            <div style={{ fontSize: "0.8rem", color: "#059669", fontWeight: "600", marginTop: "4px" }}>Clearances & permits granted</div>
+          </div>
         </div>
       </section>
 
