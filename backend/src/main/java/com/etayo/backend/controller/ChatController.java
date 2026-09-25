@@ -71,6 +71,12 @@ public class ChatController {
         emailService.sendEmail(chatMessage.getRecipientEmail(), "e-Tayo: New Message Received", htmlBody);
     }
 
+    @PostMapping("/api/messages/send")
+    public ResponseEntity<ChatMessage> postMessage(@RequestBody ChatMessage chatMessage) {
+        sendMessage(chatMessage);
+        return ResponseEntity.ok(chatMessage);
+    }
+
     @GetMapping("/api/messages/history")
     public ResponseEntity<List<ChatMessage>> getChatHistory(
             @RequestParam String user1, 

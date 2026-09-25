@@ -70,7 +70,7 @@ public class SecurityConfig {
                         // 3. Public Read-Only Lookups (Tracking & Fee Structure & In-System Document Files)
                         .requestMatchers(HttpMethod.GET, "/api/permits/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/fees/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/messages/**").permitAll()
+                        .requestMatchers("/api/messages/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
 
                         // 4. Authenticated Permit Application Submissions & File Uploads

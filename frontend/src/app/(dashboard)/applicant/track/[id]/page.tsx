@@ -24,8 +24,13 @@ import {
   MapPin, 
   Sparkles,
   RefreshCw,
-  Home
+  Home,
+  CreditCard,
+  Receipt,
+  Banknote,
+  X
 } from "lucide-react";
+import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
 import Link from "next/link";
 import { 
   generateUnifiedPermitPdf, 
@@ -45,7 +50,7 @@ import { INITIAL_APPLICATIONS } from "../../../../../data/mock";
 export default function ApplicationTrackDetail() {
   const params = useParams();
   const router = useRouter();
-  const { applications, cancelApplication } = usePermitContext();
+  const { applications, updateApplication, cancelApplication } = usePermitContext();
 
   const rawId = params?.id;
   const appId = useMemo(() => {
@@ -58,6 +63,69 @@ export default function ApplicationTrackDetail() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("Change of project plans");
   const [isCancelling, setIsCancelling] = useState(false);
+
+  // Payment Confirmation Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentRefInput, setPaymentRefInput] = useState("");
+  const [paymentMethodInput, setPaymentMethodInput] = useState("Municipal Treasury Cashier (On-site)");
+  const [paymentNotesInput, setPaymentNotesInput] = useState("");
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "info" } | null>(null);
+
+  const handleSubmitPaymentConfirm = async () => {
+    if (!appData) return;
+    setIsSubmittingPayment(true);
+    const refNo = paymentRefInput.trim() || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+    const assessedAmountStr = `PHP ${(appData.assessedFees || 3795).toLocaleString()}`;
+
+    const updatedApp = {
+      ...appData,
+      userConfirmedPayment: true,
+      paymentStatus: "awaiting_verification" as const,
+      paymentReference: refNo,
+      paymentMethod: paymentMethodInput,
+      paymentDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+      paymentNotes: paymentNotesInput,
+      historyLog: [
+        ...(appData.historyLog || []),
+        {
+          date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+          action: "Payment Confirmation Submitted",
+          actor: appData.applicantName || "Applicant",
+          details: `Payment submitted under reference ${refNo} via ${paymentMethodInput}. Assessed: ${assessedAmountStr}. Awaiting municipal cashier sign-off.`
+        }
+      ]
+    };
+
+    setAppData(updatedApp);
+    await updateApplication(updatedApp as any);
+
+    // Notify staff desk
+    try {
+      await dispatchPermitMessage({
+        applicationId: appData.id,
+        recipientEmail: "staff@etayo.gov.ph",
+        senderEmail: appData.applicantEmail || "applicant@etayo.gov.ph",
+        content: `[Ref: ${appData.id} - ${appData.projectName || "Permit Application"}]
+💳 PAYMENT CONFIRMATION SUBMITTED BY APPLICANT
+
+The applicant has submitted payment confirmation for Order of Payment ${appData.orderOfPaymentNo || 'OP-2026'}.
+Amount: ${assessedAmountStr}
+Official Receipt / Reference: ${refNo}
+Payment Channel: ${paymentMethodInput}
+${paymentNotesInput ? `Applicant Remarks: ${paymentNotesInput}` : ""}
+
+Action Required: Please inspect and click "Payment Complete & Release Permit" on the Evaluation Page to officially release the permit papers.`,
+      });
+    } catch (e) {
+      console.warn("Could not dispatch payment confirmation message", e);
+    }
+
+    setIsSubmittingPayment(false);
+    setShowPaymentModal(false);
+    setToastMsg({ text: "Payment confirmation submitted! Municipal cashier notified.", type: "success" });
+    setTimeout(() => setToastMsg(null), 3800);
+  };
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
     ? `${process.env.NEXT_PUBLIC_API_URL}/api` 
@@ -593,13 +661,9 @@ export default function ApplicationTrackDetail() {
       applicantGovIdDateIssued: (appData as any)?.applicantGovIdDateIssued || (appData as any)?.govIdDateIssued,
       applicantGovIdPlaceIssued: (appData as any)?.applicantGovIdPlaceIssued || (appData as any)?.govIdPlaceIssued,
       applicantCtcNo: (appData as any)?.applicantCtcNo || (appData as any)?.govIdNo,
-      lotOwnerSignedDate: (appData as any)?.lotOwnerSignedDate,
       fencingPermitNo: (appData as any)?.fencingPermitNo,
       fencingScopeOfWork: (appData as any)?.fencingScopeOfWork,
       fencingScopeDetails: (appData as any)?.fencingScopeDetails,
-      fenceLength: (appData as any)?.fenceLength,
-      fenceHeight: (appData as any)?.fenceHeight,
-      fenceType: (appData as any)?.fenceType,
       fencingLength: (appData as any)?.fencingLength || (appData as any)?.fenceLength,
       fencingHeight: (appData as any)?.fencingHeight || (appData as any)?.fenceHeight,
       fencingType: (appData as any)?.fencingType || (appData as any)?.fenceType,
@@ -607,7 +671,6 @@ export default function ApplicationTrackDetail() {
       fencingTypeOthers: (appData as any)?.fencingTypeOthers,
       fencingTypeOthersLine2: (appData as any)?.fencingTypeOthersLine2,
       fencingTypeOthersLine3: (appData as any)?.fencingTypeOthersLine3,
-      fenceCost: (appData as any)?.fenceCost,
       fencingCost: (appData as any)?.fencingCost || (appData as any)?.fenceCost,
       fencingDesignerRole: (appData as any)?.fencingDesignerRole,
       fencingSupervisorRole: (appData as any)?.fencingSupervisorRole,
@@ -828,6 +891,183 @@ export default function ApplicationTrackDetail() {
         {/* Left Column: Timeline & Project Summary */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
           
+          {/* Toast Notification */}
+          {toastMsg && (
+            <div style={{
+              background: toastMsg.type === "success" ? "#ecfdf5" : "#eff6ff",
+              border: `1.5px solid ${toastMsg.type === "success" ? "#86efac" : "#bfdbfe"}`,
+              color: toastMsg.type === "success" ? "#166534" : "#1e40af",
+              borderRadius: "12px",
+              padding: "0.85rem 1.25rem",
+              fontWeight: "700",
+              fontSize: "0.88rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+            }}>
+              <CheckCircle2 size={18} />
+              <span>{toastMsg.text}</span>
+            </div>
+          )}
+
+          {/* ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
+          {appData?.status === "approved" && (
+            <div style={{
+              background: (appData as any).userConfirmedPayment
+                ? "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)"
+                : "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+              border: `1.5px solid ${(appData as any).userConfirmedPayment ? "#86efac" : "#fde68a"}`,
+              borderRadius: "20px",
+              padding: "1.4rem",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flex: 1, minWidth: "260px" }}>
+                  <div style={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "12px",
+                    background: (appData as any).userConfirmedPayment ? "#dcfce7" : "#fef3c7",
+                    color: (appData as any).userConfirmedPayment ? "#16a34a" : "#d97706",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: `1px solid ${(appData as any).userConfirmedPayment ? "#bbf7d0" : "#fcd34d"}`
+                  }}>
+                    {(appData as any).userConfirmedPayment ? (
+                      <CheckCircle2 size={24} strokeWidth={2.5} />
+                    ) : (
+                      <CreditCard size={24} strokeWidth={2.5} />
+                    )}
+                  </div>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "800", color: (appData as any).userConfirmedPayment ? "#166534" : "#92400e" }}>
+                        {(appData as any).userConfirmedPayment
+                          ? "Payment Confirmation Submitted (Awaiting Cashier Sign-off)"
+                          : "Approved · Order of Payment Issued"}
+                      </h4>
+                      <span style={{
+                        fontSize: "0.72rem",
+                        fontWeight: "800",
+                        padding: "2px 8px",
+                        borderRadius: "6px",
+                        background: (appData as any).userConfirmedPayment ? "#dcfce7" : "#fee2e2",
+                        color: (appData as any).userConfirmedPayment ? "#15803d" : "#b91c1c",
+                        border: `1px solid ${(appData as any).userConfirmedPayment ? "#86efac" : "#fca5a5"}`
+                      }}>
+                        {(appData as any).userConfirmedPayment ? "Under Review" : "Payment Required"}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "0.85rem", color: (appData as any).userConfirmedPayment ? "#15803d" : "#78350f", marginTop: "4px", lineHeight: "1.45" }}>
+                      {(appData as any).userConfirmedPayment ? (
+                        <>
+                          You submitted payment confirmation with Reference: <strong>{(appData as any).paymentReference}</strong> ({(appData as any).paymentMethod || "Treasury / Online"}). The Municipal Building Official cashier will verify and officially release your permits.
+                        </>
+                      ) : (
+                        <>
+                          Your application has passed evaluation! Please settle the assessed regulatory fee of <strong style={{ color: "#b45309", fontSize: "1rem" }}>PHP {((appData as any).assessedFees || 3795).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || "OP-2026"}</strong>) at the Municipal Treasury or online to unlock your official signed permits.
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {!(appData as any).userConfirmedPayment ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentRefInput(`OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
+                      setShowPaymentModal(true);
+                    }}
+                    style={{
+                      background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                      color: "white",
+                      border: "none",
+                      padding: "10px 20px",
+                      borderRadius: "10px",
+                      fontWeight: "800",
+                      fontSize: "0.9rem",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
+                    }}
+                  >
+                    <CreditCard size={16} />
+                    <span>Confirm Payment Sent</span>
+                  </button>
+                ) : (
+                  <div style={{
+                    background: "#dcfce7",
+                    border: "1px solid #86efac",
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    fontSize: "0.78rem",
+                    fontWeight: "700",
+                    color: "#166534",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}>
+                    <Clock size={14} />
+                    <span>Cashier Verification Pending</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* PERMIT OFFICIALLY RELEASED BANNER */}
+          {appData?.status === "released" && (
+            <div style={{
+              background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
+              border: "1.5px solid #86efac",
+              borderRadius: "20px",
+              padding: "1.4rem",
+              boxShadow: "0 4px 16px rgba(16, 185, 129, 0.08)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{
+                  width: "46px",
+                  height: "46px",
+                  borderRadius: "14px",
+                  background: "#dcfce7",
+                  color: "#16a34a",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px solid #86efac"
+                }}>
+                  <CheckCircle size={28} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <h4 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "900", color: "#166534" }}>
+                      🎉 Official Permits Released — Process Complete!
+                    </h4>
+                    <span style={{
+                      fontSize: "0.72rem",
+                      fontWeight: "800",
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      background: "#dcfce7",
+                      color: "#15803d",
+                      border: "1px solid #86efac"
+                    }}>
+                      Step 4 Complete
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "0.85rem", color: "#15803d", marginTop: "3px" }}>
+                    Payment verified under Official Receipt No: <strong>{(appData as any).officialReceiptNo || "OR-2026-OFFICIAL"}</strong>. All official building permits, ancillary clearances, and approved plans are now released and active.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Application Timeline Card */}
           <div className="glass-panel" style={{ 
             padding: "1.75rem 2rem", 
@@ -866,7 +1106,11 @@ export default function ApplicationTrackDetail() {
                       boxShadow: isActive ? `0 0 0 4px ${statusConfig.bg}` : "none",
                       transition: "all 0.3s ease"
                     }}>
-                      {isPassed ? <CheckCircle size={20} color={iconColor} /> : <span style={{ color: iconColor, fontWeight: "700" }}>{step.num}</span>}
+                      {isPassed || (step.num === 4 && statusConfig.step >= 4) ? (
+                        <CheckCircle size={20} color={iconColor} />
+                      ) : (
+                        <span style={{ color: iconColor, fontWeight: "700" }}>{step.num}</span>
+                      )}
                     </div>
                     <div style={{ paddingTop: "6px" }}>
                       <h3 style={{ fontSize: "1.05rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>{step.title}</h3>
@@ -1214,6 +1458,186 @@ export default function ApplicationTrackDetail() {
           </div>
         </div>
       )}
+
+      {/* PAYMENT CONFIRMATION MODAL FOR APPLICANT */}
+      {showPaymentModal && appData && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(15, 23, 42, 0.65)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          padding: "1rem"
+        }}>
+          <div style={{
+            background: "white",
+            borderRadius: "20px",
+            width: "100%",
+            maxWidth: "520px",
+            padding: "2rem",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            border: "1px solid #e2e8f0"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <CreditCard size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "800", color: "#0f172a" }}>
+                    Confirm Payment Sent
+                  </h3>
+                  <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
+                    Submit proof of fee settlement to unlock official permit release
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Assessment Breakdown Card */}
+            <div style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: "14px", padding: "1rem 1.25rem", marginBottom: "1.25rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ fontSize: "0.82rem", color: "#64748b" }}>Permit Application:</span>
+                <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#0f172a" }}>{appData.id}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ fontSize: "0.82rem", color: "#64748b" }}>Order of Payment No:</span>
+                <span style={{ fontSize: "0.84rem", fontWeight: "700", color: "#6d28d9" }}>{appData.orderOfPaymentNo || "OP-2026"}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px dashed #cbd5e1" }}>
+                <span style={{ fontSize: "0.86rem", fontWeight: "700", color: "#334155" }}>Amount Assessed:</span>
+                <span style={{ fontSize: "1.25rem", fontWeight: "900", color: "#059669" }}>
+                  PHP {((appData as any).assessedFees || 3795).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Form Inputs */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "5px" }}>
+                  Official Receipt (OR) / Transaction Reference No: <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={paymentRefInput}
+                  onChange={(e) => setPaymentRefInput(e.target.value)}
+                  placeholder="e.g. OR-2026-94812 or GCash Ref"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    fontWeight: "700",
+                    color: "#0f172a"
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "5px" }}>
+                  Payment Channel:
+                </label>
+                <select
+                  value={paymentMethodInput}
+                  onChange={(e) => setPaymentMethodInput(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: "0.88rem",
+                    color: "#0f172a",
+                    background: "white"
+                  }}
+                >
+                  <option value="Municipal Treasury Cashier (On-site)">Municipal Treasury Cashier (Town Hall)</option>
+                  <option value="GCash (Sto. Tomas Municipal LGU Trust Fund)">GCash (Sto. Tomas LGU)</option>
+                  <option value="Landbank Link.BizPortal">Landbank Link.BizPortal</option>
+                  <option value="Bank Deposit / Over-the-counter">Bank Deposit / Over-the-counter</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "5px" }}>
+                  Notes / Payment Remarks (Optional):
+                </label>
+                <textarea
+                  value={paymentNotesInput}
+                  onChange={(e) => setPaymentNotesInput(e.target.value)}
+                  rows={2}
+                  placeholder="e.g. Paid in cash at Counter 2 or GCash reference 001928374"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: "0.84rem",
+                    color: "#334155"
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                style={{
+                  background: "#f1f5f9",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "10px",
+                  padding: "9px 18px",
+                  fontSize: "0.88rem",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  color: "#475569"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitPaymentConfirm}
+                disabled={isSubmittingPayment}
+                style={{
+                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "9px 22px",
+                  fontSize: "0.92rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)"
+                }}
+              >
+                <CheckCircle2 size={18} />
+                <span>{isSubmittingPayment ? "Submitting..." : "Submit Payment Confirmation"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

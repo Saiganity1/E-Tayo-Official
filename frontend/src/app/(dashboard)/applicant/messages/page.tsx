@@ -148,12 +148,43 @@ export default function ApplicantMessagesPage() {
         } catch (e) {}
         
         // Load initial chat history with Mang Tomas (staff@etayo.gov.ph)
+        const mergeWithLocal = (apiData: any[]) => {
+          let localMsgs: any[] = [];
+          try {
+            const raw = localStorage.getItem("etayo_messages_history");
+            if (raw) localMsgs = JSON.parse(raw);
+          } catch (e) {}
+          const merged = [...apiData];
+          localMsgs.forEach((lm: any) => {
+            if (
+              (lm.recipientEmail === email || lm.senderEmail === email) &&
+              !merged.some((m: any) => m.id === lm.id || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
+            ) {
+              merged.push(lm);
+            }
+          });
+          setMessages(merged);
+        };
+
         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/messages/history?user1=${email}&user2=${MANG_TOMAS.email}`)
           .then(res => res.json())
           .then(data => {
-            if (Array.isArray(data)) setMessages(data);
+            mergeWithLocal(Array.isArray(data) ? data : []);
           })
-          .catch(err => console.error("Failed to load message history", err));
+          .catch(err => {
+            console.error("Failed to load message history", err);
+            mergeWithLocal([]);
+          });
+
+        const handleCustomMsg = (e: any) => {
+          if (e.detail) {
+            setMessages((prev: any[]) => {
+              if (prev.some(m => m.id === e.detail.id)) return prev;
+              return [...prev, e.detail];
+            });
+          }
+        };
+        window.addEventListener("etayo_new_message", handleCustomMsg);
 
         // Setup WebSocket
         let wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";

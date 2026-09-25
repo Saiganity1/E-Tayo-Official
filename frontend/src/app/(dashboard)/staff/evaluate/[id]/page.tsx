@@ -55,8 +55,13 @@ import {
   X,
   Scale,
   Award,
-  BadgeCheck
+  BadgeCheck,
+  CreditCard,
+  Banknote,
+  Receipt,
+  Clock
 } from "lucide-react";
+import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
 
 interface ViewerDoc {
   id: string;
@@ -126,6 +131,12 @@ export default function StaffEvaluatePage() {
   const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
   const [selectedDeficiencies, setSelectedDeficiencies] = useState<string[]>([]);
   const [customDeficiencyNote, setCustomDeficiencyNote] = useState<string>("");
+
+  // Payment Confirmation & Release State
+  const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
+  const [officialReceiptInput, setOfficialReceiptInput] = useState<string>("");
+  const [certifyingCashierInput, setCertifyingCashierInput] = useState<string>("Engr. Gilbert Cruz, Municipal Building Official");
+  const [paymentReleaseNotes, setPaymentReleaseNotes] = useState<string>("Official receipt verified. Permits released.");
 
   // Engineering Disciplines Checklist State (for Building Permits)
   const [engineeringDisciplines, setEngineeringDisciplines] = useState([
@@ -1057,6 +1068,8 @@ export default function StaffEvaluatePage() {
     const updatedApp = {
       ...app,
       status: "approved" as const,
+      paymentStatus: "awaiting_payment" as const,
+      userConfirmedPayment: (app as any).userConfirmedPayment || false,
       dateApproved: (app as any).dateApproved || issuedDateFormatted,
       dateIssued: (app as any).dateIssued || issuedDateFormatted,
       permitIssuedDate: (app as any).permitIssuedDate || issuedDateFormatted,
@@ -1073,7 +1086,36 @@ export default function StaffEvaluatePage() {
 
     await updateApplication(updatedApp as any);
 
-    // 1. Record in Admin System Audit Logs
+    // 1. Automatically dispatch official approval notice & Order of Payment with fee amount to applicant
+    try {
+      const assessedFormatted = `PHP ${totalFees.toLocaleString()}`;
+      await dispatchPermitMessage({
+        applicationId: app.id,
+        recipientEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+        senderEmail: staffEmail,
+        content: `[Ref: ${app.id} - ${app.projectName || (isBuildingPermit ? "Building Permit" : "Locational Clearance")}]
+🏛️ OFFICIAL NOTICE: APPLICATION APPROVED & ORDER OF PAYMENT ISSUED
+
+Dear ${applicantLabel},
+
+Your application (${app.id}) has been formally APPROVED by the ${isBuildingPermit ? "Office of the Building Official (OBO)" : "Municipal Planning & Development Office (MPDO)"}.
+
+📄 Order of Payment Reference: ${orderOfPaymentNo}
+💰 Total Assessed Regulatory Amount: ${assessedFormatted}
+
+Payment Channels:
+1. Municipal Treasury Office (Ground Floor, Sto. Tomas Municipal Hall, Pampanga)
+2. Landbank Link.BizPortal / GCash (Sto. Tomas Municipal LGU Trust Fund)
+
+Next Step:
+Please settle the assessed regulatory fee and click "Confirm Payment Sent" on your Permit Tracking Dashboard.
+Once payment is verified by the municipal cashier, your official permit documents will be IMMEDIATELY RELEASED.`,
+      });
+    } catch (e) {
+      console.warn("Could not dispatch approval message", e);
+    }
+
+    // 2. Record in Admin System Audit Logs
     try {
       await addSystemLog({
         action: "EVALUATION_APPROVED",
@@ -1089,7 +1131,7 @@ export default function StaffEvaluatePage() {
       console.warn("Could not save system log", e);
     }
 
-    // 2. Record official evaluation log in backend
+    // 3. Record official evaluation log in backend
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -1113,9 +1155,104 @@ export default function StaffEvaluatePage() {
     setIsProcessing(false);
     setSuccessMessage(
       isBuildingPermit
-        ? `Building Permit & Technical Permitting Forms (${app.id}) have been successfully APPROVED! Order of Payment No. ${orderOfPaymentNo} generated for ${applicantLabel}.`
-        : `Locational Clearance (${app.id}) has been successfully APPROVED! Stage 1 is officially completed and Stage 2 (Technical Permitting Forms) is now unlocked for applicant ${applicantLabel}.`
+        ? `Building Permit & Technical Permitting Forms (${app.id}) have been successfully APPROVED! Automated Order of Payment No. ${orderOfPaymentNo} (PHP ${totalFees.toLocaleString()}) messaged to ${applicantLabel}.`
+        : `Locational Clearance (${app.id}) has been successfully APPROVED! Automated Order of Payment (PHP ${totalFees.toLocaleString()}) messaged to ${applicantLabel}.`
     );
+  };
+
+  const handleConfirmPaymentAndRelease = async () => {
+    if (!app) return;
+    setIsProcessing(true);
+    setShowPaymentModal(false);
+
+    const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+    let staffName = "Engr. Gilbert Cruz";
+    let staffEmail = "staff@etayo.gov.ph";
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u.name) staffName = u.name;
+        if (u.email) staffEmail = u.email;
+      } catch (e) {}
+    }
+
+    const applicantLabel = app.applicantName ? `${app.applicantName}` : app.applicantEmail || "Applicant";
+    const releaseDateFormatted = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+    const orNumber = officialReceiptInput.trim() || (app as any).paymentReference || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+    const assessedAmountStr = `PHP ${((app as any).assessedFees || totalFees).toLocaleString()}`;
+
+    const updatedTracking = [
+      ...(app.trackingSteps || []).map((step) => ({ ...step, status: "completed" as const })),
+      {
+        title: "Permit Officially Released",
+        status: "completed" as const,
+        date: releaseDateFormatted,
+        notes: `Payment of ${assessedAmountStr} confirmed under Official Receipt No. ${orNumber}. All official permits and clearances have been RELEASED and made available for applicant download.`,
+        actor: certifyingCashierInput.trim() || `${staffName} / Municipal Building Official & Cashier`,
+      },
+    ];
+
+    const updatedHistory = [
+      ...(app.historyLog || []),
+      {
+        date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        action: "Permit Released (Payment Complete)",
+        actor: staffName,
+        details: `Official Receipt No. ${orNumber} verified for ${assessedAmountStr}. Permits officially released.`,
+      },
+    ];
+
+    const updatedApp = {
+      ...app,
+      status: "released" as const,
+      paymentStatus: "paid" as const,
+      isReleased: true,
+      officialReceiptNo: orNumber,
+      dateReleased: releaseDateFormatted,
+      cashierOfficer: certifyingCashierInput.trim() || staffName,
+      trackingSteps: updatedTracking,
+      historyLog: updatedHistory,
+      remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`,
+    };
+
+    await updateApplication(updatedApp as any);
+
+    // Dispatch automated release notification to applicant
+    try {
+      await dispatchPermitMessage({
+        applicationId: app.id,
+        recipientEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+        senderEmail: staffEmail,
+        content: `[Ref: ${app.id} - ${app.projectName || (isBuildingPermit ? "Building Permit" : "Locational Clearance")}]
+🎉 OFFICIAL PERMITS RELEASED!
+
+Good day ${applicantLabel},
+
+Your payment of ${assessedAmountStr} has been VERIFIED under Official Receipt No. ${orNumber}.
+Your official ${isBuildingPermit ? "Building Permit & Ancillary Permitting Clearances" : "Locational Clearance"} have been officially RELEASED!
+
+You may now download and print your official approved permits directly from your Permit Tracking Dashboard. Step 4 (Released) is now marked complete (Green).
+
+Thank you for building safely and legally with the Municipality of Sto. Tomas, Pampanga.`,
+      });
+    } catch (e) {
+      console.warn("Could not dispatch release message", e);
+    }
+
+    // Add system audit log
+    try {
+      await addSystemLog({
+        action: "PERMIT_RELEASED",
+        category: "application",
+        status: "success",
+        user: staffEmail,
+        message: `Permit ${app.id} officially RELEASED to ${applicantLabel} (OR #${orNumber})`,
+        details: `Payment complete (${assessedAmountStr}) verified by ${staffName}. Permits released.`,
+      });
+    } catch (e) {}
+
+    setIsProcessing(false);
+    setSuccessMessage(`Payment confirmed under OR #${orNumber}! Application ${app.id} has been officially RELEASED. Step 4 (Released) is now active and green on the applicant's portal.`);
   };
 
   const handleConfirmReject = async () => {
@@ -1824,37 +1961,117 @@ export default function StaffEvaluatePage() {
                   </div>
                 </div>
 
+                {/* Settlement Notice when Approved */}
+                {(app.status as string) === "approved" && (
+                  <div style={{
+                    background: (app as any).userConfirmedPayment ? "#f0fdf4" : "#fffbeb",
+                    border: `1.5px solid ${(app as any).userConfirmedPayment ? "#86efac" : "#fde68a"}`,
+                    borderRadius: "12px",
+                    padding: "0.85rem 1rem",
+                    marginBottom: "1rem"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                      {(app as any).userConfirmedPayment ? (
+                        <CheckCircle2 size={16} color="#16a34a" />
+                      ) : (
+                        <Clock size={16} color="#d97706" />
+                      )}
+                      <strong style={{ fontSize: "0.84rem", color: (app as any).userConfirmedPayment ? "#166534" : "#92400e" }}>
+                        {(app as any).userConfirmedPayment ? "Applicant Confirmed Payment" : "Awaiting Fee Settlement"}
+                      </strong>
+                    </div>
+                    <div style={{ fontSize: "0.78rem", color: (app as any).userConfirmedPayment ? "#15803d" : "#78350f", lineHeight: "1.45" }}>
+                      {(app as any).userConfirmedPayment ? (
+                        <>
+                          Payment Reference: <strong>{(app as any).paymentReference || "OR Submitted"}</strong>
+                          {(app as any).paymentMethod && ` · ${(app as any).paymentMethod}`}
+                          <br />
+                          Assessed Amount: <strong>PHP {((app as any).assessedFees || totalFees).toLocaleString()}</strong>
+                          <br />
+                          <span style={{ color: "#166534", fontWeight: "700" }}>✓ Ready for cashier sign-off and permit paper release.</span>
+                        </>
+                      ) : (
+                        <>
+                          Order of Payment <strong>{(app as any).orderOfPaymentNo || orderOfPaymentNo}</strong> for <strong>PHP {((app as any).assessedFees || totalFees).toLocaleString()}</strong> was messaged to the applicant. Click below once settled to release papers.
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Primary & Secondary Action Buttons */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  <button
-                    onClick={handleApprove}
-                    disabled={isProcessing || app.status === "approved"}
-                    style={{
-                      background: app.status === "approved"
-                        ? "#94a3b8"
-                        : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                      color: "white",
-                      border: "none",
-                      padding: "0.95rem 1.25rem",
+                  {(app.status as string) === "approved" ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOfficialReceiptInput((app as any).paymentReference || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
+                        setShowPaymentModal(true);
+                      }}
+                      disabled={isProcessing}
+                      style={{
+                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                        color: "white",
+                        border: "none",
+                        padding: "0.95rem 1.25rem",
+                        borderRadius: "10px",
+                        fontWeight: "800",
+                        fontSize: "0.95rem",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                        boxShadow: "0 4px 14px rgba(5, 150, 105, 0.4)",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      <CreditCard size={18} />
+                      <span>Payment Complete & Release Permit</span>
+                    </button>
+                  ) : app.status === "released" ? (
+                    <div style={{
+                      background: "#dcfce7",
+                      border: "1.5px solid #86efac",
                       borderRadius: "10px",
-                      fontWeight: "800",
-                      fontSize: "0.95rem",
-                      cursor: app.status === "approved" ? "not-allowed" : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                      boxShadow: app.status === "approved" ? "none" : "0 4px 14px rgba(16, 185, 129, 0.35)",
-                      transition: "all 0.2s ease"
-                    }}
-                  >
-                    <CheckCircle2 size={18} /> 
-                    {app.status === "approved" 
-                      ? (isBuildingPermit ? "Building Permit Approved" : "Locational Clearance Approved") 
-                      : (isBuildingPermit ? "Approve & Issue Order of Payment" : "Approve Locational Clearance")}
-                  </button>
+                      padding: "0.85rem",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", color: "#166534", fontWeight: "800", fontSize: "0.9rem" }}>
+                        <CheckCircle2 size={18} color="#16a34a" />
+                        <span>Permit Officially Released (Done)</span>
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "#15803d", marginTop: "4px" }}>
+                        Official Receipt No: <strong>{(app as any).officialReceiptNo || "Verified"}</strong> · {(app as any).dateReleased || "Released"}
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleApprove}
+                      disabled={isProcessing}
+                      style={{
+                        background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        color: "white",
+                        border: "none",
+                        padding: "0.95rem 1.25rem",
+                        borderRadius: "10px",
+                        fontWeight: "800",
+                        fontSize: "0.95rem",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                        boxShadow: "0 4px 14px rgba(16, 185, 129, 0.35)",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      <CheckCircle2 size={18} /> 
+                      {isBuildingPermit ? "Approve & Issue Order of Payment" : "Approve Locational Clearance"}
+                    </button>
+                  )}
 
-                  {app.status !== "approved" && (
+                  {app.status !== "approved" && app.status !== "released" && (
                     <button
                       onClick={() => setShowRejectModal(true)}
                       disabled={isProcessing}
@@ -2268,6 +2485,181 @@ export default function StaffEvaluatePage() {
                 }}
               >
                 {isProcessing ? "Processing..." : "Send Formal Notice of Deficiencies"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PAYMENT COMPLETE & PERMIT RELEASE MODAL */}
+      {showPaymentModal && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(15, 23, 42, 0.65)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          padding: "1rem"
+        }}>
+          <div style={{
+            background: "white",
+            borderRadius: "20px",
+            width: "100%",
+            maxWidth: "540px",
+            padding: "2rem",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            border: "1px solid #e2e8f0"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Receipt size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: "800", color: "#0f172a" }}>
+                    Payment Complete & Release Permit
+                  </h3>
+                  <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
+                    Verify cashier payment settlement and officially release paper documents
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Fee & Payment Summary Card */}
+            <div style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: "14px", padding: "1rem 1.25rem", marginBottom: "1.25rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <span style={{ fontSize: "0.84rem", color: "#64748b" }}>Application Ref:</span>
+                <span style={{ fontWeight: "800", color: "#0f172a", fontSize: "0.9rem" }}>{app.id}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <span style={{ fontSize: "0.84rem", color: "#64748b" }}>Order of Payment No:</span>
+                <span style={{ fontWeight: "700", color: "#6d28d9", fontSize: "0.88rem" }}>{(app as any).orderOfPaymentNo || orderOfPaymentNo}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px dashed #cbd5e1" }}>
+                <span style={{ fontSize: "0.88rem", fontWeight: "700", color: "#334155" }}>Total Regulatory Amount:</span>
+                <span style={{ fontSize: "1.25rem", fontWeight: "900", color: "#059669" }}>
+                  PHP {((app as any).assessedFees || totalFees).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Form Fields */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "5px" }}>
+                  Official Receipt (OR) Number / Cashier Ref: <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={officialReceiptInput}
+                  onChange={(e) => setOfficialReceiptInput(e.target.value)}
+                  placeholder="e.g. OR-2026-94812"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    fontWeight: "700",
+                    color: "#0f172a"
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "5px" }}>
+                  Certifying Cashier / Building Official Signatory:
+                </label>
+                <input
+                  type="text"
+                  value={certifyingCashierInput}
+                  onChange={(e) => setCertifyingCashierInput(e.target.value)}
+                  placeholder="Engr. Gilbert Cruz, Municipal Building Official"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: "0.88rem",
+                    color: "#0f172a"
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "5px" }}>
+                  Release Verification Notes:
+                </label>
+                <textarea
+                  value={paymentReleaseNotes}
+                  onChange={(e) => setPaymentReleaseNotes(e.target.value)}
+                  rows={2}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: "0.84rem",
+                    color: "#334155",
+                    lineHeight: "1.4"
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                style={{
+                  background: "#f1f5f9",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "10px",
+                  padding: "9px 18px",
+                  fontSize: "0.88rem",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  color: "#475569"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmPaymentAndRelease}
+                disabled={isProcessing}
+                style={{
+                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "9px 22px",
+                  fontSize: "0.92rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)"
+                }}
+              >
+                <CheckCircle2 size={18} />
+                <span>{isProcessing ? "Releasing Permit..." : "Confirm Payment & Release Papers"}</span>
               </button>
             </div>
           </div>
