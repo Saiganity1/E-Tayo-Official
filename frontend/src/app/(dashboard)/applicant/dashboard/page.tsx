@@ -544,6 +544,7 @@ export default function ApplicantDashboard() {
                   <Archive size={14} color="#7c3aed" />
                   <span>{archivedCount} Archived</span>
                 </Link>
+              )}
             </div>
           </div>
 
