@@ -855,7 +855,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
         borderRadius: "20px",
         padding: "1.25rem 1.75rem",
-        marginBottom: "1.25rem" 
+        marginBottom: "0.5rem"
       }}>
         <button 
           onClick={() => router.push("/applicant/track")} 
@@ -929,7 +929,6 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       </header>
 
       {/* Toast Notification */}
-      {/* Toast Notification */}
           {toastMsg && (
             <div style={{
               background: toastMsg.type === "success" ? "#ecfdf5" : "#eff6ff",
@@ -943,7 +942,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               alignItems: "center",
               gap: "8px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-        marginBottom: "1.25rem"
+        marginBottom: "0.5rem"
             }}>
               <CheckCircle2 size={18} />
               <span>{toastMsg.text}</span>
@@ -951,7 +950,6 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           )}
 
       {/* Standalone Top Card: ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
-      {/* ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
           {appData?.status === "approved" && !isActuallyReleased && (
             <div style={{
               background: (appData as any).userConfirmedPayment
@@ -961,7 +959,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               borderRadius: "20px",
               padding: "1.4rem",
               boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)",
-        marginBottom: "1.5rem"
+        marginBottom: "0.5rem"
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flex: 1, minWidth: "260px" }}>
@@ -1087,7 +1085,6 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           )}
 
       {/* Standalone Top Card: PERMIT OFFICIALLY RELEASED BANNER */}
-      {/* PERMIT OFFICIALLY RELEASED BANNER */}
           {(appData?.status === "released" || isActuallyReleased) && (
             <div style={{
               background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
@@ -1095,7 +1092,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               borderRadius: "20px",
               padding: "1.4rem",
               boxShadow: "0 4px 16px rgba(16, 185, 129, 0.08)",
-        marginBottom: "1.5rem"
+        marginBottom: "0.5rem"
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
                 <div style={{
@@ -1144,10 +1141,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         border: "1px solid rgba(255,255,255,0.9)", 
         boxShadow: "0 10px 35px rgba(0,0,0,0.06)" 
       }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(380px, 500px)", gap: "2.5rem", alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(380px, 500px)", gap: "1.75rem", alignItems: "start" }}>
           
           {/* Left Column: Project Information (Top) & Timeline (Bottom) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             
             {/* 1. Project Information */}
             <div>
@@ -1247,7 +1244,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           </div>
 
           {/* Right Column: Submitted Forms & Attachments */}
-          <div style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: "2rem" }}>
+          <div style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: "1.75rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.5rem" }}>
               <div>
                 <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
