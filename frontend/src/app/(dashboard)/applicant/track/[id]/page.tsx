@@ -1291,41 +1291,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                         transition: "all 0.15s ease"
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: "0.85rem", marginBottom: "0.75rem" }}>
-                        <div style={{ 
-                          background: doc.iconBg, 
-                          color: doc.iconColor, 
-                          padding: "10px", 
-                          borderRadius: "12px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0
-                        }}>
-                          {renderDocIcon(doc.iconType)}
-                        </div>
-
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginBottom: "2px" }}>
-                            <span style={{ 
-                              background: doc.badgeBg, 
-                              color: doc.badgeColor, 
-                              fontSize: "0.68rem", 
-                              fontWeight: "800", 
-                              padding: "2px 7px", 
-                              borderRadius: "4px",
-                              letterSpacing: "0.5px"
-                            }}>
-                              {doc.code}
-                            </span>
-                            <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600" }}>
-                              • {doc.category}
-                            </span>
-                          </div>
-
-                          <strong style={{ display: "block", color: "#0f172a", fontSize: "0.92rem", lineHeight: "1.3" }}>
-                            {doc.title}
-                          </strong>
+                      <div style={{ marginBottom: "0.75rem" }}>
+                        <strong style={{ display: "block", color: "#0f172a", fontSize: "0.95rem", lineHeight: "1.3" }}>
+                          {doc.title}
+                        </strong>
                           <p style={{ margin: "3px 0 0 0", color: "#64748b", fontSize: "0.78rem", lineHeight: "1.3" }}>
                             {doc.desc}
                           </p>
@@ -1342,7 +1311,6 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                             )}
                           </div>
                         </div>
-                      </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "flex-end", paddingTop: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
                         <button
