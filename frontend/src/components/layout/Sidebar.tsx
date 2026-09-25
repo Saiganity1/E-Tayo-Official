@@ -188,15 +188,15 @@ export default function Sidebar() {
       <aside className={`sidebar ${isOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <Link href="/" className="logo-group" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', cursor: 'pointer' }} title="Bumalik sa Homepage">
-            <Image src="/logo.png" alt="eTAYO" width={125} height={40} style={{ height: "34px", width: "auto", objectFit: "contain", cursor: "pointer" }} priority />
+            <Image src="/logo.png" alt="eTAYO" width={120} height={36} style={{ height: "30px", width: "auto", objectFit: "contain", cursor: "pointer" }} priority />
           </Link>
           <button className="close-btn" onClick={() => setIsOpen(false)}>
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
         <div className="user-profile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
             <div className="user-avatar">
               {avatarChar}
             </div>
@@ -227,7 +227,7 @@ export default function Sidebar() {
                 onClick={() => setIsOpen(false)}
               >
                 <div className="nav-item-content">
-                  <Icon size={18} strokeWidth={2.25} />
+                  <Icon size={17} strokeWidth={2.2} />
                   <span>{item.label}</span>
                 </div>
                 {item.badge && <span className="nav-badge">{item.badge}</span>}
@@ -252,7 +252,7 @@ export default function Sidebar() {
                 }}
               >
                 <div className="nav-item-content">
-                  <LogOut size={18} strokeWidth={2.25} />
+                  <LogOut size={17} strokeWidth={2.2} />
                   <span>Sign Out</span>
                 </div>
               </Link>
