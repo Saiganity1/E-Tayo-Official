@@ -9,8 +9,23 @@ import {
   FileText, CheckCircle, ChevronRight, Copy, Check, 
   MapPin, Sparkles, Layers, ShieldCheck, ArrowRight, MessageSquare, Lock,
   XCircle, Trash2, Archive, ArchiveRestore, RotateCcw, Filter, Calendar,
-  Building2, DollarSign, Eye, RefreshCw
+  Building2, DollarSign, Eye, RefreshCw, FolderKanban, List, ChevronDown
 } from "lucide-react";
+
+type ViewMode = "project" | "flat";
+
+interface ProjectDossier {
+  id: string;
+  projectName: string;
+  projectType: string;
+  projectAddress: string;
+  applications: any[];
+  totalCount: number;
+  pendingCount: number;
+  approvedCount: number;
+  actionRequiredCount: number;
+  latestDate: string;
+}
 
 export default function ApplicationStatusPage() {
   const router = useRouter();
@@ -20,6 +35,8 @@ export default function ApplicationStatusPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [activeTab, setActiveTab] = useState<"active" | "archived">("active");
+  const [viewMode, setViewMode] = useState<ViewMode>("project");
+  const [expandedDossiers, setExpandedDossiers] = useState<Record<string, boolean>>({});
   const [userName, setUserName] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -197,6 +214,553 @@ export default function ApplicationStatusPage() {
       default:
         return { color: "#64748b", bg: "#f1f5f9", border: "#94a3b8", icon: FileText, label: "Processing", step: 1 };
     }
+  };
+
+  const getPermitTypeBadge = (permitType?: string, appId?: string) => {
+    const isLC = (permitType || "").toLowerCase().includes("locational") || (appId || "").toLowerCase().startsWith("lc-");
+    if (isLC) {
+      return {
+        code: "LC",
+        stage: "Stage 1",
+        label: "Locational Clearance",
+        bg: "#eff6ff",
+        color: "#1e40af",
+        border: "#bfdbfe"
+      };
+    }
+    return {
+      code: "BP",
+      stage: "Stage 2",
+      label: "Technical Permits",
+      bg: "#f5f3ff",
+      color: "#6d28d9",
+      border: "#ddd6fe"
+    };
+  };
+
+  const extractBaseProjectName = (app: any) => {
+    const pTypeStr = typeof app.projectType === "object" ? (app.projectType as any)?.name : (app.projectType || "");
+    const pName = (app.projectName || "").trim();
+
+    const cleaned = pName
+      .replace(/\s*-\s*locational clearance/i, "")
+      .replace(/\s*installation\s*&\s*construction/i, "")
+      .replace(/\s*construction/i, "")
+      .replace(/\s*building permit/i, "")
+      .trim();
+
+    if (cleaned && cleaned.toLowerCase() !== "residential house" && cleaned.toLowerCase() !== "commercial building") {
+      return cleaned;
+    }
+
+    if (pTypeStr && pTypeStr !== "Other" && pTypeStr !== "Unknown") {
+      return pTypeStr.trim();
+    }
+
+    return cleaned || pName || "Permit Project";
+  };
+
+  // Group applications by Project Dossier (combining Locational Clearance and Technical Permits)
+  const projectDossiers = useMemo(() => {
+    const groups: Record<string, ProjectDossier> = {};
+
+    filteredApps.forEach(app => {
+      const baseTitle = extractBaseProjectName(app).toLowerCase();
+      const pAddr = (app.projectAddress || app.location?.address || "").trim().toLowerCase();
+
+      // Find matching group by base title or matching address
+      let matchedKey: string | null = null;
+      for (const key of Object.keys(groups)) {
+        const g = groups[key];
+        const gTitle = g.projectName.toLowerCase();
+        const gAddr = g.projectAddress.toLowerCase();
+
+        const titleMatch = Boolean(baseTitle && gTitle && (baseTitle === gTitle || baseTitle.includes(gTitle) || gTitle.includes(baseTitle)));
+        const addrMatch = Boolean(pAddr && gAddr && (pAddr.includes(gAddr) || gAddr.includes(pAddr) || pAddr.slice(0, 16) === gAddr.slice(0, 16)));
+
+        if (titleMatch || (addrMatch && (!baseTitle || !gTitle))) {
+          matchedKey = key;
+          break;
+        }
+      }
+
+      const displayTitle = extractBaseProjectName(app);
+      const groupKey = matchedKey || `GROUP-${baseTitle || app.id}`;
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          id: `DOSSIER-${Object.keys(groups).length + 1}`,
+          projectName: displayTitle,
+          projectType: typeof app.projectType === "object" ? (app.projectType as any)?.name : (app.projectType || displayTitle),
+          projectAddress: app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga",
+          applications: [],
+          totalCount: 0,
+          pendingCount: 0,
+          approvedCount: 0,
+          actionRequiredCount: 0,
+          latestDate: app.dateSubmitted || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+        };
+      }
+
+      groups[groupKey].applications.push(app);
+      groups[groupKey].totalCount++;
+
+      if (app.status === "pending" || app.status === "under_review") {
+        groups[groupKey].pendingCount++;
+      } else if (app.status === "approved" || app.status === "released") {
+        groups[groupKey].approvedCount++;
+      } else if (app.status === "incomplete_requirements" || app.status === "rejected") {
+        groups[groupKey].actionRequiredCount++;
+      }
+    });
+
+    // Sort applications inside each dossier: Locational Clearance first, then Building Permit, then others
+    Object.values(groups).forEach(g => {
+      g.applications.sort((a, b) => {
+        const typeRank = (type?: string, id?: string) => {
+          const t = (type || "").toLowerCase();
+          const i = (id || "").toLowerCase();
+          if (t.includes("locational") || t.includes("zoning") || i.startsWith("lc-")) return 1;
+          if (t.includes("building") || i.startsWith("bp-") || i.startsWith("app-")) return 2;
+          if (t.includes("occupancy") || i.startsWith("oc-")) return 3;
+          return 4;
+        };
+        return typeRank(a.permitType, a.id) - typeRank(b.permitType, b.id);
+      });
+    });
+
+    // Sort dossiers: active/pending items first, then by total count
+    return Object.values(groups).sort((a, b) => {
+      if (a.pendingCount > 0 && b.pendingCount === 0) return -1;
+      if (b.pendingCount > 0 && a.pendingCount === 0) return 1;
+      return b.applications.length - a.applications.length;
+    });
+  }, [filteredApps]);
+
+  const toggleDossier = (dossierId: string) => {
+    setExpandedDossiers(prev => ({
+      ...prev,
+      [dossierId]: prev[dossierId] === undefined ? false : !prev[dossierId]
+    }));
+  };
+
+  const isDossierExpanded = (dossierId: string) => {
+    if (expandedDossiers[dossierId] !== undefined) {
+      return expandedDossiers[dossierId];
+    }
+    return true;
+  };
+
+  const expandAll = () => {
+    const allExp: Record<string, boolean> = {};
+    projectDossiers.forEach(d => { allExp[d.id] = true; });
+    setExpandedDossiers(allExp);
+  };
+
+  const collapseAll = () => {
+    const allCol: Record<string, boolean> = {};
+    projectDossiers.forEach(d => { allCol[d.id] = false; });
+    setExpandedDossiers(allCol);
+  };
+
+  // Helper to render an individual application card with visual timeline
+  const renderApplicationCard = (app: any) => {
+    const statusConfig = getStatusConfig(app.status);
+    const StatusIcon = statusConfig.icon;
+    const isLocationalClearance = app.permitType === "locational_clearance";
+    const isApprovedLC = isLocationalClearance && (app.status === "approved" || app.status === "released");
+    const isArchived = archivedIds.includes(app.id);
+
+    return (
+      <div 
+        key={app.id}
+        style={{
+          background: "#ffffff",
+          borderRadius: "20px",
+          border: "1.5px solid #e2e8f0",
+          borderLeft: `6px solid ${statusConfig.border}`,
+          padding: "1.75rem",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+          transition: "all 0.2s ease"
+        }}
+      >
+        {/* TOP HEADER ROW: CHIPS & STATUS */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.75rem", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+            {/* Tracking ID Badge with Instant Copy */}
+            <button
+              type="button"
+              onClick={(e) => handleCopyId(app.id, e)}
+              title="Click to copy Tracking ID"
+              style={{
+                background: "#f8fafc",
+                border: "1px solid #cbd5e1",
+                borderRadius: "10px",
+                padding: "5px 12px",
+                fontSize: "0.85rem",
+                fontWeight: "800",
+                color: "#0f172a",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                cursor: "pointer",
+                transition: "all 0.15s ease"
+              }}
+            >
+              <code style={{ fontFamily: "monospace", fontSize: "0.88rem" }}>{app.id}</code>
+              {copiedId === app.id ? (
+                <Check size={14} color="#16a34a" />
+              ) : (
+                <Copy size={14} color="#64748b" />
+              )}
+            </button>
+
+            {/* Permit Type Badge */}
+            {isLocationalClearance ? (
+              <span style={{
+                background: "#eff6ff",
+                color: "#1e40af",
+                fontSize: "0.76rem",
+                fontWeight: "800",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                border: "1px solid #bfdbfe",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px"
+              }}>
+                <ShieldCheck size={13} /> Stage 1 · Locational Clearance
+              </span>
+            ) : (
+              <span style={{
+                background: "#f5f3ff",
+                color: "#5b21b6",
+                fontSize: "0.76rem",
+                fontWeight: "800",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                border: "1px solid #ddd6fe",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px"
+              }}>
+                <Sparkles size={13} /> Stage 2 · {app.projectType || "Unified Technical Permits"}
+              </span>
+            )}
+
+            {/* Archive Status Pill if archived */}
+            {isArchived && (
+              <span style={{
+                background: "#ede9fe",
+                color: "#6d28d9",
+                fontSize: "0.72rem",
+                fontWeight: "800",
+                padding: "3px 8px",
+                borderRadius: "6px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px"
+              }}>
+                <Archive size={12} /> Archived
+              </span>
+            )}
+          </div>
+
+          {/* Status Pill */}
+          <div style={{
+            background: statusConfig.bg,
+            color: statusConfig.color,
+            border: `1.5px solid ${statusConfig.border}40`,
+            borderRadius: "999px",
+            padding: "5px 14px",
+            fontSize: "0.84rem",
+            fontWeight: "800",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+          }}>
+            <StatusIcon size={15} strokeWidth={2.5} />
+            <span>{statusConfig.label}</span>
+          </div>
+        </div>
+
+        {/* PROJECT TITLE & LOCATION */}
+        <div style={{ marginBottom: "1.25rem" }}>
+          <h3 style={{ margin: "0 0 0.4rem 0", fontSize: "1.35rem", fontWeight: "900", color: "#0f172a", letterSpacing: "-0.3px" }}>
+            {app.projectName || (isLocationalClearance ? "Locational Clearance Application" : "Unified Permitting Dossier")}
+          </h3>
+          
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap", color: "#64748b", fontSize: "0.88rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+              <MapPin size={15} color="#94a3b8" />
+              <span>{app.projectAddress || "Sto. Tomas, Pampanga"}</span>
+            </div>
+
+            {app.projectType && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                <Building2 size={15} color="#94a3b8" />
+                <span>{app.projectType}</span>
+              </div>
+            )}
+
+            {app.dateSubmitted && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                <Calendar size={15} color="#94a3b8" />
+                <span>Filed on: <strong>{app.dateSubmitted}</strong></span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 4-STAGE VISUAL TIMELINE STEPPER */}
+        <div style={{
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
+          borderRadius: "16px",
+          padding: "1rem 1.4rem",
+          marginBottom: "1.25rem"
+        }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
+            {[
+              { num: 1, title: "1. Filed", desc: "Submitted Online", active: statusConfig.step >= 1, current: statusConfig.step === 1 },
+              { num: 2, title: "2. Evaluation", desc: "Technical Review", active: statusConfig.step >= 2, current: statusConfig.step === 2 },
+              { num: 3, title: "3. Endorsement", desc: "Chief OBO Approval", active: statusConfig.step >= 3, current: statusConfig.step === 3 },
+              { num: 4, title: "4. Released", desc: "Order of Payment", active: statusConfig.step >= 4, current: statusConfig.step === 4 }
+            ].map((step) => (
+              <div key={step.num} style={{ textAlign: "center", position: "relative" }}>
+                <div style={{
+                  height: "7px",
+                  borderRadius: "999px",
+                  background: step.active ? statusConfig.color : "#cbd5e1",
+                  marginBottom: "8px",
+                  boxShadow: step.current ? `0 0 10px ${statusConfig.color}90` : "none",
+                  transition: "all 0.3s ease"
+                }} />
+                <div style={{
+                  fontSize: "0.8rem",
+                  fontWeight: step.active ? "800" : "600",
+                  color: step.active ? "#0f172a" : "#94a3b8"
+                }}>
+                  {step.title}
+                </div>
+                <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "1px" }}>
+                  {step.desc}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* PROMPT BANNER FOR APPROVED LOCATIONAL CLEARANCE */}
+        {isApprovedLC && (
+          <div style={{
+            background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
+            border: "1.5px solid #86efac",
+            borderRadius: "14px",
+            padding: "1rem 1.25rem",
+            marginBottom: "1.25rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "10px",
+            boxShadow: "0 2px 10px rgba(16, 185, 129, 0.08)"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ width: "34px", height: "34px", borderRadius: "10px", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Check size={20} strokeWidth={2.5} />
+              </div>
+              <div>
+                <div style={{ fontSize: "0.9rem", fontWeight: "800", color: "#166534" }}>
+                  Stage 1 Prerequisite Passed! Clearance Ref: {app.id}
+                </div>
+                <div style={{ fontSize: "0.8rem", color: "#15803d" }}>
+                  Your locational zoning is officially approved. You can now proceed to Stage 2 Technical Permitting Forms with all fields prefilled.
+                </div>
+              </div>
+            </div>
+
+            <Link 
+              href={`/applicant/apply?clearanceRef=${encodeURIComponent(app.id)}&step=3`}
+              style={{
+                background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                color: "white",
+                padding: "8px 16px",
+                borderRadius: "10px",
+                fontSize: "0.85rem",
+                fontWeight: "800",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
+              }}
+            >
+              <span>Proceed to Step 3: Permitting Forms</span>
+              <ArrowRight size={15} />
+            </Link>
+          </div>
+        )}
+
+        {/* FOOTER ROW WITH ACTIONS */}
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "0.85rem",
+          borderTop: "1.5px solid #f1f5f9",
+          paddingTop: "1rem"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.82rem", color: "#64748b" }}>
+            <span>Permit Dossier: <strong>{app.requirements?.length || 1} Document(s)</strong></span>
+            {app.locationalClearanceRef && (
+              <span>• Ref LC: <strong>{app.locationalClearanceRef}</strong></span>
+            )}
+          </div>
+
+          <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
+            {/* Message Desk Officer */}
+            <Link
+              href={`/applicant/messages?ref=${encodeURIComponent(app.id)}`}
+              style={{
+                background: "#ffffff",
+                border: "1.5px solid #cbd5e1",
+                color: "#334155",
+                padding: "7px 13px",
+                borderRadius: "10px",
+                fontSize: "0.84rem",
+                fontWeight: "700",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                transition: "all 0.15s ease"
+              }}
+              title="Inquire or message municipal evaluation officer regarding this application"
+            >
+              <MessageSquare size={14} color="#64748b" />
+              <span>Message Desk</span>
+            </Link>
+
+            {/* ARCHIVE / UNARCHIVE ACTION BUTTON */}
+            {isArchived ? (
+              <button
+                type="button"
+                onClick={(e) => handleUnarchiveApp(app.id, e)}
+                style={{
+                  background: "#ede9fe",
+                  border: "1.5px solid #ddd6fe",
+                  color: "#6d28d9",
+                  padding: "7px 13px",
+                  borderRadius: "10px",
+                  fontSize: "0.84rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  transition: "all 0.15s ease"
+                }}
+                title="Restore this application back to your active dashboard"
+              >
+                <ArchiveRestore size={14} />
+                <span>Restore to Active</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => handleArchiveApp(app.id, e)}
+                style={{
+                  background: "#ffffff",
+                  border: "1.5px solid #cbd5e1",
+                  color: "#475569",
+                  padding: "7px 13px",
+                  borderRadius: "10px",
+                  fontSize: "0.84rem",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  transition: "all 0.15s ease"
+                }}
+                title="Archive this application to hide it from your active list"
+              >
+                <Archive size={14} color="#64748b" />
+                <span>Archive</span>
+              </button>
+            )}
+
+            {/* Cancel Application Button (if not already cancelled or released) */}
+            {app.status === "cancelled" ? (
+              <span style={{
+                background: "#fee2e2",
+                color: "#991b1b",
+                border: "1px solid #fca5a5",
+                padding: "6px 12px",
+                borderRadius: "10px",
+                fontSize: "0.82rem",
+                fontWeight: "700",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px"
+              }}>
+                <XCircle size={14} color="#dc2626" /> Cancelled
+              </span>
+            ) : app.status !== "released" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setAppToCancel(app);
+                  setCancelReason("Change of project plans");
+                }}
+                style={{
+                  background: "#ffffff",
+                  border: "1.5px solid #fca5a5",
+                  color: "#b91c1c",
+                  padding: "7px 12px",
+                  borderRadius: "10px",
+                  fontSize: "0.84rem",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  transition: "all 0.15s ease"
+                }}
+                title="Cancel or withdraw this application"
+              >
+                <XCircle size={14} color="#dc2626" />
+                <span>Cancel</span>
+              </button>
+            ) : null}
+
+            {/* View Full Timeline Dossier Button */}
+            <Link
+              href={`/applicant/track/${app.id}`}
+              style={{
+                background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
+                color: "#ffffff",
+                padding: "7px 16px",
+                borderRadius: "10px",
+                fontSize: "0.86rem",
+                fontWeight: "800",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                boxShadow: "0 3px 10px rgba(0, 56, 168, 0.35)"
+              }}
+            >
+              <span>View Full Timeline</span>
+              <ChevronRight size={15} />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -472,6 +1036,82 @@ export default function ApplicationStatusPage() {
             </button>
           )}
         </div>
+
+        {/* VIEW MODE TOGGLE & ACTIONS ROW */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginTop: "0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f1f5f9", flexWrap: "wrap", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{ display: "flex", background: "#f1f5f9", padding: "3px", borderRadius: "12px", border: "1px solid #e2e8f0", gap: "3px" }}>
+              <button
+                type="button"
+                onClick={() => setViewMode("project")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 14px",
+                  borderRadius: "9px",
+                  fontSize: "0.82rem",
+                  fontWeight: "700",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  background: viewMode === "project" ? "#ffffff" : "transparent",
+                  color: viewMode === "project" ? "#0038A8" : "#64748b",
+                  boxShadow: viewMode === "project" ? "0 2px 6px rgba(0,0,0,0.06)" : "none"
+                }}
+                title="Group applications into Project Dossiers (combining Locational Clearance & Building Permits for each site)"
+              >
+                <FolderKanban size={15} /> Group by Project Dossier
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode("flat")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 14px",
+                  borderRadius: "9px",
+                  fontSize: "0.82rem",
+                  fontWeight: "700",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  background: viewMode === "flat" ? "#ffffff" : "transparent",
+                  color: viewMode === "flat" ? "#0038A8" : "#64748b",
+                  boxShadow: viewMode === "flat" ? "0 2px 6px rgba(0,0,0,0.06)" : "none"
+                }}
+                title="View all individual applications in a flat list"
+              >
+                <List size={15} /> All Applications (Flat)
+              </button>
+            </div>
+
+            <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: "600" }}>
+              {viewMode === "project" ? `${projectDossiers.length} Project Dossier${projectDossiers.length !== 1 ? "s" : ""}` : `${filteredApps.length} Application${filteredApps.length !== 1 ? "s" : ""}`}
+            </span>
+          </div>
+
+          {viewMode === "project" && projectDossiers.length > 0 && (
+            <div style={{ display: "flex", gap: "6px" }}>
+              <button
+                type="button"
+                onClick={expandAll}
+                style={{ background: "#f8fafc", border: "1px solid #cbd5e1", color: "#475569", padding: "5px 12px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: "700", cursor: "pointer" }}
+              >
+                Expand All
+              </button>
+              <button
+                type="button"
+                onClick={collapseAll}
+                style={{ background: "#f8fafc", border: "1px solid #cbd5e1", color: "#475569", padding: "5px 12px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: "700", cursor: "pointer" }}
+              >
+                Collapse All
+              </button>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* APPLICATIONS LIST */}
@@ -574,407 +1214,150 @@ export default function ApplicationStatusPage() {
               </Link>
             )}
           </div>
-        ) : (
-          /* LIST OF APPLICATION CARDS */
+        ) : viewMode === "project" ? (
+          /* VIEW 1: GROUPED BY PROJECT DOSSIER */
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            {filteredApps.map(app => {
-              const statusConfig = getStatusConfig(app.status);
-              const StatusIcon = statusConfig.icon;
-              const isLocationalClearance = app.permitType === "locational_clearance";
-              const isApprovedLC = isLocationalClearance && (app.status === "approved" || app.status === "released");
-              const isArchived = archivedIds.includes(app.id);
+            {projectDossiers.map(dossier => {
+              const isExpanded = isDossierExpanded(dossier.id);
+              const hasPending = dossier.pendingCount > 0;
+              const hasAction = dossier.actionRequiredCount > 0;
+              const allApproved = dossier.approvedCount === dossier.totalCount && dossier.totalCount > 0;
+              const borderStatusColor = hasAction ? "#ef4444" : hasPending ? "#f59e0b" : allApproved ? "#10b981" : "#0038A8";
 
               return (
-                <div 
-                  key={app.id}
+                <div
+                  key={dossier.id}
                   style={{
                     background: "#ffffff",
                     borderRadius: "20px",
                     border: "1.5px solid #e2e8f0",
-                    borderLeft: `6px solid ${statusConfig.border}`,
-                    padding: "1.75rem",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+                    borderLeft: `5px solid ${borderStatusColor}`,
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+                    overflow: "hidden",
                     transition: "all 0.2s ease"
                   }}
                 >
-                  {/* TOP HEADER ROW: CHIPS & STATUS */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.75rem", marginBottom: "1rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-                      {/* Tracking ID Badge with Instant Copy */}
-                      <button
-                        type="button"
-                        onClick={(e) => handleCopyId(app.id, e)}
-                        title="Click to copy Tracking ID"
-                        style={{
-                          background: "#f8fafc",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: "10px",
-                          padding: "5px 12px",
-                          fontSize: "0.85rem",
-                          fontWeight: "800",
-                          color: "#0f172a",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          cursor: "pointer",
-                          transition: "all 0.15s ease"
-                        }}
-                      >
-                        <code style={{ fontFamily: "monospace", fontSize: "0.88rem" }}>{app.id}</code>
-                        {copiedId === app.id ? (
-                          <Check size={14} color="#16a34a" />
-                        ) : (
-                          <Copy size={14} color="#64748b" />
-                        )}
-                      </button>
-
-                      {/* Permit Type Badge */}
-                      {isLocationalClearance ? (
-                        <span style={{
-                          background: "#eff6ff",
-                          color: "#1e40af",
-                          fontSize: "0.76rem",
-                          fontWeight: "800",
-                          padding: "4px 10px",
-                          borderRadius: "8px",
-                          border: "1px solid #bfdbfe",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "5px"
-                        }}>
-                          <ShieldCheck size={13} /> Stage 1 · Locational Clearance
-                        </span>
-                      ) : (
-                        <span style={{
-                          background: "#f5f3ff",
-                          color: "#5b21b6",
-                          fontSize: "0.76rem",
-                          fontWeight: "800",
-                          padding: "4px 10px",
-                          borderRadius: "8px",
-                          border: "1px solid #ddd6fe",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "5px"
-                        }}>
-                          <Sparkles size={13} /> Stage 2 · {app.projectType || "Unified Technical Permits"}
-                        </span>
-                      )}
-
-                      {/* Archive Status Pill if archived */}
-                      {isArchived && (
-                        <span style={{
-                          background: "#ede9fe",
-                          color: "#6d28d9",
-                          fontSize: "0.72rem",
-                          fontWeight: "800",
-                          padding: "3px 8px",
-                          borderRadius: "6px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px"
-                        }}>
-                          <Archive size={12} /> Archived
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Status Pill */}
-                    <div style={{
-                      background: statusConfig.bg,
-                      color: statusConfig.color,
-                      border: `1.5px solid ${statusConfig.border}40`,
-                      borderRadius: "999px",
-                      padding: "5px 14px",
-                      fontSize: "0.84rem",
-                      fontWeight: "800",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
-                    }}>
-                      <StatusIcon size={15} strokeWidth={2.5} />
-                      <span>{statusConfig.label}</span>
-                    </div>
-                  </div>
-
-                  {/* PROJECT TITLE & LOCATION */}
-                  <div style={{ marginBottom: "1.25rem" }}>
-                    <h3 style={{ margin: "0 0 0.4rem 0", fontSize: "1.35rem", fontWeight: "900", color: "#0f172a", letterSpacing: "-0.3px" }}>
-                      {app.projectName || (isLocationalClearance ? "Locational Clearance Application" : "Unified Permitting Dossier")}
-                    </h3>
-                    
-                    <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap", color: "#64748b", fontSize: "0.88rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                        <MapPin size={15} color="#94a3b8" />
-                        <span>{app.projectAddress || "Sto. Tomas, Pampanga"}</span>
-                      </div>
-
-                      {app.projectType && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                          <Building2 size={15} color="#94a3b8" />
-                          <span>{app.projectType}</span>
-                        </div>
-                      )}
-
-                      {app.dateSubmitted && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                          <Calendar size={15} color="#94a3b8" />
-                          <span>Filed on: <strong>{app.dateSubmitted}</strong></span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 4-STAGE VISUAL TIMELINE STEPPER */}
-                  <div style={{
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "16px",
-                    padding: "1rem 1.4rem",
-                    marginBottom: "1.25rem"
-                  }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
-                      {[
-                        { num: 1, title: "1. Filed", desc: "Submitted Online", active: statusConfig.step >= 1, current: statusConfig.step === 1 },
-                        { num: 2, title: "2. Evaluation", desc: "Technical Review", active: statusConfig.step >= 2, current: statusConfig.step === 2 },
-                        { num: 3, title: "3. Endorsement", desc: "Chief OBO Approval", active: statusConfig.step >= 3, current: statusConfig.step === 3 },
-                        { num: 4, title: "4. Released", desc: "Order of Payment", active: statusConfig.step >= 4, current: statusConfig.step === 4 }
-                      ].map((step) => (
-                        <div key={step.num} style={{ textAlign: "center", position: "relative" }}>
-                          <div style={{
-                            height: "7px",
-                            borderRadius: "999px",
-                            background: step.active ? statusConfig.color : "#cbd5e1",
-                            marginBottom: "8px",
-                            boxShadow: step.current ? `0 0 10px ${statusConfig.color}90` : "none",
-                            transition: "all 0.3s ease"
-                          }} />
-                          <div style={{
-                            fontSize: "0.8rem",
-                            fontWeight: step.active ? "800" : "600",
-                            color: step.active ? "#0f172a" : "#94a3b8"
-                          }}>
-                            {step.title}
-                          </div>
-                          <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "1px" }}>
-                            {step.desc}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* PROMPT BANNER FOR APPROVED LOCATIONAL CLEARANCE */}
-                  {isApprovedLC && (
-                    <div style={{
-                      background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
-                      border: "1.5px solid #86efac",
-                      borderRadius: "14px",
-                      padding: "1rem 1.25rem",
-                      marginBottom: "1.25rem",
+                  {/* DOSSIER HEADER CARD */}
+                  <div
+                    onClick={() => toggleDossier(dossier.id)}
+                    style={{
+                      padding: "1.25rem 1.5rem",
+                      background: hasPending ? "linear-gradient(180deg, #fdfbf7 0%, #ffffff 100%)" : "#ffffff",
+                      cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
                       flexWrap: "wrap",
-                      gap: "10px",
-                      boxShadow: "0 2px 10px rgba(16, 185, 129, 0.08)"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div style={{ width: "34px", height: "34px", borderRadius: "10px", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <Check size={20} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "0.9rem", fontWeight: "800", color: "#166534" }}>
-                            Stage 1 Prerequisite Passed! Clearance Ref: {app.id}
-                          </div>
-                          <div style={{ fontSize: "0.8rem", color: "#15803d" }}>
-                            Your locational zoning is officially approved. You can now proceed to Stage 2 Technical Permitting Forms with all fields prefilled.
-                          </div>
-                        </div>
+                      gap: "1.25rem",
+                      borderBottom: isExpanded ? "1px solid #f1f5f9" : "none"
+                    }}
+                  >
+                    {/* Left: Project Dossier Title & Meta */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem", minWidth: "280px", flex: 1 }}>
+                      <div style={{
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "14px",
+                        background: hasPending ? "#fef3c7" : allApproved ? "#d1fae5" : "#eff6ff",
+                        color: hasPending ? "#b45309" : allApproved ? "#059669" : "#0038A8",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.04)"
+                      }}>
+                        <Building2 size={24} />
                       </div>
 
-                      <Link 
-                        href={`/applicant/apply?clearanceRef=${encodeURIComponent(app.id)}&step=3`}
-                        style={{
-                          background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                          color: "white",
-                          padding: "8px 16px",
-                          borderRadius: "10px",
-                          fontSize: "0.85rem",
-                          fontWeight: "800",
-                          textDecoration: "none",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
-                        }}
-                      >
-                        <span>Proceed to Step 3: Permitting Forms</span>
-                        <ArrowRight size={15} />
-                      </Link>
-                    </div>
-                  )}
-
-                  {/* FOOTER ROW WITH ACTIONS */}
-                  <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: "0.85rem",
-                    borderTop: "1.5px solid #f1f5f9",
-                    paddingTop: "1rem"
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.82rem", color: "#64748b" }}>
-                      <span>Permit Dossier: <strong>{app.requirements?.length || 1} Document(s)</strong></span>
-                      {app.locationalClearanceRef && (
-                        <span>• Ref LC: <strong>{app.locationalClearanceRef}</strong></span>
-                      )}
-                    </div>
-
-                    <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
-                      {/* Message Desk Officer */}
-                      <Link
-                        href={`/applicant/messages?ref=${encodeURIComponent(app.id)}`}
-                        style={{
-                          background: "#ffffff",
-                          border: "1.5px solid #cbd5e1",
-                          color: "#334155",
-                          padding: "7px 13px",
-                          borderRadius: "10px",
-                          fontSize: "0.84rem",
-                          fontWeight: "700",
-                          textDecoration: "none",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "5px",
-                          transition: "all 0.15s ease"
-                        }}
-                        title="Inquire or message municipal evaluation officer regarding this application"
-                      >
-                        <MessageSquare size={14} color="#64748b" />
-                        <span>Message Desk</span>
-                      </Link>
-
-                      {/* ARCHIVE / UNARCHIVE ACTION BUTTON */}
-                      {isArchived ? (
-                        <button
-                          type="button"
-                          onClick={(e) => handleUnarchiveApp(app.id, e)}
-                          style={{
-                            background: "#ede9fe",
-                            border: "1.5px solid #ddd6fe",
-                            color: "#6d28d9",
-                            padding: "7px 13px",
-                            borderRadius: "10px",
-                            fontSize: "0.84rem",
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                          <h3 style={{ fontSize: "1.25rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                            {dossier.projectName}
+                          </h3>
+                          <span style={{
+                            fontSize: "0.75rem",
                             fontWeight: "800",
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            transition: "all 0.15s ease"
-                          }}
-                          title="Restore this application back to your active dashboard"
-                        >
-                          <ArchiveRestore size={14} />
-                          <span>Restore to Active</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={(e) => handleArchiveApp(app.id, e)}
-                          style={{
-                            background: "#ffffff",
-                            border: "1.5px solid #cbd5e1",
-                            color: "#475569",
-                            padding: "7px 13px",
-                            borderRadius: "10px",
-                            fontSize: "0.84rem",
-                            fontWeight: "700",
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            transition: "all 0.15s ease"
-                          }}
-                          title="Archive this application to hide it from your active list"
-                        >
-                          <Archive size={14} color="#64748b" />
-                          <span>Archive</span>
-                        </button>
-                      )}
+                            padding: "3px 9px",
+                            borderRadius: "999px",
+                            background: hasAction ? "#fee2e2" : hasPending ? "#fffbeb" : "#f0fdf4",
+                            color: hasAction ? "#b91c1c" : hasPending ? "#b45309" : "#16a34a",
+                            border: `1px solid ${hasAction ? "#fca5a5" : hasPending ? "#fde68a" : "#bbf7d0"}`
+                          }}>
+                            {hasAction ? "Action Required on Requirements" : hasPending ? `${dossier.pendingCount} Form${dossier.pendingCount > 1 ? "s" : ""} Awaiting Review` : "All Forms Approved ✓"}
+                          </span>
+                        </div>
 
-                      {/* Cancel Application Button (if not already cancelled or released) */}
-                      {app.status === "cancelled" ? (
-                        <span style={{
-                          background: "#fee2e2",
-                          color: "#991b1b",
-                          border: "1px solid #fca5a5",
-                          padding: "6px 12px",
-                          borderRadius: "10px",
-                          fontSize: "0.82rem",
-                          fontWeight: "700",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px"
-                        }}>
-                          <XCircle size={14} color="#dc2626" /> Cancelled
-                        </span>
-                      ) : app.status !== "released" ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAppToCancel(app);
-                            setCancelReason("Change of project plans");
-                          }}
-                          style={{
-                            background: "#ffffff",
-                            border: "1.5px solid #fca5a5",
-                            color: "#b91c1c",
-                            padding: "7px 12px",
-                            borderRadius: "10px",
-                            fontSize: "0.84rem",
-                            fontWeight: "700",
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            transition: "all 0.15s ease"
-                          }}
-                          title="Cancel or withdraw this application"
-                        >
-                          <XCircle size={14} color="#dc2626" />
-                          <span>Cancel</span>
-                        </button>
-                      ) : null}
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.85rem", color: "#64748b", flexWrap: "wrap" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <MapPin size={13} color="#94a3b8" /> {dossier.projectAddress}
+                          </span>
+                          <span>•</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <FolderKanban size={13} color="#94a3b8" /> {dossier.applications.length} Connected Permit Form{dossier.applications.length > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                      {/* View Full Timeline Dossier Button */}
-                      <Link
-                        href={`/applicant/track/${app.id}`}
-                        style={{
-                          background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
-                          color: "#ffffff",
-                          padding: "7px 16px",
-                          borderRadius: "10px",
-                          fontSize: "0.86rem",
-                          fontWeight: "800",
-                          textDecoration: "none",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "5px",
-                          boxShadow: "0 3px 10px rgba(0, 56, 168, 0.35)"
-                        }}
-                      >
-                        <span>View Full Timeline</span>
-                        <ChevronRight size={15} />
-                      </Link>
+                    {/* Right: Milestone Flow Chips & Expand Arrow */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                        {dossier.applications.map((app, idx) => {
+                          const badge = getPermitTypeBadge(app.permitType, app.id);
+                          const stConfig = getStatusConfig(app.status);
+                          return (
+                            <React.Fragment key={app.id}>
+                              <div style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "5px",
+                                padding: "4px 10px",
+                                borderRadius: "8px",
+                                background: stConfig.bg,
+                                border: `1px solid ${stConfig.border}50`,
+                                fontSize: "0.78rem"
+                              }}>
+                                <span style={{ fontWeight: "800", color: badge.color }}>[{badge.code}]</span>
+                                <span style={{ fontWeight: "700", color: "#1e293b" }}>{badge.label}</span>
+                                <span style={{ fontWeight: "700", color: stConfig.color }}>• {stConfig.label}</span>
+                              </div>
+                              {idx < dossier.applications.length - 1 && (
+                                <ArrowRight size={13} color="#94a3b8" />
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
+
+                      <div style={{ 
+                        width: "32px", 
+                        height: "32px", 
+                        borderRadius: "8px", 
+                        background: "#f8fafc", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center", 
+                        color: "#64748b"
+                      }}>
+                        {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                      </div>
                     </div>
                   </div>
+
+                  {/* EXPANDED DOSSIER CONTENT */}
+                  {isExpanded && (
+                    <div style={{ padding: "1.25rem 1.5rem", background: "#f8fafc", display: "flex", flexDirection: "column", gap: "1.25rem", borderTop: "1px solid #f1f5f9" }}>
+                      {dossier.applications.map(app => renderApplicationCard(app))}
+                    </div>
+                  )}
                 </div>
               );
             })}
+          </div>
+        ) : (
+          /* VIEW 2: FLAT LIST OF APPLICATION CARDS */
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            {filteredApps.map(app => renderApplicationCard(app))}
           </div>
         )}
       </section>
