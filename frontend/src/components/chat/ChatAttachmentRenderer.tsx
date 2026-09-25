@@ -114,8 +114,9 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
   if (isOrderOfPaymentNotice) {
     const fee = cleanText.match(/(?:Assessed Regulatory Fee|Total Assessed Regulatory Amount):\s*(PHP\s*[\d,]+)/i)?.[1] || "PHP 3,795";
     const op = cleanText.match(/(?:Order of Payment Reference|Order of Payment No\.?):\s*([^\n\r]+)/i)?.[1] || "OP-2026";
-    const ref = cleanText.match(/\[Ref:\s*([^\]\-]+)(?:\s*-\s*([^\]]+))?\]/i)?.[1]?.trim() || "";
-    const project = cleanText.match(/\[Ref:\s*[^\]\-]+\s*-\s*([^\]]+)\]/i)?.[1]?.trim() || "Permit Application";
+    const refMatch = cleanText.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)(?:\s*[-–—]\s*([^\]]+))?\]/i);
+    const ref = refMatch?.[1]?.trim() || "";
+    const project = refMatch?.[2]?.trim() || "Permit Application";
     const addressedTo = cleanText.match(/Dear\s*([^,\n]+)/i)?.[1]?.trim() || "Applicant";
 
     return (
@@ -253,7 +254,7 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
 
   if (isPermitReleaseNotice) {
     const orNo = cleanText.match(/Official Receipt No:\s*([^\n\r]+)/i)?.[1] || "OR-2026-94812";
-    const ref = cleanText.match(/\[Ref:\s*([^\]\-]+)/i)?.[1]?.trim() || "";
+    const ref = cleanText.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)/i)?.[1]?.trim() || "";
     const fee = cleanText.match(/Payment of\s*(PHP\s*[\d,]+)/i)?.[1] || "PHP 3,795";
 
     return (

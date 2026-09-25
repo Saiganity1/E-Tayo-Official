@@ -91,9 +91,9 @@ export default function StaffMessagesPage() {
     }
     const content = msg.content || "";
     // Match [Ref: LC-2026-4157# - Sicat] or [Ref: LC-2026-4157]
-    const refMatch = content.match(/\[Ref:\s*([^\]\-#]+)(?:#)?(?:\s*-\s*([^\]]+))?\]/i);
+    const refMatch = content.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)(?:\s*[-–—]\s*([^\]]+))?\]/i);
     if (refMatch) {
-      const matchedId = refMatch[1].trim();
+      const matchedId = refMatch[1].replace(/#$/, "").trim();
       if (matchedId.toLowerCase() === "general") return "general";
       return matchedId;
     }

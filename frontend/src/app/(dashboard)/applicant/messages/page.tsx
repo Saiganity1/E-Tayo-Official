@@ -129,7 +129,7 @@ export default function ApplicantMessagesPage() {
     }
     const content = msg.content || "";
     // Check for [Ref: ID - ProjectName]
-    const refMatch = content.match(/\[Ref:\s*([^\]\-]+)(?:\s*-\s*([^\]]+))?\]/i);
+    const refMatch = content.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)(?:\s*[-–—]\s*([^\]]+))?\]/i);
     if (refMatch) {
       const matchedId = refMatch[1].trim();
       if (matchedId.toLowerCase() === "general") return "general";

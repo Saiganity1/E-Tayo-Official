@@ -6,7 +6,8 @@ import {
   ShieldCheck, Landmark, CheckCircle2, ChevronRight, Phone, Info, 
   AlertCircle, Building2, MapPin, RefreshCw, BadgeCheck, ExternalLink, 
   Layers, Filter, FileText, Check, ChevronDown, ChevronUp, Sparkles,
-  Briefcase, Activity, Calendar, ShieldAlert
+  Briefcase, Activity, Calendar, ShieldAlert, Receipt, CreditCard, CheckCircle,
+  Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
 import { Client } from "@stomp/stompjs";
@@ -17,7 +18,7 @@ import {
   AttachmentPreviewModal, 
   ParsedAttachment 
 } from "../../../../components/chat/ChatAttachmentRenderer";
-import { ensureApplicationConversationMessages } from "../../../../utils/permitMessaging";
+import { ensureApplicationConversationMessages, dispatchPermitMessage } from "../../../../utils/permitMessaging";
 
 // Canned official municipal responses for fast staff dispatch
 const CANNED_RESPONSES = [
@@ -49,7 +50,13 @@ const CANNED_RESPONSES = [
 ];
 
 export default function AdminMessagesPage() {
-  const { applications, refreshApplications } = usePermitContext();
+  const { applications, updateApplication, refreshApplications } = usePermitContext();
+
+  const [releaseModalApp, setReleaseModalApp] = useState<any | null>(null);
+  const [officialReceiptInput, setOfficialReceiptInput] = useState("");
+  const [certifyingCashierInput, setCertifyingCashierInput] = useState("Engr. Gilbert Cruz, Municipal Building Official");
+  const [receiptPhotoPreview, setReceiptPhotoPreview] = useState<string | null>(null);
+  const [isReleasingPermit, setIsReleasingPermit] = useState(false);
 
   const [messages, setMessages] = useState<any[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -84,9 +91,9 @@ export default function AdminMessagesPage() {
     }
     const content = msg.content || "";
     // Match [Ref: LC-2026-4157# - Sicat] or [Ref: LC-2026-4157]
-    const refMatch = content.match(/\[Ref:\s*([^\]\-#]+)(?:#)?(?:\s*-\s*([^\]]+))?\]/i);
+    const refMatch = content.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)(?:\s*[-–—]\s*([^\]]+))?\]/i);
     if (refMatch) {
-      const matchedId = refMatch[1].trim();
+      const matchedId = refMatch[1].replace(/#$/, "").trim();
       if (matchedId.toLowerCase() === "general") return "general";
       return matchedId;
     }
@@ -379,6 +386,59 @@ export default function AdminMessagesPage() {
 
       setInputMessage("");
       setAdminAttachedFile(null);
+    }
+  };
+
+  const handleConfirmPaymentAndRelease = async () => {
+    if (!releaseModalApp) return;
+    setIsReleasingPermit(true);
+    try {
+      const orNumber = officialReceiptInput.trim() || (releaseModalApp as any).paymentReference || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+      const releaseDateFormatted = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+      const assessedAmount = ((releaseModalApp as any).assessedFees || 3795).toLocaleString();
+
+      const updatedTracking = [
+        ...(releaseModalApp.trackingSteps || []).map((step: any) => ({ ...step, status: "completed" })),
+        {
+          title: "Permit Officially Released",
+          status: "completed",
+          date: releaseDateFormatted,
+          notes: `Payment of PHP ${assessedAmount} confirmed under Official Receipt No. ${orNumber}. All official permits and clearances have been RELEASED and made available for applicant download.`
+        }
+      ];
+
+      const updatedApp = {
+        ...releaseModalApp,
+        status: "released",
+        paymentStatus: "paid",
+        officialReceiptNo: orNumber,
+        datePaid: releaseDateFormatted,
+        dateReleased: releaseDateFormatted,
+        certifyingCashier: certifyingCashierInput.trim() || "Engr. Gilbert Cruz, Municipal Building Official",
+        trackingSteps: updatedTracking
+      };
+
+      if (updateApplication) {
+        await updateApplication(updatedApp);
+      }
+
+      // Dispatch release notice in the conversation
+      const releaseNoticeContent = `[Ref: ${releaseModalApp.id} - Permit Released] Payment Verified! Official Receipt No. ${orNumber} has been verified and confirmed by the Building Official.
+All official permit papers, ancillary clearances, and approved plans for ${releaseModalApp.id} have been RELEASED and are now available for download on your tracking dashboard.`;
+
+      await dispatchPermitMessage({
+        applicationId: releaseModalApp.id,
+        recipientEmail: releaseModalApp.applicantEmail || applicantEmail || "applicant@etayo.gov.ph",
+        senderEmail: "staff@etayo.gov.ph",
+        content: releaseNoticeContent
+      });
+
+      setReleaseModalApp(null);
+      setReceiptPhotoPreview(null);
+    } catch (err) {
+      console.error("Error releasing permit from messages", err);
+    } finally {
+      setIsReleasingPermit(false);
     }
   };
 
@@ -1130,38 +1190,183 @@ export default function AdminMessagesPage() {
               </div>
 
               {/* Active Thread Notice Banner */}
-              {activeThreadId !== "all" && (
-                <div style={{
-                  background: "#eff6ff",
-                  borderBottom: "1px solid #bfdbfe",
-                  padding: "6px 1.5rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  fontSize: "0.78rem",
-                  color: "#1e40af"
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Info size={14} />
-                    <span>
-                      Viewing thread for <strong>{activeThreadId}</strong>. Responses sent will automatically carry this permit reference.
-                    </span>
+              {activeThreadId !== "all" && (() => {
+                const relevantApp = (applications || []).find(a => a.id === activeThreadId);
+                if (relevantApp && (relevantApp.status === "approved" || relevantApp.status === "released")) {
+                  const cachedReceipt = typeof window !== "undefined"
+                    ? localStorage.getItem(`etayo_receipt_${relevantApp.id}`) || (relevantApp as any).paymentProofUrl
+                    : null;
+                  const hasReceipt = Boolean((relevantApp as any).userConfirmedPayment || cachedReceipt);
+
+                  if ((relevantApp.status as string) === "approved") {
+                    return (
+                      <div style={{
+                        padding: "10px 1.5rem",
+                        background: hasReceipt ? "#f0fdf4" : "#fffbeb",
+                        borderBottom: `1.5px solid ${hasReceipt ? "#86efac" : "#fde68a"}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: "10px",
+                        fontSize: "0.82rem"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "8px",
+                            background: hasReceipt ? "#dcfce7" : "#fef3c7",
+                            color: hasReceipt ? "#16a34a" : "#d97706",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                          }}>
+                            {hasReceipt ? <Receipt size={17} /> : <CreditCard size={17} />}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: "800", color: hasReceipt ? "#166534" : "#92400e" }}>
+                              {relevantApp.id} · Order of Payment: PHP {((relevantApp as any).assessedFees || 3795).toLocaleString()} ({(relevantApp as any).orderOfPaymentNo || "OP-2026"})
+                            </div>
+                            <div style={{ fontSize: "0.76rem", color: hasReceipt ? "#15803d" : "#78350f" }}>
+                              {hasReceipt
+                                ? "✓ Applicant submitted payment receipt photo. Check photo and confirm payment below."
+                                : "Order of Payment issued. Awaiting applicant payment receipt photo in this conversation."}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          {cachedReceipt && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPreviewAttachment({
+                                  fileName: "applicant_receipt.jpg",
+                                  fileUrl: cachedReceipt,
+                                  isImage: true,
+                                  isPdf: false,
+                                  isDoc: false
+                                });
+                              }}
+                              style={{
+                                background: "#ffffff",
+                                border: "1.5px solid #cbd5e1",
+                                color: "#334155",
+                                padding: "7px 12px",
+                                borderRadius: "9px",
+                                fontSize: "0.8rem",
+                                fontWeight: "700",
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "5px"
+                              }}
+                            >
+                              <ImageIcon size={14} color="#2563eb" />
+                              <span>Inspect Receipt</span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReleaseModalApp(relevantApp);
+                              setOfficialReceiptInput((relevantApp as any).paymentReference || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
+                              setReceiptPhotoPreview(cachedReceipt);
+                            }}
+                            style={{
+                              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                              color: "white",
+                              border: "none",
+                              padding: "7px 16px",
+                              borderRadius: "9px",
+                              fontSize: "0.84rem",
+                              fontWeight: "800",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)"
+                            }}
+                          >
+                            <CheckCircle2 size={16} />
+                            <span>Confirmed Payment &amp; Release Permit</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if ((relevantApp.status as string) === "released") {
+                    return (
+                      <div style={{
+                        padding: "8px 1.5rem",
+                        background: "#dcfce7",
+                        borderBottom: "1.5px solid #86efac",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        fontSize: "0.8rem",
+                        color: "#166534"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <CheckCircle size={15} color="#16a34a" />
+                          <span>
+                            <strong>{relevantApp.id}</strong> has been officially <strong>RELEASED</strong> under Official Receipt No. <strong>{(relevantApp as any).officialReceiptNo || "OR-2026-94812"}</strong>.
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setActiveThreadId("all")}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "#15803d",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                            fontSize: "0.75rem"
+                          }}
+                        >
+                          View All
+                        </button>
+                      </div>
+                    );
+                  }
+                }
+
+                return (
+                  <div style={{
+                    background: "#eff6ff",
+                    borderBottom: "1px solid #bfdbfe",
+                    padding: "6px 1.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "0.78rem",
+                    color: "#1e40af"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Info size={14} />
+                      <span>
+                        Viewing thread for <strong>{activeThreadId}</strong>. Responses sent will automatically carry this permit reference.
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setActiveThreadId("all")}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#2563eb",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      View All
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setActiveThreadId("all")}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#2563eb",
-                      fontWeight: "700",
-                      cursor: "pointer",
-                      fontSize: "0.75rem"
-                    }}
-                  >
-                    View All
-                  </button>
-                </div>
-              )}
+                );
+              })()}
 
               {/* =============================================================== */}
               {/* MESSAGES SCROLL FEED */}
@@ -1718,6 +1923,176 @@ export default function AdminMessagesPage() {
         )}
 
       </div>
+
+      {/* ========================================================================= */}
+      {/* PAYMENT COMPLETE & RELEASE PERMIT MODAL */}
+      {/* ========================================================================= */}
+      {releaseModalApp && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(15, 23, 42, 0.65)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 99999,
+          padding: "1rem"
+        }}>
+          <div style={{
+            background: "white",
+            borderRadius: "20px",
+            width: "100%",
+            maxWidth: "540px",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: "2rem",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            border: "1px solid #e2e8f0"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Receipt size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: "800", color: "#0f172a" }}>
+                    Verify Payment &amp; Release Permit
+                  </h3>
+                  <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
+                    Check applicant receipt photo and confirm payment to release permit
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReleaseModalApp(null)}
+                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Assessment Breakdown Card */}
+            <div style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: "14px", padding: "1rem 1.25rem", marginBottom: "1.25rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ fontSize: "0.82rem", color: "#64748b" }}>Permit Application:</span>
+                <span style={{ fontSize: "0.86rem", fontWeight: "800", color: "#0f172a" }}>{releaseModalApp.id}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ fontSize: "0.82rem", color: "#64748b" }}>Order of Payment No:</span>
+                <span style={{ fontSize: "0.86rem", fontWeight: "700", color: "#6d28d9" }}>{(releaseModalApp as any).orderOfPaymentNo || "OP-2026"}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px dashed #cbd5e1" }}>
+                <span style={{ fontSize: "0.86rem", fontWeight: "700", color: "#334155" }}>Total Regulatory Amount:</span>
+                <span style={{ fontSize: "1.25rem", fontWeight: "900", color: "#059669" }}>
+                  PHP {((releaseModalApp as any).assessedFees || 3795).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Receipt Photo Preview if available */}
+            {receiptPhotoPreview ? (
+              <div style={{ marginBottom: "1.25rem" }}>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                  Applicant Uploaded Receipt Photo:
+                </label>
+                <div style={{ borderRadius: "12px", overflow: "hidden", border: "1.5px solid #cbd5e1", background: "#000", maxHeight: "220px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <img src={receiptPhotoPreview} alt="Receipt preview" style={{ maxWidth: "100%", maxHeight: "220px", objectFit: "contain" }} />
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginBottom: "1.25rem", padding: "10px 14px", background: "#fef3c7", borderRadius: "10px", border: "1px solid #fde68a", fontSize: "0.82rem", color: "#92400e" }}>
+                ℹ️ Receipt photo not attached in thread yet. You can still confirm payment if settled on-site at the Municipal Treasury Cashier.
+              </div>
+            )}
+
+            {/* Input Form */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  Official Receipt (OR) Number:
+                </label>
+                <input
+                  type="text"
+                  value={officialReceiptInput}
+                  onChange={(e) => setOfficialReceiptInput(e.target.value)}
+                  placeholder="e.g. OR-2026-94812"
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    outline: "none"
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  Certifying Cashier / Building Official:
+                </label>
+                <input
+                  type="text"
+                  value={certifyingCashierInput}
+                  onChange={(e) => setCertifyingCashierInput(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    outline: "none"
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setReleaseModalApp(null)}
+                style={{
+                  background: "#f1f5f9",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "10px",
+                  padding: "9px 18px",
+                  fontSize: "0.88rem",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  color: "#475569"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmPaymentAndRelease}
+                disabled={isReleasingPermit}
+                style={{
+                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "9px 22px",
+                  fontSize: "0.92rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)"
+                }}
+              >
+                <CheckCircle2 size={18} />
+                <span>{isReleasingPermit ? "Releasing Permit..." : "Confirmed Payment & Release Papers"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 3. ATTACHMENT PREVIEW MODAL */}

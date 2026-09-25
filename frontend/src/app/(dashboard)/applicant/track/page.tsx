@@ -272,8 +272,18 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     archivedTotal: archivedApps.length,
   };
 
-  const getStatusConfig = (status: string) => {
-    switch(status) {
+  const isActuallyReleasedApp = (app: any) => {
+    if (!app) return false;
+    return app.status === "released" || 
+      Boolean(app.isReleased) || 
+      (app.paymentStatus === "paid" && Boolean(app.officialReceiptNo)) ||
+      (Array.isArray(app.trackingSteps) && app.trackingSteps.some((s: any) => s.title?.toLowerCase().includes("released") && s.status === "completed"));
+  };
+
+  const getStatusConfig = (status: string, app?: any) => {
+    const isReleased = status === "released" || isActuallyReleasedApp(app);
+    const effStatus = isReleased ? "released" : status;
+    switch(effStatus) {
       case "pending":
         return { color: "#d97706", bg: "#fef3c7", border: "#f59e0b", icon: Clock, label: "Pending Review", step: 1 };
       case "under_review":
@@ -281,7 +291,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       case "incomplete_requirements":
         return { color: "#dc2626", bg: "#fee2e2", border: "#ef4444", icon: AlertTriangle, label: "Action Required", step: 2 };
       case "approved":
-        return { color: "#059669", bg: "#d1fae5", border: "#10b981", icon: CheckCircle2, label: "Approved", step: 3 };
+        return { color: "#059669", bg: "#d1fae5", border: "#10b981", icon: CheckCircle2, label: "Approved (Awaiting Payment)", step: 3 };
       case "released":
         return { color: "#059669", bg: "#dcfce7", border: "#16a34a", icon: CheckCircle, label: "Permit Released", step: 4 };
       case "cancelled":
@@ -440,7 +450,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
   // Helper to render an individual application card with visual timeline
   const renderApplicationCard = (app: any) => {
-    const statusConfig = getStatusConfig(app.status);
+    const statusConfig = getStatusConfig(app.status, app);
     const StatusIcon = statusConfig.icon;
     const isLocationalClearance = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
     const isApprovedLC = isLocationalClearance && (app.status === "approved" || app.status === "released");
@@ -673,7 +683,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         </div>
 
         {/* ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
-        {app.status === "approved" && app.status !== "released" && (
+        {app.status === "approved" && app.status !== "released" && !isActuallyReleasedApp(app) && (
           <div style={{
             background: (app as any).userConfirmedPayment
               ? "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)"
@@ -808,7 +818,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         )}
 
         {/* PERMIT OFFICIALLY RELEASED & PROCESS COMPLETE BANNER */}
-        {app.status === "released" && (
+        {(app.status === "released" || isActuallyReleasedApp(app)) && (
           <div style={{
             background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
             border: "1.5px solid #86efac",
@@ -1757,7 +1767,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         {dossier.applications.map((app, idx) => {
                           const badge = getPermitTypeBadge(app.permitType, app.id);
-                          const stConfig = getStatusConfig(app.status);
+                          const stConfig = getStatusConfig(app.status, app);
                           return (
                             <React.Fragment key={app.id}>
                               <div style={{

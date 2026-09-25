@@ -153,8 +153,29 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
     // 1. Initial check from context or local cache
     const findLocal = () => {
+      const cleanAppId = appId.trim();
+      const lower = cleanAppId.toLowerCase();
+
+      const matchApp = (list: any[]) => {
+        if (!list || !Array.isArray(list)) return null;
+        // Exact match
+        const exact = list.find(a => (a.id || "").toLowerCase() === lower);
+        if (exact) return exact;
+        // If cleanAppId is "APP" or "LC", match the latest or released application with that prefix
+        if (lower === "app" || lower === "lc") {
+          const releasedMatch = list.find(a => (a.id || "").toLowerCase().startsWith(lower + "-") && (a.status === "released" || a.isReleased || a.paymentStatus === "paid"));
+          if (releasedMatch) return releasedMatch;
+          const anyPrefix = list.find(a => (a.id || "").toLowerCase().startsWith(lower + "-"));
+          if (anyPrefix) return anyPrefix;
+        }
+        // Match prefix like APP-2026
+        const partial = list.find(a => (a.id || "").toLowerCase().startsWith(lower));
+        if (partial) return partial;
+        return null;
+      };
+
       if (applications && applications.length > 0) {
-        const found = applications.find(a => (a.id || "").toLowerCase() === appId.toLowerCase());
+        const found = matchApp(applications);
         if (found) return found;
       }
 
@@ -162,15 +183,13 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         const cachedStr = localStorage.getItem("etayo_cached_applications");
         if (cachedStr) {
           const cachedList = JSON.parse(cachedStr);
-          if (Array.isArray(cachedList)) {
-            const found = cachedList.find((a: any) => (a.id || "").toLowerCase() === appId.toLowerCase());
-            if (found) return found;
-          }
+          const found = matchApp(cachedList);
+          if (found) return found;
         }
       } catch (e) {}
 
       // Fallback: check initial mock dataset
-      const mockFound = (INITIAL_APPLICATIONS || []).find(a => (a.id || "").toLowerCase() === appId.toLowerCase());
+      const mockFound = matchApp(INITIAL_APPLICATIONS || []);
       if (mockFound) return mockFound;
 
       return null;
@@ -179,6 +198,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const localFound = findLocal();
     if (localFound && isMounted) {
       setAppData(localFound);
+      if ((appId.toLowerCase() === "app" || appId.toLowerCase() === "lc") && localFound.id && localFound.id.toLowerCase() !== appId.toLowerCase()) {
+        router.replace(`/applicant/track/${encodeURIComponent(localFound.id)}`);
+      }
     }
 
     // 2. Fetch fresh live data directly from server
@@ -518,14 +540,20 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     }
   };
 
-  const statusConfig = getStatusDetails(appData?.status || "pending");
+  const isActuallyReleased = appData?.status === "released" || 
+    Boolean(appData?.isReleased) || 
+    (appData?.paymentStatus === "paid" && Boolean(appData?.officialReceiptNo)) ||
+    (Array.isArray(appData?.trackingSteps) && appData.trackingSteps.some((s: any) => s.title?.toLowerCase().includes("released") && s.status === "completed"));
+
+  const effectiveStatus = isActuallyReleased ? "released" : (appData?.status || "pending");
+  const statusConfig = getStatusDetails(effectiveStatus);
   const StatusIcon = statusConfig.icon;
 
   const timelineSteps = [
     { num: 1, title: "Application Submitted", desc: `Received on ${appData?.dateSubmitted || "Online Portal"}` },
     { num: 2, title: "Document Evaluation", desc: appData?.status === "incomplete_requirements" ? "Pending applicant action" : "Verifying attached requirements" },
-    { num: 3, title: "Final Approval", desc: "Awaiting signatures from municipal engineers" },
-    { num: 4, title: "Permit Release", desc: "Official clearance & permits released" }
+    { num: 3, title: "Final Approval", desc: isActuallyReleased ? "Approved & signed by municipal engineers" : "Awaiting signatures from municipal engineers" },
+    { num: 4, title: "Permit Release", desc: isActuallyReleased ? `Official clearance & permits released (OR #${appData?.officialReceiptNo || "Verified"})` : "Official clearance & permits released" }
   ];
 
   const getFilledDocUrl = async (doc: any): Promise<string> => {
@@ -927,7 +955,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           )}
 
           {/* ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
-          {appData?.status === "approved" && (
+          {appData?.status === "approved" && !isActuallyReleased && (
             <div style={{
               background: (appData as any).userConfirmedPayment
                 ? "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)"
@@ -1061,7 +1089,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           )}
 
           {/* PERMIT OFFICIALLY RELEASED BANNER */}
-          {appData?.status === "released" && (
+          {(appData?.status === "released" || isActuallyReleased) && (
             <div style={{
               background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
               border: "1.5px solid #86efac",
