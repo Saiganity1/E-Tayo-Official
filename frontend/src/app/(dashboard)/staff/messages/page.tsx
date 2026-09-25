@@ -82,6 +82,7 @@ export default function StaffMessagesPage() {
   const staffFileInputRef = useRef<HTMLInputElement>(null);
   const stompClient = useRef<Client | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Helper to extract thread/application ID from message
   const getMessageThreadId = (msg: any): string => {
@@ -294,10 +295,21 @@ export default function StaffMessagesPage() {
     }
   }, [applications, applicantEmail]);
 
-  // Scroll to bottom on new messages
+  // Scroll strictly inside messages container (never scrolls the browser window)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, activeThreadId]);
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [activeThreadId, applicantEmail]);
+
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, [messages.length]);
 
   // Handle Staff File Attachment
   const handleStaffFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1364,7 +1376,9 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
               {/* =============================================================== */}
               {/* MESSAGES SCROLL FEED */}
               {/* =============================================================== */}
-              <div style={{
+              <div 
+                ref={messagesContainerRef}
+                style={{
                 flex: 1,
                 overflowY: "auto",
                 padding: "1.5rem",

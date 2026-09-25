@@ -105,6 +105,7 @@ export default function ApplicantMessagesPage() {
 
   const stompClient = useRef<Client | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const receiptFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -284,10 +285,21 @@ export default function ApplicantMessagesPage() {
     }
   }, [applications, currentUserEmail]);
 
-  // Auto-scroll to latest message in active thread
+  // Auto-scroll strictly inside the message container (never scrolls the outer browser window)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, activeThreadId]);
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [activeThreadId]);
+
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, [messages.length]);
 
   // Derive full categorized conversation threads
   const conversationThreads = useMemo(() => {
@@ -729,39 +741,36 @@ export default function ApplicantMessagesPage() {
         background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
         backdropFilter: "blur(20px)",
         border: "1px solid rgba(255, 255, 255, 0.9)",
-        boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
-        borderRadius: "20px",
-        padding: "1.25rem 1.75rem",
-        marginBottom: "1.25rem"
+        boxShadow: "0 4px 18px rgba(0, 0, 0, 0.05)",
+        borderRadius: "16px",
+        padding: "0.75rem 1.5rem",
+        marginBottom: "0.75rem"
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.35rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.2rem" }}>
               <span style={{
                 background: "linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)",
                 color: "white",
-                padding: "3px 10px",
-                borderRadius: "6px",
-                fontSize: "0.72rem",
+                padding: "2px 8px",
+                borderRadius: "5px",
+                fontSize: "0.7rem",
                 fontWeight: "800",
                 letterSpacing: "0.5px",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "5px"
+                gap: "4px"
               }}>
-                <Landmark size={12} />
-                LGU SANTO TOMAS, PAMPANGA
+                <Landmark size={11} />
+                LGU SANTO TOMAS
               </span>
-              <span style={{ fontSize: "0.76rem", color: "#64748b", fontWeight: "600" }}>
+              <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: "600" }}>
                 • Office of the Building Official (OBO)
               </span>
             </div>
-            <h1 className="page-title" style={{ fontSize: "1.85rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", margin: "0 0 0.25rem 0", letterSpacing: "-0.02em" }}>
-              Messages & Helpdesk
+            <h1 className="page-title" style={{ fontSize: "1.45rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", margin: 0, letterSpacing: "-0.02em" }}>
+              Messages &amp; Helpdesk
             </h1>
-            <p className="page-subtitle" style={{ margin: 0, color: "#475569", fontSize: "0.92rem" }}>
-              Real-time consultation with the OBO Admin per permit application. Mang Tomas is available for FAQs &amp; general guidance.
-            </p>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
@@ -769,12 +778,12 @@ export default function ApplicantMessagesPage() {
             <div style={{
               background: "#ffffff",
               border: "1px solid #e2e8f0",
-              borderRadius: "12px",
-              padding: "7px 14px",
+              borderRadius: "10px",
+              padding: "5px 12px",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.02)"
+              gap: "7px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.02)"
             }}>
               <span style={{
                 width: "8px",
@@ -784,7 +793,7 @@ export default function ApplicantMessagesPage() {
                 boxShadow: connected ? "0 0 0 3px rgba(22, 163, 74, 0.2)" : "none",
                 display: "inline-block"
               }} />
-              <span style={{ fontSize: "0.82rem", fontWeight: "700", color: connected ? "#15803d" : "#854d0e" }}>
+              <span style={{ fontSize: "0.78rem", fontWeight: "700", color: connected ? "#15803d" : "#854d0e" }}>
                 {connected ? "Helpdesk Connected" : "Connecting..."}
               </span>
             </div>
@@ -795,19 +804,19 @@ export default function ApplicantMessagesPage() {
               style={{
                 background: "#f1f5f9",
                 color: "#334155",
-                fontSize: "0.84rem",
+                fontSize: "0.8rem",
                 fontWeight: "700",
-                padding: "8px 14px",
-                borderRadius: "10px",
+                padding: "6px 12px",
+                borderRadius: "9px",
                 border: "1px solid #cbd5e1",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "5px",
                 textDecoration: "none",
                 transition: "all 0.15s ease"
               }}
             >
-              <FileText size={15} color="#475569" />
+              <FileText size={14} color="#475569" />
               <span>Track Applications</span>
             </Link>
           </div>
@@ -823,12 +832,12 @@ export default function ApplicantMessagesPage() {
           width: "100%",
           margin: "0 auto",
           background: "#ffffff",
-          borderRadius: "20px",
+          borderRadius: "18px",
           border: "1px solid #e2e8f0",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.04)",
+          boxShadow: "0 6px 25px rgba(0,0,0,0.05)",
           overflow: "hidden",
-          minHeight: "600px",
-          height: "calc(100vh - 210px)"
+          height: "calc(100vh - 160px)",
+          minHeight: "560px"
         }}
       >
         {/* LEFT SIDEBAR: CATEGORIZED CONVERSATIONS */}
@@ -1068,36 +1077,36 @@ export default function ApplicantMessagesPage() {
         }}>
           {/* Active Thread Header */}
           <div style={{
-            padding: "0.9rem 1.5rem",
-            borderBottom: "1px solid #f1f5f9",
+            padding: "0.75rem 1.25rem",
+            borderBottom: "1px solid #e2e8f0",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+            background: "#ffffff",
             flexWrap: "wrap",
-            gap: "0.75rem"
+            gap: "0.6rem"
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
               <div style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
-                background: OBO_ADMIN.avatarBg,
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                 color: "white",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 position: "relative",
-                boxShadow: "0 4px 10px rgba(37, 99, 235, 0.25)",
+                boxShadow: "0 2px 8px rgba(0, 56, 168, 0.25)",
                 flexShrink: 0
               }}>
-                <Landmark size={22} />
+                <Building2 size={20} />
                 <span style={{
                   position: "absolute",
                   bottom: "-2px",
                   right: "-2px",
-                  width: "11px",
-                  height: "11px",
+                  width: "10px",
+                  height: "10px",
                   borderRadius: "50%",
                   background: "#16a34a",
                   border: "2px solid #ffffff"
@@ -1106,90 +1115,78 @@ export default function ApplicantMessagesPage() {
 
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                  <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>
-                    {MANG_TOMAS.name}
+                  <h3 style={{ margin: 0, fontSize: "0.98rem", fontWeight: "800", color: "#0f172a" }}>
+                    {activeThreadId !== "general" ? `OBO Permitting Desk • ${activeThreadId}` : "OBO Admin Desk (Mang Tomas)"}
                   </h3>
                   <span style={{
-                    background: "#e0e7ff",
-                    color: "#4338ca",
-                    fontSize: "0.68rem",
+                    background: activeThreadId !== "general" ? "#eff6ff" : "#e0e7ff",
+                    color: activeThreadId !== "general" ? "#1e40af" : "#4338ca",
+                    fontSize: "0.66rem",
                     fontWeight: "800",
                     padding: "2px 7px",
-                    borderRadius: "999px"
+                    borderRadius: "6px"
                   }}>
-                    {MANG_TOMAS.badge}
+                    {activeThreadId !== "general" ? "Official OBO Record" : "General Helpdesk"}
                   </span>
                 </div>
-                <div style={{ fontSize: "0.78rem", color: "#64748b" }}>
-                  {MANG_TOMAS.title} • <span style={{ color: "#16a34a", fontWeight: "700" }}>● {MANG_TOMAS.status}</span>
+                <div style={{ fontSize: "0.74rem", color: "#64748b", marginTop: "1px" }}>
+                  {activeThreadId !== "general" ? "Engr. Gilbert Cruz • Municipal Building Official" : "Mang Tomas • FAQs & Procedures"} • <span style={{ color: "#16a34a", fontWeight: "700" }}>● Online</span>
                 </div>
               </div>
             </div>
 
-            {/* Active Thread Context Badge */}
+            {/* Active Thread Context Badge & Hotline */}
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              {activeThreadId !== "general" ? (
+              {activeThreadId !== "general" && activeApp ? (
                 <div style={{
-                  background: "#eff6ff",
-                  border: "1.5px solid #93c5fd",
-                  borderRadius: "10px",
-                  padding: "5px 12px",
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  padding: "4px 10px",
                   display: "flex",
                   alignItems: "center",
                   gap: "8px"
                 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                    <Building2 size={14} color="#1d4ed8" />
-                    <span style={{ fontWeight: "800", color: "#1e40af", fontSize: "0.8rem", fontFamily: "monospace" }}>
-                      {activeThreadId}
-                    </span>
-                  </div>
-                  <span style={{ fontSize: "0.78rem", color: "#3b82f6", fontWeight: "600" }}>
-                    {activeApp?.projectName || activeThread.title}
+                  <span style={{ fontSize: "0.76rem", color: "#334155", fontWeight: "700" }}>
+                    {activeApp.projectName || activeThread.title}
                   </span>
-                  {activeApp && (
-                    <Link
-                      href={`/applicant/track/${activeApp.id}`}
-                      style={{
-                        fontSize: "0.72rem",
-                        fontWeight: "700",
-                        color: "#2563eb",
-                        background: "#ffffff",
-                        padding: "2px 7px",
-                        borderRadius: "6px",
-                        textDecoration: "none",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "3px"
-                      }}
-                      title="View full application status"
-                    >
-                      <span>Track</span>
-                      <ExternalLink size={10} />
-                    </Link>
-                  )}
+                  <span style={{
+                    fontSize: "0.66rem",
+                    fontWeight: "800",
+                    background: activeApp.status === "released" ? "#dcfce7" : (activeApp.status === "approved" ? "#dcfce7" : "#fef3c7"),
+                    color: activeApp.status === "released" ? "#15803d" : (activeApp.status === "approved" ? "#166534" : "#b45309"),
+                    padding: "2px 8px",
+                    borderRadius: "999px",
+                    textTransform: "uppercase"
+                  }}>
+                    {activeApp.status}
+                  </span>
+                  <Link
+                    href={`/applicant/track/${encodeURIComponent(activeApp.id)}`}
+                    style={{
+                      fontSize: "0.72rem",
+                      fontWeight: "700",
+                      color: "#2563eb",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "3px"
+                    }}
+                    title="Track application progress"
+                  >
+                    <span>Track</span>
+                    <ExternalLink size={10} />
+                  </Link>
                 </div>
-              ) : (
-                <div style={{
-                  background: "#f5f3ff",
-                  border: "1px solid #ddd6fe",
-                  borderRadius: "10px",
-                  padding: "5px 12px",
-                  fontSize: "0.78rem",
-                  fontWeight: "700",
-                  color: "#6d28d9"
-                }}>
-                  General Inquiries Desk
-                </div>
-              )}
+              ) : null}
 
               <div style={{
-                fontSize: "0.76rem",
+                fontSize: "0.74rem",
                 color: "#64748b",
-                background: "#ffffff",
+                background: "#f8fafc",
                 border: "1px solid #e2e8f0",
-                padding: "6px 10px",
-                borderRadius: "9px",
+                padding: "5px 9px",
+                borderRadius: "8px",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "5px"
@@ -1200,78 +1197,60 @@ export default function ApplicantMessagesPage() {
             </div>
           </div>
 
-          {/* ORDER OF PAYMENT & SETTLEMENT ACTION BANNER */}
+          {/* SLIM NOTICE BANNER (Takes only 34px instead of 180px!) */}
           {activeApp && activeApp.status === "approved" && (
             <div style={{
-              padding: "10px 1.5rem",
-              background: (activeApp as any).userConfirmedPayment
-                ? "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)"
-                : "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
-              borderBottom: `1.5px solid ${(activeApp as any).userConfirmedPayment ? "#86efac" : "#fde68a"}`,
+              padding: "7px 1.25rem",
+              background: (activeApp as any).userConfirmedPayment ? "#f0fdf4" : "#fffbeb",
+              borderBottom: `1px solid ${(activeApp as any).userConfirmedPayment ? "#bbf7d0" : "#fde68a"}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "10px"
+              gap: "8px",
+              fontSize: "0.8rem"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "10px",
-                  background: (activeApp as any).userConfirmedPayment ? "#dcfce7" : "#fef3c7",
-                  color: (activeApp as any).userConfirmedPayment ? "#16a34a" : "#d97706",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0
-                }}>
-                  <CreditCard size={18} />
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.86rem", fontWeight: "800", color: (activeApp as any).userConfirmedPayment ? "#166534" : "#92400e" }}>
-                    Order of Payment: PHP {((activeApp as any).assessedFees || 3795).toLocaleString()} · {(activeApp as any).orderOfPaymentNo || "OP-2026"}
-                  </div>
-                  <div style={{ fontSize: "0.76rem", color: (activeApp as any).userConfirmedPayment ? "#15803d" : "#78350f" }}>
-                    {(activeApp as any).userConfirmedPayment
-                      ? "✓ Receipt photo submitted in this conversation. Awaiting municipal admin verification to release permit."
-                      : "Application Approved! Settle regulatory fees and send a photo of your receipt in this chat."}
-                  </div>
-                </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <CreditCard size={15} color={(activeApp as any).userConfirmedPayment ? "#16a34a" : "#d97706"} />
+                <span style={{ fontWeight: "700", color: (activeApp as any).userConfirmedPayment ? "#166534" : "#92400e" }}>
+                  Order of Payment: PHP {((activeApp as any).assessedFees || 3795).toLocaleString()} ({(activeApp as any).orderOfPaymentNo || "OP-2026"})
+                </span>
+                <span style={{ color: "#94a3b8" }}>•</span>
+                <span style={{ color: (activeApp as any).userConfirmedPayment ? "#15803d" : "#78350f" }}>
+                  {(activeApp as any).userConfirmedPayment
+                    ? "Receipt submitted. Awaiting municipal admin verification to release permit."
+                    : "Settle at Municipal Treasury and send a photo of your receipt in this chat."}
+                </span>
               </div>
             </div>
           )}
 
           {activeApp && activeApp.status === "released" && (
             <div style={{
-              padding: "10px 1.5rem",
-              background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
-              borderBottom: "1.5px solid #86efac",
+              padding: "7px 1.25rem",
+              background: "#f0fdf4",
+              borderBottom: "1px solid #bbf7d0",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "10px"
+              gap: "8px",
+              fontSize: "0.8rem"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <CheckCircle2 size={20} color="#16a34a" />
-                <div>
-                  <div style={{ fontSize: "0.86rem", fontWeight: "800", color: "#166534" }}>
-                    🎉 Permit Officially Released — Permitting Complete!
-                  </div>
-                  <div style={{ fontSize: "0.76rem", color: "#15803d" }}>
-                    Official Receipt: <strong>{(activeApp as any).officialReceiptNo || "Verified"}</strong>. Step 4 (Permit Release) is complete!
-                  </div>
-                </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <CheckCircle2 size={16} color="#16a34a" />
+                <span style={{ fontWeight: "700", color: "#166534" }}>
+                  Official Permits Released (OR #{(activeApp as any).officialReceiptNo || "Verified"})
+                </span>
+                <span style={{ color: "#94a3b8" }}>•</span>
+                <span style={{ color: "#15803d" }}>All approved documents and clearances are ready for download.</span>
               </div>
               <Link
                 href={`/applicant/track/${encodeURIComponent(activeApp.id)}`}
                 style={{
                   background: "#16a34a",
                   color: "white",
-                  padding: "5px 12px",
-                  borderRadius: "8px",
-                  fontSize: "0.78rem",
+                  padding: "4px 10px",
+                  borderRadius: "6px",
+                  fontSize: "0.74rem",
                   fontWeight: "700",
                   textDecoration: "none",
                   display: "inline-flex",
@@ -1280,139 +1259,99 @@ export default function ApplicantMessagesPage() {
                 }}
               >
                 <span>View Downloads</span>
-                <ExternalLink size={12} />
+                <ExternalLink size={11} />
               </Link>
             </div>
           )}
 
-          {/* QUICK INQUIRY CHIPS CAROUSEL */}
-          <div style={{
-            padding: "8px 1.5rem",
-            background: "#f8fafc",
-            borderBottom: "1px solid #edf2f7",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            overflowX: "auto"
-          }}>
-            <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#64748b", display: "inline-flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap" }}>
-              <Sparkles size={12} color="#6366f1" /> Quick Inquiries:
-            </span>
-            {QUICK_INQUIRIES.map((q, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setInputMessage(q.text)}
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "999px",
-                  padding: "4px 12px",
-                  fontSize: "0.75rem",
-                  color: "#334155",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  transition: "all 0.15s ease"
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.color = "#4338ca"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#334155"; }}
-              >
-                <span>{q.icon}</span>
-                <span>{q.label}</span>
-              </button>
-            ))}
-          </div>
+          {/* QUICK INQUIRY CHIPS (Only shown on General Desk) */}
+          {activeThreadId === "general" && (
+            <div style={{
+              padding: "7px 1.25rem",
+              background: "#f8fafc",
+              borderBottom: "1px solid #edf2f7",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              overflowX: "auto"
+            }}>
+              <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#64748b", display: "inline-flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap" }}>
+                <Sparkles size={12} color="#6366f1" /> Quick Inquiries:
+              </span>
+              {QUICK_INQUIRIES.map((q, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setInputMessage(q.text)}
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "999px",
+                    padding: "3px 11px",
+                    fontSize: "0.74rem",
+                    color: "#334155",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    transition: "all 0.15s ease"
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.color = "#4338ca"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#334155"; }}
+                >
+                  <span>{q.icon}</span>
+                  <span>{q.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* MESSAGES FEED AREA FOR ACTIVE THREAD */}
           <div 
+            ref={messagesContainerRef}
             className="chat-messages"
             style={{
               flex: 1,
               overflowY: "auto",
-              padding: "1.25rem 1.5rem",
-              background: "#fafbfd",
+              padding: "1rem 1.5rem",
+              background: "#f8fafc",
               display: "flex",
               flexDirection: "column",
-              gap: "1rem"
+              gap: "0.85rem"
             }}
           >
-            {/* THREAD CONTEXT CARD AT TOP */}
+            {/* THREAD CONTEXT DIVIDER (Clean, modern 22px line instead of 120px card) */}
             {activeThreadId !== "general" && activeApp ? (
               <div style={{
-                background: "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)",
-                border: "1.5px solid #86efac",
-                borderRadius: "16px",
-                padding: "1.1rem 1.35rem",
-                boxShadow: "0 4px 14px rgba(34, 197, 94, 0.08)",
-                marginBottom: "0.5rem"
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+                margin: "4px 0 10px 0"
               }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "0.5rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "10px",
-                      background: "#10b981",
-                      color: "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center"
-                    }}>
-                      <ShieldCheck size={20} />
-                    </div>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: "0.98rem", fontWeight: "800", color: "#065f46" }}>
-                        {activeApp.projectName || "Permit Application"}
-                      </h4>
-                      <span style={{ fontSize: "0.74rem", color: "#166534", fontWeight: "700", fontFamily: "monospace" }}>
-                        Ref: {activeApp.id} • {activeApp.permitType === "locational_clearance" ? "Locational Clearance" : "Building Permit"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{
-                      fontSize: "0.72rem",
-                      fontWeight: "800",
-                      background: activeApp.status === "approved" ? "#dcfce7" : "#fef3c7",
-                      color: activeApp.status === "approved" ? "#166534" : "#b45309",
-                      padding: "3px 10px",
-                      borderRadius: "999px",
-                      textTransform: "uppercase"
-                    }}>
-                      {activeApp.status}
-                    </span>
-                    <Link
-                      href={`/applicant/track/${activeApp.id}`}
-                      style={{
-                        background: "#ffffff",
-                        border: "1px solid #86efac",
-                        color: "#059669",
-                        fontSize: "0.74rem",
-                        fontWeight: "700",
-                        padding: "4px 10px",
-                        borderRadius: "8px",
-                        textDecoration: "none",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px"
-                      }}
-                    >
-                      <span>View Application</span>
-                      <ChevronRight size={13} />
-                    </Link>
-                  </div>
-                </div>
-
-                <p style={{ margin: 0, fontSize: "0.82rem", color: "#166534", lineHeight: "1.45" }}>
-                  This conversation is strictly linked to <strong>{activeApp.id}</strong>. All inquiries and responses are archived directly with your official municipal permit records.
-                </p>
+                <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
+                <span style={{
+                  fontSize: "0.72rem",
+                  fontWeight: "700",
+                  color: "#475569",
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "999px",
+                  padding: "3px 12px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
+                }}>
+                  <ShieldCheck size={12} color="#16a34a" /> Official Municipal Archive • Ref: {activeApp.id}
+                </span>
+                <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
               </div>
-            ) : activeThreadId === "general" && activeThreadMessages.length === 0 ? (
+            ) : null}
+
+            {activeThreadId === "general" && activeThreadMessages.length === 0 && (
               <div style={{
                 margin: "auto",
                 maxWidth: "480px",
@@ -1464,7 +1403,7 @@ export default function ApplicantMessagesPage() {
                   <Plus size={16} /> Start Conversation for Application
                 </button>
               </div>
-            ) : null}
+            )}
 
             {/* MESSAGES LIST */}
             {activeThreadMessages.map((msg, idx) => {
@@ -1499,50 +1438,64 @@ export default function ApplicantMessagesPage() {
                     </div>
                   )}
 
-                  <div style={{
-                    maxWidth: "75%",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: isMe ? "flex-end" : "flex-start"
-                  }}>
-                    {!isMe && (
-                      <span style={{ fontSize: "0.74rem", color: "#475569", fontWeight: "800", marginBottom: "3px", marginLeft: "4px" }}>
-                        {msg.actualSender || "OBO Admin • Municipal Building Official"}
-                      </span>
-                    )}
+                  {(() => {
+                    const isNotice = !isMe && (
+                      msg.content?.includes("OFFICIAL NOTICE: APPLICATION APPROVED") ||
+                      msg.content?.includes("ORDER OF PAYMENT ISSUED") ||
+                      msg.content?.includes("PAYMENT VERIFIED & OFFICIAL PERMITS RELEASED") ||
+                      msg.content?.includes("PERMITS RELEASED")
+                    );
 
-                    <div style={{
-                      padding: "0.85rem 1.15rem",
-                      borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                      background: isMe 
-                        ? "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)" 
-                        : "#ffffff",
-                      color: isMe ? "#ffffff" : "#1e293b",
-                      border: isMe ? "none" : "1px solid #e2e8f0",
-                      boxShadow: isMe ? "0 4px 14px rgba(0, 56, 168, 0.3)" : "0 2px 8px rgba(0,0,0,0.03)",
-                      fontSize: "0.92rem",
-                      lineHeight: "1.45"
-                    }}>
-                      <MessageBubbleContent
-                        content={msg.content}
-                        isMe={isMe}
-                        onOpenAttachment={(att) => setPreviewAttachment(att)}
-                      />
-                    </div>
+                    return (
+                      <div style={{
+                        maxWidth: isNotice ? "680px" : "82%",
+                        width: isNotice ? "100%" : "auto",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: isMe ? "flex-end" : "flex-start"
+                      }}>
+                        {!isMe && (
+                          <span style={{ fontSize: "0.74rem", color: "#475569", fontWeight: "800", marginBottom: "3px", marginLeft: "4px" }}>
+                            {msg.actualSender || "OBO Admin • Municipal Building Official"}
+                          </span>
+                        )}
 
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      fontSize: "0.68rem",
-                      color: "#94a3b8",
-                      marginTop: "3px",
-                      padding: "0 4px"
-                    }}>
-                      <span>{timeStr}</span>
-                      {isMe && <CheckCheck size={12} color="#3b82f6" />}
-                    </div>
-                  </div>
+                        <div style={{
+                          padding: isNotice ? "0" : "0.85rem 1.25rem",
+                          borderRadius: isNotice ? "14px" : (isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px"),
+                          background: isNotice
+                            ? "transparent"
+                            : (isMe 
+                                ? "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)" 
+                                : "#ffffff"),
+                          color: isMe ? "#ffffff" : "#1e293b",
+                          border: isNotice ? "none" : (isMe ? "none" : "1px solid #e2e8f0"),
+                          boxShadow: isNotice ? "none" : (isMe ? "0 4px 14px rgba(0, 56, 168, 0.25)" : "0 2px 8px rgba(0,0,0,0.03)"),
+                          fontSize: "0.93rem",
+                          lineHeight: "1.55"
+                        }}>
+                          <MessageBubbleContent
+                            content={msg.content}
+                            isMe={isMe}
+                            onOpenAttachment={(att) => setPreviewAttachment(att)}
+                          />
+                        </div>
+
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          fontSize: "0.68rem",
+                          color: "#94a3b8",
+                          marginTop: "3px",
+                          padding: "0 4px"
+                        }}>
+                          <span>{timeStr}</span>
+                          {isMe && <CheckCheck size={12} color="#3b82f6" />}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}

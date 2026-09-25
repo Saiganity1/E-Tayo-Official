@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { 
   FileText, Image as ImageIcon, ExternalLink, Download, 
-  Eye, X, ZoomIn, ZoomOut, Check, Sparkles, Shield, AlertCircle
+  Eye, X, ZoomIn, ZoomOut, Check, Sparkles, Shield, AlertCircle, Landmark
 } from "lucide-react";
 import Link from "next/link";
 
@@ -96,6 +96,273 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
       return <span key={i}>{part}</span>;
     });
   };
+
+  // Structured rendering for Official Municipal Order of Payment Notices
+  const isOrderOfPaymentNotice = !isMe && (
+    cleanText.includes("OFFICIAL NOTICE: APPLICATION APPROVED") ||
+    cleanText.includes("ORDER OF PAYMENT ISSUED") ||
+    (cleanText.includes("Order of Payment Reference") && cleanText.includes("Assessed Regulatory Fee"))
+  );
+
+  // Structured rendering for Official Permit Release Notices
+  const isPermitReleaseNotice = !isMe && (
+    cleanText.includes("PAYMENT VERIFIED & OFFICIAL PERMITS RELEASED") ||
+    cleanText.includes("PERMITS RELEASED") ||
+    cleanText.includes("OFFICIAL PERMITS RELEASED")
+  );
+
+  if (isOrderOfPaymentNotice) {
+    const fee = cleanText.match(/(?:Assessed Regulatory Fee|Total Assessed Regulatory Amount):\s*(PHP\s*[\d,]+)/i)?.[1] || "PHP 3,795";
+    const op = cleanText.match(/(?:Order of Payment Reference|Order of Payment No\.?):\s*([^\n\r]+)/i)?.[1] || "OP-2026";
+    const ref = cleanText.match(/\[Ref:\s*([^\]\-]+)(?:\s*-\s*([^\]]+))?\]/i)?.[1]?.trim() || "";
+    const project = cleanText.match(/\[Ref:\s*[^\]\-]+\s*-\s*([^\]]+)\]/i)?.[1]?.trim() || "Permit Application";
+    const addressedTo = cleanText.match(/Dear\s*([^,\n]+)/i)?.[1]?.trim() || "Applicant";
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "620px" }}>
+        <div style={{
+          background: "#ffffff",
+          borderRadius: "14px",
+          border: "1.5px solid #cbd5e1",
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)",
+          overflow: "hidden",
+          color: "#0f172a"
+        }}>
+          {/* Header */}
+          <div style={{
+            background: "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)",
+            padding: "10px 16px",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{
+                width: "28px",
+                height: "28px",
+                borderRadius: "8px",
+                background: "rgba(255,255,255,0.15)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <Landmark size={16} color="#93c5fd" />
+              </div>
+              <div>
+                <div style={{ fontSize: "0.68rem", fontWeight: "700", letterSpacing: "0.5px", color: "#bfdbfe", textTransform: "uppercase" }}>
+                  LGU Santo Tomas, Pampanga • OBO
+                </div>
+                <div style={{ fontSize: "0.86rem", fontWeight: "800" }}>
+                  Official Order of Payment Notice
+                </div>
+              </div>
+            </div>
+            {ref && (
+              <span style={{ fontSize: "0.72rem", background: "rgba(255,255,255,0.18)", padding: "2px 8px", borderRadius: "6px", fontFamily: "monospace", fontWeight: "800" }}>
+                {ref}
+              </span>
+            )}
+          </div>
+
+          {/* Body */}
+          <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ fontSize: "0.88rem", color: "#334155", lineHeight: "1.5" }}>
+              Dear <strong>{addressedTo}</strong>,<br />
+              Your application for <strong>{project}</strong> {ref ? `(${ref})` : ""} has been formally reviewed and <strong>APPROVED</strong> by the Municipal Building Official.
+            </div>
+
+            {/* Fee Box */}
+            <div style={{
+              background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
+              border: "1.5px solid #86efac",
+              borderRadius: "12px",
+              padding: "10px 14px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "8px"
+            }}>
+              <div>
+                <div style={{ fontSize: "0.7rem", fontWeight: "800", color: "#166534", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Assessed Regulatory Fee
+                </div>
+                <div style={{ fontSize: "1.4rem", fontWeight: "900", color: "#065f46" }}>
+                  {fee}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "0.7rem", fontWeight: "700", color: "#64748b" }}>
+                  Order of Payment Ref
+                </div>
+                <div style={{ fontSize: "0.92rem", fontWeight: "800", color: "#1e3a8a", fontFamily: "monospace" }}>
+                  {op}
+                </div>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div style={{
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: "10px",
+              padding: "10px 12px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+              fontSize: "0.82rem"
+            }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                <span style={{ fontSize: "0.9rem" }}>🏛️</span>
+                <div>
+                  <span style={{ fontWeight: "700", color: "#1e293b" }}>Payment Office: </span>
+                  <span style={{ color: "#475569" }}>Municipal Treasury Office (Ground Floor, Sto. Tomas Municipal Hall, Pampanga)</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                <span style={{ fontSize: "0.9rem" }}>📸</span>
+                <div>
+                  <span style={{ fontWeight: "700", color: "#1e293b" }}>Action Required: </span>
+                  <span style={{ color: "#475569" }}>Please settle the assessed regulatory fee of <strong>{fee}</strong> and reply directly in this conversation with a photo or screenshot of your Official Receipt (OR).</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: "0.76rem", color: "#64748b", fontStyle: "italic", borderTop: "1px dashed #e2e8f0", paddingTop: "8px" }}>
+              Once we inspect your receipt photo in this conversation, we will click "Confirmed Payment" to officially release your permits.
+            </div>
+          </div>
+        </div>
+
+        {attachments.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {attachments.map((att, idx) => (
+              <div key={idx}>
+                {att.isImage && att.fileUrl && (
+                  <img src={att.fileUrl} alt={att.fileName} style={{ width: "100%", maxHeight: "240px", objectFit: "contain", borderRadius: "10px" }} />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (isPermitReleaseNotice) {
+    const orNo = cleanText.match(/Official Receipt No:\s*([^\n\r]+)/i)?.[1] || "OR-2026-94812";
+    const ref = cleanText.match(/\[Ref:\s*([^\]\-]+)/i)?.[1]?.trim() || "";
+    const fee = cleanText.match(/Payment of\s*(PHP\s*[\d,]+)/i)?.[1] || "PHP 3,795";
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "620px" }}>
+        <div style={{
+          background: "#ffffff",
+          borderRadius: "14px",
+          border: "1.5px solid #86efac",
+          boxShadow: "0 4px 16px rgba(16, 185, 129, 0.08)",
+          overflow: "hidden",
+          color: "#0f172a"
+        }}>
+          <div style={{
+            background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+            padding: "10px 16px",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{
+                width: "28px",
+                height: "28px",
+                borderRadius: "8px",
+                background: "rgba(255,255,255,0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <Check size={16} color="#86efac" />
+              </div>
+              <div>
+                <div style={{ fontSize: "0.68rem", fontWeight: "700", letterSpacing: "0.5px", color: "#dcfce7", textTransform: "uppercase" }}>
+                  Santo Tomas OBO Permitting
+                </div>
+                <div style={{ fontSize: "0.86rem", fontWeight: "800" }}>
+                  Payment Verified &amp; Permits Officially Released
+                </div>
+              </div>
+            </div>
+            {ref && (
+              <span style={{ fontSize: "0.72rem", background: "rgba(255,255,255,0.2)", padding: "2px 8px", borderRadius: "6px", fontFamily: "monospace", fontWeight: "800" }}>
+                {ref}
+              </span>
+            )}
+          </div>
+
+          <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "#f0fdf4",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              border: "1px solid #bbf7d0",
+              fontSize: "0.82rem"
+            }}>
+              <span>Official Receipt No: <strong style={{ color: "#166534" }}>{orNo}</strong></span>
+              <span>Payment Verified: <strong style={{ color: "#065f46" }}>{fee}</strong></span>
+            </div>
+
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#334155", lineHeight: "1.5" }}>
+              Payment has been verified and confirmed by the Building Official. All official permit papers, ancillary clearances, and approved plans for <strong>{ref || "your application"}</strong> have been officially <strong>RELEASED</strong>. Step 4 (Released) is marked complete (Green).
+            </p>
+
+            {ref && (
+              <Link
+                href={`/applicant/track/${encodeURIComponent(ref)}`}
+                style={{
+                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  color: "white",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  fontSize: "0.82rem",
+                  fontWeight: "800",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  alignSelf: "flex-start",
+                  boxShadow: "0 2px 8px rgba(16, 185, 129, 0.25)"
+                }}
+              >
+                <Download size={14} />
+                <span>Download Official Permits &amp; Clearances</span>
+                <ExternalLink size={12} />
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {attachments.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {attachments.map((att, idx) => (
+              <div key={idx}>
+                {att.isImage && att.fileUrl && (
+                  <img src={att.fileUrl} alt={att.fileName} style={{ width: "100%", maxHeight: "240px", objectFit: "contain", borderRadius: "10px" }} />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
