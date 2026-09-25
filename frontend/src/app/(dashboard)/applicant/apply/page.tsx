@@ -326,6 +326,23 @@ export default function ApplyPage() {
     );
   }, [userClearances, selectedProjectType]);
 
+  // Check if a connected Stage 2 application has already been submitted for this Locational Clearance
+  const alreadySubmittedStage2App = useMemo(() => {
+    if (!activeClearanceRef || activeClearanceRef === "EXEMPT") return null;
+    return allAvailableApps.find(
+      (app: any) =>
+        app.id !== activeClearanceRef &&
+        !(app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
+        (
+          (app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === activeClearanceRef.trim().toLowerCase()) ||
+          (matchedClearanceApp?.projectName && app.projectName && (
+            app.projectName.toLowerCase().includes(matchedClearanceApp.projectName.toLowerCase()) ||
+            matchedClearanceApp.projectName.toLowerCase().includes(app.projectName.toLowerCase())
+          ))
+        )
+    );
+  }, [allAvailableApps, activeClearanceRef, matchedClearanceApp]);
+
   // Persist active clearance reference to localStorage so Sidebar dynamically shows "Existing Application"
   useEffect(() => {
     if (activeClearanceRef && activeClearanceRef !== "EXEMPT") {
@@ -2078,6 +2095,95 @@ export default function ApplyPage() {
           {/* STEP 3: REQUIRED PERMIT FORMS */}
           {currentStep === 3 && (
             <div className="step-pane animate-fade-in-up">
+              {alreadySubmittedStage2App && (
+                <div style={{
+                  background: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released"
+                    ? "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)"
+                    : "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+                  border: `1.5px solid ${
+                    alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released"
+                      ? "#86efac"
+                      : "#fde68a"
+                  }`,
+                  borderRadius: "14px",
+                  padding: "1.1rem 1.4rem",
+                  marginBottom: "1.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.04)"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "10px",
+                      background: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#dcfce7" : "#fef3c7",
+                      color: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#16a34a" : "#d97706",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0
+                    }}>
+                      <Clock size={20} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <div style={{
+                        fontSize: "0.95rem",
+                        fontWeight: "800",
+                        color: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#166534" : "#92400e",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        flexWrap: "wrap"
+                      }}>
+                        <span>Stage 2 Application Already Submitted ({alreadySubmittedStage2App.id})</span>
+                        <span style={{
+                          fontSize: "0.72rem",
+                          fontWeight: "800",
+                          padding: "2px 8px",
+                          borderRadius: "6px",
+                          background: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#dcfce7" : "#fef9c3",
+                          color: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#15803d" : "#b45309",
+                          border: `1px solid ${alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#86efac" : "#fde047"}`
+                        }}>
+                          {alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "Approved" : "Pending Review"}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontSize: "0.83rem",
+                        color: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#15803d" : "#78350f",
+                        marginTop: "2px"
+                      }}>
+                        You have already completed and submitted your technical permitting forms for Locational Clearance {activeClearanceRef}. You do not need to submit again.
+                      </div>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/applicant/track/${encodeURIComponent(alreadySubmittedStage2App.id)}`}
+                    style={{
+                      background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                      color: "white",
+                      padding: "9px 18px",
+                      borderRadius: "10px",
+                      fontSize: "0.86rem",
+                      fontWeight: "800",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 12px rgba(37, 99, 235, 0.25)"
+                    }}
+                  >
+                    <span>View In Application Status</span>
+                    <ArrowRight size={15} />
+                  </Link>
+                </div>
+              )}
+
               <TechnicalPermitFormsStep
                 projectType={selectedProjectType}
                 locationalClearanceRef={activeClearanceRef}

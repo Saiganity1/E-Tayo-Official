@@ -367,9 +367,54 @@ export default function ApplicationStatusPage() {
   const renderApplicationCard = (app: any) => {
     const statusConfig = getStatusConfig(app.status);
     const StatusIcon = statusConfig.icon;
-    const isLocationalClearance = app.permitType === "locational_clearance";
+    const isLocationalClearance = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
     const isApprovedLC = isLocationalClearance && (app.status === "approved" || app.status === "released");
     const isArchived = archivedIds.includes(app.id);
+
+    // Identify connected Stage 2 Technical Permitting application for this Locational Clearance
+    const connectedStage2App = isLocationalClearance
+      ? (applications || []).find((other: any) => {
+          if (!other || other.id === app.id) return false;
+          const otherIsLC = (other.permitType || "").toLowerCase().includes("locational") || (other.id || "").toLowerCase().startsWith("lc-");
+          if (otherIsLC) return false;
+
+          // 1. Exact match on locationalClearanceRef
+          const refLC = (other.locationalClearanceRef || other.clearanceRef || other.connectedClearanceId || "").trim().toLowerCase();
+          if (refLC && refLC === app.id.trim().toLowerCase()) return true;
+
+          // 2. Same project base name or same address
+          const baseAppTitle = extractBaseProjectName(app).toLowerCase();
+          const otherBaseTitle = extractBaseProjectName(other).toLowerCase();
+          const sameProject = Boolean(
+            baseAppTitle && otherBaseTitle &&
+            (baseAppTitle === otherBaseTitle || baseAppTitle.includes(otherBaseTitle) || otherBaseTitle.includes(baseAppTitle))
+          );
+          const sameAddress = Boolean(
+            app.projectAddress && other.projectAddress &&
+            (app.projectAddress.trim().toLowerCase() === other.projectAddress.trim().toLowerCase() ||
+             app.projectAddress.trim().toLowerCase().slice(0, 16) === other.projectAddress.trim().toLowerCase().slice(0, 16))
+          );
+
+          return sameProject || sameAddress;
+        })
+      : null;
+
+    // For Stage 2 applications, find connected Locational Clearance if not directly populated
+    const connectedLCApp = !isLocationalClearance
+      ? (applications || []).find((other: any) => {
+          if (!other || other.id === app.id) return false;
+          const otherIsLC = (other.permitType || "").toLowerCase().includes("locational") || (other.id || "").toLowerCase().startsWith("lc-");
+          if (!otherIsLC) return false;
+          if (app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === other.id.trim().toLowerCase()) return true;
+
+          const baseAppTitle = extractBaseProjectName(app).toLowerCase();
+          const otherBaseTitle = extractBaseProjectName(other).toLowerCase();
+          return Boolean(
+            baseAppTitle && otherBaseTitle &&
+            (baseAppTitle === otherBaseTitle || baseAppTitle.includes(otherBaseTitle) || otherBaseTitle.includes(baseAppTitle))
+          );
+        })
+      : null;
 
     return (
       <div 
@@ -552,55 +597,170 @@ export default function ApplicationStatusPage() {
           </div>
         </div>
 
-        {/* PROMPT BANNER FOR APPROVED LOCATIONAL CLEARANCE */}
+        {/* BANNER FOR APPROVED LOCATIONAL CLEARANCE */}
         {isApprovedLC && (
-          <div style={{
-            background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
-            border: "1.5px solid #86efac",
-            borderRadius: "14px",
-            padding: "1rem 1.25rem",
-            marginBottom: "1.25rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: "10px",
-            boxShadow: "0 2px 10px rgba(16, 185, 129, 0.08)"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ width: "34px", height: "34px", borderRadius: "10px", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Check size={20} strokeWidth={2.5} />
-              </div>
-              <div>
-                <div style={{ fontSize: "0.9rem", fontWeight: "800", color: "#166534" }}>
-                  Stage 1 Prerequisite Passed! Clearance Ref: {app.id}
+          connectedStage2App ? (
+            <div style={{
+              background: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                ? "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)"
+                : "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+              border: `1.5px solid ${
+                connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                  ? "#86efac"
+                  : "#fde68a"
+              }`,
+              borderRadius: "14px",
+              padding: "1rem 1.25rem",
+              marginBottom: "1.25rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "10px",
+              boxShadow: "0 2px 10px rgba(0, 0, 0, 0.04)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "10px",
+                  background: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                    ? "#dcfce7"
+                    : "#fef3c7",
+                  color: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                    ? "#16a34a"
+                    : "#d97706",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: `1px solid ${
+                    connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                      ? "#bbf7d0"
+                      : "#fcd34d"
+                  }`
+                }}>
+                  {connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? (
+                    <CheckCircle2 size={20} strokeWidth={2.5} />
+                  ) : (
+                    <Clock size={20} strokeWidth={2.5} />
+                  )}
                 </div>
-                <div style={{ fontSize: "0.8rem", color: "#15803d" }}>
-                  Your locational zoning is officially approved. You can now proceed to Stage 2 Technical Permitting Forms with all fields prefilled.
+                <div>
+                  <div style={{
+                    fontSize: "0.92rem",
+                    fontWeight: "800",
+                    color: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                      ? "#166534"
+                      : "#92400e",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    flexWrap: "wrap"
+                  }}>
+                    <span>
+                      {connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                        ? `Stage 2 Complete: Technical Permits Approved (${connectedStage2App.id})`
+                        : `Stage 2 Connected: Technical Permits Awaiting Review (${connectedStage2App.id})`}
+                    </span>
+                    <span style={{
+                      fontSize: "0.72rem",
+                      fontWeight: "800",
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      background: connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "#dcfce7" : "#fef9c3",
+                      color: connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "#15803d" : "#b45309",
+                      border: `1px solid ${connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "#86efac" : "#fde047"}`
+                    }}>
+                      {connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "Approved" : "Pending Review"}
+                    </span>
+                  </div>
+                  <div style={{
+                    fontSize: "0.82rem",
+                    color: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                      ? "#15803d"
+                      : "#78350f",
+                    marginTop: "2px"
+                  }}>
+                    {connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                      ? `Both your locational zoning clearance and technical permitting forms have been verified and approved.`
+                      : `You have completed this step! Your Stage 2 permitting forms (${connectedStage2App.id}) are officially linked to this clearance and currently awaiting municipal approval.`}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <Link 
-              href={`/applicant/apply?clearanceRef=${encodeURIComponent(app.id)}&step=3`}
-              style={{
-                background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                color: "white",
-                padding: "8px 16px",
-                borderRadius: "10px",
-                fontSize: "0.85rem",
-                fontWeight: "800",
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
-              }}
-            >
-              <span>Proceed to Step 3: Permitting Forms</span>
-              <ArrowRight size={15} />
-            </Link>
-          </div>
+              <Link 
+                href={`/applicant/track/${encodeURIComponent(connectedStage2App.id)}`}
+                style={{
+                  background: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                    ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
+                    : "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+                  color: "white",
+                  padding: "8px 16px",
+                  borderRadius: "10px",
+                  fontSize: "0.85rem",
+                  fontWeight: "800",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                    ? "0 4px 12px rgba(5, 150, 105, 0.25)"
+                    : "0 4px 12px rgba(217, 119, 6, 0.25)"
+                }}
+              >
+                <span>View Stage 2 Permits ({connectedStage2App.id})</span>
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+          ) : (
+            <div style={{
+              background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
+              border: "1.5px solid #86efac",
+              borderRadius: "14px",
+              padding: "1rem 1.25rem",
+              marginBottom: "1.25rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "10px",
+              boxShadow: "0 2px 10px rgba(16, 185, 129, 0.08)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "34px", height: "34px", borderRadius: "10px", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Check size={20} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.9rem", fontWeight: "800", color: "#166534" }}>
+                    Stage 1 Prerequisite Passed! Clearance Ref: {app.id}
+                  </div>
+                  <div style={{ fontSize: "0.8rem", color: "#15803d" }}>
+                    Your locational zoning is officially approved. You can now proceed to Stage 2 Technical Permitting Forms with all fields prefilled.
+                  </div>
+                </div>
+              </div>
+
+              <Link 
+                href={`/applicant/apply?clearanceRef=${encodeURIComponent(app.id)}&step=3`}
+                style={{
+                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  color: "white",
+                  padding: "8px 16px",
+                  borderRadius: "10px",
+                  fontSize: "0.85rem",
+                  fontWeight: "800",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
+                }}
+              >
+                <span>Proceed to Step 3: Permitting Forms</span>
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+          )
         )}
 
         {/* FOOTER ROW WITH ACTIONS */}
@@ -613,11 +773,23 @@ export default function ApplicationStatusPage() {
           borderTop: "1.5px solid #f1f5f9",
           paddingTop: "1rem"
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.82rem", color: "#64748b" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.82rem", color: "#64748b", flexWrap: "wrap" }}>
             <span>Permit Dossier: <strong>{app.requirements?.length || 1} Document(s)</strong></span>
-            {app.locationalClearanceRef && (
-              <span>• Ref LC: <strong>{app.locationalClearanceRef}</strong></span>
-            )}
+            {app.locationalClearanceRef ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                • Linked Prerequisite: <strong style={{ color: "#059669" }}>LC ({app.locationalClearanceRef}) ✓ Approved</strong>
+              </span>
+            ) : connectedLCApp ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                • Linked Prerequisite: <strong style={{ color: "#059669" }}>LC ({connectedLCApp.id}) ✓ Approved</strong>
+              </span>
+            ) : connectedStage2App ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                • Connected Stage 2: <strong style={{ color: connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "#059669" : "#d97706" }}>
+                  {connectedStage2App.id} ({connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "Approved" : "Awaiting Review"})
+                </strong>
+              </span>
+            ) : null}
           </div>
 
           <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>

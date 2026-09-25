@@ -99,12 +99,33 @@ export default function Sidebar() {
         );
         const clearanceRef = approvedApp?.id || approvedClearanceRef;
 
+        // Check if user has ALREADY submitted a connected Stage 2 application
+        const submittedStage2 = clearanceRef
+          ? (applications || []).find(
+              (app: any) =>
+                app.id !== clearanceRef &&
+                !(app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
+                (
+                  (app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === clearanceRef.trim().toLowerCase()) ||
+                  (approvedApp?.projectName && app.projectName && (
+                    app.projectName.toLowerCase().includes(approvedApp.projectName.toLowerCase()) ||
+                    approvedApp.projectName.toLowerCase().includes(app.projectName.toLowerCase())
+                  ))
+                )
+            )
+          : null;
+
         return [
           { href: "/applicant/dashboard", label: "Dashboard", icon: Home },
           { href: "/applicant/apply", label: "New Application", icon: PlusCircle },
           { href: "/applicant/track", label: "Application Status", icon: ClipboardList },
           ...(clearanceRef ? [
-            {
+            submittedStage2 ? {
+              href: `/applicant/track/${encodeURIComponent(submittedStage2.id)}`,
+              label: "Existing Application",
+              icon: FileCheck,
+              badge: submittedStage2.status === "approved" || submittedStage2.status === "released" ? "Approved" : "Review"
+            } : {
               href: `/applicant/apply?clearanceRef=${encodeURIComponent(clearanceRef)}&step=3`,
               label: "Existing Application",
               icon: FileCheck,
