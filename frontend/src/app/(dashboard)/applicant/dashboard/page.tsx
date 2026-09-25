@@ -544,56 +544,6 @@ export default function ApplicantDashboard() {
                   <Archive size={14} color="#7c3aed" />
                   <span>{archivedCount} Archived</span>
                 </Link>
-              )}
-            </div>
-
-            {/* VIEW MODE TOGGLE BUTTONS (Group by Project Dossier vs Flat List) */}
-            <div style={{ display: "flex", background: "#f1f5f9", padding: "4px", borderRadius: "14px", border: "1px solid #e2e8f0", gap: "4px" }}>
-              <button
-                type="button"
-                onClick={() => setViewMode("project")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "7px 14px",
-                  borderRadius: "10px",
-                  fontSize: "0.85rem",
-                  fontWeight: "700",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  background: viewMode === "project" ? "#ffffff" : "transparent",
-                  color: viewMode === "project" ? "#0038A8" : "#64748b",
-                  boxShadow: viewMode === "project" ? "0 2px 8px rgba(0,0,0,0.06)" : "none"
-                }}
-                title="Group applications into Project Dossiers (combining Locational Clearance & Building Permits for each site)"
-              >
-                <FolderKanban size={16} /> Group by Project Dossier
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setViewMode("flat")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "7px 14px",
-                  borderRadius: "10px",
-                  fontSize: "0.85rem",
-                  fontWeight: "700",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  background: viewMode === "flat" ? "#ffffff" : "transparent",
-                  color: viewMode === "flat" ? "#0038A8" : "#64748b",
-                  boxShadow: viewMode === "flat" ? "0 2px 8px rgba(0,0,0,0.06)" : "none"
-                }}
-                title="View all individual applications in a flat grid"
-              >
-                <List size={16} /> All Applications (Flat)
-              </button>
             </div>
           </div>
 
