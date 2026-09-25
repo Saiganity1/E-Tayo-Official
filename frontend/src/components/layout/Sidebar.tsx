@@ -195,19 +195,32 @@ export default function Sidebar() {
           </button>
         </div>
 
-        <div className="user-profile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
-            <div className="user-avatar">
+        <div className="user-profile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1 }}>
+            <div className="user-avatar" style={{ flexShrink: 0 }}>
               {avatarChar}
             </div>
-            <div className="user-info">
-              <span className="user-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div className="user-info" style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <span 
+                className="user-name" 
+                style={{ 
+                  fontSize: displayName.length > 24 ? "0.7rem" : displayName.length > 16 ? "0.77rem" : "0.84rem",
+                  lineHeight: "1.25",
+                  fontWeight: 700,
+                  wordBreak: "break-word"
+                }}
+                title={displayName}
+              >
                 {displayName}
               </span>
-              <span className="user-role">{userRole}</span>
+              <span className="user-role" style={{ marginTop: "2px" }}>{userRole}</span>
             </div>
           </div>
-          {userRole !== "public" && <NotificationBell />}
+          {userRole !== "public" && (
+            <div style={{ flexShrink: 0 }}>
+              <NotificationBell />
+            </div>
+          )}
         </div>
 
         <nav className="sidebar-nav">
