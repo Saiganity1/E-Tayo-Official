@@ -137,9 +137,8 @@ Your application for ${projName} (${appId}) has been formally reviewed and APPRO
 💰 Assessed Regulatory Fee: PHP ${assessedAmt}
 📄 Order of Payment Reference: ${opNo}
 
-Payment Channels:
-1. Municipal Treasury Office (Ground Floor, Sto. Tomas Municipal Hall, Pampanga)
-2. Online: Landbank Link.BizPortal / GCash (Sto. Tomas Municipal LGU Trust Fund)
+Payment Office:
+Municipal Treasury Office (Ground Floor, Sto. Tomas Municipal Hall, Pampanga)
 
 Action Required:
 Please settle the assessed regulatory fee of PHP ${assessedAmt} and reply directly in this conversation with a photo or screenshot of your Official Receipt (OR) or payment confirmation.

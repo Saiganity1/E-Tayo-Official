@@ -481,6 +481,22 @@ export default function ApplicantMessagesPage() {
         };
         setMessages(prev => [...prev, localMsg]);
 
+        // Auto-register payment proof if applicant sent an image in an approved permit thread
+        if (attachedFile && activeApp && (activeApp.status === "approved" || activeApp.status === "released")) {
+          try {
+            const fileUrl = attachedFile.url || (typeof window !== "undefined" ? localStorage.getItem(`att_${attachedFile.name}`) : "");
+            if (fileUrl) {
+              localStorage.setItem("etayo_receipt_" + activeApp.id, fileUrl);
+            }
+            updateApplication({
+              ...activeApp,
+              userConfirmedPayment: true,
+              paymentProofUrl: fileUrl || (activeApp as any).paymentProofUrl,
+              datePaymentSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+            } as any);
+          } catch (e) {}
+        }
+
         // Also trigger Mang Tomas AI response if talking to Mang Tomas / General Desk
         fetch("/api/chat", {
           method: "POST",
@@ -528,6 +544,22 @@ export default function ApplicantMessagesPage() {
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, localMsg]);
+
+      // Auto-register payment proof in offline fallback mode
+      if (attachedFile && activeApp && (activeApp.status === "approved" || activeApp.status === "released")) {
+        try {
+          const fileUrl = attachedFile.url || (typeof window !== "undefined" ? localStorage.getItem(`att_${attachedFile.name}`) : "");
+          if (fileUrl) {
+            localStorage.setItem("etayo_receipt_" + activeApp.id, fileUrl);
+          }
+          updateApplication({
+            ...activeApp,
+            userConfirmedPayment: true,
+            paymentProofUrl: fileUrl || (activeApp as any).paymentProofUrl,
+            datePaymentSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+          } as any);
+        } catch (e) {}
+      }
 
       // Call /api/chat for local offline/knowledge base response
       fetch("/api/chat", {
@@ -1207,30 +1239,6 @@ export default function ApplicantMessagesPage() {
                   </div>
                 </div>
               </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <button
-                  type="button"
-                  onClick={() => receiptFileInputRef.current?.click()}
-                  style={{
-                    background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                    color: "white",
-                    border: "none",
-                    padding: "7px 15px",
-                    borderRadius: "9px",
-                    fontSize: "0.82rem",
-                    fontWeight: "800",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)"
-                  }}
-                >
-                  <ImageIcon size={15} />
-                  <span>{(activeApp as any).userConfirmedPayment ? "Send New Receipt Photo" : "📷 Upload Receipt Photo"}</span>
-                </button>
-              </div>
             </div>
           )}
 
@@ -1609,35 +1617,6 @@ export default function ApplicantMessagesPage() {
               >
                 <Paperclip size={18} />
               </button>
-
-              {/* Dedicated Receipt Photo Button */}
-              {activeApp && activeApp.status === "approved" && (
-                <button
-                  type="button"
-                  onClick={() => receiptFileInputRef.current?.click()}
-                  title="Upload & Send Payment Receipt Photo in Conversation"
-                  style={{
-                    background: "#ecfdf5",
-                    border: "1.5px solid #86efac",
-                    color: "#166534",
-                    padding: "0 12px",
-                    height: "42px",
-                    borderRadius: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    fontSize: "0.82rem",
-                    fontWeight: "800",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    flexShrink: 0,
-                    boxShadow: "0 2px 6px rgba(16, 185, 129, 0.15)"
-                  }}
-                >
-                  <Receipt size={16} color="#16a34a" />
-                  <span>Send Receipt Photo</span>
-                </button>
-              )}
 
               {/* Main Input Text */}
               <input
