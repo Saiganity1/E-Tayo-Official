@@ -163,6 +163,255 @@ export default function ApplicationTrackDetail() {
     };
   }, [appId, applications]);
 
+  const resolvedDocuments = React.useMemo(() => {
+    if (!appData) return [];
+
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    const resolveUrl = (u: string) => {
+      if (!u) return "";
+      const trimmed = u.trim();
+      return trimmed.startsWith("/api/files/") ? `${apiBase}${trimmed}` : trimmed;
+    };
+
+    const rawUrls = (typeof appData.fileUrl === "string" ? appData.fileUrl : "").split(",").map((s: string) => s.trim()).filter(Boolean);
+    const primaryFileUrl = resolveUrl(rawUrls[0] || "");
+    const isDrive = (typeof appData.fileUrl === "string" ? appData.fileUrl : "").includes("drive.google.com");
+    
+    const rawProjName = typeof appData.projectName === "string" 
+      ? appData.projectName 
+      : (typeof appData.projectType === "object" ? appData.projectType?.name : (typeof appData.projectType === "string" ? appData.projectType : "Permit"));
+    const projNameClean = (rawProjName || "Permit").replace(/[^a-zA-Z0-9_-]/g, "_");
+
+    const docs: Array<{
+      id: string;
+      title: string;
+      code: string;
+      category: string;
+      desc: string;
+      fileName: string;
+      fileSize: string;
+      url: string;
+      downloadName: string;
+      badgeBg: string;
+      badgeColor: string;
+      iconBg: string;
+      iconColor: string;
+      iconType: "bp" | "ap" | "sp" | "ep" | "pl" | "fsec" | "lc" | "map" | "file";
+      isDriveBackup?: boolean;
+    }> = [];
+
+    const pTypeStr = String(appData.permitType || "locational_clearance").toLowerCase();
+
+    // 1. MASTER UNIFIED PERMIT PACKAGE (Compiled Dossier)
+    if (primaryFileUrl || pTypeStr === "building_permit" || pTypeStr === "locational_clearance") {
+      docs.push({
+        id: "master-dossier",
+        title: pTypeStr === "locational_clearance" 
+          ? "Official Locational Clearance Dossier" 
+          : "Compiled Unified Building Permit Dossier",
+        code: pTypeStr === "locational_clearance" ? "LC-DOSSIER" : "BP-DOSSIER",
+        category: "Master Dossier",
+        desc: "Complete compiled DPWH & LGU permit package with technical certifications",
+        fileName: appData.fileName || `${appData.id}_${projNameClean}_Permit_Package.pdf`,
+        fileSize: "2.4 MB",
+        url: primaryFileUrl || (pTypeStr === "locational_clearance" ? "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf" : "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf"),
+        downloadName: appData.fileName || `${appData.id}_${projNameClean}_Permit_Package.pdf`,
+        badgeBg: "#dbeafe",
+        badgeColor: "#1e40af",
+        iconBg: "#eff6ff",
+        iconColor: "#0038A8",
+        iconType: pTypeStr === "locational_clearance" ? "lc" : "bp",
+        isDriveBackup: isDrive
+      });
+    }
+
+    // 2. LOCATIONAL CLEARANCE (Zoning Prerequisite)
+    if (appData.locationalClearanceRef && appData.locationalClearanceRef !== "EXEMPT") {
+      docs.push({
+        id: "locational-clearance",
+        title: "Locational Clearance (Zoning Approval)",
+        code: "LC",
+        category: "Zoning Clearance",
+        desc: `Municipal zoning compliance prerequisite • Ref: ${appData.locationalClearanceRef}`,
+        fileName: `Locational_Clearance_${appData.locationalClearanceRef}.pdf`,
+        fileSize: "840 KB",
+        url: "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
+        downloadName: `Locational_Clearance_${appData.locationalClearanceRef}.pdf`,
+        badgeBg: "#dcfce7",
+        badgeColor: "#15803d",
+        iconBg: "#f0fdf4",
+        iconColor: "#16a34a",
+        iconType: "lc"
+      });
+    }
+
+    // 3. THE 6 OFFICIAL TECHNICAL PERMIT FORMS (DPWH & Sto. Tomas Municipal Engineering)
+    const standardTechnicalForms = [
+      {
+        key: "buildingPermit",
+        code: "BP",
+        title: "Building Permit (NBC Form B-01)",
+        desc: "General Construction, Storeys, Floor Area & Total Cost Breakdown",
+        template: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
+        badgeBg: "#dbeafe",
+        badgeColor: "#1d4ed8",
+        iconBg: "#eff6ff",
+        iconColor: "#0038A8",
+        iconType: "bp" as const
+      },
+      {
+        key: "architecturalPermit",
+        code: "AP",
+        title: "Architectural Permit (NBC Form A-01)",
+        desc: "Architectural Plans, Spatial Layouts, Setbacks & Material Finishes",
+        template: "/templates/ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
+        badgeBg: "#e0e7ff",
+        badgeColor: "#4338ca",
+        iconBg: "#eef2ff",
+        iconColor: "#4f46e5",
+        iconType: "ap" as const
+      },
+      {
+        key: "civilStructuralPermit",
+        code: "SP",
+        title: "Civil / Structural Permit (NBC Form S-01)",
+        desc: "Foundation Design, Concrete fc', Rebar fy & Structural Calculations",
+        template: "/templates/Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf",
+        badgeBg: "#f3e8ff",
+        badgeColor: "#6d28d9",
+        iconBg: "#faf5ff",
+        iconColor: "#7c3aed",
+        iconType: "sp" as const
+      },
+      {
+        key: "electricalPermit",
+        code: "EP",
+        title: "Electrical Permit (NBC Form E-01)",
+        desc: "Service Voltage, Load Schedules, Connected Load & PEE Sign-off",
+        template: "/templates/ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf",
+        badgeBg: "#fef3c7",
+        badgeColor: "#b45309",
+        iconBg: "#fffbeb",
+        iconColor: "#d97706",
+        iconType: "ep" as const
+      },
+      {
+        key: "sanitaryPermit",
+        code: "PL",
+        title: "Sanitary / Plumbing Permit (NBC Form P-01)",
+        desc: "Water Supply, Septic Tank Dimensions, Fixtures & Master Plumber",
+        template: "/templates/SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf",
+        badgeBg: "#cffafe",
+        badgeColor: "#0e7490",
+        iconBg: "#ecfeff",
+        iconColor: "#0891b2",
+        iconType: "pl" as const
+      },
+      {
+        key: "fireBfpPermit",
+        code: "FSEC",
+        title: "Fire Safety Evaluation Clearance (FSEC / BFP)",
+        desc: "BFP Life Safety Standards, Fire Exits, Extinguishers & Egress Widths",
+        template: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
+        badgeBg: "#fee2e2",
+        badgeColor: "#b91c1c",
+        iconBg: "#fef2f2",
+        iconColor: "#dc2626",
+        iconType: "fsec" as const
+      }
+    ];
+
+    if (Array.isArray(appData.requirements) && appData.requirements.length > 0) {
+      appData.requirements.forEach((req: any, i: number) => {
+        if (!req) return;
+        const reqName = typeof req === "string" ? req : (req.name || `Requirement ${i + 1}`);
+
+        // Avoid duplicating LC if already added
+        if (reqName.toLowerCase().includes("locational clearance") && docs.some(d => d.code === "LC" || d.code === "LC-DOSSIER")) {
+          return;
+        }
+
+        const matched = standardTechnicalForms.find(
+          f => reqName.toLowerCase().includes(f.title.toLowerCase()) || 
+               reqName.includes(`(${f.code})`) || 
+               (typeof req.fileName === "string" && req.fileName.startsWith(`${f.code}_`))
+        );
+
+        const code = matched ? matched.code : `REQ-${i + 1}`;
+        const title = matched ? matched.title : reqName;
+        const desc = matched ? matched.desc : (req.remarks || "Official engineering attachment submitted");
+        const template = matched ? matched.template : (primaryFileUrl || "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf");
+        const fileName = req.fileName || `${code}_${projNameClean}_Official_Filled.pdf`;
+        const fileSize = req.fileSize || "1.4 MB";
+        const badgeBg = matched ? matched.badgeBg : "#f1f5f9";
+        const badgeColor = matched ? matched.badgeColor : "#334155";
+        const iconBg = matched ? matched.iconBg : "#f8fafc";
+        const iconColor = matched ? matched.iconColor : "#475569";
+        const iconType = matched ? matched.iconType : ("file" as const);
+
+        if (!docs.some(d => d.title === title || d.code === code)) {
+          docs.push({
+            id: `req-${i}`,
+            title,
+            code,
+            category: "Technical Permit",
+            desc,
+            fileName,
+            fileSize,
+            url: resolveUrl(req.fileUrl || template),
+            downloadName: fileName,
+            badgeBg,
+            badgeColor,
+            iconBg,
+            iconColor,
+            iconType
+          });
+        }
+      });
+    } else if (pTypeStr === "building_permit" || pTypeStr.includes("building")) {
+      standardTechnicalForms.forEach((f, i) => {
+        docs.push({
+          id: `std-form-${i}`,
+          title: f.title,
+          code: f.code,
+          category: "Technical Permit",
+          desc: f.desc,
+          fileName: `${f.code}_${projNameClean}_Official_Filled.pdf`,
+          fileSize: "1.4 MB",
+          url: f.template,
+          downloadName: `${f.code}_${projNameClean}_Official_Filled.pdf`,
+          badgeBg: f.badgeBg,
+          badgeColor: f.badgeColor,
+          iconBg: f.iconBg,
+          iconColor: f.iconColor,
+          iconType: f.iconType
+        });
+      });
+    }
+
+    // 4. VICINITY SKETCH MAP (if available)
+    if (appData.sketchImageUrl) {
+      docs.push({
+        id: "sketch-map",
+        title: "Section D: Vicinity Sketch Map & Cadastral Coordinates",
+        code: "GIS-MAP",
+        category: "Site Mapping",
+        desc: `Georeferenced cadastral boundaries in Sto. Tomas (Lat: ${appData.location?.lat || '15.0050'}, Lng: ${appData.location?.lng || '120.7100'})`,
+        fileName: `${appData.id}_Vicinity_Sketch.png`,
+        fileSize: "620 KB",
+        url: resolveUrl(appData.sketchImageUrl),
+        downloadName: `${appData.id}_Vicinity_Sketch.png`,
+        badgeBg: "#e0f2fe",
+        badgeColor: "#0369a1",
+        iconBg: "#f0f9ff",
+        iconColor: "#0284c7",
+        iconType: "map"
+      });
+    }
+
+    return docs;
+  }, [appData]);
+
   if (!appData) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center animate-fade-in-up" style={{ minHeight: "50vh" }}>
@@ -475,255 +724,6 @@ export default function ApplicationTrackDetail() {
     a.click();
     document.body.removeChild(a);
   };
-
-  const resolvedDocuments = React.useMemo(() => {
-    if (!appData) return [];
-
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-    const resolveUrl = (u: string) => {
-      if (!u) return "";
-      const trimmed = u.trim();
-      return trimmed.startsWith("/api/files/") ? `${apiBase}${trimmed}` : trimmed;
-    };
-
-    const rawUrls = (typeof appData.fileUrl === "string" ? appData.fileUrl : "").split(",").map((s: string) => s.trim()).filter(Boolean);
-    const primaryFileUrl = resolveUrl(rawUrls[0] || "");
-    const isDrive = (typeof appData.fileUrl === "string" ? appData.fileUrl : "").includes("drive.google.com");
-    
-    const rawProjName = typeof appData.projectName === "string" 
-      ? appData.projectName 
-      : (typeof appData.projectType === "object" ? appData.projectType?.name : (typeof appData.projectType === "string" ? appData.projectType : "Permit"));
-    const projNameClean = (rawProjName || "Permit").replace(/[^a-zA-Z0-9_-]/g, "_");
-
-    const docs: Array<{
-      id: string;
-      title: string;
-      code: string;
-      category: string;
-      desc: string;
-      fileName: string;
-      fileSize: string;
-      url: string;
-      downloadName: string;
-      badgeBg: string;
-      badgeColor: string;
-      iconBg: string;
-      iconColor: string;
-      iconType: "bp" | "ap" | "sp" | "ep" | "pl" | "fsec" | "lc" | "map" | "file";
-      isDriveBackup?: boolean;
-    }> = [];
-
-    const pTypeStr = String(appData.permitType || "locational_clearance").toLowerCase();
-
-    // 1. MASTER UNIFIED PERMIT PACKAGE (Compiled Dossier)
-    if (primaryFileUrl || pTypeStr === "building_permit" || pTypeStr === "locational_clearance") {
-      docs.push({
-        id: "master-dossier",
-        title: pTypeStr === "locational_clearance" 
-          ? "Official Locational Clearance Dossier" 
-          : "Compiled Unified Building Permit Dossier",
-        code: pTypeStr === "locational_clearance" ? "LC-DOSSIER" : "BP-DOSSIER",
-        category: "Master Dossier",
-        desc: "Complete compiled DPWH & LGU permit package with technical certifications",
-        fileName: appData.fileName || `${appData.id}_${projNameClean}_Permit_Package.pdf`,
-        fileSize: "2.4 MB",
-        url: primaryFileUrl || (pTypeStr === "locational_clearance" ? "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf" : "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf"),
-        downloadName: appData.fileName || `${appData.id}_${projNameClean}_Permit_Package.pdf`,
-        badgeBg: "#dbeafe",
-        badgeColor: "#1e40af",
-        iconBg: "#eff6ff",
-        iconColor: "#0038A8",
-        iconType: pTypeStr === "locational_clearance" ? "lc" : "bp",
-        isDriveBackup: isDrive
-      });
-    }
-
-    // 2. LOCATIONAL CLEARANCE (Zoning Prerequisite)
-    if (appData.locationalClearanceRef && appData.locationalClearanceRef !== "EXEMPT") {
-      docs.push({
-        id: "locational-clearance",
-        title: "Locational Clearance (Zoning Approval)",
-        code: "LC",
-        category: "Zoning Clearance",
-        desc: `Municipal zoning compliance prerequisite • Ref: ${appData.locationalClearanceRef}`,
-        fileName: `Locational_Clearance_${appData.locationalClearanceRef}.pdf`,
-        fileSize: "840 KB",
-        url: "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
-        downloadName: `Locational_Clearance_${appData.locationalClearanceRef}.pdf`,
-        badgeBg: "#dcfce7",
-        badgeColor: "#15803d",
-        iconBg: "#f0fdf4",
-        iconColor: "#16a34a",
-        iconType: "lc"
-      });
-    }
-
-    // 3. THE 6 OFFICIAL TECHNICAL PERMIT FORMS (DPWH & Sto. Tomas Municipal Engineering)
-    const standardTechnicalForms = [
-      {
-        key: "buildingPermit",
-        code: "BP",
-        title: "Building Permit (NBC Form B-01)",
-        desc: "General Construction, Storeys, Floor Area & Total Cost Breakdown",
-        template: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
-        badgeBg: "#dbeafe",
-        badgeColor: "#1d4ed8",
-        iconBg: "#eff6ff",
-        iconColor: "#0038A8",
-        iconType: "bp" as const
-      },
-      {
-        key: "architecturalPermit",
-        code: "AP",
-        title: "Architectural Permit (NBC Form A-01)",
-        desc: "Architectural Plans, Spatial Layouts, Setbacks & Material Finishes",
-        template: "/templates/ARCHITECTURAL-PERMIT-Sto-Tomas-Gilbert-Cruz.pdf",
-        badgeBg: "#e0e7ff",
-        badgeColor: "#4338ca",
-        iconBg: "#eef2ff",
-        iconColor: "#4f46e5",
-        iconType: "ap" as const
-      },
-      {
-        key: "civilStructuralPermit",
-        code: "SP",
-        title: "Civil / Structural Permit (NBC Form S-01)",
-        desc: "Foundation Design, Concrete fc', Rebar fy & Structural Calculations",
-        template: "/templates/Civil-Structural-Permit-Sto-Tomas-Gilbert-Cruz.pdf",
-        badgeBg: "#f3e8ff",
-        badgeColor: "#6d28d9",
-        iconBg: "#faf5ff",
-        iconColor: "#7c3aed",
-        iconType: "sp" as const
-      },
-      {
-        key: "electricalPermit",
-        code: "EP",
-        title: "Electrical Permit (NBC Form E-01)",
-        desc: "Service Voltage, Load Schedules, Connected Load & PEE Sign-off",
-        template: "/templates/ELECTRICAL-PERMIT-FORM-Gilbert-Cruz.pdf",
-        badgeBg: "#fef3c7",
-        badgeColor: "#b45309",
-        iconBg: "#fffbeb",
-        iconColor: "#d97706",
-        iconType: "ep" as const
-      },
-      {
-        key: "sanitaryPermit",
-        code: "PL",
-        title: "Sanitary / Plumbing Permit (NBC Form P-01)",
-        desc: "Water Supply, Septic Tank Dimensions, Fixtures & Master Plumber",
-        template: "/templates/SANITARY-PLUMBING-PERMIT-Sto-Tomas-Fixed.pdf",
-        badgeBg: "#cffafe",
-        badgeColor: "#0e7490",
-        iconBg: "#ecfeff",
-        iconColor: "#0891b2",
-        iconType: "pl" as const
-      },
-      {
-        key: "fireBfpPermit",
-        code: "FSEC",
-        title: "Fire Safety Evaluation Clearance (FSEC / BFP)",
-        desc: "BFP Life Safety Standards, Fire Exits, Extinguishers & Egress Widths",
-        template: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
-        badgeBg: "#fee2e2",
-        badgeColor: "#b91c1c",
-        iconBg: "#fef2f2",
-        iconColor: "#dc2626",
-        iconType: "fsec" as const
-      }
-    ];
-
-    if (Array.isArray(appData.requirements) && appData.requirements.length > 0) {
-      appData.requirements.forEach((req: any, i: number) => {
-        if (!req) return;
-        const reqName = typeof req === "string" ? req : (req.name || `Requirement ${i + 1}`);
-
-        // Avoid duplicating LC if already added
-        if (reqName.toLowerCase().includes("locational clearance") && docs.some(d => d.code === "LC" || d.code === "LC-DOSSIER")) {
-          return;
-        }
-
-        const matched = standardTechnicalForms.find(
-          f => reqName.toLowerCase().includes(f.title.toLowerCase()) || 
-               reqName.includes(`(${f.code})`) || 
-               (typeof req.fileName === "string" && req.fileName.startsWith(`${f.code}_`))
-        );
-
-        const code = matched ? matched.code : `REQ-${i + 1}`;
-        const title = matched ? matched.title : reqName;
-        const desc = matched ? matched.desc : (req.remarks || "Official engineering attachment submitted");
-        const template = matched ? matched.template : (primaryFileUrl || "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf");
-        const fileName = req.fileName || `${code}_${projNameClean}_Official_Filled.pdf`;
-        const fileSize = req.fileSize || "1.4 MB";
-        const badgeBg = matched ? matched.badgeBg : "#f1f5f9";
-        const badgeColor = matched ? matched.badgeColor : "#334155";
-        const iconBg = matched ? matched.iconBg : "#f8fafc";
-        const iconColor = matched ? matched.iconColor : "#475569";
-        const iconType = matched ? matched.iconType : ("file" as const);
-
-        if (!docs.some(d => d.title === title || d.code === code)) {
-          docs.push({
-            id: `req-${i}`,
-            title,
-            code,
-            category: "Technical Permit",
-            desc,
-            fileName,
-            fileSize,
-            url: resolveUrl(req.fileUrl || template),
-            downloadName: fileName,
-            badgeBg,
-            badgeColor,
-            iconBg,
-            iconColor,
-            iconType
-          });
-        }
-      });
-    } else if (pTypeStr === "building_permit" || pTypeStr.includes("building")) {
-      standardTechnicalForms.forEach((f, i) => {
-        docs.push({
-          id: `std-form-${i}`,
-          title: f.title,
-          code: f.code,
-          category: "Technical Permit",
-          desc: f.desc,
-          fileName: `${f.code}_${projNameClean}_Official_Filled.pdf`,
-          fileSize: "1.4 MB",
-          url: f.template,
-          downloadName: `${f.code}_${projNameClean}_Official_Filled.pdf`,
-          badgeBg: f.badgeBg,
-          badgeColor: f.badgeColor,
-          iconBg: f.iconBg,
-          iconColor: f.iconColor,
-          iconType: f.iconType
-        });
-      });
-    }
-
-    // 4. VICINITY SKETCH MAP (if available)
-    if (appData.sketchImageUrl) {
-      docs.push({
-        id: "sketch-map",
-        title: "Section D: Vicinity Sketch Map & Cadastral Coordinates",
-        code: "GIS-MAP",
-        category: "Site Mapping",
-        desc: `Georeferenced cadastral boundaries in Sto. Tomas (Lat: ${appData.location?.lat || '15.0050'}, Lng: ${appData.location?.lng || '120.7100'})`,
-        fileName: `${appData.id}_Vicinity_Sketch.png`,
-        fileSize: "620 KB",
-        url: resolveUrl(appData.sketchImageUrl),
-        downloadName: `${appData.id}_Vicinity_Sketch.png`,
-        badgeBg: "#e0f2fe",
-        badgeColor: "#0369a1",
-        iconBg: "#f0f9ff",
-        iconColor: "#0284c7",
-        iconType: "map"
-      });
-    }
-
-    return docs;
-  }, [appData]);
 
   const renderDocIcon = (iconType: string) => {
     switch(iconType) {
