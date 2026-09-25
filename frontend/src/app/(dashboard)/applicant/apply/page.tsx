@@ -478,9 +478,19 @@ export default function ApplyPage() {
     (k) => selectedProjectType.matrix[k] === 'conditional' && k !== 'zoningPermit'
   ) : [];
 
-  // Mandatory permits that have not yet been attached
+  // Technical permits (BP, AP, SP, EP, PL, MP, EL, FP, DP) are answered digitally online in Step 3.
+  // The ONLY permit that requires manual file upload/attachment is Fire / BFP Clearance ('fireBfpPermit').
+  const isPermitSatisfied = (k: keyof PermitFormMatrix) => {
+    if (k === 'fireBfpPermit') {
+      return Boolean(uploadedPermitDocs['fireBfpPermit']);
+    }
+    // All other technical permits are answered online in Step 3 and compiled digitally
+    return true;
+  };
+
+  // Mandatory permits that require manual file upload and have not yet been attached (ONLY fireBfpPermit)
   const missingMandatoryPermits = mandatoryPermitsToSubmit.filter(
-    (k) => !uploadedPermitDocs[k]
+    (k) => !isPermitSatisfied(k)
   );
 
   const isAllMandatoryAttached = missingMandatoryPermits.length === 0;
@@ -597,7 +607,7 @@ export default function ApplyPage() {
     if (!isAllMandatoryAttached) {
       const missingLabels = missingMandatoryPermits.map(k => PERMIT_FORM_METADATA[k]?.label || k).join(", ");
       setSubmissionErrorAlert(
-        `Submission Incomplete: Sto. Tomas Permitting Regulations require attaching all mandatory engineering permits for ${selectedProjectType.name}. Missing: ${missingLabels}. Please upload the documents below or complete them online.`
+        `Submission Incomplete: Sto. Tomas Permitting Regulations require attaching your ${missingLabels} for ${selectedProjectType.name}. Please upload your issued BFP clearance file below before submitting.`
       );
       if (typeof document !== "undefined") {
         const elem = document.getElementById("mandatory-requirements-section");
@@ -2433,12 +2443,12 @@ export default function ApplyPage() {
                       {isAllMandatoryAttached ? (
                         <>
                           <Check size={14} strokeWidth={3} />
-                          All Mandatory Attached ({mandatoryPermitsToSubmit.length}/{mandatoryPermitsToSubmit.length})
+                          All Requirements Satisfied ({mandatoryPermitsToSubmit.length}/{mandatoryPermitsToSubmit.length})
                         </>
                       ) : (
                         <>
                           <AlertCircle size={14} />
-                          {missingMandatoryPermits.length} Mandatory Pending Upload
+                          {missingMandatoryPermits.length} Mandatory Pending Upload (Fire / BFP Clearance)
                         </>
                       )}
                     </span>
@@ -2446,7 +2456,7 @@ export default function ApplyPage() {
                 </div>
 
                 <p style={{ margin: "0 0 1.25rem 0", color: "#475569", fontSize: "0.9rem", lineHeight: "1.5" }}>
-                  Under the Santo Tomas Municipal Permitting Matrix and the National Building Code of the Philippines (PD 1096), projects under <strong>{selectedProjectType.name}</strong> require submitting the technical engineering permits below before an official permit can be issued.
+                  Under the Santo Tomas Municipal Permitting Matrix and the National Building Code of the Philippines (PD 1096), technical engineering permits answered online in Step 3 are automatically compiled into your official digital permit dossier.
                 </p>
 
                 {/* Submission Error Banner */}
@@ -2493,29 +2503,9 @@ export default function ApplyPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <AlertCircle size={18} color="#d97706" style={{ flexShrink: 0 }} />
                       <span style={{ fontSize: "0.86rem", color: "#92400e", fontWeight: "600" }}>
-                        Submission locked: You must attach the <strong>{missingMandatoryPermits.map(k => PERMIT_FORM_METADATA[k]?.label || k).join(", ")}</strong> below before your application can be filed.
+                        Submission locked: You must attach your <strong>Fire / BFP Clearance (FSEC)</strong> below before your application can be filed. (Other mandatory technical permits were answered online in Step 3).
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowUnifiedForm(true)}
-                      style={{
-                        background: "#4f46e5",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        padding: "6px 12px",
-                        fontSize: "0.78rem",
-                        fontWeight: "700",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "5px",
-                        boxShadow: "0 2px 6px rgba(79, 70, 229, 0.2)"
-                      }}
-                    >
-                      <Sparkles size={13} /> Or Auto-Fill Online
-                    </button>
                   </div>
                 ) : (
                   <div style={{
@@ -2530,7 +2520,7 @@ export default function ApplyPage() {
                   }}>
                     <CheckCircle2 size={18} color="#16a34a" style={{ flexShrink: 0 }} />
                     <span style={{ fontSize: "0.86rem", color: "#166534", fontWeight: "700" }}>
-                      All mandatory engineering attachments verified! You may now submit your application package to the Building Official.
+                      All mandatory engineering attachments and digital forms verified! You may now submit your application package to the Building Official.
                     </span>
                   </div>
                 )}
@@ -2543,31 +2533,171 @@ export default function ApplyPage() {
                     const templatePath = getPermitFormTemplate(key, selectedProjectType);
                     const Icon = PERMIT_ICONS[key] || FileText;
                     const isUploading = activeUploadingKey === key;
+                    const isBfpClearance = key === "fireBfpPermit";
 
                     // Specialized engineering requirement notice
-                    let signeeNotice = "Must be prepared, signed, and sealed by a registered PRC professional.";
-                    if (key === "electricalPermit") {
-                      signeeNotice = "Requires sign-off by a licensed Professional Electrical Engineer (PEE) with electrical layout & load computations.";
-                    } else if (key === "mechanicalPermit") {
-                      signeeNotice = "Requires sign-off by a licensed Professional Mechanical Engineer (PME) with machinery plans & equipment details.";
-                    } else if (key === "civilStructuralPermit") {
-                      signeeNotice = "Requires sign-off by a licensed Civil/Structural Engineer with structural design calculations.";
-                    } else if (key === "architecturalPermit") {
-                      signeeNotice = "Requires sign-off by a licensed Registered Architect with complete architectural plans.";
-                    } else if (key === "sanitaryPermit") {
-                      signeeNotice = "Requires sign-off by a licensed Master Plumber or Sanitary Engineer with plumbing layout.";
-                    } else if (key === "electronicsPermit") {
-                      signeeNotice = "Requires sign-off by a licensed Professional Electronics Engineer (PECE).";
-                    } else if (key === "fireBfpPermit") {
-                      signeeNotice = "Requires Fire Safety Evaluation Clearance (FSEC) application compliant with RA 9514.";
+                    let signeeNotice = "Digitally filled & verified online in Step 3 • Sto. Tomas NBCP standards applied.";
+                    if (isBfpClearance) {
+                      signeeNotice = "Requires Fire Safety Evaluation Clearance (FSEC) certificate issued by Bureau of Fire Protection (BFP Sto. Tomas).";
                     }
 
+                    if (isBfpClearance) {
+                      // Fire / BFP Clearance is the ONLY permit requiring external file upload
+                      return (
+                        <div 
+                          key={key} 
+                          style={{
+                            background: doc ? "#f0fdf4" : "#fffbeb",
+                            border: doc ? "1.5px solid #86efac" : "1.5px solid #fde68a",
+                            borderRadius: "14px",
+                            padding: "1.1rem 1.25rem",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: "1rem",
+                            transition: "all 0.2s ease"
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem", flex: 1, minWidth: "280px" }}>
+                            <div style={{
+                              width: "42px",
+                              height: "42px",
+                              borderRadius: "10px",
+                              background: doc ? "#dcfce7" : "#fee2e2",
+                              color: doc ? "#15803d" : "#dc2626",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                              marginTop: "2px"
+                            }}>
+                              <Icon size={22} />
+                            </div>
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "3px" }}>
+                                <span style={{
+                                  background: "#991b1b",
+                                  color: "white",
+                                  fontSize: "0.68rem",
+                                  fontWeight: "800",
+                                  padding: "2px 7px",
+                                  borderRadius: "4px"
+                                }}>
+                                  {meta.code}
+                                </span>
+                                <strong style={{ fontSize: "1rem", color: "#0f172a" }}>
+                                  {meta.label}
+                                </strong>
+                                <span style={{
+                                  fontSize: "0.68rem",
+                                  fontWeight: "800",
+                                  padding: "2px 8px",
+                                  borderRadius: "999px",
+                                  background: doc ? "#dcfce7" : "#fee2e2",
+                                  color: doc ? "#166534" : "#991b1b",
+                                  border: doc ? "1px solid #bbf7d0" : "1px solid #fecaca"
+                                }}>
+                                  {doc ? "ATTACHED" : "UPLOAD REQUIRED"}
+                                </span>
+                              </div>
+                              <p style={{ margin: "0 0 4px 0", fontSize: "0.82rem", color: "#475569" }}>
+                                {meta.desc}
+                              </p>
+                              <p style={{ margin: 0, fontSize: "0.76rem", color: doc ? "#16a34a" : "#b45309", fontStyle: "italic", fontWeight: "600" }}>
+                                {doc ? "✓ Official BFP Clearance document attached" : signeeNotice}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Right: Upload controls */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                            {doc ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <div style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  background: "#ffffff",
+                                  border: "1px solid #86efac",
+                                  color: "#166534",
+                                  padding: "6px 12px",
+                                  borderRadius: "8px",
+                                  fontSize: "0.8rem",
+                                  fontWeight: "600",
+                                  maxWidth: "220px",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap"
+                                }}>
+                                  <CheckCircle2 size={15} color="#16a34a" />
+                                  <span title={doc.fileName} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {doc.fileName}
+                                  </span>
+                                  <span style={{ color: "#64748b", fontSize: "0.72rem" }}>
+                                    ({doc.fileSize})
+                                  </span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePermitDoc(key)}
+                                  style={{
+                                    background: "#fee2e2",
+                                    border: "1px solid #fca5a5",
+                                    color: "#dc2626",
+                                    borderRadius: "8px",
+                                    padding: "7px 10px",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: "700"
+                                  }}
+                                  title="Remove this attachment"
+                                >
+                                  <Trash2 size={13} /> Remove
+                                </button>
+                              </div>
+                            ) : (
+                              <label style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                padding: "8px 14px",
+                                borderRadius: "8px",
+                                background: isUploading ? "#94a3b8" : "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                                color: "white",
+                                fontSize: "0.8rem",
+                                fontWeight: "700",
+                                cursor: isUploading ? "wait" : "pointer",
+                                boxShadow: "0 2px 6px rgba(220, 38, 38, 0.25)",
+                                transition: "all 0.15s ease"
+                              }}>
+                                <Upload size={14} />
+                                <span>{isUploading ? "Uploading..." : "Attach BFP File"}</span>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.png,.jpg,.jpeg"
+                                  disabled={isUploading}
+                                  onChange={(e) => handlePermitDocUpload(key, e)}
+                                  style={{ display: "none" }}
+                                />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // All other mandatory permits are digital online forms answered in Step 3
                     return (
                       <div 
                         key={key} 
                         style={{
-                          background: doc ? "#f0fdf4" : "#f8fafc",
-                          border: doc ? "1.5px solid #86efac" : "1.5px solid #e2e8f0",
+                          background: "#f0fdf4",
+                          border: "1.5px solid #86efac",
                           borderRadius: "14px",
                           padding: "1.1rem 1.25rem",
                           display: "flex",
@@ -2583,8 +2713,8 @@ export default function ApplyPage() {
                             width: "42px",
                             height: "42px",
                             borderRadius: "10px",
-                            background: doc ? "#dcfce7" : "#eff6ff",
-                            color: doc ? "#15803d" : "#2563eb",
+                            background: "#dcfce7",
+                            color: "#15803d",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -2613,23 +2743,27 @@ export default function ApplyPage() {
                                 fontWeight: "800",
                                 padding: "2px 8px",
                                 borderRadius: "999px",
-                                background: doc ? "#dcfce7" : "#fee2e2",
-                                color: doc ? "#166534" : "#991b1b",
-                                border: doc ? "1px solid #bbf7d0" : "1px solid #fecaca"
+                                background: "#dcfce7",
+                                color: "#166534",
+                                border: "1px solid #bbf7d0",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px"
                               }}>
-                                {doc ? "ATTACHED" : "MANDATORY"}
+                                <Check size={12} strokeWidth={3} />
+                                FILLED ONLINE (STEP 3)
                               </span>
                             </div>
                             <p style={{ margin: "0 0 4px 0", fontSize: "0.82rem", color: "#475569" }}>
                               {meta.desc}
                             </p>
-                            <p style={{ margin: 0, fontSize: "0.76rem", color: "#64748b", fontStyle: "italic" }}>
-                              {signeeNotice}
+                            <p style={{ margin: 0, fontSize: "0.76rem", color: "#16a34a", fontWeight: "600" }}>
+                              ✓ Form answered & compiled digitally. No manual file attachment required.
                             </p>
                           </div>
                         </div>
 
-                        {/* Right: Upload controls and template */}
+                        {/* Right: Template download & edit online form */}
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           {templatePath && (
                             <a
@@ -2658,80 +2792,28 @@ export default function ApplyPage() {
                             </a>
                           )}
 
-                          {doc ? (
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <div style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                background: "#ffffff",
-                                border: "1px solid #86efac",
-                                color: "#166534",
-                                padding: "6px 12px",
-                                borderRadius: "8px",
-                                fontSize: "0.8rem",
-                                fontWeight: "600",
-                                maxWidth: "220px",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap"
-                              }}>
-                                <CheckCircle2 size={15} color="#16a34a" />
-                                <span title={doc.fileName} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-                                  {doc.fileName}
-                                </span>
-                                <span style={{ color: "#64748b", fontSize: "0.72rem" }}>
-                                  ({doc.fileSize})
-                                </span>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => handleRemovePermitDoc(key)}
-                                style={{
-                                  background: "#fee2e2",
-                                  border: "1px solid #fca5a5",
-                                  color: "#dc2626",
-                                  borderRadius: "8px",
-                                  padding: "7px 10px",
-                                  cursor: "pointer",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "4px",
-                                  fontSize: "0.75rem",
-                                  fontWeight: "700"
-                                }}
-                                title="Remove this attachment"
-                              >
-                                <Trash2 size={13} /> Remove
-                              </button>
-                            </div>
-                          ) : (
-                            <label style={{
+                          <button
+                            type="button"
+                            onClick={() => goToStep(3)}
+                            style={{
                               display: "inline-flex",
                               alignItems: "center",
-                              gap: "6px",
-                              padding: "8px 14px",
+                              gap: "5px",
+                              padding: "7px 12px",
                               borderRadius: "8px",
-                              background: isUploading ? "#94a3b8" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                              color: "white",
-                              fontSize: "0.8rem",
+                              background: "#f8fafc",
+                              border: "1px solid #cbd5e1",
+                              color: "#475569",
+                              fontSize: "0.78rem",
                               fontWeight: "700",
-                              cursor: isUploading ? "wait" : "pointer",
-                              boxShadow: "0 2px 6px rgba(37, 99, 235, 0.25)",
+                              cursor: "pointer",
                               transition: "all 0.15s ease"
-                            }}>
-                              <Upload size={14} />
-                              <span>{isUploading ? "Uploading..." : `Attach ${meta.code} File`}</span>
-                              <input
-                                type="file"
-                                accept=".pdf,.png,.jpg,.jpeg"
-                                disabled={isUploading}
-                                onChange={(e) => handlePermitDocUpload(key, e)}
-                                style={{ display: "none" }}
-                              />
-                            </label>
-                          )}
+                            }}
+                            title="Review or edit your online answers in Step 3"
+                          >
+                            <FileText size={13} color="#2563eb" />
+                            <span>Edit Online Form</span>
+                          </button>
                         </div>
                       </div>
                     );

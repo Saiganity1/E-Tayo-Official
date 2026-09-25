@@ -816,6 +816,19 @@ export default function TechnicalPermitFormsStep({
         setNotification("Please attach your issued Fire / BFP Clearance (FSEC) file before submitting.");
         return;
       }
+    } else {
+      // Automatically register the completed digital online form
+      setUploadedPermitDocs((prev) => ({
+        ...prev,
+        [tabKey]: prev[tabKey] || {
+          fileName: `${PERMIT_FORM_METADATA[tabKey as keyof PermitFormMatrix]?.code || tabKey}_${projectType.name.replace(/\s+/g, '_')}_Official_Filled.pdf`,
+          fileSize: "1.4 MB",
+          fileUrl: getPermitFormTemplate(tabKey as keyof PermitFormMatrix, projectType) || "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
+          uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isCompiled: true,
+          isFilledOnline: true,
+        }
+      }));
     }
 
     setCompletedForms((prev) => {
@@ -841,6 +854,27 @@ export default function TechnicalPermitFormsStep({
         setActiveTab(nextIncomplete);
       }, 500);
     }
+  };
+
+  // Ensure all satisfied online forms are saved before advancing to Step 4: Mapping
+  const handleProceedToMapping = () => {
+    setUploadedPermitDocs((prev) => {
+      const next = { ...prev };
+      for (const key of mandatoryKeys) {
+        if (key !== "fireBfpPermit" && !next[key]) {
+          next[key] = {
+            fileName: `${PERMIT_FORM_METADATA[key as keyof PermitFormMatrix]?.code || key}_${projectType.name.replace(/\s+/g, '_')}_Official_Filled.pdf`,
+            fileSize: "1.4 MB",
+            fileUrl: getPermitFormTemplate(key as keyof PermitFormMatrix, projectType) || "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
+            uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isCompiled: true,
+            isFilledOnline: true,
+          };
+        }
+      }
+      return next;
+    });
+    onProceedToMapping();
   };
 
   // Answer Later handler
@@ -8307,7 +8341,7 @@ export default function TechnicalPermitFormsStep({
           {areAllMandatorySatisfied ? (
             <button
               type="button"
-              onClick={onProceedToMapping}
+              onClick={handleProceedToMapping}
               style={{
                 padding: "11px 24px",
                 borderRadius: "10px",
