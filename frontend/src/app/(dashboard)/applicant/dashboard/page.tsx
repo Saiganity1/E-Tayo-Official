@@ -577,26 +577,6 @@ export default function ApplicantDashboard() {
                 <option value="incomplete_requirements">Action Required</option>
               </select>
             </div>
-
-            {/* Expand / Collapse All for Dossier View */}
-            {viewMode === "project" && projectDossiers.length > 0 && (
-              <div style={{ display: "flex", gap: "6px" }}>
-                <button
-                  type="button"
-                  onClick={expandAll}
-                  style={{ background: "#f8fafc", border: "1px solid #cbd5e1", color: "#475569", padding: "6px 12px", borderRadius: "8px", fontSize: "0.8rem", fontWeight: "700", cursor: "pointer" }}
-                >
-                  Expand All
-                </button>
-                <button
-                  type="button"
-                  onClick={collapseAll}
-                  style={{ background: "#f8fafc", border: "1px solid #cbd5e1", color: "#475569", padding: "6px 12px", borderRadius: "8px", fontSize: "0.8rem", fontWeight: "700", cursor: "pointer" }}
-                >
-                  Collapse All
-                </button>
-              </div>
-            )}
           </div>
         </div>
 

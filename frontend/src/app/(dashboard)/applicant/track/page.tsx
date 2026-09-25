@@ -1500,80 +1500,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           )}
         </div>
 
-        {/* VIEW MODE TOGGLE & ACTIONS ROW */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginTop: "0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f1f5f9", flexWrap: "wrap", gap: "0.75rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div style={{ display: "flex", background: "#f1f5f9", padding: "3px", borderRadius: "12px", border: "1px solid #e2e8f0", gap: "3px" }}>
-              <button
-                type="button"
-                onClick={() => setViewMode("project")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 14px",
-                  borderRadius: "9px",
-                  fontSize: "0.82rem",
-                  fontWeight: "700",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  background: viewMode === "project" ? "#ffffff" : "transparent",
-                  color: viewMode === "project" ? "#0038A8" : "#64748b",
-                  boxShadow: viewMode === "project" ? "0 2px 6px rgba(0,0,0,0.06)" : "none"
-                }}
-                title="Group applications into Project Dossiers (combining Locational Clearance & Building Permits for each site)"
-              >
-                <FolderKanban size={15} /> Group by Project Dossier
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setViewMode("flat")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 14px",
-                  borderRadius: "9px",
-                  fontSize: "0.82rem",
-                  fontWeight: "700",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  background: viewMode === "flat" ? "#ffffff" : "transparent",
-                  color: viewMode === "flat" ? "#0038A8" : "#64748b",
-                  boxShadow: viewMode === "flat" ? "0 2px 6px rgba(0,0,0,0.06)" : "none"
-                }}
-                title="View all individual applications in a flat list"
-              >
-                <List size={15} /> All Applications (Flat)
-              </button>
-            </div>
-
-            <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: "600" }}>
-              {viewMode === "project" ? `${projectDossiers.length} Project Dossier${projectDossiers.length !== 1 ? "s" : ""}` : `${filteredApps.length} Application${filteredApps.length !== 1 ? "s" : ""}`}
-            </span>
-          </div>
-
-          {viewMode === "project" && projectDossiers.length > 0 && (
-            <div style={{ display: "flex", gap: "6px" }}>
-              <button
-                type="button"
-                onClick={expandAll}
-                style={{ background: "#f8fafc", border: "1px solid #cbd5e1", color: "#475569", padding: "5px 12px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: "700", cursor: "pointer" }}
-              >
-                Expand All
-              </button>
-              <button
-                type="button"
-                onClick={collapseAll}
-                style={{ background: "#f8fafc", border: "1px solid #cbd5e1", color: "#475569", padding: "5px 12px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: "700", cursor: "pointer" }}
-              >
-                Collapse All
-              </button>
-            </div>
-          )}
+        {/* DOSSIER COUNT */}
+        <div style={{ display: "flex", alignItems: "center", width: "100%", marginTop: "0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f1f5f9" }}>
+          <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: "600" }}>
+            {`${projectDossiers.length} Project Dossier${projectDossiers.length !== 1 ? "s" : ""}`}
+          </span>
         </div>
       </section>
 
