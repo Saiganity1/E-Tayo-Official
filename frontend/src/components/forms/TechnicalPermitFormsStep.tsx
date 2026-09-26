@@ -25,6 +25,7 @@ import {
   generateMechanicalPermitPdf,
   generateElectronicsPermitPdf,
   generateDemolitionPermitPdf,
+  generateExcavationPermitPdf,
   generateBfpApplicationPdf,
   generateFencingPermitPdf,
   UnifiedPermitFormData 
@@ -102,6 +103,13 @@ export const FORM_OFFICIAL_DETAILS: Record<string, { officialTitle: string; nbcC
     icon: Hammer,
     color: "#b91c1c",
     desc: "Safe demolition plan, structural dismantling sequence, and safety measures."
+  },
+  excavationPermit: {
+    officialTitle: "EXCAVATION AND GROUND PREPARATION PERMIT APPLICATION",
+    nbcCode: "NBC FORM NO. B-02",
+    icon: Hammer,
+    color: "#b45309",
+    desc: "Official excavation, earthworks, foundation fills, pile driving, and Civil Engineer supervisor sign-off."
   }
 };
 
@@ -717,7 +725,35 @@ export default function TechnicalPermitFormsStep({
   const [demolitionSupervisorAddress, setDemolitionSupervisorAddress] = useState("Sto. Tomas, Pampanga");
   const [demolitionSupervisorPhone, setDemolitionSupervisorPhone] = useState("0918-765-4321");
   const [demolitionSupervisorSignature, setDemolitionSupervisorSignature] = useState<string>("");
-  const [excavationVolume, setExcavationVolume] = useState("65.0 cu.m.");
+  const [excavationWithBuildingPermit, setExcavationWithBuildingPermit] = useState<boolean>(true);
+  const [excavationBuildingPermitNo, setExcavationBuildingPermitNo] = useState<string>("");
+  const [sameAsCivilEngineerExcavation, setSameAsCivilEngineerExcavation] = useState<boolean>(true);
+  const [excavationSupervisorName, setExcavationSupervisorName] = useState("Engr. Roberto Cruz, CE");
+  const [excavationSupervisorAddress, setExcavationSupervisorAddress] = useState("Sto. Tomas, Pampanga");
+  const [excavationSupervisorPhone, setExcavationSupervisorPhone] = useState("0918-765-4321");
+  const [excavationSupervisorPRC, setExcavationSupervisorPRC] = useState("0078923");
+  const [excavationSupervisorPRCValidity, setExcavationSupervisorPRCValidity] = useState("2028-11-20");
+  const [excavationSupervisorTIN, setExcavationSupervisorTIN] = useState("456-789-012-000");
+  const [excavationSupervisorPTR, setExcavationSupervisorPTR] = useState("PTR-ST-2026-001");
+  const [excavationSupervisorPTRIssued, setExcavationSupervisorPTRIssued] = useState("Jan 10, 2026");
+  const [excavationSupervisorPTRIssuedAt, setExcavationSupervisorPTRIssuedAt] = useState("Sto. Tomas");
+  const [excavationSupervisorSignature, setExcavationSupervisorSignature] = useState<string>("");
+  const [excavationVolume, setExcavationVolume] = useState("120.00");
+  const [excavationDepth, setExcavationDepth] = useState("2.50");
+  const [excavationScope, setExcavationScope] = useState("Foundation Excavation, Site Grading & Ground Levelling");
+  const [excavationType, setExcavationType] = useState("Foundation and Retaining Walls");
+  const [excavationAndFills, setExcavationAndFills] = useState<boolean>(false);
+  const [foundationAndRetainingWalls, setFoundationAndRetainingWalls] = useState<boolean>(true);
+  const [pileFoundations, setPileFoundations] = useState<boolean>(false);
+  const [gradingAndEarthworks, setGradingAndEarthworks] = useState<boolean>(false);
+  const [othersSpecify, setOthersSpecify] = useState<boolean>(false);
+  const [othersSpecifyText, setOthersSpecifyText] = useState<string>("");
+  const [othersCustomLine2Check, setOthersCustomLine2Check] = useState<boolean>(false);
+  const [othersCustomLine2Text, setOthersCustomLine2Text] = useState<string>("");
+  const [othersCustomLine3Check, setOthersCustomLine3Check] = useState<boolean>(false);
+  const [othersCustomLine3Text, setOthersCustomLine3Text] = useState<string>("");
+  const [excavationStartDate, setExcavationStartDate] = useState("2026-10-01");
+  const [excavationCompletionDate, setExcavationCompletionDate] = useState("2026-11-15");
   const [signDimensions, setSignDimensions] = useState("1.20m Width x 0.80m Height");
   const [tempConnectionLoad, setTempConnectionLoad] = useState("5.0 kVA (Temporary Construction Power, 6 Months Duration)");
 
@@ -743,8 +779,9 @@ export default function TechnicalPermitFormsStep({
     if (mandatoryKeys.length > 0 && !mandatoryKeys.includes(activeTab)) {
       setActiveTab(mandatoryKeys[0]);
     }
-    if (mandatoryKeys.includes("buildingPermit") || projectType.matrix?.buildingPermit === "required") {
+    if (mandatoryKeys.includes("buildingPermit") || projectType.matrix?.buildingPermit === "required" || projectType.matrix?.buildingPermit === "conditional") {
       setDemolitionWithBuildingPermit(true);
+      setExcavationWithBuildingPermit(true);
     }
   }, [projectType, mandatoryKeys]);
 
@@ -841,7 +878,7 @@ export default function TechnicalPermitFormsStep({
 
     handleSaveDraft();
 
-    const formMeta = PERMIT_FORM_METADATA[tabKey];
+    const formMeta = PERMIT_FORM_METADATA[tabKey as keyof PermitFormMatrix];
     const formLabel = formMeta?.label || tabKey;
     setNotification(`✓ Form "${formLabel}" completed and submitted successfully!`);
 
@@ -1409,6 +1446,25 @@ export default function TechnicalPermitFormsStep({
         fencingSupervisorPTRIssuedAt: sameAsDesignFencingSupervisor ? fencingDesignerPTRIssuedAt : fencingSupervisorPTRIssuedAt,
         fencingSupervisorTIN: sameAsDesignFencingSupervisor ? fencingDesignerTIN : fencingSupervisorTIN,
         fencingSupervisorSignature: sameAsDesignFencingSupervisor ? fencingDesignerSignature : fencingSupervisorSignature,
+        excavationWithBuildingPermit,
+        excavationBuildingPermitNo: excavationWithBuildingPermit ? (excavationBuildingPermitNo || buildingPermitNo) : undefined,
+        sameAsCivilEngineerExcavation,
+        excavationSupervisorName: sameAsCivilEngineerExcavation ? civilEngineerName : excavationSupervisorName,
+        excavationSupervisorAddress: sameAsCivilEngineerExcavation ? civilEngineerAddress : excavationSupervisorAddress,
+        excavationSupervisorPhone: sameAsCivilEngineerExcavation ? (applicantPhone || "0918-765-4321") : excavationSupervisorPhone,
+        excavationSupervisorPRC: sameAsCivilEngineerExcavation ? civilEngineerPRC : excavationSupervisorPRC,
+        excavationSupervisorPRCValidity: sameAsCivilEngineerExcavation ? civilEngineerPRCValidity : excavationSupervisorPRCValidity,
+        excavationSupervisorPTR: sameAsCivilEngineerExcavation ? civilEngineerPTR : excavationSupervisorPTR,
+        excavationSupervisorPTRIssued: sameAsCivilEngineerExcavation ? civilEngineerPTRIssued : excavationSupervisorPTRIssued,
+        excavationSupervisorPTRIssuedAt: sameAsCivilEngineerExcavation ? civilEngineerPTRIssuedAt : excavationSupervisorPTRIssuedAt,
+        excavationSupervisorTIN: sameAsCivilEngineerExcavation ? civilEngineerTIN : excavationSupervisorTIN,
+        excavationSupervisorSignature: sameAsCivilEngineerExcavation ? (civilEngineerSignature || excavationSupervisorSignature) : excavationSupervisorSignature,
+        excavationVolume,
+        excavationDepth,
+        excavationScope: excavationScope || excavationType,
+        excavationType,
+        excavationStartDate,
+        excavationCompletionDate,
         activePermitForms: mandatoryKeys,
         submissionDate
       };
@@ -1608,6 +1664,89 @@ export default function TechnicalPermitFormsStep({
               lotOwnerSignature: lotOwnerConsent ? lotOwnerSignature : undefined,
             };
             const b64 = await generateFencingPermitPdf(fpPayload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "excavationPermit") {
+            const hasBp = excavationWithBuildingPermit || mandatoryKeys.includes("buildingPermit");
+            const gatheredBpNo = hasBp
+              ? (excavationBuildingPermitNo || payload.buildingPermitNo || buildingPermitNo)
+              : undefined;
+            const activeSupName = sameAsCivilEngineerExcavation ? civilEngineerName : excavationSupervisorName;
+            const activeSupPRC = sameAsCivilEngineerExcavation ? civilEngineerPRC : excavationSupervisorPRC;
+            const activeSupValidity = sameAsCivilEngineerExcavation ? civilEngineerPRCValidity : excavationSupervisorPRCValidity;
+            const activeSupPTR = sameAsCivilEngineerExcavation ? civilEngineerPTR : excavationSupervisorPTR;
+            const activeSupPTRIssued = sameAsCivilEngineerExcavation ? civilEngineerPTRIssued : excavationSupervisorPTRIssued;
+            const activeSupPTRIssuedAt = sameAsCivilEngineerExcavation ? civilEngineerPTRIssuedAt : excavationSupervisorPTRIssuedAt;
+            const activeSupTIN = sameAsCivilEngineerExcavation ? civilEngineerTIN : excavationSupervisorTIN;
+            const activeSupAddress = sameAsCivilEngineerExcavation ? civilEngineerAddress : excavationSupervisorAddress;
+            const activeSupPhone = sameAsCivilEngineerExcavation ? (applicantPhone || "0918-765-4321") : excavationSupervisorPhone;
+            const activeSupSignature = sameAsCivilEngineerExcavation ? (civilEngineerSignature || excavationSupervisorSignature) : excavationSupervisorSignature;
+
+            const expPayload: UnifiedPermitFormData = {
+              ...payload,
+              excavationPermitNo: payload.excavationPermitNo || `EGPP-${currentYear}-${randomSeq}`,
+              egppNo: payload.excavationPermitNo || `EGPP-${currentYear}-${randomSeq}`,
+              withBuildingPermit: hasBp,
+              buildingPermitNo: gatheredBpNo,
+              bpNo: gatheredBpNo,
+              excavationType,
+              excavationScope: excavationScope || excavationType,
+              excavationVolume,
+              excavationDepth,
+              excavationStartDate,
+              excavationCompletionDate,
+              // Box 6 Classifications
+              excavationAndFills,
+              foundationAndRetainingWalls,
+              pileFoundations,
+              gradingAndEarthworks,
+              othersSpecify,
+              othersSpecifyText,
+              othersCustomLine2Check,
+              othersCustomLine2Text,
+              othersCustomLine3Check,
+              othersCustomLine3Text,
+              // Box 2 Design Professional
+              civilEngineerName,
+              civilEngineerAddress,
+              civilEngineerPRC,
+              civilEngineerPRCValidity,
+              civilEngineerPTR,
+              civilEngineerPTRIssued,
+              civilEngineerPTRIssuedAt,
+              civilEngineerTIN,
+              civilEngineerSignature,
+              civilEngineerSignedDate,
+              // Box 3 Supervisor
+              supervisorCivilEngineerName: activeSupName,
+              supervisorCivilEngineerAddress: activeSupAddress,
+              supervisorCivilEngineerPRC: activeSupPRC,
+              supervisorCivilEngineerPRCValidity: activeSupValidity,
+              supervisorCivilEngineerPTR: activeSupPTR,
+              supervisorCivilEngineerPTRIssued: activeSupPTRIssued,
+              supervisorCivilEngineerPTRIssuedAt: activeSupPTRIssuedAt,
+              supervisorCivilEngineerTIN: activeSupTIN,
+              supervisorCivilEngineerSignature: activeSupSignature,
+              supervisorCivilEngineerSignedDate: civilEngineerSignedDate,
+              // Box 4 Building Owner
+              applicantName: compiledFullName || applicantName,
+              applicantAddress: streetAddress,
+              applicantCtcNo: govIdNo,
+              applicantGovIdDateIssued: govIdDateIssued,
+              applicantGovIdPlaceIssued: govIdPlaceIssued,
+              applicantSignature,
+              applicantSignedDate,
+              // Box 5 Lot Owner Consent
+              lotOwnerConsent,
+              lotOwnerName: lotOwnerConsent ? lotOwnerName : undefined,
+              lotOwnerAddress: lotOwnerConsent ? lotOwnerAddress : undefined,
+              lotOwnerCtcNo: lotOwnerConsent ? lotOwnerGovIdNo : undefined,
+              lotOwnerGovIdNo: lotOwnerConsent ? lotOwnerGovIdNo : undefined,
+              lotOwnerGovIdDateIssued: lotOwnerConsent ? lotOwnerGovIdDateIssued : undefined,
+              lotOwnerGovIdPlaceIssued: lotOwnerConsent ? lotOwnerGovIdPlaceIssued : undefined,
+              lotOwnerSignature: lotOwnerConsent ? lotOwnerSignature : undefined,
+              lotOwnerSignedDate: lotOwnerConsent ? lotOwnerSignedDate : undefined,
+            };
+            const b64 = await generateExcavationPermitPdf(expPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           }
         } catch (indivErr) {
@@ -8079,9 +8218,814 @@ export default function TechnicalPermitFormsStep({
                   )}
 
                   {activeTab === "excavationPermit" && (
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Excavation Volume (cu. m.) *</label>
-                      <input type="text" value={excavationVolume} onChange={(e) => setExcavationVolume(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                      {/* Section 1: Accompanying Building Permit */}
+                      <div style={{
+                        padding: "12px 14px",
+                        borderRadius: "10px",
+                        background: excavationWithBuildingPermit ? "#eff6ff" : "#f8fafc",
+                        border: excavationWithBuildingPermit ? "1.5px solid #93c5fd" : "1px solid #e2e8f0"
+                      }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: "600", fontSize: "0.85rem", color: "#1e293b" }}>
+                          <input
+                            type="checkbox"
+                            checked={excavationWithBuildingPermit}
+                            onChange={(e) => setExcavationWithBuildingPermit(e.target.checked)}
+                            style={{ width: "18px", height: "18px", accentColor: "#2563eb", cursor: "pointer" }}
+                          />
+                          <span>This Excavation and Ground Preparation Permit is submitted with / accompanied by a Building Permit</span>
+                        </label>
+                        {excavationWithBuildingPermit && (
+                          <div style={{ marginTop: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", alignItems: "center" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#3b82f6", marginBottom: "3px" }}>
+                                Building Permit No. (Auto-gathered)
+                              </label>
+                              <input
+                                type="text"
+                                value={excavationBuildingPermitNo || (mandatoryKeys.includes("buildingPermit") ? `BP-${new Date().getFullYear()}-0001` : "BP-2026-0001")}
+                                onChange={(e) => setExcavationBuildingPermitNo(e.target.value)}
+                                placeholder="BP-2026-0001"
+                                style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.85rem", fontWeight: "700", background: "#ffffff", color: "#1d4ed8" }}
+                              />
+                            </div>
+                            <div style={{ fontSize: "0.75rem", color: "#475569" }}>
+                              Automatically gathered from the Building Permit application and inserted 1 character per compartment box into the 8 boxes of <strong>BUILDING PERMIT NO.</strong> on NBC Form B-02.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 2: Box 1 Summary & Auto-Sync Review */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 1: Owner / Applicant & Installation Location Details
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Auto-synchronized across all municipal permit forms from your primary project information
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#e2e8f0", color: "#334155", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form B-02 Box 1
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1.2fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Applicant Full Name</label>
+                            <div style={{ fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", padding: "6px 10px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {compiledFullName}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>T.I.N. Number</label>
+                            <div style={{ fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", padding: "6px 10px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {applicantTIN || "123-456-789-000"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Form of Ownership</label>
+                            <div style={{ fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", padding: "6px 10px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {formOfOwnership || "INDIVIDUAL / OWNER"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Character of Occupancy</label>
+                            <div style={{ fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", padding: "6px 10px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {occupancyClassificationDetail || occupancyClass || "GROUP A - RESIDENTIAL"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Lot No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {lotNo || "Lot 12"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Blk No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {blockNo || "Block 4"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>TCT / OCT No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {tctNo || "TCT-889977-P"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Tax Dec. No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {taxDecNo || "TD-2026-004455"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 3: Box 2 Design Professional, Plans and Specification */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 2: Design Professional, Plans and Specification (Architect or Civil Engineer)
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Registered Civil Engineer / Architect who prepared and signed the excavation plans and shoring specifications
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#e2e8f0", color: "#334155", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form B-02 Box 2
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Engineer / Architect Full Name (with Title) *</label>
+                            <input
+                              type="text"
+                              required
+                              value={civilEngineerName}
+                              onChange={(e) => setCivilEngineerName(e.target.value)}
+                              placeholder="e.g. ENGR. ROBERTO CRUZ, PICE"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Professional Address *</label>
+                            <input
+                              type="text"
+                              required
+                              value={civilEngineerAddress}
+                              onChange={(e) => setCivilEngineerAddress(e.target.value)}
+                              placeholder="e.g. Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PRC Registration No. *</label>
+                            <input
+                              type="text"
+                              required
+                              value={civilEngineerPRC}
+                              onChange={(e) => setCivilEngineerPRC(e.target.value)}
+                              placeholder="e.g. 0078923"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PRC Validity Date *</label>
+                            <input
+                              type="text"
+                              required
+                              value={civilEngineerPRCValidity}
+                              onChange={(e) => setCivilEngineerPRCValidity(e.target.value)}
+                              placeholder="YYYY-MM-DD"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>TIN Number *</label>
+                            <input
+                              type="text"
+                              required
+                              value={civilEngineerTIN}
+                              onChange={(e) => setCivilEngineerTIN(e.target.value)}
+                              placeholder="000-000-000-000"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PTR Number *</label>
+                            <input
+                              type="text"
+                              required
+                              value={civilEngineerPTR}
+                              onChange={(e) => setCivilEngineerPTR(e.target.value)}
+                              placeholder="e.g. PTR-ST-554433"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Date Issued *</label>
+                            <input
+                              type="text"
+                              required
+                              value={civilEngineerPTRIssued}
+                              onChange={(e) => setCivilEngineerPTRIssued(e.target.value)}
+                              placeholder="e.g. Jan 10, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Issued At *</label>
+                            <input
+                              type="text"
+                              required
+                              value={civilEngineerPTRIssuedAt}
+                              onChange={(e) => setCivilEngineerPTRIssuedAt(e.target.value)}
+                              placeholder="e.g. Sto. Tomas"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Signed Date *</label>
+                            <input
+                              type="text"
+                              required
+                              value={civilEngineerSignedDate}
+                              onChange={(e) => setCivilEngineerSignedDate(e.target.value)}
+                              placeholder="e.g. Sep 17, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Professional E-Signature */}
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                          <SignatureCreator
+                            value={civilEngineerSignature}
+                            onChange={setCivilEngineerSignature}
+                            label={`Professional Seal & E-Signature (Affixed over printed name: ${civilEngineerName || 'Civil Engineer'})`}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Section 4: Box 3 Full-Time Inspector and Supervisor of Excavation Works */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f0fdf4", border: "1.5px solid #86efac" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#14532d", textTransform: "uppercase", display: "block" }}>
+                              Box 3: Full-Time Inspector and Supervisor of Excavation & Ground Preparation Works
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#166534" }}>
+                              Licensed Civil Engineer in charge of full-time excavation safety, shoring, sheet piling, and ground operations
+                            </span>
+                          </div>
+
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#166534", cursor: "pointer", background: "#dcfce7", padding: "4px 8px", borderRadius: "6px" }}>
+                            <input
+                              type="checkbox"
+                              checked={sameAsCivilEngineerExcavation}
+                              onChange={(e) => setSameAsCivilEngineerExcavation(e.target.checked)}
+                              style={{ accentColor: "#16a34a" }}
+                            />
+                            Same as Project Civil Engineer (Box 2)
+                          </label>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>Supervisor Full Name (with Title) *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineerExcavation ? civilEngineerName : excavationSupervisorName}
+                              onChange={(e) => setExcavationSupervisorName(e.target.value)}
+                              disabled={sameAsCivilEngineerExcavation}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", fontWeight: "700", background: sameAsCivilEngineerExcavation ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>Professional Address *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineerExcavation ? civilEngineerAddress : excavationSupervisorAddress}
+                              onChange={(e) => setExcavationSupervisorAddress(e.target.value)}
+                              disabled={sameAsCivilEngineerExcavation}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineerExcavation ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>Telephone / Mobile *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineerExcavation ? (applicantPhone || "0918-765-4321") : excavationSupervisorPhone}
+                              onChange={(e) => setExcavationSupervisorPhone(e.target.value)}
+                              disabled={sameAsCivilEngineerExcavation}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineerExcavation ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>PRC Registration No. *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineerExcavation ? civilEngineerPRC : excavationSupervisorPRC}
+                              onChange={(e) => setExcavationSupervisorPRC(e.target.value)}
+                              disabled={sameAsCivilEngineerExcavation}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineerExcavation ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>PRC Validity Date *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineerExcavation ? civilEngineerPRCValidity : excavationSupervisorPRCValidity}
+                              onChange={(e) => setExcavationSupervisorPRCValidity(e.target.value)}
+                              disabled={sameAsCivilEngineerExcavation}
+                              placeholder="YYYY-MM-DD"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineerExcavation ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>TIN Number *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineerExcavation ? civilEngineerTIN : excavationSupervisorTIN}
+                              onChange={(e) => setExcavationSupervisorTIN(e.target.value)}
+                              disabled={sameAsCivilEngineerExcavation}
+                              placeholder="000-000-000-000"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineerExcavation ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>PTR Number *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineerExcavation ? civilEngineerPTR : excavationSupervisorPTR}
+                              onChange={(e) => setExcavationSupervisorPTR(e.target.value)}
+                              disabled={sameAsCivilEngineerExcavation}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineerExcavation ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>Date Issued *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineerExcavation ? civilEngineerPTRIssued : excavationSupervisorPTRIssued}
+                              onChange={(e) => setExcavationSupervisorPTRIssued(e.target.value)}
+                              disabled={sameAsCivilEngineerExcavation}
+                              placeholder="e.g. Jan 10, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineerExcavation ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#14532d", marginBottom: "3px" }}>Issued At *</label>
+                            <input
+                              type="text"
+                              required
+                              value={sameAsCivilEngineerExcavation ? civilEngineerPTRIssuedAt : excavationSupervisorPTRIssuedAt}
+                              onChange={(e) => setExcavationSupervisorPTRIssuedAt(e.target.value)}
+                              disabled={sameAsCivilEngineerExcavation}
+                              placeholder="e.g. Sto. Tomas"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.85rem", background: sameAsCivilEngineerExcavation ? "#f0fdf4" : "white" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Supervisor E-Signature */}
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #86efac" }}>
+                          <SignatureCreator
+                            value={sameAsCivilEngineerExcavation ? (civilEngineerSignature || excavationSupervisorSignature) : excavationSupervisorSignature}
+                            onChange={(sig) => {
+                              setExcavationSupervisorSignature(sig);
+                              if (sameAsCivilEngineerExcavation) setCivilEngineerSignature(sig);
+                            }}
+                            label={`Supervisor Seal & E-Signature (Affixed over printed name: ${sameAsCivilEngineerExcavation ? civilEngineerName : excavationSupervisorName})`}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Section 5: Box 4 Building Owner & Box 5 Lot Owner Consent */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #0284c7", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ marginBottom: "12px" }}>
+                          <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase", display: "block" }}>
+                            Box 4 & Box 5: Building Owner Authorization & Lot Owner Consent
+                          </span>
+                          <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                            Official DPWH Box 4 applicant identification and Box 5 registered lot owner consent signatures
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
+                          {/* Box 4: Building Owner Card */}
+                          <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "1rem" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                              <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase" }}>
+                                Box 4: Building Owner / Applicant (Left)
+                              </span>
+                              <span style={{ fontSize: "0.7rem", background: "#e2e8f0", color: "#334155", padding: "2px 6px", borderRadius: "4px", fontWeight: "700" }}>
+                                NBC Form B-02
+                              </span>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Applicant Full Name</label>
+                                <input
+                                  type="text"
+                                  value={compiledFullName || applicantName || "JUAN DELA CRUZ"}
+                                  disabled
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9", fontWeight: "700" }}
+                                />
+                              </div>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Applicant Address</label>
+                                <input
+                                  type="text"
+                                  value={streetAddress || "123 Rizal St., Poblacion, Sto. Tomas"}
+                                  disabled
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>C.T.C. / Gov ID No. *</label>
+                                <input
+                                  type="text"
+                                  value={govIdNo || "00987654"}
+                                  onChange={(e) => setGovIdNo(e.target.value)}
+                                  placeholder="e.g. 00987654"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Date Issued *</label>
+                                <input
+                                  type="text"
+                                  value={govIdDateIssued || "Jan 08, 2026"}
+                                  onChange={(e) => setGovIdDateIssued(e.target.value)}
+                                  placeholder="e.g. Jan 08, 2026"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Place Issued *</label>
+                                <input
+                                  type="text"
+                                  value={govIdPlaceIssued || "Sto. Tomas"}
+                                  onChange={(e) => setGovIdPlaceIssued(e.target.value)}
+                                  placeholder="e.g. Sto. Tomas"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Signed Date *</label>
+                                <input
+                                  type="text"
+                                  value={applicantSignedDate || "Sep 17, 2026"}
+                                  onChange={(e) => setApplicantSignedDate(e.target.value)}
+                                  placeholder="e.g. Sep 17, 2026"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                              <SignatureCreator
+                                value={applicantSignature}
+                                onChange={setApplicantSignature}
+                                label={`Applicant E-Signature (Affixed over printed name: ${compiledFullName || applicantName || 'Applicant'})`}
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          {/* Box 5: Lot Owner Consent Card */}
+                          <div style={{ background: lotOwnerConsent ? "#f0fdf4" : "#f8fafc", border: lotOwnerConsent ? "1px solid #86efac" : "1px solid #cbd5e1", borderRadius: "10px", padding: "1rem", transition: "all 0.2s ease" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                              <span style={{ fontSize: "0.8rem", fontWeight: "800", color: lotOwnerConsent ? "#166534" : "#1e293b", textTransform: "uppercase" }}>
+                                Box 5: With My Consent: Lot Owner (Right)
+                              </span>
+                              <label style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.74rem", fontWeight: "700", color: "#166534", cursor: "pointer" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={lotOwnerConsent}
+                                  onChange={(e) => setLotOwnerConsent(e.target.checked)}
+                                  style={{ accentColor: "#16a34a", width: "15px", height: "15px", cursor: "pointer" }}
+                                />
+                                <span>Consent Required</span>
+                              </label>
+                            </div>
+
+                            {lotOwnerConsent ? (
+                              <>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                                  <div style={{ gridColumn: "span 2" }}>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Lot Owner Full Name *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerName}
+                                      onChange={(e) => setLotOwnerName(e.target.value)}
+                                      placeholder="e.g. DAVE SICAT"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff", fontWeight: "700" }}
+                                    />
+                                  </div>
+                                  <div style={{ gridColumn: "span 2" }}>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Lot Owner Address *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerAddress}
+                                      onChange={(e) => setLotOwnerAddress(e.target.value)}
+                                      placeholder="e.g. 153 Sitio Visitas, Sto. Tomas, Pampanga"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>C.T.C. No. *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerGovIdNo}
+                                      onChange={(e) => setLotOwnerGovIdNo(e.target.value)}
+                                      placeholder="e.g. 00987654"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Date Issued *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerGovIdDateIssued}
+                                      onChange={(e) => setLotOwnerGovIdDateIssued(e.target.value)}
+                                      placeholder="e.g. Jan 10, 2024"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Place Issued *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerGovIdPlaceIssued}
+                                      onChange={(e) => setLotOwnerGovIdPlaceIssued(e.target.value)}
+                                      placeholder="e.g. Sto. Tomas"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.73rem", color: "#64748b", marginBottom: "2px" }}>Signed Date *</label>
+                                    <input
+                                      type="text"
+                                      value={lotOwnerSignedDate}
+                                      onChange={(e) => setLotOwnerSignedDate(e.target.value)}
+                                      placeholder="e.g. Jan 08, 2026"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #86efac" }}>
+                                  <SignatureCreator
+                                    value={lotOwnerSignature}
+                                    onChange={setLotOwnerSignature}
+                                    label={`Lot Owner E-Signature (Affixed over printed name: ${lotOwnerName || 'Lot Owner'})`}
+                                  />
+                                </div>
+                              </>
+                            ) : (
+                              <p style={{ fontSize: "0.78rem", color: "#64748b", margin: "1rem 0", fontStyle: "italic" }}>
+                                Check "Consent Required" above if the applicant is not the registered owner of the property where the excavation works will take place.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 6: Page 2 Box 6 Excavation Specifications */}
+                      <div style={{ padding: "1.2rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              BOX 6: TO BE ACCOMPLISHED BY THE DESIGN PROFESSIONAL
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Official excavation and ground preparation classification checkboxes (Page 2 of NBC Form B-02)
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#e2e8f0", color: "#334155", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form B-02 Box 6
+                          </span>
+                        </div>
+
+                        {/* Official DPWH Box 6 Checkbox Grid */}
+                        <div style={{
+                          background: "#ffffff",
+                          border: "1.5px solid #94a3b8",
+                          borderRadius: "8px",
+                          padding: "1rem",
+                          marginBottom: "1rem"
+                        }}>
+                          {/* Row 1 */}
+                          <div style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                            gap: "0.85rem",
+                            marginBottom: "1rem",
+                            paddingBottom: "0.85rem",
+                            borderBottom: "1px dashed #e2e8f0"
+                          }}>
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer", fontSize: "0.8rem", fontWeight: "700", color: "#1e293b" }}>
+                              <input
+                                type="checkbox"
+                                checked={excavationAndFills}
+                                onChange={(e) => setExcavationAndFills(e.target.checked)}
+                                style={{ width: "16px", height: "16px", accentColor: "#2563eb", marginTop: "2px", cursor: "pointer" }}
+                              />
+                              <span>EXCAVATION AND FILLS</span>
+                            </label>
+
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer", fontSize: "0.8rem", fontWeight: "700", color: "#1e293b" }}>
+                              <input
+                                type="checkbox"
+                                checked={foundationAndRetainingWalls}
+                                onChange={(e) => setFoundationAndRetainingWalls(e.target.checked)}
+                                style={{ width: "16px", height: "16px", accentColor: "#2563eb", marginTop: "2px", cursor: "pointer" }}
+                              />
+                              <span>FOUNDATION AND RETAINING WALLS</span>
+                            </label>
+
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer", fontSize: "0.8rem", fontWeight: "700", color: "#1e293b" }}>
+                              <input
+                                type="checkbox"
+                                checked={pileFoundations}
+                                onChange={(e) => setPileFoundations(e.target.checked)}
+                                style={{ width: "16px", height: "16px", accentColor: "#2563eb", marginTop: "2px", cursor: "pointer" }}
+                              />
+                              <span>PILE FOUNDATIONS</span>
+                            </label>
+
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer", fontSize: "0.8rem", fontWeight: "700", color: "#1e293b" }}>
+                              <input
+                                type="checkbox"
+                                checked={gradingAndEarthworks}
+                                onChange={(e) => setGradingAndEarthworks(e.target.checked)}
+                                style={{ width: "16px", height: "16px", accentColor: "#2563eb", marginTop: "2px", cursor: "pointer" }}
+                              />
+                              <div>
+                                <span>GRADING AND EARTHWORKS</span>
+                                <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "500" }}>(Including fills and embankment.)</div>
+                              </div>
+                            </label>
+                          </div>
+
+                          {/* Row 2: Others (Specify) and Additional Custom Scope Lines */}
+                          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.5fr 1.3fr", gap: "1rem" }}>
+                            <div>
+                              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.8rem", fontWeight: "700", color: "#1e293b", marginBottom: "4px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={othersSpecify}
+                                  onChange={(e) => setOthersSpecify(e.target.checked)}
+                                  style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                                />
+                                <span>OTHERS (Specify)</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={othersSpecifyText}
+                                onChange={(e) => {
+                                  setOthersSpecifyText(e.target.value);
+                                  if (e.target.value.trim() && !othersSpecify) setOthersSpecify(true);
+                                }}
+                                placeholder="e.g. TRENCHING"
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: othersSpecify ? "#ffffff" : "#f1f5f9" }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.8rem", fontWeight: "700", color: "#1e293b", marginBottom: "4px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={othersCustomLine2Check}
+                                  onChange={(e) => setOthersCustomLine2Check(e.target.checked)}
+                                  style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                                />
+                                <span>Additional Custom Scope (Line 2)</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={othersCustomLine2Text}
+                                onChange={(e) => {
+                                  setOthersCustomLine2Text(e.target.value);
+                                  if (e.target.value.trim() && !othersCustomLine2Check) setOthersCustomLine2Check(true);
+                                }}
+                                placeholder="e.g. DEEP BASEMENT SHORING"
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: othersCustomLine2Check ? "#ffffff" : "#f1f5f9" }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.8rem", fontWeight: "700", color: "#1e293b", marginBottom: "4px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={othersCustomLine3Check}
+                                  onChange={(e) => setOthersCustomLine3Check(e.target.checked)}
+                                  style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                                />
+                                <span>Custom Scope (Line 3)</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={othersCustomLine3Text}
+                                onChange={(e) => {
+                                  setOthersCustomLine3Text(e.target.value);
+                                  if (e.target.value.trim() && !othersCustomLine3Check) setOthersCustomLine3Check(true);
+                                }}
+                                placeholder="e.g. SITE DEWATERING"
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: othersCustomLine3Check ? "#ffffff" : "#f1f5f9" }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Engineering Dimensions, Volume & Schedule */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "1rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                              Excavation Volume (cu. m.) *
+                            </label>
+                            <input
+                              type="text"
+                              value={excavationVolume}
+                              onChange={(e) => setExcavationVolume(e.target.value)}
+                              placeholder="120.00"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                              Maximum Excavation Depth (meters) *
+                            </label>
+                            <input
+                              type="text"
+                              value={excavationDepth}
+                              onChange={(e) => setExcavationDepth(e.target.value)}
+                              placeholder="2.50"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                              Proposed Start Date *
+                            </label>
+                            <input
+                              type="date"
+                              value={excavationStartDate}
+                              onChange={(e) => setExcavationStartDate(e.target.value)}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                              Expected Completion Date *
+                            </label>
+                            <input
+                              type="date"
+                              value={excavationCompletionDate}
+                              onChange={(e) => setExcavationCompletionDate(e.target.value)}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Overall Scope Summary input */}
+                        <div style={{ marginBottom: "0.85rem" }}>
+                          <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>
+                            Detailed Scope Description *
+                          </label>
+                          <input
+                            type="text"
+                            value={excavationScope}
+                            onChange={(e) => setExcavationScope(e.target.value)}
+                            placeholder="e.g. Foundation Excavation, Retaining Wall Shoring & Site Earthworks"
+                            style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                          />
+                        </div>
+
+                        {/* Condition 7 Cash Bond Notice */}
+                        <div style={{ padding: "8px 12px", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: "6px", fontSize: "0.74rem", color: "#92400e", display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                          <Info size={16} style={{ flexShrink: 0, marginTop: "2px", color: "#b45309" }} />
+                          <div>
+                            <strong>Condition 7 Notice (NBC Form B-02):</strong> For excavations exceeding 50 cu. m. and more than 2 meters in depth, the applicant/permittee shall post a cash restoration bond of ₱50,000.00 for the first 50 cu. m., plus ₱300.00 for every cubic meter thereafter, to be deposited with the Office of the Building Official (OBO).
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 

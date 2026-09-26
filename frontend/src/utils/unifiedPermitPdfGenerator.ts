@@ -15,10 +15,6 @@ export interface UnifiedPermitFormData {
   bpNo?: string;
   demolitionPermitNo?: string;
   dpNo?: string;
-  demolitionBuildingType?: string;
-  demolitionArea?: string;
-  demolitionStoreys?: string;
-  demolitionScope?: string;
   demolitionMethod?: string;
   demolitionStartDate?: string;
   demolitionCompletionDate?: string;
@@ -32,8 +28,9 @@ export interface UnifiedPermitFormData {
   demolitionSupervisorAddress?: string;
   demolitionSupervisorPhone?: string;
   demolitionSupervisorSignature?: string;
-  fencingPermitNo?: string;
   fpNo?: string;
+  excavationPermitNo?: string;
+  egppNo?: string;
   withBuildingPermit?: boolean;
   status?: string;
   isApproved?: boolean;
@@ -350,10 +347,23 @@ export interface UnifiedPermitFormData {
   fencingSupervisorTIN?: string;
   fencingSupervisorSignature?: string;
 
-  // Excavation Permit details
+  // Excavation Permit details (NBC Form B-02)
   excavationVolume?: string;
   excavationDepth?: string;
   excavationScope?: string;
+  excavationType?: string;
+  excavationStartDate?: string;
+  excavationCompletionDate?: string;
+  excavationAndFills?: boolean;
+  foundationAndRetainingWalls?: boolean;
+  pileFoundations?: boolean;
+  gradingAndEarthworks?: boolean;
+  othersSpecify?: boolean;
+  othersSpecifyText?: string;
+  othersCustomLine2Check?: boolean;
+  othersCustomLine2Text?: string;
+  othersCustomLine3Check?: boolean;
+  othersCustomLine3Text?: string;
 
   // Sign Permit details
   signType?: string;
@@ -554,6 +564,7 @@ export interface UnifiedPermitFormData {
   lotOwnerGovIdDateIssued?: string;
   lotOwnerGovIdPlaceIssued?: string;
   lotOwnerSignedDate?: string;
+  [key: string]: any;
 }
 
 async function embedSignatureImage(
@@ -4025,101 +4036,385 @@ export async function generateExcavationPermitPdf(data: UnifiedPermitFormData): 
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header: Applicant No. inside box
-  drawText(data.applicationNo || "APP-2026-6636", 75, 656.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 430, 656.0, 8, false);
+  const boxWidth = 13.35;
 
-  // Box 1
+  // 1. APPLICATION NO. in individual segmented boxes (10 boxes)
+  const rawAppNo = safeText(data.applicationNo || "2026-0001").trim();
+  const cleanAppNo = rawAppNo.replace(/^(APP|UNIFIED|PERMIT|DOC)[\s\-#:]*(TEST[\s\-#:]*)?/i, "").trim() || "2026-0001";
+  const appChars = cleanAppNo.slice(0, 10).split("");
+  const appBoxLefts = Array.from({ length: 10 }, (_, i) => 23.40 + i * boxWidth);
+  appBoxLefts.forEach((boxLeft, idx) => {
+    if (idx < appChars.length) {
+      const char = appChars[idx];
+      const charW = fontBold.widthOfTextAtSize(char, 9.0);
+      const charX = boxLeft + (boxWidth - charW) / 2;
+      p1.drawText(char, { x: charX, y: 642.2, size: 9.0, font: fontBold, color: darkNavy });
+    }
+  });
+
+  // 2. EGPP NO. (Excavation & Ground Preparation Permit No.) in individual segmented boxes (8 boxes)
+  const isApprovedOrIssued =
+    data.isApproved === true ||
+    data.status === "approved" ||
+    data.status === "released" ||
+    Boolean(data.permitIssuedDate) ||
+    Boolean(data.dateIssued) ||
+    Boolean(data.excavationPermitNo) ||
+    Boolean(data.egppNo) ||
+    (Boolean(data.permitNo) && !data.permitNo?.startsWith("AP-") && !data.permitNo?.startsWith("BP-") && !data.permitNo?.startsWith("EP-") && !data.permitNo?.startsWith("P-") && !data.permitNo?.startsWith("SP-") && !data.permitNo?.startsWith("MP-")) ||
+    (!data.status); // Default to preview if no submission status is provided (e.g. Form Tester)
+
+  if (isApprovedOrIssued) {
+    const rawEgppNo = (
+      data.excavationPermitNo ||
+      data.egppNo ||
+      (data.permitNo && !data.permitNo.startsWith("AP-") && !data.permitNo.startsWith("BP-") && !data.permitNo.startsWith("EP-") && !data.permitNo.startsWith("P-") && !data.permitNo.startsWith("SP-") && !data.permitNo.startsWith("MP-") ? data.permitNo : "") ||
+      (data.applicationNo ? `EXP-${cleanAppNo}` : "EXP-2026-0001")
+    ).trim();
+
+    if (rawEgppNo) {
+      let cleanEgppNo = rawEgppNo.replace(/^(EXP|EGPP|APP|NBC)[\s\-#:]*(TEST[\s\-#:]*)?/i, "").trim();
+      if (cleanEgppNo.length > 8 && cleanEgppNo.includes('-')) {
+        cleanEgppNo = cleanEgppNo.replace(/-/g, '');
+      }
+      const egppChars = cleanEgppNo.slice(0, 8).split("");
+      const egppBoxLefts = Array.from({ length: 8 }, (_, i) => 278.60 + i * boxWidth);
+      egppBoxLefts.forEach((boxLeft, idx) => {
+        if (idx < egppChars.length) {
+          const char = egppChars[idx];
+          const charW = fontBold.widthOfTextAtSize(char, 9.0);
+          const charX = boxLeft + (boxWidth - charW) / 2;
+          p1.drawText(char, { x: charX, y: 643.7, size: 9.0, font: fontBold, color: darkNavy });
+        }
+      });
+    }
+  }
+
+  // 3. BUILDING PERMIT NO. in individual segmented boxes (8 boxes)
+  // Auto-gathered if the user's selected project type requires/accompanies a Building Permit,
+  // or if buildingPermitNo / activePermitForms includes buildingPermit
+  const isBpRequired =
+    Boolean(data.buildingPermitNo) ||
+    Boolean(data.bpNo) ||
+    Boolean(data.permitNo?.startsWith("BP-")) ||
+    (Array.isArray(data.activePermitForms) && data.activePermitForms.includes("buildingPermit")) ||
+    data.withBuildingPermit === true ||
+    (!data.projectType) ||
+    (data.projectType?.matrix?.buildingPermit === 'required' || data.projectType?.matrix?.buildingPermit === 'conditional');
+
+  if (isBpRequired) {
+    const rawBpNo = (
+      data.buildingPermitNo ||
+      data.bpNo ||
+      (data.permitNo?.startsWith("BP-") ? data.permitNo : "") ||
+      (data.applicationNo ? `BP-${cleanAppNo}` : "BP-2026-0001")
+    ).trim();
+
+    if (rawBpNo) {
+      let cleanBpNo = rawBpNo.replace(/^(BP|APP|NBC)[\s\-#:]*(TEST[\s\-#:]*)?/i, "").trim();
+      if (cleanBpNo.length > 8 && cleanBpNo.includes('-')) {
+        cleanBpNo = cleanBpNo.replace(/-/g, '');
+      }
+      const bpChars = cleanBpNo.slice(0, 8).split("");
+      const bpBoxLefts = Array.from({ length: 8 }, (_, i) => 481.80 + i * boxWidth);
+      bpBoxLefts.forEach((boxLeft, idx) => {
+        if (idx < bpChars.length) {
+          const char = bpChars[idx];
+          const charW = fontBold.widthOfTextAtSize(char, 9.0);
+          const charX = boxLeft + (boxWidth - charW) / 2;
+          p1.drawText(char, { x: charX, y: 643.7, size: 9.0, font: fontBold, color: darkNavy });
+        }
+      });
+    }
+  }
+
+  // ==========================================
+  // BOX 1: OWNER / APPLICANT INFORMATION
+  // ==========================================
   const { lastName, firstName, mi, middleName } = parseApplicantName(data);
-  drawText(lastName, 160, 602.0, 8.5, true, 20);
-  drawText(firstName, 260, 602.0, 8.5, true, 22);
-  drawText(middleName || mi, 370, 602.0, 8, true);
-  drawText(data.applicantTIN || "000-123-456-000", 450, 602.0, 8, false);
-  drawText(data.formOfOwnership || "INDIVIDUAL", 210, 575.0, 8, false, 25);
-  drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 575.0, 8, false, 25);
+  drawText(lastName, 166.0, 591.0, 8.5, true, 18);
+  drawText(firstName, 256.0, 591.0, 8.5, true, 20);
+  drawText(middleName || mi, 355.0, 591.0, 8.5, true, 18);
+  drawText(data.applicantTIN || "123-456-789-000", 488.0, 591.0, 8.0, false, 18);
 
-  // Address (Applicant Address)
-  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 546.0, 7.5, false, 28);
-  drawText(data.barangay || "Poblacion", 80, 528.0, 7.5, false, 20);
-  drawText(data.applicantPhone || "0917-123-4567", 450, 546.0, 7.5, true);
+  // Row 2: Enterprise, Form of Ownership, Use/Character of Occupancy
+  const enterpriseName = (data.constructionOwnedByEnterprise || data.enterpriseName || data.corporationName || "N/A (INDIVIDUAL)").trim();
+  drawText(enterpriseName, 30.0, 560.0, 7.5, false, 28);
+  drawText(data.formOfOwnership || "INDIVIDUAL / OWNER", 205.0, 560.0, 7.5, false, 26);
+  const occTitle = safeText(data.occupancyClassificationDetail || data.occupancyClass || data.projectType?.category || "RESIDENTIAL").toUpperCase();
+  drawText(occTitle, 385.0, 560.0, 7.5, false, 28);
 
-  // Location
-  drawText(data.lotNo || "Lot 12", 160, 514.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 240, 514.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 320, 514.0, 7.5, true, 16);
-  // Missing Tax Dec No. added
-  drawText(data.taxDecNo || "TD-2026-0012", 440, 514.0, 7.5, false);
+  // Row 3: Applicant Address & Phone
+  const addr = parseBox1AddressParts(data);
+  drawText(addr.no || "123", 116.0, 547.5, 7.5, false, 10);
+  drawText(addr.street || "Rizal St.", 198.0, 547.5, 7.5, false, 38);
+  drawText(addr.barangay || "Poblacion", 80.0, 529.0, 7.5, false, 16);
+  drawText(addr.municipality || "Sto. Tomas, Pampanga", 268.0, 529.0, 7.5, false, 24);
+  drawText(addr.zipCode || "2020", 433.0, 529.0, 7.5, false, 8);
+  drawText(addr.phone || data.applicantPhone || "0917-123-4567", 490.0, 533.0, 7.5, true, 16);
 
-  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 80, 496.0, 7.5, false, 24);
-  drawText(data.barangay || "Poblacion", 240, 496.0, 7.5, true, 20);
+  // Row 4: Location of Installation
+  drawText(data.lotNo || "12", 195.0, 516.0, 7.5, true, 8);
+  drawText(data.blockNo || "4", 296.0, 516.0, 7.5, true, 8);
+  drawText(data.tctNo || "TCT-889977-P", 389.0, 516.0, 7.5, true, 14);
+  drawText(data.taxDecNo || "TD-2026-004455", 516.0, 516.0, 7.5, false, 14);
 
-  // Box 2: Excavation Specifications: moved higher (+5px)
-  const excScope = data.excavationScope || "Foundation Excavation, Site Grading & Ground Levelling";
-  drawText(excScope, 160, 465.0, 8, true, 48);
-  drawText(`${data.excavationVolume || "120.00"} CU. M.`, 160, 445.0, 8, true);
-  drawText(`${data.excavationDepth || "2.50"} METERS`, 360, 445.0, 8, true);
-  drawText(`PHP ${data.projectCost || "85,000.00"}`, 160, 425.0, 8, true);
-  drawText(data.proposedStartDate || "Oct 01, 2026", 160, 405.0, 7.5, false);
-  drawText(data.expectedCompletionDate || "Nov 15, 2026", 360, 405.0, 7.5, false);
+  // Project street (clean from lot/block if present)
+  let projStreet = safeText(data.projectStreet || data.projectAddress || "Sunset Valley Subd.").trim();
+  projStreet = projStreet.replace(/^(lot\s+\d+[-\w]*[\s,]+)?(blk|block)?\s*\d*[\s,]*/i, "").trim() || projStreet;
+  drawText(projStreet, 65.0, 497.5, 7.0, false, 24);
+  drawText(data.barangay || addr.barangay || "Poblacion", 243.0, 497.5, 7.5, true, 18);
+  drawText(data.applicantMunicipality || "Sto. Tomas, Pampanga", 458.0, 497.5, 7.5, true, 20);
 
-  // Box 3: Civil Engineer
-  const ceName = data.civilEngineerName || "Engr. Roberto Cruz, CE";
-  drawText(ceName.toUpperCase(), 100, 275.0, 8.5, true);
-  drawText(data.civilEngineerPRC || "PRC-0078923", 80, 245.0, 7.5, false);
-  drawText(data.civilEngineerPTR || "PTR-ST-2026-001", 80, 232.0, 7.5, false);
+  // Row 5: Scope of Work Checkboxes
+  const drawCheck = (x: number, y: number) => {
+    p1.drawText("X", { x, y, size: 8.0, font: fontBold, color: darkNavy });
+  };
+  const scopeLower = safeText(data.scopeOfWork || "New Construction").toLowerCase();
+  if (scopeLower.includes("demolition")) {
+    drawCheck(49.4, 460.7);
+  } else if (scopeLower.includes("addition")) {
+    drawCheck(49.4, 449.6);
+  } else if (scopeLower.includes("renovation")) {
+    drawCheck(245.3, 471.0);
+  } else if (scopeLower.includes("repair")) {
+    drawCheck(245.4, 460.4);
+  } else if (scopeLower.includes("other") || scopeLower.includes("excavation") || scopeLower.includes("grading")) {
+    drawCheck(398.9, 470.6);
+    drawText(data.scopeOfWorkDetails || data.excavationScope || "Site Excavation & Ground Prep", 480.0, 471.0, 7.0, false, 20);
+  } else {
+    // Default: New Construction
+    drawCheck(49.4, 470.9);
+  }
 
-  // Box 4: Building Owner Signature & Lot Owner Consent
+  // Row 6: Use or Character of Occupancy Checkboxes
+  const occUpper = safeText(data.occupancyClass || data.projectType?.category || "RESIDENTIAL").toUpperCase();
+  if (occUpper.includes("GROUP B") || occUpper.includes("HOTEL") || occUpper.includes("APARTMENT")) {
+    drawCheck(49.4, 406.8);
+  } else if (occUpper.includes("GROUP C") || occUpper.includes("EDUCATIONAL")) {
+    drawCheck(49.4, 396.6);
+  } else if (occUpper.includes("GROUP D") || occUpper.includes("INSTITUTIONAL")) {
+    drawCheck(49.4, 386.2);
+  } else if (occUpper.includes("GROUP E") || occUpper.includes("BUSINESS") || occUpper.includes("MERCANTILE") || occUpper.includes("COMMERCIAL")) {
+    drawCheck(49.4, 375.5);
+  } else if (occUpper.includes("GROUP F") || (occUpper.includes("INDUSTRIAL") && !occUpper.includes("HAZARDOUS"))) {
+    drawCheck(264.6, 417.5);
+  } else if (occUpper.includes("GROUP G") || occUpper.includes("HAZARDOUS")) {
+    drawCheck(264.7, 406.8);
+  } else if (occUpper.includes("GROUP H")) {
+    drawCheck(264.6, 396.5);
+  } else if (occUpper.includes("GROUP I")) {
+    drawCheck(264.7, 386.0);
+  } else if (occUpper.includes("GROUP J") || occUpper.includes("AGRICULTURAL")) {
+    drawCheck(264.8, 375.5);
+  } else if (occUpper.includes("OTHER")) {
+    drawCheck(482.3, 417.5);
+  } else {
+    // Default: GROUP A: RESIDENTIAL, DWELLINGS
+    drawCheck(49.4, 417.5);
+  }
+
+  // ==========================================
+  // BOX 2: DESIGN PROFESSIONAL (ARCHITECT OR CIVIL ENGINEER)
+  // ==========================================
+  const ceName = (data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, PICE").toUpperCase().trim();
+  const ceNameW = fontBold.widthOfTextAtSize(ceName, 8.5);
+  const ceNameX = Math.max(50.0, 152.0 - ceNameW / 2);
+  drawText(ceName, ceNameX, 316.5, 8.5, true, 32);
+
+  if (data.civilEngineerSignature) {
+    await embedSignatureImage(doc, p1, data.civilEngineerSignature, 102.0, 316.5, 100, 20);
+  }
+
+  // Signed Date rests on Date ____________________________ line (pdflib y = 283.5)
+  drawText(data.civilEngineerSignedDate || data.submissionDate || "Sep 17, 2026", 108.0, 283.5, 7.5, false);
+
+  // Address
+  drawText(data.civilEngineerAddress || "Sto. Tomas, Pampanga", 68.0, 265.0, 7.5, false, 35);
+
+  // PRC & Validity
+  const cleanCePrc = safeText(data.civilEngineerPRC || "0078923").replace(/^PRC[\s\-#:]*/i, "").trim() || "0078923";
+  drawText(cleanCePrc, 68.0, 251.0, 7.5, false);
+  drawText(data.civilEngineerPRCValidity || "2028-11-20", 195.0, 251.0, 7.5, false);
+
+  // PTR & Date Issued
+  drawText(data.civilEngineerPTR || "PTR-ST-554433", 68.0, 237.5, 7.5, false);
+  drawText(data.civilEngineerPTRIssued || "Jan 10, 2026", 205.0, 237.5, 7.5, false);
+
+  // Issued at & TIN
+  drawText(data.civilEngineerPTRIssuedAt || "Sto. Tomas", 68.0, 224.5, 7.5, false);
+  drawText(data.civilEngineerTIN || "123-456-789-000", 180.0, 224.5, 7.5, false);
+
+  // ==========================================
+  // BOX 3: FULL-TIME INSPECTOR AND SUPERVISOR OF CONSTRUCTION WORKS
+  // ==========================================
+  const supCeName = (data.supervisorCivilEngineerName || data.civilEngineerName || "Engr. Roberto Cruz, PICE").toUpperCase().trim();
+  const supCeNameW = fontBold.widthOfTextAtSize(supCeName, 8.5);
+  const supCeNameX = Math.max(340.0, 445.5 - supCeNameW / 2);
+  drawText(supCeName, supCeNameX, 313.0, 8.5, true, 32);
+
+  if (data.supervisorCivilEngineerSignature || data.civilEngineerSignature) {
+    await embedSignatureImage(doc, p1, data.supervisorCivilEngineerSignature || data.civilEngineerSignature, 395.5, 313.0, 100, 20);
+  }
+
+  // Supervisor Signed Date
+  drawText(data.supervisorCivilEngineerSignedDate || data.civilEngineerSignedDate || data.submissionDate || "Sep 17, 2026", 412.0, 281.0, 7.5, false);
+
+  // Supervisor Address
+  drawText(data.supervisorCivilEngineerAddress || data.civilEngineerAddress || "Sto. Tomas, Pampanga", 345.0, 259.0, 7.5, false, 35);
+
+  // PRC & Validity
+  const cleanSupPrc = safeText(data.supervisorCivilEngineerPRC || data.civilEngineerPRC || "0078923").replace(/^PRC[\s\-#:]*/i, "").trim() || "0078923";
+  drawText(cleanSupPrc, 345.0, 244.5, 7.5, false);
+  drawText(data.supervisorCivilEngineerPRCValidity || data.civilEngineerPRCValidity || "2028-11-20", 498.0, 244.5, 7.5, false);
+
+  // PTR & Date Issued
+  drawText(data.supervisorCivilEngineerPTR || data.civilEngineerPTR || "PTR-ST-554433", 345.0, 231.5, 7.5, false);
+  drawText(data.supervisorCivilEngineerPTRIssued || data.civilEngineerPTRIssued || "Jan 10, 2026", 512.0, 231.5, 7.5, false);
+
+  // Issued at & TIN
+  drawText(data.supervisorCivilEngineerPTRIssuedAt || data.civilEngineerPTRIssuedAt || "Sto. Tomas", 345.0, 218.5, 7.5, false);
+  drawText(data.supervisorCivilEngineerTIN || data.civilEngineerTIN || "123-456-789-000", 485.0, 218.5, 7.5, false);
+
+  // ==========================================
+  // BOX 4: BUILDING OWNER
+  // ==========================================
   const appFullName = (data.applicantName || "JUAN DELA CRUZ").toUpperCase().trim();
   const appNameW = fontBold.widthOfTextAtSize(appFullName, 8.5);
-  const appNameX = Math.max(50.0, 142.5 - appNameW / 2);
-  drawText(appFullName, appNameX, 145.0, 8.5, true);
+  const appNameX = Math.max(50.0, 152.0 - appNameW / 2);
+  drawText(appFullName, appNameX, 141.0, 8.5, true, 30);
 
   if (data.applicantSignature) {
     const sigW = 100;
     const sigH = 20;
-    const sigX = Math.max(50.0, 142.5 - sigW / 2);
-    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 143.0, sigW, sigH);
+    const sigX = Math.max(50.0, 152.0 - sigW / 2);
+    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 139.0, sigW, sigH);
   }
 
-  drawText(data.applicantSignedDate || data.submissionDate || "Sep 17, 2026", 118.0, 122.5, 7.5, false);
-  drawText(data.applicantAddress || data.projectAddress || "123 Rizal St., Poblacion", 70.0, 99.0, 7.5, false, 36);
+  // Crucial: Date rests on Date ____________________ line at y = 117.0 (NO overlap with "(Signature Over Printed Name)")
+  drawText(data.applicantSignedDate || data.submissionDate || "Sep 17, 2026", 122.0, 117.0, 7.5, false);
 
-  const rawAppCtc = (data.applicantCtcNo || data.govIdNo || "CTC-2026-00192").trim();
-  let cleanAppCtc = rawAppCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
-  if (!cleanAppCtc) cleanAppCtc = rawAppCtc;
-  if (cleanAppCtc.length > 9) cleanAppCtc = cleanAppCtc.slice(0, 9);
-  const appCtcFontSize = cleanAppCtc.length > 8 ? 5.5 : cleanAppCtc.length > 6 ? 6.0 : 6.5;
-  drawText(cleanAppCtc, 30.0, 65.0, appCtcFontSize, false, 9);
+  // Address
+  drawText(data.applicantAddress || data.projectAddress || "123 RIZAL ST., POBLACION, STO. TOMAS", 68.0, 94.0, 7.5, false, 36);
 
-  drawText(data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 08, 2026", 120.0, 65.0, 6.8, false, 12);
-  drawText(data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 215.0, 65.0, 6.8, false, 14);
+  // CTC row
+  const rawAppCtc = safeText(data.applicantCtcNo || data.govIdNo || "00987654").replace(/^[a-zA-Z\s-]+/g, "").trim() || "00987654";
+  drawText(rawAppCtc.slice(0, 12), 35.0, 65.0, 7.0, false);
+  drawText(data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 08, 2026", 118.0, 65.0, 7.0, false);
+  drawText(data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 205.0, 65.0, 7.0, false);
 
-  // Box 4 (Right): With My Consent (Lot Owner)
+  // ==========================================
+  // BOX 5: WITH MY CONSENT: LOT OWNER
+  // ==========================================
   if (data.lotOwnerConsent || data.lotOwnerName) {
     const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase().trim();
     const lotNameW = fontBold.widthOfTextAtSize(lotName, 8.5);
-    const lotNameX = Math.max(340.0, 454.0 - lotNameW / 2);
-    drawText(lotName, lotNameX, 145.0, 8.5, true, 26);
+    const lotNameX = Math.max(340.0, 434.0 - lotNameW / 2);
+    drawText(lotName, lotNameX, 139.0, 8.5, true, 30);
 
     if (data.lotOwnerSignature) {
       const sigW = 100;
       const sigH = 20;
-      const sigX = Math.max(340.0, 454.0 - sigW / 2);
-      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 143.0, sigW, sigH);
+      const sigX = Math.max(340.0, 434.0 - sigW / 2);
+      await embedSignatureImage(doc, p1, data.lotOwnerSignature, sigX, 137.0, sigW, sigH);
     }
 
-    drawText(data.lotOwnerSignedDate || data.submissionDate || "Sep 17, 2026", 418.0, 122.5, 7.5, false);
-    drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", 355.0, 99.0, 7.5, false, 40);
+    // Crucial: Date rests on Date __________________ line at y = 117.0 (NO overlap with "(Signed Over Printed Name)")
+    drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", 422.0, 117.0, 7.5, false);
 
-    const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "00881923").trim();
-    let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
-    if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
-    if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
-    const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
-    drawText(cleanLotCtc, 310.0, 65.0, lotCtcFontSize, false, 9);
+    // Address
+    drawText(data.lotOwnerAddress || "153 Sitio Visitas", 345.0, 93.0, 7.5, false, 40);
 
-    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 440.0, 65.0, 6.8, false, 12);
-    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 526.0, 65.0, 6.8, false, 14);
+    // CTC row
+    const rawLotCtc = safeText(data.lotOwnerCtcNo || data.lotOwnerGovIdNo || "00987654").replace(/^[a-zA-Z\s-]+/g, "").trim() || "00987654";
+    drawText(rawLotCtc.slice(0, 12), 312.0, 65.0, 7.0, false);
+    drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", 428.0, 65.0, 7.0, false);
+    drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", 505.0, 65.0, 7.0, false);
+  }
+
+  // ==========================================
+  // PAGE 2: BOX 6 (TO BE ACCOMPLISHED BY THE DESIGN PROFESSIONAL)
+  // ==========================================
+  if (doc.getPageCount() > 1) {
+    const p2 = doc.getPage(1);
+    const drawP2 = (text: string | undefined | null, x: number, y: number, size: number = 7.5, isBold: boolean = false, maxWidth?: number) => {
+      if (!text) return;
+      let clean = safeText(text).trim();
+      if (maxWidth && clean.length > maxWidth) clean = clean.slice(0, maxWidth);
+      p2.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
+    };
+    const checkP2 = (x: number, y: number) => {
+      p2.drawText("X", { x, y, size: 7.5, font: fontBold, color: darkNavy });
+    };
+
+    const excScopeLower = safeText(data.excavationScope || "").toLowerCase();
+    const excTypeLower = safeText(data.excavationType || "").toLowerCase();
+
+    // Row 1 Checkbox 1: EXCAVATION AND FILLS
+    const isExcAndFills = Boolean(data.excavationAndFills) ||
+      excTypeLower === "excavation and fills" ||
+      (excScopeLower.includes("fill") && !excScopeLower.includes("grading and earthwork"));
+    if (isExcAndFills) {
+      checkP2(29.8, 730.8);
+    }
+
+    // Row 1 Checkbox 2: FOUNDATION AND RETAINING WALLS
+    const isFoundRet = Boolean(data.foundationAndRetainingWalls) ||
+      excTypeLower === "foundation and retaining walls" ||
+      excScopeLower.includes("foundation") ||
+      excScopeLower.includes("retaining") ||
+      (!data.excavationAndFills && !data.pileFoundations && !data.gradingAndEarthworks && !data.othersSpecify && !data.excavationType);
+    if (isFoundRet) {
+      checkP2(148.8, 730.8);
+    }
+
+    // Row 1 Checkbox 3: PILE FOUNDATIONS
+    const isPile = Boolean(data.pileFoundations) ||
+      excTypeLower === "pile foundations" ||
+      excScopeLower.includes("pile");
+    if (isPile) {
+      checkP2(320.2, 730.8);
+    }
+
+    // Row 1 Checkbox 4: GRADING AND EARTHWORKS (Including fills and embankment.)
+    const isGrading = Boolean(data.gradingAndEarthworks) ||
+      excTypeLower.includes("grading") ||
+      excTypeLower.includes("earthwork") ||
+      excScopeLower.includes("grading") ||
+      excScopeLower.includes("earthwork");
+    if (isGrading) {
+      checkP2(420.4, 730.8);
+    }
+
+    // Row 2 Checkbox 5: OTHERS (Specify)
+    const isOthers = Boolean(data.othersSpecify) ||
+      Boolean(data.othersSpecifyText) ||
+      excTypeLower.includes("other") ||
+      excScopeLower.includes("other");
+    if (isOthers) {
+      checkP2(29.8, 712.2);
+      const specText = (data.othersSpecifyText || (excTypeLower.includes("other") ? data.excavationScope : "") || "").trim().toUpperCase();
+      // Fits safely on the line right after (Specify) _____ (up to 10 chars at 6.0pt)
+      if (specText) {
+        drawP2(specText, 107.0, 712.5, 6.0, true, 10);
+      }
+    }
+
+    // Row 2 Checkbox 6: Additional custom line 2 [ ] _______________________
+    if (data.othersCustomLine2Check || data.othersCustomLine2Text) {
+      checkP2(148.8, 712.2);
+      if (data.othersCustomLine2Text) {
+        drawP2(data.othersCustomLine2Text.toUpperCase(), 158.0, 712.5, 7.0, true, 30);
+      }
+    }
+
+    // Row 2 Checkbox 7: Additional custom line 3 [ ] _______________________
+    if (data.othersCustomLine3Check || data.othersCustomLine3Text) {
+      checkP2(320.2, 712.2);
+      if (data.othersCustomLine3Text) {
+        drawP2(data.othersCustomLine3Text.toUpperCase(), 329.0, 712.5, 7.0, true, 20);
+      }
+    }
   }
 
   return await doc.saveAsBase64({ dataUri: false });

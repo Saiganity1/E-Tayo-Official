@@ -378,6 +378,16 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   excavationVolume: "120.00",
   excavationDepth: "2.50",
   excavationScope: "Foundation Excavation, Site Grading & Ground Levelling",
+  excavationAndFills: true,
+  foundationAndRetainingWalls: true,
+  pileFoundations: false,
+  gradingAndEarthworks: true,
+  othersSpecify: false,
+  othersSpecifyText: "",
+  othersCustomLine2Check: false,
+  othersCustomLine2Text: "",
+  othersCustomLine3Check: false,
+  othersCustomLine3Text: "",
 
   // Sign Permit
   signType: "Business Sign, Wall Type (Illuminated LED)",
@@ -603,7 +613,7 @@ const getPermitNoLabel = (formId: string): string => {
     case "BP": return "Building Permit No. (BP NO)";
     case "DP": return "Demolition Permit No. (DP NO)";
     case "FP": return "Fencing Permit No. (FP NO)";
-    case "EXP": return "Excavation Permit No. (EXP NO)";
+    case "EXP": return "Excavation and Ground Preparation Permit No. (EGPP NO)";
     case "SGP": return "Sign Permit No. (SGP NO)";
     case "TSC": return "Temporary Service Permit No. (TSC NO)";
     default: return `${formId} Permit No.`;
@@ -612,7 +622,7 @@ const getPermitNoLabel = (formId: string): string => {
 
 const isFormLinkedToBuildingPermit = (formId: string): boolean => {
   // Ancillary permits and certificates that connect to the master Building Permit No.
-  return ["AP", "SP", "EP", "PL", "MP", "EL", "DP", "CO", "CC", "CFEI"].includes(formId);
+  return ["AP", "SP", "EP", "PL", "MP", "EL", "DP", "CO", "CC", "CFEI", "EXP"].includes(formId);
 };
 
 export default function FormTestingStudio() {
@@ -4878,22 +4888,291 @@ export default function FormTestingStudio() {
                   )}
 
                   {selectedForm.id === "EXP" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Excavation Scope</label>
-                        <input type="text" value={formData.excavationScope || ""} onChange={e => handleFieldChange("excavationScope", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      {/* Section 1: Accompanying Building Permit */}
+                      <div style={{
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        background: (formData.withBuildingPermit !== false && Boolean(formData.buildingPermitNo)) ? "#eff6ff" : "#f8fafc",
+                        border: (formData.withBuildingPermit !== false && Boolean(formData.buildingPermitNo)) ? "1.5px solid #93c5fd" : "1px solid #cbd5e1",
+                      }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: "700", fontSize: "0.8rem", color: "#1e293b" }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.withBuildingPermit !== false && Boolean(formData.buildingPermitNo)}
+                            onChange={e => {
+                              const checked = e.target.checked;
+                              handleFieldChange("withBuildingPermit", checked);
+                              if (checked && !formData.buildingPermitNo) {
+                                handleFieldChange("buildingPermitNo", getAutoPermitNumber("BP", formData.applicationNo));
+                              }
+                            }}
+                            style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                          />
+                          <span>Accompanying Building Permit (With Building Permit)</span>
+                        </label>
+                        <span style={{ display: "block", fontSize: "0.72rem", color: "#64748b", marginTop: "4px" }}>
+                          When enabled, automatically gathers the Building Permit number ({formData.buildingPermitNo || "BP-2026-0001"}) and inserts it into the 8 compartment boxes under <strong>BUILDING PERMIT NO.</strong> on NBC Form B-02.
+                        </span>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Excavation Volume (cu.m.)</label>
-                        <input type="text" value={formData.excavationVolume || ""} onChange={e => handleFieldChange("excavationVolume", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Section 2: Page 2 Box 6 Specifications */}
+                      <div style={{ padding: "0.9rem", borderRadius: "10px", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block", marginBottom: "0.35rem" }}>
+                          Box 6: To Be Accomplished by the Design Professional
+                        </span>
+                        <span style={{ fontSize: "0.72rem", color: "#64748b", display: "block", marginBottom: "0.75rem" }}>
+                          Select all excavation and ground preparation classifications that apply (NBC Form B-02 Page 2):
+                        </span>
+
+                        {/* Official DPWH Box 6 Checkbox Grid */}
+                        <div style={{
+                          background: "#ffffff",
+                          border: "1.5px solid #cbd5e1",
+                          borderRadius: "8px",
+                          padding: "0.85rem",
+                          marginBottom: "0.85rem"
+                        }}>
+                          {/* Row 1 */}
+                          <div style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                            gap: "0.85rem",
+                            marginBottom: "0.85rem",
+                            paddingBottom: "0.75rem",
+                            borderBottom: "1px dashed #e2e8f0"
+                          }}>
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer", fontSize: "0.78rem", fontWeight: "700", color: "#1e293b" }}>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(formData.excavationAndFills)}
+                                onChange={(e) => handleFieldChange("excavationAndFills", e.target.checked)}
+                                style={{ width: "16px", height: "16px", accentColor: "#2563eb", marginTop: "2px", cursor: "pointer" }}
+                              />
+                              <span>EXCAVATION AND FILLS</span>
+                            </label>
+
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer", fontSize: "0.78rem", fontWeight: "700", color: "#1e293b" }}>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(formData.foundationAndRetainingWalls)}
+                                onChange={(e) => handleFieldChange("foundationAndRetainingWalls", e.target.checked)}
+                                style={{ width: "16px", height: "16px", accentColor: "#2563eb", marginTop: "2px", cursor: "pointer" }}
+                              />
+                              <span>FOUNDATION AND RETAINING WALLS</span>
+                            </label>
+
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer", fontSize: "0.78rem", fontWeight: "700", color: "#1e293b" }}>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(formData.pileFoundations)}
+                                onChange={(e) => handleFieldChange("pileFoundations", e.target.checked)}
+                                style={{ width: "16px", height: "16px", accentColor: "#2563eb", marginTop: "2px", cursor: "pointer" }}
+                              />
+                              <span>PILE FOUNDATIONS</span>
+                            </label>
+
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer", fontSize: "0.78rem", fontWeight: "700", color: "#1e293b" }}>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(formData.gradingAndEarthworks)}
+                                onChange={(e) => handleFieldChange("gradingAndEarthworks", e.target.checked)}
+                                style={{ width: "16px", height: "16px", accentColor: "#2563eb", marginTop: "2px", cursor: "pointer" }}
+                              />
+                              <div>
+                                <span>GRADING AND EARTHWORKS</span>
+                                <div style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: "500" }}>(Including fills and embankment.)</div>
+                              </div>
+                            </label>
+                          </div>
+
+                          {/* Row 2: Others (Specify) and Additional Custom Scope Lines */}
+                          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.5fr 1.3fr", gap: "0.75rem" }}>
+                            <div>
+                              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.78rem", fontWeight: "700", color: "#1e293b", marginBottom: "4px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(formData.othersSpecify)}
+                                  onChange={(e) => handleFieldChange("othersSpecify", e.target.checked)}
+                                  style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                                />
+                                <span>OTHERS (Specify)</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.othersSpecifyText || ""}
+                                onChange={(e) => {
+                                  handleFieldChange("othersSpecifyText", e.target.value);
+                                  if (e.target.value.trim() && !formData.othersSpecify) handleFieldChange("othersSpecify", true);
+                                }}
+                                placeholder="e.g. TRENCHING"
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.78rem", background: formData.othersSpecify ? "#ffffff" : "#f1f5f9" }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.78rem", fontWeight: "700", color: "#1e293b", marginBottom: "4px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(formData.othersCustomLine2Check)}
+                                  onChange={(e) => handleFieldChange("othersCustomLine2Check", e.target.checked)}
+                                  style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                                />
+                                <span>Additional Scope (Line 2)</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.othersCustomLine2Text || ""}
+                                onChange={(e) => {
+                                  handleFieldChange("othersCustomLine2Text", e.target.value);
+                                  if (e.target.value.trim() && !formData.othersCustomLine2Check) handleFieldChange("othersCustomLine2Check", true);
+                                }}
+                                placeholder="e.g. DEEP BASEMENT SHORING"
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.78rem", background: formData.othersCustomLine2Check ? "#ffffff" : "#f1f5f9" }}
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.78rem", fontWeight: "700", color: "#1e293b", marginBottom: "4px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(formData.othersCustomLine3Check)}
+                                  onChange={(e) => handleFieldChange("othersCustomLine3Check", e.target.checked)}
+                                  style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                                />
+                                <span>Custom Scope (Line 3)</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.othersCustomLine3Text || ""}
+                                onChange={(e) => {
+                                  handleFieldChange("othersCustomLine3Text", e.target.value);
+                                  if (e.target.value.trim() && !formData.othersCustomLine3Check) handleFieldChange("othersCustomLine3Check", true);
+                                }}
+                                placeholder="e.g. SITE DEWATERING"
+                                style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.78rem", background: formData.othersCustomLine3Check ? "#ffffff" : "#f1f5f9" }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Overall Scope Summary input */}
+                        <div style={{ marginBottom: "0.75rem" }}>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>Detailed Scope Description</label>
+                          <input
+                            type="text"
+                            value={formData.excavationScope || ""}
+                            onChange={e => handleFieldChange("excavationScope", e.target.value)}
+                            placeholder="e.g. Foundation Excavation, Site Grading & Ground Levelling"
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                          />
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>Volume (cu.m.)</label>
+                            <input
+                              type="text"
+                              value={formData.excavationVolume || "120.00"}
+                              onChange={e => handleFieldChange("excavationVolume", e.target.value)}
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>Max Depth (meters)</label>
+                            <input
+                              type="text"
+                              value={formData.excavationDepth || "2.50"}
+                              onChange={e => handleFieldChange("excavationDepth", e.target.value)}
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>Start Date</label>
+                            <input
+                              type="date"
+                              value={formData.proposedStartDate || "2026-10-01"}
+                              onChange={e => handleFieldChange("proposedStartDate", e.target.value)}
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>Completion Date</label>
+                            <input
+                              type="date"
+                              value={formData.expectedCompletionDate || "2026-11-15"}
+                              onChange={e => handleFieldChange("expectedCompletionDate", e.target.value)}
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Maximum Depth (meters)</label>
-                        <input type="text" value={formData.excavationDepth || ""} onChange={e => handleFieldChange("excavationDepth", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Start & Completion Dates</label>
-                        <input type="text" value={`${formData.proposedStartDate || "Oct 01, 2026"} to ${formData.expectedCompletionDate || "Nov 15, 2026"}`} readOnly style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f1f5f9" }} />
+
+                      {/* Section 3: Box 3 Supervisor of Excavation Works */}
+                      <div style={{ padding: "0.9rem", borderRadius: "10px", background: "#f0fdf4", border: "1.5px solid #86efac" }}>
+                        <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#14532d", textTransform: "uppercase", display: "block", marginBottom: "0.25rem" }}>
+                          Box 3: Full-Time Inspector and Supervisor of Excavation Works
+                        </span>
+                        <span style={{ fontSize: "0.72rem", color: "#166534", display: "block", marginBottom: "0.75rem" }}>
+                          Civil Engineer in charge of full-time excavation safety, shoring, and operations
+                        </span>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>Supervisor Full Name (with Title)</label>
+                            <input type="text" value={formData.supervisorCivilEngineerName || formData.civilEngineerName || "Engr. Roberto Cruz, CE"} onChange={e => { handleFieldChange("supervisorCivilEngineerName", e.target.value); handleFieldChange("civilEngineerName", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem", fontWeight: "700" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>Address</label>
+                            <input type="text" value={formData.supervisorCivilEngineerAddress || formData.civilEngineerAddress || "Sto. Tomas, Pampanga"} onChange={e => { handleFieldChange("supervisorCivilEngineerAddress", e.target.value); handleFieldChange("civilEngineerAddress", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>Telephone / Mobile</label>
+                            <input type="text" value={formData.supervisorCivilEngineerPhone || formData.applicantPhone || "0918-765-4321"} onChange={e => handleFieldChange("supervisorCivilEngineerPhone", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>PRC Registration No.</label>
+                            <input type="text" value={formData.supervisorCivilEngineerPRC || formData.civilEngineerPRC || "0078923"} onChange={e => { handleFieldChange("supervisorCivilEngineerPRC", e.target.value); handleFieldChange("civilEngineerPRC", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>PRC Validity Date</label>
+                            <input type="text" value={formData.supervisorCivilEngineerPRCValidity || formData.civilEngineerPRCValidity || "2028-11-20"} onChange={e => { handleFieldChange("supervisorCivilEngineerPRCValidity", e.target.value); handleFieldChange("civilEngineerPRCValidity", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>TIN Number</label>
+                            <input type="text" value={formData.supervisorCivilEngineerTIN || formData.civilEngineerTIN || "123-456-789-000"} onChange={e => { handleFieldChange("supervisorCivilEngineerTIN", e.target.value); handleFieldChange("civilEngineerTIN", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>PTR Number</label>
+                            <input type="text" value={formData.supervisorCivilEngineerPTR || formData.civilEngineerPTR || "PTR-ST-2026-001"} onChange={e => { handleFieldChange("supervisorCivilEngineerPTR", e.target.value); handleFieldChange("civilEngineerPTR", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>Date Issued</label>
+                            <input type="text" value={formData.supervisorCivilEngineerPTRIssued || formData.civilEngineerPTRIssued || "Jan 10, 2026"} onChange={e => { handleFieldChange("supervisorCivilEngineerPTRIssued", e.target.value); handleFieldChange("civilEngineerPTRIssued", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#14532d", fontWeight: "700" }}>Issued At</label>
+                            <input type="text" value={formData.supervisorCivilEngineerPTRIssuedAt || formData.civilEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => { handleFieldChange("supervisorCivilEngineerPTRIssuedAt", e.target.value); handleFieldChange("civilEngineerPTRIssuedAt", e.target.value); }} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+
+                        {/* Supervisor E-Signature */}
+                        <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #86efac" }}>
+                          <SignatureCreator
+                            value={formData.supervisorCivilEngineerSignature || formData.civilEngineerSignature}
+                            onChange={sig => {
+                              handleFieldChange("supervisorCivilEngineerSignature", sig);
+                              handleFieldChange("civilEngineerSignature", sig);
+                            }}
+                            label={`Supervisor Seal & E-Signature (Affixed over printed name: ${formData.supervisorCivilEngineerName || formData.civilEngineerName || "Engr. Roberto Cruz, CE"})`}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
