@@ -39,3 +39,6 @@ logs/
 uploads/
 backend/uploads/
 
+# Scratch & test output
+scratch/
+

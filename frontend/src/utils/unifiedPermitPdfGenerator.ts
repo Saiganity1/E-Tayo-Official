@@ -576,6 +576,33 @@ export interface UnifiedPermitFormData {
   signSupervisorSignature?: string;
   signSupervisorSignedDate?: string;
 
+  // Permit for Temporary Service Connection (NBC Form E-03)
+  controlNo?: string;
+  temporaryServicePermitNo?: string;
+  ptscNo?: string;
+  tscNo?: string;
+  temporaryServiceStartDate?: string;
+  temporaryServiceTransformerKva?: string;
+  temporaryServiceGeneratorKva?: string;
+  ptscPurposeForConstruction?: boolean;
+  ptscPurposeForTesting?: boolean;
+  ptscPurposeOthers?: boolean;
+  ptscPurposeOthersSpecify?: string;
+  ptscSupervisorRole?: string;
+  supervisorElectricalEngineerName?: string;
+  supervisorElectricalEngineerAddress?: string;
+  supervisorElectricalEngineerPRC?: string;
+  supervisorElectricalEngineerPRCValidity?: string;
+  supervisorElectricalEngineerPTR?: string;
+  supervisorElectricalEngineerPTRIssued?: string;
+  supervisorElectricalEngineerPTRIssuedAt?: string;
+  supervisorElectricalEngineerTIN?: string;
+  supervisorElectricalEngineerSignature?: string;
+  applicantZip?: string;
+  applicantNo?: string;
+  applicantStreet?: string;
+  applicantCity?: string;
+
   // Active form checkboxes selected
   activePermitForms?: (keyof PermitFormMatrix)[];
   submissionDate?: string;
@@ -656,6 +683,22 @@ function safeText(str: string | undefined | null): string {
     .replace(/[^\x20-\x7E\t\n\r]/g, "");
 }
 
+function formatDisplayDate(d?: string | null): string {
+  if (!d) return "";
+  const s = String(d).trim();
+  if (s.includes("-")) {
+    const parts = s.split("T")[0].split("-");
+    if (parts.length === 3 && parts[0].length === 4) {
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const mIdx = parseInt(parts[1], 10) - 1;
+      if (mIdx >= 0 && mIdx < 12) {
+        return `${months[mIdx]} ${parseInt(parts[2], 10)}, ${parts[0]}`;
+      }
+    }
+  }
+  return s;
+}
+
 function parseApplicantName(
   input: UnifiedPermitFormData | string | undefined | null
 ): { lastName: string; firstName: string; middleName: string; mi: string } {
@@ -670,7 +713,7 @@ function parseApplicantName(
     }
     nameStr = input.applicantName || "";
   } else {
-    nameStr = input || "";
+    nameStr = typeof input === "string" ? input : "";
   }
   const parts = nameStr.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return { lastName: "DELA CRUZ", firstName: "JUAN", middleName: "SANTOS", mi: "S." };
@@ -4926,49 +4969,287 @@ export async function generateTemporaryServicePermitPdf(data: UnifiedPermitFormD
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header: Applicant No. inside box
-  drawText(data.applicationNo || "APP-2026-6636", 75, 766.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 440, 766.0, 8, false);
+  const drawCompartmentString = (
+    text: string | undefined | null,
+    centers: number[],
+    baselineY: number,
+    fontSize: number = 8.0
+  ) => {
+    if (!text) return;
+    const chars = text.trim().split("");
+    centers.forEach((centerX, idx) => {
+      if (idx < chars.length) {
+        const char = chars[idx];
+        const charW = fontBold.widthOfTextAtSize(char, fontSize);
+        const charX = centerX - charW / 2;
+        p1.drawText(char, {
+          x: charX,
+          y: baselineY,
+          size: fontSize,
+          font: fontBold,
+          color: darkNavy,
+        });
+      }
+    });
+  };
 
-  // Box 1
+  // Header exact compartment cell centers
+  const ctrlCenters = [56.4, 67.7, 81.36, 92.7, 105.3, 118.92, 130.5, 143.1, 155.7, 167.7, 180.3];
+  const ptscCenters = [480.5, 493.1, 505.7, 518.1, 530.7, 543.3, 555.9, 568.5];
+
+  // 1. CONTROL NO. (11 individual segmented boxes)
+  const rawCtrl = safeText(data.controlNo || data.applicationNo || "2026-0001").trim();
+  let cleanCtrl = rawCtrl.replace(/^APP-(TEST-)?/i, "").replace(/^UNIFIED-/i, "").replace(/^CTRL-/i, "").trim();
+  if (cleanCtrl.length > 11 && cleanCtrl.includes("-")) {
+    cleanCtrl = cleanCtrl.replace(/-/g, "");
+  }
+  if (cleanCtrl.length > 11) cleanCtrl = cleanCtrl.slice(0, 11);
+  drawCompartmentString(cleanCtrl, ctrlCenters, 800.0, 8.0);
+
+  // 2. PTSC NO. (Permit for Temporary Service Connection No. - 8 individual segmented boxes)
+  const isApprovedOrIssued =
+    data.isApproved === true ||
+    data.status === "approved" ||
+    data.status === "released" ||
+    Boolean(data.permitIssuedDate) ||
+    Boolean(data.dateIssued) ||
+    Boolean(data.temporaryServicePermitNo) ||
+    Boolean(data.ptscNo) ||
+    Boolean(data.tscNo) ||
+    (data.permitNo?.startsWith("PTSC-") || data.permitNo?.startsWith("TSC-")) ||
+    (!data.status); // Default to preview if no submission status is provided (e.g. Form Tester)
+
+  if (isApprovedOrIssued) {
+    const rawPtsc = (
+      data.temporaryServicePermitNo ||
+      data.ptscNo ||
+      data.tscNo ||
+      (data.permitNo && (data.permitNo.startsWith("PTSC-") || data.permitNo.startsWith("TSC-")) ? data.permitNo : "") ||
+      (data.applicationNo ? `PTSC-${cleanCtrl}` : "2026-0001")
+    ).trim();
+
+    if (rawPtsc) {
+      let cleanPtsc = rawPtsc.replace(/^(PTSC|TSC|PERMIT)[\s\-#:]*(TEST[\s\-#:]*)?/i, "").trim();
+      if (cleanPtsc.length > 8 && /^\d{4}-0\d{3}$/.test(cleanPtsc)) {
+        cleanPtsc = cleanPtsc.replace(/-0(\d{3})$/, '-$1');
+      } else if (cleanPtsc.length > 8 && cleanPtsc.includes('-')) {
+        cleanPtsc = cleanPtsc.replace(/-/g, '');
+      }
+      if (cleanPtsc.length > 8) cleanPtsc = cleanPtsc.slice(0, 8);
+      drawCompartmentString(cleanPtsc, ptscCenters, 800.0, 8.0);
+    }
+  }
+
+  const drawCheck = (cx: number, cy: number, size: number = 7.5) => {
+    p1.drawText("X", {
+      x: cx - 2.8,
+      y: cy - 2.8,
+      size,
+      font: fontBold,
+      color: darkNavy,
+    });
+  };
+
+  // Date Applied (top right above Box 1 table)
+  const appDate = data.submissionDate || data.applicationDate || data.applicantSignedDate || "Sep 17, 2026";
+  drawText(formatDisplayDate(appDate), 480.0, 765.0, 8.0, false);
+
+  // Box 1 - Row 1: OWNER / APPLICANT
   const { lastName, firstName, mi, middleName } = parseApplicantName(data);
-  drawText(lastName, 160, 747.0, 8.5, true, 20);
-  drawText(firstName, 260, 747.0, 8.5, true, 22);
-  drawText(middleName || mi, 370, 747.0, 8, true);
-  drawText(data.applicantTIN || "000-123-456-000", 450, 747.0, 8, false);
-  drawText(data.formOfOwnership || "INDIVIDUAL", 210, 704.0, 8, false, 25);
-  drawText((data.projectType?.category || "Residential").toUpperCase(), 380, 704.0, 8, false, 25);
+  drawText(lastName, 80.0, 730.0, 8.5, true, 25);
+  drawText(firstName, 255.0, 730.0, 8.5, true, 25);
+  drawText(middleName || mi, 450.0, 730.0, 8.5, true, 6);
+  drawText(data.applicantTIN || "123-456-789-000", 492.0, 730.0, 8.0, false, 18);
 
-  // Address (Applicant Address)
-  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 671.0, 7.5, false, 28);
-  drawText(data.barangay || "Poblacion", 240, 671.0, 7.5, false, 18);
-  drawText(data.applicantPhone || "0917-123-4567", 450, 671.0, 7.5, true);
+  // Box 1 - Row 2: ENTERPRISE, FORM OF OWNERSHIP, USE OR CHARACTER OF OCCUPANCY
+  if (data.enterpriseName && data.enterpriseName.trim().length > 0) {
+    drawText(data.enterpriseName, 122.0, 693.0, 7.5, true, 22);
+  } else {
+    drawText("N/A", 122.0, 693.0, 7.5, false);
+  }
+  drawText(data.formOfOwnership || "INDIVIDUAL", 250.0, 693.0, 8.0, true, 20);
+  drawText((data.characterOfOccupancy || data.projectType?.category || "RESIDENTIAL").toUpperCase(), 415.0, 693.0, 8.0, true, 25);
 
-  // Location
-  drawText(data.lotNo || "Lot 12", 160, 629.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 240, 629.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 320, 629.0, 7.5, true, 16);
-  // Missing Tax Dec No. added
-  drawText(data.taxDecNo || "TD-2026-0012", 440, 629.0, 7.5, false);
+  // Box 1 - Row 3: ADDRESS
+  const streetNo = data.applicantNo ? `${data.applicantNo} ${data.applicantStreet || ""}`.trim() : (data.applicantAddress?.split(",")[0] || "123 Rizal St.");
+  const bgy = data.applicantBarangay || data.barangay || "Poblacion";
+  const cityMun = data.applicantCity || "Sto. Tomas";
+  const zip = data.applicantZip || "2020";
+  const phone = data.applicantPhone || "0917-123-4567";
 
-  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 80, 609.0, 7.5, false, 24);
-  drawText(data.barangay || "Poblacion", 240, 609.0, 7.5, true, 20);
+  drawText(streetNo, 48.0, 656.0, 7.5, false, 24);
+  drawText(bgy, 180.0, 656.0, 7.5, false, 16);
+  drawText(cityMun, 275.0, 656.0, 7.5, false, 22);
+  drawText(zip, 405.0, 656.0, 7.5, false, 8);
+  drawText(phone, 460.0, 656.0, 7.5, true, 16);
 
-  // Box 2: Temporary Service Specs: moved higher (+5px)
-  drawText(data.temporaryServicePurpose || "FOR CONSTRUCTION POWER & TESTING", 160, 582.0, 8, true, 45);
-  drawText(`${data.temporaryServiceKva || "15.0"} kVA, ${data.temporaryServiceVoltage || "230V, Single Phase, 60Hz"}`, 160, 553.0, 8, true);
-  drawText(`${data.temporaryServiceDuration || "90"} DAYS`, 160, 533.0, 8, true);
-  drawText(data.proposedStartDate || "Oct 01, 2026", 160, 513.0, 7.5, false);
+  // Box 1 - Row 4: LOCATION OF CONSTRUCTION
+  drawText(data.lotNo || "12", 195.0, 632.0, 7.5, true, 10);
+  drawText(data.blockNo || "4", 265.0, 632.0, 7.5, true, 10);
+  drawText(data.tctNo || "TCT-889977-P", 346.0, 632.0, 7.5, true, 18);
+  drawText(data.taxDecNo || "TD-2026-004455", 485.0, 632.0, 7.5, true, 18);
 
-  // Box 3: Electrical Engineer
-  const peeName = data.electricalEngineerName || "Engr. Danilo Reyes, PEE";
-  drawText(peeName.toUpperCase(), 100, 395.0, 8.5, true);
-  drawText(data.electricalEngineerPRC || "PRC-0033421", 80, 365.0, 7.5, false);
-  drawText(data.electricalEngineerPTR || "PTR-ST-2026-4412", 80, 350.0, 7.5, false);
+  // Box 1 - Row 5: STREET, BARANGAY, CITY / MUNICIPALITY
+  let projStreetClean = (data.projectAddress || data.streetAddress || "Sunset Valley Subd.").split(",")[0].trim();
+  drawText(projStreetClean, 82.0, 611.5, 7.0, true, 18);
+  drawText(data.barangay || "Poblacion", 215.0, 611.5, 7.5, true, 20);
+  drawText(data.installationCity || "Sto. Tomas, Pampanga", 420.0, 611.5, 7.5, true, 28);
 
-  // Box 4: Owner Signature: moved higher (+5px)
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 150.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 80, 125.0, 7.5, false);
+  // Box 1 - PURPOSE CHECKBOXES:
+  const purposeUpper = (data.temporaryServicePurpose || "FOR CONSTRUCTION POWER & EQUIPMENT TESTING").toUpperCase();
+  const isForConstruction = data.ptscPurposeForConstruction !== undefined
+    ? data.ptscPurposeForConstruction
+    : (purposeUpper.includes("CONSTRUCTION") || !data.temporaryServicePurpose);
+  const isForTesting = data.ptscPurposeForTesting !== undefined
+    ? data.ptscPurposeForTesting
+    : purposeUpper.includes("TESTING");
+  const isOthers = data.ptscPurposeOthers !== undefined
+    ? data.ptscPurposeOthers
+    : (purposeUpper.includes("OTHER") || (!isForConstruction && !isForTesting));
+
+  if (isForConstruction) drawCheck(58.1, 583.7);
+  if (isForTesting) drawCheck(220.1, 583.7);
+  if (isOthers) {
+    drawCheck(371.0, 584.5);
+    const specifyText = data.ptscPurposeOthersSpecify || (isOthers && !isForConstruction && !isForTesting ? data.temporaryServicePurpose : "");
+    if (specifyText) {
+      drawText(specifyText, 458.0, 582.0, 7.5, true, 24);
+    }
+  }
+
+  // Box 1 - SUMMARY OF ELECTRICAL LOADS / CAPACITIES APPLIED FOR:
+  const connLoad = data.temporaryServiceKva || data.electricalConnectedLoad || "15.0";
+  const transCap = data.temporaryServiceTransformerKva || "25.0";
+  const genCap = data.temporaryServiceGeneratorKva || "N/A";
+
+  drawText(connLoad, 115.0, 524.5, 8.0, true, 12);
+  drawText(transCap, 295.0, 524.5, 8.0, true, 12);
+  drawText(genCap, 470.0, 524.5, 8.0, true, 12);
+
+  // BOX 2: DESIGN PROFESSIONAL, PLANS AND SPECIFICATIONS (PEE)
+  const peeName = (data.electricalEngineerName || (data as any).ptscPeeName || "Engr. Danilo Reyes, PEE").trim();
+  const peeAddr = (data.electricalEngineerAddress || (data as any).ptscPeeAddress || "San Nicolas, Sto. Tomas, Pampanga").trim();
+  const peePrc = (data.electricalEngineerPRC || (data as any).ptscPeePRC || "0033421").trim();
+  const peeValidity = (data.electricalEngineerPRCValidity || (data as any).ptscPeePRCValidity || "2028-11-20").trim();
+  const peePtr = (data.electricalEngineerPTR || (data as any).ptscPeePTR || "PTR-ST-2026-4412").trim();
+  const peePtrIssued = (data.electricalEngineerPTRIssued || (data as any).ptscPeePTRIssued || "Jan 10, 2026").trim();
+  const peePtrIssuedAt = (data.electricalEngineerPTRIssuedAt || (data as any).ptscPeePTRIssuedAt || "Sto. Tomas, Pampanga").trim();
+  const peeTin = (data.electricalEngineerTIN || (data as any).ptscPeeTIN || "456-789-012-000").trim();
+  const peeDate = (data.electricalEngineerSignedDate || (data as any).ptscPeeSignedDate || data.applicantSignedDate || data.submissionDate || "Sep 17, 2026").trim();
+
+  const peeSig = data.electricalEngineerSignature || (data as any).ptscPeeSignature;
+  if (peeSig) {
+    await embedSignatureImage(doc, p1, peeSig, 120.0, 442.0, 95, 26);
+  }
+  // Printed Name over underline at y=433.5
+  drawText(peeName.toUpperCase(), 105.0, 437.0, 8.5, true, 30);
+  // Date over underline Date ________________________ at y=398.1
+  drawText(formatDisplayDate(peeDate), 145.0, 401.5, 7.5, false);
+
+  // Right-side credentials table
+  drawText(peeAddr, 355.0, 452.0, 7.5, false, 36);
+  drawText(peePrc, 350.0, 431.5, 7.5, false, 15);
+  drawText(formatDisplayDate(peeValidity), 485.0, 431.5, 7.5, false, 15);
+  drawText(peePtr, 350.0, 412.5, 7.5, false, 15);
+  drawText(formatDisplayDate(peePtrIssued), 495.0, 412.5, 7.5, false, 15);
+  drawText(peePtrIssuedAt, 350.0, 398.0, 7.5, false, 15);
+  drawText(peeTin, 468.0, 398.0, 7.5, false, 18);
+
+  // BOX 3: SUPERVISOR / IN-CHARGE OF ELECTRICAL WORKS
+  const supRole = (data.ptscSupervisorRole || data.installationInChargeRole || "PEE").toUpperCase();
+  if (supRole.includes("PEE")) {
+    drawCheck(49.5, 353.25);
+  } else if (supRole.includes("REE")) {
+    drawCheck(229.45, 353.25);
+  } else if (supRole.includes("RME")) {
+    drawCheck(418.55, 353.25);
+  } else {
+    drawCheck(49.5, 353.25);
+  }
+
+  const supName = (data.supervisorElectricalEngineerName || (data as any).ptscSupervisorName || data.installationInChargeName || peeName).trim();
+  const supAddr = (data.supervisorElectricalEngineerAddress || (data as any).ptscSupervisorAddress || data.installationInChargeAddress || peeAddr).trim();
+  const supPrc = (data.supervisorElectricalEngineerPRC || (data as any).ptscSupervisorPRC || data.installationInChargePRC || peePrc).trim();
+  const supValidity = (data.supervisorElectricalEngineerPRCValidity || (data as any).ptscSupervisorPRCValidity || data.installationInChargePRCValidity || peeValidity).trim();
+  const supPtr = (data.supervisorElectricalEngineerPTR || (data as any).ptscSupervisorPTR || data.installationInChargePTR || peePtr).trim();
+  const supPtrIssued = (data.supervisorElectricalEngineerPTRIssued || (data as any).ptscSupervisorPTRIssued || data.installationInChargePTRIssued || peePtrIssued).trim();
+  const supPtrIssuedAt = (data.supervisorElectricalEngineerPTRIssuedAt || (data as any).ptscSupervisorPTRIssuedAt || data.installationInChargePTRIssuedAt || peePtrIssuedAt).trim();
+  const supTin = (data.supervisorElectricalEngineerTIN || (data as any).ptscSupervisorTIN || data.installationInChargeTIN || peeTin).trim();
+  const supSig = data.supervisorElectricalEngineerSignature || (data as any).ptscSupervisorSignature || data.installationInChargeSignature || data.electricalEngineerSignature;
+  const supDate = (data.supervisorElectricalEngineerSignedDate || (data as any).ptscSupervisorSignedDate || data.installationInChargeSignedDate || peeDate).trim();
+
+  if (supSig) {
+    await embedSignatureImage(doc, p1, supSig, 235.0, 303.0, 95, 26);
+  }
+  // Supervisor Printed Name on underline at y=296.8
+  drawText(supName.toUpperCase(), 215.0, 300.0, 8.5, true, 30);
+  // Date on Date ________________________ at y=296.0
+  drawText(formatDisplayDate(supDate), 398.0, 298.5, 7.5, false);
+
+  // Box 3 Credentials Table
+  drawText(supPrc, 80.0, 271.0, 7.5, false, 20);
+  drawText(formatDisplayDate(supValidity), 350.0, 271.0, 7.5, false, 20);
+  drawText(supPtr, 80.0, 256.0, 7.5, false, 20);
+  drawText(formatDisplayDate(supPtrIssued), 360.0, 256.0, 7.5, false, 20);
+  drawText(supPtrIssuedAt, 80.0, 242.5, 7.5, false, 20);
+  drawText(supTin, 340.0, 242.5, 7.5, false, 20);
+  drawText(supAddr, 85.0, 228.5, 7.5, false, 45);
+
+  // BOX 4: OWNER / APPLICANT
+  const applicantFull = (data.applicantName || "JUAN DELA CRUZ").trim();
+  const applicantAddr = (data.applicantAddress || "123 Rizal St., Poblacion, Sto. Tomas, Pampanga").trim();
+  const ctc = (data.govIdNo || data.ctcNo || (data as any).ptscApplicantCtcNo || "CTC-2026-00192").trim();
+  const ctcDate = (data.ctcDateIssued || data.govIdDateIssued || (data as any).ptscApplicantCtcDateIssued || "Jan 15, 2026").trim();
+  const ctcPlace = (data.ctcPlaceIssued || data.govIdPlaceIssued || (data as any).ptscApplicantCtcPlaceIssued || "Sto. Tomas, Pampanga").trim();
+  const appSignDate = (data.applicantSignedDate || data.submissionDate || "Sep 17, 2026").trim();
+
+  if (data.applicantSignature) {
+    await embedSignatureImage(doc, p1, data.applicantSignature, 105.0, 164.0, 95, 26);
+  }
+  // Applicant Printed Name on underline at y=160.3
+  drawText(applicantFull.toUpperCase(), 90.0, 162.5, 8.5, true, 32);
+  // Date on Date ________________________ at y=129.8
+  drawText(formatDisplayDate(appSignDate), 145.0, 132.0, 7.5, false);
+
+  // Box 4 Right Table
+  drawText(applicantAddr, 355.0, 190.0, 7.5, false, 36);
+  drawText(ctc, 360.0, 171.0, 7.5, false, 20);
+  drawText(formatDisplayDate(ctcDate), 360.0, 152.5, 7.5, false, 20);
+  drawText(ctcPlace, 365.0, 133.5, 7.5, false, 25);
+
+  // PAGE 1: Building Official & Approval
+  if (doc.getPageCount() > 1) {
+    const p2 = doc.getPage(1);
+    const drawTextP2 = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false, maxWidth?: number) => {
+      if (!text) return;
+      let clean = safeText(text).trim();
+      if (maxWidth && clean.length > maxWidth) clean = clean.slice(0, maxWidth);
+      p2.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
+    };
+
+    // Box 4 on Page 1 (To be accomplished by Processing & Evaluation Division)
+    const rawFee = (data.feePaid || data.buildingPermitFee || data.totalFee || (data as any).ptscFeePaid || "850.00").toString().trim();
+    const cleanFee = rawFee.replace(/^(PHP|P|₱)\s*/i, "").trim();
+
+    const rawOr = (data.officialReceiptNo || (data as any).ptscOfficialReceiptNo || "OR-2026-004521").toString().trim();
+    const cleanOr = rawOr.replace(/^AC\s*[-–]?\s*/i, "").trim();
+
+    const rawDatePaid = (data.datePaid || data.receiptDate || (data as any).ptscDatePaid || data.submissionDate || "Sep 18, 2026").toString().trim();
+    const rawDateIssued = (data.permitIssuedDate || data.dateIssued || (data as any).ptscDateIssued || data.receiptDate || "Sep 18, 2026").toString().trim();
+
+    // Sits directly on underline (underline y=818.0, text baseline y=820.0)
+    drawTextP2(cleanFee, 105.0, 820.0, 8.0, true);
+    drawTextP2(cleanOr, 436.0, 820.0, 8.0, true);
+    // Dates sit cleanly on underlines (underline y=794.5, text baseline y=796.5)
+    drawTextP2(formatDisplayDate(rawDatePaid), 110.0, 796.5, 7.5, false);
+    drawTextP2(formatDisplayDate(rawDateIssued), 395.0, 796.5, 7.5, false);
+
+    // Box 5 on Page 1 (To be accomplished by the Building Official)
+    drawTextP2(applicantFull.toUpperCase(), 270.0, 651.0, 8.5, true, 38);
+    drawTextP2(applicantAddr, 175.0, 632.0, 7.5, false, 50);
+    drawTextP2(data.temporaryServiceDuration || (data as any).ptscDuration || "90", 440.0, 575.0, 8.0, true);
+    drawTextP2(formatDisplayDate(data.proposedStartDate || data.temporaryServiceStartDate || (data as any).ptscStartDate || "Oct 01, 2026"), 85.0, 556.0, 8.0, true);
+  }
 
   return await doc.saveAsBase64({ dataUri: false });
 }

@@ -29,6 +29,7 @@ import {
   generateBfpApplicationPdf,
   generateFencingPermitPdf,
   generateSignPermitPdf,
+  generateTemporaryServicePermitPdf,
   UnifiedPermitFormData 
 } from "../../utils/unifiedPermitPdfGenerator";
 import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
@@ -807,6 +808,100 @@ export default function TechnicalPermitFormsStep({
   const [signBldgOwnerSignedDate, setSignBldgOwnerSignedDate] = useState("Jan 08, 2026");
   const [signBldgOwnerSignature, setSignBldgOwnerSignature] = useState("");
   const [tempConnectionLoad, setTempConnectionLoad] = useState("5.0 kVA (Temporary Construction Power, 6 Months Duration)");
+  // Temporary Service Connection (NBC Form E-03) state
+  const [ptscPurposeForConstruction, setPtscPurposeForConstruction] = useState(true);
+  const [ptscPurposeForTesting, setPtscPurposeForTesting] = useState(true);
+  const [ptscPurposeOthers, setPtscPurposeOthers] = useState(false);
+  const [ptscPurposeOthersSpecify, setPtscPurposeOthersSpecify] = useState("");
+  const [ptscConnectedLoad, setPtscConnectedLoad] = useState(() => {
+    const num = parseFloat((electricalConnectedLoad || "").replace(/[^0-9.]/g, ""));
+    return (!isNaN(num) && num > 0) ? num.toFixed(1) : "15.0";
+  });
+  const [ptscTransformerCapacity, setPtscTransformerCapacity] = useState("25.0");
+  const [ptscGeneratorCapacity, setPtscGeneratorCapacity] = useState("N/A");
+  const [ptscDuration, setPtscDuration] = useState("90");
+  const [ptscStartDate, setPtscStartDate] = useState("2026-10-01");
+  const [ptscFormOfOwnership, setPtscFormOfOwnership] = useState(() => formOfOwnership || "Individual");
+  const [ptscEnterpriseName, setPtscEnterpriseName] = useState(() => (constructionOwnedByEnterprise && constructionOwnedByEnterprise !== "N/A (INDIVIDUAL)") ? constructionOwnedByEnterprise : "");
+  const [ptscCharacterOfOccupancy, setPtscCharacterOfOccupancy] = useState("Residential");
+  const [ptscApplicantNo, setPtscApplicantNo] = useState(() => (applicantNoStreet ? applicantNoStreet.split(" ")[0] : "123"));
+  const [ptscApplicantStreet, setPtscApplicantStreet] = useState(() => streetAddress || applicantNoStreet || "Rizal St.");
+  const [ptscApplicantBarangay, setPtscApplicantBarangay] = useState(() => barangay || applicantBarangay || "Poblacion");
+  const [ptscApplicantCity, setPtscApplicantCity] = useState(() => applicantMunicipality ? `${applicantMunicipality}, ${applicantProvince || "Pampanga"}` : "Sto. Tomas, Pampanga");
+  const [ptscApplicantZip, setPtscApplicantZip] = useState(() => applicantZipCode || "2020");
+  const [ptscPeeName, setPtscPeeName] = useState(() => electricalEngineerName || "ENGR. DANILO REYES, PEE");
+  const [ptscPeeAddress, setPtscPeeAddress] = useState("San Nicolas, Sto. Tomas, Pampanga");
+  const [ptscPeePRC, setPtscPeePRC] = useState(() => electricalEngineerPRC ? electricalEngineerPRC.replace(/^[A-Za-z-]+/, "") : "0033421");
+  const [ptscPeePRCValidity, setPtscPeePRCValidity] = useState(() => electricalEngineerPRCValidity || "2028-11-20");
+  const [ptscPeePTR, setPtscPeePTR] = useState(() => electricalEngineerPTR || "PTR-ST-2026-4412");
+  const [ptscPeePTRIssued, setPtscPeePTRIssued] = useState(() => electricalEngineerPTRIssued || "Jan 10, 2026");
+  const [ptscPeePTRIssuedAt, setPtscPeePTRIssuedAt] = useState("Sto. Tomas, Pampanga");
+  const [ptscPeeTIN, setPtscPeeTIN] = useState(() => electricalEngineerTIN || "456-789-012-000");
+  const [ptscPeeSignature, setPtscPeeSignature] = useState(() => electricalEngineerSignature || "");
+  const [ptscPeeSignedDate, setPtscPeeSignedDate] = useState(() => applicantSignedDate || "2026-09-17");
+  const [sameAsDesignPtscSupervisor, setSameAsDesignPtscSupervisor] = useState(true);
+  const [ptscSupervisorRole, setPtscSupervisorRole] = useState("PEE");
+  const [ptscSupervisorName, setPtscSupervisorName] = useState(() => electricalEngineerName || "ENGR. DANILO REYES, PEE");
+  const [ptscSupervisorAddress, setPtscSupervisorAddress] = useState("San Nicolas, Sto. Tomas, Pampanga");
+  const [ptscSupervisorPRC, setPtscSupervisorPRC] = useState(() => electricalEngineerPRC ? electricalEngineerPRC.replace(/^[A-Za-z-]+/, "") : "0033421");
+  const [ptscSupervisorPRCValidity, setPtscSupervisorPRCValidity] = useState(() => electricalEngineerPRCValidity || "2028-11-20");
+  const [ptscSupervisorPTR, setPtscSupervisorPTR] = useState(() => electricalEngineerPTR || "PTR-ST-2026-4412");
+  const [ptscSupervisorPTRIssued, setPtscSupervisorPTRIssued] = useState(() => electricalEngineerPTRIssued || "Jan 10, 2026");
+  const [ptscSupervisorPTRIssuedAt, setPtscSupervisorPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
+  const [ptscSupervisorTIN, setPtscSupervisorTIN] = useState(() => electricalEngineerTIN || "456-789-012-000");
+  const [ptscSupervisorSignature, setPtscSupervisorSignature] = useState(() => electricalEngineerSignature || "");
+  const [ptscSupervisorSignedDate, setPtscSupervisorSignedDate] = useState(() => applicantSignedDate || "2026-09-17");
+  const [ptscApplicantCtcNo, setPtscApplicantCtcNo] = useState(() => govIdNo || "CTC-2026-00192");
+  const [ptscApplicantCtcDateIssued, setPtscApplicantCtcDateIssued] = useState(() => govIdDateIssued || "Jan 15, 2026");
+  const [ptscApplicantCtcPlaceIssued, setPtscApplicantCtcPlaceIssued] = useState(() => govIdPlaceIssued || "Sto. Tomas, Pampanga");
+  const [ptscApplicantSignature, setPtscApplicantSignature] = useState(() => applicantSignature || "");
+  // Page 2: Box 4 Processing & Evaluation Division
+  const [ptscFeePaid, setPtscFeePaid] = useState(() => (clearanceApp as any)?.assessedFees ? `${(clearanceApp as any).assessedFees.toFixed(2)}` : "850.00");
+  const [ptscDatePaid, setPtscDatePaid] = useState(() => (clearanceApp as any)?.dateReleased || (clearanceApp as any)?.paymentDate || "Sep 18, 2026");
+  const [ptscOfficialReceiptNo, setPtscOfficialReceiptNo] = useState(() => (clearanceApp as any)?.officialReceiptNo || (clearanceApp as any)?.paymentReference || "OR-2026-004521");
+  const [ptscDateIssued, setPtscDateIssued] = useState(() => (clearanceApp as any)?.dateReleased || "Sep 18, 2026");
+
+  const handleAutoFillPtscFromSystem = () => {
+    setPtscApplicantNo(applicantNoStreet ? applicantNoStreet.split(" ")[0] : "123");
+    setPtscApplicantStreet(streetAddress || applicantNoStreet || "Rizal St.");
+    setPtscApplicantBarangay(barangay || applicantBarangay || "Poblacion");
+    setPtscApplicantCity(applicantMunicipality ? `${applicantMunicipality}, ${applicantProvince || "Pampanga"}` : "Sto. Tomas, Pampanga");
+    setPtscApplicantZip(applicantZipCode || "2020");
+    if (formOfOwnership) setPtscFormOfOwnership(formOfOwnership);
+    if (constructionOwnedByEnterprise && constructionOwnedByEnterprise !== "N/A (INDIVIDUAL)") {
+      setPtscEnterpriseName(constructionOwnedByEnterprise);
+    }
+    if (govIdNo) setPtscApplicantCtcNo(govIdNo);
+    if (govIdDateIssued) setPtscApplicantCtcDateIssued(govIdDateIssued);
+    if (govIdPlaceIssued) setPtscApplicantCtcPlaceIssued(govIdPlaceIssued);
+    if (applicantSignature) setPtscApplicantSignature(applicantSignature);
+
+    if (electricalEngineerName) setPtscPeeName(electricalEngineerName);
+    if (electricalEngineerPRC) setPtscPeePRC(electricalEngineerPRC.replace(/^[A-Za-z-]+/, ""));
+    if (electricalEngineerPRCValidity) setPtscPeePRCValidity(electricalEngineerPRCValidity);
+    if (electricalEngineerPTR) setPtscPeePTR(electricalEngineerPTR);
+    if (electricalEngineerPTRIssued) setPtscPeePTRIssued(electricalEngineerPTRIssued);
+    if (electricalEngineerTIN) setPtscPeeTIN(electricalEngineerTIN);
+    if (electricalEngineerSignature) setPtscPeeSignature(electricalEngineerSignature);
+    setPtscPeeSignedDate(applicantSignedDate || "2026-09-17");
+    setPtscSupervisorSignedDate(applicantSignedDate || "2026-09-17");
+
+    const numLoad = parseFloat((electricalConnectedLoad || "").replace(/[^0-9.]/g, ""));
+    if (!isNaN(numLoad) && numLoad > 0) {
+      setPtscConnectedLoad(numLoad.toFixed(1));
+    }
+
+    if ((clearanceApp as any)?.assessedFees) {
+      setPtscFeePaid(`${(clearanceApp as any).assessedFees.toFixed(2)}`);
+    } else {
+      setPtscFeePaid("850.00");
+    }
+    setPtscDatePaid((clearanceApp as any)?.dateReleased || (clearanceApp as any)?.paymentDate || "Sep 18, 2026");
+    setPtscOfficialReceiptNo((clearanceApp as any)?.officialReceiptNo || (clearanceApp as any)?.paymentReference || "OR-2026-004521");
+    setPtscDateIssued((clearanceApp as any)?.dateReleased || "Sep 18, 2026");
+
+    setNotification("PTSC Form auto-filled from application & electrical records!");
+  };
 
   // State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1900,6 +1995,113 @@ export default function TechnicalPermitFormsStep({
               isPaid: (clearanceApp as any)?.paymentStatus === "paid" || Boolean((clearanceApp as any)?.officialReceiptNo),
             };
             const b64 = await generateSignPermitPdf(sgpPayload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "temporaryServiceConnection") {
+            const ptscPayload: UnifiedPermitFormData = {
+              ...payload,
+              controlNo: payload.applicationNo || `2026-${randomSeq}`,
+              applicationNo: payload.applicationNo || `2026-${randomSeq}`,
+              temporaryServicePermitNo: (payload as any).temporaryServicePermitNo || `PTSC-${currentYear}-${randomSeq}`,
+              ptscNo: (payload as any).ptscNo || `PTSC-${currentYear}-${randomSeq}`,
+              // Purpose
+              ptscPurposeForConstruction,
+              ptscPurposeForTesting,
+              ptscPurposeOthers,
+              ptscPurposeOthersSpecify,
+              temporaryServicePurpose: ptscPurposeOthers && ptscPurposeOthersSpecify
+                ? ptscPurposeOthersSpecify
+                : (ptscPurposeForConstruction && ptscPurposeForTesting
+                  ? "FOR CONSTRUCTION POWER & EQUIPMENT TESTING"
+                  : ptscPurposeForConstruction ? "FOR CONSTRUCTION" : "FOR TESTING"),
+              // Capacities & duration
+              temporaryServiceKva: ptscConnectedLoad || electricalConnectedLoad || "15.0",
+              temporaryServiceTransformerKva: ptscTransformerCapacity || "25.0",
+              temporaryServiceGeneratorKva: ptscGeneratorCapacity || "N/A",
+              temporaryServiceVoltage: electricalVoltage ? `${electricalVoltage}, Single Phase, 60Hz` : "230V, Single Phase, 60Hz",
+              temporaryServiceDuration: ptscDuration || "90",
+              temporaryServiceStartDate: ptscStartDate || applicantSignedDate || "Oct 01, 2026",
+              proposedStartDate: ptscStartDate || applicantSignedDate || "Oct 01, 2026",
+              // Box 1 Ownership & Address
+              formOfOwnership: ptscFormOfOwnership,
+              enterpriseName: ptscEnterpriseName,
+              characterOfOccupancy: ptscCharacterOfOccupancy,
+              applicantNo: ptscApplicantNo,
+              applicantStreet: ptscApplicantStreet,
+              applicantBarangay: ptscApplicantBarangay,
+              applicantCity: ptscApplicantCity,
+              applicantZip: ptscApplicantZip,
+              // Box 2 Design Professional
+              electricalEngineerName: ptscPeeName || electricalEngineerName,
+              electricalEngineerAddress: ptscPeeAddress,
+              electricalEngineerPRC: ptscPeePRC || electricalEngineerPRC,
+              electricalEngineerPRCValidity: ptscPeePRCValidity || electricalEngineerPRCValidity,
+              electricalEngineerPTR: ptscPeePTR || electricalEngineerPTR,
+              electricalEngineerPTRIssued: ptscPeePTRIssued,
+              electricalEngineerPTRIssuedAt: ptscPeePTRIssuedAt,
+              electricalEngineerTIN: ptscPeeTIN || electricalEngineerTIN,
+              electricalEngineerSignature: ptscPeeSignature,
+              electricalEngineerSignedDate: ptscPeeSignedDate,
+              ptscPeeName,
+              ptscPeeAddress,
+              ptscPeePRC,
+              ptscPeePRCValidity,
+              ptscPeePTR,
+              ptscPeePTRIssued,
+              ptscPeePTRIssuedAt,
+              ptscPeeTIN,
+              ptscPeeSignature,
+              ptscPeeSignedDate,
+              // Box 3 Supervisor
+              ptscSupervisorRole,
+              supervisorElectricalEngineerName: sameAsDesignPtscSupervisor ? (ptscPeeName || electricalEngineerName) : ptscSupervisorName,
+              supervisorElectricalEngineerAddress: sameAsDesignPtscSupervisor ? ptscPeeAddress : ptscSupervisorAddress,
+              supervisorElectricalEngineerPRC: sameAsDesignPtscSupervisor ? (ptscPeePRC || electricalEngineerPRC) : ptscSupervisorPRC,
+              supervisorElectricalEngineerPRCValidity: sameAsDesignPtscSupervisor ? (ptscPeePRCValidity || electricalEngineerPRCValidity) : ptscSupervisorPRCValidity,
+              supervisorElectricalEngineerPTR: sameAsDesignPtscSupervisor ? (ptscPeePTR || electricalEngineerPTR) : ptscSupervisorPTR,
+              supervisorElectricalEngineerPTRIssued: sameAsDesignPtscSupervisor ? ptscPeePTRIssued : ptscSupervisorPTRIssued,
+              supervisorElectricalEngineerPTRIssuedAt: sameAsDesignPtscSupervisor ? ptscPeePTRIssuedAt : ptscSupervisorPTRIssuedAt,
+              supervisorElectricalEngineerTIN: sameAsDesignPtscSupervisor ? (ptscPeeTIN || electricalEngineerTIN) : ptscSupervisorTIN,
+              supervisorElectricalEngineerSignature: sameAsDesignPtscSupervisor ? ptscPeeSignature : ptscSupervisorSignature,
+              supervisorElectricalEngineerSignedDate: sameAsDesignPtscSupervisor ? ptscPeeSignedDate : ptscSupervisorSignedDate,
+              ptscSupervisorName,
+              ptscSupervisorAddress,
+              ptscSupervisorPRC,
+              ptscSupervisorPRCValidity,
+              ptscSupervisorPTR,
+              ptscSupervisorPTRIssued,
+              ptscSupervisorPTRIssuedAt,
+              ptscSupervisorTIN,
+              ptscSupervisorSignature,
+              ptscSupervisorSignedDate,
+              // Box 4 Owner
+              applicantName: compiledFullName || applicantName,
+              applicantAddress: `${ptscApplicantNo ? ptscApplicantNo + ' ' : ''}${ptscApplicantStreet}, ${ptscApplicantBarangay}, ${ptscApplicantCity}`,
+              applicantTIN,
+              govIdNo: ptscApplicantCtcNo || govIdNo,
+              ctcNo: ptscApplicantCtcNo,
+              ctcDateIssued: ptscApplicantCtcDateIssued,
+              ctcPlaceIssued: ptscApplicantCtcPlaceIssued,
+              applicantSignature: ptscApplicantSignature || applicantSignature,
+              applicantSignedDate: applicantSignedDate || new Date().toISOString().split("T")[0],
+              // Page 2: Box 4 Processing & Evaluation Division (Official Receipt & Fee Payment)
+              feePaid: ptscFeePaid,
+              buildingPermitFee: ptscFeePaid,
+              totalFee: ptscFeePaid,
+              ptscFeePaid,
+              datePaid: ptscDatePaid,
+              receiptDate: ptscDatePaid,
+              ptscDatePaid,
+              officialReceiptNo: ptscOfficialReceiptNo,
+              ptscOfficialReceiptNo,
+              permitIssuedDate: ptscDateIssued,
+              dateIssued: ptscDateIssued,
+              ptscDateIssued,
+              isPaid: true,
+              // Page 2: Box 5 Building Official & Duration
+              ptscDuration,
+              ptscStartDate,
+            };
+            const b64 = await generateTemporaryServicePermitPdf(ptscPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           }
         } catch (indivErr) {
@@ -10424,9 +10626,919 @@ export default function TechnicalPermitFormsStep({
                   )}
 
                   {activeTab === "temporaryServiceConnection" && (
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Requested Temporary Power Capacity & Duration *</label>
-                      <input type="text" value={tempConnectionLoad} onChange={(e) => setTempConnectionLoad(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                      {/* Auto-fill Status Banner */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1.5px solid #86efac", padding: "12px 16px", borderRadius: "10px", flexWrap: "wrap", gap: "10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#22c55e", color: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Zap size={18} />
+                          </div>
+                          <div>
+                            <span style={{ fontSize: "0.85rem", fontWeight: "800", color: "#166534", display: "block" }}>
+                              System Auto-Fill Active
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#15803d" }}>
+                              Applicant identification, addresses, lot details, connected load, and Professional Electrical Engineer credentials are auto-populated from your application.
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAutoFillPtscFromSystem}
+                          style={{
+                            background: "#16a34a",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 14px",
+                            fontSize: "0.78rem",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                          }}
+                        >
+                          <RefreshCw size={14} />
+                          Re-Sync from System
+                        </button>
+                      </div>
+
+                      {/* Section 1: Box 1 Summary & Enterprise / Ownership Details */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 1: Owner / Applicant & Enterprise Information
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Official details formatted for NBC Form E-03 (Permit for Temporary Service Connection)
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#fef3c7", color: "#92400e", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form E-03 • Box 1
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Applicant Full Name</label>
+                            <div style={{ fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", padding: "6px 10px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {compiledFullName}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>T.I.N. Number</label>
+                            <div style={{ fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", padding: "6px 10px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {applicantTIN || "123-456-789-000"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Form of Ownership</label>
+                            <select
+                              value={ptscFormOfOwnership}
+                              onChange={(e) => setPtscFormOfOwnership(e.target.value)}
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "600", background: "#ffffff" }}
+                            >
+                              <option value="Individual">Individual</option>
+                              <option value="Sole Proprietorship">Sole Proprietorship</option>
+                              <option value="Corporation">Corporation</option>
+                              <option value="Partnership">Partnership</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Character of Occupancy</label>
+                            <select
+                              value={ptscCharacterOfOccupancy}
+                              onChange={(e) => setPtscCharacterOfOccupancy(e.target.value)}
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "600", background: "#ffffff" }}
+                            >
+                              <option value="Residential">Residential</option>
+                              <option value="Commercial / Business">Commercial / Business</option>
+                              <option value="Industrial">Industrial</option>
+                              <option value="Institutional">Institutional</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.75rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>For Construction Owned by an Enterprise (Enterprise Name)</label>
+                            <input
+                              type="text"
+                              value={ptscEnterpriseName}
+                              onChange={(e) => setPtscEnterpriseName(e.target.value)}
+                              placeholder="Leave blank or N/A if individual owner"
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Telephone / Contact No.</label>
+                            <input
+                              type="text"
+                              value={applicantPhone || "0917-123-4567"}
+                              readOnly
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "0.84rem", background: "#f8fafc", color: "#475569" }}
+                            />
+                          </div>
+                        </div>
+
+                        <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "#475569", display: "block", marginBottom: "4px" }}>
+                          Applicant Postal Address (Printed in Box 1):
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "80px 1.5fr 1fr 1fr 90px", gap: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.70rem", color: "#64748b" }}>No.</label>
+                            <input
+                              type="text"
+                              value={ptscApplicantNo}
+                              onChange={(e) => setPtscApplicantNo(e.target.value)}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.80rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.70rem", color: "#64748b" }}>Street</label>
+                            <input
+                              type="text"
+                              value={ptscApplicantStreet}
+                              onChange={(e) => setPtscApplicantStreet(e.target.value)}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.80rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.70rem", color: "#64748b" }}>Barangay</label>
+                            <input
+                              type="text"
+                              value={ptscApplicantBarangay}
+                              onChange={(e) => setPtscApplicantBarangay(e.target.value)}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.80rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.70rem", color: "#64748b" }}>City / Municipality</label>
+                            <input
+                              type="text"
+                              value={ptscApplicantCity}
+                              onChange={(e) => setPtscApplicantCity(e.target.value)}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.80rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.70rem", color: "#64748b" }}>Zip Code</label>
+                            <input
+                              type="text"
+                              value={ptscApplicantZip}
+                              onChange={(e) => setPtscApplicantZip(e.target.value)}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.80rem" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 2: Location of Construction */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block", marginBottom: "0.5rem" }}>
+                          Location of Construction (NBC Form E-03 • Box 1)
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Lot No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {lotNo || "12"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Blk No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {blockNo || "4"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>TCT / OCT No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {tctNo || "TCT-889977-P"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Tax Dec. No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {taxDecNo || "TD-2026-004455"}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "0.82rem", color: "#334155", background: "#ffffff", padding: "6px 10px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                          <strong>Construction Site Address:</strong> {streetAddress || "Lot 12, Blk 4, Sunset Valley"}, {barangay || "Poblacion"}, Sto. Tomas, Pampanga
+                        </div>
+                      </div>
+
+                      {/* Section 3: Purpose of Temporary Service Connection */}
+                      <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "1rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase" }}>
+                            Purpose of Temporary Service Connection (NBC Form E-03 • Box 1)
+                          </span>
+                          <span style={{ fontSize: "0.7rem", background: "#ede9fe", color: "#6d28d9", padding: "2px 8px", borderRadius: "4px", fontWeight: "700" }}>
+                            Official Checkboxes
+                          </span>
+                        </div>
+                        <p style={{ margin: "0 0 10px 0", fontSize: "0.78rem", color: "#64748b" }}>
+                          Select the intended purpose(s) of this temporary service connection. Each selected option will mark an official checkbox on the form.
+                        </p>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.6rem" }}>
+                          <button
+                            type="button"
+                            onClick={() => setPtscPurposeForConstruction(!ptscPurposeForConstruction)}
+                            style={{
+                              padding: "10px 14px",
+                              borderRadius: "8px",
+                              border: ptscPurposeForConstruction ? "2px solid #2563eb" : "1px solid #cbd5e1",
+                              background: ptscPurposeForConstruction ? "#eff6ff" : "#ffffff",
+                              color: ptscPurposeForConstruction ? "#1d4ed8" : "#334155",
+                              fontWeight: ptscPurposeForConstruction ? "700" : "500",
+                              fontSize: "0.84rem",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            <span style={{ fontSize: "1rem" }}>{ptscPurposeForConstruction ? "☑" : "☐"}</span>
+                            <span>FOR CONSTRUCTION</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setPtscPurposeForTesting(!ptscPurposeForTesting)}
+                            style={{
+                              padding: "10px 14px",
+                              borderRadius: "8px",
+                              border: ptscPurposeForTesting ? "2px solid #2563eb" : "1px solid #cbd5e1",
+                              background: ptscPurposeForTesting ? "#eff6ff" : "#ffffff",
+                              color: ptscPurposeForTesting ? "#1d4ed8" : "#334155",
+                              fontWeight: ptscPurposeForTesting ? "700" : "500",
+                              fontSize: "0.84rem",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            <span style={{ fontSize: "1rem" }}>{ptscPurposeForTesting ? "☑" : "☐"}</span>
+                            <span>FOR TESTING</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setPtscPurposeOthers(!ptscPurposeOthers)}
+                            style={{
+                              padding: "10px 14px",
+                              borderRadius: "8px",
+                              border: ptscPurposeOthers ? "2px solid #2563eb" : "1px solid #cbd5e1",
+                              background: ptscPurposeOthers ? "#eff6ff" : "#ffffff",
+                              color: ptscPurposeOthers ? "#1d4ed8" : "#334155",
+                              fontWeight: ptscPurposeOthers ? "700" : "500",
+                              fontSize: "0.84rem",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            <span style={{ fontSize: "1rem" }}>{ptscPurposeOthers ? "☑" : "☐"}</span>
+                            <span>OTHERS (Specify)</span>
+                          </button>
+                        </div>
+
+                        {ptscPurposeOthers && (
+                          <div style={{ marginTop: "10px" }}>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "3px" }}>
+                              Specify Other Purpose *
+                            </label>
+                            <input
+                              type="text"
+                              value={ptscPurposeOthersSpecify}
+                              onChange={(e) => setPtscPurposeOthersSpecify(e.target.value)}
+                              placeholder="e.g. Seasonal Commercial Exhibit / Temporary Utility Transfer"
+                              style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.84rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 4: Summary of Electrical Loads & Capacities Applied For */}
+                      <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "1.1rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Summary of Electrical Loads / Capacities Applied For
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Capacity specs printed into the official 3 columns of NBC Form E-03
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#e0f2fe", color: "#0369a1", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            Capacities
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#1e293b", marginBottom: "2px" }}>
+                              Total Connected Load (kVA) *
+                            </label>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <input
+                                type="text"
+                                value={ptscConnectedLoad}
+                                onChange={(e) => setPtscConnectedLoad(e.target.value)}
+                                placeholder="15.0"
+                                style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", background: "#ffffff" }}
+                              />
+                              <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#64748b" }}>kVA</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#1e293b", marginBottom: "2px" }}>
+                              Total Transformer Capacity (kVA)
+                            </label>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <input
+                                type="text"
+                                value={ptscTransformerCapacity}
+                                onChange={(e) => setPtscTransformerCapacity(e.target.value)}
+                                placeholder="25.0 (or N/A)"
+                                style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", background: "#ffffff" }}
+                              />
+                              <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#64748b" }}>kVA</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#1e293b", marginBottom: "2px" }}>
+                              Total Generator/UPS Capacity (kVA)
+                            </label>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <input
+                                type="text"
+                                value={ptscGeneratorCapacity}
+                                onChange={(e) => setPtscGeneratorCapacity(e.target.value)}
+                                placeholder="N/A (or 10.0)"
+                                style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", background: "#ffffff" }}
+                              />
+                              <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#64748b" }}>kVA</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", paddingTop: "0.5rem", borderTop: "1px dashed #cbd5e1" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#1e293b", marginBottom: "2px" }}>
+                              Requested Temporary Service Duration *
+                            </label>
+                            <select
+                              value={ptscDuration}
+                              onChange={(e) => setPtscDuration(e.target.value)}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "600", background: "#ffffff" }}
+                            >
+                              <option value="30">30 Days (1 Month)</option>
+                              <option value="60">60 Days (2 Months)</option>
+                              <option value="90">90 Days (3 Months Standard)</option>
+                              <option value="180">180 Days (6 Months Construction Power)</option>
+                              <option value="365">365 Days (1 Year)</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#1e293b", marginBottom: "2px" }}>
+                              Proposed Service Energization Start Date *
+                            </label>
+                            <input
+                              type="date"
+                              value={ptscStartDate}
+                              onChange={(e) => setPtscStartDate(e.target.value)}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 5: Box 2: Design Professional (PEE) */}
+                      <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "1.1rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 2: Design Professional, Plans and Specifications (PEE)
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Professional Electrical Engineer (PEE) sign-off on plans & specs
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#ede9fe", color: "#6d28d9", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form E-03 • Box 2
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              Professional Electrical Engineer Full Name (Printed Over Underline) *
+                            </label>
+                            <input
+                              type="text"
+                              value={ptscPeeName}
+                              onChange={(e) => setPtscPeeName(e.target.value)}
+                              placeholder="e.g. ENGR. DANILO REYES, PEE"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Professional Address *</label>
+                            <input
+                              type="text"
+                              value={ptscPeeAddress}
+                              onChange={(e) => setPtscPeeAddress(e.target.value)}
+                              placeholder="e.g. San Nicolas, Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "0.65rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC Registration No. *</label>
+                            <input
+                              type="text"
+                              value={ptscPeePRC}
+                              onChange={(e) => setPtscPeePRC(e.target.value)}
+                              placeholder="e.g. 0033421"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC Validity *</label>
+                            <input
+                              type="date"
+                              value={ptscPeePRCValidity}
+                              onChange={(e) => setPtscPeePRCValidity(e.target.value)}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR No. *</label>
+                            <input
+                              type="text"
+                              value={ptscPeePTR}
+                              onChange={(e) => setPtscPeePTR(e.target.value)}
+                              placeholder="e.g. PTR-ST-2026-4412"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR Date Issued *</label>
+                            <input
+                              type="text"
+                              value={ptscPeePTRIssued}
+                              onChange={(e) => setPtscPeePTRIssued(e.target.value)}
+                              placeholder="e.g. Jan 10, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR Issued At *</label>
+                            <input
+                              type="text"
+                              value={ptscPeePTRIssuedAt}
+                              onChange={(e) => setPtscPeePTRIssuedAt(e.target.value)}
+                              placeholder="e.g. Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>T.I.N. *</label>
+                            <input
+                              type="text"
+                              value={ptscPeeTIN}
+                              onChange={(e) => setPtscPeeTIN(e.target.value)}
+                              placeholder="e.g. 456-789-012-000"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Date Signed *</label>
+                            <input
+                              type="date"
+                              value={ptscPeeSignedDate}
+                              onChange={(e) => setPtscPeeSignedDate(e.target.value)}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* E-Signature Creator for Box 2 */}
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #c7d2fe" }}>
+                          <SignatureCreator
+                            value={ptscPeeSignature}
+                            onChange={setPtscPeeSignature}
+                            label={`Design Professional E-Signature (Professional Electrical Engineer - Affixed Over Printed Name: ${ptscPeeName})`}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Section 6: Box 3: Supervisor / In-Charge of Electrical Works */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #059669", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#065f46", textTransform: "uppercase", display: "block" }}>
+                              Box 3: Supervisor / In-Charge of Electrical Works
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Official qualification checkbox & credentials on NBC Form E-03
+                            </span>
+                          </div>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "700", color: "#065f46", cursor: "pointer", background: "#ecfdf5", padding: "4px 10px", borderRadius: "6px", border: "1px solid #a7f3d0" }}>
+                            <input
+                              type="checkbox"
+                              checked={sameAsDesignPtscSupervisor}
+                              onChange={(e) => setSameAsDesignPtscSupervisor(e.target.checked)}
+                              style={{ accentColor: "#059669", width: "15px", height: "15px", cursor: "pointer" }}
+                            />
+                            <span>Same as Design Professional (Box 2)</span>
+                          </label>
+                        </div>
+
+                        {sameAsDesignPtscSupervisor ? (
+                          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "0.85rem", display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "#22c55e", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem", fontWeight: "bold" }}>✓</div>
+                            <div>
+                              <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#166534", display: "block" }}>
+                                Full Credentials & E-Signature Inherited from Box 2 (PEE)
+                              </span>
+                              <span style={{ fontSize: "0.76rem", color: "#15803d" }}>
+                                Supervisor: <strong>{ptscPeeName}</strong> (PRC: {ptscPeePRC}, PTR: {ptscPeePTR}). Role: Professional Electrical Engineer.
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ marginBottom: "0.75rem" }}>
+                              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                                Supervisor Qualification Category (Official Box 3 Checkbox) *
+                              </label>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.5rem" }}>
+                                {[
+                                  { id: "PEE", label: "Professional Electrical Engineer" },
+                                  { id: "REE", label: "Registered Electrical Engineer" },
+                                  { id: "RME", label: "Registered Master Electrician" },
+                                ].map((cat) => {
+                                  const isSel = ptscSupervisorRole === cat.id;
+                                  return (
+                                    <button
+                                      key={cat.id}
+                                      type="button"
+                                      onClick={() => setPtscSupervisorRole(cat.id)}
+                                      style={{
+                                        padding: "8px 12px",
+                                        borderRadius: "8px",
+                                        border: isSel ? "2px solid #059669" : "1px solid #cbd5e1",
+                                        background: isSel ? "#ecfdf5" : "#ffffff",
+                                        color: isSel ? "#065f46" : "#334155",
+                                        fontWeight: isSel ? "700" : "500",
+                                        fontSize: "0.80rem",
+                                        textAlign: "left",
+                                        cursor: "pointer"
+                                      }}
+                                    >
+                                      {isSel ? "☑" : "☐"} {cat.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.65rem", marginBottom: "0.75rem" }}>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                                  Supervisor Full Name (Printed Over Underline) *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={ptscSupervisorName}
+                                  onChange={(e) => setPtscSupervisorName(e.target.value)}
+                                  placeholder="e.g. ENGR. DANILO REYES, PEE"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Address *</label>
+                                <input
+                                  type="text"
+                                  value={ptscSupervisorAddress}
+                                  onChange={(e) => setPtscSupervisorAddress(e.target.value)}
+                                  placeholder="e.g. San Nicolas, Sto. Tomas, Pampanga"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC Registration No. *</label>
+                                <input
+                                  type="text"
+                                  value={ptscSupervisorPRC}
+                                  onChange={(e) => setPtscSupervisorPRC(e.target.value)}
+                                  placeholder="e.g. 0033421"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC Validity *</label>
+                                <input
+                                  type="date"
+                                  value={ptscSupervisorPRCValidity}
+                                  onChange={(e) => setPtscSupervisorPRCValidity(e.target.value)}
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR No. *</label>
+                                <input
+                                  type="text"
+                                  value={ptscSupervisorPTR}
+                                  onChange={(e) => setPtscSupervisorPTR(e.target.value)}
+                                  placeholder="e.g. PTR-ST-2026-4412"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR Date Issued *</label>
+                                <input
+                                  type="text"
+                                  value={ptscSupervisorPTRIssued}
+                                  onChange={(e) => setPtscSupervisorPTRIssued(e.target.value)}
+                                  placeholder="e.g. Jan 10, 2026"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR Issued At *</label>
+                                <input
+                                  type="text"
+                                  value={ptscSupervisorPTRIssuedAt}
+                                  onChange={(e) => setPtscSupervisorPTRIssuedAt(e.target.value)}
+                                  placeholder="e.g. Sto. Tomas, Pampanga"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>T.I.N. *</label>
+                                <input
+                                  type="text"
+                                  value={ptscSupervisorTIN}
+                                  onChange={(e) => setPtscSupervisorTIN(e.target.value)}
+                                  placeholder="e.g. 456-789-012-000"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Date Signed *</label>
+                                <input
+                                  type="date"
+                                  value={ptscSupervisorSignedDate}
+                                  onChange={(e) => setPtscSupervisorSignedDate(e.target.value)}
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #a7f3d0" }}>
+                              <SignatureCreator
+                                value={ptscSupervisorSignature}
+                                onChange={setPtscSupervisorSignature}
+                                label={`Electrical Works Supervisor E-Signature (${ptscSupervisorRole} - Affixed Over Printed Name: ${ptscSupervisorName})`}
+                                required
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Section 7: Box 4: Owner / Applicant Verification & CTC */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #3b82f6", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e3a8a", textTransform: "uppercase", display: "block" }}>
+                              Box 4: Owner / Applicant Verification & Community Tax Certificate (CTC)
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Identity proof and digital sign-off of the owner/applicant
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#dbeafe", color: "#1e40af", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form E-03 • Box 4
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Owner/Applicant Full Name</label>
+                            <div style={{ fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", padding: "6px 10px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {compiledFullName}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>C.T.C. No. *</label>
+                            <input
+                              type="text"
+                              value={ptscApplicantCtcNo}
+                              onChange={(e) => setPtscApplicantCtcNo(e.target.value)}
+                              placeholder="e.g. CTC-2026-00192"
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Date Issued *</label>
+                            <input
+                              type="text"
+                              value={ptscApplicantCtcDateIssued}
+                              onChange={(e) => setPtscApplicantCtcDateIssued(e.target.value)}
+                              placeholder="e.g. Jan 15, 2026"
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Place Issued *</label>
+                            <input
+                              type="text"
+                              value={ptscApplicantCtcPlaceIssued}
+                              onChange={(e) => setPtscApplicantCtcPlaceIssued(e.target.value)}
+                              placeholder="e.g. Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Owner / Applicant Date Signed *</label>
+                            <input
+                              type="date"
+                              value={applicantSignedDate}
+                              onChange={(e) => setApplicantSignedDate(e.target.value)}
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #bfdbfe" }}>
+                          <SignatureCreator
+                            value={ptscApplicantSignature || applicantSignature}
+                            onChange={(sig) => setPtscApplicantSignature(sig)}
+                            label={`Owner / Applicant Digital Signature (Affixed Over Printed Name: ${compiledFullName})`}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Section 8: Page 2 Box 4: Processing & Evaluation Division (Official Receipt & Fee Payment) */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #0284c7", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase", display: "block" }}>
+                              Box 4 (Page 2): Processing & Evaluation Division
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Official LGU payment verification, Official Receipt (O.R.), and permit issuance details (NBC Form E-03 • Box 4)
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#e0f2fe", color: "#0369a1", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form E-03 • Page 2 Box 4
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                          {/* Left Column: Fee Paid & Date Paid */}
+                          <div style={{ background: "#f8fafc", padding: "0.85rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                            <div style={{ marginBottom: "0.75rem" }}>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                                FEE PAID (PHP) *
+                              </label>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span style={{ fontSize: "0.85rem", fontWeight: "800", color: "#0369a1" }}>₱</span>
+                                <input
+                                  type="text"
+                                  value={ptscFeePaid}
+                                  onChange={(e) => setPtscFeePaid(e.target.value)}
+                                  placeholder="850.00"
+                                  style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", background: "#ffffff" }}
+                                />
+                              </div>
+                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>Printed on the official form next to "FEE PAID: P"</span>
+                            </div>
+
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                                DATE PAID *
+                              </label>
+                              <input
+                                type="text"
+                                value={ptscDatePaid}
+                                onChange={(e) => setPtscDatePaid(e.target.value)}
+                                placeholder="Sep 18, 2026"
+                                style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#ffffff" }}
+                              />
+                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>Printed on the underline for "DATE PAID"</span>
+                            </div>
+                          </div>
+
+                          {/* Right Column: Official Receipt No & Date Issued */}
+                          <div style={{ background: "#f8fafc", padding: "0.85rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                            <div style={{ marginBottom: "0.75rem" }}>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                                OFFICIAL RECEIPT NO. *
+                              </label>
+                              <input
+                                type="text"
+                                value={ptscOfficialReceiptNo}
+                                onChange={(e) => setPtscOfficialReceiptNo(e.target.value)}
+                                placeholder="OR-2026-004521"
+                                style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700", color: "#0284c7", background: "#ffffff" }}
+                              />
+                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>Printed on the official form next to "OFFICIAL RECEIPT NO.: AC -"</span>
+                            </div>
+
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>
+                                DATE ISSUED *
+                              </label>
+                              <input
+                                type="text"
+                                value={ptscDateIssued}
+                                onChange={(e) => setPtscDateIssued(e.target.value)}
+                                placeholder="Sep 18, 2026"
+                                style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#ffffff" }}
+                              />
+                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>Printed on the underline for "DATE ISSUED"</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 9: Page 2 Box 5: Building Official Approval & Temporary Service Validity */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #64748b", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 5 (Page 2): Building Official Approval & Temporary Service Validity
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Authorized temporary connection period and permit validity (NBC Form E-03 • Box 5)
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#f1f5f9", color: "#475569", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form E-03 • Page 2 Box 5
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Authorized Connection Period (Days) *</label>
+                            <input
+                              type="text"
+                              value={ptscDuration}
+                              onChange={(e) => setPtscDuration(e.target.value)}
+                              placeholder="e.g. 90"
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700", background: "#ffffff" }}
+                            />
+                            <span style={{ fontSize: "0.7rem", color: "#64748b" }}>Printed on "... for a period of [ ___ ] days"</span>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Effective Start Date *</label>
+                            <input
+                              type="date"
+                              value={ptscStartDate}
+                              onChange={(e) => setPtscStartDate(e.target.value)}
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#ffffff" }}
+                            />
+                            <span style={{ fontSize: "0.7rem", color: "#64748b" }}>Printed on "... from date [ __________ ]"</span>
+                          </div>
+                        </div>
+
+                        <div style={{ padding: "0.75rem 10px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                          <span style={{ fontSize: "0.76rem", fontWeight: "700", color: "#475569", display: "block", marginBottom: "4px" }}>
+                            Official Grantee & Installation Location (Auto-linked):
+                          </span>
+                          <span style={{ fontSize: "0.78rem", color: "#1e293b", display: "block" }}>
+                            Granted to: <strong>{compiledFullName}</strong> | Postal Address: <strong>{`${ptscApplicantNo ? ptscApplicantNo + ' ' : ''}${ptscApplicantStreet}, ${ptscApplicantBarangay}, ${ptscApplicantCity}`}</strong>
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

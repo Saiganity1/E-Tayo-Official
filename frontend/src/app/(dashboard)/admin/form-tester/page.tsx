@@ -78,6 +78,9 @@ const FORMS: FormOption[] = [
 
 const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   applicationNo: "APP-TEST-2026-0001",
+  controlNo: "2026-000001",
+  temporaryServicePermitNo: "PTSC-2026-0001",
+  ptscNo: "PTSC-2026-0001",
   permitNo: "AP-2026-0001",
   buildingPermitNo: "BP-2026-0001",
   electronicsPermitNo: "EL-2026-0001",
@@ -428,6 +431,8 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   // Temporary Service Connection
   temporaryServicePurpose: "FOR CONSTRUCTION POWER & EQUIPMENT TESTING",
   temporaryServiceKva: "15.0",
+  temporaryServiceTransformerKva: "25.0",
+  temporaryServiceGeneratorKva: "N/A",
   temporaryServiceVoltage: "230V, Single Phase, 60Hz",
   temporaryServiceDuration: "90",
 
@@ -621,7 +626,7 @@ const getAutoPermitNumber = (formId: string, applicationNo?: string): string => 
     case "FP": return `FP-${yearSeq}`;
     case "EXP": return `EXP-${yearSeq}`;
     case "SGP": return `SGP-${yearSeq}`;
-    case "TSC": return `TSC-${yearSeq}`;
+    case "TSC": return `PTSC-${yearSeq}`;
     case "CO": return `CO-${yearSeq}`;
     case "CC": return `CC-${yearSeq}`;
     case "CFEI": return `CFEI-${yearSeq}`;
@@ -642,7 +647,7 @@ const getPermitNoLabel = (formId: string): string => {
     case "FP": return "Fencing Permit No. (FP NO)";
     case "EXP": return "Excavation and Ground Preparation Permit No. (EGPP NO)";
     case "SGP": return "Sign Permit No. (SGP NO)";
-    case "TSC": return "Temporary Service Permit No. (TSC NO)";
+    case "TSC": return "Permit for Temporary Service Connection No. (PTSC NO)";
     default: return `${formId} Permit No.`;
   }
 };
@@ -5785,22 +5790,57 @@ export default function FormTestingStudio() {
                   )}
 
                   {selectedForm.id === "TSC" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Purpose of Temporary Power</label>
-                        <input type="text" value={formData.temporaryServicePurpose || ""} onChange={e => handleFieldChange("temporaryServicePurpose", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Purpose of Temporary Power</label>
+                          <input type="text" value={formData.temporaryServicePurpose || ""} onChange={e => handleFieldChange("temporaryServicePurpose", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Connected Load (kVA)</label>
+                          <input type="text" value={formData.temporaryServiceKva || ""} onChange={e => handleFieldChange("temporaryServiceKva", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Total Transformer Capacity (kVA)</label>
+                          <input type="text" value={formData.temporaryServiceTransformerKva || ""} onChange={e => handleFieldChange("temporaryServiceTransformerKva", e.target.value)} placeholder="25.0" style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Total Generator/UPS Capacity (kVA)</label>
+                          <input type="text" value={formData.temporaryServiceGeneratorKva || ""} onChange={e => handleFieldChange("temporaryServiceGeneratorKva", e.target.value)} placeholder="N/A" style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Service Voltage</label>
+                          <input type="text" value={formData.temporaryServiceVoltage || ""} onChange={e => handleFieldChange("temporaryServiceVoltage", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Duration (Days)</label>
+                          <input type="text" value={formData.temporaryServiceDuration || ""} onChange={e => handleFieldChange("temporaryServiceDuration", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Connected Load (kVA)</label>
-                        <input type="text" value={formData.temporaryServiceKva || ""} onChange={e => handleFieldChange("temporaryServiceKva", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Service Voltage</label>
-                        <input type="text" value={formData.temporaryServiceVoltage || ""} onChange={e => handleFieldChange("temporaryServiceVoltage", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Duration (Days)</label>
-                        <input type="text" value={formData.temporaryServiceDuration || ""} onChange={e => handleFieldChange("temporaryServiceDuration", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Box 4 on Page 2: Processing and Evaluation Division */}
+                      <div style={{ padding: "10px 12px", borderRadius: "8px", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
+                          Box 4 (Page 2): Processing and Evaluation Division (Fee & Receipt)
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Fee Paid (PHP)</label>
+                            <input type="text" value={formData.feePaid || formData.buildingPermitFee || "850.00"} onChange={e => handleFieldChange("feePaid", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", fontWeight: "700" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Paid</label>
+                            <input type="text" value={formData.datePaid || formData.receiptDate || "Sep 18, 2026"} onChange={e => handleFieldChange("datePaid", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Official Receipt No.</label>
+                            <input type="text" value={formData.officialReceiptNo || "OR-2026-004521"} onChange={e => handleFieldChange("officialReceiptNo", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", fontWeight: "700", color: "#0284c7" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
+                            <input type="text" value={formData.dateIssued || formData.permitIssuedDate || "Sep 18, 2026"} onChange={e => handleFieldChange("dateIssued", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -6256,10 +6296,10 @@ export default function FormTestingStudio() {
                             <input type="text" value={formData.electricalEngineerAddress || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("electricalEngineerAddress", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PRC No.</label>
-                            <input type="text" value={formData.electricalEngineerPRC || ""} onChange={e => handleFieldChange("electricalEngineerPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            <input type="text" value={formData.electricalEngineerPRC || "0033421"} onChange={e => handleFieldChange("electricalEngineerPRC", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Validity</label>
@@ -6269,11 +6309,15 @@ export default function FormTestingStudio() {
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>TIN</label>
                             <input type="text" value={formData.electricalEngineerTIN || "456-789-012-000"} onChange={e => handleFieldChange("electricalEngineerTIN", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Signed</label>
+                            <input type="date" value={formData.electricalEngineerSignedDate || "2026-09-17"} onChange={e => handleFieldChange("electricalEngineerSignedDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>PTR No.</label>
-                            <input type="text" value={formData.electricalEngineerPTR || ""} onChange={e => handleFieldChange("electricalEngineerPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            <input type="text" value={formData.electricalEngineerPTR || "PTR-ST-2026-4412"} onChange={e => handleFieldChange("electricalEngineerPTR", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Date Issued</label>
@@ -6281,7 +6325,7 @@ export default function FormTestingStudio() {
                           </div>
                           <div>
                             <label style={{ display: "block", fontSize: "0.72rem", color: "#64748b" }}>Issued at</label>
-                            <input type="text" value={formData.electricalEngineerPTRIssuedAt || "Sto. Tomas"} onChange={e => handleFieldChange("electricalEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            <input type="text" value={formData.electricalEngineerPTRIssuedAt || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("electricalEngineerPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
 
