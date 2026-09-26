@@ -28,6 +28,7 @@ import {
   generateExcavationPermitPdf,
   generateBfpApplicationPdf,
   generateFencingPermitPdf,
+  generateSignPermitPdf,
   UnifiedPermitFormData 
 } from "../../utils/unifiedPermitPdfGenerator";
 import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
@@ -754,7 +755,57 @@ export default function TechnicalPermitFormsStep({
   const [othersCustomLine3Text, setOthersCustomLine3Text] = useState<string>("");
   const [excavationStartDate, setExcavationStartDate] = useState("2026-10-01");
   const [excavationCompletionDate, setExcavationCompletionDate] = useState("2026-11-15");
-  const [signDimensions, setSignDimensions] = useState("1.20m Width x 0.80m Height");
+  const [signDimensions, setSignDimensions] = useState("3.00m Width x 1.50m Height");
+  const [signLength, setSignLength] = useState("3.00");
+  const [signWidth, setSignWidth] = useState("1.50");
+  const [signArea, setSignArea] = useState("4.50");
+  const [signDisplayType, setSignDisplayType] = useState<string>("Single Face");
+  const [signDisplayMedium, setSignDisplayMedium] = useState<string>("Illuminated");
+  const [signInstallationType, setSignInstallationType] = useState<string>("Business Sign, Wall Type");
+  const [signType, setSignType] = useState<string>("Business Sign, Wall Type (Illuminated LED)");
+  const [signMaterial, setSignMaterial] = useState<string>("Acrylic Face with LED Backlight on Steel Framing");
+  const [signCost, setSignCost] = useState<string>("45,000.00");
+  const [signScopeOfWork, setSignScopeOfWork] = useState<string>("New Construction");
+  const [signScopeOthers, setSignScopeOthers] = useState<string>("");
+  const [signFormOfOwnership, setSignFormOfOwnership] = useState<string>("Sole Proprietorship");
+  const [signEnterpriseName, setSignEnterpriseName] = useState<string>("");
+  const [signCharacterOfOccupancy, setSignCharacterOfOccupancy] = useState<string>("Commercial / Business");
+  const [signApplicantNo, setSignApplicantNo] = useState<string>("123");
+  const [signApplicantStreet, setSignApplicantStreet] = useState<string>("Rizal St.");
+  const [signApplicantBarangay, setSignApplicantBarangay] = useState<string>("Poblacion");
+  const [signApplicantCity, setSignApplicantCity] = useState<string>("Sto. Tomas, Pampanga");
+  const [signWithBuildingPermit, setSignWithBuildingPermit] = useState<boolean>(() => {
+    return mandatoryKeys.includes("buildingPermit") || Boolean(projectType?.matrix?.buildingPermit === 'required' || projectType?.matrix?.buildingPermit === 'conditional');
+  });
+  const [signBuildingPermitNo, setSignBuildingPermitNo] = useState<string>("");
+  const [signDocTct, setSignDocTct] = useState<boolean>(true);
+  const [signDocContractOfLease, setSignDocContractOfLease] = useState<boolean>(false);
+  const [signDocTaxDeclaration, setSignDocTaxDeclaration] = useState<boolean>(true);
+  const [signDocLotPlan, setSignDocLotPlan] = useState<boolean>(true);
+  const [signDocSignPlansStructural, setSignDocSignPlansStructural] = useState<boolean>(true);
+  const [signDocSpecsCostEstimates, setSignDocSpecsCostEstimates] = useState<boolean>(true);
+  const [sameAsDesignSignSupervisor, setSameAsDesignSignSupervisor] = useState(true);
+  const [signDesignerSignature, setSignDesignerSignature] = useState<string>("");
+  const [signSupervisorName, setSignSupervisorName] = useState("ENGR. ROBERTO CRUZ, CE");
+  const [signSupervisorAddress, setSignSupervisorAddress] = useState("Sto. Tomas, Pampanga");
+  const [signSupervisorPRC, setSignSupervisorPRC] = useState("0078923");
+  const [signSupervisorPRCValidity, setSignSupervisorPRCValidity] = useState("2028-11-20");
+  const [signSupervisorPTR, setSignSupervisorPTR] = useState("PTR-ST-2026-001");
+  const [signSupervisorPTRIssued, setSignSupervisorPTRIssued] = useState("Jan 10, 2026");
+  const [signSupervisorPTRIssuedAt, setSignSupervisorPTRIssuedAt] = useState("Sto. Tomas");
+  const [signSupervisorTIN, setSignSupervisorTIN] = useState("123-456-789-000");
+  const [signSupervisorSignature, setSignSupervisorSignature] = useState<string>("");
+  const [signApplicantCtcNo, setSignApplicantCtcNo] = useState("CTC-2026-00192");
+  const [signApplicantCtcDateIssued, setSignApplicantCtcDateIssued] = useState("Jan 10, 2026");
+  const [signApplicantCtcPlaceIssued, setSignApplicantCtcPlaceIssued] = useState("Sto. Tomas");
+  const [signSameAsApplicantBldgOwner, setSignSameAsApplicantBldgOwner] = useState(true);
+  const [signBldgOwnerName, setSignBldgOwnerName] = useState("");
+  const [signBldgOwnerAddress, setSignBldgOwnerAddress] = useState("");
+  const [signBldgOwnerCtcNo, setSignBldgOwnerCtcNo] = useState("CTC-2026-00192");
+  const [signBldgOwnerCtcDateIssued, setSignBldgOwnerCtcDateIssued] = useState("Jan 10, 2026");
+  const [signBldgOwnerCtcPlaceIssued, setSignBldgOwnerCtcPlaceIssued] = useState("Sto. Tomas");
+  const [signBldgOwnerSignedDate, setSignBldgOwnerSignedDate] = useState("Jan 08, 2026");
+  const [signBldgOwnerSignature, setSignBldgOwnerSignature] = useState("");
   const [tempConnectionLoad, setTempConnectionLoad] = useState("5.0 kVA (Temporary Construction Power, 6 Months Duration)");
 
   // State
@@ -1747,6 +1798,108 @@ export default function TechnicalPermitFormsStep({
               lotOwnerSignedDate: lotOwnerConsent ? lotOwnerSignedDate : undefined,
             };
             const b64 = await generateExcavationPermitPdf(expPayload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "signPermit") {
+            const hasBp = signWithBuildingPermit || mandatoryKeys.includes("buildingPermit") || Boolean(projectType?.matrix?.buildingPermit === 'required' || projectType?.matrix?.buildingPermit === 'conditional');
+            const gatheredBpNo = hasBp
+              ? (signBuildingPermitNo || payload.buildingPermitNo || buildingPermitNo || `BP-${currentYear}-0001`)
+              : undefined;
+
+            const calcArea = (parseFloat(signLength || "3.00") * parseFloat(signWidth || "1.50")).toFixed(2);
+            const sgpPayload: UnifiedPermitFormData = {
+              ...payload,
+              signPermitNo: payload.signPermitNo || `SP-${currentYear}-${randomSeq}`,
+              spNo: payload.signPermitNo || `SP-${currentYear}-${randomSeq}`,
+              withBuildingPermit: hasBp,
+              buildingPermitNo: gatheredBpNo,
+              bpNo: gatheredBpNo,
+              signLength,
+              signWidth,
+              signArea: calcArea,
+              signDisplayType,
+              signDisplayMedium,
+              signInstallationType,
+              signDimensions: `${signLength}m (L) x ${signWidth}m (W)`,
+              signType: `${signInstallationType} (${signDisplayType}, ${signDisplayMedium})`,
+              signMaterial,
+              signCost,
+              signScopeOfWork,
+              signScopeOthers,
+              signFormOfOwnership,
+              signEnterpriseName,
+              signCharacterOfOccupancy,
+              signApplicantNo,
+              signApplicantStreet,
+              signApplicantBarangay,
+              signApplicantCity,
+              installationStreet: streetAddress || "Lot 12, Blk 4, McArthur Hwy",
+              installationBarangay: barangay || "Poblacion",
+              installationCity: "Sto. Tomas, Pampanga",
+              // Box 2 Accompanying Documents
+              signDocTct,
+              signDocContractOfLease,
+              signDocTaxDeclaration,
+              signDocLotPlan,
+              signDocSignPlansStructural,
+              signDocSpecsCostEstimates,
+              // Box 3 Design Professional
+              architectName,
+              architectAddress: architectAddress || civilEngineerAddress,
+              architectPRC,
+              architectPRCValidity,
+              architectPTR,
+              architectPTRIssued,
+              architectPTRIssuedAt,
+              architectTIN,
+              architectSignature: signDesignerSignature || civilEngineerSignature,
+              architectSignedDate: applicantSignedDate || "Sep 26, 2026",
+              // Box 4 Supervisor
+              sameAsDesignSignSupervisor,
+              supervisorCivilEngineerName: sameAsDesignSignSupervisor ? (architectName || civilEngineerName) : signSupervisorName,
+              supervisorCivilEngineerAddress: sameAsDesignSignSupervisor ? (architectAddress || civilEngineerAddress) : signSupervisorAddress,
+              supervisorCivilEngineerPRC: sameAsDesignSignSupervisor ? (architectPRC || civilEngineerPRC) : signSupervisorPRC,
+              supervisorCivilEngineerPRCValidity: sameAsDesignSignSupervisor ? (architectPRCValidity || civilEngineerPRCValidity) : signSupervisorPRCValidity,
+              supervisorCivilEngineerPTR: sameAsDesignSignSupervisor ? (architectPTR || civilEngineerPTR) : signSupervisorPTR,
+              supervisorCivilEngineerPTRIssued: sameAsDesignSignSupervisor ? (architectPTRIssued || civilEngineerPTRIssued) : signSupervisorPTRIssued,
+              supervisorCivilEngineerPTRIssuedAt: sameAsDesignSignSupervisor ? (architectPTRIssuedAt || civilEngineerPTRIssuedAt) : signSupervisorPTRIssuedAt,
+              supervisorCivilEngineerTIN: sameAsDesignSignSupervisor ? (architectTIN || civilEngineerTIN) : signSupervisorTIN,
+              supervisorCivilEngineerSignature: sameAsDesignSignSupervisor ? (signDesignerSignature || civilEngineerSignature) : signSupervisorSignature,
+              supervisorCivilEngineerSignedDate: applicantSignedDate || "Sep 26, 2026",
+              // Box 5 Applicant
+              applicantName: compiledFullName || applicantName,
+              applicantAddress: signApplicantStreet ? `${signApplicantNo} ${signApplicantStreet}, ${signApplicantBarangay}, ${signApplicantCity}` : (streetAddress || compiledFullAddress),
+              applicantCtcNo: signApplicantCtcNo || govIdNo || "CTC-2026-00192",
+              applicantGovIdDateIssued: signApplicantCtcDateIssued || govIdDateIssued || "Jan 10, 2026",
+              applicantGovIdPlaceIssued: signApplicantCtcPlaceIssued || govIdPlaceIssued || "Sto. Tomas",
+              applicantTIN: applicantTIN || "123-456-789-000",
+              applicantSignature,
+              applicantSignedDate,
+              // Page 2 Box 6 Building Owner
+              buildingOwnerName: signSameAsApplicantBldgOwner ? (compiledFullName || applicantName) : signBldgOwnerName,
+              buildingOwnerAddress: signSameAsApplicantBldgOwner ? (signApplicantStreet ? `${signApplicantNo} ${signApplicantStreet}, ${signApplicantBarangay}, ${signApplicantCity}` : (streetAddress || compiledFullAddress)) : signBldgOwnerAddress,
+              buildingOwnerCtcNo: signSameAsApplicantBldgOwner ? (signApplicantCtcNo || govIdNo || "CTC-2026-00192") : signBldgOwnerCtcNo,
+              buildingOwnerCtcDateIssued: signSameAsApplicantBldgOwner ? (signApplicantCtcDateIssued || govIdDateIssued || "Jan 10, 2026") : signBldgOwnerCtcDateIssued,
+              buildingOwnerCtcPlaceIssued: signSameAsApplicantBldgOwner ? (signApplicantCtcPlaceIssued || govIdPlaceIssued || "Sto. Tomas") : signBldgOwnerCtcPlaceIssued,
+              buildingOwnerSignature: signSameAsApplicantBldgOwner ? applicantSignature : signBldgOwnerSignature,
+              buildingOwnerSignedDate: signSameAsApplicantBldgOwner ? applicantSignedDate : signBldgOwnerSignedDate,
+              // Page 2 Box 7 Lot Owner Consent
+              lotOwnerConsent,
+              lotOwnerName: lotOwnerConsent ? lotOwnerName : undefined,
+              lotOwnerAddress: lotOwnerConsent ? lotOwnerAddress : undefined,
+              lotOwnerCtcNo: lotOwnerConsent ? lotOwnerGovIdNo : undefined,
+              lotOwnerGovIdNo: lotOwnerConsent ? lotOwnerGovIdNo : undefined,
+              lotOwnerGovIdDateIssued: lotOwnerConsent ? lotOwnerGovIdDateIssued : undefined,
+              lotOwnerGovIdPlaceIssued: lotOwnerConsent ? lotOwnerGovIdPlaceIssued : undefined,
+              lotOwnerSignature: lotOwnerConsent ? lotOwnerSignature : undefined,
+              lotOwnerSignedDate: lotOwnerConsent ? lotOwnerSignedDate : undefined,
+              // Page 2 Box 8 Processing & Evaluation Division (Official Receipt & Payment)
+              officialReceiptNo: (clearanceApp as any)?.officialReceiptNo || (clearanceApp as any)?.paymentReference,
+              feePaid: (clearanceApp as any)?.assessedFees ? `PHP ${(clearanceApp as any).assessedFees.toLocaleString()}` : undefined,
+              datePaid: (clearanceApp as any)?.dateReleased || (clearanceApp as any)?.paymentDate,
+              dateIssued: (clearanceApp as any)?.dateReleased,
+              isPaid: (clearanceApp as any)?.paymentStatus === "paid" || Boolean((clearanceApp as any)?.officialReceiptNo),
+            };
+            const b64 = await generateSignPermitPdf(sgpPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           }
         } catch (indivErr) {
@@ -9030,9 +9183,1243 @@ export default function TechnicalPermitFormsStep({
                   )}
 
                   {activeTab === "signPermit" && (
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>Signboard Dimensions (W x H) *</label>
-                      <input type="text" value={signDimensions} onChange={(e) => setSignDimensions(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                      {/* Section 1: Accompanying Building Permit */}
+                      <div style={{
+                        padding: "12px 14px",
+                        borderRadius: "10px",
+                        background: signWithBuildingPermit ? "#eff6ff" : "#f8fafc",
+                        border: signWithBuildingPermit ? "1.5px solid #93c5fd" : "1px solid #e2e8f0"
+                      }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: "600", fontSize: "0.85rem", color: "#1e293b" }}>
+                          <input
+                            type="checkbox"
+                            checked={signWithBuildingPermit}
+                            onChange={(e) => setSignWithBuildingPermit(e.target.checked)}
+                            style={{ width: "18px", height: "18px", accentColor: "#2563eb", cursor: "pointer" }}
+                          />
+                          <span>This Sign and Billboard Permit is submitted with / accompanied by a Building Permit</span>
+                        </label>
+                        {signWithBuildingPermit && (
+                          <div style={{ marginTop: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", alignItems: "center" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#3b82f6", marginBottom: "3px" }}>
+                                Building Permit No. (Auto-gathered)
+                              </label>
+                              <input
+                                type="text"
+                                value={signBuildingPermitNo || (mandatoryKeys.includes("buildingPermit") ? `BP-${new Date().getFullYear()}-0001` : "BP-2026-0001")}
+                                onChange={(e) => setSignBuildingPermitNo(e.target.value)}
+                                placeholder="BP-2026-0001"
+                                style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.85rem", fontWeight: "700", background: "#ffffff", color: "#1d4ed8" }}
+                              />
+                            </div>
+                            <div style={{ fontSize: "0.75rem", color: "#475569" }}>
+                              Automatically gathered from the Building Permit application and inserted 1 character per compartment box into the 8 boxes of <strong>BUILDING PERMIT NO.</strong> on NBC Form B-07.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 2: Box 1 Summary & Enterprise / Ownership Details */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 1: Owner / Applicant & Enterprise Information
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Official details formatted for NBC Form B-07 (Sign Permit)
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#e2e8f0", color: "#334155", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form B-07 Box 1
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Applicant Full Name</label>
+                            <div style={{ fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", padding: "6px 10px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {compiledFullName}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>T.I.N. Number</label>
+                            <div style={{ fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", padding: "6px 10px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {applicantTIN || "123-456-789-000"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Form of Ownership</label>
+                            <select
+                              value={signFormOfOwnership}
+                              onChange={(e) => setSignFormOfOwnership(e.target.value)}
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "600", background: "#ffffff" }}
+                            >
+                              <option value="Sole Proprietorship">Sole Proprietorship</option>
+                              <option value="Corporation">Corporation</option>
+                              <option value="Partnership">Partnership</option>
+                              <option value="Individual">Individual</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Character of Occupancy</label>
+                            <select
+                              value={signCharacterOfOccupancy}
+                              onChange={(e) => setSignCharacterOfOccupancy(e.target.value)}
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "600", background: "#ffffff" }}
+                            >
+                              <option value="Commercial / Business">Commercial / Business</option>
+                              <option value="Industrial">Industrial</option>
+                              <option value="Institutional">Institutional</option>
+                              <option value="Residential">Residential</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.75rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>For Construction Owned by an Enterprise (Enterprise Name)</label>
+                            <input
+                              type="text"
+                              value={signEnterpriseName}
+                              onChange={(e) => setSignEnterpriseName(e.target.value)}
+                              placeholder="e.g. STO. TOMAS COMMERCIAL VENTURES CORP."
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Telephone / Fax No.</label>
+                            <input
+                              type="text"
+                              value={applicantPhone || "0917-123-4567"}
+                              readOnly
+                              style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "0.84rem", background: "#f8fafc", color: "#475569" }}
+                            />
+                          </div>
+                        </div>
+
+                        <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "#475569", display: "block", marginBottom: "4px" }}>
+                          Applicant Registered Address (Printed in Box 1):
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "80px 1.5fr 1fr 1fr", gap: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.70rem", color: "#64748b" }}>No.</label>
+                            <input
+                              type="text"
+                              value={signApplicantNo}
+                              onChange={(e) => setSignApplicantNo(e.target.value)}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.80rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.70rem", color: "#64748b" }}>Street</label>
+                            <input
+                              type="text"
+                              value={signApplicantStreet}
+                              onChange={(e) => setSignApplicantStreet(e.target.value)}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.80rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.70rem", color: "#64748b" }}>Barangay</label>
+                            <input
+                              type="text"
+                              value={signApplicantBarangay}
+                              onChange={(e) => setSignApplicantBarangay(e.target.value)}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.80rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.70rem", color: "#64748b" }}>City / Municipality</label>
+                            <input
+                              type="text"
+                              value={signApplicantCity}
+                              onChange={(e) => setSignApplicantCity(e.target.value)}
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "0.80rem" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 3: Location of Signboard Installation */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block", marginBottom: "0.5rem" }}>
+                          Location of Installation (NBC Form B-07 • Box 1)
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Lot No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {lotNo || "12"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Blk No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {blockNo || "4"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>TCT / OCT No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {tctNo || "TCT-889977-P"}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Tax Dec. No.</label>
+                            <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "#0f172a", padding: "5px 8px", background: "#ffffff", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {taxDecNo || "TD-2026-004455"}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "0.82rem", color: "#334155", background: "#ffffff", padding: "6px 10px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                          <strong>Installation Address:</strong> {streetAddress || "Lot 12, Blk 4, McArthur Hwy"}, {barangay || "Poblacion"}, Sto. Tomas, Pampanga
+                        </div>
+                      </div>
+
+                      {/* Section 4: Scope of Work */}
+                      <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "1rem" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                          Scope of Work (NBC Form B-07 • Box 1)
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.5rem" }}>
+                          {[
+                            "New Construction",
+                            "Erection",
+                            "Addition",
+                            "Alteration",
+                            "Renovation",
+                            "Conversion",
+                            "Repair",
+                            "Moving",
+                            "Raising",
+                            "Demolition",
+                            "Accessory Building/Structure",
+                            "Others (Specify)"
+                          ].map((scope) => {
+                            const isSelected = signScopeOfWork === scope;
+                            return (
+                              <button
+                                key={scope}
+                                type="button"
+                                onClick={() => setSignScopeOfWork(scope)}
+                                style={{
+                                  padding: "8px 12px",
+                                  borderRadius: "8px",
+                                  border: isSelected ? "2px solid #6366f1" : "1px solid #cbd5e1",
+                                  background: isSelected ? "#eef2ff" : "#ffffff",
+                                  color: isSelected ? "#4338ca" : "#334155",
+                                  fontWeight: isSelected ? "700" : "500",
+                                  fontSize: "0.82rem",
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  transition: "all 0.15s ease"
+                                }}
+                              >
+                                {scope}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {signScopeOfWork.includes("Other") && (
+                          <div style={{ marginTop: "10px" }}>
+                            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
+                              Specify Other Scope Details *
+                            </label>
+                            <input
+                              type="text"
+                              value={signScopeOthers}
+                              onChange={(e) => setSignScopeOthers(e.target.value)}
+                              placeholder="e.g. LED Digital Screen Replacement"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1.5px solid #93c5fd", fontSize: "0.84rem", background: "#f0f9ff" }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 5: Use or Character of Occupancy (A, B, C) */}
+                      <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "1.1rem" }}>
+                        <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block", marginBottom: "0.85rem" }}>
+                          Use or Character of Occupancy & Sign Details (NBC Form B-07 • Box 1)
+                        </span>
+
+                        {/* A. Type of Display */}
+                        <div style={{ marginBottom: "1rem", padding: "10px 12px", borderRadius: "8px", background: "#ffffff", border: "1px solid #e2e8f0" }}>
+                          <span style={{ fontSize: "0.80rem", fontWeight: "700", color: "#0f172a", display: "block", marginBottom: "6px" }}>
+                            A. Type of Display
+                          </span>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "4px" }}>Display Configuration</label>
+                              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                                {["Single Face", "Double Face", "Multi-Media"].map((face) => (
+                                  <button
+                                    key={face}
+                                    type="button"
+                                    onClick={() => setSignDisplayType(face)}
+                                    style={{
+                                      padding: "5px 10px",
+                                      borderRadius: "6px",
+                                      border: signDisplayType === face ? "1.5px solid #2563eb" : "1px solid #cbd5e1",
+                                      background: signDisplayType === face ? "#dbeafe" : "#ffffff",
+                                      color: signDisplayType === face ? "#1d4ed8" : "#334155",
+                                      fontSize: "0.78rem",
+                                      fontWeight: signDisplayType === face ? "700" : "500",
+                                      cursor: "pointer"
+                                    }}
+                                  >
+                                    {face}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "4px" }}>Illumination / Medium</label>
+                              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                                {["Neon", "Illuminated", "Painted-on", "Other"].map((medium) => (
+                                  <button
+                                    key={medium}
+                                    type="button"
+                                    onClick={() => setSignDisplayMedium(medium)}
+                                    style={{
+                                      padding: "5px 10px",
+                                      borderRadius: "6px",
+                                      border: signDisplayMedium === medium ? "1.5px solid #2563eb" : "1px solid #cbd5e1",
+                                      background: signDisplayMedium === medium ? "#dbeafe" : "#ffffff",
+                                      color: signDisplayMedium === medium ? "#1d4ed8" : "#334155",
+                                      fontSize: "0.78rem",
+                                      fontWeight: signDisplayMedium === medium ? "700" : "500",
+                                      cursor: "pointer"
+                                    }}
+                                  >
+                                    {medium}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* B. Type of Installation */}
+                        <div style={{ marginBottom: "1rem", padding: "10px 12px", borderRadius: "8px", background: "#ffffff", border: "1px solid #e2e8f0" }}>
+                          <span style={{ fontSize: "0.80rem", fontWeight: "700", color: "#0f172a", display: "block", marginBottom: "6px" }}>
+                            B. Type of Installation
+                          </span>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.5rem" }}>
+                            {[
+                              "Business Sign, Wall Type",
+                              "Business Sign, Projecting Type",
+                              "Business Sign, Ground Type",
+                              "Business Sign, Temporary",
+                              "Advertising Sign, Ground Type",
+                              "Advertising Sign, Wall Type",
+                              "Advertising Sign, Projecting Type",
+                              "Advertising Sign, Other"
+                            ].map((inst) => {
+                              const isSelected = signInstallationType === inst;
+                              return (
+                                <button
+                                  key={inst}
+                                  type="button"
+                                  onClick={() => setSignInstallationType(inst)}
+                                  style={{
+                                    padding: "6px 10px",
+                                    borderRadius: "6px",
+                                    border: isSelected ? "1.5px solid #2563eb" : "1px solid #cbd5e1",
+                                    background: isSelected ? "#dbeafe" : "#ffffff",
+                                    color: isSelected ? "#1d4ed8" : "#334155",
+                                    fontSize: "0.78rem",
+                                    fontWeight: isSelected ? "700" : "500",
+                                    textAlign: "left",
+                                    cursor: "pointer"
+                                  }}
+                                >
+                                  {inst}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* C. Display Size / Dimensions */}
+                        <div style={{ padding: "10px 12px", borderRadius: "8px", background: "#ffffff", border: "1px solid #e2e8f0" }}>
+                          <span style={{ fontSize: "0.80rem", fontWeight: "700", color: "#0f172a", display: "block", marginBottom: "6px" }}>
+                            C. Display Size / Face (Length, Width, and Total Area)
+                          </span>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                                Length / Height L(m) *
+                              </label>
+                              <input
+                                type="text"
+                                value={signLength}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSignLength(val);
+                                  const l = parseFloat(val) || 0;
+                                  const w = parseFloat(signWidth) || 0;
+                                  setSignArea((l * w).toFixed(2));
+                                }}
+                                placeholder="3.00"
+                                style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700" }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                                Width W(m) *
+                              </label>
+                              <input
+                                type="text"
+                                value={signWidth}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSignWidth(val);
+                                  const l = parseFloat(signLength) || 0;
+                                  const w = parseFloat(val) || 0;
+                                  setSignArea((l * w).toFixed(2));
+                                }}
+                                placeholder="1.50"
+                                style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700" }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                                Total Area At(m²) (Auto-calculated)
+                              </label>
+                              <div style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.85rem", fontWeight: "800", background: "#eff6ff", color: "#1d4ed8" }}>
+                                {signArea || (parseFloat(signLength || "3.00") * parseFloat(signWidth || "1.50")).toFixed(2)} sq.m.
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.75rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                                Material & Structural Framing *
+                              </label>
+                              <input
+                                type="text"
+                                value={signMaterial}
+                                onChange={(e) => setSignMaterial(e.target.value)}
+                                placeholder="e.g. Acrylic Face with LED Backlight on Steel Framing"
+                                style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                                Estimated Project Cost (PHP) *
+                              </label>
+                              <input
+                                type="text"
+                                value={signCost}
+                                onChange={(e) => setSignCost(e.target.value)}
+                                placeholder="45,000.00"
+                                style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 6: Box 2 Accompanying Documents Checklist */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 2: Accompanying Documents Checklist
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Five (5) sets each signed and sealed by responsible design professional (NBC Form B-07 • Box 2)
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#dbeafe", color: "#1e40af", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form B-07 Box 2
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                          {/* Left Column */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                            <label style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "8px",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              background: signDocTct ? "#ffffff" : "#f1f5f9",
+                              border: signDocTct ? "1px solid #93c5fd" : "1px solid #cbd5e1",
+                              cursor: "pointer",
+                              fontSize: "0.78rem",
+                              fontWeight: signDocTct ? "700" : "500",
+                              color: signDocTct ? "#1e293b" : "#64748b"
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={signDocTct}
+                                onChange={(e) => setSignDocTct(e.target.checked)}
+                                style={{ marginTop: "2px", width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                              />
+                              <span>CERTIFIED XEROX COPY OF TCT</span>
+                            </label>
+
+                            <label style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "8px",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              background: signDocContractOfLease ? "#ffffff" : "#f1f5f9",
+                              border: signDocContractOfLease ? "1px solid #93c5fd" : "1px solid #cbd5e1",
+                              cursor: "pointer",
+                              fontSize: "0.78rem",
+                              fontWeight: signDocContractOfLease ? "700" : "500",
+                              color: signDocContractOfLease ? "#1e293b" : "#64748b"
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={signDocContractOfLease}
+                                onChange={(e) => setSignDocContractOfLease(e.target.checked)}
+                                style={{ marginTop: "2px", width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                              />
+                              <span>IF NOT OWNED BY APPLICANT: CONTRACT OF LEASE / CONSENT</span>
+                            </label>
+
+                            <label style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "8px",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              background: signDocTaxDeclaration ? "#ffffff" : "#f1f5f9",
+                              border: signDocTaxDeclaration ? "1px solid #93c5fd" : "1px solid #cbd5e1",
+                              cursor: "pointer",
+                              fontSize: "0.78rem",
+                              fontWeight: signDocTaxDeclaration ? "700" : "500",
+                              color: signDocTaxDeclaration ? "#1e293b" : "#64748b"
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={signDocTaxDeclaration}
+                                onChange={(e) => setSignDocTaxDeclaration(e.target.checked)}
+                                style={{ marginTop: "2px", width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                              />
+                              <span>XEROX COPY OF TAX DECLARATION AND LATEST REALTY TAX RECEIPT</span>
+                            </label>
+                          </div>
+
+                          {/* Right Column */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                            <label style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "8px",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              background: signDocLotPlan ? "#ffffff" : "#f1f5f9",
+                              border: signDocLotPlan ? "1px solid #93c5fd" : "1px solid #cbd5e1",
+                              cursor: "pointer",
+                              fontSize: "0.78rem",
+                              fontWeight: signDocLotPlan ? "700" : "500",
+                              color: signDocLotPlan ? "#1e293b" : "#64748b"
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={signDocLotPlan}
+                                onChange={(e) => setSignDocLotPlan(e.target.checked)}
+                                style={{ marginTop: "2px", width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                              />
+                              <span>XEROX COPY OF LOT PLAN AND SITE DEVELOPMENT PLAN</span>
+                            </label>
+
+                            <label style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "8px",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              background: signDocSignPlansStructural ? "#ffffff" : "#f1f5f9",
+                              border: signDocSignPlansStructural ? "1px solid #93c5fd" : "1px solid #cbd5e1",
+                              cursor: "pointer",
+                              fontSize: "0.78rem",
+                              fontWeight: signDocSignPlansStructural ? "700" : "500",
+                              color: signDocSignPlansStructural ? "#1e293b" : "#64748b"
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={signDocSignPlansStructural}
+                                onChange={(e) => setSignDocSignPlansStructural(e.target.checked)}
+                                style={{ marginTop: "2px", width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                              />
+                              <span>PLANS OF SIGN STRUCTURES, STRUCTURAL DESIGN & COMPUTATION</span>
+                            </label>
+
+                            <label style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "8px",
+                              padding: "8px 10px",
+                              borderRadius: "6px",
+                              background: signDocSpecsCostEstimates ? "#ffffff" : "#f1f5f9",
+                              border: signDocSpecsCostEstimates ? "1px solid #93c5fd" : "1px solid #cbd5e1",
+                              cursor: "pointer",
+                              fontSize: "0.78rem",
+                              fontWeight: signDocSpecsCostEstimates ? "700" : "500",
+                              color: signDocSpecsCostEstimates ? "#1e293b" : "#64748b"
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={signDocSpecsCostEstimates}
+                                onChange={(e) => setSignDocSpecsCostEstimates(e.target.checked)}
+                                style={{ marginTop: "2px", width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                              />
+                              <span>SPECIFICATIONS AND COST ESTIMATES</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 7: Box 3 Design Professional, Plans and Specification */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 3: Design Professional, Plans and Specification
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Architect or Civil Engineer in charge of sign plans, calculations and specifications (NBC Form B-07 • Box 3)
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#e2e8f0", color: "#334155", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form B-07 Box 3
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Design Professional Full Name (with Title) *</label>
+                            <input
+                              type="text"
+                              required
+                              value={architectName}
+                              onChange={(e) => setArchitectName(e.target.value)}
+                              placeholder="e.g. ARCH. MARIA ELENA SANTOS, UAP"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Professional Address *</label>
+                            <input
+                              type="text"
+                              required
+                              value={architectAddress}
+                              onChange={(e) => setArchitectAddress(e.target.value)}
+                              placeholder="e.g. Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PRC Registration No. *</label>
+                            <input
+                              type="text"
+                              required
+                              value={architectPRC}
+                              onChange={(e) => setArchitectPRC(e.target.value)}
+                              placeholder="0045211"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PRC Validity Date *</label>
+                            <input
+                              type="text"
+                              required
+                              value={architectPRCValidity}
+                              onChange={(e) => setArchitectPRCValidity(e.target.value)}
+                              placeholder="YYYY-MM-DD"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PTR Number *</label>
+                            <input
+                              type="text"
+                              required
+                              value={architectPTR}
+                              onChange={(e) => setArchitectPTR(e.target.value)}
+                              placeholder="PTR-ST-665544"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>TIN Number *</label>
+                            <input
+                              type="text"
+                              required
+                              value={architectTIN}
+                              onChange={(e) => setArchitectTIN(e.target.value)}
+                              placeholder="000-000-000-000"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PTR Date Issued *</label>
+                            <input
+                              type="text"
+                              required
+                              value={architectPTRIssued}
+                              onChange={(e) => setArchitectPTRIssued(e.target.value)}
+                              placeholder="e.g. Jan 08, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PTR Issued At *</label>
+                            <input
+                              type="text"
+                              required
+                              value={architectPTRIssuedAt}
+                              onChange={(e) => setArchitectPTRIssuedAt(e.target.value)}
+                              placeholder="e.g. Sto. Tomas"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Designer E-Signature */}
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                          <SignatureCreator
+                            value={signDesignerSignature}
+                            onChange={(sig) => setSignDesignerSignature(sig)}
+                            label={`Design Professional Seal & E-Signature (Affixed over printed name: ${architectName || "Architect"})`}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Section 8: Box 4 Full-Time Inspector and Supervisor of Construction Works */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 4: Full-Time Inspector and Supervisor of Construction Works
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Architect or Civil Engineer in charge of full-time sign installation and structural supervision (NBC Form B-07 • Box 4)
+                            </span>
+                          </div>
+
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#1e40af", cursor: "pointer", background: "#dbeafe", padding: "4px 8px", borderRadius: "6px" }}>
+                            <input
+                              type="checkbox"
+                              checked={sameAsDesignSignSupervisor}
+                              onChange={(e) => setSameAsDesignSignSupervisor(e.target.checked)}
+                              style={{ accentColor: "#2563eb" }}
+                            />
+                            Same as Design Professional (Box 3)
+                          </label>
+                        </div>
+
+                        {sameAsDesignSignSupervisor ? (
+                          <div style={{ padding: "12px 14px", borderRadius: "8px", background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1e40af", fontSize: "0.82rem" }}>
+                            <strong>Using credentials and e-signature from Box 3 (Design Professional):</strong> {architectName || "ARCH. MARIA ELENA SANTOS, UAP"} (PRC: {architectPRC || "0045211"}, PTR: {architectPTR || "PTR-ST-665544"}).
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Supervisor Full Name (with Title) *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={signSupervisorName}
+                                  onChange={(e) => setSignSupervisorName(e.target.value)}
+                                  placeholder="e.g. ENGR. ROBERTO CRUZ, CE"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Professional Address *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={signSupervisorAddress}
+                                  onChange={(e) => setSignSupervisorAddress(e.target.value)}
+                                  placeholder="e.g. Sto. Tomas, Pampanga"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PRC Registration No. *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={signSupervisorPRC}
+                                  onChange={(e) => setSignSupervisorPRC(e.target.value)}
+                                  placeholder="0078923"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PRC Validity Date *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={signSupervisorPRCValidity}
+                                  onChange={(e) => setSignSupervisorPRCValidity(e.target.value)}
+                                  placeholder="YYYY-MM-DD"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PTR Number *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={signSupervisorPTR}
+                                  onChange={(e) => setSignSupervisorPTR(e.target.value)}
+                                  placeholder="PTR-ST-2026-001"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>TIN Number *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={signSupervisorTIN}
+                                  onChange={(e) => setSignSupervisorTIN(e.target.value)}
+                                  placeholder="000-000-000-000"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PTR Date Issued *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={signSupervisorPTRIssued}
+                                  onChange={(e) => setSignSupervisorPTRIssued(e.target.value)}
+                                  placeholder="e.g. Jan 10, 2026"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>PTR Issued At *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={signSupervisorPTRIssuedAt}
+                                  onChange={(e) => setSignSupervisorPTRIssuedAt(e.target.value)}
+                                  placeholder="e.g. Sto. Tomas"
+                                  style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Supervisor E-Signature */}
+                            <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                              <SignatureCreator
+                                value={signSupervisorSignature}
+                                onChange={(sig) => setSignSupervisorSignature(sig)}
+                                label={`Supervisor Seal & E-Signature (Affixed over printed name: ${signSupervisorName || "Supervisor"})`}
+                                required
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Section 9: Box 5 Applicant (Building Owner) */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 5: Applicant (Building Owner / Signboard Owner)
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Official DPWH Box 5 applicant identification, Community Tax Certificate (C.T.C.), and signature (NBC Form B-07 • Box 5)
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#e2e8f0", color: "#334155", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form B-07 Box 5
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Applicant Full Name</label>
+                            <input
+                              type="text"
+                              value={applicantName || "JUAN DELA CRUZ"}
+                              disabled
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#f1f5f9", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Applicant Address</label>
+                            <input
+                              type="text"
+                              value={streetAddress ? `${streetAddress}, ${barangay || "Sto. Tomas, Pampanga"}` : (barangay ? `${barangay}, Sto. Tomas, Pampanga` : "123 Rizal St., Poblacion, Sto. Tomas, Pampanga")}
+                              disabled
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#f1f5f9" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>C.T.C. No. *</label>
+                            <input
+                              type="text"
+                              required
+                              value={signApplicantCtcNo}
+                              onChange={(e) => setSignApplicantCtcNo(e.target.value)}
+                              placeholder="CTC-2026-00192"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Date Issued *</label>
+                            <input
+                              type="text"
+                              required
+                              value={signApplicantCtcDateIssued}
+                              onChange={(e) => setSignApplicantCtcDateIssued(e.target.value)}
+                              placeholder="e.g. Jan 10, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>Place Issued *</label>
+                            <input
+                              type="text"
+                              required
+                              value={signApplicantCtcPlaceIssued}
+                              onChange={(e) => setSignApplicantCtcPlaceIssued(e.target.value)}
+                              placeholder="e.g. Sto. Tomas"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.76rem", fontWeight: "700", color: "#334155", marginBottom: "3px" }}>TIN Number</label>
+                            <input
+                              type="text"
+                              value={applicantTIN || "123-456-789-000"}
+                              disabled
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#f1f5f9" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Applicant E-Signature */}
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                          <SignatureCreator
+                            value={applicantSignature}
+                            onChange={(sig) => setApplicantSignature(sig)}
+                            label={`Applicant E-Signature (Affixed over printed name: ${compiledFullName || applicantName || "Applicant"})`}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Section 10: Page 2 Box 6 (Building Owner) & Box 7 (With My Consent: Lot Owner) */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 6 & Box 7: Building Owner & Lot Owner Consent
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Official property and lot ownership consent sections (NBC Form B-07 • Page 2 • Boxes 6 & 7)
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#e2e8f0", color: "#334155", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            NBC Form B-07 Page 2
+                          </span>
+                        </div>
+
+                        {/* BOX 6: BUILDING OWNER */}
+                        <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "1rem", marginBottom: "1rem" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                            <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase" }}>
+                              BOX 6: BUILDING OWNER
+                            </span>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#1e40af", cursor: "pointer", background: "#dbeafe", padding: "4px 8px", borderRadius: "6px" }}>
+                              <input
+                                type="checkbox"
+                                checked={signSameAsApplicantBldgOwner}
+                                onChange={(e) => setSignSameAsApplicantBldgOwner(e.target.checked)}
+                                style={{ accentColor: "#2563eb" }}
+                              />
+                              Same as Applicant (Box 5)
+                            </label>
+                          </div>
+
+                          {signSameAsApplicantBldgOwner ? (
+                            <div style={{ padding: "10px 12px", borderRadius: "6px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", fontSize: "0.8rem" }}>
+                              <strong>Building Owner matches Applicant:</strong> {compiledFullName || applicantName || "JUAN DELA CRUZ"} (C.T.C. No: {signApplicantCtcNo || "CTC-2026-00192"}).
+                            </div>
+                          ) : (
+                            <>
+                              <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>Building Owner Full Name *</label>
+                                  <input
+                                    type="text"
+                                    value={signBldgOwnerName}
+                                    onChange={(e) => setSignBldgOwnerName(e.target.value)}
+                                    placeholder="e.g. JUAN DELA CRUZ"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", fontWeight: "700" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>Building Owner Address *</label>
+                                  <input
+                                    type="text"
+                                    value={signBldgOwnerAddress}
+                                    onChange={(e) => setSignBldgOwnerAddress(e.target.value)}
+                                    placeholder="e.g. 123 Rizal St., Poblacion, Sto. Tomas"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                  />
+                                </div>
+                              </div>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>C.T.C. No. *</label>
+                                  <input
+                                    type="text"
+                                    value={signBldgOwnerCtcNo}
+                                    onChange={(e) => setSignBldgOwnerCtcNo(e.target.value)}
+                                    placeholder="CTC-2026-00192"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>Date Issued *</label>
+                                  <input
+                                    type="text"
+                                    value={signBldgOwnerCtcDateIssued}
+                                    onChange={(e) => setSignBldgOwnerCtcDateIssued(e.target.value)}
+                                    placeholder="Jan 10, 2026"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>Place Issued *</label>
+                                  <input
+                                    type="text"
+                                    value={signBldgOwnerCtcPlaceIssued}
+                                    onChange={(e) => setSignBldgOwnerCtcPlaceIssued(e.target.value)}
+                                    placeholder="Sto. Tomas"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>Date Signed *</label>
+                                  <input
+                                    type="text"
+                                    value={signBldgOwnerSignedDate}
+                                    onChange={(e) => setSignBldgOwnerSignedDate(e.target.value)}
+                                    placeholder="Jan 08, 2026"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                  />
+                                </div>
+                              </div>
+                              <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                                <SignatureCreator
+                                  value={signBldgOwnerSignature}
+                                  onChange={(sig) => setSignBldgOwnerSignature(sig)}
+                                  label={`Building Owner E-Signature (Affixed over printed name: ${signBldgOwnerName || "Building Owner"})`}
+                                />
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* BOX 7: WITH MY CONSENT: LOT OWNER */}
+                        <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "1rem" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                            <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase" }}>
+                              BOX 7: WITH MY CONSENT: LOT OWNER
+                            </span>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: "700", color: "#047857", cursor: "pointer", background: "#d1fae5", padding: "4px 8px", borderRadius: "6px" }}>
+                              <input
+                                type="checkbox"
+                                checked={lotOwnerConsent}
+                                onChange={(e) => setLotOwnerConsent(e.target.checked)}
+                                style={{ accentColor: "#059669" }}
+                              />
+                              Consent Required (Check if property is leased / rented)
+                            </label>
+                          </div>
+
+                          {lotOwnerConsent ? (
+                            <>
+                              <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>Lot Owner Full Name *</label>
+                                  <input
+                                    type="text"
+                                    value={lotOwnerName}
+                                    onChange={(e) => setLotOwnerName(e.target.value)}
+                                    placeholder="e.g. DAVE SICAT"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", fontWeight: "700" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>Lot Owner Address *</label>
+                                  <input
+                                    type="text"
+                                    value={lotOwnerAddress}
+                                    onChange={(e) => setLotOwnerAddress(e.target.value)}
+                                    placeholder="e.g. 153 Sitio Visitas, Sto. Tomas, Pampanga"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                  />
+                                </div>
+                              </div>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>C.T.C. No. *</label>
+                                  <input
+                                    type="text"
+                                    value={lotOwnerGovIdNo}
+                                    onChange={(e) => setLotOwnerGovIdNo(e.target.value)}
+                                    placeholder="e.g. 00987654"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>Date Issued *</label>
+                                  <input
+                                    type="text"
+                                    value={lotOwnerGovIdDateIssued}
+                                    onChange={(e) => setLotOwnerGovIdDateIssued(e.target.value)}
+                                    placeholder="Jan 10, 2026"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>Place Issued *</label>
+                                  <input
+                                    type="text"
+                                    value={lotOwnerGovIdPlaceIssued}
+                                    onChange={(e) => setLotOwnerGovIdPlaceIssued(e.target.value)}
+                                    placeholder="Sto. Tomas"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>Date Signed *</label>
+                                  <input
+                                    type="text"
+                                    value={lotOwnerSignedDate}
+                                    onChange={(e) => setLotOwnerSignedDate(e.target.value)}
+                                    placeholder="Jan 08, 2026"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                  />
+                                </div>
+                              </div>
+                              <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                                <SignatureCreator
+                                  value={lotOwnerSignature}
+                                  onChange={(sig) => setLotOwnerSignature(sig)}
+                                  label={`Lot Owner E-Signature (Affixed over printed name: ${lotOwnerName || "Lot Owner"})`}
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <p style={{ fontSize: "0.76rem", color: "#64748b", margin: "0.25rem 0", fontStyle: "italic" }}>
+                              Leave unchecked if the applicant is also the registered owner of the lot where the sign is installed.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Section 11: Page 2 Box 8 (Processing & Evaluation Division - Official Receipt & Payment Auto-Generation) */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Box 8: Processing and Evaluation Division (Fee & Receipt)
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Official LGU payment verification, Official Receipt (O.R.), and permit issuance details (NBC Form B-07 • Box 8)
+                            </span>
+                          </div>
+                          <span style={{
+                            fontSize: "0.72rem",
+                            background: ((clearanceApp as any)?.paymentStatus === "paid" || Boolean((clearanceApp as any)?.officialReceiptNo)) ? "#dcfce7" : "#fef9c3",
+                            color: ((clearanceApp as any)?.paymentStatus === "paid" || Boolean((clearanceApp as any)?.officialReceiptNo)) ? "#166534" : "#854d0e",
+                            padding: "3px 8px",
+                            borderRadius: "6px",
+                            fontWeight: "800"
+                          }}>
+                            {((clearanceApp as any)?.paymentStatus === "paid" || Boolean((clearanceApp as any)?.officialReceiptNo)) ? "✓ Payment Confirmed & Auto-Filled" : "Auto-Populated on Payment"}
+                          </span>
+                        </div>
+
+                        <div style={{
+                          background: "#ffffff",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "8px",
+                          padding: "1rem",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                          gap: "0.75rem"
+                        }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>FEE PAID</label>
+                            <input
+                              type="text"
+                              value={(clearanceApp as any)?.assessedFees ? `PHP ${(clearanceApp as any).assessedFees.toLocaleString()}` : "PHP 1,250.00"}
+                              disabled
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc", fontWeight: "700", color: "#1e293b" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>DATE PAID</label>
+                            <input
+                              type="text"
+                              value={(clearanceApp as any)?.dateReleased || (clearanceApp as any)?.paymentDate || "Auto upon payment"}
+                              disabled
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc", color: "#475569" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>OFFICIAL RECEIPT NO.</label>
+                            <input
+                              type="text"
+                              value={(clearanceApp as any)?.officialReceiptNo || (clearanceApp as any)?.paymentReference || "Generated on cashier release"}
+                              disabled
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc", fontWeight: "700", color: "#0284c7" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#334155", marginBottom: "2px" }}>DATE ISSUED</label>
+                            <input
+                              type="text"
+                              value={(clearanceApp as any)?.dateReleased || "Auto upon release"}
+                              disabled
+                              style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc", color: "#475569" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 

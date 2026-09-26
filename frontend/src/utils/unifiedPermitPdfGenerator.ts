@@ -365,11 +365,35 @@ export interface UnifiedPermitFormData {
   othersCustomLine3Check?: boolean;
   othersCustomLine3Text?: string;
 
-  // Sign Permit details
+  // Sign Permit details (NBC Form B-07)
   signType?: string;
   signDimensions?: string;
   signMaterial?: string;
   signCost?: string;
+  signScopeOfWork?: string;
+  signScopeOthers?: string;
+  signDisplayType?: string;
+  signDisplayMedium?: string;
+  signInstallationType?: string;
+  signLength?: string;
+  signWidth?: string;
+  signArea?: string;
+  signFormOfOwnership?: string;
+  signEnterpriseName?: string;
+  signCharacterOfOccupancy?: string;
+  signApplicantNo?: string;
+  signApplicantStreet?: string;
+  signApplicantBarangay?: string;
+  signApplicantCity?: string;
+  installationStreet?: string;
+  installationBarangay?: string;
+  installationCity?: string;
+  signDocTct?: boolean;
+  signDocContractOfLease?: boolean;
+  signDocTaxDeclaration?: boolean;
+  signDocLotPlan?: boolean;
+  signDocSignPlansStructural?: boolean;
+  signDocSpecsCostEstimates?: boolean;
 
   // Temporary Service Connection details
   temporaryServicePurpose?: string;
@@ -538,6 +562,19 @@ export interface UnifiedPermitFormData {
   electronicsSupervisorTIN?: string;
   electronicsSupervisorSignedDate?: string;
   electronicsSupervisorSignature?: string;
+
+  // Box 4: Full-Time Inspector and Supervisor of Construction Works (Sign Permit / SGP)
+  sameAsDesignSignSupervisor?: boolean;
+  signSupervisorName?: string;
+  signSupervisorAddress?: string;
+  signSupervisorPRC?: string;
+  signSupervisorPRCValidity?: string;
+  signSupervisorPTR?: string;
+  signSupervisorPTRIssued?: string;
+  signSupervisorPTRIssuedAt?: string;
+  signSupervisorTIN?: string;
+  signSupervisorSignature?: string;
+  signSupervisorSignedDate?: string;
 
   // Active form checkboxes selected
   activePermitForms?: (keyof PermitFormMatrix)[];
@@ -743,7 +780,7 @@ export async function generateBuildingPermitPdf(data: UnifiedPermitFormData): Pr
   const cleanAppNo = rawAppNo.replace(/^APP-(TEST-)?/i, "");
   const appChars = cleanAppNo.split("");
   const boxXPositions = [28.56, 39.00, 49.92, 60.72, 71.52, 82.44, 93.00, 103.80, 114.12, 124.68];
-  
+
   boxXPositions.forEach((boxLeft, idx) => {
     if (idx < appChars.length) {
       const char = appChars[idx];
@@ -1378,35 +1415,35 @@ export async function generateArchitecturalPermitPdf(data: UnifiedPermitFormData
 
   // Box 4: SUPERVISOR / IN-CHARGE OF ARCHITECTURAL WORKS
   const isSameArch = data.sameAsDesignArchitect ?? false;
-  const supName = isSameArch 
+  const supName = isSameArch
     ? (data.architectName || "ARCH. MARIA ELENA SANTOS, UAP")
     : (data.supervisorArchitectName || "ARCH. JUAN CARLOS REYES, UAP");
-  const supAddress = isSameArch 
+  const supAddress = isSameArch
     ? (data.architectAddress || "Sto. Tomas, Pampanga")
     : (data.supervisorArchitectAddress || "Sto. Tomas, Pampanga");
-  const supIAPOA = isSameArch 
+  const supIAPOA = isSameArch
     ? (data.architectIAPOA || "IAPOA-2026-9988")
     : (data.supervisorArchitectIAPOA || "IAPOA-2026-8877");
-  const supIAPOAValidity = isSameArch 
+  const supIAPOAValidity = isSameArch
     ? (data.architectIAPOAValidity || "2028-12-31")
     : (data.supervisorArchitectIAPOAValidity || "2027-12-31");
-  const supPRC = isSameArch 
+  const supPRC = isSameArch
     ? (data.architectPRC || "0045211")
     : (data.supervisorArchitectPRC || "0056123");
-  const supPRCValidity = isSameArch 
+  const supPRCValidity = isSameArch
     ? (data.architectPRCValidity || "2028-09-15")
     : (data.supervisorArchitectPRCValidity || "2027-08-20");
-  const supPTR = isSameArch 
+  const supPTR = isSameArch
     ? (data.architectPTR || "PTR-ST-665544")
     : (data.supervisorArchitectPTR || "PTR-ST-778899");
-  const rawSupPtrDate = isSameArch 
+  const rawSupPtrDate = isSameArch
     ? (data.architectPTRIssued || "Jan 08, 2026")
     : (data.supervisorArchitectPTRIssued || "Jan 10, 2026");
   const supPtrDateOnly = rawSupPtrDate.includes("/") ? rawSupPtrDate.split("/")[1].trim() : rawSupPtrDate;
-  const supPTRIssuedAt = isSameArch 
+  const supPTRIssuedAt = isSameArch
     ? (data.architectPTRIssuedAt || "Sto. Tomas")
     : (data.supervisorArchitectPTRIssuedAt || "Sto. Tomas");
-  const supTIN = isSameArch 
+  const supTIN = isSameArch
     ? (data.architectTIN || "234-567-890-000")
     : (data.supervisorArchitectTIN || "345-678-901-000");
 
@@ -1651,7 +1688,7 @@ export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): 
     drawCheck(47.0, 498.0);
   } else if (scopeNorm.includes("alter")) {
     drawCheck(47.0, 487.0);
-  // Column 2: RENOVATION, CONVERSION, REPAIR, MOVING
+    // Column 2: RENOVATION, CONVERSION, REPAIR, MOVING
   } else if (scopeNorm.includes("renov")) {
     drawCheck(174.5, 520.0);
     if (scopeDetails) drawText(scopeDetails, 240, 520.0, 7.0, false, 24);
@@ -1664,7 +1701,7 @@ export async function generateStructuralPermitPdf(data: UnifiedPermitFormData): 
   } else if (scopeNorm.includes("mov")) {
     drawCheck(174.5, 487.0);
     if (scopeDetails) drawText(scopeDetails, 226, 487.0, 7.0, false, 26);
-  // Column 3: RAISING, DEMOLITION, ACCESSORY BUILDING/STRUCTURE, OTHERS
+    // Column 3: RAISING, DEMOLITION, ACCESSORY BUILDING/STRUCTURE, OTHERS
   } else if (scopeNorm.includes("rais")) {
     drawCheck(355.5, 520.0);
     if (scopeDetails) drawText(scopeDetails, 400, 520.0, 7.0, false, 26);
@@ -2101,8 +2138,8 @@ export async function generateElectricalPermitPdf(data: UnifiedPermitFormData): 
   const inChargePtrDateOnly = inChargeRawPtrDate.includes("/") ? inChargeRawPtrDate.split("/")[1].trim() : inChargeRawPtrDate;
   const inChargePTRIssuedAt = isSameEE ? (data.electricalEngineerPTRIssuedAt || "Sto. Tomas") : (data.installationInChargePTRIssuedAt || data.electricalEngineerPTRIssuedAt || "Sto. Tomas");
   const inChargeTIN = isSameEE ? (data.electricalEngineerTIN || "456-789-012-000") : (data.installationInChargeTIN || data.electricalEngineerTIN || "456-789-012-000");
-  const inChargeSignedDate = isSameEE 
-    ? (data.electricalEngineerSignedDate || data.submissionDate || inChargePtrDateOnly) 
+  const inChargeSignedDate = isSameEE
+    ? (data.electricalEngineerSignedDate || data.submissionDate || inChargePtrDateOnly)
     : (data.installationInChargeSignedDate || data.submissionDate || inChargePtrDateOnly);
   const inChargeSignature = isSameEE ? data.electricalEngineerSignature : data.installationInChargeSignature;
 
@@ -2647,7 +2684,7 @@ export async function generateMechanicalPermitPdf(data: UnifiedPermitFormData): 
   } else if (scope.includes("ALTER")) {
     drawCheck(52.5, 526.5); // [X] ALTERATION
     if (scopeDetail) drawText(scopeDetail, 125, 527.0, 7.0, false, 18);
-  // Column 2 (x = 208.8)
+    // Column 2 (x = 208.8)
   } else if (scope.includes("RENOV")) {
     drawCheck(208.8, 553.5); // [X] RENOVATION
     if (scopeDetail) drawText(scopeDetail, 275, 554.0, 7.0, false, 15);
@@ -2660,7 +2697,7 @@ export async function generateMechanicalPermitPdf(data: UnifiedPermitFormData): 
   } else if (scope.includes("MOV")) {
     drawCheck(208.8, 526.5); // [X] MOVING
     if (scopeDetail) drawText(scopeDetail, 255, 527.0, 7.0, false, 18);
-  // Column 3 (x = 359.5)
+    // Column 3 (x = 359.5)
   } else if (scope.includes("RAIS")) {
     drawCheck(359.5, 552.5); // [X] RAISING
     if (scopeDetail) drawText(scopeDetail, 405, 553.0, 7.0, false, 30);
@@ -3162,11 +3199,11 @@ export async function generateBfpApplicationPdf(data: UnifiedPermitFormData): Pr
   const page = doc.addPage([612, 792]); // Letter size
 
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const fontReg  = await doc.embedFont(StandardFonts.Helvetica);
+  const fontReg = await doc.embedFont(StandardFonts.Helvetica);
 
-  const navy   = rgb(0.05, 0.12, 0.35);
-  const red    = rgb(0.75, 0.05, 0.10);
-  const gray   = rgb(0.40, 0.40, 0.40);
+  const navy = rgb(0.05, 0.12, 0.35);
+  const red = rgb(0.75, 0.05, 0.10);
+  const gray = rgb(0.40, 0.40, 0.40);
   const border = rgb(0.80, 0.80, 0.80);
 
   const { width, height } = page.getSize();
@@ -4438,89 +4475,435 @@ export async function generateSignPermitPdf(data: UnifiedPermitFormData): Promis
   };
 
   const drawCheck = (x: number, y: number) => {
-    p1.drawText("X", { x, y, size: 8.5, font: fontBold, color: darkNavy });
+    p1.drawText("X", { x, y, size: 7.5, font: fontBold, color: darkNavy });
   };
 
-  // Header: Applicant No. inside box
-  drawText(data.applicationNo || "APP-2026-6636", 75, 781.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 440, 781.0, 8, false);
+  const drawCompartmentString = (
+    text: string | undefined | null,
+    centers: number[],
+    baselineY: number,
+    fontSize: number = 8.0
+  ) => {
+    if (!text) return;
+    const chars = text.trim().split("");
+    centers.forEach((centerX, idx) => {
+      if (idx < chars.length) {
+        const char = chars[idx];
+        const charW = fontBold.widthOfTextAtSize(char, fontSize);
+        const charX = centerX - charW / 2;
+        p1.drawText(char, {
+          x: charX,
+          y: baselineY,
+          size: fontSize,
+          font: fontBold,
+          color: darkNavy,
+        });
+      }
+    });
+  };
 
-  // Box 1
+  // Header exact compartment cell centers
+  const appCenters = [33.95, 45.00, 56.10, 67.25, 78.30, 89.35, 100.50, 111.65, 122.70, 133.80];
+  const spCenters = [264.90, 276.45, 287.55, 298.65, 309.75, 320.85, 331.95, 343.05];
+  const bpCenters = [471.80, 483.35, 494.45, 505.50, 516.60, 527.70, 538.75, 549.90];
+
+  // 1. APPLICATION NO. (10 individual segmented boxes)
+  const rawApp = safeText(data.applicationNo || "2026-0001").trim();
+  let cleanApp = rawApp.replace(/^APP-(TEST-)?/i, "").replace(/^UNIFIED-/i, "").trim();
+  if (cleanApp.length > 10 && cleanApp.includes("-")) {
+    cleanApp = cleanApp.replace(/-/g, "");
+  }
+  if (cleanApp.length > 10) cleanApp = cleanApp.slice(0, 10);
+  drawCompartmentString(cleanApp, appCenters, 770.8, 8.0);
+
+  // 2. SP NO. (Sign Permit No. - 8 individual segmented boxes)
+  const isApprovedOrIssued =
+    data.isApproved === true ||
+    data.status === "approved" ||
+    data.status === "released" ||
+    Boolean(data.permitIssuedDate) ||
+    Boolean(data.dateIssued) ||
+    Boolean(data.signPermitNo) ||
+    Boolean(data.spNo) ||
+    Boolean(data.sgpNo) ||
+    (data.permitNo?.startsWith("SP-") || data.permitNo?.startsWith("SGP-")) ||
+    (!data.status); // Default to preview if no submission status is provided (e.g. Form Tester)
+
+  if (isApprovedOrIssued) {
+    const rawSp = (
+      data.signPermitNo ||
+      data.spNo ||
+      data.sgpNo ||
+      (data.permitNo && (data.permitNo.startsWith("SP-") || data.permitNo.startsWith("SGP-")) ? data.permitNo : "") ||
+      (data.applicationNo ? `SP-${cleanApp}` : "SP-2026-0001")
+    ).trim();
+
+    if (rawSp) {
+      let cleanSp = rawSp.replace(/^(SP|SGP)[\s\-#:]*(TEST[\s\-#:]*)?/i, "").trim();
+      if (cleanSp.length > 8 && /^\d{4}-0\d{3}$/.test(cleanSp)) {
+        cleanSp = cleanSp.replace(/-0(\d{3})$/, '-$1');
+      } else if (cleanSp.length > 8 && cleanSp.includes('-')) {
+        cleanSp = cleanSp.replace(/-/g, '');
+      }
+      if (cleanSp.length > 8) cleanSp = cleanSp.slice(0, 8);
+      drawCompartmentString(cleanSp, spCenters, 770.8, 8.0);
+    }
+  }
+
+  // 3. BUILDING PERMIT NO. (8 individual segmented boxes)
+  // Auto-gathered if the user has an accompanying building permit in this project type
+  const isWithBuildingPermit = Boolean(
+    data.withBuildingPermit === true ||
+    (data.withBuildingPermit !== false && Boolean(data.buildingPermitNo || data.bpNo)) ||
+    (Array.isArray(data.activePermitForms) && data.activePermitForms.includes("buildingPermit")) ||
+    (data.projectType?.matrix?.buildingPermit === 'required' || data.projectType?.matrix?.buildingPermit === 'conditional')
+  );
+
+  if (isWithBuildingPermit) {
+    const rawBp = (
+      data.buildingPermitNo ||
+      data.bpNo ||
+      (data.permitNo?.startsWith("BP-") ? data.permitNo : "") ||
+      (data.applicationNo ? `BP-${cleanApp}` : "BP-2026-0001")
+    ).trim();
+
+    if (rawBp) {
+      let cleanBp = rawBp.replace(/^(BP|APP|NBC)[\s\-#:]*(TEST[\s\-#:]*)?/i, "").trim();
+      if (cleanBp.length > 8 && /^\d{4}-0\d{3}$/.test(cleanBp)) {
+        cleanBp = cleanBp.replace(/-0(\d{3})$/, '-$1');
+      } else if (cleanBp.length > 8 && cleanBp.includes('-')) {
+        cleanBp = cleanBp.replace(/-/g, '');
+      }
+      if (cleanBp.length > 8) cleanBp = cleanBp.slice(0, 8);
+      drawCompartmentString(cleanBp, bpCenters, 772.0, 8.0);
+    }
+  }
+
+  // Box 1: Owner / Applicant Details
   const { lastName, firstName, mi, middleName } = parseApplicantName(data);
-  drawText(lastName, 160, 728.0, 8.5, true, 20);
-  drawText(firstName, 260, 728.0, 8.5, true, 22);
-  drawText(middleName || mi, 370, 728.0, 8, true);
-  drawText(data.applicantTIN || "000-123-456-000", 460, 728.0, 8, false);
-  drawText(data.formOfOwnership || "INDIVIDUAL / ENTERPRISE", 210, 700.0, 8, false, 25);
-  drawText((data.projectType?.category || "Commercial / Business").toUpperCase(), 380, 700.0, 8, false, 25);
+  drawText(lastName, 160.0, 714.0, 8.5, true, 20);
+  drawText(firstName, 256.0, 714.0, 8.5, true, 22);
+  drawText(middleName || mi, 355.0, 714.0, 8.0, true, 16);
+  drawText(data.applicantTIN || "000-123-456-000", 465.0, 727.0, 8.0, false);
+
+  drawText(data.signEnterpriseName || data.enterpriseName || "", 28.0, 686.0, 7.5, true, 26);
+  drawText(data.signFormOfOwnership || data.formOfOwnership || "SOLE PROPRIETORSHIP", 205.0, 686.0, 8.0, false, 25);
+  drawText((data.signCharacterOfOccupancy || data.characterOfOccupancy || data.projectType?.category || "Commercial / Business").toUpperCase(), 385.0, 686.0, 8.0, false, 25);
 
   // Address (Applicant Address)
-  drawText(data.applicantAddress || "123 Rizal St., Poblacion", 80, 672.0, 7.5, false, 28);
-  drawText(data.barangay || "Poblacion", 240, 672.0, 7.5, false, 18);
-  drawText(data.applicantPhone || "0917-123-4567", 460, 672.0, 7.5, true);
+  let appNo = data.signApplicantNo || data.applicantHouseNo || "";
+  let appStreet = data.signApplicantStreet || data.applicantStreet || "";
+  let appBrgy = data.signApplicantBarangay || data.applicantBarangay || data.barangay || "";
+  let appCity = data.signApplicantCity || data.applicantCity || data.city || data.municipality || "Sto. Tomas";
 
-  // Location of Sign
-  drawText(data.lotNo || "Lot 12", 160, 643.0, 7.5, true);
-  drawText(data.blockNo || "Blk 4", 240, 643.0, 7.5, true);
-  drawText(data.tctNo || "TCT-123456", 320, 643.0, 7.5, true, 16);
-  // Missing Tax Dec No. added
-  drawText(data.taxDecNo || "TD-2026-0012", 440, 643.0, 7.5, false);
-
-  drawText(data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd.", 80, 613.0, 7.5, false, 24);
-  drawText(data.barangay || "Poblacion", 240, 613.0, 7.5, true, 20);
-
-  // Scope of Work: [X] New Installation
-  drawCheck(55, 613.0);
-
-  // Box 2: Sign Details
-  const sType = data.signType || "Business Sign, Wall Type (Illuminated LED)";
-  drawText(sType, 160, 528.0, 8, true, 48);
-  drawText(data.signDimensions || "3.00m Width x 1.50m Height (Area: 4.50 sq.m.)", 160, 498.0, 8, true, 48);
-  drawText(data.signMaterial || "Acrylic Face with LED Backlight on Steel Framing", 160, 478.0, 8, false, 48);
-  drawText(`PHP ${data.signCost || "45,000.00"}`, 160, 458.0, 8, true);
-  drawText(data.proposedStartDate || "Oct 01, 2026", 160, 438.0, 7.5, false);
-  drawText(data.expectedCompletionDate || "Oct 15, 2026", 360, 438.0, 7.5, false);
-
-  // Box 3: Architect / Structural Engineer: moved higher (+5px)
-  const archName = data.architectName || "Arch. Maria Santos, UAP";
-  drawText(archName.toUpperCase(), 100, 285.0, 8.5, true);
-  drawText(data.architectPRC || "PRC-0045211", 80, 260.0, 7.5, false);
-  drawText(data.architectPTR || "PTR-ST-2026-004", 80, 245.0, 7.5, false);
-
-  // Box 5: Applicant Signature: moved higher (+5px)
-  if (data.applicantSignature) {
-    await embedSignatureImage(doc, p1, data.applicantSignature, 80, 200.0, 110, 30);
+  if (!appNo && !appStreet && data.applicantAddress) {
+    const addrParts = data.applicantAddress.split(",").map(s => s.trim());
+    if (addrParts.length > 0) {
+      const firstPart = addrParts[0];
+      const numMatch = firstPart.match(/^(\d+[\w\-\/]*)\s+(.*)$/);
+      if (numMatch) {
+        appNo = numMatch[1];
+        appStreet = numMatch[2];
+      } else {
+        appStreet = firstPart;
+      }
+    }
+    if (addrParts.length > 1 && !appBrgy) appBrgy = addrParts[1];
+    if (addrParts.length > 2 && (!appCity || appCity === "Sto. Tomas")) appCity = addrParts.slice(2).join(", ");
   }
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 100, 200.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 80, 173.0, 7.5, false);
 
-  // Page 2 Box 7: With My Consent (Lot Owner)
+  drawText(appNo || "123", 95.0, 658.0, 7.5, false, 8);
+  drawText(appStreet || "Rizal St.", 155.0, 658.0, 7.5, false, 18);
+  drawText(appBrgy || "Poblacion", 250.0, 658.0, 7.5, false, 16);
+  drawText(appCity || "Sto. Tomas, Pampanga", 340.0, 658.0, 7.5, false, 18);
+  drawText(data.applicantPhone || "0917-123-4567", 488.0, 671.5, 7.5, true);
+
+  // Location of Installation
+  drawText(data.lotNo || "12", 198.0, 645.0, 7.5, true, 8);
+  drawText(data.blockNo || "4", 276.0, 645.0, 7.5, true, 6);
+  drawText(data.tctNo || "TCT-889977-P", 348.0, 645.0, 7.5, true, 16);
+  drawText(data.taxDecNo || "TD-2026-004455", 492.0, 645.0, 7.5, false, 16);
+
+  drawText(data.projectAddress || data.installationStreet || "Lot 12, Blk 4, McArthur Hwy", 70.0, 626.5, 7.5, false, 28);
+  drawText(data.installationBarangay || data.barangay || "Poblacion", 260.0, 626.5, 7.5, true, 18);
+  drawText(data.installationCity || data.city || data.municipality || "Sto. Tomas, Pampanga", 435.0, 626.5, 7.5, false, 24);
+
+  // Scope of Work Checkboxes
+  const scopeLower = (data.signScopeOfWork || data.scopeOfWork || "New Construction").toLowerCase();
+  if (scopeLower.includes("erection")) {
+    drawCheck(50.2, 598.1);
+  } else if (scopeLower.includes("addition")) {
+    drawCheck(50.2, 588.9);
+  } else if (scopeLower.includes("alteration")) {
+    drawCheck(50.2, 579.7);
+  } else if (scopeLower.includes("renovation")) {
+    drawCheck(206.0, 607.5);
+  } else if (scopeLower.includes("conversion")) {
+    drawCheck(206.0, 598.1);
+  } else if (scopeLower.includes("repair")) {
+    drawCheck(206.0, 588.9);
+  } else if (scopeLower.includes("moving")) {
+    drawCheck(206.0, 579.7);
+  } else if (scopeLower.includes("raising")) {
+    drawCheck(357.0, 607.5);
+  } else if (scopeLower.includes("demolition")) {
+    drawCheck(357.0, 598.1);
+  } else if (scopeLower.includes("accessory")) {
+    drawCheck(357.0, 588.9);
+  } else if (scopeLower.includes("other")) {
+    drawCheck(357.0, 579.7);
+    drawText(data.signScopeOthers || data.scopeOthers || "CUSTOM", 445.0, 580.0, 7.0, false);
+  } else {
+    // Default to New Construction
+    drawCheck(50.2, 607.5);
+  }
+
+  // Type of Display Checkboxes
+  const sDisplay = (data.signDisplayType || "").toLowerCase();
+  if (sDisplay.includes("double")) {
+    drawCheck(287.5, 559.0);
+  } else if (sDisplay.includes("multi")) {
+    drawCheck(434.5, 558.0);
+  } else {
+    drawCheck(156.5, 559.0); // 1. Single Face
+  }
+
+  const sMedium = (data.signDisplayMedium || data.signMaterial || data.signType || "").toLowerCase();
+  if (sMedium.includes("neon")) {
+    drawCheck(50.5, 550.0);
+  } else if (sMedium.includes("painted")) {
+    drawCheck(287.5, 550.0);
+  } else if (sMedium.includes("other")) {
+    drawCheck(434.5, 550.0);
+  } else {
+    drawCheck(156.5, 550.0); // 2. Illuminated (Default)
+  }
+
+  // Type of Installation Checkboxes
+  const sInstall = (data.signInstallationType || data.signType || "").toLowerCase();
+  if (sInstall.includes("projecting")) {
+    drawCheck(50.5, 522.5); // 2. Business Sign, Projecting Type
+  } else if (sInstall.includes("business") && sInstall.includes("ground")) {
+    drawCheck(50.5, 513.0); // 3. Business Sign, Ground Type
+  } else if (sInstall.includes("temporary")) {
+    drawCheck(288.0, 531.0); // 4. Business Sign, Temporary
+  } else if (sInstall.includes("advertising") && sInstall.includes("ground")) {
+    drawCheck(288.0, 522.0); // 5. Advertising Sign, Ground Type
+  } else if (sInstall.includes("advertising") && sInstall.includes("wall")) {
+    drawCheck(288.0, 513.0); // 6. Advertising Sign, Wall Type
+  } else if (sInstall.includes("roof") || (sInstall.includes("advertising") && sInstall.includes("projecting"))) {
+    drawCheck(434.5, 531.0); // 7. Advertising Sign, Wall Type / Projecting
+  } else if (sInstall.includes("advertising") && sInstall.includes("other")) {
+    drawCheck(434.5, 523.0); // 8. Advertising Sign, Other
+  } else {
+    drawCheck(50.5, 531.0); // 1. Business Sign, Wall Type
+  }
+
+  // Display Size / Dimensions
+  const rawDim = data.signDimensions || "";
+  let lenVal = data.signLength || "";
+  let widVal = data.signWidth || "";
+  let areaVal = data.signArea || "";
+  if (!lenVal || !widVal) {
+    const wMatch = rawDim.match(/([\d.]+)\s*m?\s*(?:width|w)/i);
+    const hMatch = rawDim.match(/([\d.]+)\s*m?\s*(?:height|h|length|l)/i);
+    if (hMatch) lenVal = hMatch[1];
+    if (wMatch) widVal = wMatch[1];
+  }
+  if (!lenVal) lenVal = "3.00";
+  if (!widVal) widVal = "1.50";
+  if (!areaVal) areaVal = (parseFloat(lenVal) * parseFloat(widVal)).toFixed(2);
+
+  drawText(lenVal, 160.0, 503.0, 7.5, true);
+  drawText(widVal, 305.0, 503.0, 7.5, true);
+  drawText(areaVal, 455.0, 503.0, 7.5, true);
+
+  // Box 2: Accompanying Documents checklist (NBC Form B-07)
+  const isDocTct = data.signDocTct !== undefined ? data.signDocTct : true;
+  const isDocLease = data.signDocContractOfLease !== undefined ? data.signDocContractOfLease : Boolean(data.lotOwnerConsent || data.lotOwnerName);
+  const isDocTaxDec = data.signDocTaxDeclaration !== undefined ? data.signDocTaxDeclaration : true;
+  const isDocLotPlan = data.signDocLotPlan !== undefined ? data.signDocLotPlan : true;
+  const isDocSignPlans = data.signDocSignPlansStructural !== undefined ? data.signDocSignPlansStructural : true;
+  const isDocSpecsCost = data.signDocSpecsCostEstimates !== undefined ? data.signDocSpecsCostEstimates : true;
+
+  if (isDocTct) drawCheck(33.0, 458.5);
+  if (isDocLease) drawCheck(33.0, 449.6);
+  if (isDocTaxDec) drawCheck(33.0, 431.8);
+  if (isDocLotPlan) drawCheck(297.5, 458.5);
+  if (isDocSignPlans) drawCheck(297.5, 449.6);
+  if (isDocSpecsCost) drawCheck(298.0, 430.8);
+
+
+  // ==========================================
+  // Box 3: Design Professional, Plans and Specification
+  // ==========================================
+  const archName = (data.architectName || data.signDesignerName || "ARCH. MARIA ELENA SANTOS, UAP").toUpperCase();
+  const archW = fontBold.widthOfTextAtSize(archName, 8.0);
+  const archX = Math.max(30.0, 112.6 - archW / 2);
+  drawText(archName, archX, 325.5, 8.0, true);
+
+  const archSig = data.architectSignature || data.signDesignerSignature;
+  if (archSig) {
+    const sigW = 90;
+    const sigH = 22;
+    const sigX = Math.max(30.0, 112.6 - sigW / 2);
+    await embedSignatureImage(doc, p1, archSig, sigX, 326.0, sigW, sigH);
+  }
+  drawText(data.architectSignedDate || data.submissionDate || "Sep 26, 2026", 228.0, 325.5, 7.0, false);
+  drawText(data.architectAddress || data.applicantAddress || "Sto. Tomas, Pampanga", 75.0, 292.5, 7.2, false, 32);
+  drawText(data.architectPRC || "0045211", 68.0, 276.0, 7.2, false);
+  drawText(data.architectPRCValidity || "2028-09-15", 188.0, 276.0, 7.2, false);
+  drawText(data.architectPTR || "PTR-ST-665544", 68.0, 266.0, 7.2, false);
+  drawText(data.architectPTRIssued || "Jan 08, 2026", 202.0, 266.0, 7.2, false);
+  drawText(data.architectPTRIssuedAt || "Sto. Tomas", 68.0, 256.0, 7.2, false);
+  drawText(data.architectTIN || "234-567-890-000", 185.0, 256.0, 7.2, false);
+
+  // ==========================================
+  // Box 4: Full-Time Inspector and Supervisor of Construction Works
+  // ==========================================
+  const isSupervisorSame = Boolean(data.sameAsDesignSignSupervisor || data.sameAsDesignArchitect || data.sameAsDesignCivilEngineer);
+  const supName = (
+    data.signSupervisorName ||
+    data.supervisorCivilEngineerName ||
+    data.supervisorArchitectName ||
+    data.civilEngineerName ||
+    data.constructionSupervisorName ||
+    (isSupervisorSame ? archName : "") ||
+    "ENGR. ROBERTO CRUZ, CE"
+  ).toUpperCase();
+  const supW = fontBold.widthOfTextAtSize(supName, 8.0);
+  const supX = Math.max(318.0, 401.6 - supW / 2);
+  drawText(supName, supX, 330.0, 8.0, true);
+
+  const supSig = data.signSupervisorSignature ||
+    data.supervisorCivilEngineerSignature ||
+    data.supervisorArchitectSignature ||
+    data.civilEngineerSignature ||
+    (isSupervisorSame ? archSig : undefined);
+  if (supSig) {
+    const sigW = 90;
+    const sigH = 22;
+    const sigX = Math.max(318.0, 401.6 - sigW / 2);
+    await embedSignatureImage(doc, p1, supSig, sigX, 330.5, sigW, sigH);
+  }
+  drawText(data.signSupervisorSignedDate || data.supervisorCivilEngineerSignedDate || data.supervisorArchitectSignedDate || data.submissionDate || "Sep 26, 2026", 516.0, 330.0, 6.8, false);
+  drawText(data.signSupervisorAddress || data.supervisorCivilEngineerAddress || data.supervisorArchitectAddress || data.civilEngineerAddress || (isSupervisorSame ? (data.architectAddress || "Sto. Tomas, Pampanga") : undefined) || "Sto. Tomas, Pampanga", 360.0, 297.5, 7.2, false, 32);
+  drawText(data.signSupervisorPRC || data.supervisorCivilEngineerPRC || data.supervisorArchitectPRC || data.civilEngineerPRC || (isSupervisorSame ? (data.architectPRC || "0045211") : undefined) || "0078923", 355.0, 280.5, 7.2, false);
+  drawText(data.signSupervisorPRCValidity || data.supervisorCivilEngineerPRCValidity || data.supervisorArchitectPRCValidity || data.civilEngineerPRCValidity || (isSupervisorSame ? (data.architectPRCValidity || "2028-09-15") : undefined) || "2028-11-20", 482.0, 280.5, 7.2, false);
+  drawText(data.signSupervisorPTR || data.supervisorCivilEngineerPTR || data.supervisorArchitectPTR || data.civilEngineerPTR || (isSupervisorSame ? (data.architectPTR || "PTR-ST-665544") : undefined) || "PTR-ST-2026-001", 355.0, 270.5, 7.2, false);
+  drawText(data.signSupervisorPTRIssued || data.supervisorCivilEngineerPTRIssued || data.supervisorArchitectPTRIssued || data.civilEngineerPTRIssued || (isSupervisorSame ? (data.architectPTRIssued || "Jan 08, 2026") : undefined) || "Jan 10, 2026", 495.0, 270.5, 7.2, false);
+  drawText(data.signSupervisorPTRIssuedAt || data.supervisorCivilEngineerPTRIssuedAt || data.supervisorArchitectPTRIssuedAt || data.civilEngineerPTRIssuedAt || (isSupervisorSame ? (data.architectPTRIssuedAt || "Sto. Tomas") : undefined) || "Sto. Tomas", 355.0, 260.5, 7.2, false);
+  drawText(data.signSupervisorTIN || data.supervisorCivilEngineerTIN || data.supervisorArchitectTIN || data.civilEngineerTIN || (isSupervisorSame ? (data.architectTIN || "234-567-890-000") : undefined) || "123-456-789-000", 475.0, 260.5, 7.2, false);
+
+  // ==========================================
+  // Box 5: Applicant
+  // ==========================================
+  const appFullName = (data.applicantName || `${firstName} ${middleName ? middleName + " " : ""}${lastName}`).toUpperCase();
+  const appW = fontBold.widthOfTextAtSize(appFullName, 8.5);
+  const appX = Math.max(230.0, 308.0 - appW / 2);
+  drawText(appFullName, appX, 209.5, 8.5, true);
+
+  if (data.applicantSignature) {
+    const sigW = 90;
+    const sigH = 22;
+    const sigX = Math.max(230.0, 308.0 - sigW / 2);
+    await embedSignatureImage(doc, p1, data.applicantSignature, sigX, 210.0, sigW, sigH);
+  }
+  drawText(data.applicantSignedDate || data.submissionDate || "Sep 26, 2026", 398.0, 209.5, 7.0, false);
+  drawText(data.applicantAddress || "123 Rizal St., Poblacion, Sto. Tomas, Pampanga", 72.0, 180.5, 7.5, false, 55);
+
+  const rawCtc = safeText(data.applicantCtcNo || data.govIdNo || "CTC-2026-00192");
+  let cleanCtc = rawCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+  if (!cleanCtc) cleanCtc = rawCtc;
+  if (cleanCtc.length > 9) cleanCtc = cleanCtc.slice(0, 9);
+  drawText(cleanCtc || "2026-00192", 72.0, 171.0, 6.8, false);
+  drawText(data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 10, 2026", 222.0, 171.0, 6.8, false);
+  drawText(data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", 358.0, 171.0, 6.8, false);
+  drawText(data.applicantTIN || "123-456-789-000", 490.0, 171.0, 6.8, false);
+
+  // Page 2: Box 6 (Building Owner) & Box 7 (With My Consent: Lot Owner) & Box 8 (Processing & Evaluation)
   const p2 = doc.getPageCount() > 1 ? doc.getPage(1) : null;
-  if (p2 && (data.lotOwnerConsent || data.lotOwnerName)) {
-    const lotName = safeText(data.lotOwnerName || "Dave Sicat").toUpperCase().trim();
-    const lotNameW = fontBold.widthOfTextAtSize(lotName, 8.5);
-    const lotNameX = Math.max(360.0, 455.0 - lotNameW / 2);
-    p2.drawText(lotName, { x: lotNameX, y: 865.5, size: 8.5, font: fontBold, color: darkNavy });
+  if (p2) {
+    // Box 6: Building Owner
+    const bldgOwnerName = safeText(
+      data.buildingOwnerName ||
+      data.applicantName ||
+      (data.applicantFirstName ? `${data.applicantFirstName} ${data.applicantMiddleName ? data.applicantMiddleName + " " : ""}${data.applicantLastName || ""}`.trim() : "") ||
+      "JUAN DELA CRUZ"
+    ).toUpperCase().trim();
+    const bldgOwnerW = fontBold.widthOfTextAtSize(bldgOwnerName, 8.5);
+    const bldgOwnerX = Math.max(95.0, 164.3 - bldgOwnerW / 2);
+    p2.drawText(bldgOwnerName, { x: bldgOwnerX, y: 866.5, size: 8.5, font: fontBold, color: darkNavy });
 
-    if (data.lotOwnerSignature) {
-      const sigW = 100;
-      const sigH = 20;
-      const sigX = Math.max(360.0, 455.0 - sigW / 2);
-      await embedSignatureImage(doc, p2, data.lotOwnerSignature, sigX, 863.0, sigW, sigH);
+    const bldgOwnerSig = data.buildingOwnerSignature || data.applicantSignature;
+    if (bldgOwnerSig) {
+      const sigW = 90;
+      const sigH = 22;
+      const sigX = Math.max(95.0, 164.3 - sigW / 2);
+      await embedSignatureImage(doc, p2, bldgOwnerSig, sigX, 864.5, sigW, sigH);
+    }
+    p2.drawText(data.buildingOwnerSignedDate || data.applicantSignedDate || data.submissionDate || "Jan 08, 2026", { x: 145.0, y: 844.5, size: 7.2, font: fontRegular, color: darkNavy });
+    p2.drawText(safeText(data.buildingOwnerAddress || data.applicantAddress || "123 Rizal St., Poblacion, Sto. Tomas"), { x: 65.0, y: 823.5, size: 7.2, font: fontRegular, color: darkNavy });
+
+    const rawBldgCtc = safeText(data.buildingOwnerCtcNo || data.applicantCtcNo || data.govIdNo || "2026-00192").trim();
+    let cleanBldgCtc = rawBldgCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+    if (!cleanBldgCtc) cleanBldgCtc = rawBldgCtc;
+    p2.drawText((cleanBldgCtc || "2026-00192").slice(0, 8), { x: 68.0, y: 806.5, size: 6.5, font: fontRegular, color: darkNavy });
+    p2.drawText(data.buildingOwnerCtcDateIssued || data.applicantGovIdDateIssued || data.govIdDateIssued || "Jan 10, 2026", { x: 158.0, y: 806.5, size: 6.8, font: fontRegular, color: darkNavy });
+    p2.drawText(data.buildingOwnerCtcPlaceIssued || data.applicantGovIdPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas", { x: 263.0, y: 806.5, size: 6.8, font: fontRegular, color: darkNavy });
+
+    // Box 7: With My Consent (Lot Owner)
+    if (data.lotOwnerConsent !== false && (data.lotOwnerConsent || data.lotOwnerName)) {
+      const lotName = safeText(data.lotOwnerName || "DAVE SICAT").toUpperCase().trim();
+      const lotNameW = fontBold.widthOfTextAtSize(lotName, 8.5);
+      const lotNameX = Math.max(387.0, 456.5 - lotNameW / 2);
+      p2.drawText(lotName, { x: lotNameX, y: 864.5, size: 8.5, font: fontBold, color: darkNavy });
+
+      if (data.lotOwnerSignature) {
+        const sigW = 90;
+        const sigH = 22;
+        const sigX = Math.max(387.0, 456.5 - sigW / 2);
+        await embedSignatureImage(doc, p2, data.lotOwnerSignature, sigX, 862.5, sigW, sigH);
+      }
+
+      p2.drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", { x: 440.0, y: 842.5, size: 7.2, font: fontRegular, color: darkNavy });
+      p2.drawText(safeText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga"), { x: 358.0, y: 822.5, size: 7.2, font: fontRegular, color: darkNavy });
+
+      const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "2026-778899").trim();
+      let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
+      if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
+      p2.drawText((cleanLotCtc || "2026-7788").slice(0, 8), { x: 360.0, y: 806.0, size: 6.5, font: fontRegular, color: darkNavy });
+      p2.drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2026", { x: 444.0, y: 806.0, size: 6.8, font: fontRegular, color: darkNavy });
+      p2.drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", { x: 544.0, y: 806.0, size: 6.8, font: fontRegular, color: darkNavy });
     }
 
-    p2.drawText(data.lotOwnerSignedDate || data.submissionDate || "Jan 08, 2026", { x: 422.0, y: 845.0, size: 7.2, font: fontRegular, color: darkNavy });
-    p2.drawText(data.lotOwnerAddress || data.projectAddress || "153 Sitio Visitas, Sto. Tomas, Pampanga", { x: 380.0, y: 824.0, size: 7.2, font: fontRegular, color: darkNavy });
+    // Box 8: TO BE ACCOMPLISHED BY THE PROCESSING AND EVALUATION DIVISION
+    // Auto-generated when admin has confirmed payment / application is paid
+    const isPaid = Boolean(
+      data.isPaid ||
+      data.paymentStatus === "paid" ||
+      data.isReleased ||
+      data.officialReceiptNo ||
+      data.feePaid
+    );
 
-    const rawLotCtc = (data.lotOwnerGovIdNo || data.lotOwnerCtcNo || "PRC-ID-00987654").trim();
-    let cleanLotCtc = rawLotCtc.replace(/^[a-zA-Z\s-]+/g, "").trim();
-    if (!cleanLotCtc) cleanLotCtc = rawLotCtc;
-    if (cleanLotCtc.length > 9) cleanLotCtc = cleanLotCtc.slice(0, 9);
-    const lotCtcFontSize = cleanLotCtc.length > 8 ? 5.5 : cleanLotCtc.length > 6 ? 6.0 : 6.5;
-    p2.drawText(cleanLotCtc, { x: 325.0, y: 807.5, size: lotCtcFontSize, font: fontRegular, color: darkNavy });
+    const feePaid = safeText(data.feePaid || (isPaid ? "P 1,250.00" : "")).trim();
+    const datePaid = safeText(data.datePaid || data.paymentDate || (isPaid ? data.submissionDate || "Jan 15, 2026" : "")).trim();
+    const orNo = safeText(data.officialReceiptNo || data.paymentReference || (isPaid ? "OR-2026-94812" : "")).trim();
+    const dateIssued = safeText(data.dateIssued || data.dateReleased || (isPaid ? data.submissionDate || "Jan 16, 2026" : "")).trim();
 
-    p2.drawText(data.lotOwnerGovIdDateIssued || "Jan 10, 2024", { x: 405.0, y: 807.5, size: 6.2, font: fontRegular, color: darkNavy });
-    p2.drawText(data.lotOwnerGovIdPlaceIssued || "Sto. Tomas", { x: 495.0, y: 807.5, size: 6.2, font: fontRegular, color: darkNavy });
+    if (feePaid) {
+      p2.drawText(feePaid, { x: 82.0, y: 755.0, size: 7.2, font: fontBold, color: darkNavy });
+    }
+    if (datePaid) {
+      p2.drawText(datePaid, { x: 200.0, y: 755.0, size: 7.2, font: fontBold, color: darkNavy });
+    }
+    if (orNo) {
+      p2.drawText(orNo, { x: 358.0, y: 755.0, size: 7.2, font: fontBold, color: darkNavy });
+    }
+    if (dateIssued) {
+      p2.drawText(dateIssued, { x: 510.0, y: 755.0, size: 7.2, font: fontBold, color: darkNavy });
+    }
   }
 
   return await doc.saveAsBase64({ dataUri: false });
