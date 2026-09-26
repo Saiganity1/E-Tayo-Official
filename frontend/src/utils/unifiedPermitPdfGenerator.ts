@@ -5245,10 +5245,44 @@ export async function generateTemporaryServicePermitPdf(data: UnifiedPermitFormD
     drawTextP2(formatDisplayDate(rawDateIssued), 395.0, 796.5, 7.5, false);
 
     // Box 5 on Page 1 (To be accomplished by the Building Official)
-    drawTextP2(applicantFull.toUpperCase(), 270.0, 651.0, 8.5, true, 38);
-    drawTextP2(applicantAddr, 175.0, 632.0, 7.5, false, 50);
-    drawTextP2(data.temporaryServiceDuration || (data as any).ptscDuration || "90", 440.0, 575.0, 8.0, true);
-    drawTextP2(formatDisplayDate(data.proposedStartDate || data.temporaryServiceStartDate || (data as any).ptscStartDate || "Oct 01, 2026"), 85.0, 556.0, 8.0, true);
+    // 1. Grantee: sits cleanly on underline (starts at x=264.0, baseline y=652.0)
+    drawTextP2(applicantFull.toUpperCase(), 264.0, 652.0, 8.5, true, 38);
+    // 2. Postal address: sits cleanly on underline (starts at x=172.0, baseline y=633.0)
+    drawTextP2(applicantAddr, 172.0, 633.0, 8.0, false, 50);
+    // 3. Duration: centered on underline between "period of" and "days" (baseline y=576.0)
+    drawTextP2(data.temporaryServiceDuration || (data as any).ptscDuration || "90", 440.0, 576.0, 8.5, true);
+    // 4. Start date: sits cleanly on underline after "date " without colliding (baseline y=557.0)
+    drawTextP2(formatDisplayDate(data.proposedStartDate || data.temporaryServiceStartDate || (data as any).ptscStartDate || "Oct 01, 2026"), 80.0, 557.0, 8.0, true);
+
+    // 5. Box 5 Inspected By: Electrical Inspector of the Building Office
+    const inspectorName = data.cfeiInspectorName || (data as any).electricalInspectorName || "ENGR. GIOVANNI L. AQUINO";
+    const inspectorPrc = (data as any).electricalInspectorPrc || "PRC No. 0042189 / Validity: Nov 20, 2028";
+    drawTextP2(inspectorName, 95.0, 370.0, 8.5, true);
+    drawTextP2(inspectorPrc, 325.0, 370.0, 7.5, false);
+
+    // 6. Box 5 Approved By: Clean up colliding template underscores and render Building Official cleanly
+    p2.drawRectangle({
+      x: 355.0,
+      y: 165.0,
+      width: 160.0,
+      height: 48.0,
+      color: rgb(1, 1, 1),
+    });
+    const bldgOfficialName = data.buildingOfficialName || "Engr. GILBERT B. CRUZ";
+    p2.drawText(bldgOfficialName, {
+      x: 375.0,
+      y: 190.0,
+      size: 9.0,
+      font: fontBold,
+      color: darkNavy,
+    });
+    p2.drawText("Building Official", {
+      x: 395.0,
+      y: 177.0,
+      size: 8.0,
+      font: fontRegular,
+      color: darkNavy,
+    });
   }
 
   return await doc.saveAsBase64({ dataUri: false });

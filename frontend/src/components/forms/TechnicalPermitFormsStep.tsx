@@ -11538,6 +11538,25 @@ export default function TechnicalPermitFormsStep({
                             Granted to: <strong>{compiledFullName}</strong> | Postal Address: <strong>{`${ptscApplicantNo ? ptscApplicantNo + ' ' : ''}${ptscApplicantStreet}, ${ptscApplicantBarangay}, ${ptscApplicantCity}`}</strong>
                           </span>
                         </div>
+
+                        {/* Municipal Sign-Offs Preview */}
+                        <div style={{ marginTop: "0.75rem", display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "0.5rem", padding: "0.75rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                          <div>
+                            <span style={{ fontSize: "0.70rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", display: "block" }}>Inspected By (Electrical Inspector)</span>
+                            <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e293b", display: "block" }}>ENGR. GIOVANNI L. AQUINO</span>
+                            <span style={{ fontSize: "0.68rem", color: "#64748b" }}>PRC No. 0042189 • Validity: Nov 20, 2028</span>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: "0.70rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", display: "block" }}>Recommending Approval</span>
+                            <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e293b", display: "block" }}>ARCH. NORBERT B. LAGMAN</span>
+                            <span style={{ fontSize: "0.68rem", color: "#64748b" }}>Chief, Processing & Evaluation Div.</span>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: "0.70rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", display: "block" }}>Approved By (Building Official)</span>
+                            <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e293b", display: "block" }}>Engr. GILBERT B. CRUZ</span>
+                            <span style={{ fontSize: "0.68rem", color: "#64748b" }}>Municipal Building Official</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
