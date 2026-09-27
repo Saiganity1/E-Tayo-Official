@@ -1271,6 +1271,31 @@ export default function StaffEvaluatePage() {
       remarks: decisionNotes || shortSummary,
     };
 
+    try {
+      const curId = String(app.id || "");
+      const lowerId = curId.toLowerCase();
+      localStorage.setItem(`etayo_status_${curId}`, "approved");
+      localStorage.setItem(`etayo_status_${lowerId}`, "approved");
+      localStorage.setItem(`etayo_approved_${curId}`, "true");
+      localStorage.setItem(`etayo_approved_${lowerId}`, "true");
+      if (orderOfPaymentNo) {
+        localStorage.setItem(`etayo_op_${curId}`, orderOfPaymentNo);
+        localStorage.setItem(`etayo_op_${lowerId}`, orderOfPaymentNo);
+      }
+      if (totalFees) {
+        localStorage.setItem(`etayo_fees_${curId}`, String(totalFees));
+        localStorage.setItem(`etayo_fees_${lowerId}`, String(totalFees));
+      }
+      if (issuedDateFormatted) {
+        localStorage.setItem(`etayo_date_approved_${curId}`, issuedDateFormatted);
+        localStorage.setItem(`etayo_date_approved_${lowerId}`, issuedDateFormatted);
+      }
+      if (decisionNotes || shortSummary) {
+        localStorage.setItem(`etayo_remarks_${curId}`, decisionNotes || shortSummary);
+        localStorage.setItem(`etayo_remarks_${lowerId}`, decisionNotes || shortSummary);
+      }
+    } catch (e) {}
+
     await updateApplication(updatedApp as any);
 
     // 1. Automatically dispatch official approval notice & Order of Payment with fee amount to applicant

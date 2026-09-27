@@ -107,15 +107,40 @@ export default function ApplicantDashboard() {
     const email = (userEmail || "").toLowerCase().trim();
     const name = (userName || "").toLowerCase().trim();
 
-    return (applications || []).filter(app => {
-      const appEmail = (app.applicantEmail || "").toLowerCase().trim();
-      const appName = (app.applicantName || "").toLowerCase().trim();
+    return (applications || [])
+      .filter(app => {
+        const appEmail = (app.applicantEmail || "").toLowerCase().trim();
+        const appName = (app.applicantName || "").toLowerCase().trim();
 
-      const matchEmail = Boolean(email && appEmail && (appEmail === email || appEmail.includes(email)));
-      const matchName = Boolean(name && appName && (appName === name || appName.includes(name)));
+        const matchEmail = Boolean(email && appEmail && (appEmail === email || appEmail.includes(email)));
+        const matchName = Boolean(name && appName && (appName === name || appName.includes(name)));
 
-      return matchEmail || matchName || (name !== "applicant" && appName === name);
-    });
+        return matchEmail || matchName || (name !== "applicant" && appName === name);
+      })
+      .map(app => {
+        const id = String(app.id || "");
+        const lowerId = id.toLowerCase();
+        const isPaid = typeof window !== "undefined" && (
+          localStorage.getItem(`etayo_paid_${id}`) === "true" ||
+          localStorage.getItem(`etayo_paid_${lowerId}`) === "true" ||
+          (app as any)?.paymentStatus === "paid" ||
+          app.status === "released" ||
+          Boolean((app as any)?.isReleased)
+        );
+        const isApproved = typeof window !== "undefined" && (
+          isPaid ||
+          localStorage.getItem(`etayo_approved_${id}`) === "true" ||
+          localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
+          localStorage.getItem(`etayo_status_${id}`) === "approved" ||
+          localStorage.getItem(`etayo_status_${lowerId}`) === "approved" ||
+          app.status === "approved"
+        );
+        const effectiveStatus = isPaid ? "released" : (isApproved ? "approved" : app.status);
+        return {
+          ...app,
+          status: effectiveStatus
+        };
+      });
   }, [applications, userEmail, userName]);
 
   // Exclude all archived applications so they NEVER appear in Recent Applications

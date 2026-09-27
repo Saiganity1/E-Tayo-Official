@@ -329,20 +329,44 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             setAppData((curr: any) => {
               const base = curr || localFound || {};
               const id = String(serverApp.id);
-              const isPaidLocal = typeof window !== "undefined" && (localStorage.getItem(`etayo_paid_${id}`) === "true" || localStorage.getItem(`etayo_paid_${id.toLowerCase()}`) === "true");
-              const isConfirmedLocal = typeof window !== "undefined" && (localStorage.getItem(`etayo_payment_confirmed_${id}`) === "true" || localStorage.getItem(`etayo_payment_confirmed_${id.toLowerCase()}`) === "true");
-              const localReceipt = typeof window !== "undefined" ? (localStorage.getItem(`etayo_receipt_${id}`) || localStorage.getItem(`etayo_receipt_${id.toLowerCase()}`)) : null;
+              const lowerId = id.toLowerCase();
+              const isPaidLocal = typeof window !== "undefined" && (localStorage.getItem(`etayo_paid_${id}`) === "true" || localStorage.getItem(`etayo_paid_${lowerId}`) === "true");
+              const isConfirmedLocal = typeof window !== "undefined" && (localStorage.getItem(`etayo_payment_confirmed_${id}`) === "true" || localStorage.getItem(`etayo_payment_confirmed_${lowerId}`) === "true");
+              const localReceipt = typeof window !== "undefined" ? (localStorage.getItem(`etayo_receipt_${id}`) || localStorage.getItem(`etayo_receipt_${lowerId}`)) : null;
               const localRef = typeof window !== "undefined" ? (localStorage.getItem(`etayo_payment_ref_${id}`) || localStorage.getItem(`etayo_or_${id}`)) : null;
+              const isApprovedLocal = typeof window !== "undefined" && (
+                isPaidLocal ||
+                localStorage.getItem(`etayo_approved_${id}`) === "true" ||
+                localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
+                localStorage.getItem(`etayo_status_${id}`) === "approved" ||
+                localStorage.getItem(`etayo_status_${lowerId}`) === "approved" ||
+                base.status === "approved" ||
+                serverApp.status === "approved"
+              );
+              const localOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${id}`) || localStorage.getItem(`etayo_op_${lowerId}`)) : null;
+              const localFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${id}`) || localStorage.getItem(`etayo_fees_${lowerId}`)) : null;
+              const localDateApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${id}`) || localStorage.getItem(`etayo_date_approved_${lowerId}`)) : null;
+              const localRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${id}`) || localStorage.getItem(`etayo_remarks_${lowerId}`)) : null;
+
+              const effectiveStatus = isPaidLocal 
+                ? "released" 
+                : (isApprovedLocal 
+                    ? "approved" 
+                    : (serverApp.status && serverApp.status !== "pending" ? serverApp.status : (base.status || serverApp.status)));
 
               return {
                 ...base,
                 ...serverApp,
-                status: (isPaidLocal || base.status === "released") ? "released" : serverApp.status,
-                paymentStatus: (isPaidLocal || serverApp.paymentStatus === "paid" || base.paymentStatus === "paid") ? "paid" : (serverApp.paymentStatus || base.paymentStatus),
+                status: effectiveStatus,
+                paymentStatus: (isPaidLocal || serverApp.paymentStatus === "paid" || base.paymentStatus === "paid") ? "paid" : (serverApp.paymentStatus || base.paymentStatus || (isApprovedLocal ? "awaiting_payment" : undefined)),
                 userConfirmedPayment: isConfirmedLocal || isPaidLocal || Boolean(localReceipt) || base.userConfirmedPayment || serverApp.userConfirmedPayment,
                 paymentReference: localRef || serverApp.paymentReference || base.paymentReference,
                 paymentProofUrl: localReceipt || serverApp.paymentProofUrl || base.paymentProofUrl,
-                officialReceiptNo: localRef || serverApp.officialReceiptNo || base.officialReceiptNo
+                officialReceiptNo: localRef || serverApp.officialReceiptNo || base.officialReceiptNo,
+                orderOfPaymentNo: localOp || serverApp.orderOfPaymentNo || base.orderOfPaymentNo,
+                assessedFees: localFees ? Number(localFees) : (serverApp.assessedFees || base.assessedFees),
+                dateApproved: localDateApproved || serverApp.dateApproved || base.dateApproved || (isApprovedLocal ? new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : undefined),
+                remarks: localRemarks || serverApp.remarks || base.remarks
               };
             });
           }
@@ -833,13 +857,25 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     );
   }, [appData, appId]);
 
-  const isApproved = Boolean(appData?.status === "approved" || appData?.status === "released" || isActuallyReleased);
+  const curTrackId = String(appData?.id || appId || "");
+  const lowerTrackId = curTrackId.toLowerCase();
+  const isApproved = Boolean(
+    appData?.status === "approved" || 
+    appData?.status === "released" || 
+    isActuallyReleased ||
+    (typeof window !== "undefined" && (
+      localStorage.getItem(`etayo_approved_${curTrackId}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${lowerTrackId}`) === "true" ||
+      localStorage.getItem(`etayo_status_${curTrackId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${lowerTrackId}`) === "approved"
+    ))
+  );
 
   const getStatusDetails = (status: string) => {
     if (isActuallyReleased || status === "released") {
       return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle, label: "Permit Released", step: 4 };
     }
-    if (status === "approved") {
+    if (status === "approved" || isApproved) {
       if (paymentInfo.confirmed) {
         return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Payment Submitted (Under Review)", step: 4 };
       }
@@ -899,8 +935,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const formData: UnifiedPermitFormData = {
       ...activePresets,
       applicationNo: appData?.id || "APP-2026-6636",
-      status: appData?.status,
-      isApproved: appData?.status === "approved" || appData?.status === "released",
+      status: (isApproved && appData?.status !== "released") ? "approved" : appData?.status,
+      isApproved: appData?.status === "approved" || appData?.status === "released" || isApproved,
       buildingPermitNo: appData?.buildingPermitNo || (pTypeObj.matrix?.buildingPermit === 'required' || !pTypeObj ? `BP-${cleanSeq}` : undefined),
       permitNo: appData?.permitNo || `AP-${cleanSeq}`,
       architecturalPermitNo: appData?.architecturalPermitNo || `AP-${cleanSeq}`,
@@ -1430,7 +1466,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       )}
 
       {/* Standalone Top Card: APPLICATION APPROVED & ORDER OF PAYMENT / STAGE 2 UNLOCKED */}
-      {appData?.status === "approved" && !isActuallyReleased && (
+      {(appData?.status === "approved" || isApproved) && !isActuallyReleased && appData?.status !== "released" && (
         <div style={{
           background: isLC
             ? "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)"
@@ -1741,7 +1777,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               <div style={{ position: "absolute", left: "20px", top: "20px", bottom: "20px", width: "3px", background: "#e2e8f0", zIndex: 0 }}></div>
               
               {timelineSteps.map((step) => {
-                const isStep3Approved = step.num === 3 && (appData?.status === "approved" || appData?.status === "released" || isActuallyReleased);
+                const isStep3Approved = step.num === 3 && (appData?.status === "approved" || appData?.status === "released" || isActuallyReleased || isApproved);
                 const isActive = statusConfig.step === step.num && !isStep3Approved;
                 const isPassed = statusConfig.step > step.num || isStep3Approved;
                 

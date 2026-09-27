@@ -284,12 +284,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       
-      // If user is unauthenticated (e.g. Incognito or guest), never fetch or store private permit data
+      // If user is unauthenticated (e.g. Incognito or guest), clear active state but preserve persistent local storage
       if (!token) {
         setApplications([]);
-        try {
-          localStorage.removeItem("etayo_cached_applications");
-        } catch (e) {}
         
         // Only public fees are fetched for public users
         const feesRes = await fetch(`${API_BASE_URL}/fees`, { headers: { "Accept": "application/json" } }).catch(e => ({ ok: false, json: async () => [] }));
@@ -362,17 +359,34 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               Boolean((bApp as any).userConfirmedPayment)
             );
 
+            const isApprovedLocal = typeof window !== "undefined" && (
+              isPaidLocal ||
+              localStorage.getItem(`etayo_approved_${id}`) === "true" ||
+              localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
+              localStorage.getItem(`etayo_status_${id}`) === "approved" ||
+              localStorage.getItem(`etayo_status_${lowerId}`) === "approved" ||
+              foundCached?.status === "approved" ||
+              bApp.status === "approved"
+            );
+
             const cachedReceiptUrl = typeof window !== "undefined" 
               ? (localStorage.getItem(`etayo_receipt_${id}`) || localStorage.getItem(`etayo_receipt_${lowerId}`))
               : null;
 
-            if (foundCached) {
-              const effectiveStatus = isPaidLocal 
-                ? "released" 
-                : (bApp.status && bApp.status !== "pending" 
-                    ? bApp.status 
-                    : (foundCached.status || bApp.status));
+            const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${id}`) || localStorage.getItem(`etayo_op_${lowerId}`)) : null;
+            const storedFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${id}`) || localStorage.getItem(`etayo_fees_${lowerId}`)) : null;
+            const storedDateApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${id}`) || localStorage.getItem(`etayo_date_approved_${lowerId}`)) : null;
+            const storedRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${id}`) || localStorage.getItem(`etayo_remarks_${lowerId}`)) : null;
 
+            const effectiveStatus = isPaidLocal 
+              ? "released" 
+              : (isApprovedLocal 
+                  ? "approved" 
+                  : (bApp.status && bApp.status !== "pending" 
+                      ? bApp.status 
+                      : (foundCached?.status || bApp.status)));
+
+            if (foundCached) {
               const isApproved = effectiveStatus === "approved" || effectiveStatus === "released";
 
               return {
@@ -383,22 +397,27 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 paymentStatus: isPaidLocal ? "paid" : (bApp.paymentStatus || (foundCached as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : undefined)),
                 userConfirmedPayment: isConfirmedLocal,
                 officialReceiptNo: (bApp as any).officialReceiptNo || (foundCached as any).officialReceiptNo,
-                orderOfPaymentNo: (bApp as any).orderOfPaymentNo || (foundCached as any).orderOfPaymentNo,
-                assessedFees: (bApp as any).assessedFees || (foundCached as any).assessedFees,
-                dateApproved: (bApp as any).dateApproved || (foundCached as any).dateApproved || (isApproved ? ((bApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
+                orderOfPaymentNo: storedOp || (bApp as any).orderOfPaymentNo || (foundCached as any).orderOfPaymentNo,
+                assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (foundCached as any).assessedFees),
+                dateApproved: storedDateApproved || (bApp as any).dateApproved || (foundCached as any).dateApproved || (isApproved ? ((bApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
+                remarks: storedRemarks || bApp.remarks || foundCached.remarks,
                 trackingSteps: (bApp.trackingSteps && bApp.trackingSteps.length > 0) ? bApp.trackingSteps : foundCached.trackingSteps,
                 historyLog: (bApp.historyLog && bApp.historyLog.length > 0) ? bApp.historyLog : foundCached.historyLog,
                 paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl || (foundCached as any).paymentProofUrl
               };
             }
 
-            if (isConfirmedLocal || isPaidLocal) {
+            if (isConfirmedLocal || isPaidLocal || isApprovedLocal) {
               return {
                 ...bApp,
-                status: isPaidLocal ? "released" : bApp.status,
+                status: effectiveStatus,
                 isReleased: isPaidLocal || Boolean((bApp as any).isReleased),
-                paymentStatus: isPaidLocal ? "paid" : ((bApp as any).paymentStatus || "awaiting_verification"),
-                userConfirmedPayment: true,
+                paymentStatus: isPaidLocal ? "paid" : ((bApp as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : (isApprovedLocal ? "awaiting_payment" : undefined))),
+                userConfirmedPayment: isConfirmedLocal,
+                orderOfPaymentNo: storedOp || (bApp as any).orderOfPaymentNo,
+                assessedFees: storedFees ? Number(storedFees) : (bApp as any).assessedFees,
+                dateApproved: storedDateApproved || (bApp as any).dateApproved || (isApprovedLocal ? new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : undefined),
+                remarks: storedRemarks || bApp.remarks,
                 paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl
               };
             }
@@ -416,6 +435,42 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       } catch (e) {
         console.warn("Error merging local cached applications", e);
       }
+
+      // Guarantee all merged applications also reflect any approved or paid flags in localStorage
+      mergedApps = mergedApps.map((mApp) => {
+        const mId = mApp.id || "";
+        const mLower = mId.toLowerCase();
+        const mIsPaid = typeof window !== "undefined" && (
+          localStorage.getItem(`etayo_paid_${mId}`) === "true" ||
+          localStorage.getItem(`etayo_paid_${mLower}`) === "true" ||
+          (mApp as any)?.paymentStatus === "paid" ||
+          mApp.status === "released" ||
+          Boolean((mApp as any)?.isReleased)
+        );
+        const mIsApproved = typeof window !== "undefined" && (
+          mIsPaid ||
+          localStorage.getItem(`etayo_approved_${mId}`) === "true" ||
+          localStorage.getItem(`etayo_approved_${mLower}`) === "true" ||
+          localStorage.getItem(`etayo_status_${mId}`) === "approved" ||
+          localStorage.getItem(`etayo_status_${mLower}`) === "approved" ||
+          mApp.status === "approved"
+        );
+        const mOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${mId}`) || localStorage.getItem(`etayo_op_${mLower}`)) : null;
+        const mFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${mId}`) || localStorage.getItem(`etayo_fees_${mLower}`)) : null;
+        const mDateApp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${mId}`) || localStorage.getItem(`etayo_date_approved_${mLower}`)) : null;
+        const mRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${mId}`) || localStorage.getItem(`etayo_remarks_${mLower}`)) : null;
+
+        const mEffectiveStatus = mIsPaid ? "released" : (mIsApproved ? "approved" : mApp.status);
+
+        return {
+          ...mApp,
+          status: mEffectiveStatus,
+          orderOfPaymentNo: mOp || (mApp as any).orderOfPaymentNo,
+          assessedFees: mFees ? Number(mFees) : (mApp as any).assessedFees,
+          dateApproved: mDateApp || (mApp as any).dateApproved || (mIsApproved ? ((mApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
+          remarks: mRemarks || mApp.remarks,
+        };
+      });
 
       setApplications(mergedApps);
       try {
@@ -464,11 +519,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     if (!token) {
-      // 1. If unauthenticated, ensure no private permits are in state or cache
+      // 1. If unauthenticated, clear active state while preserving local storage
       setApplications([]);
-      try {
-        localStorage.removeItem("etayo_cached_applications");
-      } catch (e) {}
     } else {
       // 1. Immediately restore locally cached applications for authenticated session
       try {
@@ -576,7 +628,6 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         try {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
-          localStorage.removeItem("etayo_cached_applications");
         } catch (e) {}
       }
     };
@@ -651,19 +702,46 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // 2. Cache in localStorage immediately so refreshes never lose the approval or payment!
     try {
+      const id = String(updatedApp.id || "");
+      const lowerId = id.toLowerCase();
+
+      localStorage.setItem(`etayo_status_${id}`, updatedApp.status);
+      localStorage.setItem(`etayo_status_${lowerId}`, updatedApp.status);
+
+      if (updatedApp.status === "approved" || updatedApp.status === "released") {
+        localStorage.setItem(`etayo_approved_${id}`, "true");
+        localStorage.setItem(`etayo_approved_${lowerId}`, "true");
+      }
+      if ((updatedApp as any).orderOfPaymentNo) {
+        localStorage.setItem(`etayo_op_${id}`, (updatedApp as any).orderOfPaymentNo);
+        localStorage.setItem(`etayo_op_${lowerId}`, (updatedApp as any).orderOfPaymentNo);
+      }
+      if ((updatedApp as any).assessedFees) {
+        localStorage.setItem(`etayo_fees_${id}`, String((updatedApp as any).assessedFees));
+        localStorage.setItem(`etayo_fees_${lowerId}`, String((updatedApp as any).assessedFees));
+      }
+      if ((updatedApp as any).dateApproved) {
+        localStorage.setItem(`etayo_date_approved_${id}`, (updatedApp as any).dateApproved);
+        localStorage.setItem(`etayo_date_approved_${lowerId}`, (updatedApp as any).dateApproved);
+      }
+      if ((updatedApp as any).remarks) {
+        localStorage.setItem(`etayo_remarks_${id}`, (updatedApp as any).remarks);
+        localStorage.setItem(`etayo_remarks_${lowerId}`, (updatedApp as any).remarks);
+      }
+
       if ((updatedApp as any).userConfirmedPayment) {
-        localStorage.setItem(`etayo_payment_confirmed_${updatedApp.id}`, "true");
-        localStorage.setItem(`etayo_payment_confirmed_${updatedApp.id.toLowerCase()}`, "true");
+        localStorage.setItem(`etayo_payment_confirmed_${id}`, "true");
+        localStorage.setItem(`etayo_payment_confirmed_${lowerId}`, "true");
         if ((updatedApp as any).paymentReference) {
-          localStorage.setItem(`etayo_payment_ref_${updatedApp.id}`, (updatedApp as any).paymentReference);
+          localStorage.setItem(`etayo_payment_ref_${id}`, (updatedApp as any).paymentReference);
         }
         if ((updatedApp as any).paymentMethod) {
-          localStorage.setItem(`etayo_payment_method_${updatedApp.id}`, (updatedApp as any).paymentMethod);
+          localStorage.setItem(`etayo_payment_method_${id}`, (updatedApp as any).paymentMethod);
         }
       }
       if ((updatedApp as any).paymentStatus === "paid" || updatedApp.status === "released") {
-        localStorage.setItem(`etayo_paid_${updatedApp.id}`, "true");
-        localStorage.setItem(`etayo_paid_${updatedApp.id.toLowerCase()}`, "true");
+        localStorage.setItem(`etayo_paid_${id}`, "true");
+        localStorage.setItem(`etayo_paid_${lowerId}`, "true");
       }
 
       const stored = localStorage.getItem("etayo_cached_applications");

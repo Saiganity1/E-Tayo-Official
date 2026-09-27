@@ -362,8 +362,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         (app.permitType && app.permitType.toLowerCase().includes(query)) ||
         (app.projectAddress && app.projectAddress.toLowerCase().includes(query));
 
+      const isAppApproved = app.status === "approved" || app.status === "released" || (typeof window !== "undefined" && (
+        localStorage.getItem(`etayo_approved_${app.id}`) === "true" ||
+        localStorage.getItem(`etayo_approved_${(app.id || "").toLowerCase()}`) === "true" ||
+        localStorage.getItem(`etayo_status_${app.id}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${(app.id || "").toLowerCase()}`) === "approved"
+      ));
+
       const matchesStatus = statusFilter === "all" || 
-        (statusFilter === "approved" ? ["approved", "released"].includes(app.status) : app.status === statusFilter);
+        (statusFilter === "approved" ? isAppApproved : (isAppApproved ? false : app.status === statusFilter));
 
       const matchesType = typeFilter === "all" ||
         (typeFilter === "locational_clearance" ? app.permitType === "locational_clearance" : app.permitType !== "locational_clearance");
@@ -374,9 +381,22 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
   const stats = {
     activeTotal: activeApps.length,
-    pending: activeApps.filter(a => a.status === "pending").length,
+    pending: activeApps.filter(a => {
+      const isAppApproved = a.status === "approved" || a.status === "released" || (typeof window !== "undefined" && (
+        localStorage.getItem(`etayo_approved_${a.id}`) === "true" ||
+        localStorage.getItem(`etayo_approved_${(a.id || "").toLowerCase()}`) === "true" ||
+        localStorage.getItem(`etayo_status_${a.id}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${(a.id || "").toLowerCase()}`) === "approved"
+      ));
+      return a.status === "pending" && !isAppApproved;
+    }).length,
     review: activeApps.filter(a => a.status === "under_review").length,
-    approved: activeApps.filter(a => ["approved", "released"].includes(a.status)).length,
+    approved: activeApps.filter(a => ["approved", "released"].includes(a.status) || (typeof window !== "undefined" && (
+      localStorage.getItem(`etayo_approved_${a.id}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${(a.id || "").toLowerCase()}`) === "true" ||
+      localStorage.getItem(`etayo_status_${a.id}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${(a.id || "").toLowerCase()}`) === "approved"
+    ))).length,
     action: activeApps.filter(a => a.status === "incomplete_requirements" || a.status === "rejected").length,
     archivedTotal: archivedApps.length,
   };
@@ -553,7 +573,17 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       return { color: "#059669", bg: "#dcfce7", border: "#16a34a", icon: CheckCircle, label: "Permit Released", step: 4 };
     }
 
-    if (status === "approved") {
+    const id = String(app?.id || "");
+    const lowerId = id.toLowerCase();
+    const isApproved = status === "approved" ||
+      (typeof window !== "undefined" && (
+        localStorage.getItem(`etayo_approved_${id}`) === "true" ||
+        localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
+        localStorage.getItem(`etayo_status_${id}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${lowerId}`) === "approved"
+      ));
+
+    if (isApproved) {
       const paymentInfo = checkUserConfirmedPayment(app, connectedApp);
       if (paymentInfo.confirmed) {
         return {
@@ -655,9 +685,18 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const connectedLCApp = !isLocationalClearance ? connectedApp : null;
     const isActuallyReleased = isActuallyReleasedApp(app, connectedApp);
     const paymentInfo = checkUserConfirmedPayment(app, connectedApp);
+    const appIdStr = String(app.id || "");
+    const lowerAppId = appIdStr.toLowerCase();
+    const isAppApproved = app.status === "approved" || app.status === "released" || isActuallyReleased ||
+      (typeof window !== "undefined" && (
+        localStorage.getItem(`etayo_approved_${appIdStr}`) === "true" ||
+        localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
+        localStorage.getItem(`etayo_status_${appIdStr}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved"
+      ));
     const statusConfig = getStatusConfig(app.status, app, connectedApp);
     const StatusIcon = statusConfig.icon;
-    const isApprovedLC = isLocationalClearance && (app.status === "approved" || app.status === "released" || isActuallyReleased);
+    const isApprovedLC = isLocationalClearance && isAppApproved;
     const isArchived = archivedIds.includes(app.id);
 
     return (
@@ -935,7 +974,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         )}
 
         {/* ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
-        {app.status === "approved" && app.status !== "released" && !isActuallyReleased && (
+        {(app.status === "approved" || isAppApproved) && app.status !== "released" && !isActuallyReleased && (
           <div style={{
             background: paymentInfo.confirmed
               ? "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)"
