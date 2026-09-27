@@ -30,21 +30,9 @@ import {
 import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
 import { PermitApplication } from "../../../../types";
+import { groupApplicationsIntoProjectDossiers, ProjectDossier } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "flat";
-
-interface ProjectDossier {
-  id: string;
-  projectName: string;
-  projectType: string;
-  projectAddress: string;
-  applications: PermitApplication[];
-  totalCount: number;
-  pendingCount: number;
-  approvedCount: number;
-  actionRequiredCount: number;
-  latestDate: string;
-}
 
 export default function ApplicantDashboard() {
   const { applications } = usePermitContext();
@@ -184,79 +172,7 @@ export default function ApplicantDashboard() {
 
   // Group applications by Project Dossier (just like on the staff/admin side!)
   const projectDossiers = useMemo(() => {
-    const groups: Record<string, ProjectDossier> = {};
-
-    filteredApps.forEach(app => {
-      const baseTitle = extractBaseProjectName(app).toLowerCase();
-      const pAddr = (app.projectAddress || app.location?.address || "").trim().toLowerCase();
-
-      // Find matching group by base title or matching address
-      let matchedKey: string | null = null;
-      for (const key of Object.keys(groups)) {
-        const g = groups[key];
-        const gTitle = g.projectName.toLowerCase();
-        const gAddr = g.projectAddress.toLowerCase();
-
-        const titleMatch = Boolean(baseTitle && gTitle && (baseTitle === gTitle || baseTitle.includes(gTitle) || gTitle.includes(baseTitle)));
-        const addrMatch = Boolean(pAddr && gAddr && (pAddr.includes(gAddr) || gAddr.includes(pAddr) || pAddr.slice(0, 16) === gAddr.slice(0, 16)));
-
-        if (titleMatch || (addrMatch && (!baseTitle || !gTitle))) {
-          matchedKey = key;
-          break;
-        }
-      }
-
-      const displayTitle = extractBaseProjectName(app);
-      const groupKey = matchedKey || `GROUP-${baseTitle || app.id}`;
-
-      if (!groups[groupKey]) {
-        groups[groupKey] = {
-          id: `DOSSIER-${Object.keys(groups).length + 1}`,
-          projectName: displayTitle,
-          projectType: typeof app.projectType === "object" ? (app.projectType as any)?.name : (app.projectType || displayTitle),
-          projectAddress: app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga",
-          applications: [],
-          totalCount: 0,
-          pendingCount: 0,
-          approvedCount: 0,
-          actionRequiredCount: 0,
-          latestDate: app.dateSubmitted || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-        };
-      }
-
-      groups[groupKey].applications.push(app);
-      groups[groupKey].totalCount++;
-
-      if (app.status === "pending" || app.status === "under_review") {
-        groups[groupKey].pendingCount++;
-      } else if (app.status === "approved" || app.status === "released") {
-        groups[groupKey].approvedCount++;
-      } else if (app.status === "incomplete_requirements" || app.status === "rejected") {
-        groups[groupKey].actionRequiredCount++;
-      }
-    });
-
-    // Sort applications inside each dossier: Locational Clearance first, then Building Permit, then others
-    Object.values(groups).forEach(g => {
-      g.applications.sort((a, b) => {
-        const typeRank = (type?: string, id?: string) => {
-          const t = (type || "").toLowerCase();
-          const i = (id || "").toLowerCase();
-          if (t.includes("locational") || t.includes("zoning") || i.startsWith("lc-")) return 1;
-          if (t.includes("building") || i.startsWith("bp-") || i.startsWith("app-")) return 2;
-          if (t.includes("occupancy") || i.startsWith("oc-")) return 3;
-          return 4;
-        };
-        return typeRank(a.permitType, a.id) - typeRank(b.permitType, b.id);
-      });
-    });
-
-    // Sort dossiers: active/pending items first, then by total count
-    return Object.values(groups).sort((a, b) => {
-      if (a.pendingCount > 0 && b.pendingCount === 0) return -1;
-      if (b.pendingCount > 0 && a.pendingCount === 0) return 1;
-      return b.applications.length - a.applications.length;
-    });
+    return groupApplicationsIntoProjectDossiers(filteredApps);
   }, [filteredApps]);
 
   const toggleDossier = (dossierId: string) => {

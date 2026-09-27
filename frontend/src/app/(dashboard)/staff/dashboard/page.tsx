@@ -10,23 +10,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { PermitApplication } from "../../../../types";
+import { groupApplicationsIntoProjectDossiers, ProjectDossier } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "applicant" | "flat";
-
-interface ProjectDossier {
-  id: string;
-  applicantName: string;
-  applicantPhone: string;
-  applicantEmail: string;
-  projectName: string;
-  projectAddress: string;
-  applications: PermitApplication[];
-  totalCount: number;
-  pendingCount: number;
-  approvedCount: number;
-  rejectedCount: number;
-  latestDate: string;
-}
 
 export default function StaffDashboard() {
   const { applications } = usePermitContext();
@@ -64,89 +50,9 @@ export default function StaffDashboard() {
     });
   }, [applications, searchTerm, filterStatus, filterType]);
 
-  // Group applications by Project Dossier (Applicant + Project/Address)
+  // Group applications by Project Dossier (Stage 1 Locational Clearance + Stage 2 Building Permit of the same project)
   const projectDossiers = useMemo(() => {
-    const groups: Record<string, ProjectDossier> = {};
-
-    filteredApps.forEach(app => {
-      const normApplicant = (app.applicantName || "Unknown Applicant").trim().toLowerCase();
-      const pTitle = (app.projectName || app.projectDescription || "").trim().toLowerCase();
-      const pAddr = (app.projectAddress || app.location?.address || "").trim().toLowerCase();
-
-      // Find if this application matches an existing group of the same applicant
-      let matchedKey: string | null = null;
-      for (const key of Object.keys(groups)) {
-        const g = groups[key];
-        const gNormApp = g.applicantName.trim().toLowerCase();
-        if (gNormApp === normApplicant) {
-          const gTitle = g.projectName.trim().toLowerCase();
-          const gAddr = g.projectAddress.trim().toLowerCase();
-
-          const addressMatch = Boolean(pAddr && gAddr && (pAddr.includes(gAddr) || gAddr.includes(pAddr) || pAddr.slice(0, 15) === gAddr.slice(0, 15)));
-          const titleMatch = Boolean(pTitle && gTitle && (pTitle.includes(gTitle) || gTitle.includes(pTitle)));
-
-          if (addressMatch || titleMatch || (!pTitle && !gTitle)) {
-            matchedKey = key;
-            break;
-          }
-        }
-      }
-
-      const groupKey = matchedKey || `${normApplicant}:::${pTitle || pAddr || app.id}`;
-
-      if (!groups[groupKey]) {
-        groups[groupKey] = {
-          id: `DOSSIER-${Object.keys(groups).length + 1}`,
-          applicantName: app.applicantName || "Unknown Applicant",
-          applicantPhone: app.applicantPhone || "",
-          applicantEmail: app.applicantEmail || "",
-          projectName: app.projectName || app.projectDescription || "Permit Project",
-          projectAddress: app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga",
-          applications: [],
-          totalCount: 0,
-          pendingCount: 0,
-          approvedCount: 0,
-          rejectedCount: 0,
-          latestDate: app.dateSubmitted || new Date().toISOString()
-        };
-      }
-
-      groups[groupKey].applications.push(app);
-      groups[groupKey].totalCount++;
-      if (app.status === "pending" || app.status === "under_review") {
-        groups[groupKey].pendingCount++;
-      } else if (app.status === "approved" || app.status === "released") {
-        groups[groupKey].approvedCount++;
-      } else if (app.status === "rejected") {
-        groups[groupKey].rejectedCount++;
-      }
-    });
-
-    // Sort applications inside each dossier: Locational Clearance first, then Building Permit, then others
-    Object.values(groups).forEach(g => {
-      g.applications.sort((a, b) => {
-        const typeRank = (type: string) => {
-          const t = (type || "").toLowerCase();
-          if (t.includes("locational") || t.includes("zoning")) return 1;
-          if (t.includes("building")) return 2;
-          if (t.includes("architectural")) return 3;
-          if (t.includes("civil") || t.includes("structural")) return 4;
-          if (t.includes("electrical")) return 5;
-          if (t.includes("sanitary") || t.includes("plumb")) return 6;
-          if (t.includes("mechanical")) return 7;
-          if (t.includes("occupancy")) return 8;
-          return 9;
-        };
-        return typeRank(a.permitType) - typeRank(b.permitType);
-      });
-    });
-
-    // Sort dossiers: dossiers with pending items first, then by total count
-    return Object.values(groups).sort((a, b) => {
-      if (a.pendingCount > 0 && b.pendingCount === 0) return -1;
-      if (b.pendingCount > 0 && a.pendingCount === 0) return 1;
-      return b.applications.length - a.applications.length;
-    });
+    return groupApplicationsIntoProjectDossiers(filteredApps);
   }, [filteredApps]);
 
   // Group applications by Applicant Name
@@ -170,6 +76,7 @@ export default function StaffDashboard() {
           pendingCount: 0,
           approvedCount: 0,
           rejectedCount: 0,
+          actionRequiredCount: 0,
           latestDate: app.dateSubmitted || new Date().toISOString()
         };
       }
@@ -182,6 +89,9 @@ export default function StaffDashboard() {
         groups[groupKey].approvedCount++;
       } else if (app.status === "rejected") {
         groups[groupKey].rejectedCount++;
+        groups[groupKey].actionRequiredCount++;
+      } else if (app.status === "incomplete_requirements") {
+        groups[groupKey].actionRequiredCount++;
       }
     });
 

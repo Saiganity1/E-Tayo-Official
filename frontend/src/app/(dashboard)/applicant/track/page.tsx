@@ -13,21 +13,14 @@ import {
   CreditCard, Receipt, Banknote, Download, X, Send, Camera
 } from "lucide-react";
 import { dispatchPermitMessage } from "../../../../utils/permitMessaging";
+import { 
+  groupApplicationsIntoProjectDossiers, 
+  getConnectedProjectApp, 
+  extractBaseProjectName, 
+  ProjectDossier 
+} from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "flat";
-
-interface ProjectDossier {
-  id: string;
-  projectName: string;
-  projectType: string;
-  projectAddress: string;
-  applications: any[];
-  totalCount: number;
-  pendingCount: number;
-  approvedCount: number;
-  actionRequiredCount: number;
-  latestDate: string;
-}
 
 export default function ApplicationStatusPage() {
   const router = useRouter();
@@ -411,34 +404,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   };
 
   const getConnectedApp = (app: any, allApps: any[]) => {
-    if (!app || !allApps || !Array.isArray(allApps)) return null;
-    const isLC = (app.permitType || "").toLowerCase().includes("locational") || (app.id || "").toLowerCase().startsWith("lc-");
-
-    return allApps.find((other: any) => {
-      if (!other || other.id === app.id) return false;
-      const otherIsLC = (other.permitType || "").toLowerCase().includes("locational") || (other.id || "").toLowerCase().startsWith("lc-");
-      if (isLC === otherIsLC) return false;
-
-      const refLC = (other.locationalClearanceRef || other.clearanceRef || other.connectedClearanceId || "").trim().toLowerCase();
-      if (refLC && refLC === String(app.id || "").trim().toLowerCase()) return true;
-
-      const myRef = (app.locationalClearanceRef || app.clearanceRef || app.connectedClearanceId || "").trim().toLowerCase();
-      if (myRef && myRef === String(other.id || "").trim().toLowerCase()) return true;
-
-      const baseAppTitle = extractBaseProjectName(app).toLowerCase();
-      const otherBaseTitle = extractBaseProjectName(other).toLowerCase();
-      const sameProject = Boolean(
-        baseAppTitle && otherBaseTitle &&
-        (baseAppTitle === otherBaseTitle || baseAppTitle.includes(otherBaseTitle) || otherBaseTitle.includes(baseAppTitle))
-      );
-      const sameAddress = Boolean(
-        app.projectAddress && other.projectAddress &&
-        (app.projectAddress.trim().toLowerCase() === other.projectAddress.trim().toLowerCase() ||
-         app.projectAddress.trim().toLowerCase().slice(0, 16) === other.projectAddress.trim().toLowerCase().slice(0, 16))
-      );
-
-      return sameProject || sameAddress;
-    }) || null;
+    return getConnectedProjectApp(app, allApps);
   };
 
   const checkUserConfirmedPayment = (app: any, connectedApp?: any): { confirmed: boolean; reference: string; method: string; date?: string; receiptUrl?: string } => {
@@ -650,79 +616,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
   // Group applications by Project Dossier (combining Locational Clearance and Technical Permits)
   const projectDossiers = useMemo(() => {
-    const groups: Record<string, ProjectDossier> = {};
-
-    filteredApps.forEach(app => {
-      const baseTitle = extractBaseProjectName(app).toLowerCase();
-      const pAddr = (app.projectAddress || app.location?.address || "").trim().toLowerCase();
-
-      // Find matching group by base title or matching address
-      let matchedKey: string | null = null;
-      for (const key of Object.keys(groups)) {
-        const g = groups[key];
-        const gTitle = g.projectName.toLowerCase();
-        const gAddr = g.projectAddress.toLowerCase();
-
-        const titleMatch = Boolean(baseTitle && gTitle && (baseTitle === gTitle || baseTitle.includes(gTitle) || gTitle.includes(baseTitle)));
-        const addrMatch = Boolean(pAddr && gAddr && (pAddr.includes(gAddr) || gAddr.includes(pAddr) || pAddr.slice(0, 16) === gAddr.slice(0, 16)));
-
-        if (titleMatch || (addrMatch && (!baseTitle || !gTitle))) {
-          matchedKey = key;
-          break;
-        }
-      }
-
-      const displayTitle = extractBaseProjectName(app);
-      const groupKey = matchedKey || `GROUP-${baseTitle || app.id}`;
-
-      if (!groups[groupKey]) {
-        groups[groupKey] = {
-          id: `DOSSIER-${Object.keys(groups).length + 1}`,
-          projectName: displayTitle,
-          projectType: typeof app.projectType === "object" ? (app.projectType as any)?.name : (app.projectType || displayTitle),
-          projectAddress: app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga",
-          applications: [],
-          totalCount: 0,
-          pendingCount: 0,
-          approvedCount: 0,
-          actionRequiredCount: 0,
-          latestDate: app.dateSubmitted || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-        };
-      }
-
-      groups[groupKey].applications.push(app);
-      groups[groupKey].totalCount++;
-
-      if (app.status === "pending" || app.status === "under_review") {
-        groups[groupKey].pendingCount++;
-      } else if (app.status === "approved" || app.status === "released") {
-        groups[groupKey].approvedCount++;
-      } else if (app.status === "incomplete_requirements" || app.status === "rejected") {
-        groups[groupKey].actionRequiredCount++;
-      }
-    });
-
-    // Sort applications inside each dossier: Locational Clearance first, then Building Permit, then others
-    Object.values(groups).forEach(g => {
-      g.applications.sort((a, b) => {
-        const typeRank = (type?: string, id?: string) => {
-          const t = (type || "").toLowerCase();
-          const i = (id || "").toLowerCase();
-          if (t.includes("locational") || t.includes("zoning") || i.startsWith("lc-")) return 1;
-          if (t.includes("building") || i.startsWith("bp-") || i.startsWith("app-")) return 2;
-          if (t.includes("occupancy") || i.startsWith("oc-")) return 3;
-          return 4;
-        };
-        return typeRank(a.permitType, a.id) - typeRank(b.permitType, b.id);
-      });
-    });
-
-    // Sort dossiers: active/pending items first, then by total count
-    return Object.values(groups).sort((a, b) => {
-      if (a.pendingCount > 0 && b.pendingCount === 0) return -1;
-      if (b.pendingCount > 0 && a.pendingCount === 0) return 1;
-      return b.applications.length - a.applications.length;
-    });
+    return groupApplicationsIntoProjectDossiers(filteredApps);
   }, [filteredApps]);
 
   const toggleDossier = (dossierId: string) => {
@@ -755,52 +649,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const renderApplicationCard = (app: any) => {
     const isLocationalClearance = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
 
-    // Identify connected Stage 2 Technical Permitting application for this Locational Clearance
-    const connectedStage2App = isLocationalClearance
-      ? (applications || []).find((other: any) => {
-          if (!other || other.id === app.id) return false;
-          const otherIsLC = (other.permitType || "").toLowerCase().includes("locational") || (other.id || "").toLowerCase().startsWith("lc-");
-          if (otherIsLC) return false;
-
-          // 1. Exact match on locationalClearanceRef
-          const refLC = (other.locationalClearanceRef || other.clearanceRef || other.connectedClearanceId || "").trim().toLowerCase();
-          if (refLC && refLC === app.id.trim().toLowerCase()) return true;
-
-          // 2. Same project base name or same address
-          const baseAppTitle = extractBaseProjectName(app).toLowerCase();
-          const otherBaseTitle = extractBaseProjectName(other).toLowerCase();
-          const sameProject = Boolean(
-            baseAppTitle && otherBaseTitle &&
-            (baseAppTitle === otherBaseTitle || baseAppTitle.includes(otherBaseTitle) || otherBaseTitle.includes(baseAppTitle))
-          );
-          const sameAddress = Boolean(
-            app.projectAddress && other.projectAddress &&
-            (app.projectAddress.trim().toLowerCase() === other.projectAddress.trim().toLowerCase() ||
-             app.projectAddress.trim().toLowerCase().slice(0, 16) === other.projectAddress.trim().toLowerCase().slice(0, 16))
-          );
-
-          return sameProject || sameAddress;
-        })
-      : null;
-
-    // For Stage 2 applications, find connected Locational Clearance if not directly populated
-    const connectedLCApp = !isLocationalClearance
-      ? (applications || []).find((other: any) => {
-          if (!other || other.id === app.id) return false;
-          const otherIsLC = (other.permitType || "").toLowerCase().includes("locational") || (other.id || "").toLowerCase().startsWith("lc-");
-          if (!otherIsLC) return false;
-          if (app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === other.id.trim().toLowerCase()) return true;
-
-          const baseAppTitle = extractBaseProjectName(app).toLowerCase();
-          const otherBaseTitle = extractBaseProjectName(other).toLowerCase();
-          return Boolean(
-            baseAppTitle && otherBaseTitle &&
-            (baseAppTitle === otherBaseTitle || baseAppTitle.includes(otherBaseTitle) || otherBaseTitle.includes(baseAppTitle))
-          );
-        })
-      : null;
-
-    const connectedApp = isLocationalClearance ? connectedStage2App : connectedLCApp;
+    // Identify connected application (Locational Clearance <-> Technical Permits) of the same project
+    const connectedApp = getConnectedProjectApp(app, applications);
+    const connectedStage2App = isLocationalClearance ? connectedApp : null;
+    const connectedLCApp = !isLocationalClearance ? connectedApp : null;
     const isActuallyReleased = isActuallyReleasedApp(app, connectedApp);
     const paymentInfo = checkUserConfirmedPayment(app, connectedApp);
     const statusConfig = getStatusConfig(app.status, app, connectedApp);

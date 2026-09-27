@@ -36,6 +36,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
+import { getConnectedProjectApp } from "@/utils/projectGrouping";
 import Link from "next/link";
 import { 
   generateUnifiedPermitPdf, 
@@ -95,17 +96,7 @@ export default function ApplicationTrackDetail() {
     const assessedAmountStr = `PHP ${((appData as any).assessedFees || 3795).toLocaleString()}`;
     const curId = String(appData.id || "");
 
-    const connectedApp = applications ? (applications.find((other: any) => {
-      if (!other || other.id === appData.id) return false;
-      const isLC = (appData.permitType || "").toLowerCase().includes("locational") || (appData.id || "").toLowerCase().startsWith("lc-");
-      const otherIsLC = (other.permitType || "").toLowerCase().includes("locational") || (other.id || "").toLowerCase().startsWith("lc-");
-      if (isLC === otherIsLC) return false;
-      const refLC = (other.locationalClearanceRef || other.clearanceRef || "").trim().toLowerCase();
-      if (refLC && refLC === appData.id.trim().toLowerCase()) return true;
-      const myRef = (appData.locationalClearanceRef || appData.clearanceRef || "").trim().toLowerCase();
-      if (myRef && myRef === other.id.trim().toLowerCase()) return true;
-      return false;
-    })) : null;
+    const connectedApp = applications ? getConnectedProjectApp(appData, applications) : null;
     const connectedId = String(connectedApp?.id || "");
 
     // Cache receipt photo locally for instant preview across tabs and admin evaluation
@@ -207,17 +198,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const releaseDateFormatted = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
     const curId = String(appData.id || "");
 
-    const connectedApp = applications ? (applications.find((other: any) => {
-      if (!other || other.id === appData.id) return false;
-      const isLC = (appData.permitType || "").toLowerCase().includes("locational") || (appData.id || "").toLowerCase().startsWith("lc-");
-      const otherIsLC = (other.permitType || "").toLowerCase().includes("locational") || (other.id || "").toLowerCase().startsWith("lc-");
-      if (isLC === otherIsLC) return false;
-      const refLC = (other.locationalClearanceRef || other.clearanceRef || "").trim().toLowerCase();
-      if (refLC && refLC === appData.id.trim().toLowerCase()) return true;
-      const myRef = (appData.locationalClearanceRef || appData.clearanceRef || "").trim().toLowerCase();
-      if (myRef && myRef === other.id.trim().toLowerCase()) return true;
-      return false;
-    })) : null;
+    const connectedApp = applications ? getConnectedProjectApp(appData, applications) : null;
     const connectedId = String(connectedApp?.id || "");
 
     const updatedTracking = [
@@ -700,24 +681,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   // Find connected application (Locational Clearance <-> Stage 2 Technical Permits)
   const connectedApp = useMemo(() => {
     if (!appData || !applications) return null;
-    const isLC = (appData.permitType || "").toLowerCase().includes("locational") || (appData.id || "").toLowerCase().startsWith("lc-");
-    return applications.find((other: any) => {
-      if (!other || other.id === appData.id) return false;
-      const otherIsLC = (other.permitType || "").toLowerCase().includes("locational") || (other.id || "").toLowerCase().startsWith("lc-");
-      if (isLC === otherIsLC) return false;
-
-      const refLC = (other.locationalClearanceRef || other.clearanceRef || other.connectedClearanceId || "").trim().toLowerCase();
-      if (refLC && refLC === String(appData.id || "").trim().toLowerCase()) return true;
-
-      const myRef = (appData.locationalClearanceRef || appData.clearanceRef || appData.connectedClearanceId || "").trim().toLowerCase();
-      if (myRef && myRef === String(other.id || "").trim().toLowerCase()) return true;
-
-      const pAddr = (appData.projectAddress || "").trim().toLowerCase();
-      const oAddr = (other.projectAddress || "").trim().toLowerCase();
-      if (pAddr && oAddr && (pAddr === oAddr || pAddr.includes(oAddr) || oAddr.includes(pAddr) || pAddr.slice(0, 16) === oAddr.slice(0, 16))) return true;
-
-      return false;
-    }) || null;
+    return getConnectedProjectApp(appData, applications);
   }, [appData, applications]);
 
   const checkPaymentInfo = (app: any, connected: any): { confirmed: boolean; reference: string; method: string; date?: string; receiptUrl?: string } => {
