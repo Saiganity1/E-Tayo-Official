@@ -45,7 +45,7 @@ export const FORM_OFFICIAL_DETAILS: Record<string, { officialTitle: string; nbcC
     nbcCode: "NBC FORM NO. B-01",
     icon: Building,
     color: "#2563eb",
-    desc: "Primary DPWH permit application covering structural footprint, occupancy classification, and scope of work."
+    desc: ""
   },
   architecturalPermit: {
     officialTitle: "ARCHITECTURAL PERMIT APPLICATION",
@@ -3640,19 +3640,18 @@ export default function TechnicalPermitFormsStep({
               color: "#4f46e5",
               desc: activeMeta.desc
             };
-            const FormIcon = formDetail.icon;
             const currentFormIndex = mandatoryKeys.indexOf(activeTab) + 1;
             const isCompleted = isFormSatisfied(activeTab);
 
             return (
               <div style={{
-                background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%)",
+                background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
                 borderRadius: "16px",
                 padding: "1.25rem 1.5rem",
                 marginBottom: "1.5rem",
-                color: "#ffffff",
-                boxShadow: "0 6px 20px rgba(15, 23, 42, 0.2)",
-                border: "1.5px solid #4338ca",
+                color: "#0f172a",
+                boxShadow: "0 6px 20px rgba(217, 119, 6, 0.25)",
+                border: "1.5px solid #d97706",
                 position: "relative",
                 overflow: "hidden"
               }}>
@@ -3664,7 +3663,7 @@ export default function TechnicalPermitFormsStep({
                   width: "160px",
                   height: "160px",
                   borderRadius: "50%",
-                  background: activeTab === "fireBfpPermit" ? "rgba(225, 29, 72, 0.25)" : "rgba(99, 102, 241, 0.25)",
+                  background: "rgba(255, 255, 255, 0.25)",
                   filter: "blur(40px)",
                   pointerEvents: "none"
                 }} />
@@ -3679,31 +3678,15 @@ export default function TechnicalPermitFormsStep({
                   zIndex: 1
                 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
-                    <div style={{
-                      width: "50px",
-                      height: "50px",
-                      borderRadius: "12px",
-                      background: activeTab === "fireBfpPermit" ? "#ffe4e6" : "#e0e7ff",
-                      color: activeTab === "fireBfpPermit" ? "#e11d48" : "#4338ca",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      marginTop: "2px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
-                    }}>
-                      <FormIcon size={26} />
-                    </div>
-
                     <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "6px" }}>
                         <span style={{
                           fontSize: "0.7rem",
                           fontWeight: "900",
                           padding: "3px 9px",
                           borderRadius: "6px",
-                          background: activeTab === "fireBfpPermit" ? "#e11d48" : "#6366f1",
-                          color: "white",
+                          background: activeTab === "fireBfpPermit" ? "#dc2626" : "#0f172a",
+                          color: "#ffffff",
                           letterSpacing: "0.5px"
                         }}>
                           {activeTab === "fireBfpPermit" ? "CERTIFICATE UPLOAD ONLY" : `CURRENTLY ANSWERING: FORM ${currentFormIndex} OF ${mandatoryKeys.length}`}
@@ -3711,8 +3694,8 @@ export default function TechnicalPermitFormsStep({
                         <span style={{
                           fontSize: "0.74rem",
                           fontWeight: "800",
-                          color: "#c7d2fe",
-                          background: "rgba(255, 255, 255, 0.12)",
+                          color: "#1e293b",
+                          background: "rgba(0, 0, 0, 0.08)",
                           padding: "2px 8px",
                           borderRadius: "4px"
                         }}>
@@ -3720,8 +3703,8 @@ export default function TechnicalPermitFormsStep({
                         </span>
                         <span style={{
                           fontSize: "0.72rem",
-                          fontWeight: "700",
-                          color: "#94a3b8"
+                          fontWeight: "800",
+                          color: "#78350f"
                         }}>
                           MUNICIPALITY OF STO. TOMAS, PAMPANGA
                         </span>
@@ -3731,16 +3714,12 @@ export default function TechnicalPermitFormsStep({
                         margin: 0,
                         fontSize: "1.35rem",
                         fontWeight: "900",
-                        color: "#ffffff",
+                        color: "#0f172a",
                         letterSpacing: "-0.01em",
                         lineHeight: 1.2
                       }}>
                         {formDetail.officialTitle}
                       </h2>
-
-                      <p style={{ margin: "6px 0 0 0", fontSize: "0.84rem", color: "#cbd5e1", maxWidth: "750px", lineHeight: 1.4 }}>
-                        {formDetail.desc}
-                      </p>
                     </div>
                   </div>
 
@@ -3758,7 +3737,7 @@ export default function TechnicalPermitFormsStep({
                         borderRadius: "999px",
                         fontSize: "0.82rem",
                         fontWeight: "800",
-                        boxShadow: "0 2px 8px rgba(34, 197, 94, 0.25)"
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)"
                       }}>
                         <CheckCircle2 size={16} /> Completed & Verified
                       </div>
@@ -3767,13 +3746,14 @@ export default function TechnicalPermitFormsStep({
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "6px",
-                        background: "rgba(245, 158, 11, 0.15)",
-                        border: "1.5px solid #f59e0b",
-                        color: "#fde68a",
+                        background: "rgba(255, 255, 255, 0.9)",
+                        border: "1.5px solid #d97706",
+                        color: "#92400e",
                         padding: "7px 14px",
                         borderRadius: "999px",
                         fontSize: "0.82rem",
-                        fontWeight: "800"
+                        fontWeight: "800",
+                        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)"
                       }}>
                         <Clock size={16} /> In Progress (Draft Saved)
                       </div>
@@ -3786,16 +3766,16 @@ export default function TechnicalPermitFormsStep({
                   <div style={{
                     marginTop: "12px",
                     paddingTop: "10px",
-                    borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+                    borderTop: "1px solid rgba(120, 53, 15, 0.2)",
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
                     fontSize: "0.76rem",
-                    color: "#a5b4fc"
+                    color: "#78350f"
                   }}>
-                    <Info size={14} style={{ flexShrink: 0 }} />
+                    <Info size={14} style={{ flexShrink: 0, color: "#92400e" }} />
                     <span>
-                      <strong>Auto-Sync Active:</strong> Box 1 (Owner/Applicant) and Box 2 (Project Location) details below will automatically synchronize across all your permit forms ({mandatoryKeys.map(k => PERMIT_FORM_METADATA[k]?.code).filter(c => c !== "FSEC").join(", ")}).
+                      <strong style={{ color: "#451a03" }}>Auto-Sync Active:</strong> Box 1 (Owner/Applicant) and Box 2 (Project Location) details below will automatically synchronize across all your permit forms ({mandatoryKeys.map(k => PERMIT_FORM_METADATA[k]?.code).filter(c => c !== "FSEC").join(", ")}).
                     </span>
                   </div>
                 )}
