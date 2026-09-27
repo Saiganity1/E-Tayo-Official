@@ -1296,6 +1296,35 @@ export default function StaffEvaluatePage() {
       }
     } catch (e) {}
 
+    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
+    const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) authHeaders["Authorization"] = `Bearer ${token}`;
+
+    try {
+      await fetch(`${apiBase}/permits/${app.id}/status`, {
+        method: "PATCH",
+        headers: authHeaders,
+        body: JSON.stringify({
+          status: "approved",
+          remarks: decisionNotes || shortSummary
+        })
+      });
+    } catch (e) {
+      console.warn("Direct PATCH permit status notice", e);
+    }
+
+    try {
+      await fetch(`${apiBase}/permits/${app.id}`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify(updatedApp)
+      });
+    } catch (e) {
+      console.warn("Direct PUT permit notice", e);
+    }
+
     await updateApplication(updatedApp as any);
 
     // 1. Automatically dispatch official approval notice & Order of Payment with fee amount to applicant
@@ -1427,6 +1456,35 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
       historyLog: updatedHistory,
       remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`,
     };
+
+    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
+    const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) authHeaders["Authorization"] = `Bearer ${token}`;
+
+    try {
+      await fetch(`${apiBase}/permits/${app.id}/status`, {
+        method: "PATCH",
+        headers: authHeaders,
+        body: JSON.stringify({
+          status: "released",
+          remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`
+        })
+      });
+    } catch (e) {
+      console.warn("Direct PATCH permit status notice", e);
+    }
+
+    try {
+      await fetch(`${apiBase}/permits/${app.id}`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify(updatedApp)
+      });
+    } catch (e) {
+      console.warn("Direct PUT permit notice", e);
+    }
 
     await updateApplication(updatedApp as any);
 

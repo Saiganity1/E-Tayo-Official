@@ -246,13 +246,22 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       }
     }
 
+    const appId = String(app.id || "");
+    const lowerAppId = appId.toLowerCase();
+    const isAppApproved = app.status === "approved" || app.status === "released" || (typeof window !== "undefined" && (
+      localStorage.getItem(`etayo_approved_${appId}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
+      localStorage.getItem(`etayo_status_${appId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved"
+    ));
+
     if (matchedDossier) {
       matchedDossier.applications.push(app);
       matchedDossier.totalCount++;
-      if (app.status === "pending" || app.status === "under_review") {
-        matchedDossier.pendingCount++;
-      } else if (app.status === "approved" || app.status === "released") {
+      if (isAppApproved) {
         matchedDossier.approvedCount++;
+      } else if (app.status === "pending" || app.status === "under_review") {
+        matchedDossier.pendingCount++;
       } else if (app.status === "rejected") {
         matchedDossier.rejectedCount++;
       }
@@ -267,8 +276,7 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       }
     } else {
       const baseTitle = extractBaseProjectName(app);
-      const isPending = app.status === "pending" || app.status === "under_review";
-      const isApproved = app.status === "approved" || app.status === "released";
+      const isPending = !isAppApproved && (app.status === "pending" || app.status === "under_review");
       const isRejected = app.status === "rejected";
       const isAction = app.status === "incomplete_requirements" || app.status === "rejected";
 
@@ -283,7 +291,7 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
         applications: [app],
         totalCount: 1,
         pendingCount: isPending ? 1 : 0,
-        approvedCount: isApproved ? 1 : 0,
+        approvedCount: isAppApproved ? 1 : 0,
         rejectedCount: isRejected ? 1 : 0,
         actionRequiredCount: isAction ? 1 : 0,
         latestDate: app.dateSubmitted || new Date().toISOString()

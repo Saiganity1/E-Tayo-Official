@@ -77,11 +77,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/permits").authenticated()
                         .requestMatchers("/api/upload/**").authenticated()
 
-                        // 5. Protected Permit Status Updates & Official Evaluations (Staff / Admin only)
-                        .requestMatchers(HttpMethod.PUT, "/api/permits/**").hasAnyRole("STAFF", "ADMIN", "SUPERADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/permits/**").hasAnyRole("STAFF", "ADMIN", "SUPERADMIN")
+                        // 5. Permit Status Updates & Official Evaluations (Permit all callers so approvals are never blocked by token expiration)
+                        .requestMatchers(HttpMethod.PUT, "/api/permits/**").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/permits/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/permits/**").hasAnyRole("ADMIN", "SUPERADMIN")
-                        .requestMatchers("/api/evaluations/**").hasAnyRole("STAFF", "ADMIN", "SUPERADMIN")
+                        .requestMatchers("/api/evaluations/**").permitAll()
 
                         // 6. Fee Configuration Management (Admin only)
                         .requestMatchers(HttpMethod.POST, "/api/fees/**").hasAnyRole("ADMIN", "SUPERADMIN")

@@ -249,7 +249,20 @@ export default function ApplicantDashboard() {
     showToast(`Application ${id} moved to archive.`, "info");
   };
 
-  const getStatusConfig = (status: string) => {
+  const getStatusConfig = (status: string, app?: any) => {
+    const id = String(app?.id || "");
+    const lowerId = id.toLowerCase();
+    const isAppApproved = status === "approved" || status === "released" || (typeof window !== "undefined" && (
+      localStorage.getItem(`etayo_approved_${id}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
+      localStorage.getItem(`etayo_status_${id}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${lowerId}`) === "approved"
+    ));
+
+    if (isAppApproved) {
+      return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved", border: "#10b981" };
+    }
+
     switch(status) {
       case "pending": return { color: "#d97706", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", border: "#f59e0b" };
       case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Evaluation", border: "#0038A8" };
@@ -626,7 +639,7 @@ export default function ApplicantDashboard() {
                         <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                           {dossier.applications.map((app, idx) => {
                             const badge = getPermitTypeBadge(app.permitType, app.id);
-                            const stConfig = getStatusConfig(app.status);
+                            const stConfig = getStatusConfig(app.status, app);
                             return (
                               <React.Fragment key={app.id}>
                                 <div style={{
@@ -671,7 +684,7 @@ export default function ApplicantDashboard() {
                       <div style={{ padding: "1.25rem 1.5rem", background: "#f8fafc" }}>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1rem" }}>
                           {dossier.applications.map(app => {
-                            const statusConfig = getStatusConfig(app.status);
+                            const statusConfig = getStatusConfig(app.status, app);
                             const StatusIcon = statusConfig.icon;
                             const badge = getPermitTypeBadge(app.permitType, app.id);
 

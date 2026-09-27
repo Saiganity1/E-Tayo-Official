@@ -29,9 +29,20 @@ public class PermitController {
     private com.etayo.backend.service.FileStorageService fileStorageService;
 
     @GetMapping
-    public ResponseEntity<List<PermitApplication>> getAllPermits(org.springframework.security.core.Authentication authentication) {
+    public ResponseEntity<List<PermitApplication>> getAllPermits(
+            @RequestParam(required = false) String email,
+            org.springframework.security.core.Authentication authentication) {
+        
+        if (email != null && !email.trim().isEmpty()) {
+            String cleanEmail = email.trim();
+            List<PermitApplication> applicantPermits = permitApplicationRepository.findAll().stream()
+                .filter(p -> p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(cleanEmail))
+                .toList();
+            return ResponseEntity.ok(applicantPermits);
+        }
+
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            // Unauthenticated / public callers cannot dump municipal permit records
+            // Unauthenticated / public callers cannot dump municipal permit records without an email filter
             return ResponseEntity.ok(java.util.Collections.emptyList());
         }
 

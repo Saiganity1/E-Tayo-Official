@@ -272,14 +272,40 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       if (refreshApplications) refreshApplications();
     }, 3000);
 
+    const directInterval = setInterval(async () => {
+      try {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
+        const base = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
+        const list = applications || [];
+        for (const a of list) {
+          if (!a || !a.id) continue;
+          const aId = String(a.id);
+          const isLocallyApproved = typeof window !== "undefined" && (
+            localStorage.getItem(`etayo_approved_${aId}`) === "true" ||
+            localStorage.getItem(`etayo_status_${aId}`) === "approved"
+          );
+          if (a.status !== "approved" && a.status !== "released" && !isLocallyApproved) {
+            const res = await fetch(`${base}/permits/${encodeURIComponent(aId)}`);
+            if (res.ok) {
+              const live = await res.json();
+              if (live && live.id && (live.status === "approved" || live.status === "released")) {
+                updateApplication(live);
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    }, 3000);
+
     return () => {
       if (typeof window !== "undefined") {
         window.removeEventListener("storage", handleSync);
         window.removeEventListener("etayo_applications_updated", handleSync);
       }
       clearInterval(pollInterval);
+      clearInterval(directInterval);
     };
-  }, [refreshApplications]);
+  }, [refreshApplications, applications, updateApplication]);
 
   const handleCopyId = (id: string, e: React.MouseEvent) => {
     e.preventDefault();

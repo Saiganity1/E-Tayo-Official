@@ -3,9 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { PermitApplication, SystemLog, FeeStructure, PermitType } from "../types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
-  ? `${process.env.NEXT_PUBLIC_API_URL}/api` 
-  : "http://localhost:8080/api";
+const rawApi = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
+const API_BASE_URL = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
 
 type UserRole = "public" | "applicant" | "staff" | "admin";
 
@@ -304,19 +303,25 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         "Authorization": `Bearer ${token}`
       };
 
+      let userEmail = "";
       let isStaffOrAdmin = userRoleRef.current === "admin" || userRoleRef.current === "staff";
       try {
         const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
         if (userStr) {
           const u = JSON.parse(userStr);
+          if (u.email) userEmail = u.email;
           if (u.role === "ROLE_ADMIN" || u.role === "ROLE_SUPERADMIN" || u.role === "ROLE_STAFF" || u.role === "admin" || u.role === "staff") {
             isStaffOrAdmin = true;
           }
         }
       } catch (e) {}
 
+      const permitsUrl = (!isStaffOrAdmin && userEmail) 
+        ? `${API_BASE_URL}/permits?email=${encodeURIComponent(userEmail)}`
+        : `${API_BASE_URL}/permits`;
+
       const [appsRes, logsRes, feesRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/permits`, { headers }).catch(e => ({ ok: false, json: async () => [] })),
+        fetch(permitsUrl, { headers }).catch(e => ({ ok: false, json: async () => [] })),
         isStaffOrAdmin 
           ? fetch(`${API_BASE_URL}/logs`, { headers }).catch(e => ({ ok: false, json: async () => [] }))
           : Promise.resolve({ ok: false, json: async () => [] } as any),
@@ -431,6 +436,39 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               mergedApps.push(c);
             }
           });
+
+          // For any cached application that is still marked pending, actively check live status by ID
+          const pendingCached = cleanCached.filter(c => c && c.id);
+          if (pendingCached.length > 0) {
+            await Promise.all(
+              pendingCached.map(async (c) => {
+                try {
+                  const singleRes = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(c.id)}`);
+                  if (singleRes.ok) {
+                    const live = await singleRes.json();
+                    if (live && live.id) {
+                      const idStr = String(live.id);
+                      const idLower = idStr.toLowerCase();
+                      if (live.status === "approved" || live.status === "released") {
+                        try {
+                          localStorage.setItem(`etayo_status_${idStr}`, live.status);
+                          localStorage.setItem(`etayo_status_${idLower}`, live.status);
+                          localStorage.setItem(`etayo_approved_${idStr}`, "true");
+                          localStorage.setItem(`etayo_approved_${idLower}`, "true");
+                        } catch (e) {}
+                      }
+                      const mIdx = mergedApps.findIndex(m => m.id === live.id);
+                      if (mIdx !== -1) {
+                        mergedApps[mIdx] = { ...mergedApps[mIdx], ...live };
+                      } else {
+                        mergedApps.push(live);
+                      }
+                    }
+                  }
+                } catch (e) {}
+              })
+            );
+          }
         }
       } catch (e) {
         console.warn("Error merging local cached applications", e);
