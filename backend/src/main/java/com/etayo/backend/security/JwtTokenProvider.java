@@ -89,7 +89,7 @@ public class JwtTokenProvider {
                     .build()
                     .parseClaimsJws(token);
             return true;
-        } catch (MalformedJwtException | ExpiredJwtException | UnsupportedJwtException | IllegalArgumentException ex) {
+        } catch (Exception ex) {
             System.err.println("Invalid JWT Token: " + ex.getMessage());
         }
         return false;

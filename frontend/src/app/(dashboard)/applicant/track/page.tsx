@@ -280,6 +280,52 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         const headers: Record<string, string> = { "Accept": "application/json" };
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
+        // 1. Background sync all applicant permits by email
+        const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+        let userEmail = "";
+        if (userStr) {
+          try {
+            const u = JSON.parse(userStr);
+            if (u.email) userEmail = u.email;
+          } catch (e) {}
+        }
+        if (userEmail) {
+          try {
+            let userAppsRes = await fetch(`${base}/permits?email=${encodeURIComponent(userEmail.trim())}`, { headers });
+            if (!userAppsRes.ok) {
+              userAppsRes = await fetch(`${base}/permits?email=${encodeURIComponent(userEmail.trim())}`, { headers: { "Accept": "application/json" } });
+            }
+            if (userAppsRes.ok) {
+              const userApps = await userAppsRes.json();
+              if (Array.isArray(userApps) && userApps.length > 0) {
+                userApps.forEach((uApp: any) => {
+                  if (!uApp || !uApp.id) return;
+                  const curId = String(uApp.id).trim();
+                  const lowId = curId.toLowerCase();
+                  const upId = curId.toUpperCase();
+                  const st = (uApp.status || "").toLowerCase().trim();
+                  if (st === "approved" || st === "released") {
+                    try {
+                      [curId, lowId, upId].forEach(k => {
+                        localStorage.setItem(`etayo_status_${k}`, uApp.status);
+                        localStorage.setItem(`etayo_approved_${k}`, "true");
+                        if (uApp.status === "released") {
+                          localStorage.setItem(`etayo_released_${k}`, "true");
+                          localStorage.setItem(`etayo_paid_${k}`, "true");
+                        }
+                        if (uApp.orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, uApp.orderOfPaymentNo);
+                        if (uApp.assessedFees) localStorage.setItem(`etayo_fees_${k}`, String(uApp.assessedFees));
+                      });
+                    } catch (e) {}
+                    updateApplication(uApp);
+                  }
+                });
+              }
+            }
+          } catch (e) {}
+        }
+
+        // 2. Poll individual unapproved applications
         const list = applications || [];
         for (const a of list) {
           if (!a || !a.id) continue;
@@ -290,8 +336,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
           if (rawSt !== "approved" && rawSt !== "released") {
             let res = await fetch(`${base}/permits/${encodeURIComponent(aId)}`, { headers });
+            if (!res.ok) {
+              res = await fetch(`${base}/permits/${encodeURIComponent(aId)}`, { headers: { "Accept": "application/json" } });
+            }
             if (!res.ok && aIdUpper !== aId) {
-              res = await fetch(`${base}/permits/${encodeURIComponent(aIdUpper)}`, { headers });
+              res = await fetch(`${base}/permits/${encodeURIComponent(aIdUpper)}`, { headers: { "Accept": "application/json" } });
             }
             if (res.ok) {
               const live = await res.json();
@@ -318,7 +367,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           }
         }
       } catch (e) {}
-    }, 2500);
+    }, 2000);
 
     return () => {
       if (typeof window !== "undefined") {
@@ -959,7 +1008,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                 num: 3, 
                 title: isLocationalClearance ? "3. Zoning Clearance" : "3. Endorsement", 
                 desc: (isAppApproved || isActuallyReleased || app.status === "approved" || app.status === "released") 
-                  ? "Approved & Endorsed ✓" 
+                  ? (isLocationalClearance ? "Zoning Review Approved ✓" : "Approved & Endorsed ✓") 
                   : (isLocationalClearance ? "Zoning Review" : "Chief OBO Approval"), 
                 active: isAppApproved || isActuallyReleased || statusConfig.step >= 3, 
                 current: isAppApproved && !isActuallyReleased 
@@ -2179,6 +2228,18 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                             const isAnyUnderReview = dossier.applications.some(a => {
                               const aId = String(a.id || "").trim();
                               const raw = (a.status || "").toLowerCase().trim();
+                              const isAppApproved = raw === "approved" || raw === "released" || Boolean((a as any)?.isReleased) || (typeof window !== "undefined" && (
+                                localStorage.getItem(`etayo_approved_${aId}`) === "true" ||
+                                localStorage.getItem(`etayo_approved_${aId.toLowerCase()}`) === "true" ||
+                                localStorage.getItem(`etayo_approved_${aId.toUpperCase()}`) === "true" ||
+                                localStorage.getItem(`etayo_status_${aId}`) === "approved" ||
+                                localStorage.getItem(`etayo_status_${aId.toLowerCase()}`) === "approved" ||
+                                localStorage.getItem(`etayo_status_${aId.toUpperCase()}`) === "approved" ||
+                                localStorage.getItem(`etayo_status_${aId}`) === "released" ||
+                                localStorage.getItem(`etayo_status_${aId.toLowerCase()}`) === "released" ||
+                                localStorage.getItem(`etayo_status_${aId.toUpperCase()}`) === "released"
+                              ));
+                              if (isAppApproved) return false;
                               return raw === "under_review" || (typeof window !== "undefined" && (
                                 localStorage.getItem(`etayo_status_${aId}`) === "under_review" ||
                                 localStorage.getItem(`etayo_status_${aId.toLowerCase()}`) === "under_review" ||

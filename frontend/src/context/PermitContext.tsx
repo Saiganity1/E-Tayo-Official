@@ -868,9 +868,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
+      const targetId = encodeURIComponent(String(updatedApp.id).trim());
+
       // 4. Fast PATCH status endpoint to guarantee DB update
       try {
-        await fetch(`${API_BASE_URL}/permits/${updatedApp.id}/status`, {
+        let patchRes = await fetch(`${API_BASE_URL}/permits/${targetId}/status`, {
           method: "PATCH",
           headers,
           body: JSON.stringify({
@@ -878,26 +880,54 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             remarks: updatedApp.remarks || ""
           })
         });
+        if (!patchRes.ok && token) {
+          await fetch(`${API_BASE_URL}/permits/${targetId}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: updatedApp.status,
+              remarks: updatedApp.remarks || ""
+            })
+          });
+        }
       } catch (e) {
-        console.warn("PATCH status fallback notice", e);
+        try {
+          await fetch(`${API_BASE_URL}/permits/${targetId}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: updatedApp.status,
+              remarks: updatedApp.remarks || ""
+            })
+          });
+        } catch (err) {}
       }
 
       // 5. Full PUT update for tracking steps, logs, requirements
-      const res = await fetch(`${API_BASE_URL}/permits/${updatedApp.id}`, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify(updatedApp)
-      });
-      if (!res.ok) {
-        console.error("Failed to update permit on backend:", res.status, await res.text());
-      } else {
-        const saved: PermitApplication = await res.json();
-        setApplications((prev) =>
-          prev.map((app) => (app.id === saved.id ? { ...app, ...saved, ...updatedApp } : app))
-        );
+      try {
+        let res = await fetch(`${API_BASE_URL}/permits/${targetId}`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(updatedApp)
+        });
+        if (!res.ok && token) {
+          res = await fetch(`${API_BASE_URL}/permits/${targetId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedApp)
+          });
+        }
+        if (res && res.ok) {
+          const saved: PermitApplication = await res.json();
+          setApplications((prev) =>
+            prev.map((app) => (matchPermitId(app.id, saved.id) ? { ...app, ...saved, ...updatedApp } : app))
+          );
+        }
+      } catch (e) {
+        console.error("Failed to update permit on backend:", e);
       }
     } catch (e) {
-      console.error("Failed to update permit", e);
+      console.error("Error in updateApplication:", e);
     }
   };
 

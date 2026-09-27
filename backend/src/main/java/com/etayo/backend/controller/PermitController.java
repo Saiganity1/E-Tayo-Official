@@ -99,9 +99,32 @@ public class PermitController {
         return ResponseEntity.ok(applicantPermits);
     }
 
+    private java.util.Optional<PermitApplication> findPermitFlexible(String id) {
+        if (id == null || id.trim().isEmpty()) return java.util.Optional.empty();
+        String cleanId = id.trim();
+        java.util.Optional<PermitApplication> found = permitApplicationRepository.findByIdIgnoreCase(cleanId);
+        if (found.isPresent()) return found;
+
+        // Try replacing spaces with hyphens
+        String withHyphens = cleanId.replaceAll("\\s+", "-");
+        found = permitApplicationRepository.findByIdIgnoreCase(withHyphens);
+        if (found.isPresent()) return found;
+
+        // Try replacing hyphens with spaces
+        String withSpaces = cleanId.replaceAll("-+", " ");
+        found = permitApplicationRepository.findByIdIgnoreCase(withSpaces);
+        if (found.isPresent()) return found;
+
+        // Try alphanumeric normalized match
+        String alphanumericOnly = cleanId.replaceAll("[\\s-_]+", "");
+        return permitApplicationRepository.findAll().stream()
+            .filter(p -> p.getId() != null && p.getId().replaceAll("[\\s-_]+", "").equalsIgnoreCase(alphanumericOnly))
+            .findFirst();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PermitApplication> getPermitById(@PathVariable String id) {
-        return permitApplicationRepository.findByIdIgnoreCase(id)
+        return findPermitFlexible(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -375,7 +398,7 @@ public class PermitController {
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<PermitApplication> updatePermit(@PathVariable String id, @RequestBody PermitApplication permit) {
         permit.setId(id);
-        return permitApplicationRepository.findByIdIgnoreCase(id).map(existing -> {
+        return findPermitFlexible(id).map(existing -> {
             String oldStatus = existing.getStatus();
             existing.setStatus(permit.getStatus());
             if (permit.getRemarks() != null) existing.setRemarks(permit.getRemarks());
@@ -450,7 +473,7 @@ public class PermitController {
     @PatchMapping("/{id}/status")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<PermitApplication> updatePermitStatus(@PathVariable String id, @RequestBody java.util.Map<String, Object> payload) {
-        return permitApplicationRepository.findByIdIgnoreCase(id).map(existing -> {
+        return findPermitFlexible(id).map(existing -> {
             String oldStatus = existing.getStatus();
             if (payload.containsKey("status") && payload.get("status") != null) {
                 existing.setStatus(String.valueOf(payload.get("status")));

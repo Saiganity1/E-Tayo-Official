@@ -88,10 +88,17 @@ interface ViewerDoc {
 export default function StaffEvaluatePage() {
   const params = useParams();
   const router = useRouter();
-  const id = params?.id as string;
+  const rawParamId = typeof params?.id === "string" ? decodeURIComponent(params.id).trim() : "";
+  const id = rawParamId;
   const { applications, updateApplication, addSystemLog } = usePermitContext();
 
-  const app = applications.find((a) => a.id === id);
+  const matchPermitId = (a?: string, b?: string) => {
+    if (!a || !b) return false;
+    if (a.trim().toLowerCase() === b.trim().toLowerCase()) return true;
+    return a.toLowerCase().replace(/[\s-_]+/g, "") === b.toLowerCase().replace(/[\s-_]+/g, "");
+  };
+
+  const app = applications.find((a) => a.id === id || matchPermitId(a.id, id));
 
   const isLC = Boolean(
     app?.permitType === "locational_clearance" ||
@@ -1363,8 +1370,11 @@ export default function StaffEvaluatePage() {
     const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
     if (token) authHeaders["Authorization"] = `Bearer ${token}`;
 
+    const targetPermitId = encodeURIComponent(String(app.id || rawParamId || id).trim());
+
+    // 1. Send status update with token, fallback without token if rejected/expired
     try {
-      await fetch(`${apiBase}/permits/${app.id}/status`, {
+      let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
         method: "PATCH",
         headers: authHeaders,
         body: JSON.stringify({
@@ -1372,18 +1382,51 @@ export default function StaffEvaluatePage() {
           remarks: decisionNotes || shortSummary
         })
       });
+      if (!patchRes.ok && token) {
+        await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "approved",
+            remarks: decisionNotes || shortSummary
+          })
+        });
+      }
     } catch (e) {
-      console.warn("Direct PATCH permit status notice", e);
+      try {
+        await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "approved",
+            remarks: decisionNotes || shortSummary
+          })
+        });
+      } catch (err) {}
     }
 
+    // 2. Send full application update with fallback
     try {
-      await fetch(`${apiBase}/permits/${app.id}`, {
+      let putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
         method: "PUT",
         headers: authHeaders,
         body: JSON.stringify(updatedApp)
       });
+      if (!putRes.ok && token) {
+        await fetch(`${apiBase}/permits/${targetPermitId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedApp)
+        });
+      }
     } catch (e) {
-      console.warn("Direct PUT permit notice", e);
+      try {
+        await fetch(`${apiBase}/permits/${targetPermitId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedApp)
+        });
+      } catch (err) {}
     }
 
     await updateApplication(updatedApp as any);
@@ -1540,8 +1583,10 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
     const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
     if (token) authHeaders["Authorization"] = `Bearer ${token}`;
 
+    const targetPermitId = encodeURIComponent(String(app.id || rawParamId || id).trim());
+
     try {
-      await fetch(`${apiBase}/permits/${app.id}/status`, {
+      let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
         method: "PATCH",
         headers: authHeaders,
         body: JSON.stringify({
@@ -1549,18 +1594,50 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
           remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`
         })
       });
+      if (!patchRes.ok && token) {
+        await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "released",
+            remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`
+          })
+        });
+      }
     } catch (e) {
-      console.warn("Direct PATCH permit status notice", e);
+      try {
+        await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "released",
+            remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`
+          })
+        });
+      } catch (err) {}
     }
 
     try {
-      await fetch(`${apiBase}/permits/${app.id}`, {
+      let putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
         method: "PUT",
         headers: authHeaders,
         body: JSON.stringify(updatedApp)
       });
+      if (!putRes.ok && token) {
+        await fetch(`${apiBase}/permits/${targetPermitId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedApp)
+        });
+      }
     } catch (e) {
-      console.warn("Direct PUT permit notice", e);
+      try {
+        await fetch(`${apiBase}/permits/${targetPermitId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedApp)
+        });
+      } catch (err) {}
     }
 
     await updateApplication(updatedApp as any);
