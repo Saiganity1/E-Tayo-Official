@@ -419,8 +419,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       }
     }, 1800);
 
-    // 4. Live polling every 3 seconds to auto-detect admin approval without manual refresh
-    const pollTimer = setInterval(fetchFreshStatus, 3000);
+    // 4. Live polling every 25 seconds (only when tab is visible) to auto-detect admin approval without manual refresh
+    const pollTimer = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      fetchFreshStatus();
+    }, 25000);
 
     // 5. Cross-tab & multi-window instant reactive update listener
     const handleSync = (e?: any) => {

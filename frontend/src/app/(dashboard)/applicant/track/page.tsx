@@ -268,16 +268,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       window.addEventListener("etayo_applications_updated", handleSync);
     }
 
-    const pollInterval = setInterval(() => {
-      if (refreshApplications) refreshApplications();
-    }, 4000);
-
     return () => {
       if (typeof window !== "undefined") {
         window.removeEventListener("storage", handleSync);
         window.removeEventListener("etayo_applications_updated", handleSync);
       }
-      clearInterval(pollInterval);
     };
   }, [refreshApplications]);
 

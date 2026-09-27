@@ -278,23 +278,21 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     userRoleRef.current = userRole;
   }, [userRole]);
 
+  const rateLimitCooldownUntil = useRef<number>(0);
+
   // Reusable fetch function for initial load and polling (memoized to keep reference stable)
   const fetchData = useCallback(async () => {
     try {
+      // Cooldown guard: if Cloudflare / Render returned 429, wait for cooldown to expire
+      if (Date.now() < rateLimitCooldownUntil.current) {
+        return;
+      }
+
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       
-      // If user is unauthenticated (e.g. Incognito or guest), clear active state but preserve persistent local storage
+      // If user is unauthenticated (e.g. on /login or guest), do not flood the backend
       if (!token) {
         setApplications([]);
-        
-        // Only public fees are fetched for public users
-        const feesRes = await fetch(`${API_BASE_URL}/fees`, { headers: { "Accept": "application/json" } }).catch(e => ({ ok: false, json: async () => [] }));
-        if (feesRes.ok) {
-          const feesData = await feesRes.json();
-          if (Array.isArray(feesData) && feesData.length > 0) {
-            setFeeStructures(feesData);
-          }
-        }
         return;
       }
 
@@ -341,6 +339,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           : Promise.resolve({ ok: false, json: async () => [] } as any),
         fetch(`${API_BASE_URL}/fees`, { headers }).catch(e => ({ ok: false, json: async () => [] }))
       ]);
+
+      // Check if Cloudflare or Render returned 429
+      if ((appsRes as any)?.status === 429 || (feesRes as any)?.status === 429) {
+        console.warn("Cloudflare / Render rate-limit challenge (429) detected. Pausing background requests for 60 seconds.");
+        rateLimitCooldownUntil.current = Date.now() + 60000;
+        return;
+      }
 
       let backendApps: PermitApplication[] = [];
       if (appsRes.ok) {
@@ -473,57 +478,6 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               mergedApps.push(c);
             }
           });
-
-          // Actively fetch live status by ID for all pending/under_review applications to catch fresh approvals immediately
-          const pendingApps = mergedApps.filter(m => m && m.id && (m.status === "pending" || m.status === "under_review"));
-          if (pendingApps.length > 0) {
-            await Promise.all(
-              pendingApps.map(async (m) => {
-                try {
-                  const mId = encodeURIComponent(String(m.id).trim());
-                  let singleRes = await fetch(`${API_BASE_URL}/permits/${mId}`, { headers });
-                  if (!singleRes.ok && m.id.toUpperCase() !== m.id) {
-                    singleRes = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(m.id.toUpperCase().trim())}`, { headers });
-                  }
-                  if (!singleRes.ok) {
-                    singleRes = await fetch(`${API_BASE_URL}/permits/${mId}`, { headers: { "Accept": "application/json" } });
-                  }
-                  if (singleRes.ok) {
-                    const live = await singleRes.json();
-                    if (live && live.id) {
-                      const idStr = String(live.id).trim();
-                      const idLower = idStr.toLowerCase();
-                      const idUpper = idStr.toUpperCase();
-                      if (live.status === "approved" || live.status === "released") {
-                        try {
-                          [idStr, idLower, idUpper].forEach(k => {
-                            localStorage.setItem(`etayo_status_${k}`, live.status);
-                            localStorage.setItem(`etayo_approved_${k}`, "true");
-                            if (live.status === "released") {
-                              localStorage.setItem(`etayo_released_${k}`, "true");
-                              localStorage.setItem(`etayo_paid_${k}`, "true");
-                            }
-                            if (live.orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, live.orderOfPaymentNo);
-                            if (live.assessedFees) localStorage.setItem(`etayo_fees_${k}`, String(live.assessedFees));
-                          });
-                        } catch (e) {}
-                      }
-                      const mIdx = mergedApps.findIndex(x => matchPermitId(x.id, live.id));
-                      if (mIdx !== -1) {
-                        mergedApps[mIdx] = { 
-                          ...mergedApps[mIdx], 
-                          ...live, 
-                          status: (live.status === "approved" || live.status === "released") ? live.status : (mergedApps[mIdx].status || live.status) 
-                        };
-                      } else {
-                        mergedApps.push(live);
-                      }
-                    }
-                  }
-                } catch (e) {}
-              })
-            );
-          }
         }
       } catch (e) {
         console.warn("Error merging local cached applications", e);
@@ -675,10 +629,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // 4. Fetch fresh data from backend immediately
     fetchData();
 
-    // 5. Set up periodic polling every 4 seconds for real-time multi-tab & multi-user sync
+    // 5. Set up periodic polling every 20 seconds for real-time multi-tab & multi-user sync (only if window is visible and user is logged in)
     const pollInterval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      const currentToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      if (!currentToken) return; // Do not poll when logged out
       fetchData();
-    }, 4000);
+    }, 20000);
 
     // 6. Cross-tab & multi-window instant reactive update listener
     const handleSyncEvent = () => {
