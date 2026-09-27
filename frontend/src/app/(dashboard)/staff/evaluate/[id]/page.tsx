@@ -12,9 +12,19 @@ import {
   generateElectricalPermitPdf, 
   generateSanitaryPermitPdf,
   generateMechanicalPermitPdf,
+  generateElectronicsPermitPdf,
+  generateDemolitionPermitPdf,
+  generateExcavationPermitPdf,
+  generateBfpApplicationPdf,
   generateFencingPermitPdf,
+  generateSignPermitPdf,
+  generateTemporaryServicePermitPdf,
+  generateCertificateOfOccupancyPdf,
+  generateCertificateOfCompletionPdf,
+  generateCfeiPdf,
   UnifiedPermitFormData
 } from "../../../../../utils/unifiedPermitPdfGenerator";
+import { getSystemActivePresets } from "../../../../../utils/systemFormPresets";
 import { PROJECT_TYPES_MATRIX, ProjectTypeItem, PermitFormMatrix } from "../../../../../data/projectTypeMatrix";
 import { 
   ShieldCheck, 
@@ -467,7 +477,9 @@ export default function StaffEvaluatePage() {
 
         const cleanSeq = app.id ? app.id.replace(/^[A-Za-z]+-/i, "") : "2026-0001";
         const issuedDate = (app as any).permitIssuedDate || (app as any).dateIssued || (app.status === "approved" || app.status === "released" ? ((app as any).dateApproved || app.dateSubmitted || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined);
+        const systemPresets = getSystemActivePresets();
         const formData: UnifiedPermitFormData = {
+          ...systemPresets,
           applicationNo: app.id,
           status: app.status,
           isApproved: app.status === "approved" || app.status === "released",
@@ -784,6 +796,177 @@ export default function StaffEvaluatePage() {
               fileName: `${app.id}_Fencing_Permit_FP.pdf`,
               isOfficialForm: true,
             });
+          }
+        }
+
+        // 7. Electronics Permit (EL)
+        if (pTypeObj.matrix?.electronicsPermit === 'required' || pTypeObj.matrix?.electronicsPermit === 'conditional' || (app as any).electronicsPermitNo || (app as any).electronicsEngineerName || (app as any).telecomScope) {
+          try {
+            const elB64 = await generateElectronicsPermitPdf(formData);
+            const elUrl = createBlobFromBase64(elB64);
+            docs.push({
+              id: "electronics-permit-tab",
+              title: "Official Electronics Permit Form (NBC Form E-02)",
+              tabLabel: "Electronics (EL)",
+              type: "pdf",
+              url: elUrl,
+              fileName: `${app.id}_Electronics_Permit_EL.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            console.error("Failed to generate EL PDF", e);
+          }
+        }
+
+        // 8. Demolition Permit (DP)
+        if (pTypeObj.matrix?.demolitionPermit === 'required' || pTypeObj.matrix?.demolitionPermit === 'conditional' || (app as any).demolitionPermitNo || (app as any).demolitionScope) {
+          try {
+            const dpB64 = await generateDemolitionPermitPdf(formData);
+            const dpUrl = createBlobFromBase64(dpB64);
+            docs.push({
+              id: "demolition-permit-tab",
+              title: "Official Demolition Permit Form (NBC Form No. B-05)",
+              tabLabel: "Demolition (DP)",
+              type: "pdf",
+              url: dpUrl,
+              fileName: `${app.id}_Demolition_Permit_DP.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            console.error("Failed to generate DP PDF", e);
+          }
+        }
+
+        // 9. Excavation & Ground Preparation Permit (EXP)
+        if (pTypeObj.matrix?.excavationPermit === 'required' || pTypeObj.matrix?.excavationPermit === 'conditional' || (app as any).excavationPermitNo || (app as any).excavationScope) {
+          try {
+            const expB64 = await generateExcavationPermitPdf(formData);
+            const expUrl = createBlobFromBase64(expB64);
+            docs.push({
+              id: "excavation-permit-tab",
+              title: "Official Excavation and Ground Preparation Permit Form (NBC Form No. B-04)",
+              tabLabel: "Excavation (EXP)",
+              type: "pdf",
+              url: expUrl,
+              fileName: `${app.id}_Excavation_Permit_EXP.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            console.error("Failed to generate EXP PDF", e);
+          }
+        }
+
+        // 10. Sign Permit (SGP)
+        if (pTypeObj.matrix?.signPermit === 'required' || pTypeObj.matrix?.signPermit === 'conditional' || (app as any).signPermitNo || (app as any).signType) {
+          try {
+            const sgpB64 = await generateSignPermitPdf(formData);
+            const sgpUrl = createBlobFromBase64(sgpB64);
+            docs.push({
+              id: "sign-permit-tab",
+              title: "Official Sign Permit Application (NBC Form B-07)",
+              tabLabel: "Sign Permit (SGP)",
+              type: "pdf",
+              url: sgpUrl,
+              fileName: `${app.id}_Sign_Permit_SGP.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            console.error("Failed to generate SGP PDF", e);
+          }
+        }
+
+        // 11. Temporary Service Connection (TSC)
+        if (pTypeObj.matrix?.temporaryServicePermit === 'required' || pTypeObj.matrix?.temporaryServicePermit === 'conditional' || (app as any).temporaryServicePermitNo || (app as any).temporaryPowerDuration) {
+          try {
+            const tscB64 = await generateTemporaryServicePermitPdf(formData);
+            const tscUrl = createBlobFromBase64(tscB64);
+            docs.push({
+              id: "temporary-service-permit-tab",
+              title: "Permit for Temporary Service Connection (NBC Form E-03)",
+              tabLabel: "Temp Service (TSC)",
+              type: "pdf",
+              url: tscUrl,
+              fileName: `${app.id}_Temporary_Service_TSC.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            console.error("Failed to generate TSC PDF", e);
+          }
+        }
+
+        // 12. Certificate of Completion (CC)
+        if (pTypeObj.matrix?.certificateOfCompletion === 'required' || pTypeObj.matrix?.certificateOfCompletion === 'conditional' || (app as any).certificateOfCompletionNo || (app as any).ccDateCompleted) {
+          try {
+            const ccB64 = await generateCertificateOfCompletionPdf(formData);
+            const ccUrl = createBlobFromBase64(ccB64);
+            docs.push({
+              id: "certificate-of-completion-tab",
+              title: "Certificate of Completion (NBC Form B-09)",
+              tabLabel: "Completion (CC)",
+              type: "pdf",
+              url: ccUrl,
+              fileName: `${app.id}_Certificate_of_Completion_CC.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            console.error("Failed to generate CC PDF", e);
+          }
+        }
+
+        // 13. Certificate of Occupancy (CO)
+        if (pTypeObj.matrix?.certificateOfOccupancy === 'required' || pTypeObj.matrix?.certificateOfOccupancy === 'conditional' || (app as any).certificateOfOccupancyNo || (app as any).occupancyDate) {
+          try {
+            const coB64 = await generateCertificateOfOccupancyPdf(formData);
+            const coUrl = createBlobFromBase64(coB64);
+            docs.push({
+              id: "certificate-of-occupancy-tab",
+              title: "Certificate of Occupancy (NBC Form B-10)",
+              tabLabel: "Occupancy (CO)",
+              type: "pdf",
+              url: coUrl,
+              fileName: `${app.id}_Certificate_of_Occupancy_CO.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            console.error("Failed to generate CO PDF", e);
+          }
+        }
+
+        // 14. Certificate of Final Electrical Inspection (CFEI)
+        if (pTypeObj.matrix?.cfei === 'required' || pTypeObj.matrix?.cfei === 'conditional' || (app as any).cfeiNo || (app as any).cfeiAppliedDate) {
+          try {
+            const cfeiB64 = await generateCfeiPdf(formData);
+            const cfeiUrl = createBlobFromBase64(cfeiB64);
+            docs.push({
+              id: "cfei-permit-tab",
+              title: "Certificate of Final Electrical Inspection (CFEI)",
+              tabLabel: "CFEI",
+              type: "pdf",
+              url: cfeiUrl,
+              fileName: `${app.id}_CFEI.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            console.error("Failed to generate CFEI PDF", e);
+          }
+        }
+
+        // 15. Bureau of Fire Protection Application (BFP)
+        if (pTypeObj.matrix?.fireSafetyEvaluationClearance === 'required' || (app as any).bfpNo || (app as any).fireSafetyEvaluationClearanceNo) {
+          try {
+            const bfpB64 = await generateBfpApplicationPdf(formData);
+            const bfpUrl = createBlobFromBase64(bfpB64);
+            docs.push({
+              id: "bfp-application-tab",
+              title: "Bureau of Fire Protection Application Form (BFP-01)",
+              tabLabel: "BFP Form",
+              type: "pdf",
+              url: bfpUrl,
+              fileName: `${app.id}_BFP_Application.pdf`,
+              isOfficialForm: true,
+            });
+          } catch (e) {
+            console.error("Failed to generate BFP PDF", e);
           }
         }
       }

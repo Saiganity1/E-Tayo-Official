@@ -37,6 +37,7 @@ import {
 } from "../../utils/unifiedPermitPdfGenerator";
 import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
 import SignatureCreator from "../common/SignatureCreator";
+import { getSystemActivePresets, getSystemPresetsMetadata } from "../../utils/systemFormPresets";
 
 export const FORM_OFFICIAL_DETAILS: Record<string, { officialTitle: string; nbcCode: string; icon: any; color: string; desc: string }> = {
   buildingPermit: {
@@ -208,6 +209,83 @@ export default function TechnicalPermitFormsStep({
   );
   const activeMeta = PERMIT_FORM_METADATA[activeTab];
   const [showMatrixGuide, setShowMatrixGuide] = useState(false);
+
+  // Active Studio Presets & Synchronization
+  const [activeSystemPresets, setActiveSystemPresets] = useState<UnifiedPermitFormData>(() => getSystemActivePresets());
+  const [studioMeta, setStudioMeta] = useState(() => getSystemPresetsMetadata());
+  const [syncToast, setSyncToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setActiveSystemPresets(getSystemActivePresets());
+      setStudioMeta(getSystemPresetsMetadata());
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("etayo-system-presets-applied", handleUpdate);
+      window.addEventListener("storage", handleUpdate);
+      return () => {
+        window.removeEventListener("etayo-system-presets-applied", handleUpdate);
+        window.removeEventListener("storage", handleUpdate);
+      };
+    }
+  }, []);
+
+  const handleSyncFromStudio = () => {
+    const presets = getSystemActivePresets();
+    setActiveSystemPresets(presets);
+    const meta = getSystemPresetsMetadata();
+    setStudioMeta(meta);
+
+    if (presets.applicantTIN) setApplicantTIN(presets.applicantTIN);
+    if (presets.govIdNo) setGovIdNo(presets.govIdNo);
+    if (presets.govIdDateIssued) setGovIdDateIssued(presets.govIdDateIssued);
+    if (presets.govIdPlaceIssued) setGovIdPlaceIssued(presets.govIdPlaceIssued);
+    if (presets.formOfOwnership) setFormOfOwnership(presets.formOfOwnership);
+    if (presets.constructionOwnedByEnterprise) setConstructionOwnedByEnterprise(presets.constructionOwnedByEnterprise);
+
+    if (presets.architectName) setArchitectName(presets.architectName);
+    if (presets.architectAddress) setArchitectAddress(presets.architectAddress);
+    if (presets.architectPRC) setArchitectPRC(presets.architectPRC);
+    if (presets.architectPRCValidity) setArchitectPRCValidity(presets.architectPRCValidity);
+    if (presets.architectIAPOA) setArchitectIAPOA(presets.architectIAPOA);
+    if (presets.architectPTR) setArchitectPTR(presets.architectPTR);
+    if (presets.architectPTRIssued) setArchitectPTRIssued(presets.architectPTRIssued);
+    if (presets.architectPTRIssuedAt) setArchitectPTRIssuedAt(presets.architectPTRIssuedAt);
+    if (presets.architectTIN) setArchitectTIN(presets.architectTIN);
+
+    if (presets.civilEngineerName) setCivilEngineerName(presets.civilEngineerName);
+    if (presets.civilEngineerAddress) setCivilEngineerAddress(presets.civilEngineerAddress);
+    if (presets.civilEngineerPRC) setCivilEngineerPRC(presets.civilEngineerPRC);
+    if (presets.civilEngineerPRCValidity) setCivilEngineerPRCValidity(presets.civilEngineerPRCValidity);
+    if (presets.civilEngineerPTR) setCivilEngineerPTR(presets.civilEngineerPTR);
+    if (presets.civilEngineerPTRIssued) setCivilEngineerPTRIssued(presets.civilEngineerPTRIssued);
+    if (presets.civilEngineerPTRIssuedAt) setCivilEngineerPTRIssuedAt(presets.civilEngineerPTRIssuedAt);
+    if (presets.civilEngineerTIN) setCivilEngineerTIN(presets.civilEngineerTIN);
+
+    if (presets.electricalEngineerName) setElectricalEngineerName(presets.electricalEngineerName);
+    if (presets.electricalEngineerPRC) setElectricalEngineerPRC(presets.electricalEngineerPRC);
+    if (presets.electricalEngineerPTR) setElectricalEngineerPTR(presets.electricalEngineerPTR);
+    if (presets.electricalEngineerTIN) setElectricalEngineerTIN(presets.electricalEngineerTIN);
+    if (presets.electricalContractorName) setElectricalContractorName(presets.electricalContractorName);
+
+    if (presets.masterPlumberName) setMasterPlumberName(presets.masterPlumberName);
+    if (presets.masterPlumberPRC) setMasterPlumberPRC(presets.masterPlumberPRC);
+    if (presets.masterPlumberPTR) setMasterPlumberPTR(presets.masterPlumberPTR);
+    if (presets.masterPlumberTIN) setMasterPlumberTIN(presets.masterPlumberTIN);
+
+    if (presets.mechanicalEngineerName) setMechanicalEngineerName(presets.mechanicalEngineerName);
+    if (presets.mechanicalEngineerPRC) setMechanicalEngineerPRC(presets.mechanicalEngineerPRC);
+    if (presets.mechanicalEngineerPTR) setMechanicalEngineerPTR(presets.mechanicalEngineerPTR);
+    if (presets.mechanicalEngineerTIN) setMechanicalEngineerTIN(presets.mechanicalEngineerTIN);
+
+    if (presets.electronicsEngineerName) setElectronicsEngineerName(presets.electronicsEngineerName);
+    if (presets.electronicsEngineerPRC) setElectronicsEngineerPRC(presets.electronicsEngineerPRC);
+    if (presets.electronicsEngineerPTR) setElectronicsEngineerPTR(presets.electronicsEngineerPTR);
+    if (presets.electronicsEngineerTIN) setElectronicsEngineerTIN(presets.electronicsEngineerTIN);
+
+    setSyncToast("Studio presets synced successfully to form fields!");
+    setTimeout(() => setSyncToast(null), 3500);
+  };
 
   // ==========================================
   // 1. GENERAL APPLICANT & PROPERTY DATA (Universal)
@@ -1892,9 +1970,10 @@ export default function TechnicalPermitFormsStep({
       const applicationNo = `UNIFIED-${currentYear}-${randomSeq}`;
       const buildingPermitNo = `BP-${currentYear}-${randomSeq}`;
       const submissionDate = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-      const fullAddress = compiledFullAddress;
+      const activePresets = getSystemActivePresets();
 
       const payload: UnifiedPermitFormData = {
+        ...activePresets,
         applicationNo,
         buildingPermitNo: (projectType.matrix?.buildingPermit === 'required' || projectType.matrix?.buildingPermit === 'conditional') ? buildingPermitNo : undefined,
         permitNo: `AP-${currentYear}-${randomSeq}`,
@@ -3257,6 +3336,30 @@ export default function TechnicalPermitFormsStep({
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <button
               type="button"
+              onClick={handleSyncFromStudio}
+              title={`Presets source: ${studioMeta.source === 'custom' ? 'Custom Studio Edits (' + studioMeta.lastUpdated + ')' : 'Factory Calibrated'}`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: studioMeta.source === "custom" ? "#eff6ff" : "#f8fafc",
+                border: studioMeta.source === "custom" ? "1.5px solid #93c5fd" : "1.5px solid #cbd5e1",
+                color: studioMeta.source === "custom" ? "#1e40af" : "#475569",
+                padding: "6px 14px",
+                borderRadius: "999px",
+                fontSize: "0.82rem",
+                fontWeight: "700",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
+              }}
+            >
+              <RefreshCw size={13} color={studioMeta.source === "custom" ? "#2563eb" : "#64748b"} />
+              <span>{studioMeta.source === "custom" ? "Sync Studio Edits (Active)" : "Sync Studio Presets"}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setShowMatrixGuide(true)}
               style={{
                 display: "inline-flex",
@@ -3298,6 +3401,25 @@ export default function TechnicalPermitFormsStep({
       </div>
 
       {/* MODE SELECTOR */}
+      {syncToast && (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "10px 16px",
+          background: "#ecfdf5",
+          border: "1px solid #a7f3d0",
+          borderRadius: "10px",
+          color: "#065f46",
+          fontSize: "0.86rem",
+          fontWeight: "600",
+          marginBottom: "1rem",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.03)"
+        }}>
+          <CheckCircle2 size={16} color="#10b981" />
+          <span>{syncToast}</span>
+        </div>
+      )}
       <div style={{
         display: "inline-flex",
         background: "#f1f5f9",

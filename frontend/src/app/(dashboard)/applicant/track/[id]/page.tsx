@@ -42,9 +42,19 @@ import {
   generateElectricalPermitPdf, 
   generateSanitaryPermitPdf,
   generateMechanicalPermitPdf,
+  generateElectronicsPermitPdf,
+  generateDemolitionPermitPdf,
+  generateExcavationPermitPdf,
+  generateBfpApplicationPdf,
   generateFencingPermitPdf,
+  generateSignPermitPdf,
+  generateTemporaryServicePermitPdf,
+  generateCertificateOfOccupancyPdf,
+  generateCertificateOfCompletionPdf,
+  generateCfeiPdf,
   UnifiedPermitFormData
 } from "../../../../../utils/unifiedPermitPdfGenerator";
+import { getSystemActivePresets } from "../../../../../utils/systemFormPresets";
 import { generateLocationalClearancePdf } from "../../../../../utils/locationalClearancePdfGenerator";
 import { PROJECT_TYPES_MATRIX, ProjectTypeItem } from "../../../../../data/projectTypeMatrix";
 import { INITIAL_APPLICATIONS } from "../../../../../data/mock";
@@ -567,8 +577,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
     const cleanSeq = appData?.id ? String(appData.id).replace(/^[A-Za-z]+-/i, "") : "2026-6636";
     const issuedDate = (appData as any)?.permitIssuedDate || (appData as any)?.dateIssued || (appData?.status === "approved" || appData?.status === "released" ? (appData?.dateApproved || appData?.dateSubmitted || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined);
+    const activePresets = getSystemActivePresets();
     
     const formData: UnifiedPermitFormData = {
+      ...activePresets,
       applicationNo: appData?.id || "APP-2026-6636",
       status: appData?.status,
       isApproved: appData?.status === "approved" || appData?.status === "released",
@@ -741,6 +753,33 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         return `data:application/pdf;base64,${b64}`;
       } else if (doc.code === "FP") {
         const b64 = await generateFencingPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "EL") {
+        const b64 = await generateElectronicsPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "DP") {
+        const b64 = await generateDemolitionPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "EXP") {
+        const b64 = await generateExcavationPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "SGP") {
+        const b64 = await generateSignPermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "TSC" || doc.code === "PTSC") {
+        const b64 = await generateTemporaryServicePermitPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "CO") {
+        const b64 = await generateCertificateOfOccupancyPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "CC") {
+        const b64 = await generateCertificateOfCompletionPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "CFEI") {
+        const b64 = await generateCfeiPdf(formData);
+        return `data:application/pdf;base64,${b64}`;
+      } else if (doc.code === "BFP" || doc.code === "FSEC") {
+        const b64 = await generateBfpApplicationPdf(formData);
         return `data:application/pdf;base64,${b64}`;
       } else if (doc.code === "LC" || doc.code === "LC-DOSSIER") {
         const b64 = await generateLocationalClearancePdf({

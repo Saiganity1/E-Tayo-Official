@@ -35,6 +35,16 @@ import {
 } from "../../../../utils/locationalClearancePdfGenerator";
 import { PROJECT_TYPES_MATRIX } from "../../../../data/projectTypeMatrix";
 import SignatureCreator from "@/components/common/SignatureCreator";
+import { 
+  DEFAULT_CALIBRATED_TEST_DATA, 
+  getStudioWorkingData, 
+  saveStudioWorkingData, 
+  applyStudioDataToSystem, 
+  getSystemPresetsMetadata, 
+  resetStudioWorkingData,
+  resetSystemPresetsToDefault,
+  SystemPresetsMetadata
+} from "../../../../utils/systemFormPresets";
 
 interface FormOption {
   id: string;
@@ -765,7 +775,10 @@ export default function FormTestingStudio() {
   const [selectedFormId, setSelectedFormId] = useState<string>("BP");
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [autoSync, setAutoSync] = useState<boolean>(true);
-  const [formData, setFormData] = useState<UnifiedPermitFormData>(CALIBRATED_TEST_DATA);
+  const [formData, setFormData] = useState<UnifiedPermitFormData>(() => getStudioWorkingData());
+  const [systemMetadata, setSystemMetadata] = useState<SystemPresetsMetadata>(() => getSystemPresetsMetadata());
+  const [applySuccessToast, setApplySuccessToast] = useState<{ message: string; timestamp: string } | null>(null);
+  const [isApplying, setIsApplying] = useState<boolean>(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [genTimeMs, setGenTimeMs] = useState<number | null>(null);
@@ -773,6 +786,20 @@ export default function FormTestingStudio() {
   const [ccProfCategory, setCcProfCategory] = useState<"supervisors" | "design">("supervisors");
   const [ccActiveProfSlot, setCcActiveProfSlot] = useState<string>("arch");
   const [ccActiveSupSlot, setCcActiveSupSlot] = useState<string>("sanitary");
+
+  // Auto-save working data within studio so edits persist on reload/navigation
+  useEffect(() => {
+    saveStudioWorkingData(formData);
+  }, [formData]);
+
+  // Keep system presets metadata in sync
+  useEffect(() => {
+    const handlePresetsUpdate = () => {
+      setSystemMetadata(getSystemPresetsMetadata());
+    };
+    window.addEventListener("etayo-system-presets-applied", handlePresetsUpdate);
+    return () => window.removeEventListener("etayo-system-presets-applied", handlePresetsUpdate);
+  }, []);
 
   // When Locational Clearance is selected, ensure active tab is 'general'
   useEffect(() => {
@@ -840,6 +867,30 @@ export default function FormTestingStudio() {
 
   const handleLoadSample = () => {
     setFormData(CALIBRATED_TEST_DATA);
+  };
+
+  const handleApplyToSystem = () => {
+    setIsApplying(true);
+    const result = applyStudioDataToSystem(formData);
+    const meta = getSystemPresetsMetadata();
+    setSystemMetadata(meta);
+    setIsApplying(false);
+    if (result.success) {
+      setApplySuccessToast({
+        message: "Your edits are now applied to the system! Applicant application forms, staff evaluation previews, and tracking downloads will now use these calibrated specifications and credentials.",
+        timestamp: result.timestamp
+      });
+      setTimeout(() => {
+        setApplySuccessToast(null);
+      }, 7000);
+    }
+  };
+
+  const handleResetToFactory = () => {
+    if (typeof window !== "undefined" && window.confirm("Reset all form fields to factory default calibrated sample? This will discard your current unapplied studio edits.")) {
+      const reset = resetStudioWorkingData();
+      setFormData(reset);
+    }
   };
 
   const handleAutoFillCcPage2 = () => {
@@ -1524,6 +1575,52 @@ export default function FormTestingStudio() {
         </span>
       </div>
 
+      {/* Real-time System Sync Banner Toast */}
+      {applySuccessToast && (
+        <div style={{
+          background: "linear-gradient(135deg, #064e3b 0%, #065f46 100%)",
+          border: "1px solid #10b981",
+          borderRadius: "14px",
+          padding: "1rem 1.25rem",
+          color: "white",
+          marginBottom: "1rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxShadow: "0 6px 20px rgba(16, 185, 129, 0.25)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <CheckCircle2 size={24} color="#34d399" />
+            <div>
+              <div style={{ fontWeight: "800", fontSize: "0.95rem", color: "#a7f3d0" }}>
+                Edits Successfully Applied Across System!
+              </div>
+              <div style={{ fontSize: "0.82rem", color: "#d1fae5", marginTop: "2px" }}>
+                {applySuccessToast.message}
+              </div>
+              <div style={{ fontSize: "0.74rem", color: "#6ee7b7", marginTop: "2px" }}>
+                Applied at: {applySuccessToast.timestamp}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setApplySuccessToast(null)}
+            style={{
+              background: "rgba(255,255,255,0.18)",
+              border: "none",
+              color: "white",
+              padding: "5px 12px",
+              borderRadius: "8px",
+              fontSize: "0.78rem",
+              fontWeight: "700",
+              cursor: "pointer"
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Main Studio Header */}
       <div style={{
         background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
@@ -1549,9 +1646,54 @@ export default function FormTestingStudio() {
           <p style={{ margin: 0, color: "#94a3b8", fontSize: "0.92rem", maxWidth: "800px", lineHeight: "1.5" }}>
             Test each municipal permit form individually. Enter test values, check if all checkboxes and input fields are answerable, and verify that text lands in the exact coordinates of the official scanned government template.
           </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "0.6rem" }}>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "0.78rem",
+              fontWeight: "700",
+              background: systemMetadata.isCustomApplied ? "rgba(16, 185, 129, 0.2)" : "rgba(148, 163, 184, 0.15)",
+              color: systemMetadata.isCustomApplied ? "#34d399" : "#94a3b8",
+              border: systemMetadata.isCustomApplied ? "1px solid rgba(16, 185, 129, 0.4)" : "1px solid rgba(148, 163, 184, 0.25)",
+              padding: "4px 11px",
+              borderRadius: "999px"
+            }}>
+              <CheckCircle2 size={13} color={systemMetadata.isCustomApplied ? "#34d399" : "#94a3b8"} />
+              {systemMetadata.isCustomApplied
+                ? `System Status: Studio Edits Active on System (Applied: ${systemMetadata.appliedAt || "Active"})`
+                : "System Status: Factory Default Presets (Click 'Apply Edits to System' to activate your current edits)"}
+            </span>
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+          {/* Apply Edits to System Button */}
+          <button
+            type="button"
+            onClick={handleApplyToSystem}
+            disabled={isApplying}
+            style={{
+              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+              color: "white",
+              border: "1px solid rgba(16, 185, 129, 0.4)",
+              padding: "10px 18px",
+              borderRadius: "12px",
+              fontWeight: "800",
+              fontSize: "0.88rem",
+              cursor: isApplying ? "not-allowed" : "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              boxShadow: "0 4px 15px rgba(16, 185, 129, 0.35)",
+              transition: "all 0.2s ease"
+            }}
+            title="Apply all edits made in this testing studio to the live system (application forms, staff evaluation previews, and applicant tracking downloads)"
+          >
+            <CheckCircle2 size={16} color="#a7f3d0" />
+            <span>{isApplying ? "Applying..." : "Apply Edits to System"}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setAutoSync(prev => !prev)}
@@ -1580,6 +1722,7 @@ export default function FormTestingStudio() {
             }} />
             <span>Real-Time Sync: {autoSync ? "ON" : "OFF"}</span>
           </button>
+
           <button
             type="button"
             onClick={handleLoadSample}
@@ -1596,10 +1739,32 @@ export default function FormTestingStudio() {
               alignItems: "center",
               gap: "6px"
             }}
-            title="Pre-fill all form fields with calibrated sample test data"
+            title="Load calibrated sample test data"
           >
             <Sparkles size={15} color="#38bdf8" /> Load Calibrated Sample
           </button>
+
+          <button
+            type="button"
+            onClick={handleResetToFactory}
+            style={{
+              background: "rgba(239, 68, 68, 0.12)",
+              color: "#fca5a5",
+              border: "1px solid rgba(239, 68, 68, 0.25)",
+              padding: "9px 14px",
+              borderRadius: "12px",
+              fontWeight: "700",
+              fontSize: "0.85rem",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+            title="Reset studio working data back to factory defaults"
+          >
+            <RotateCcw size={14} /> Reset Factory
+          </button>
+
           <button
             type="button"
             onClick={handleClear}
@@ -1620,6 +1785,7 @@ export default function FormTestingStudio() {
           >
             <RotateCcw size={15} /> Clear Fields
           </button>
+
           <button
             type="button"
             onClick={handleGeneratePdf}
