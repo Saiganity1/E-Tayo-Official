@@ -256,6 +256,19 @@ export default function ApplicantDashboard() {
     const rawStatus = (status || "").toLowerCase().trim();
     const appRawStatus = (app?.status || "").toLowerCase().trim();
 
+    const isReleased = rawStatus === "released" || appRawStatus === "released" || Boolean(app?.isReleased) || (typeof window !== "undefined" && (
+      localStorage.getItem(`etayo_released_${id}`) === "true" ||
+      localStorage.getItem(`etayo_released_${lowerId}`) === "true" ||
+      localStorage.getItem(`etayo_released_${upperId}`) === "true" ||
+      localStorage.getItem(`etayo_status_${id}`) === "released" ||
+      localStorage.getItem(`etayo_status_${lowerId}`) === "released" ||
+      localStorage.getItem(`etayo_status_${upperId}`) === "released"
+    ));
+
+    if (isReleased) {
+      return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Permit Released", border: "#10b981" };
+    }
+
     const isLocallyApproved = typeof window !== "undefined" && (
       localStorage.getItem(`etayo_approved_${id}`) === "true" ||
       localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
@@ -265,7 +278,7 @@ export default function ApplicantDashboard() {
       localStorage.getItem(`etayo_status_${upperId}`) === "approved"
     );
 
-    const isAppApproved = rawStatus === "approved" || rawStatus === "released" || appRawStatus === "approved" || appRawStatus === "released" || Boolean(app?.isReleased) || isLocallyApproved;
+    const isAppApproved = rawStatus === "approved" || appRawStatus === "approved" || isLocallyApproved;
 
     if (isAppApproved) {
       return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved", border: "#10b981" };

@@ -1288,31 +1288,24 @@ export default function StaffEvaluatePage() {
     };
 
     try {
-      const curId = String(app.id || "");
+      const curId = String(app.id || "").trim();
       const lowerId = curId.toLowerCase();
-      localStorage.setItem(`etayo_status_${curId}`, "approved");
-      localStorage.setItem(`etayo_status_${lowerId}`, "approved");
-      localStorage.setItem(`etayo_approved_${curId}`, "true");
-      localStorage.setItem(`etayo_approved_${lowerId}`, "true");
-      if (orderOfPaymentNo) {
-        localStorage.setItem(`etayo_op_${curId}`, orderOfPaymentNo);
-        localStorage.setItem(`etayo_op_${lowerId}`, orderOfPaymentNo);
-      }
-      if (totalFees) {
-        localStorage.setItem(`etayo_fees_${curId}`, String(totalFees));
-        localStorage.setItem(`etayo_fees_${lowerId}`, String(totalFees));
-      }
-      if (issuedDateFormatted) {
-        localStorage.setItem(`etayo_date_approved_${curId}`, issuedDateFormatted);
-        localStorage.setItem(`etayo_date_approved_${lowerId}`, issuedDateFormatted);
-      }
-      if (decisionNotes || shortSummary) {
-        localStorage.setItem(`etayo_remarks_${curId}`, decisionNotes || shortSummary);
-        localStorage.setItem(`etayo_remarks_${lowerId}`, decisionNotes || shortSummary);
+      const upperId = curId.toUpperCase();
+      [curId, lowerId, upperId].forEach(k => {
+        localStorage.setItem(`etayo_status_${k}`, "approved");
+        localStorage.setItem(`etayo_approved_${k}`, "true");
+        if (orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, orderOfPaymentNo);
+        if (totalFees) localStorage.setItem(`etayo_fees_${k}`, String(totalFees));
+        if (issuedDateFormatted) localStorage.setItem(`etayo_date_approved_${k}`, issuedDateFormatted);
+        if (decisionNotes || shortSummary) localStorage.setItem(`etayo_remarks_${k}`, decisionNotes || shortSummary);
+      });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("etayo_applications_updated"));
       }
     } catch (e) {}
 
-    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
+    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
     const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
@@ -1473,7 +1466,23 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
       remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`,
     };
 
-    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
+    try {
+      const curId = String(app.id || "").trim();
+      const lowerId = curId.toLowerCase();
+      const upperId = curId.toUpperCase();
+      [curId, lowerId, upperId].forEach(k => {
+        localStorage.setItem(`etayo_status_${k}`, "released");
+        localStorage.setItem(`etayo_released_${k}`, "true");
+        localStorage.setItem(`etayo_paid_${k}`, "true");
+        localStorage.setItem(`etayo_or_${k}`, orNumber);
+      });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("etayo_applications_updated"));
+      }
+    } catch (e) {}
+
+    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
     const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     const authHeaders: Record<string, string> = { "Content-Type": "application/json" };

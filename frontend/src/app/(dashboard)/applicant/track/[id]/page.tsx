@@ -253,9 +253,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     setTimeout(() => setToastMsg(null), 3800);
   };
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
-    ? `${process.env.NEXT_PUBLIC_API_URL}/api` 
-    : "http://localhost:8080/api";
+  const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+  const API_BASE_URL = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
 
   useEffect(() => {
     if (!appId) return;
@@ -849,8 +848,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     );
   }, [appData, appId]);
 
-  const curTrackId = String(appData?.id || appId || "");
+  const curTrackId = String(appData?.id || appId || "").trim();
   const lowerTrackId = curTrackId.toLowerCase();
+  const upperTrackId = curTrackId.toUpperCase();
   const isApproved = Boolean(
     appData?.status === "approved" || 
     appData?.status === "released" || 
@@ -858,8 +858,13 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     (typeof window !== "undefined" && (
       localStorage.getItem(`etayo_approved_${curTrackId}`) === "true" ||
       localStorage.getItem(`etayo_approved_${lowerTrackId}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${upperTrackId}`) === "true" ||
       localStorage.getItem(`etayo_status_${curTrackId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${lowerTrackId}`) === "approved"
+      localStorage.getItem(`etayo_status_${lowerTrackId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${upperTrackId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${curTrackId}`) === "released" ||
+      localStorage.getItem(`etayo_status_${lowerTrackId}`) === "released" ||
+      localStorage.getItem(`etayo_status_${upperTrackId}`) === "released"
     ))
   );
 
@@ -869,7 +874,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     }
     if (status === "approved" || isApproved) {
       if (paymentInfo.confirmed) {
-        return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Payment Submitted (Under Review)", step: 4 };
+        return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Payment Submitted (Under Review)", step: 3 };
       }
       return { 
         color: "#059669", 
@@ -1780,9 +1785,17 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               <div style={{ position: "absolute", left: "20px", top: "20px", bottom: "20px", width: "3px", background: "#e2e8f0", zIndex: 0 }}></div>
               
               {timelineSteps.map((step) => {
-                const isStep3Approved = step.num === 3 && (appData?.status === "approved" || appData?.status === "released" || isActuallyReleased || isApproved);
-                const isActive = statusConfig.step === step.num && !isStep3Approved;
-                const isPassed = statusConfig.step > step.num || isStep3Approved;
+                const isStep2Approved = step.num === 2 && (isApproved || isActuallyReleased || statusConfig.step >= 2);
+                const isStep3Approved = step.num === 3 && (isApproved || isActuallyReleased || statusConfig.step >= 3);
+                const isStep4Released = step.num === 4 && (isActuallyReleased || statusConfig.step >= 4);
+
+                const isPassed = (step.num === 1) ||
+                                 (step.num === 2 && isStep2Approved) ||
+                                 (step.num === 3 && isStep3Approved) ||
+                                 (step.num === 4 && isStep4Released);
+
+                const isActive = (step.num === 3 && isApproved && !isActuallyReleased) ||
+                                 (step.num === 4 && isStep4Released);
                 
                 let circleColor = "#e2e8f0";
                 let iconColor = "#94a3b8";
@@ -1803,7 +1816,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       boxShadow: isActive ? `0 0 0 4px ${statusConfig.bg}` : "none",
                       transition: "all 0.3s ease"
                     }}>
-                      {isPassed || (step.num === 4 && statusConfig.step >= 4) ? (
+                      {isPassed ? (
                         <CheckCircle size={20} color={iconColor} />
                       ) : (
                         <span style={{ color: iconColor, fontWeight: "700" }}>{step.num}</span>

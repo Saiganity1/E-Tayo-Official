@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { PermitApplication, SystemLog, FeeStructure, PermitType } from "../types";
 
-const rawApi = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
+const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
 const API_BASE_URL = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
 
 type UserRole = "public" | "applicant" | "staff" | "admin";
@@ -305,16 +305,19 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       let userEmail = "";
       let userName = "";
-      let isStaffOrAdmin = userRoleRef.current === "admin" || userRoleRef.current === "staff";
+      let isStaffOrAdmin = false;
       try {
         const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
         if (userStr) {
           const u = JSON.parse(userStr);
           if (u.email) userEmail = u.email;
           if (u.name) userName = u.name;
-          if (u.role === "ROLE_ADMIN" || u.role === "ROLE_SUPERADMIN" || u.role === "ROLE_STAFF" || u.role === "admin" || u.role === "staff") {
+          const r = String(u.role || "").toUpperCase();
+          if (r.includes("ADMIN") || r.includes("STAFF")) {
             isStaffOrAdmin = true;
           }
+        } else if (userRoleRef.current === "admin" || userRoleRef.current === "staff") {
+          isStaffOrAdmin = true;
         }
       } catch (e) {}
 
@@ -473,6 +476,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                           [idStr, idLower, idUpper].forEach(k => {
                             localStorage.setItem(`etayo_status_${k}`, live.status);
                             localStorage.setItem(`etayo_approved_${k}`, "true");
+                            if (live.status === "released") {
+                              localStorage.setItem(`etayo_released_${k}`, "true");
+                              localStorage.setItem(`etayo_paid_${k}`, "true");
+                            }
                             if (live.orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, live.orderOfPaymentNo);
                             if (live.assessedFees) localStorage.setItem(`etayo_fees_${k}`, String(live.assessedFees));
                           });

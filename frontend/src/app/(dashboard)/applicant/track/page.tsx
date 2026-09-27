@@ -274,7 +274,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
     const directInterval = setInterval(async () => {
       try {
-        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
         const base = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         const headers: Record<string, string> = { "Accept": "application/json" };
@@ -303,6 +303,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                   [curId, lowId, upId].forEach(k => {
                     localStorage.setItem(`etayo_status_${k}`, live.status);
                     localStorage.setItem(`etayo_approved_${k}`, "true");
+                    if (live.status === "released") {
+                      localStorage.setItem(`etayo_released_${k}`, "true");
+                      localStorage.setItem(`etayo_paid_${k}`, "true");
+                    }
                     if (live.orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, live.orderOfPaymentNo);
                     if (live.assessedFees) localStorage.setItem(`etayo_fees_${k}`, String(live.assessedFees));
                   });
@@ -580,13 +584,21 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
   const isActuallyReleasedApp = (app: any, connectedApp?: any) => {
     if (!app) return false;
-    if (app.status === "released" || Boolean(app.isReleased)) return true;
-    if (app.paymentStatus === "paid") return true;
+    const rawSt = (app.status || "").toLowerCase().trim();
+    if (rawSt === "released" || Boolean(app.isReleased)) return true;
 
     if (typeof window !== "undefined") {
-      const id = String(app.id || "");
-      if (localStorage.getItem(`etayo_paid_${id}`) === "true" || 
-          localStorage.getItem(`etayo_paid_${id.toLowerCase()}`) === "true") {
+      const id = String(app.id || "").trim();
+      const lowerId = id.toLowerCase();
+      const upperId = id.toUpperCase();
+      if (
+        localStorage.getItem(`etayo_released_${id}`) === "true" || 
+        localStorage.getItem(`etayo_released_${lowerId}`) === "true" ||
+        localStorage.getItem(`etayo_released_${upperId}`) === "true" ||
+        localStorage.getItem(`etayo_status_${id}`) === "released" ||
+        localStorage.getItem(`etayo_status_${lowerId}`) === "released" ||
+        localStorage.getItem(`etayo_status_${upperId}`) === "released"
+      ) {
         return true;
       }
     }
@@ -597,13 +609,22 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
     const other = connectedApp || (applications ? getConnectedApp(app, applications) : null);
     if (other) {
-      if (other.status === "released" || Boolean(other.isReleased) || other.paymentStatus === "paid") {
+      const otherRawSt = (other.status || "").toLowerCase().trim();
+      if (otherRawSt === "released" || Boolean(other.isReleased)) {
         return true;
       }
       if (typeof window !== "undefined") {
-        const otherId = String(other.id || "");
-        if (localStorage.getItem(`etayo_paid_${otherId}`) === "true" || 
-            localStorage.getItem(`etayo_paid_${otherId.toLowerCase()}`) === "true") {
+        const otherId = String(other.id || "").trim();
+        const otherLower = otherId.toLowerCase();
+        const otherUpper = otherId.toUpperCase();
+        if (
+          localStorage.getItem(`etayo_released_${otherId}`) === "true" || 
+          localStorage.getItem(`etayo_released_${otherLower}`) === "true" ||
+          localStorage.getItem(`etayo_released_${otherUpper}`) === "true" ||
+          localStorage.getItem(`etayo_status_${otherId}`) === "released" ||
+          localStorage.getItem(`etayo_status_${otherLower}`) === "released" ||
+          localStorage.getItem(`etayo_status_${otherUpper}`) === "released"
+        ) {
           return true;
         }
       }
@@ -644,7 +665,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           border: "#16a34a",
           icon: CheckCircle2,
           label: "Payment Submitted (Under Cashier Review)",
-          step: 4
+          step: 3
         };
       }
       const isLC = (app?.permitType || "").toLowerCase().includes("locational") || (app?.id || "").toLowerCase().startsWith("lc-");
@@ -748,7 +769,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         localStorage.getItem(`etayo_approved_${upperAppId}`) === "true" ||
         localStorage.getItem(`etayo_status_${appIdStr}`) === "approved" ||
         localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved" ||
-        localStorage.getItem(`etayo_status_${upperAppId}`) === "approved"
+        localStorage.getItem(`etayo_status_${upperAppId}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${appIdStr}`) === "released" ||
+        localStorage.getItem(`etayo_status_${lowerAppId}`) === "released" ||
+        localStorage.getItem(`etayo_status_${upperAppId}`) === "released"
       ));
     const effectiveStatus = isActuallyReleased ? "released" : (isAppApproved ? "approved" : app.status);
     const statusConfig = getStatusConfig(effectiveStatus, app, connectedApp);
@@ -908,42 +932,56 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
             {[
-              { num: 1, title: "1. Filed", desc: "Submitted Online", active: statusConfig.step >= 1, current: statusConfig.step === 1 && !isAppApproved },
-              { num: 2, title: "2. Evaluation", desc: "Technical Review", active: statusConfig.step >= 2 || isAppApproved, current: statusConfig.step === 2 && !isAppApproved },
+              { 
+                num: 1, 
+                title: "1. Filed", 
+                desc: "Submitted Online", 
+                active: true, 
+                current: !isAppApproved && !isActuallyReleased && (statusConfig.step === 1) 
+              },
+              { 
+                num: 2, 
+                title: "2. Evaluation", 
+                desc: "Technical Review", 
+                active: isAppApproved || isActuallyReleased || statusConfig.step >= 2, 
+                current: !isAppApproved && !isActuallyReleased && (statusConfig.step === 2) 
+              },
               { 
                 num: 3, 
                 title: isLocationalClearance ? "3. Zoning Clearance" : "3. Endorsement", 
-                desc: (isAppApproved || app.status === "approved" || app.status === "released" || isActuallyReleased) 
+                desc: (isAppApproved || isActuallyReleased || app.status === "approved" || app.status === "released") 
                   ? "Approved & Endorsed ✓" 
                   : (isLocationalClearance ? "Zoning Review" : "Chief OBO Approval"), 
-                active: statusConfig.step >= 3 || isAppApproved, 
-                current: (statusConfig.step === 3 || isAppApproved) && !isActuallyReleased && !paymentInfo.confirmed 
+                active: isAppApproved || isActuallyReleased || statusConfig.step >= 3, 
+                current: isAppApproved && !isActuallyReleased 
               },
               { 
                 num: 4, 
                 title: "4. Released", 
-                desc: isActuallyReleased ? "Permit Released" : (paymentInfo.confirmed ? "Cashier Verifying" : "Order of Payment"), 
-                active: isActuallyReleased || paymentInfo.confirmed, 
-                current: paymentInfo.confirmed && !isActuallyReleased 
+                desc: isActuallyReleased 
+                  ? "Permit Released ✓" 
+                  : (paymentInfo.confirmed ? "Cashier Verifying" : "Order of Payment"), 
+                active: Boolean(isActuallyReleased), 
+                current: Boolean(isActuallyReleased) 
               }
             ].map((step) => (
               <div key={step.num} style={{ textAlign: "center", position: "relative" }}>
                 <div style={{
                   height: "7px",
                   borderRadius: "999px",
-                  background: step.active ? (statusConfig.step >= 4 || step.num < 4 ? "#10b981" : statusConfig.color) : "#cbd5e1",
+                  background: step.active ? "#10b981" : "#cbd5e1",
                   marginBottom: "8px",
-                  boxShadow: step.current ? `0 0 10px ${statusConfig.color}90` : "none",
+                  boxShadow: step.current ? `0 0 10px #10b98190` : "none",
                   transition: "all 0.3s ease"
                 }} />
                 <div style={{
                   fontSize: "0.8rem",
                   fontWeight: step.active ? "800" : "600",
-                  color: step.active ? (step.num === 4 && statusConfig.step >= 4 ? "#059669" : "#0f172a") : "#94a3b8"
+                  color: step.active ? "#0f172a" : "#94a3b8"
                 }}>
                   {step.title}
                 </div>
-                <div style={{ fontSize: "0.7rem", color: step.active && step.num === 4 && statusConfig.step >= 4 ? "#16a34a" : "#64748b", marginTop: "1px" }}>
+                <div style={{ fontSize: "0.7rem", color: step.active ? (step.num === 4 ? "#16a34a" : "#059669") : "#64748b", marginTop: "1px" }}>
                   {step.desc}
                 </div>
               </div>

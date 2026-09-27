@@ -257,7 +257,10 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       localStorage.getItem(`etayo_approved_${upperAppId}`) === "true" ||
       localStorage.getItem(`etayo_status_${appId}`) === "approved" ||
       localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${upperAppId}`) === "approved"
+      localStorage.getItem(`etayo_status_${upperAppId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${appId}`) === "released" ||
+      localStorage.getItem(`etayo_status_${lowerAppId}`) === "released" ||
+      localStorage.getItem(`etayo_status_${upperAppId}`) === "released"
     ));
 
     if (matchedDossier) {
