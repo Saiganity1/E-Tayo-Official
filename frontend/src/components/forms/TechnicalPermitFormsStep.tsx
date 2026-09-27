@@ -985,20 +985,51 @@ export default function TechnicalPermitFormsStep({
   const [ccActualProjectCost, setCcActualProjectCost] = useState(() => projectCost || "2,500,000.00");
 
   // Cost Breakdown Items (1. Materials, 2. Labor, 3. Equipment, 4. Other)
-  const [ccShowCostBreakdown, setCcShowCostBreakdown] = useState(false);
-  const [ccMaterialsCost, setCcMaterialsCost] = useState("");
-  const [ccCementBags, setCcCementBags] = useState("");
-  const [ccLumber, setCcLumber] = useState("");
-  const [ccReinforcingBars, setCcReinforcingBars] = useState("");
-  const [ccGiSheets, setCcGiSheets] = useState("");
-  const [ccStructuralSteel, setCcStructuralSteel] = useState("");
-  const [ccOtherMaterialsCost, setCcOtherMaterialsCost] = useState("");
-  const [ccLaborCost, setCcLaborCost] = useState("");
-  const [ccEquipmentCost, setCcEquipmentCost] = useState("");
-  const [ccOtherCosts, setCcOtherCosts] = useState("");
+  const [ccShowCostBreakdown, setCcShowCostBreakdown] = useState(true);
+  const [ccMaterialsCost, setCcMaterialsCost] = useState(() => {
+    const t = parseFloat((projectCost || "2,500,000.00").replace(/[^0-9.]/g, "")) || 2500000;
+    return (t * 0.58).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [ccCementBags, setCcCementBags] = useState(() => {
+    const t = parseFloat((projectCost || "2,500,000.00").replace(/[^0-9.]/g, "")) || 2500000;
+    return String(Math.round(t * 0.00034));
+  });
+  const [ccLumber, setCcLumber] = useState(() => {
+    const t = parseFloat((projectCost || "2,500,000.00").replace(/[^0-9.]/g, "")) || 2500000;
+    return String(Math.round(t * 0.00128));
+  });
+  const [ccReinforcingBars, setCcReinforcingBars] = useState(() => {
+    const t = parseFloat((projectCost || "2,500,000.00").replace(/[^0-9.]/g, "")) || 2500000;
+    return String(Math.round(t * 0.00216));
+  });
+  const [ccGiSheets, setCcGiSheets] = useState(() => {
+    const t = parseFloat((projectCost || "2,500,000.00").replace(/[^0-9.]/g, "")) || 2500000;
+    return String(Math.round(t * 0.000048));
+  });
+  const [ccStructuralSteel, setCcStructuralSteel] = useState(() => {
+    const t = parseFloat((projectCost || "2,500,000.00").replace(/[^0-9.]/g, "")) || 2500000;
+    return String(Math.round(t * 0.00084));
+  });
+  const [ccOtherMaterialsCost, setCcOtherMaterialsCost] = useState(() => {
+    const t = parseFloat((projectCost || "2,500,000.00").replace(/[^0-9.]/g, "")) || 2500000;
+    return (t * 0.074).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [ccLaborCost, setCcLaborCost] = useState(() => {
+    const t = parseFloat((projectCost || "2,500,000.00").replace(/[^0-9.]/g, "")) || 2500000;
+    return (t * 0.30).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [ccEquipmentCost, setCcEquipmentCost] = useState(() => {
+    const t = parseFloat((projectCost || "2,500,000.00").replace(/[^0-9.]/g, "")) || 2500000;
+    return (t * 0.072).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [ccOtherCosts, setCcOtherCosts] = useState(() => {
+    const t = parseFloat((projectCost || "2,500,000.00").replace(/[^0-9.]/g, "")) || 2500000;
+    return (t * 0.048).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
 
   // Supervisor
   const [ccSupervisorName, setCcSupervisorName] = useState("ENGR. ROBERTO CRUZ, CE");
+  const [ccSupervisorSignDate, setCcSupervisorSignDate] = useState(() => new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }));
   const [ccSupervisorPRC, setCcSupervisorPRC] = useState("0078923");
   const [ccSupervisorPRCValidity, setCcSupervisorPRCValidity] = useState("2028-11-20");
   const [ccSupervisorPTR, setCcSupervisorPTR] = useState("PTR-ST-2026-001");
@@ -1024,8 +1055,11 @@ export default function TechnicalPermitFormsStep({
   const [ccContractorCtcDate, setCcContractorCtcDate] = useState("");
   const [ccContractorCtcPlace, setCcContractorCtcPlace] = useState("");
 
-  // Owner Conforme Signature
+  // Owner Conforme Signature & Community Tax Certificate (CTC)
   const [ccApplicantSignature, setCcApplicantSignature] = useState(() => applicantSignature || "");
+  const [ccApplicantCtcNo, setCcApplicantCtcNo] = useState(() => govIdNo || "CTC-2026-00192");
+  const [ccApplicantCtcDateIssued, setCcApplicantCtcDateIssued] = useState(() => govIdDateIssued || "Jan 10, 2026");
+  const [ccApplicantCtcPlaceIssued, setCcApplicantCtcPlaceIssued] = useState(() => govIdPlaceIssued || "Sto. Tomas, Pampanga");
 
   // Jurat / Notarial
   const [ccJuratCity, setCcJuratCity] = useState("Sto. Tomas, Pampanga");
@@ -1184,6 +1218,23 @@ export default function TechnicalPermitFormsStep({
   const [ccInteriorSupTin, setCcInteriorSupTin] = useState("");
   const [ccInteriorSupSig, setCcInteriorSupSig] = useState("");
 
+  const handleAutoCalculateCcCostBreakdown = (baseCostStr?: string) => {
+    const raw = (baseCostStr || ccActualProjectCost || projectCost || "2,500,000.00").replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim();
+    const totalNum = parseFloat(raw.replace(/,/g, "")) || 2500000;
+    const fmt = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    setCcMaterialsCost(fmt(totalNum * 0.58));
+    setCcCementBags(String(Math.round(totalNum * 0.00034)));
+    setCcLumber(String(Math.round(totalNum * 0.00128)));
+    setCcReinforcingBars(String(Math.round(totalNum * 0.00216)));
+    setCcGiSheets(String(Math.round(totalNum * 0.000048)));
+    setCcStructuralSteel(String(Math.round(totalNum * 0.00084)));
+    setCcOtherMaterialsCost(fmt(totalNum * 0.074));
+    setCcLaborCost(fmt(totalNum * 0.30));
+    setCcEquipmentCost(fmt(totalNum * 0.072));
+    setCcOtherCosts(fmt(totalNum * 0.048));
+  };
+
   const handleAutoFillCcFromSystem = () => {
     setCcBuildingPermitNo((clearanceApp as any)?.buildingPermitNo || "BP-2026-0091");
     setCcBpDateIssued((clearanceApp as any)?.permitIssuedDate || "Jan 12, 2026");
@@ -1199,7 +1250,12 @@ export default function TechnicalPermitFormsStep({
       setCcPlannedFloorArea(floorArea);
       setCcActualFloorArea(floorArea);
     }
-    if (projectCost) setCcActualProjectCost(projectCost);
+    if (projectCost) {
+      setCcActualProjectCost(projectCost);
+      handleAutoCalculateCcCostBreakdown(projectCost);
+    } else {
+      handleAutoCalculateCcCostBreakdown(ccActualProjectCost);
+    }
     if (civilEngineerName) setCcSupervisorName(civilEngineerName);
     if (civilEngineerPRC) setCcSupervisorPRC(civilEngineerPRC);
     if (civilEngineerPTR) setCcSupervisorPTR(civilEngineerPTR);
@@ -1208,6 +1264,9 @@ export default function TechnicalPermitFormsStep({
     if (civilEngineerTIN) setCcSupervisorTIN(civilEngineerTIN);
     if (civilEngineerSignature) setCcSupervisorSignature(civilEngineerSignature);
     if (applicantSignature) setCcApplicantSignature(applicantSignature);
+    if (govIdNo) setCcApplicantCtcNo(govIdNo);
+    if (govIdDateIssued) setCcApplicantCtcDateIssued(govIdDateIssued);
+    if (govIdPlaceIssued) setCcApplicantCtcPlaceIssued(govIdPlaceIssued);
     if (applicantMunicipality) setCcJuratCity(`${applicantMunicipality}, ${applicantProvince || "Pampanga"}`);
 
     // Auto-sync Page 2 Design Professionals from active system forms
@@ -2620,6 +2679,7 @@ export default function TechnicalPermitFormsStep({
               supervisorCtcDateIssued: ccSupervisorCtcDateIssued,
               supervisorCtcPlaceIssued: ccSupervisorCtcPlaceIssued,
               supervisorSignature: ccSupervisorSignature,
+              supervisorSignDate: ccSupervisorSignDate,
               contractorName: ccHasContractor ? ccContractorName : undefined,
               contractorAddress: ccHasContractor ? ccContractorAddress : undefined,
               contractorPcabLicense: ccHasContractor ? ccContractorPcabLicense : undefined,
@@ -2632,6 +2692,9 @@ export default function TechnicalPermitFormsStep({
               contractorCtcDate: ccHasContractor ? ccContractorCtcDate : undefined,
               contractorCtcPlace: ccHasContractor ? ccContractorCtcPlace : undefined,
               applicantSignature: ccApplicantSignature || applicantSignature,
+              applicantCtcNo: ccApplicantCtcNo,
+              applicantCtcDateIssued: ccApplicantCtcDateIssued,
+              applicantCtcPlaceIssued: ccApplicantCtcPlaceIssued,
               juratCity: ccJuratCity,
               juratDate: ccJuratDate,
 
@@ -13261,33 +13324,55 @@ export default function TechnicalPermitFormsStep({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "8px" }}>
                           <div>
                             <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
-                              5. Summary of Actual Costs
+                              5. Summary of Actual Costs (NBCP Form CC Box 5)
                             </span>
                             <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
-                              Total structure cost and optional itemized breakdown per NBCP Form CC
+                              Official itemized construction expenditure breakdown required for Certificate of Completion
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setCcShowCostBreakdown(!ccShowCostBreakdown)}
-                            style={{
-                              background: ccShowCostBreakdown ? "#e0f2fe" : "#f1f5f9",
-                              color: ccShowCostBreakdown ? "#0369a1" : "#475569",
-                              border: "1px solid #cbd5e1",
-                              borderRadius: "6px",
-                              padding: "4px 10px",
-                              fontSize: "0.74rem",
-                              fontWeight: "700",
-                              cursor: "pointer"
-                            }}
-                          >
-                            {ccShowCostBreakdown ? "▲ Hide Itemized Breakdown" : "▼ Show Itemized Breakdown (Optional)"}
-                          </button>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <button
+                              type="button"
+                              onClick={() => handleAutoCalculateCcCostBreakdown()}
+                              style={{
+                                background: "#0284c7",
+                                color: "#ffffff",
+                                border: "none",
+                                borderRadius: "6px",
+                                padding: "4px 10px",
+                                fontSize: "0.72rem",
+                                fontWeight: "700",
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px"
+                              }}
+                            >
+                              <Sparkles size={12} />
+                              Auto-Calculate Breakdown
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCcShowCostBreakdown(!ccShowCostBreakdown)}
+                              style={{
+                                background: ccShowCostBreakdown ? "#e0f2fe" : "#f1f5f9",
+                                color: ccShowCostBreakdown ? "#0369a1" : "#475569",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: "6px",
+                                padding: "4px 10px",
+                                fontSize: "0.74rem",
+                                fontWeight: "700",
+                                cursor: "pointer"
+                              }}
+                            >
+                              {ccShowCostBreakdown ? "▲ Hide Breakdown" : "▼ Show Itemized Breakdown"}
+                            </button>
+                          </div>
                         </div>
 
                         <div style={{ maxWidth: "420px", marginBottom: ccShowCostBreakdown ? "1rem" : "0" }}>
-                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#0369a1", marginBottom: "2px" }}>
-                            Total Cost of Building / Structure (PHP) *
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "800", color: "#0369a1", marginBottom: "2px" }}>
+                            TOTAL COST OF BUILDING / STRUCTURE (PHP) *
                           </label>
                           <input
                             type="text"
@@ -13300,109 +13385,137 @@ export default function TechnicalPermitFormsStep({
 
                         {ccShowCostBreakdown && (
                           <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "1rem", marginTop: "0.75rem" }}>
-                            <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#334155", display: "block", marginBottom: "0.5rem" }}>
-                              Itemized Construction Cost Breakdown
+                            <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#334155", display: "block", marginBottom: "0.6rem" }}>
+                              Official Itemized Construction Expenditure Breakdown
                             </span>
 
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.75rem" }}>
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1. Total Cost of Materials (PHP)</label>
-                                <input
-                                  type="text"
-                                  value={ccMaterialsCost}
-                                  onChange={(e) => setCcMaterialsCost(e.target.value)}
-                                  placeholder="e.g. 1,450,000.00"
-                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                                />
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                              {/* 1. Total Cost of Materials */}
+                              <div style={{ gridColumn: "span 2", background: "#f8fafc", padding: "0.85rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.65rem" }}>
+                                  <div style={{ gridColumn: "1 / -1" }}>
+                                    <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "800", color: "#1e293b", marginBottom: "2px" }}>
+                                      1. TOTAL COST OF MATERIALS (PHP) *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={ccMaterialsCost}
+                                      onChange={(e) => setCcMaterialsCost(e.target.value)}
+                                      placeholder="e.g. 1,450,000.00"
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", color: "#1e293b", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.7rem", fontWeight: "600", color: "#475569", marginBottom: "2px" }}>1.1 CEMENT (Bags)</label>
+                                    <input
+                                      type="text"
+                                      value={ccCementBags}
+                                      onChange={(e) => setCcCementBags(e.target.value)}
+                                      placeholder="e.g. 850"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.7rem", fontWeight: "600", color: "#475569", marginBottom: "2px" }}>1.2 LUMBER (bd. Ft)</label>
+                                    <input
+                                      type="text"
+                                      value={ccLumber}
+                                      onChange={(e) => setCcLumber(e.target.value)}
+                                      placeholder="e.g. 3,200"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.7rem", fontWeight: "600", color: "#475569", marginBottom: "2px" }}>1.3 REINFORCING BARS (Kg)</label>
+                                    <input
+                                      type="text"
+                                      value={ccReinforcingBars}
+                                      onChange={(e) => setCcReinforcingBars(e.target.value)}
+                                      placeholder="e.g. 5,400"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.7rem", fontWeight: "600", color: "#475569", marginBottom: "2px" }}>1.4 G.I SHEETS (sheets)</label>
+                                    <input
+                                      type="text"
+                                      value={ccGiSheets}
+                                      onChange={(e) => setCcGiSheets(e.target.value)}
+                                      placeholder="e.g. 120"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.7rem", fontWeight: "600", color: "#475569", marginBottom: "2px" }}>1.5 PREFAB STRUCTURAL STEEL (kg)</label>
+                                    <input
+                                      type="text"
+                                      value={ccStructuralSteel}
+                                      onChange={(e) => setCcStructuralSteel(e.target.value)}
+                                      placeholder="e.g. 2,100"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "0.7rem", fontWeight: "600", color: "#475569", marginBottom: "2px" }}>1.6 Other Materials (PHP)</label>
+                                    <input
+                                      type="text"
+                                      value={ccOtherMaterialsCost}
+                                      onChange={(e) => setCcOtherMaterialsCost(e.target.value)}
+                                      placeholder="e.g. 185,000.00"
+                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
+                                    />
+                                  </div>
+                                </div>
                               </div>
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.1 Cement (Bags)</label>
-                                <input
-                                  type="text"
-                                  value={ccCementBags}
-                                  onChange={(e) => setCcCementBags(e.target.value)}
-                                  placeholder="e.g. 850"
-                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                                />
-                              </div>
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.2 Lumber (bd. Ft)</label>
-                                <input
-                                  type="text"
-                                  value={ccLumber}
-                                  onChange={(e) => setCcLumber(e.target.value)}
-                                  placeholder="e.g. 3,200"
-                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                                />
-                              </div>
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.3 Reinforcing Bars (Kg)</label>
-                                <input
-                                  type="text"
-                                  value={ccReinforcingBars}
-                                  onChange={(e) => setCcReinforcingBars(e.target.value)}
-                                  placeholder="e.g. 5,400"
-                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                                />
-                              </div>
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.4 G.I Sheets (sheets)</label>
-                                <input
-                                  type="text"
-                                  value={ccGiSheets}
-                                  onChange={(e) => setCcGiSheets(e.target.value)}
-                                  placeholder="e.g. 120"
-                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                                />
-                              </div>
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.5 Prefab Structural Steel (kg)</label>
-                                <input
-                                  type="text"
-                                  value={ccStructuralSteel}
-                                  onChange={(e) => setCcStructuralSteel(e.target.value)}
-                                  placeholder="e.g. 2,100"
-                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                                />
-                              </div>
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.6 Other Materials</label>
-                                <input
-                                  type="text"
-                                  value={ccOtherMaterialsCost}
-                                  onChange={(e) => setCcOtherMaterialsCost(e.target.value)}
-                                  placeholder="e.g. 185,000.00"
-                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
-                                />
-                              </div>
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>2. Total Cost of Direct Labor (PHP)</label>
+
+                              {/* 2. Direct Labor */}
+                              <div style={{ background: "#f8fafc", padding: "0.85rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "800", color: "#1e293b", marginBottom: "2px" }}>
+                                  2. TOTAL COST OF DIRECT LABOR (PHP) *
+                                </label>
+                                <span style={{ display: "block", fontSize: "0.68rem", color: "#64748b", marginBottom: "6px" }}>
+                                  Compensation whether by salary or contract for project Architect / Engineer down to laborer
+                                </span>
                                 <input
                                   type="text"
                                   value={ccLaborCost}
                                   onChange={(e) => setCcLaborCost(e.target.value)}
                                   placeholder="e.g. 750,000.00"
-                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                  style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", color: "#1e293b", background: "#ffffff" }}
                                 />
                               </div>
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>3. Equipment Utilization (PHP)</label>
+
+                              {/* 3. Equipment Utilization */}
+                              <div style={{ background: "#f8fafc", padding: "0.85rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "800", color: "#1e293b", marginBottom: "2px" }}>
+                                  3. TOTAL COST OF EQUIPMENT UTILIZATION (PHP) *
+                                </label>
+                                <span style={{ display: "block", fontSize: "0.68rem", color: "#64748b", marginBottom: "6px" }}>
+                                  Machinery, scaffolding, heavy equipment rental & operation
+                                </span>
                                 <input
                                   type="text"
                                   value={ccEquipmentCost}
                                   onChange={(e) => setCcEquipmentCost(e.target.value)}
                                   placeholder="e.g. 180,000.00"
-                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                  style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", color: "#1e293b", background: "#ffffff" }}
                                 />
                               </div>
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>4. Other Costs (PHP)</label>
+
+                              {/* 4. Other Costs */}
+                              <div style={{ gridColumn: "span 2", background: "#f8fafc", padding: "0.85rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "800", color: "#1e293b", marginBottom: "2px" }}>
+                                  4. OTHER COSTS (PHP) *
+                                </label>
+                                <span style={{ display: "block", fontSize: "0.68rem", color: "#64748b", marginBottom: "6px" }}>
+                                  Professional services fees, permits, and other statutory fees
+                                </span>
                                 <input
                                   type="text"
                                   value={ccOtherCosts}
                                   onChange={(e) => setCcOtherCosts(e.target.value)}
                                   placeholder="e.g. 120,000.00"
-                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                  style={{ width: "100%", maxWidth: "420px", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700", color: "#1e293b", background: "#ffffff" }}
                                 />
                               </div>
                             </div>
@@ -13427,7 +13540,7 @@ export default function TechnicalPermitFormsStep({
                         </div>
 
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                          <div style={{ gridColumn: "span 2" }}>
+                          <div>
                             <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
                               Supervisor Full Name (Architect or Civil Engineer) *
                             </label>
@@ -13437,6 +13550,18 @@ export default function TechnicalPermitFormsStep({
                               onChange={(e) => setCcSupervisorName(e.target.value)}
                               placeholder="e.g. ENGR. ROBERTO CRUZ, CE"
                               style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              Supervisor Date Signed *
+                            </label>
+                            <input
+                              type="text"
+                              value={ccSupervisorSignDate}
+                              onChange={(e) => setCcSupervisorSignDate(e.target.value)}
+                              placeholder="e.g. Sep 27, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
                             />
                           </div>
                           <div>
@@ -13709,6 +13834,51 @@ export default function TechnicalPermitFormsStep({
                           label="Owner / Applicant Conforme E-Signature (Affixed Over Printed Name)"
                           required
                         />
+
+                        {/* Owner Community Tax Certificate (CTC) Credentials */}
+                        <div style={{ marginTop: "1rem", padding: "0.85rem", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px" }}>
+                          <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#166534", display: "block", marginBottom: "0.5rem" }}>
+                            Owner / Applicant Community Tax Certificate (CTC)
+                          </span>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                                CTC No. *
+                              </label>
+                              <input
+                                type="text"
+                                value={ccApplicantCtcNo}
+                                onChange={(e) => setCcApplicantCtcNo(e.target.value)}
+                                placeholder="e.g. CTC-2026-00192"
+                                style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                                Date Issued *
+                              </label>
+                              <input
+                                type="text"
+                                value={ccApplicantCtcDateIssued}
+                                onChange={(e) => setCcApplicantCtcDateIssued(e.target.value)}
+                                placeholder="e.g. Jan 10, 2026"
+                                style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                                Place Issued *
+                              </label>
+                              <input
+                                type="text"
+                                value={ccApplicantCtcPlaceIssued}
+                                onChange={(e) => setCcApplicantCtcPlaceIssued(e.target.value)}
+                                placeholder="e.g. Sto. Tomas, Pampanga"
+                                style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Section 9: Notarial Acknowledgment (Jurat) */}

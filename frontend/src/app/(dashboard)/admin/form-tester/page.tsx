@@ -462,6 +462,16 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   // Occupancy & Completion
   actualCompletionDate: "2027-04-30",
   actualProjectCost: "2,500,000.00",
+  materialsCost: "1,450,000.00",
+  cementBags: "850",
+  lumberBdFt: "3,200",
+  reinforcingBarsKg: "5,400",
+  giSheets: "120",
+  structuralSteelKg: "2,100",
+  otherMaterialsCost: "185,000.00",
+  laborCost: "750,000.00",
+  equipmentCost: "180,000.00",
+  otherCosts: "120,000.00",
   actualFloorArea: "185.50",
   constructionSupervisorName: "Engr. Roberto Cruz, CE",
   cfeiInspectorName: "Engr. GILBERT B. CRUZ, Electrical Inspector",
@@ -835,6 +845,19 @@ export default function FormTestingStudio() {
   const handleAutoFillCcPage2 = () => {
     setFormData(prev => ({
       ...prev,
+      // Summary of Actual Costs:
+      actualProjectCost: prev.actualProjectCost || "2,500,000.00",
+      materialsCost: prev.materialsCost || "1,450,000.00",
+      cementBags: prev.cementBags || "850",
+      lumberBdFt: prev.lumberBdFt || "3,200",
+      reinforcingBarsKg: prev.reinforcingBarsKg || "5,400",
+      giSheets: prev.giSheets || "120",
+      structuralSteelKg: prev.structuralSteelKg || "2,100",
+      otherMaterialsCost: prev.otherMaterialsCost || "185,000.00",
+      laborCost: prev.laborCost || "750,000.00",
+      equipmentCost: prev.equipmentCost || "180,000.00",
+      otherCosts: prev.otherCosts || "120,000.00",
+
       // Design Professionals:
       architectName: prev.architectName || "ARCH. MARIA ELENA SANTOS, UAP",
       architectAddress: prev.architectAddress || "Sto. Tomas, Pampanga",
@@ -1097,6 +1120,49 @@ export default function FormTestingStudio() {
           submissionDate: formData.submissionDate || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
           juratCity: (formData as any).juratCity || "Sto. Tomas, Pampanga",
           juratDate: (formData as any).juratDate || formData.submissionDate || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+          // Summary of Actual Costs
+          actualProjectCost: (formData as any).actualProjectCost || formData.projectCost || "2,500,000.00",
+          materialsCost: (formData as any).materialsCost || "1,450,000.00",
+          cementBags: (formData as any).cementBags || "850",
+          lumberBdFt: (formData as any).lumberBdFt || "3,200",
+          reinforcingBarsKg: (formData as any).reinforcingBarsKg || "5,400",
+          giSheets: (formData as any).giSheets || "120",
+          structuralSteelKg: (formData as any).structuralSteelKg || "2,100",
+          otherMaterialsCost: (formData as any).otherMaterialsCost || "185,000.00",
+          laborCost: (formData as any).laborCost || "750,000.00",
+          equipmentCost: (formData as any).equipmentCost || "180,000.00",
+          otherCosts: (formData as any).otherCosts || "120,000.00",
+          // Supervisor Credentials
+          constructionSupervisorName: (formData as any).constructionSupervisorName || formData.civilEngineerName || "ENGR. ROBERTO CRUZ, CE",
+          supervisorSignDate: (formData as any).supervisorSignDate || "Sep 27, 2026",
+          supervisorPRC: (formData as any).supervisorPRC || formData.civilEngineerPRC || "0078923",
+          supervisorPRCValidity: (formData as any).supervisorPRCValidity || formData.civilEngineerPRCValidity || "2028-11-20",
+          supervisorPTR: (formData as any).supervisorPTR || formData.civilEngineerPTR || "PTR-ST-554433",
+          supervisorPTRIssued: (formData as any).supervisorPTRIssued || formData.civilEngineerPTRIssued || "Jan 10, 2026",
+          supervisorPTRIssuedAt: (formData as any).supervisorPTRIssuedAt || formData.civilEngineerPTRIssuedAt || "Sto. Tomas",
+          supervisorTin: (formData as any).supervisorTin || formData.civilEngineerTIN || "123-456-789-000",
+          supervisorCtcNo: (formData as any).supervisorCtcNo || "CTC-2026-00841",
+          supervisorCtcDateIssued: (formData as any).supervisorCtcDateIssued || "Jan 10, 2026",
+          supervisorCtcPlaceIssued: (formData as any).supervisorCtcPlaceIssued || "Sto. Tomas",
+          supervisorSignature: (formData as any).supervisorSignature || formData.civilEngineerSignature,
+          // Contractor (If Undertaken by Contract)
+          contractorName: (formData as any).contractorName,
+          contractorAddress: (formData as any).contractorAddress,
+          contractorPcabLicense: (formData as any).contractorPcabLicense,
+          contractorPcabValidity: (formData as any).contractorPcabValidity,
+          contractorTin: (formData as any).contractorTin,
+          contractorTel: (formData as any).contractorTel,
+          authorizedManagingOfficer: (formData as any).authorizedManagingOfficer || (formData as any).contractorAmo,
+          contractorSignDate: (formData as any).contractorSignDate,
+          contractorCtcNo: (formData as any).contractorCtcNo,
+          contractorCtcDate: (formData as any).contractorCtcDate,
+          contractorCtcPlace: (formData as any).contractorCtcPlace,
+          // Owner Conforme Signature & CTC
+          applicantName: (formData as any).applicantName || `${formData.applicantLastName || "DELA CRUZ"}, ${formData.applicantFirstName || "JUAN"}`.trim(),
+          applicantSignature: (formData as any).applicantSignature,
+          applicantCtcNo: (formData as any).applicantCtcNo || "CTC-2026-00192",
+          applicantCtcDateIssued: (formData as any).applicantCtcDateIssued || "Jan 10, 2026",
+          applicantCtcPlaceIssued: (formData as any).applicantCtcPlaceIssued || "Sto. Tomas, Pampanga",
           // Page 2: Design Professionals
           architectName: formData.architectName || "ARCH. MARIA ELENA SANTOS, UAP",
           architectAddress: formData.architectAddress || "Sto. Tomas, Pampanga",
@@ -6659,15 +6725,183 @@ export default function FormTestingStudio() {
                         </div>
                       </div>
 
-                      {/* Total Project Cost */}
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Summary of Actual Costs: Total Cost of Building (PHP)</label>
-                        <input
-                          type="text"
-                          value={(formData as any).actualProjectCost || formData.projectCost || "2,500,000.00"}
-                          onChange={e => handleFieldChange("actualProjectCost" as any, e.target.value)}
-                          style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1.5px solid #0284c7", fontSize: "0.85rem", fontWeight: "800", color: "#0369a1" }}
-                        />
+                      {/* Summary of Actual Costs */}
+                      <div style={{ marginTop: "0.25rem", padding: "0.85rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #0284c7" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem", flexWrap: "wrap", gap: "6px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase", display: "block" }}>
+                              Summary of Actual Costs (NBCP Form CC Box 5)
+                            </span>
+                            <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                              Itemized construction expenditure breakdown
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const tStr = (formData as any).actualProjectCost || formData.projectCost || "2,500,000.00";
+                              const totalNum = parseFloat(tStr.replace(/[^0-9.]/g, "")) || 2500000;
+                              const fmt = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                              handleFieldChange("materialsCost" as any, fmt(totalNum * 0.58));
+                              handleFieldChange("cementBags" as any, String(Math.round(totalNum * 0.00034)));
+                              handleFieldChange("lumberBdFt" as any, String(Math.round(totalNum * 0.00128)));
+                              handleFieldChange("reinforcingBarsKg" as any, String(Math.round(totalNum * 0.00216)));
+                              handleFieldChange("giSheets" as any, String(Math.round(totalNum * 0.000048)));
+                              handleFieldChange("structuralSteelKg" as any, String(Math.round(totalNum * 0.00084)));
+                              handleFieldChange("otherMaterialsCost" as any, fmt(totalNum * 0.074));
+                              handleFieldChange("laborCost" as any, fmt(totalNum * 0.30));
+                              handleFieldChange("equipmentCost" as any, fmt(totalNum * 0.072));
+                              handleFieldChange("otherCosts" as any, fmt(totalNum * 0.048));
+                            }}
+                            style={{
+                              background: "#0284c7",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: "6px",
+                              padding: "4px 10px",
+                              fontSize: "0.72rem",
+                              fontWeight: "700",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px"
+                            }}
+                          >
+                            <Sparkles size={12} />
+                            Auto-Calculate Breakdown
+                          </button>
+                        </div>
+
+                        {/* Total Cost of Building / Structure */}
+                        <div style={{ marginBottom: "0.75rem", padding: "0.6rem 0.8rem", borderRadius: "8px", background: "#f0f9ff", border: "1px solid #bae6fd" }}>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "800", color: "#0369a1", marginBottom: "3px" }}>
+                            TOTAL COST OF BUILDING / STRUCTURE (PHP) *
+                          </label>
+                          <input
+                            type="text"
+                            value={(formData as any).actualProjectCost || formData.projectCost || "2,500,000.00"}
+                            onChange={e => handleFieldChange("actualProjectCost" as any, e.target.value)}
+                            style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1.5px solid #0284c7", fontSize: "0.92rem", fontWeight: "800", color: "#0369a1", background: "#ffffff" }}
+                          />
+                        </div>
+
+                        {/* Breakdown Fields */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                          {/* 1. Total Cost of Materials */}
+                          <div style={{ gridColumn: "span 2", background: "#ffffff", padding: "0.6rem", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#1e293b" }}>1. TOTAL COST OF MATERIALS (PHP)</label>
+                                <input
+                                  type="text"
+                                  value={(formData as any).materialsCost || "1,450,000.00"}
+                                  onChange={e => handleFieldChange("materialsCost" as any, e.target.value)}
+                                  placeholder="1,450,000.00"
+                                  style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", fontWeight: "700", color: "#1e293b" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>1.1 CEMENT (Bags)</label>
+                                <input
+                                  type="text"
+                                  value={(formData as any).cementBags || "850"}
+                                  onChange={e => handleFieldChange("cementBags" as any, e.target.value)}
+                                  placeholder="850"
+                                  style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>1.2 LUMBER (bd. Ft)</label>
+                                <input
+                                  type="text"
+                                  value={(formData as any).lumberBdFt || "3,200"}
+                                  onChange={e => handleFieldChange("lumberBdFt" as any, e.target.value)}
+                                  placeholder="3,200"
+                                  style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>1.3 REINFORCING BARS (Kg)</label>
+                                <input
+                                  type="text"
+                                  value={(formData as any).reinforcingBarsKg || "5,400"}
+                                  onChange={e => handleFieldChange("reinforcingBarsKg" as any, e.target.value)}
+                                  placeholder="5,400"
+                                  style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>1.4 G.I SHEETS (sheets)</label>
+                                <input
+                                  type="text"
+                                  value={(formData as any).giSheets || "120"}
+                                  onChange={e => handleFieldChange("giSheets" as any, e.target.value)}
+                                  placeholder="120"
+                                  style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>1.5 PREFAB STRUCTURAL STEEL (kg)</label>
+                                <input
+                                  type="text"
+                                  value={(formData as any).structuralSteelKg || "2,100"}
+                                  onChange={e => handleFieldChange("structuralSteelKg" as any, e.target.value)}
+                                  placeholder="2,100"
+                                  style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>1.6 Other Materials (PHP)</label>
+                                <input
+                                  type="text"
+                                  value={(formData as any).otherMaterialsCost || "185,000.00"}
+                                  onChange={e => handleFieldChange("otherMaterialsCost" as any, e.target.value)}
+                                  placeholder="185,000.00"
+                                  style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 2. Direct Labor */}
+                          <div style={{ background: "#ffffff", padding: "0.6rem", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#1e293b", marginBottom: "2px" }}>2. TOTAL COST OF DIRECT LABOR (PHP)</label>
+                            <span style={{ display: "block", fontSize: "0.65rem", color: "#64748b", marginBottom: "4px" }}>Architect/Engineer down to laborer</span>
+                            <input
+                              type="text"
+                              value={(formData as any).laborCost || "750,000.00"}
+                              onChange={e => handleFieldChange("laborCost" as any, e.target.value)}
+                              placeholder="750,000.00"
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", fontWeight: "700" }}
+                            />
+                          </div>
+
+                          {/* 3. Equipment Utilization */}
+                          <div style={{ background: "#ffffff", padding: "0.6rem", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#1e293b", marginBottom: "2px" }}>3. EQUIPMENT UTILIZATION (PHP)</label>
+                            <span style={{ display: "block", fontSize: "0.65rem", color: "#64748b", marginBottom: "4px" }}>Machinery & heavy equipment</span>
+                            <input
+                              type="text"
+                              value={(formData as any).equipmentCost || "180,000.00"}
+                              onChange={e => handleFieldChange("equipmentCost" as any, e.target.value)}
+                              placeholder="180,000.00"
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", fontWeight: "700" }}
+                            />
+                          </div>
+
+                          {/* 4. Other Costs */}
+                          <div style={{ gridColumn: "span 2", background: "#ffffff", padding: "0.6rem", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "700", color: "#1e293b", marginBottom: "2px" }}>4. OTHER COSTS (PHP)</label>
+                            <span style={{ display: "block", fontSize: "0.65rem", color: "#64748b", marginBottom: "4px" }}>Professional fees, permits, and other auxiliary fees</span>
+                            <input
+                              type="text"
+                              value={(formData as any).otherCosts || "120,000.00"}
+                              onChange={e => handleFieldChange("otherCosts" as any, e.target.value)}
+                              placeholder="120,000.00"
+                              style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", fontWeight: "700" }}
+                            />
+                          </div>
+                        </div>
                       </div>
 
                       {/* Construction Supervisor for CC */}

@@ -274,6 +274,23 @@ export interface UnifiedPermitFormData {
   funicular?: boolean;
   mechanicalPreparedBy?: string;
 
+  // Certificate of Completion: Summary of Actual Costs
+  materialsCost?: string;
+  cementBags?: string;
+  cementBagsCost?: string;
+  lumberBdFt?: string;
+  lumberCost?: string;
+  reinforcingBarsKg?: string;
+  reinforcingBarsCost?: string;
+  giSheets?: string;
+  giSheetsCost?: string;
+  structuralSteelKg?: string;
+  structuralSteelCost?: string;
+  otherMaterialsCost?: string;
+  laborCost?: string;
+  equipmentCost?: string;
+  otherCosts?: string;
+
   // Electronics details (NBC Form EL-01)
   electronicsScopeOfWork?: string;
   electronicsScopeOthers?: string;
@@ -418,6 +435,10 @@ export interface UnifiedPermitFormData {
   supervisorCtcPlaceIssued?: string;
   supervisorTin?: string;
   supervisorSignature?: string;
+  supervisorSignDate?: string;
+  applicantCtcNo?: string;
+  applicantCtcDateIssued?: string;
+  applicantCtcPlaceIssued?: string;
 
   // Requirements Submitted Checkboxes (Certificate of Occupancy)
   reqApprovedPlan?: boolean;
@@ -5701,34 +5722,60 @@ export async function generateCertificateOfCompletionPdf(data: UnifiedPermitForm
   drawCenteredText(plannedUnits, 303.62, 554.5, 8.0, true);
   drawCenteredText(actualUnits, 483.30, 554.5, 8.0, true);
 
-  // 6. Summary of Costs
-  // Optional detailed breakdown if provided
-  const matCost = (data as any).materialsCost;
-  if (matCost) drawCenteredText(matCost.replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim(), 484.25, 528.5, 7.5, false);
-  const cementVal = (data as any).cementBagsCost || (data as any).cementBags;
-  if (cementVal) drawCenteredText(String(cementVal).trim(), 273.8, 517.0, 7.5, false);
-  const lumberVal = (data as any).lumberCost || (data as any).lumberBdFt;
-  if (lumberVal) drawCenteredText(String(lumberVal).trim(), 276.15, 505.5, 7.5, false);
-  const rebarsVal = (data as any).reinforcingBarsCost || (data as any).reinforcingBarsKg;
-  if (rebarsVal) drawCenteredText(String(rebarsVal).trim(), 298.9, 494.0, 7.5, false);
-  const giSheetsVal = (data as any).giSheetsCost || (data as any).giSheets;
-  if (giSheetsVal) drawCenteredText(String(giSheetsVal).trim(), 286.1, 482.5, 7.5, false);
-  const steelVal = (data as any).structuralSteelCost || (data as any).structuralSteelKg;
-  if (steelVal) drawCenteredText(String(steelVal).trim(), 316.75, 471.0, 7.5, false);
-  const otherMatVal = (data as any).otherMaterialsCost;
-  if (otherMatVal) drawCenteredText(String(otherMatVal).trim(), 270.65, 459.5, 7.5, false);
-
-  const laborCost = (data as any).laborCost;
-  if (laborCost) drawCenteredText(laborCost.replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim(), 484.25, 448.0, 7.5, false);
-  const equipCost = (data as any).equipmentCost;
-  if (equipCost) drawCenteredText(equipCost.replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim(), 484.25, 425.0, 7.5, false);
-  const otherCost = (data as any).otherCosts;
-  if (otherCost) drawCenteredText(otherCost.replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim(), 484.25, 413.5, 7.5, false);
-
-  // Total Cost of Building / Structure: underline x=437.0 to 531.5, center=484.25, baseline y=390.5
-  // Note: Template has "P " already engraved, so we format without redundant PHP/P prefix
+  // 6. Summary of Actual Costs (NBCP Form CC Box 5)
+  // Underlines: Total Materials x=437.0..531.5, Items x=192..352, Labor/Equip/Other/Building x=437.0..531.5
   const rawCost = (data.actualProjectCost || data.projectCost || "2,500,000.00").replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim();
-  drawCenteredText(rawCost, 484.25, 390.5, 8.0, true);
+  const numTotal = parseFloat(rawCost.replace(/,/g, "")) || 2500000;
+  const fmtPesos = (val: number) => val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtQty = (val: string | number) => {
+    const s = String(val).trim();
+    const n = parseFloat(s.replace(/,/g, ""));
+    return isNaN(n) ? s : n.toLocaleString("en-US");
+  };
+
+  // 1. Total Cost of Materials (center x = 484.25, baseline y = 530.5)
+  const matCost = (data.materialsCost || fmtPesos(numTotal * 0.58)).replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim();
+  drawCenteredText(matCost, 484.25, 530.5, 7.5, false);
+
+  // 1.1 Cement (Bags) (center x = 273.8, baseline y = 519.0)
+  const cementVal = fmtQty(data.cementBagsCost || data.cementBags || Math.round(numTotal * 0.00034));
+  drawCenteredText(cementVal, 273.8, 519.0, 7.5, false);
+
+  // 1.2 Lumber (bd. Ft) (center x = 276.15, baseline y = 507.5)
+  const lumberVal = fmtQty(data.lumberCost || data.lumberBdFt || Math.round(numTotal * 0.00128));
+  drawCenteredText(lumberVal, 276.15, 507.5, 7.5, false);
+
+  // 1.3 Reinforcing Bars (Kg) (center x = 298.9, baseline y = 496.0)
+  const rebarsVal = fmtQty(data.reinforcingBarsCost || data.reinforcingBarsKg || Math.round(numTotal * 0.00216));
+  drawCenteredText(rebarsVal, 298.9, 496.0, 7.5, false);
+
+  // 1.4 G.I Sheets (sheets) (center x = 286.1, baseline y = 484.5)
+  const giSheetsVal = fmtQty(data.giSheetsCost || data.giSheets || Math.round(numTotal * 0.000048));
+  drawCenteredText(giSheetsVal, 286.1, 484.5, 7.5, false);
+
+  // 1.5 Prefab Structural Steel (kg) (center x = 316.75, baseline y = 473.0)
+  const steelVal = fmtQty(data.structuralSteelCost || data.structuralSteelKg || Math.round(numTotal * 0.00084));
+  drawCenteredText(steelVal, 316.75, 473.0, 7.5, false);
+
+  // 1.6 Other Materials (center x = 270.65, baseline y = 461.5)
+  const otherMatVal = String(data.otherMaterialsCost || fmtPesos(numTotal * 0.074)).replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim();
+  drawCenteredText(otherMatVal, 270.65, 461.5, 7.5, false);
+
+  // 2. Total Cost of Direct Labor (center x = 484.25, baseline y = 450.0)
+  const laborCost = (data.laborCost || fmtPesos(numTotal * 0.30)).replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim();
+  drawCenteredText(laborCost, 484.25, 450.0, 7.5, false);
+
+  // 3. Total Cost of Equipment Utilization (center x = 484.25, baseline y = 427.0)
+  const equipCost = (data.equipmentCost || fmtPesos(numTotal * 0.072)).replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim();
+  drawCenteredText(equipCost, 484.25, 427.0, 7.5, false);
+
+  // 4. Other Costs (center x = 484.25, baseline y = 415.5)
+  const otherCost = (data.otherCosts || fmtPesos(numTotal * 0.048)).replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim();
+  drawCenteredText(otherCost, 484.25, 415.5, 7.5, false);
+
+  // Total Cost of Building / Structure (center x = 484.25, baseline y = 392.5)
+  // Note: Template has "P " already engraved, so we format without redundant PHP/P prefix
+  drawCenteredText(rawCost, 484.25, 392.5, 8.0, true);
 
   // 7. Full-Time Supervisor / Inspector
   // Underline at x=73.3 to 253.4, center=163.35, baseline y=350.0
@@ -5773,19 +5820,20 @@ export async function generateCertificateOfCompletionPdf(data: UnifiedPermitForm
   // 7b. Contractor Details (if undertaken by contract)
   const contractorName = (data as any).contractorName;
   if (contractorName) {
-    drawText(contractorName.toUpperCase(), 385.0, 361.5, 7.0, true, 26);
-    drawText((data as any).contractorAddress, 365.0, 323.5, 7.0, false, 32);
-    drawText((data as any).contractorPcabLicense, 549.0, 361.5, 7.0, false);
-    drawText((data as any).contractorPcabValidity, 525.0, 349.0, 7.0, false);
-    drawText((data as any).contractorTin, 512.0, 336.5, 7.0, false);
-    drawText((data as any).contractorTel, 525.0, 323.5, 7.0, false);
+    drawText(contractorName.toUpperCase(), 384.0, 361.5, 6.8, true, 26);
+    drawText((data as any).contractorAddress, 365.0, 323.5, 6.2, false, 32);
+    const pcabClean = ((data as any).contractorPcabLicense || "").replace(/^PCAB[- ]?/i, "");
+    drawText(pcabClean, 548.0, 361.5, 5.5, false);
+    drawText((data as any).contractorPcabValidity, 526.0, 349.0, 6.5, false);
+    drawText((data as any).contractorTin, 510.0, 336.5, 6.5, false);
+    drawText((data as any).contractorTel, 526.0, 323.5, 6.5, false);
     const amoName = (data as any).authorizedManagingOfficer || (data as any).contractorAmo;
-    if (amoName) drawCenteredText(amoName.toUpperCase(), 410.8, 286.0, 7.5, true);
+    if (amoName) drawCenteredText(amoName.toUpperCase(), 410.8, 289.0, 7.5, true);
     const amoDate = (data as any).contractorSignDate || autoDate;
-    drawCenteredText(amoDate, 548.0, 286.0, 7.0, false);
-    drawText((data as any).contractorCtcNo, 360.0, 247.5, 6.5, false);
-    drawText((data as any).contractorCtcDate, 454.0, 247.5, 6.5, false);
-    drawText((data as any).contractorCtcPlace, 552.0, 247.5, 6.5, false);
+    drawCenteredText(amoDate, 548.0, 289.0, 6.5, false);
+    drawText((data as any).contractorCtcNo, 354.0, 247.5, 5.2, false);
+    drawText((data as any).contractorCtcDate, 454.0, 247.5, 6.0, false);
+    drawText((data as any).contractorCtcPlace, 552.0, 247.5, 6.0, false);
   }
 
   // 8. Conforme: Owner / Applicant
@@ -5801,12 +5849,21 @@ export async function generateCertificateOfCompletionPdf(data: UnifiedPermitForm
     }
   }
 
+  // Owner / Applicant CTC Table (Right side of Owner/Applicant box)
+  const juratCityBody = (data as any).juratCity || "Sto. Tomas, Pampanga";
+  const ownerCtcNo = data.applicantCtcNo || (data as any).applicantCtc || "CTC-2026-00192";
+  const ownerCtcDate = data.applicantCtcDateIssued || (data as any).applicantCtcDate || autoDate;
+  const ownerCtcPlace = data.applicantCtcPlaceIssued || (data as any).applicantCtcPlace || juratCityBody;
+
+  drawText(ownerCtcNo, 486.0, 237.5, 7.0, false);
+  drawText(ownerCtcDate, 486.0, 224.8, 7.0, false);
+  drawText(ownerCtcPlace, 486.0, 212.3, 7.0, false);
+
   // 9. Jurat: City/Municipality of Sto. Tomas, Pampanga on underlines
   // Line 1: CITY/ MUNICIPALITY OF _______________________} S.S (center = 197.8, baseline y = 187.5)
   const juratCityHeader = ((data as any).juratCity || "STO. TOMAS, PAMPANGA").toUpperCase();
   drawCenteredText(juratCityHeader, 197.8, 187.5, 8.0, true);
   // Line 2: BEFORE ME, at the City/Municipality of ___________________________, on _________________________
-  const juratCityBody = (data as any).juratCity || "Sto. Tomas, Pampanga";
   drawText(juratCityBody, 245.0, 167.0, 7.5, true);
   const juratDate = (data as any).juratDate || autoDate;
   drawCenteredText(juratDate, 500.7, 167.0, 7.5, false);
