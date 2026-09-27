@@ -31,6 +31,7 @@ import {
   generateSignPermitPdf,
   generateTemporaryServicePermitPdf,
   generateCertificateOfOccupancyPdf,
+  generateCertificateOfCompletionPdf,
   UnifiedPermitFormData 
 } from "../../utils/unifiedPermitPdfGenerator";
 import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
@@ -120,6 +121,13 @@ export const FORM_OFFICIAL_DETAILS: Record<string, { officialTitle: string; nbcC
     icon: Award,
     color: "#7e22ce",
     desc: "Unified application for Certificate of Occupancy and Fire Safety Inspection Certificate (FSIC)."
+  },
+  certificateOfCompletion: {
+    officialTitle: "OFFICIAL CERTIFICATE OF COMPLETION",
+    nbcCode: "NBC FORM NO. CC",
+    icon: CheckCircle2,
+    color: "#0284c7",
+    desc: "Official Certificate of Completion signed by supervising engineers, architects, and contractor."
   }
 };
 
@@ -947,6 +955,317 @@ export default function TechnicalPermitFormsStep({
     if (civilEngineerPTRIssuedAt) setCoSupervisorPTRIssuedAt(civilEngineerPTRIssuedAt);
     if (civilEngineerTIN) setCoSupervisorTIN(civilEngineerTIN);
     if (civilEngineerSignature) setCoSupervisorSignature(civilEngineerSignature);
+  };
+
+  // Certificate of Completion (CC) Specific State
+  const [ccBuildingPermitNo, setCcBuildingPermitNo] = useState(() => (clearanceApp as any)?.buildingPermitNo || "BP-2026-0091");
+  const [ccBpDateIssued, setCcBpDateIssued] = useState(() => (clearanceApp as any)?.permitIssuedDate || "Jan 12, 2026");
+  const [ccSubmissionDate, setCcSubmissionDate] = useState(() => new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }));
+  const [ccApplicantLastName, setCcApplicantLastName] = useState(() => applicantLastName || "");
+  const [ccApplicantFirstName, setCcApplicantFirstName] = useState(() => applicantFirstName || "");
+  const [ccApplicantMiddleInitial, setCcApplicantMiddleInitial] = useState(() => applicantMiddleName || "");
+  const [ccApplicantAddress, setCcApplicantAddress] = useState(() => compiledFullAddress || "");
+  const [ccApplicantZip, setCcApplicantZip] = useState(() => applicantZipCode || "2020");
+  const [ccApplicantContactNo, setCcApplicantContactNo] = useState(() => applicantPhone || "0917-123-4567");
+  const [ccProjectLocation, setCcProjectLocation] = useState(() => `${streetAddress || '123 Rizal St.'}, Brgy. ${barangay || 'Poblacion'}, Sto. Tomas, Pampanga`);
+  const [ccCharacterOfOccupancy, setCcCharacterOfOccupancy] = useState(() => occupancyRuleVII || occupancyClass || "Residential");
+  const [ccOccupancyGroup, setCcOccupancyGroup] = useState("A");
+
+  // Table: Planned vs Actual
+  const [ccPlannedStartDate, setCcPlannedStartDate] = useState("Oct 01, 2026");
+  const [ccActualStartDate, setCcActualStartDate] = useState("Oct 01, 2026");
+  const [ccPlannedCompletionDate, setCcPlannedCompletionDate] = useState("Apr 30, 2027");
+  const [ccActualCompletionDate, setCcActualCompletionDate] = useState("Apr 30, 2027");
+  const [ccPlannedFloorArea, setCcPlannedFloorArea] = useState(() => floorArea || "185.50");
+  const [ccActualFloorArea, setCcActualFloorArea] = useState(() => floorArea || "185.50");
+  const [ccPlannedStoreys, setCcPlannedStoreys] = useState("2");
+  const [ccActualStoreys, setCcActualStoreys] = useState("2");
+  const [ccPlannedUnits, setCcPlannedUnits] = useState("1");
+  const [ccActualUnits, setCcActualUnits] = useState("1");
+  const [ccActualProjectCost, setCcActualProjectCost] = useState(() => projectCost || "2,500,000.00");
+
+  // Cost Breakdown Items (1. Materials, 2. Labor, 3. Equipment, 4. Other)
+  const [ccShowCostBreakdown, setCcShowCostBreakdown] = useState(false);
+  const [ccMaterialsCost, setCcMaterialsCost] = useState("");
+  const [ccCementBags, setCcCementBags] = useState("");
+  const [ccLumber, setCcLumber] = useState("");
+  const [ccReinforcingBars, setCcReinforcingBars] = useState("");
+  const [ccGiSheets, setCcGiSheets] = useState("");
+  const [ccStructuralSteel, setCcStructuralSteel] = useState("");
+  const [ccOtherMaterialsCost, setCcOtherMaterialsCost] = useState("");
+  const [ccLaborCost, setCcLaborCost] = useState("");
+  const [ccEquipmentCost, setCcEquipmentCost] = useState("");
+  const [ccOtherCosts, setCcOtherCosts] = useState("");
+
+  // Supervisor
+  const [ccSupervisorName, setCcSupervisorName] = useState("ENGR. ROBERTO CRUZ, CE");
+  const [ccSupervisorPRC, setCcSupervisorPRC] = useState("0078923");
+  const [ccSupervisorPRCValidity, setCcSupervisorPRCValidity] = useState("2028-11-20");
+  const [ccSupervisorPTR, setCcSupervisorPTR] = useState("PTR-ST-2026-001");
+  const [ccSupervisorPTRIssued, setCcSupervisorPTRIssued] = useState("Jan 10, 2026");
+  const [ccSupervisorPTRIssuedAt, setCcSupervisorPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
+  const [ccSupervisorTIN, setCcSupervisorTIN] = useState("456-789-012-000");
+  const [ccSupervisorCtcNo, setCcSupervisorCtcNo] = useState("CTC-2026-00841");
+  const [ccSupervisorCtcDateIssued, setCcSupervisorCtcDateIssued] = useState("Jan 10, 2026");
+  const [ccSupervisorCtcPlaceIssued, setCcSupervisorCtcPlaceIssued] = useState("Sto. Tomas");
+  const [ccSupervisorSignature, setCcSupervisorSignature] = useState("");
+
+  // Contractor (If Construction was Undertaken by Contract)
+  const [ccHasContractor, setCcHasContractor] = useState(false);
+  const [ccContractorName, setCcContractorName] = useState("");
+  const [ccContractorAddress, setCcContractorAddress] = useState("");
+  const [ccContractorPcabLicense, setCcContractorPcabLicense] = useState("");
+  const [ccContractorPcabValidity, setCcContractorPcabValidity] = useState("");
+  const [ccContractorTin, setCcContractorTin] = useState("");
+  const [ccContractorTel, setCcContractorTel] = useState("");
+  const [ccContractorAmo, setCcContractorAmo] = useState("");
+  const [ccContractorSignDate, setCcContractorSignDate] = useState("");
+  const [ccContractorCtcNo, setCcContractorCtcNo] = useState("");
+  const [ccContractorCtcDate, setCcContractorCtcDate] = useState("");
+  const [ccContractorCtcPlace, setCcContractorCtcPlace] = useState("");
+
+  // Owner Conforme Signature
+  const [ccApplicantSignature, setCcApplicantSignature] = useState(() => applicantSignature || "");
+
+  // Jurat / Notarial
+  const [ccJuratCity, setCcJuratCity] = useState("Sto. Tomas, Pampanga");
+  const [ccJuratDate, setCcJuratDate] = useState(() => new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }));
+
+  // Page 2: UI Tab Navigation
+  const [ccPage2SubTab, setCcPage2SubTab] = useState<"design" | "supervisors">("design");
+  const [ccActiveProfKey, setCcActiveProfKey] = useState<"arch" | "civil" | "elec" | "mech" | "sanitary" | "plumbing" | "electronics" | "interior">("arch");
+  const [ccActiveSupKey, setCcActiveSupKey] = useState<"elec" | "mech" | "sanitary" | "plumbing" | "electronics" | "interior">("elec");
+
+  // Page 2: Design Professionals (Plans and Specification)
+  const [ccArchName, setCcArchName] = useState(() => architectName || "ARCH. MARIA ELENA SANTOS, UAP");
+  const [ccArchAddress, setCcArchAddress] = useState(() => architectAddress || "Sto. Tomas, Pampanga");
+  const [ccArchPrc, setCcArchPrc] = useState(() => architectPRC || "0045211");
+  const [ccArchPrcValidity, setCcArchPrcValidity] = useState(() => architectPRCValidity || "2028-09-15");
+  const [ccArchPtr, setCcArchPtr] = useState(() => architectPTR || "PTR-ST-665544");
+  const [ccArchPtrDate, setCcArchPtrDate] = useState(() => architectPTRIssued || "Jan 08, 2026");
+  const [ccArchIssuedAt, setCcArchIssuedAt] = useState(() => architectPTRIssuedAt || "Sto. Tomas");
+  const [ccArchTin, setCcArchTin] = useState(() => architectTIN || "234-567-890-000");
+  const [ccArchSig, setCcArchSig] = useState("");
+
+  const [ccCivilName, setCcCivilName] = useState(() => civilEngineerName || "ENGR. ROBERTO CRUZ, CE");
+  const [ccCivilAddress, setCcCivilAddress] = useState(() => civilEngineerAddress || "Sto. Tomas, Pampanga");
+  const [ccCivilPrc, setCcCivilPrc] = useState(() => civilEngineerPRC || "0078923");
+  const [ccCivilPrcValidity, setCcCivilPrcValidity] = useState(() => civilEngineerPRCValidity || "2028-11-24");
+  const [ccCivilPtr, setCcCivilPtr] = useState(() => civilEngineerPTR || "PTR-ST-2026-001");
+  const [ccCivilPtrDate, setCcCivilPtrDate] = useState(() => civilEngineerPTRIssued || "Jan 08, 2026");
+  const [ccCivilIssuedAt, setCcCivilIssuedAt] = useState(() => civilEngineerPTRIssuedAt || "Sto. Tomas, Pampanga");
+  const [ccCivilTin, setCcCivilTin] = useState(() => civilEngineerTIN || "234-567-890-000");
+  const [ccCivilSig, setCcCivilSig] = useState(() => civilEngineerSignature || "");
+
+  const [ccElecName, setCcElecName] = useState(() => electricalEngineerName || "ENGR. DANILO REYES, PEE");
+  const [ccElecAddress, setCcElecAddress] = useState("Sto. Tomas, Pampanga");
+  const [ccElecPrc, setCcElecPrc] = useState(() => electricalEngineerPRC || "0033421");
+  const [ccElecPrcValidity, setCcElecPrcValidity] = useState(() => electricalEngineerPRCValidity || "2027-09-30");
+  const [ccElecPtr, setCcElecPtr] = useState(() => electricalEngineerPTR || "PTR-ST-2026-4412");
+  const [ccElecPtrDate, setCcElecPtrDate] = useState("Jan 10, 2026");
+  const [ccElecIssuedAt, setCcElecIssuedAt] = useState(() => electricalEngineerPTRIssued || "Sto. Tomas, Pampanga");
+  const [ccElecTin, setCcElecTin] = useState(() => electricalEngineerTIN || "456-789-012-000");
+  const [ccElecSig, setCcElecSig] = useState(() => electricalEngineerSignature || "");
+
+  const [ccMechName, setCcMechName] = useState(() => mechanicalEngineerName || "ENGR. LEONARDO V. TORRES, PME");
+  const [ccMechAddress, setCcMechAddress] = useState(() => mechanicalEngineerAddress || "Sto. Tomas, Pampanga");
+  const [ccMechPrc, setCcMechPrc] = useState(() => mechanicalEngineerPRC || "0044556");
+  const [ccMechPrcValidity, setCcMechPrcValidity] = useState(() => mechanicalEngineerPRCValidity || "2027-12-18");
+  const [ccMechPtr, setCcMechPtr] = useState(() => mechanicalEngineerPTR || "PTR-ST-221100");
+  const [ccMechPtrDate, setCcMechPtrDate] = useState(() => mechanicalEngineerPTRDate || "Jan 10, 2026");
+  const [ccMechIssuedAt, setCcMechIssuedAt] = useState(() => mechanicalEngineerPTRIssuedAt || "Sto. Tomas, Pampanga");
+  const [ccMechTin, setCcMechTin] = useState(() => mechanicalEngineerTIN || "678-901-234-000");
+  const [ccMechSig, setCcMechSig] = useState(() => mechanicalEngineerSignature || "");
+
+  const [ccSanitaryName, setCcSanitaryName] = useState("ENGR. ANDRES BONIFACIO, SE");
+  const [ccSanitaryAddress, setCcSanitaryAddress] = useState("San Bartolome, Sto. Tomas, Pampanga");
+  const [ccSanitaryPrc, setCcSanitaryPrc] = useState("0054321");
+  const [ccSanitaryPrcValidity, setCcSanitaryPrcValidity] = useState("2027-11-30");
+  const [ccSanitaryPtr, setCcSanitaryPtr] = useState("PTR-ST-5678901");
+  const [ccSanitaryPtrDate, setCcSanitaryPtrDate] = useState("Jan 15, 2026");
+  const [ccSanitaryIssuedAt, setCcSanitaryIssuedAt] = useState("Sto. Tomas");
+  const [ccSanitaryTin, setCcSanitaryTin] = useState("567-890-123-000");
+  const [ccSanitarySig, setCcSanitarySig] = useState("");
+
+  const [ccPlumbingName, setCcPlumbingName] = useState(() => masterPlumberName || "ENGR. APOLINARIO MABINI, RMP");
+  const [ccPlumbingAddress, setCcPlumbingAddress] = useState("Sto. Rosario, Sto. Tomas, Pampanga");
+  const [ccPlumbingPrc, setCcPlumbingPrc] = useState(() => masterPlumberPRC || "0043210");
+  const [ccPlumbingPrcValidity, setCcPlumbingPrcValidity] = useState(() => masterPlumberPRCValidity || "2028-06-25");
+  const [ccPlumbingPtr, setCcPlumbingPtr] = useState(() => masterPlumberPTR || "PTR-ST-6789012");
+  const [ccPlumbingPtrDate, setCcPlumbingPtrDate] = useState(() => masterPlumberPTRIssued || "Jan 18, 2026");
+  const [ccPlumbingIssuedAt, setCcPlumbingIssuedAt] = useState("Sto. Tomas");
+  const [ccPlumbingTin, setCcPlumbingTin] = useState(() => masterPlumberTIN || "678-901-234-000");
+  const [ccPlumbingSig, setCcPlumbingSig] = useState("");
+
+  const [ccElectronicsName, setCcElectronicsName] = useState(() => electronicsEngineerName || "ENGR. CARLOS LIM, PECE");
+  const [ccElectronicsAddress, setCcElectronicsAddress] = useState(() => electronicsEngineerAddress || "Sto. Tomas, Pampanga");
+  const [ccElectronicsPrc, setCcElectronicsPrc] = useState(() => electronicsEngineerPRC || "0038912");
+  const [ccElectronicsPrcValidity, setCcElectronicsPrcValidity] = useState(() => electronicsEngineerPRCValidity || "2028-08-20");
+  const [ccElectronicsPtr, setCcElectronicsPtr] = useState(() => electronicsEngineerPTR || "PTR-ST-2026-7782");
+  const [ccElectronicsPtrDate, setCcElectronicsPtrDate] = useState(() => electronicsEngineerPTRIssued || "Jan 05, 2026");
+  const [ccElectronicsIssuedAt, setCcElectronicsIssuedAt] = useState(() => electronicsEngineerPTRIssuedAt || "Sto. Tomas, Pampanga");
+  const [ccElectronicsTin, setCcElectronicsTin] = useState(() => electronicsEngineerTIN || "789-012-345-000");
+  const [ccElectronicsSig, setCcElectronicsSig] = useState(() => electronicsEngineerSignature || "");
+
+  const [ccInteriorName, setCcInteriorName] = useState("IDR. GABRIELA SILANG, PIID");
+  const [ccInteriorAddress, setCcInteriorAddress] = useState("Poblacion, Sto. Tomas, Pampanga");
+  const [ccInteriorPrc, setCcInteriorPrc] = useState("0021098");
+  const [ccInteriorPrcValidity, setCcInteriorPrcValidity] = useState("2027-05-18");
+  const [ccInteriorPtr, setCcInteriorPtr] = useState("PTR-ST-8901234");
+  const [ccInteriorPtrDate, setCcInteriorPtrDate] = useState("Jan 22, 2026");
+  const [ccInteriorIssuedAt, setCcInteriorIssuedAt] = useState("Sto. Tomas");
+  const [ccInteriorTin, setCcInteriorTin] = useState("890-123-456-000");
+  const [ccInteriorSig, setCcInteriorSig] = useState("");
+
+  // Page 2: Specialty Supervisors Same As Design Checkboxes & Custom Fields
+  const [ccSameAsDesignElecSup, setCcSameAsDesignElecSup] = useState(true);
+  const [ccElecSupName, setCcElecSupName] = useState("");
+  const [ccElecSupAddress, setCcElecSupAddress] = useState("");
+  const [ccElecSupPrc, setCcElecSupPrc] = useState("");
+  const [ccElecSupPrcValidity, setCcElecSupPrcValidity] = useState("");
+  const [ccElecSupPtr, setCcElecSupPtr] = useState("");
+  const [ccElecSupPtrDate, setCcElecSupPtrDate] = useState("");
+  const [ccElecSupIssuedAt, setCcElecSupIssuedAt] = useState("");
+  const [ccElecSupTin, setCcElecSupTin] = useState("");
+  const [ccElecSupSig, setCcElecSupSig] = useState("");
+
+  const [ccSameAsDesignMechSup, setCcSameAsDesignMechSup] = useState(true);
+  const [ccMechSupName, setCcMechSupName] = useState("");
+  const [ccMechSupAddress, setCcMechSupAddress] = useState("");
+  const [ccMechSupPrc, setCcMechSupPrc] = useState("");
+  const [ccMechSupPrcValidity, setCcMechSupPrcValidity] = useState("");
+  const [ccMechSupPtr, setCcMechSupPtr] = useState("");
+  const [ccMechSupPtrDate, setCcMechSupPtrDate] = useState("");
+  const [ccMechSupIssuedAt, setCcMechSupIssuedAt] = useState("");
+  const [ccMechSupTin, setCcMechSupTin] = useState("");
+  const [ccMechSupSig, setCcMechSupSig] = useState("");
+
+  const [ccSameAsDesignSanitarySup, setCcSameAsDesignSanitarySup] = useState(true);
+  const [ccSanitarySupName, setCcSanitarySupName] = useState("");
+  const [ccSanitarySupAddress, setCcSanitarySupAddress] = useState("");
+  const [ccSanitarySupPrc, setCcSanitarySupPrc] = useState("");
+  const [ccSanitarySupPrcValidity, setCcSanitarySupPrcValidity] = useState("");
+  const [ccSanitarySupPtr, setCcSanitarySupPtr] = useState("");
+  const [ccSanitarySupPtrDate, setCcSanitarySupPtrDate] = useState("");
+  const [ccSanitarySupIssuedAt, setCcSanitarySupIssuedAt] = useState("");
+  const [ccSanitarySupTin, setCcSanitarySupTin] = useState("");
+  const [ccSanitarySupSig, setCcSanitarySupSig] = useState("");
+
+  const [ccSameAsDesignPlumbingSup, setCcSameAsDesignPlumbingSup] = useState(true);
+  const [ccPlumbingSupName, setCcPlumbingSupName] = useState("");
+  const [ccPlumbingSupAddress, setCcPlumbingSupAddress] = useState("");
+  const [ccPlumbingSupPrc, setCcPlumbingSupPrc] = useState("");
+  const [ccPlumbingSupPrcValidity, setCcPlumbingSupPrcValidity] = useState("");
+  const [ccPlumbingSupPtr, setCcPlumbingSupPtr] = useState("");
+  const [ccPlumbingSupPtrDate, setCcPlumbingSupPtrDate] = useState("");
+  const [ccPlumbingSupIssuedAt, setCcPlumbingSupIssuedAt] = useState("");
+  const [ccPlumbingSupTin, setCcPlumbingSupTin] = useState("");
+  const [ccPlumbingSupSig, setCcPlumbingSupSig] = useState("");
+
+  const [ccSameAsDesignElectronicsSup, setCcSameAsDesignElectronicsSup] = useState(true);
+  const [ccElectronicsSupName, setCcElectronicsSupName] = useState("");
+  const [ccElectronicsSupAddress, setCcElectronicsSupAddress] = useState("");
+  const [ccElectronicsSupPrc, setCcElectronicsSupPrc] = useState("");
+  const [ccElectronicsSupPrcValidity, setCcElectronicsSupPrcValidity] = useState("");
+  const [ccElectronicsSupPtr, setCcElectronicsSupPtr] = useState("");
+  const [ccElectronicsSupPtrDate, setCcElectronicsSupPtrDate] = useState("");
+  const [ccElectronicsSupIssuedAt, setCcElectronicsSupIssuedAt] = useState("");
+  const [ccElectronicsSupTin, setCcElectronicsSupTin] = useState("");
+  const [ccElectronicsSupSig, setCcElectronicsSupSig] = useState("");
+
+  const [ccSameAsDesignInteriorSup, setCcSameAsDesignInteriorSup] = useState(true);
+  const [ccInteriorSupName, setCcInteriorSupName] = useState("");
+  const [ccInteriorSupAddress, setCcInteriorSupAddress] = useState("");
+  const [ccInteriorSupPrc, setCcInteriorSupPrc] = useState("");
+  const [ccInteriorSupPrcValidity, setCcInteriorSupPrcValidity] = useState("");
+  const [ccInteriorSupPtr, setCcInteriorSupPtr] = useState("");
+  const [ccInteriorSupPtrDate, setCcInteriorSupPtrDate] = useState("");
+  const [ccInteriorSupIssuedAt, setCcInteriorSupIssuedAt] = useState("");
+  const [ccInteriorSupTin, setCcInteriorSupTin] = useState("");
+  const [ccInteriorSupSig, setCcInteriorSupSig] = useState("");
+
+  const handleAutoFillCcFromSystem = () => {
+    setCcBuildingPermitNo((clearanceApp as any)?.buildingPermitNo || "BP-2026-0091");
+    setCcBpDateIssued((clearanceApp as any)?.permitIssuedDate || "Jan 12, 2026");
+    if (applicantLastName) setCcApplicantLastName(applicantLastName);
+    if (applicantFirstName) setCcApplicantFirstName(applicantFirstName);
+    if (applicantMiddleName) setCcApplicantMiddleInitial(applicantMiddleName);
+    if (compiledFullAddress) setCcApplicantAddress(compiledFullAddress);
+    if (applicantZipCode) setCcApplicantZip(applicantZipCode);
+    if (applicantPhone) setCcApplicantContactNo(applicantPhone);
+    if (streetAddress || barangay) setCcProjectLocation(`${streetAddress || '123 Rizal St.'}, Brgy. ${barangay || 'Poblacion'}, Sto. Tomas, Pampanga`);
+    if (occupancyRuleVII || occupancyClass) setCcCharacterOfOccupancy(occupancyRuleVII || occupancyClass);
+    if (floorArea) {
+      setCcPlannedFloorArea(floorArea);
+      setCcActualFloorArea(floorArea);
+    }
+    if (projectCost) setCcActualProjectCost(projectCost);
+    if (civilEngineerName) setCcSupervisorName(civilEngineerName);
+    if (civilEngineerPRC) setCcSupervisorPRC(civilEngineerPRC);
+    if (civilEngineerPTR) setCcSupervisorPTR(civilEngineerPTR);
+    if (civilEngineerPTRIssued) setCcSupervisorPTRIssued(civilEngineerPTRIssued);
+    if (civilEngineerPTRIssuedAt) setCcSupervisorPTRIssuedAt(civilEngineerPTRIssuedAt);
+    if (civilEngineerTIN) setCcSupervisorTIN(civilEngineerTIN);
+    if (civilEngineerSignature) setCcSupervisorSignature(civilEngineerSignature);
+    if (applicantSignature) setCcApplicantSignature(applicantSignature);
+    if (applicantMunicipality) setCcJuratCity(`${applicantMunicipality}, ${applicantProvince || "Pampanga"}`);
+
+    // Auto-sync Page 2 Design Professionals from active system forms
+    if (architectName) setCcArchName(architectName);
+    if (architectAddress) setCcArchAddress(architectAddress);
+    if (architectPRC) setCcArchPrc(architectPRC);
+    if (architectPRCValidity) setCcArchPrcValidity(architectPRCValidity);
+    if (architectPTR) setCcArchPtr(architectPTR);
+    if (architectPTRIssued) setCcArchPtrDate(architectPTRIssued);
+    if (architectPTRIssuedAt) setCcArchIssuedAt(architectPTRIssuedAt);
+    if (architectTIN) setCcArchTin(architectTIN);
+
+    if (civilEngineerName) setCcCivilName(civilEngineerName);
+    if (civilEngineerAddress) setCcCivilAddress(civilEngineerAddress);
+    if (civilEngineerPRC) setCcCivilPrc(civilEngineerPRC);
+    if (civilEngineerPRCValidity) setCcCivilPrcValidity(civilEngineerPRCValidity);
+    if (civilEngineerPTR) setCcCivilPtr(civilEngineerPTR);
+    if (civilEngineerPTRIssued) setCcCivilPtrDate(civilEngineerPTRIssued);
+    if (civilEngineerPTRIssuedAt) setCcCivilIssuedAt(civilEngineerPTRIssuedAt);
+    if (civilEngineerTIN) setCcCivilTin(civilEngineerTIN);
+    if (civilEngineerSignature) setCcCivilSig(civilEngineerSignature);
+
+    if (electricalEngineerName) setCcElecName(electricalEngineerName);
+    if (electricalEngineerPRC) setCcElecPrc(electricalEngineerPRC);
+    if (electricalEngineerPRCValidity) setCcElecPrcValidity(electricalEngineerPRCValidity);
+    if (electricalEngineerPTR) setCcElecPtr(electricalEngineerPTR);
+    if (electricalEngineerPTRIssued) setCcElecIssuedAt(electricalEngineerPTRIssued);
+    if (electricalEngineerTIN) setCcElecTin(electricalEngineerTIN);
+    if (electricalEngineerSignature) setCcElecSig(electricalEngineerSignature);
+
+    if (mechanicalEngineerName) setCcMechName(mechanicalEngineerName);
+    if (mechanicalEngineerAddress) setCcMechAddress(mechanicalEngineerAddress);
+    if (mechanicalEngineerPRC) setCcMechPrc(mechanicalEngineerPRC);
+    if (mechanicalEngineerPRCValidity) setCcMechPrcValidity(mechanicalEngineerPRCValidity);
+    if (mechanicalEngineerPTR) setCcMechPtr(mechanicalEngineerPTR);
+    if (mechanicalEngineerPTRDate) setCcMechPtrDate(mechanicalEngineerPTRDate);
+    if (mechanicalEngineerPTRIssuedAt) setCcMechIssuedAt(mechanicalEngineerPTRIssuedAt);
+    if (mechanicalEngineerTIN) setCcMechTin(mechanicalEngineerTIN);
+    if (mechanicalEngineerSignature) setCcMechSig(mechanicalEngineerSignature);
+
+    if (masterPlumberName) setCcPlumbingName(masterPlumberName);
+    if (masterPlumberPRC) setCcPlumbingPrc(masterPlumberPRC);
+    if (masterPlumberPRCValidity) setCcPlumbingPrcValidity(masterPlumberPRCValidity);
+    if (masterPlumberPTR) setCcPlumbingPtr(masterPlumberPTR);
+    if (masterPlumberPTRIssued) setCcPlumbingPtrDate(masterPlumberPTRIssued);
+    if (masterPlumberTIN) setCcPlumbingTin(masterPlumberTIN);
+
+    if (electronicsEngineerName) setCcElectronicsName(electronicsEngineerName);
+    if (electronicsEngineerAddress) setCcElectronicsAddress(electronicsEngineerAddress);
+    if (electronicsEngineerPRC) setCcElectronicsPrc(electronicsEngineerPRC);
+    if (electronicsEngineerPRCValidity) setCcElectronicsPrcValidity(electronicsEngineerPRCValidity);
+    if (electronicsEngineerPTR) setCcElectronicsPtr(electronicsEngineerPTR);
+    if (electronicsEngineerPTRIssued) setCcElectronicsPtrDate(electronicsEngineerPTRIssued);
+    if (electronicsEngineerPTRIssuedAt) setCcElectronicsIssuedAt(electronicsEngineerPTRIssuedAt);
+    if (electronicsEngineerTIN) setCcElectronicsTin(electronicsEngineerTIN);
+    if (electronicsEngineerSignature) setCcElectronicsSig(electronicsEngineerSignature);
+
+    setNotification("Certificate of Completion Form auto-filled from system records!");
   };
 
   const handleAutoFillPtscFromSystem = () => {
@@ -2252,6 +2571,214 @@ export default function TechnicalPermitFormsStep({
               reqOthersSpecify: coReqOthersSpecify,
             };
             const b64 = await generateCertificateOfOccupancyPdf(coPayload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "certificateOfCompletion") {
+            const ccPayload: UnifiedPermitFormData = {
+              ...payload,
+              buildingPermitNo: ccBuildingPermitNo || payload.buildingPermitNo || "BP-2026-0091",
+              buildingPermitDateIssued: ccBpDateIssued || "Jan 12, 2026",
+              submissionDate: ccSubmissionDate,
+              applicantLastName: ccApplicantLastName || payload.applicantLastName,
+              applicantFirstName: ccApplicantFirstName || payload.applicantFirstName,
+              applicantMiddleInitial: ccApplicantMiddleInitial || payload.applicantMiddleInitial,
+              applicantAddress: ccApplicantAddress || payload.applicantAddress || compiledFullAddress,
+              applicantZipCode: ccApplicantZip || payload.applicantZipCode || "2020",
+              applicantPhone: ccApplicantContactNo || payload.applicantPhone || "0917-123-4567",
+              projectLocation: ccProjectLocation,
+              characterOfOccupancy: ccCharacterOfOccupancy || payload.characterOfOccupancy || "Residential",
+              occupancyGroup: ccOccupancyGroup,
+              proposedStartDate: ccPlannedStartDate,
+              actualStartDate: ccActualStartDate,
+              expectedCompletionDate: ccPlannedCompletionDate,
+              actualCompletionDate: ccActualCompletionDate,
+              floorArea: ccPlannedFloorArea,
+              actualFloorArea: ccActualFloorArea,
+              proposedStoreys: ccPlannedStoreys,
+              actualStoreys: ccActualStoreys,
+              numberOfUnits: ccPlannedUnits,
+              actualUnits: ccActualUnits,
+              projectCost: ccActualProjectCost,
+              actualProjectCost: ccActualProjectCost,
+              materialsCost: ccMaterialsCost || undefined,
+              cementBags: ccCementBags || undefined,
+              lumberBdFt: ccLumber || undefined,
+              reinforcingBarsKg: ccReinforcingBars || undefined,
+              giSheets: ccGiSheets || undefined,
+              structuralSteelKg: ccStructuralSteel || undefined,
+              otherMaterialsCost: ccOtherMaterialsCost || undefined,
+              laborCost: ccLaborCost || undefined,
+              equipmentCost: ccEquipmentCost || undefined,
+              otherCosts: ccOtherCosts || undefined,
+              constructionSupervisorName: ccSupervisorName,
+              supervisorPRC: ccSupervisorPRC,
+              supervisorPRCValidity: ccSupervisorPRCValidity,
+              supervisorPTR: ccSupervisorPTR,
+              supervisorPTRIssued: ccSupervisorPTRIssued,
+              supervisorPTRIssuedAt: ccSupervisorPTRIssuedAt,
+              supervisorTin: ccSupervisorTIN,
+              supervisorCtcNo: ccSupervisorCtcNo,
+              supervisorCtcDateIssued: ccSupervisorCtcDateIssued,
+              supervisorCtcPlaceIssued: ccSupervisorCtcPlaceIssued,
+              supervisorSignature: ccSupervisorSignature,
+              contractorName: ccHasContractor ? ccContractorName : undefined,
+              contractorAddress: ccHasContractor ? ccContractorAddress : undefined,
+              contractorPcabLicense: ccHasContractor ? ccContractorPcabLicense : undefined,
+              contractorPcabValidity: ccHasContractor ? ccContractorPcabValidity : undefined,
+              contractorTin: ccHasContractor ? ccContractorTin : undefined,
+              contractorTel: ccHasContractor ? ccContractorTel : undefined,
+              authorizedManagingOfficer: ccHasContractor ? ccContractorAmo : undefined,
+              contractorSignDate: ccHasContractor ? ccContractorSignDate : undefined,
+              contractorCtcNo: ccHasContractor ? ccContractorCtcNo : undefined,
+              contractorCtcDate: ccHasContractor ? ccContractorCtcDate : undefined,
+              contractorCtcPlace: ccHasContractor ? ccContractorCtcPlace : undefined,
+              applicantSignature: ccApplicantSignature || applicantSignature,
+              juratCity: ccJuratCity,
+              juratDate: ccJuratDate,
+
+              // Page 2: Design Professionals (Plans & Specifications)
+              architectName: ccArchName,
+              architectAddress: ccArchAddress,
+              architectPRC: ccArchPrc,
+              architectPRCValidity: ccArchPrcValidity,
+              architectPTR: ccArchPtr,
+              architectPTRIssued: ccArchPtrDate,
+              architectPTRIssuedAt: ccArchIssuedAt,
+              architectTIN: ccArchTin,
+              architectSignature: ccArchSig,
+
+              civilEngineerName: ccCivilName,
+              civilEngineerAddress: ccCivilAddress,
+              civilEngineerPRC: ccCivilPrc,
+              civilEngineerPRCValidity: ccCivilPrcValidity,
+              civilEngineerPTR: ccCivilPtr,
+              civilEngineerPTRIssued: ccCivilPtrDate,
+              civilEngineerPTRIssuedAt: ccCivilIssuedAt,
+              civilEngineerTIN: ccCivilTin,
+              civilEngineerSignature: ccCivilSig,
+
+              electricalEngineerName: ccElecName,
+              electricalEngineerAddress: ccElecAddress,
+              electricalEngineerPRC: ccElecPrc,
+              electricalEngineerPRCValidity: ccElecPrcValidity,
+              electricalEngineerPTR: ccElecPtr,
+              electricalEngineerPTRIssued: ccElecPtrDate,
+              electricalEngineerPTRIssuedAt: ccElecIssuedAt,
+              electricalEngineerTIN: ccElecTin,
+              electricalEngineerSignature: ccElecSig,
+
+              mechanicalEngineerName: ccMechName,
+              mechanicalEngineerAddress: ccMechAddress,
+              mechanicalEngineerPRC: ccMechPrc,
+              mechanicalEngineerPRCValidity: ccMechPrcValidity,
+              mechanicalEngineerPTR: ccMechPtr,
+              mechanicalEngineerPTRDate: ccMechPtrDate,
+              mechanicalEngineerPTRIssued: ccMechPtrDate,
+              mechanicalEngineerPTRIssuedAt: ccMechIssuedAt,
+              mechanicalEngineerTIN: ccMechTin,
+              mechanicalEngineerSignature: ccMechSig,
+
+              sanitaryEngineerName: ccSanitaryName,
+              sanitaryEngineerAddress: ccSanitaryAddress,
+              sanitaryEngineerPRC: ccSanitaryPrc,
+              sanitaryEngineerPRCValidity: ccSanitaryPrcValidity,
+              sanitaryEngineerPTR: ccSanitaryPtr,
+              sanitaryEngineerPTRIssued: ccSanitaryPtrDate,
+              sanitaryEngineerPTRIssuedAt: ccSanitaryIssuedAt,
+              sanitaryEngineerTIN: ccSanitaryTin,
+              sanitaryEngineerSignature: ccSanitarySig,
+
+              masterPlumberName: ccPlumbingName,
+              masterPlumberAddress: ccPlumbingAddress,
+              masterPlumberPRC: ccPlumbingPrc,
+              masterPlumberPRCValidity: ccPlumbingPrcValidity,
+              masterPlumberPTR: ccPlumbingPtr,
+              masterPlumberPTRIssued: ccPlumbingPtrDate,
+              masterPlumberPTRIssuedAt: ccPlumbingIssuedAt,
+              masterPlumberTIN: ccPlumbingTin,
+              masterPlumberSignature: ccPlumbingSig,
+
+              electronicsEngineerName: ccElectronicsName,
+              electronicsEngineerAddress: ccElectronicsAddress,
+              electronicsEngineerPRC: ccElectronicsPrc,
+              electronicsEngineerPRCValidity: ccElectronicsPrcValidity,
+              electronicsEngineerPTR: ccElectronicsPtr,
+              electronicsEngineerPTRIssued: ccElectronicsPtrDate,
+              electronicsEngineerPTRIssuedAt: ccElectronicsIssuedAt,
+              electronicsEngineerTIN: ccElectronicsTin,
+              electronicsEngineerSignature: ccElectronicsSig,
+
+              interiorDesignerName: ccInteriorName,
+              interiorDesignerAddress: ccInteriorAddress,
+              interiorDesignerPRC: ccInteriorPrc,
+              interiorDesignerPRCValidity: ccInteriorPrcValidity,
+              interiorDesignerPTR: ccInteriorPtr,
+              interiorDesignerPTRIssued: ccInteriorPtrDate,
+              interiorDesignerPTRIssuedAt: ccInteriorIssuedAt,
+              interiorDesignerTIN: ccInteriorTin,
+              interiorDesignerSignature: ccInteriorSig,
+
+              // Page 2: Supervisors of Specialty Works
+              electricalSupervisorName: ccSameAsDesignElecSup ? ccElecName : ccElecSupName,
+              electricalSupervisorAddress: ccSameAsDesignElecSup ? ccElecAddress : ccElecSupAddress,
+              electricalSupervisorPRC: ccSameAsDesignElecSup ? ccElecPrc : ccElecSupPrc,
+              electricalSupervisorPRCValidity: ccSameAsDesignElecSup ? ccElecPrcValidity : ccElecSupPrcValidity,
+              electricalSupervisorPTR: ccSameAsDesignElecSup ? ccElecPtr : ccElecSupPtr,
+              electricalSupervisorPTRIssued: ccSameAsDesignElecSup ? ccElecPtrDate : ccElecSupPtrDate,
+              electricalSupervisorPTRIssuedAt: ccSameAsDesignElecSup ? ccElecIssuedAt : ccElecSupIssuedAt,
+              electricalSupervisorTIN: ccSameAsDesignElecSup ? ccElecTin : ccElecSupTin,
+              electricalSupervisorSignature: ccSameAsDesignElecSup ? ccElecSig : ccElecSupSig,
+
+              mechanicalSupervisorName: ccSameAsDesignMechSup ? ccMechName : ccMechSupName,
+              mechanicalSupervisorAddress: ccSameAsDesignMechSup ? ccMechAddress : ccMechSupAddress,
+              mechanicalSupervisorPRC: ccSameAsDesignMechSup ? ccMechPrc : ccMechSupPrc,
+              mechanicalSupervisorPRCValidity: ccSameAsDesignMechSup ? ccMechPrcValidity : ccMechSupPrcValidity,
+              mechanicalSupervisorPTR: ccSameAsDesignMechSup ? ccMechPtr : ccMechSupPtr,
+              mechanicalSupervisorPTRIssued: ccSameAsDesignMechSup ? ccMechPtrDate : ccMechSupPtrDate,
+              mechanicalSupervisorPTRIssuedAt: ccSameAsDesignMechSup ? ccMechIssuedAt : ccMechSupIssuedAt,
+              mechanicalSupervisorTIN: ccSameAsDesignMechSup ? ccMechTin : ccMechSupTin,
+              mechanicalSupervisorSignature: ccSameAsDesignMechSup ? ccMechSig : ccMechSupSig,
+
+              sanitarySupervisorName: ccSameAsDesignSanitarySup ? ccSanitaryName : ccSanitarySupName,
+              sanitarySupervisorAddress: ccSameAsDesignSanitarySup ? ccSanitaryAddress : ccSanitarySupAddress,
+              sanitarySupervisorPRC: ccSameAsDesignSanitarySup ? ccSanitaryPrc : ccSanitarySupPrc,
+              sanitarySupervisorPRCValidity: ccSameAsDesignSanitarySup ? ccSanitaryPrcValidity : ccSanitarySupPrcValidity,
+              sanitarySupervisorPTR: ccSameAsDesignSanitarySup ? ccSanitaryPtr : ccSanitarySupPtr,
+              sanitarySupervisorPTRIssued: ccSameAsDesignSanitarySup ? ccSanitaryPtrDate : ccSanitarySupPtrDate,
+              sanitarySupervisorPTRIssuedAt: ccSameAsDesignSanitarySup ? ccSanitaryIssuedAt : ccSanitarySupIssuedAt,
+              sanitarySupervisorTIN: ccSameAsDesignSanitarySup ? ccSanitaryTin : ccSanitarySupTin,
+              sanitarySupervisorSignature: ccSameAsDesignSanitarySup ? ccSanitarySig : ccSanitarySupSig,
+
+              plumbingSupervisorName: ccSameAsDesignPlumbingSup ? ccPlumbingName : ccPlumbingSupName,
+              plumbingSupervisorAddress: ccSameAsDesignPlumbingSup ? ccPlumbingAddress : ccPlumbingSupAddress,
+              plumbingSupervisorPRC: ccSameAsDesignPlumbingSup ? ccPlumbingPrc : ccPlumbingSupPrc,
+              plumbingSupervisorPRCValidity: ccSameAsDesignPlumbingSup ? ccPlumbingPrcValidity : ccPlumbingSupPrcValidity,
+              plumbingSupervisorPTR: ccSameAsDesignPlumbingSup ? ccPlumbingPtr : ccPlumbingSupPtr,
+              plumbingSupervisorPTRIssued: ccSameAsDesignPlumbingSup ? ccPlumbingPtrDate : ccPlumbingSupPtrDate,
+              plumbingSupervisorPTRIssuedAt: ccSameAsDesignPlumbingSup ? ccPlumbingIssuedAt : ccPlumbingSupIssuedAt,
+              plumbingSupervisorTIN: ccSameAsDesignPlumbingSup ? ccPlumbingTin : ccPlumbingSupTin,
+              plumbingSupervisorSignature: ccSameAsDesignPlumbingSup ? ccPlumbingSig : ccPlumbingSupSig,
+
+              electronicsSupervisorName: ccSameAsDesignElectronicsSup ? ccElectronicsName : ccElectronicsSupName,
+              electronicsSupervisorAddress: ccSameAsDesignElectronicsSup ? ccElectronicsAddress : ccElectronicsSupAddress,
+              electronicsSupervisorPRC: ccSameAsDesignElectronicsSup ? ccElectronicsPrc : ccElectronicsSupPrc,
+              electronicsSupervisorPRCValidity: ccSameAsDesignElectronicsSup ? ccElectronicsPrcValidity : ccElectronicsSupPrcValidity,
+              electronicsSupervisorPTR: ccSameAsDesignElectronicsSup ? ccElectronicsPtr : ccElectronicsSupPtr,
+              electronicsSupervisorPTRIssued: ccSameAsDesignElectronicsSup ? ccElectronicsPtrDate : ccElectronicsSupPtrDate,
+              electronicsSupervisorPTRIssuedAt: ccSameAsDesignElectronicsSup ? ccElectronicsIssuedAt : ccElectronicsSupIssuedAt,
+              electronicsSupervisorTIN: ccSameAsDesignElectronicsSup ? ccElectronicsTin : ccElectronicsSupTin,
+              electronicsSupervisorSignature: ccSameAsDesignElectronicsSup ? ccElectronicsSig : ccElectronicsSupSig,
+
+              interiorSupervisorName: ccSameAsDesignInteriorSup ? ccInteriorName : ccInteriorSupName,
+              interiorSupervisorAddress: ccSameAsDesignInteriorSup ? ccInteriorAddress : ccInteriorSupAddress,
+              interiorSupervisorPRC: ccSameAsDesignInteriorSup ? ccInteriorPrc : ccInteriorSupPrc,
+              interiorSupervisorPRCValidity: ccSameAsDesignInteriorSup ? ccInteriorPrcValidity : ccInteriorSupPrcValidity,
+              interiorSupervisorPTR: ccSameAsDesignInteriorSup ? ccInteriorPtr : ccInteriorSupPtr,
+              interiorSupervisorPTRIssued: ccSameAsDesignInteriorSup ? ccInteriorPtrDate : ccInteriorSupPtrDate,
+              interiorSupervisorPTRIssuedAt: ccSameAsDesignInteriorSup ? ccInteriorIssuedAt : ccInteriorSupIssuedAt,
+              interiorSupervisorTIN: ccSameAsDesignInteriorSup ? ccInteriorTin : ccInteriorSupTin,
+              interiorSupervisorSignature: ccSameAsDesignInteriorSup ? ccInteriorSig : ccInteriorSupSig,
+            };
+            const b64 = await generateCertificateOfCompletionPdf(ccPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           }
         } catch (indivErr) {
@@ -12372,6 +12899,1281 @@ export default function TechnicalPermitFormsStep({
                             required
                           />
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "certificateOfCompletion" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                      {/* Auto-fill Status Banner */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1.5px solid #86efac", padding: "12px 16px", borderRadius: "10px", flexWrap: "wrap", gap: "10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#16a34a", color: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <CheckCircle2 size={18} />
+                          </div>
+                          <div>
+                            <span style={{ fontSize: "0.85rem", fontWeight: "800", color: "#166534", display: "block" }}>
+                              System Auto-Fill Active — Certificate of Completion
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#15803d" }}>
+                              Building Permit details, owner verification, project address, planned vs actual metrics, and supervising engineer credentials synchronized from municipal records.
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAutoFillCcFromSystem}
+                          style={{
+                            background: "#16a34a",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 14px",
+                            fontSize: "0.78rem",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                          }}
+                        >
+                          <RefreshCw size={14} />
+                          Re-Sync from System
+                        </button>
+                      </div>
+
+                      {/* Header Section: Official Certificate of Completion */}
+                      <div style={{
+                        padding: "1.25rem",
+                        borderRadius: "12px",
+                        background: "#ffffff",
+                        border: "2px solid #0284c7",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                      }}>
+                        <div style={{ textAlign: "center", marginBottom: "0.5rem" }}>
+                          <span style={{ fontSize: "0.72rem", background: "#e0f2fe", color: "#0369a1", padding: "3px 10px", borderRadius: "999px", fontWeight: "800", letterSpacing: "0.5px" }}>
+                            NBC FORM NO. CC
+                          </span>
+                          <h3 style={{ fontSize: "1.08rem", fontWeight: "900", color: "#0f172a", margin: "0.5rem 0 0.25rem 0", letterSpacing: "0.5px" }}>
+                            OFFICIAL CERTIFICATE OF COMPLETION
+                          </h3>
+                          <span style={{ fontSize: "0.76rem", color: "#64748b", fontWeight: "600" }}>
+                            National Building Code of the Philippines (PD 1096) — Section 309 | Municipality of Sto. Tomas, Pampanga
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Section 1: Building Permit Reference & Certificate Date */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+                          1. Building Permit Reference & Certificate Date
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                              Building Permit No. (Auto-gathered) *
+                            </label>
+                            <input
+                              type="text"
+                              value={ccBuildingPermitNo}
+                              onChange={(e) => setCcBuildingPermitNo(e.target.value)}
+                              placeholder="e.g. BP-2026-0091"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1.5px solid #38bdf8", fontSize: "0.85rem", background: "#f0f9ff", fontWeight: "700", color: "#0369a1" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                              BP Date Issued *
+                            </label>
+                            <input
+                              type="text"
+                              value={ccBpDateIssued}
+                              onChange={(e) => setCcBpDateIssued(e.target.value)}
+                              placeholder="e.g. Jan 12, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                              Certificate Date (Top Right Date - Auto) *
+                            </label>
+                            <input
+                              type="text"
+                              value={ccSubmissionDate}
+                              onChange={(e) => setCcSubmissionDate(e.target.value)}
+                              placeholder="e.g. Sep 27, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1.5px solid #38bdf8", fontSize: "0.85rem", background: "#f0f9ff", fontWeight: "700", color: "#0369a1" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 2: Owner Information */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#ffffff", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+                          2. Name & Address of Owner
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 0.6fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Last Name *</label>
+                            <input
+                              type="text"
+                              value={ccApplicantLastName}
+                              onChange={(e) => setCcApplicantLastName(e.target.value)}
+                              placeholder="e.g. DELA CRUZ"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Given Name *</label>
+                            <input
+                              type="text"
+                              value={ccApplicantFirstName}
+                              onChange={(e) => setCcApplicantFirstName(e.target.value)}
+                              placeholder="e.g. JUAN SANTOS"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Middle Initial</label>
+                            <input
+                              type="text"
+                              value={ccApplicantMiddleInitial}
+                              onChange={(e) => setCcApplicantMiddleInitial(e.target.value)}
+                              placeholder="e.g. S."
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "2fr 0.8fr 1fr", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Address of Owner *</label>
+                            <input
+                              type="text"
+                              value={ccApplicantAddress}
+                              onChange={(e) => setCcApplicantAddress(e.target.value)}
+                              placeholder="e.g. 123 Rizal St., Poblacion, Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>ZIP Code *</label>
+                            <input
+                              type="text"
+                              value={ccApplicantZip}
+                              onChange={(e) => setCcApplicantZip(e.target.value)}
+                              placeholder="e.g. 2020"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Contact Number *</label>
+                            <input
+                              type="text"
+                              value={ccApplicantContactNo}
+                              onChange={(e) => setCcApplicantContactNo(e.target.value)}
+                              placeholder="e.g. 0917-123-4567"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 3: Project Location & Occupancy Classification */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+                          3. Location of Construction & Occupancy Classification
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "2fr 1.2fr 0.6fr", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Location of Construction *</label>
+                            <input
+                              type="text"
+                              value={ccProjectLocation}
+                              onChange={(e) => setCcProjectLocation(e.target.value)}
+                              placeholder="e.g. Lot 12, Block 4, Sunset Valley Subd., Brgy. Poblacion, Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Use or Character of Occupancy *</label>
+                            <input
+                              type="text"
+                              value={ccCharacterOfOccupancy}
+                              onChange={(e) => setCcCharacterOfOccupancy(e.target.value)}
+                              placeholder="e.g. SINGLE FAMILY DWELLING"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Group *</label>
+                            <input
+                              type="text"
+                              value={ccOccupancyGroup}
+                              onChange={(e) => setCcOccupancyGroup(e.target.value)}
+                              placeholder="e.g. A"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "800", textAlign: "center" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 4: Construction Metrics Table (Planned vs Actual) */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#ffffff", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              4. Planned vs Actual Construction Specifications Table
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Enter the planned dates/metrics and actual as-built completed specifications
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#f0fdf4", color: "#166534", padding: "3px 8px", borderRadius: "6px", fontWeight: "700", border: "1px solid #86efac" }}>
+                            Official 5-Row NBCP Table
+                          </span>
+                        </div>
+
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
+                            <thead>
+                              <tr style={{ background: "#f1f5f9", borderBottom: "2px solid #cbd5e1" }}>
+                                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "800", color: "#334155", width: "40%" }}>SPECIFICATION / ITEM</th>
+                                <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "800", color: "#1e40af", width: "30%", background: "#eff6ff" }}>PLANNED</th>
+                                <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "800", color: "#166534", width: "30%", background: "#f0fdf4" }}>ACTUAL (AS-BUILT)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: "700", color: "#1e293b" }}>1. Date of Start Construction</td>
+                                <td style={{ padding: "6px 8px", background: "#eff6ff" }}>
+                                  <input
+                                    type="text"
+                                    value={ccPlannedStartDate}
+                                    onChange={(e) => setCcPlannedStartDate(e.target.value)}
+                                    placeholder="e.g. Oct 01, 2026"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #bfdbfe", fontSize: "0.82rem", background: "#ffffff", textAlign: "center" }}
+                                  />
+                                </td>
+                                <td style={{ padding: "6px 8px", background: "#f0fdf4" }}>
+                                  <input
+                                    type="text"
+                                    value={ccActualStartDate}
+                                    onChange={(e) => setCcActualStartDate(e.target.value)}
+                                    placeholder="e.g. Oct 01, 2026"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "0.82rem", background: "#ffffff", textAlign: "center", fontWeight: "700" }}
+                                  />
+                                </td>
+                              </tr>
+                              <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: "700", color: "#1e293b" }}>2. Date of Completion</td>
+                                <td style={{ padding: "6px 8px", background: "#eff6ff" }}>
+                                  <input
+                                    type="text"
+                                    value={ccPlannedCompletionDate}
+                                    onChange={(e) => setCcPlannedCompletionDate(e.target.value)}
+                                    placeholder="e.g. Apr 30, 2027"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #bfdbfe", fontSize: "0.82rem", background: "#ffffff", textAlign: "center" }}
+                                  />
+                                </td>
+                                <td style={{ padding: "6px 8px", background: "#f0fdf4" }}>
+                                  <input
+                                    type="text"
+                                    value={ccActualCompletionDate}
+                                    onChange={(e) => setCcActualCompletionDate(e.target.value)}
+                                    placeholder="e.g. Apr 30, 2027"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "0.82rem", background: "#ffffff", textAlign: "center", fontWeight: "700" }}
+                                  />
+                                </td>
+                              </tr>
+                              <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: "700", color: "#1e293b" }}>3. Total Floor Area (Square Meters)</td>
+                                <td style={{ padding: "6px 8px", background: "#eff6ff" }}>
+                                  <input
+                                    type="text"
+                                    value={ccPlannedFloorArea}
+                                    onChange={(e) => setCcPlannedFloorArea(e.target.value)}
+                                    placeholder="e.g. 185.50"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #bfdbfe", fontSize: "0.82rem", background: "#ffffff", textAlign: "center" }}
+                                  />
+                                </td>
+                                <td style={{ padding: "6px 8px", background: "#f0fdf4" }}>
+                                  <input
+                                    type="text"
+                                    value={ccActualFloorArea}
+                                    onChange={(e) => setCcActualFloorArea(e.target.value)}
+                                    placeholder="e.g. 185.50"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "0.82rem", background: "#ffffff", textAlign: "center", fontWeight: "700" }}
+                                  />
+                                </td>
+                              </tr>
+                              <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: "700", color: "#1e293b" }}>4. No. of Storey(s)</td>
+                                <td style={{ padding: "6px 8px", background: "#eff6ff" }}>
+                                  <input
+                                    type="text"
+                                    value={ccPlannedStoreys}
+                                    onChange={(e) => setCcPlannedStoreys(e.target.value)}
+                                    placeholder="e.g. 2"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #bfdbfe", fontSize: "0.82rem", background: "#ffffff", textAlign: "center" }}
+                                  />
+                                </td>
+                                <td style={{ padding: "6px 8px", background: "#f0fdf4" }}>
+                                  <input
+                                    type="text"
+                                    value={ccActualStoreys}
+                                    onChange={(e) => setCcActualStoreys(e.target.value)}
+                                    placeholder="e.g. 2"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "0.82rem", background: "#ffffff", textAlign: "center", fontWeight: "700" }}
+                                  />
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style={{ padding: "8px 12px", fontWeight: "700", color: "#1e293b" }}>5. No. of Unit(s)</td>
+                                <td style={{ padding: "6px 8px", background: "#eff6ff" }}>
+                                  <input
+                                    type="text"
+                                    value={ccPlannedUnits}
+                                    onChange={(e) => setCcPlannedUnits(e.target.value)}
+                                    placeholder="e.g. 1"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #bfdbfe", fontSize: "0.82rem", background: "#ffffff", textAlign: "center" }}
+                                  />
+                                </td>
+                                <td style={{ padding: "6px 8px", background: "#f0fdf4" }}>
+                                  <input
+                                    type="text"
+                                    value={ccActualUnits}
+                                    onChange={(e) => setCcActualUnits(e.target.value)}
+                                    placeholder="e.g. 1"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "0.82rem", background: "#ffffff", textAlign: "center", fontWeight: "700" }}
+                                  />
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Section 5: Summary of Actual Costs */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "8px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              5. Summary of Actual Costs
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Total structure cost and optional itemized breakdown per NBCP Form CC
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setCcShowCostBreakdown(!ccShowCostBreakdown)}
+                            style={{
+                              background: ccShowCostBreakdown ? "#e0f2fe" : "#f1f5f9",
+                              color: ccShowCostBreakdown ? "#0369a1" : "#475569",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "6px",
+                              padding: "4px 10px",
+                              fontSize: "0.74rem",
+                              fontWeight: "700",
+                              cursor: "pointer"
+                            }}
+                          >
+                            {ccShowCostBreakdown ? "▲ Hide Itemized Breakdown" : "▼ Show Itemized Breakdown (Optional)"}
+                          </button>
+                        </div>
+
+                        <div style={{ maxWidth: "420px", marginBottom: ccShowCostBreakdown ? "1rem" : "0" }}>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#0369a1", marginBottom: "2px" }}>
+                            Total Cost of Building / Structure (PHP) *
+                          </label>
+                          <input
+                            type="text"
+                            value={ccActualProjectCost}
+                            onChange={(e) => setCcActualProjectCost(e.target.value)}
+                            placeholder="e.g. 2,500,000.00"
+                            style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1.5px solid #0284c7", fontSize: "0.95rem", background: "#ffffff", fontWeight: "800", color: "#0369a1" }}
+                          />
+                        </div>
+
+                        {ccShowCostBreakdown && (
+                          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "1rem", marginTop: "0.75rem" }}>
+                            <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#334155", display: "block", marginBottom: "0.5rem" }}>
+                              Itemized Construction Cost Breakdown
+                            </span>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.75rem" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1. Total Cost of Materials (PHP)</label>
+                                <input
+                                  type="text"
+                                  value={ccMaterialsCost}
+                                  onChange={(e) => setCcMaterialsCost(e.target.value)}
+                                  placeholder="e.g. 1,450,000.00"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.1 Cement (Bags)</label>
+                                <input
+                                  type="text"
+                                  value={ccCementBags}
+                                  onChange={(e) => setCcCementBags(e.target.value)}
+                                  placeholder="e.g. 850"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.2 Lumber (bd. Ft)</label>
+                                <input
+                                  type="text"
+                                  value={ccLumber}
+                                  onChange={(e) => setCcLumber(e.target.value)}
+                                  placeholder="e.g. 3,200"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.3 Reinforcing Bars (Kg)</label>
+                                <input
+                                  type="text"
+                                  value={ccReinforcingBars}
+                                  onChange={(e) => setCcReinforcingBars(e.target.value)}
+                                  placeholder="e.g. 5,400"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.4 G.I Sheets (sheets)</label>
+                                <input
+                                  type="text"
+                                  value={ccGiSheets}
+                                  onChange={(e) => setCcGiSheets(e.target.value)}
+                                  placeholder="e.g. 120"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.5 Prefab Structural Steel (kg)</label>
+                                <input
+                                  type="text"
+                                  value={ccStructuralSteel}
+                                  onChange={(e) => setCcStructuralSteel(e.target.value)}
+                                  placeholder="e.g. 2,100"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>1.6 Other Materials</label>
+                                <input
+                                  type="text"
+                                  value={ccOtherMaterialsCost}
+                                  onChange={(e) => setCcOtherMaterialsCost(e.target.value)}
+                                  placeholder="e.g. 185,000.00"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>2. Total Cost of Direct Labor (PHP)</label>
+                                <input
+                                  type="text"
+                                  value={ccLaborCost}
+                                  onChange={(e) => setCcLaborCost(e.target.value)}
+                                  placeholder="e.g. 750,000.00"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>3. Equipment Utilization (PHP)</label>
+                                <input
+                                  type="text"
+                                  value={ccEquipmentCost}
+                                  onChange={(e) => setCcEquipmentCost(e.target.value)}
+                                  placeholder="e.g. 180,000.00"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>4. Other Costs (PHP)</label>
+                                <input
+                                  type="text"
+                                  value={ccOtherCosts}
+                                  onChange={(e) => setCcOtherCosts(e.target.value)}
+                                  placeholder="e.g. 120,000.00"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 6: Full-Time Supervisor / Inspector & Signatures */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #0284c7", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase", display: "block" }}>
+                              6. Full-Time Supervisor of Inspector of Construction
+                            </span>
+                            <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                              Architect or Civil Engineer in charge of construction supervision
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#e0f2fe", color: "#0369a1", padding: "3px 10px", borderRadius: "999px", fontWeight: "800" }}>
+                            Licensed Professional
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div style={{ gridColumn: "span 2" }}>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              Supervisor Full Name (Architect or Civil Engineer) *
+                            </label>
+                            <input
+                              type="text"
+                              value={ccSupervisorName}
+                              onChange={(e) => setCcSupervisorName(e.target.value)}
+                              placeholder="e.g. ENGR. ROBERTO CRUZ, CE"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC Registration No. *</label>
+                            <input
+                              type="text"
+                              value={ccSupervisorPRC}
+                              onChange={(e) => setCcSupervisorPRC(e.target.value)}
+                              placeholder="e.g. 0078923"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC Validity *</label>
+                            <input
+                              type="text"
+                              value={ccSupervisorPRCValidity}
+                              onChange={(e) => setCcSupervisorPRCValidity(e.target.value)}
+                              placeholder="e.g. 2028-11-20"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR No. *</label>
+                            <input
+                              type="text"
+                              value={ccSupervisorPTR}
+                              onChange={(e) => setCcSupervisorPTR(e.target.value)}
+                              placeholder="e.g. PTR-ST-2026-001"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR Date Issued *</label>
+                            <input
+                              type="text"
+                              value={ccSupervisorPTRIssued}
+                              onChange={(e) => setCcSupervisorPTRIssued(e.target.value)}
+                              placeholder="e.g. Jan 10, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR Issued At *</label>
+                            <input
+                              type="text"
+                              value={ccSupervisorPTRIssuedAt}
+                              onChange={(e) => setCcSupervisorPTRIssuedAt(e.target.value)}
+                              placeholder="e.g. Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>TIN *</label>
+                            <input
+                              type="text"
+                              value={ccSupervisorTIN}
+                              onChange={(e) => setCcSupervisorTIN(e.target.value)}
+                              placeholder="e.g. 456-789-012-000"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>CTC No. *</label>
+                            <input
+                              type="text"
+                              value={ccSupervisorCtcNo}
+                              onChange={(e) => setCcSupervisorCtcNo(e.target.value)}
+                              placeholder="e.g. CTC-2026-00841"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>CTC Date Issued *</label>
+                            <input
+                              type="text"
+                              value={ccSupervisorCtcDateIssued}
+                              onChange={(e) => setCcSupervisorCtcDateIssued(e.target.value)}
+                              placeholder="e.g. Jan 10, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>CTC Place Issued *</label>
+                            <input
+                              type="text"
+                              value={ccSupervisorCtcPlaceIssued}
+                              onChange={(e) => setCcSupervisorCtcPlaceIssued(e.target.value)}
+                              placeholder="e.g. Sto. Tomas"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #bae6fd" }}>
+                          <SignatureCreator
+                            value={ccSupervisorSignature}
+                            onChange={setCcSupervisorSignature}
+                            label={`Supervising Professional E-Signature (Affixed Over Printed Name: ${ccSupervisorName})`}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Section 7: If Construction was Undertaken by Contract */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              7. If Construction was Undertaken by Contract
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Contractor details and Authorized Managing Officer (AMO) verification
+                            </span>
+                          </div>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "700", color: "#0369a1", cursor: "pointer" }}>
+                            <input
+                              type="checkbox"
+                              checked={ccHasContractor}
+                              onChange={(e) => setCcHasContractor(e.target.checked)}
+                              style={{ width: "16px", height: "16px" }}
+                            />
+                            Undertaken by Contract
+                          </label>
+                        </div>
+
+                        {ccHasContractor && (
+                          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "1rem" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem" }}>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Contractor / Firm Name *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorName}
+                                  onChange={(e) => setCcContractorName(e.target.value)}
+                                  placeholder="e.g. STO. TOMAS BUILDERS CORP."
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", fontWeight: "700" }}
+                                />
+                              </div>
+                              <div style={{ gridColumn: "span 2" }}>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Contractor Address *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorAddress}
+                                  onChange={(e) => setCcContractorAddress(e.target.value)}
+                                  placeholder="e.g. McArthur Highway, Sto. Tomas, Pampanga"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PCAB License No. *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorPcabLicense}
+                                  onChange={(e) => setCcContractorPcabLicense(e.target.value)}
+                                  placeholder="e.g. PCAB-2026-4412"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PCAB Validity *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorPcabValidity}
+                                  onChange={(e) => setCcContractorPcabValidity(e.target.value)}
+                                  placeholder="e.g. 2027-06-30"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Contractor TIN *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorTin}
+                                  onChange={(e) => setCcContractorTin(e.target.value)}
+                                  placeholder="e.g. 123-456-789-000"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Telephone No. *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorTel}
+                                  onChange={(e) => setCcContractorTel(e.target.value)}
+                                  placeholder="e.g. (045) 123-4567"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Authorized Managing Officer (AMO) *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorAmo}
+                                  onChange={(e) => setCcContractorAmo(e.target.value)}
+                                  placeholder="e.g. CARLOS SANTOS"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", fontWeight: "700" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>AMO Sign Date *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorSignDate}
+                                  onChange={(e) => setCcContractorSignDate(e.target.value)}
+                                  placeholder="e.g. Sep 27, 2026"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>AMO CTC No. *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorCtcNo}
+                                  onChange={(e) => setCcContractorCtcNo(e.target.value)}
+                                  placeholder="e.g. CTC-2026-99120"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>AMO CTC Date Issued *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorCtcDate}
+                                  onChange={(e) => setCcContractorCtcDate(e.target.value)}
+                                  placeholder="e.g. Jan 10, 2026"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>AMO CTC Place Issued *</label>
+                                <input
+                                  type="text"
+                                  value={ccContractorCtcPlace}
+                                  onChange={(e) => setCcContractorCtcPlace(e.target.value)}
+                                  placeholder="e.g. Sto. Tomas"
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 8: Conforme (Owner / Applicant) */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #16a34a", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#166534", textTransform: "uppercase", display: "block" }}>
+                              8. Conforme: Owner / Applicant
+                            </span>
+                            <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                              Affix digital signature acknowledging completed construction inspection
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#f0fdf4", color: "#166534", padding: "3px 10px", borderRadius: "999px", fontWeight: "800" }}>
+                            Applicant Conforme
+                          </span>
+                        </div>
+
+                        <div style={{ marginBottom: "0.75rem" }}>
+                          <span style={{ fontSize: "0.8rem", color: "#334155", fontWeight: "600" }}>
+                            Owner Name: <strong style={{ color: "#0f172a" }}>{`${ccApplicantLastName || "DELA CRUZ"}, ${ccApplicantFirstName || "JUAN"} ${ccApplicantMiddleInitial || ""}`.trim()}</strong>
+                          </span>
+                        </div>
+
+                        <SignatureCreator
+                          value={ccApplicantSignature}
+                          onChange={setCcApplicantSignature}
+                          label="Owner / Applicant Conforme E-Signature (Affixed Over Printed Name)"
+                          required
+                        />
+                      </div>
+
+                      {/* Section 9: Notarial Acknowledgment (Jurat) */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+                          9. Notarial Acknowledgment (Jurat) & Municipal Registry
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              City / Municipality of Jurat *
+                            </label>
+                            <input
+                              type="text"
+                              value={ccJuratCity}
+                              onChange={(e) => setCcJuratCity(e.target.value)}
+                              placeholder="e.g. Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              Date of Notarization *
+                            </label>
+                            <input
+                              type="text"
+                              value={ccJuratDate}
+                              onChange={(e) => setCcJuratDate(e.target.value)}
+                              placeholder="e.g. Sep 27, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 10: Page 2 — Design Professionals, Plans, and Specification & Supervisors of Specialty Works */}
+                      <div style={{
+                        padding: "1.25rem",
+                        borderRadius: "12px",
+                        background: "#ffffff",
+                        border: "2px solid #0284c7",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem", flexWrap: "wrap", gap: "10px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.72rem", background: "#e0f2fe", color: "#0369a1", padding: "3px 10px", borderRadius: "999px", fontWeight: "800", letterSpacing: "0.5px" }}>
+                              OFFICIAL FORM CC — PAGE 2
+                            </span>
+                            <h4 style={{ fontSize: "1.02rem", fontWeight: "900", color: "#0f172a", margin: "0.35rem 0 0.15rem 0" }}>
+                              10. Design Professionals & Specialty Supervisors (Plans, Specs & Specialty Works)
+                            </h4>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Full professional credentials, PRC registrations, PTR certifications, and digital signatures for Page 2
+                            </span>
+                          </div>
+
+                          {/* Sub-Tabs: Design Professionals vs Supervisors */}
+                          <div style={{ display: "flex", gap: "6px", background: "#f1f5f9", padding: "4px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+                            <button
+                              type="button"
+                              onClick={() => setCcPage2SubTab("design")}
+                              style={{
+                                padding: "6px 14px",
+                                borderRadius: "6px",
+                                border: "none",
+                                fontSize: "0.78rem",
+                                fontWeight: "800",
+                                cursor: "pointer",
+                                background: ccPage2SubTab === "design" ? "#0284c7" : "transparent",
+                                color: ccPage2SubTab === "design" ? "#ffffff" : "#475569",
+                                boxShadow: ccPage2SubTab === "design" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                                transition: "all 0.15s ease"
+                              }}
+                            >
+                              Design Professionals (8)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCcPage2SubTab("supervisors")}
+                              style={{
+                                padding: "6px 14px",
+                                borderRadius: "6px",
+                                border: "none",
+                                fontSize: "0.78rem",
+                                fontWeight: "800",
+                                cursor: "pointer",
+                                background: ccPage2SubTab === "supervisors" ? "#0284c7" : "transparent",
+                                color: ccPage2SubTab === "supervisors" ? "#ffffff" : "#475569",
+                                boxShadow: ccPage2SubTab === "supervisors" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                                transition: "all 0.15s ease"
+                              }}
+                            >
+                              Specialty Supervisors (6)
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* SUB-TAB 1: DESIGN PROFESSIONALS (PLANS AND SPECIFICATION) */}
+                        {ccPage2SubTab === "design" && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                            {/* Professional Pills Selection */}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                              {[
+                                { key: "arch", label: "Architectural", name: ccArchName },
+                                { key: "civil", label: "Civil / Structural", name: ccCivilName },
+                                { key: "elec", label: "Electrical", name: ccElecName },
+                                { key: "mech", label: "Mechanical", name: ccMechName },
+                                { key: "sanitary", label: "Sanitary", name: ccSanitaryName },
+                                { key: "plumbing", label: "Plumbing", name: ccPlumbingName },
+                                { key: "electronics", label: "Electronics", name: ccElectronicsName },
+                                { key: "interior", label: "Interior Design", name: ccInteriorName }
+                              ].map((prof) => (
+                                <button
+                                  key={prof.key}
+                                  type="button"
+                                  onClick={() => setCcActiveProfKey(prof.key as any)}
+                                  style={{
+                                    padding: "6px 12px",
+                                    borderRadius: "8px",
+                                    border: ccActiveProfKey === prof.key ? "1.5px solid #0284c7" : "1px solid #e2e8f0",
+                                    background: ccActiveProfKey === prof.key ? "#f0f9ff" : "#f8fafc",
+                                    color: ccActiveProfKey === prof.key ? "#0369a1" : "#475569",
+                                    fontSize: "0.76rem",
+                                    fontWeight: "700",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px"
+                                  }}
+                                >
+                                  <span>{prof.label}</span>
+                                  {prof.name && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }} />}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Active Professional Fields Card */}
+                            {(() => {
+                              const profConfigs: Record<string, {
+                                title: string;
+                                name: string; setName: (v: string) => void;
+                                address: string; setAddress: (v: string) => void;
+                                prc: string; setPrc: (v: string) => void;
+                                validity: string; setValidity: (v: string) => void;
+                                ptr: string; setPtr: (v: string) => void;
+                                ptrDate: string; setPtrDate: (v: string) => void;
+                                issuedAt: string; setIssuedAt: (v: string) => void;
+                                tin: string; setTin: (v: string) => void;
+                                sig: string; setSig: (v: string) => void;
+                              }> = {
+                                arch: { title: "ARCHITECTURAL (Plans & Specifications)", name: ccArchName, setName: setCcArchName, address: ccArchAddress, setAddress: setCcArchAddress, prc: ccArchPrc, setPrc: setCcArchPrc, validity: ccArchPrcValidity, setValidity: setCcArchPrcValidity, ptr: ccArchPtr, setPtr: setCcArchPtr, ptrDate: ccArchPtrDate, setPtrDate: setCcArchPtrDate, issuedAt: ccArchIssuedAt, setIssuedAt: setCcArchIssuedAt, tin: ccArchTin, setTin: setCcArchTin, sig: ccArchSig, setSig: setCcArchSig },
+                                civil: { title: "CIVIL / STRUCTURAL (Plans & Specifications)", name: ccCivilName, setName: setCcCivilName, address: ccCivilAddress, setAddress: setCcCivilAddress, prc: ccCivilPrc, setPrc: setCcCivilPrc, validity: ccCivilPrcValidity, setValidity: setCcCivilPrcValidity, ptr: ccCivilPtr, setPtr: setCcCivilPtr, ptrDate: ccCivilPtrDate, setPtrDate: setCcCivilPtrDate, issuedAt: ccCivilIssuedAt, setIssuedAt: setCcCivilIssuedAt, tin: ccCivilTin, setTin: setCcCivilTin, sig: ccCivilSig, setSig: setCcCivilSig },
+                                elec: { title: "ELECTRICAL (Plans & Specifications)", name: ccElecName, setName: setCcElecName, address: ccElecAddress, setAddress: setCcElecAddress, prc: ccElecPrc, setPrc: setCcElecPrc, validity: ccElecPrcValidity, setValidity: setCcElecPrcValidity, ptr: ccElecPtr, setPtr: setCcElecPtr, ptrDate: ccElecPtrDate, setPtrDate: setCcElecPtrDate, issuedAt: ccElecIssuedAt, setIssuedAt: setCcElecIssuedAt, tin: ccElecTin, setTin: setCcElecTin, sig: ccElecSig, setSig: setCcElecSig },
+                                mech: { title: "MECHANICAL (Plans & Specifications)", name: ccMechName, setName: setCcMechName, address: ccMechAddress, setAddress: setCcMechAddress, prc: ccMechPrc, setPrc: setCcMechPrc, validity: ccMechPrcValidity, setValidity: setCcMechPrcValidity, ptr: ccMechPtr, setPtr: setCcMechPtr, ptrDate: ccMechPtrDate, setPtrDate: setCcMechPtrDate, issuedAt: ccMechIssuedAt, setIssuedAt: setCcMechIssuedAt, tin: ccMechTin, setTin: setCcMechTin, sig: ccMechSig, setSig: setCcMechSig },
+                                sanitary: { title: "SANITARY (Plans & Specifications)", name: ccSanitaryName, setName: setCcSanitaryName, address: ccSanitaryAddress, setAddress: setCcSanitaryAddress, prc: ccSanitaryPrc, setPrc: setCcSanitaryPrc, validity: ccSanitaryPrcValidity, setValidity: setCcSanitaryPrcValidity, ptr: ccSanitaryPtr, setPtr: setCcSanitaryPtr, ptrDate: ccSanitaryPtrDate, setPtrDate: setCcSanitaryPtrDate, issuedAt: ccSanitaryIssuedAt, setIssuedAt: setCcSanitaryIssuedAt, tin: ccSanitaryTin, setTin: setCcSanitaryTin, sig: ccSanitarySig, setSig: setCcSanitarySig },
+                                plumbing: { title: "PLUMBING (Plans & Specifications)", name: ccPlumbingName, setName: setCcPlumbingName, address: ccPlumbingAddress, setAddress: setCcPlumbingAddress, prc: ccPlumbingPrc, setPrc: setCcPlumbingPrc, validity: ccPlumbingPrcValidity, setValidity: setCcPlumbingPrcValidity, ptr: ccPlumbingPtr, setPtr: setCcPlumbingPtr, ptrDate: ccPlumbingPtrDate, setPtrDate: setCcPlumbingPtrDate, issuedAt: ccPlumbingIssuedAt, setIssuedAt: setCcPlumbingIssuedAt, tin: ccPlumbingTin, setTin: setCcPlumbingTin, sig: ccPlumbingSig, setSig: setCcPlumbingSig },
+                                electronics: { title: "ELECTRONICS (Plans & Specifications)", name: ccElectronicsName, setName: setCcElectronicsName, address: ccElectronicsAddress, setAddress: setCcElectronicsAddress, prc: ccElectronicsPrc, setPrc: setCcElectronicsPrc, validity: ccElectronicsPrcValidity, setValidity: setCcElectronicsPrcValidity, ptr: ccElectronicsPtr, setPtr: setCcElectronicsPtr, ptrDate: ccElectronicsPtrDate, setPtrDate: setCcElectronicsPtrDate, issuedAt: ccElectronicsIssuedAt, setIssuedAt: setCcElectronicsIssuedAt, tin: ccElectronicsTin, setTin: setCcElectronicsTin, sig: ccElectronicsSig, setSig: setCcElectronicsSig },
+                                interior: { title: "INTERIOR DESIGN (Plans & Specifications)", name: ccInteriorName, setName: setCcInteriorName, address: ccInteriorAddress, setAddress: setCcInteriorAddress, prc: ccInteriorPrc, setPrc: setCcInteriorPrc, validity: ccInteriorPrcValidity, setValidity: setCcInteriorPrcValidity, ptr: ccInteriorPtr, setPtr: setCcInteriorPtr, ptrDate: ccInteriorPtrDate, setPtrDate: setCcInteriorPtrDate, issuedAt: ccInteriorIssuedAt, setIssuedAt: setCcInteriorIssuedAt, tin: ccInteriorTin, setTin: setCcInteriorTin, sig: ccInteriorSig, setSig: setCcInteriorSig },
+                              };
+                              const cfg = profConfigs[ccActiveProfKey] || profConfigs.arch;
+
+                              return (
+                                <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "1.1rem" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
+                                    <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase" }}>
+                                      {cfg.title}
+                                    </span>
+                                    <span style={{ fontSize: "0.72rem", background: "#e0f2fe", color: "#0369a1", padding: "2px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                                      Active Design Section
+                                    </span>
+                                  </div>
+
+                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                                    <div style={{ gridColumn: "span 2" }}>
+                                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                                        Full Name (Signature Over Printed Name) *
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={cfg.name}
+                                        onChange={(e) => cfg.setName(e.target.value)}
+                                        placeholder="e.g. ARCH. JUAN CARLOS DELA CRUZ"
+                                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                                      />
+                                    </div>
+                                    <div style={{ gridColumn: "span 2" }}>
+                                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                                        Professional Address *
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={cfg.address}
+                                        onChange={(e) => cfg.setAddress(e.target.value)}
+                                        placeholder="e.g. Sto. Tomas, Pampanga"
+                                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC No. *</label>
+                                      <input
+                                        type="text"
+                                        value={cfg.prc}
+                                        onChange={(e) => cfg.setPrc(e.target.value)}
+                                        placeholder="e.g. 0045211"
+                                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Validity *</label>
+                                      <input
+                                        type="text"
+                                        value={cfg.validity}
+                                        onChange={(e) => cfg.setValidity(e.target.value)}
+                                        placeholder="e.g. 2028-09-15"
+                                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR No. *</label>
+                                      <input
+                                        type="text"
+                                        value={cfg.ptr}
+                                        onChange={(e) => cfg.setPtr(e.target.value)}
+                                        placeholder="e.g. PTR-ST-665544"
+                                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Date Issued *</label>
+                                      <input
+                                        type="text"
+                                        value={cfg.ptrDate}
+                                        onChange={(e) => cfg.setPtrDate(e.target.value)}
+                                        placeholder="e.g. Jan 08, 2026"
+                                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Issued At *</label>
+                                      <input
+                                        type="text"
+                                        value={cfg.issuedAt}
+                                        onChange={(e) => cfg.setIssuedAt(e.target.value)}
+                                        placeholder="e.g. Sto. Tomas"
+                                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>TIN *</label>
+                                      <input
+                                        type="text"
+                                        value={cfg.tin}
+                                        onChange={(e) => cfg.setTin(e.target.value)}
+                                        placeholder="e.g. 234-567-890-000"
+                                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div style={{ marginTop: "0.85rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                                    <SignatureCreator
+                                      value={cfg.sig}
+                                      onChange={cfg.setSig}
+                                      label={`Affix Digital Signature for ${cfg.name || "Design Professional"}`}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+
+                        {/* SUB-TAB 2: SUPERVISORS OF SPECIALTY WORKS */}
+                        {ccPage2SubTab === "supervisors" && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                            {/* Supervisor Pills Selection */}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                              {[
+                                { key: "elec", label: "Electrical Works", same: ccSameAsDesignElecSup, name: ccSameAsDesignElecSup ? ccElecName : ccElecSupName },
+                                { key: "mech", label: "Mechanical Works", same: ccSameAsDesignMechSup, name: ccSameAsDesignMechSup ? ccMechName : ccMechSupName },
+                                { key: "sanitary", label: "Sanitary Works", same: ccSameAsDesignSanitarySup, name: ccSameAsDesignSanitarySup ? ccSanitaryName : ccSanitarySupName },
+                                { key: "plumbing", label: "Plumbing Works", same: ccSameAsDesignPlumbingSup, name: ccSameAsDesignPlumbingSup ? ccPlumbingName : ccPlumbingSupName },
+                                { key: "electronics", label: "Electronics Works", same: ccSameAsDesignElectronicsSup, name: ccSameAsDesignElectronicsSup ? ccElectronicsName : ccElectronicsSupName },
+                                { key: "interior", label: "Interior Design Works", same: ccSameAsDesignInteriorSup, name: ccSameAsDesignInteriorSup ? ccInteriorName : ccInteriorSupName }
+                              ].map((sup) => (
+                                <button
+                                  key={sup.key}
+                                  type="button"
+                                  onClick={() => setCcActiveSupKey(sup.key as any)}
+                                  style={{
+                                    padding: "6px 12px",
+                                    borderRadius: "8px",
+                                    border: ccActiveSupKey === sup.key ? "1.5px solid #0284c7" : "1px solid #e2e8f0",
+                                    background: ccActiveSupKey === sup.key ? "#f0f9ff" : "#f8fafc",
+                                    color: ccActiveSupKey === sup.key ? "#0369a1" : "#475569",
+                                    fontSize: "0.76rem",
+                                    fontWeight: "700",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px"
+                                  }}
+                                >
+                                  <span>{sup.label}</span>
+                                  {sup.name && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }} />}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Active Specialty Supervisor Card */}
+                            {(() => {
+                              const supConfigs: Record<string, {
+                                title: string;
+                                designName: string;
+                                designPrc: string;
+                                same: boolean; setSame: (v: boolean) => void;
+                                name: string; setName: (v: string) => void;
+                                address: string; setAddress: (v: string) => void;
+                                prc: string; setPrc: (v: string) => void;
+                                validity: string; setValidity: (v: string) => void;
+                                ptr: string; setPtr: (v: string) => void;
+                                ptrDate: string; setPtrDate: (v: string) => void;
+                                issuedAt: string; setIssuedAt: (v: string) => void;
+                                tin: string; setTin: (v: string) => void;
+                                sig: string; setSig: (v: string) => void;
+                              }> = {
+                                elec: { title: "ELECTRICAL WORKS SUPERVISOR", designName: ccElecName, designPrc: ccElecPrc, same: ccSameAsDesignElecSup, setSame: setCcSameAsDesignElecSup, name: ccElecSupName, setName: setCcElecSupName, address: ccElecSupAddress, setAddress: setCcElecSupAddress, prc: ccElecSupPrc, setPrc: setCcElecSupPrc, validity: ccElecSupPrcValidity, setValidity: setCcElecSupPrcValidity, ptr: ccElecSupPtr, setPtr: setCcElecSupPtr, ptrDate: ccElecSupPtrDate, setPtrDate: setCcElecSupPtrDate, issuedAt: ccElecSupIssuedAt, setIssuedAt: setCcElecSupIssuedAt, tin: ccElecSupTin, setTin: setCcElecSupTin, sig: ccElecSupSig, setSig: setCcElecSupSig },
+                                mech: { title: "MECHANICAL WORKS SUPERVISOR", designName: ccMechName, designPrc: ccMechPrc, same: ccSameAsDesignMechSup, setSame: setCcSameAsDesignMechSup, name: ccMechSupName, setName: setCcMechSupName, address: ccMechSupAddress, setAddress: setCcMechSupAddress, prc: ccMechSupPrc, setPrc: setCcMechSupPrc, validity: ccMechSupPrcValidity, setValidity: setCcMechSupPrcValidity, ptr: ccMechSupPtr, setPtr: setCcMechSupPtr, ptrDate: ccMechSupPtrDate, setPtrDate: setCcMechPtrDate, issuedAt: ccMechSupIssuedAt, setIssuedAt: setCcMechIssuedAt, tin: ccMechSupTin, setTin: setCcMechTin, sig: ccMechSupSig, setSig: setCcMechSig },
+                                sanitary: { title: "SANITARY WORKS SUPERVISOR", designName: ccSanitaryName, designPrc: ccSanitaryPrc, same: ccSameAsDesignSanitarySup, setSame: setCcSameAsDesignSanitarySup, name: ccSanitarySupName, setName: setCcSanitarySupName, address: ccSanitarySupAddress, setAddress: setCcSanitarySupAddress, prc: ccSanitarySupPrc, setPrc: setCcSanitarySupPrc, validity: ccSanitarySupPrcValidity, setValidity: setCcSanitarySupPrcValidity, ptr: ccSanitarySupPtr, setPtr: setCcSanitarySupPtr, ptrDate: ccSanitarySupPtrDate, setPtrDate: setCcSanitaryPtrDate, issuedAt: ccSanitarySupIssuedAt, setIssuedAt: setCcSanitaryIssuedAt, tin: ccSanitarySupTin, setTin: setCcSanitaryTin, sig: ccSanitarySupSig, setSig: setCcSanitarySig },
+                                plumbing: { title: "PLUMBING WORKS SUPERVISOR", designName: ccPlumbingName, designPrc: ccPlumbingPrc, same: ccSameAsDesignPlumbingSup, setSame: setCcSameAsDesignPlumbingSup, name: ccPlumbingSupName, setName: setCcPlumbingSupName, address: ccPlumbingSupAddress, setAddress: setCcPlumbingSupAddress, prc: ccPlumbingSupPrc, setPrc: setCcPlumbingSupPrc, validity: ccPlumbingSupPrcValidity, setValidity: setCcPlumbingPrcValidity, ptr: ccPlumbingSupPtr, setPtr: setCcPlumbingSupPtr, ptrDate: ccPlumbingSupPtrDate, setPtrDate: setCcPlumbingPtrDate, issuedAt: ccPlumbingSupIssuedAt, setIssuedAt: setCcPlumbingIssuedAt, tin: ccPlumbingSupTin, setTin: setCcPlumbingTin, sig: ccPlumbingSupSig, setSig: setCcPlumbingSig },
+                                electronics: { title: "ELECTRONICS WORKS SUPERVISOR", designName: ccElectronicsName, designPrc: ccElectronicsPrc, same: ccSameAsDesignElectronicsSup, setSame: setCcSameAsDesignElectronicsSup, name: ccElectronicsSupName, setName: setCcElectronicsSupName, address: ccElectronicsSupAddress, setAddress: setCcElectronicsSupAddress, prc: ccElectronicsSupPrc, setPrc: setCcElectronicsSupPrc, validity: ccElectronicsSupPrcValidity, setValidity: setCcElectronicsSupPrcValidity, ptr: ccElectronicsSupPtr, setPtr: setCcElectronicsSupPtr, ptrDate: ccElectronicsSupPtrDate, setPtrDate: setCcElectronicsPtrDate, issuedAt: ccElectronicsSupIssuedAt, setIssuedAt: setCcElectronicsIssuedAt, tin: ccElectronicsSupTin, setTin: setCcElectronicsTin, sig: ccElectronicsSupSig, setSig: setCcElectronicsSig },
+                                interior: { title: "INTERIOR DESIGN WORKS SUPERVISOR", designName: ccInteriorName, designPrc: ccInteriorPrc, same: ccSameAsDesignInteriorSup, setSame: setCcSameAsDesignInteriorSup, name: ccInteriorSupName, setName: setCcInteriorSupName, address: ccInteriorSupAddress, setAddress: setCcInteriorSupAddress, prc: ccInteriorSupPrc, setPrc: setCcInteriorSupPrc, validity: ccInteriorSupPrcValidity, setValidity: setCcInteriorSupPrcValidity, ptr: ccInteriorSupPtr, setPtr: setCcInteriorSupPtr, ptrDate: ccInteriorSupPtrDate, setPtrDate: setCcInteriorPtrDate, issuedAt: ccInteriorSupIssuedAt, setIssuedAt: setCcInteriorIssuedAt, tin: ccInteriorSupTin, setTin: setCcInteriorSupTin, sig: ccInteriorSupSig, setSig: setCcInteriorSig },
+                              };
+                              const scfg = supConfigs[ccActiveSupKey] || supConfigs.elec;
+
+                              return (
+                                <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "1.1rem" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem", flexWrap: "wrap", gap: "8px" }}>
+                                    <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase" }}>
+                                      {scfg.title}
+                                    </span>
+                                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", fontWeight: "700", color: "#166534", cursor: "pointer", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "4px 8px", borderRadius: "6px" }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={scfg.same}
+                                        onChange={(e) => scfg.setSame(e.target.checked)}
+                                        style={{ width: "16px", height: "16px" }}
+                                      />
+                                      Same as Design Professional
+                                    </label>
+                                  </div>
+
+                                  {scfg.same ? (
+                                    <div style={{ background: "#ffffff", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "0.85rem", display: "flex", alignItems: "center", gap: "10px" }}>
+                                      <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#16a34a", color: "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                        <CheckCircle2 size={16} />
+                                      </div>
+                                      <div>
+                                        <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#166534", display: "block" }}>
+                                          Synchronized with Design Professional: {scfg.designName || "Design Professional"}
+                                        </span>
+                                        <span style={{ fontSize: "0.74rem", color: "#15803d" }}>
+                                          PRC: {scfg.designPrc || "Registered"} — Page 2 of the Certificate of Completion will automatically mirror these credentials and signature.
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                                        <div style={{ gridColumn: "span 2" }}>
+                                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Supervisor Full Name *</label>
+                                          <input
+                                            type="text"
+                                            value={scfg.name}
+                                            onChange={(e) => scfg.setName(e.target.value)}
+                                            placeholder="e.g. ENGR. PEDRO PENDUKO REYES"
+                                            style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                                          />
+                                        </div>
+                                        <div style={{ gridColumn: "span 2" }}>
+                                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Supervisor Address *</label>
+                                          <input
+                                            type="text"
+                                            value={scfg.address}
+                                            onChange={(e) => scfg.setAddress(e.target.value)}
+                                            placeholder="e.g. Sto. Tomas, Pampanga"
+                                            style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PRC No. *</label>
+                                          <input
+                                            type="text"
+                                            value={scfg.prc}
+                                            onChange={(e) => scfg.setPrc(e.target.value)}
+                                            placeholder="e.g. 0076543"
+                                            style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Validity *</label>
+                                          <input
+                                            type="text"
+                                            value={scfg.validity}
+                                            onChange={(e) => scfg.setValidity(e.target.value)}
+                                            placeholder="e.g. 2028-04-20"
+                                            style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>PTR No. *</label>
+                                          <input
+                                            type="text"
+                                            value={scfg.ptr}
+                                            onChange={(e) => scfg.setPtr(e.target.value)}
+                                            placeholder="e.g. PTR-3456789"
+                                            style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Date Issued *</label>
+                                          <input
+                                            type="text"
+                                            value={scfg.ptrDate}
+                                            onChange={(e) => scfg.setPtrDate(e.target.value)}
+                                            placeholder="e.g. Jan 10, 2026"
+                                            style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Issued At *</label>
+                                          <input
+                                            type="text"
+                                            value={scfg.issuedAt}
+                                            onChange={(e) => scfg.setIssuedAt(e.target.value)}
+                                            placeholder="e.g. Sto. Tomas"
+                                            style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>TIN *</label>
+                                          <input
+                                            type="text"
+                                            value={scfg.tin}
+                                            onChange={(e) => scfg.setTin(e.target.value)}
+                                            placeholder="e.g. 345-678-901-000"
+                                            style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div style={{ marginTop: "0.85rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                                        <SignatureCreator
+                                          value={scfg.sig}
+                                          onChange={scfg.setSig}
+                                          label={`Supervisor E-Signature for ${scfg.name || "Specialty Supervisor"}`}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

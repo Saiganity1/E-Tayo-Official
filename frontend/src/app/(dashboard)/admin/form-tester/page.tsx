@@ -552,6 +552,17 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   masterPlumberPTRIssued: "Jan 15, 2026",
   masterPlumberPTRIssuedAt: "Sto. Tomas",
   masterPlumberTIN: "567-890-123-000",
+  masterPlumberSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+
+  sanitaryEngineerName: "ENGR. ANDRES BONIFACIO, SE",
+  sanitaryEngineerAddress: "San Bartolome, Sto. Tomas, Pampanga",
+  sanitaryEngineerPRC: "0054321",
+  sanitaryEngineerPRCValidity: "2027-11-30",
+  sanitaryEngineerPTR: "PTR-ST-5678901",
+  sanitaryEngineerPTRIssued: "Jan 15, 2026",
+  sanitaryEngineerPTRIssuedAt: "Sto. Tomas",
+  sanitaryEngineerTIN: "567-890-123-000",
+  sanitaryEngineerSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
 
   mechanicalEngineerName: "ENGR. LEONARDO V. TORRES, PME",
   mechanicalEngineerAddress: "Sto. Tomas, Pampanga",
@@ -564,7 +575,7 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   mechanicalEngineerPTRIssuedAt: "Sto. Tomas",
   mechanicalEngineerTIN: "678-901-234-000",
   mechanicalEngineerSignedDate: "Jan 19, 2026",
-  mechanicalEngineerSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih0p4xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+  mechanicalEngineerSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
 
   // Box 4: Supervisor / In-Charge of Mechanical Works
   sameAsDesignMechanicalEngineer: true,
@@ -579,8 +590,7 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   mechSupervisorPTRIssuedAt: "Sto. Tomas",
   mechSupervisorTIN: "678-901-234-000",
   mechSupervisorSignedDate: "Jan 19, 2026",
-  mechSupervisorSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih0p4xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
-
+  mechSupervisorSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
 
   electronicsEngineerName: "ENGR. ALAN T. SANTOS, PECE",
   electronicsEngineerAddress: "Sto. Tomas, Pampanga",
@@ -592,7 +602,58 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   electronicsEngineerPTRIssuedAt: "Sto. Tomas",
   electronicsEngineerTIN: "789-012-345-000",
   electronicsEngineerSignedDate: "Jan 20, 2026",
-  electronicsEngineerSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih0p4xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+  electronicsEngineerSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+
+  interiorDesignerName: "IDR. GABRIELA SILANG, PIID",
+  interiorDesignerAddress: "Poblacion, Sto. Tomas, Pampanga",
+  interiorDesignerPRC: "0021098",
+  interiorDesignerPRCValidity: "2027-05-18",
+  interiorDesignerPTR: "PTR-ST-8901234",
+  interiorDesignerPTRIssued: "Jan 22, 2026",
+  interiorDesignerPTRIssuedAt: "Sto. Tomas",
+  interiorDesignerTIN: "890-123-456-000",
+  interiorDesignerSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+
+  // Page 2: Supervisors of Specialty Works
+  electricalSupervisorName: "ENGR. DANILO REYES, PEE",
+  electricalSupervisorAddress: "Sto. Tomas, Pampanga",
+  electricalSupervisorPRC: "0033421",
+  electricalSupervisorPRCValidity: "2028-11-30",
+  electricalSupervisorPTR: "PTR-ST-443322",
+  electricalSupervisorPTRIssued: "Jan 12, 2026",
+  electricalSupervisorPTRIssuedAt: "Sto. Tomas",
+  electricalSupervisorTIN: "456-789-012-000",
+  electricalSupervisorSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+
+  mechanicalSupervisorName: "ENGR. LEONARDO V. TORRES, PME",
+  mechanicalSupervisorAddress: "Sto. Tomas, Pampanga",
+  mechanicalSupervisorPRC: "0044556",
+  mechanicalSupervisorPRCValidity: "2027-12-18",
+  mechanicalSupervisorPTR: "PTR-ST-221100",
+  mechanicalSupervisorPTRIssued: "Jan 18, 2026",
+  mechanicalSupervisorPTRIssuedAt: "Sto. Tomas",
+  mechanicalSupervisorTIN: "678-901-234-000",
+  mechanicalSupervisorSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+
+  sanitarySupervisorName: "ENGR. ANDRES BONIFACIO, SE",
+  sanitarySupervisorAddress: "San Bartolome, Sto. Tomas, Pampanga",
+  sanitarySupervisorPRC: "0054321",
+  sanitarySupervisorPRCValidity: "2027-11-30",
+  sanitarySupervisorPTR: "PTR-ST-5678901",
+  sanitarySupervisorPTRIssued: "Jan 15, 2026",
+  sanitarySupervisorPTRIssuedAt: "Sto. Tomas",
+  sanitarySupervisorTIN: "567-890-123-000",
+  sanitarySupervisorSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+
+  plumbingSupervisorName: "ENGR. DARIO K. AQUINO, RMP",
+  plumbingSupervisorAddress: "Sto. Tomas, Pampanga",
+  plumbingSupervisorPRC: "0011998",
+  plumbingSupervisorPRCValidity: "2028-01-25",
+  plumbingSupervisorPTR: "PTR-ST-332211",
+  plumbingSupervisorPTRIssued: "Jan 15, 2026",
+  plumbingSupervisorPTRIssuedAt: "Sto. Tomas",
+  plumbingSupervisorTIN: "567-890-123-000",
+  plumbingSupervisorSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
 
   // Box 4: Supervisor / In-Charge of Electronics Works
   sameAsDesignElectronicsEngineer: true,
@@ -607,7 +668,17 @@ const CALIBRATED_TEST_DATA: UnifiedPermitFormData = {
   electronicsSupervisorPTRIssuedAt: "Sto. Tomas",
   electronicsSupervisorTIN: "789-012-345-000",
   electronicsSupervisorSignedDate: "Jan 20, 2026",
-  electronicsSupervisorSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih0p4xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+  electronicsSupervisorSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
+
+  interiorSupervisorName: "IDR. GABRIELA SILANG, PIID",
+  interiorSupervisorAddress: "Poblacion, Sto. Tomas, Pampanga",
+  interiorSupervisorPRC: "0021098",
+  interiorSupervisorPRCValidity: "2027-05-18",
+  interiorSupervisorPTR: "PTR-ST-8901234",
+  interiorSupervisorPTRIssued: "Jan 22, 2026",
+  interiorSupervisorPTRIssuedAt: "Sto. Tomas",
+  interiorSupervisorTIN: "890-123-456-000",
+  interiorSupervisorSignature: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAABGCAYAAADyxhn6AAADe0lEQVR4nO3cTXLcIBCGYU0qPoZP6XP4lDlGFpOVKpRLPwi66f7gfTbezFhI8KmRhOb1fr83AJp+RTcAQDsCDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CAMAIMCCPAgDACDAgjwIAwAgwII8CVPj6/3uVfIIMXv8hx7yi0f/98vyLaApTSVGC1CqfSTswtRQXOXOHugpqlnVhTeAVWr2Qfn19v9X3ooTZzmk14Bb7q+Ojq9rNtZXsyzxpGOeu71Y5DpNAA15y1owbDVXjPPnP2udlk7rfVhE2hZxj8taGeSe3+rX5pMUpIBb4Lb0318/R0+zOcjGo87bejz8DW8ADXDPbIQLRue+YQPw0mQR4n/C70Uadm6ujatpxNp9WnkS1hfBpstBtagXunpt7BttreLNXYYj+oxr6GVWCLs6/KGVz95tbZzKEldFTjez3HYkgF7hkMo6qwx3YUK7FnxaQa/2c13twD7DENs+5wz/+vFOIRbV05xB6LlkICvG3PGuw9sEafIDy20SMiVKsE2XuloWuAj4LRGhavkEVN0b23VyuyXVmPSa+Ry4PdAvzkoX9UiCMqY6ZqnKUtMwQ5ak2/S4BrB0b0iqeoFV/RwckYmIxtupPhRRzzALcMzidB8npWG71cc1Qbok8ed7IHOUNoS+4Bbr1Z5R3i6AAftcGzHdmDUcrW1myhLZkGeFSwegd+hvCetWXbeHSzy3iDbdT2a5kF2PP61OL6ufd7nkYvnsiwz7VGhlgltCWTAHsNkruwtYQxY4B3lsdRteqe8dofxdCWugM8egrY87M2mcO74wWCc1b7pR7aknmAR63e2bdTu32lqaTl2vEn31XREuSZQlvqCnBERWtd3aVQfUu9s4ua7yir2d9ZQ1tqDnD0mf7uFayrjlTpvNYFMVefnc2TV/FmPB5mFTjLc9TdDAHetvtwRp9IM1ih044xuQaOPkhXg1w5vKXaSqO6fxb2Y9Rz517t+IX/sLuVmgGu1jk/9Vw2oI7aGEkfYAZiG7WBiDa/oxtQw+I530wDep/qKU75YCt9BW6x8l1ZrCX8d6E97EG9W3oJqJuyAh+Z5W40UFomwDuuGzGT5QIMzGTKa2BgFQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWEEGBBGgAFhBBgQRoABYQQYEEaAAWH/AMK1QcQfdloeAAAAAElFTkSuQmCC",
 
   // Box 3 & Box 4: Owner E-Signature & Government ID
   govIdDateIssued: "Jan 10, 2024",
@@ -689,6 +760,9 @@ export default function FormTestingStudio() {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [genTimeMs, setGenTimeMs] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"general" | "specs" | "professionals">("general");
+  const [ccProfCategory, setCcProfCategory] = useState<"supervisors" | "design">("supervisors");
+  const [ccActiveProfSlot, setCcActiveProfSlot] = useState<string>("arch");
+  const [ccActiveSupSlot, setCcActiveSupSlot] = useState<string>("sanitary");
 
   // When Locational Clearance is selected, ensure active tab is 'general'
   useEffect(() => {
@@ -758,6 +832,206 @@ export default function FormTestingStudio() {
     setFormData(CALIBRATED_TEST_DATA);
   };
 
+  const handleAutoFillCcPage2 = () => {
+    setFormData(prev => ({
+      ...prev,
+      // Design Professionals:
+      architectName: prev.architectName || "ARCH. MARIA ELENA SANTOS, UAP",
+      architectAddress: prev.architectAddress || "Sto. Tomas, Pampanga",
+      architectPRC: prev.architectPRC || "0045211",
+      architectPRCValidity: prev.architectPRCValidity || "2028-09-15",
+      architectPTR: prev.architectPTR || "PTR-ST-665544",
+      architectPTRIssued: prev.architectPTRIssued || "Jan 08, 2026",
+      architectPTRIssuedAt: prev.architectPTRIssuedAt || "Sto. Tomas",
+      architectTIN: prev.architectTIN || "234-567-890-000",
+
+      civilEngineerName: prev.civilEngineerName || "ENGR. ROBERTO CRUZ, CE",
+      civilEngineerAddress: prev.civilEngineerAddress || "Sto. Tomas, Pampanga",
+      civilEngineerPRC: prev.civilEngineerPRC || "0078923",
+      civilEngineerPRCValidity: prev.civilEngineerPRCValidity || "2028-11-24",
+      civilEngineerPTR: prev.civilEngineerPTR || "PTR-ST-2026-001",
+      civilEngineerPTRIssued: prev.civilEngineerPTRIssued || "Jan 08, 2026",
+      civilEngineerPTRIssuedAt: prev.civilEngineerPTRIssuedAt || "Sto. Tomas, Pampanga",
+      civilEngineerTIN: prev.civilEngineerTIN || "234-567-890-000",
+
+      electricalEngineerName: prev.electricalEngineerName || "ENGR. DANILO REYES, PEE",
+      electricalEngineerAddress: prev.electricalEngineerAddress || "Sto. Tomas, Pampanga",
+      electricalEngineerPRC: prev.electricalEngineerPRC || "0033421",
+      electricalEngineerPRCValidity: prev.electricalEngineerPRCValidity || "2028-11-30",
+      electricalEngineerPTR: prev.electricalEngineerPTR || "PTR-ST-443322",
+      electricalEngineerPTRIssued: prev.electricalEngineerPTRIssued || "Jan 12, 2026",
+      electricalEngineerPTRIssuedAt: prev.electricalEngineerPTRIssuedAt || "Sto. Tomas",
+      electricalEngineerTIN: prev.electricalEngineerTIN || "456-789-012-000",
+
+      mechanicalEngineerName: prev.mechanicalEngineerName || "ENGR. LEONARDO V. TORRES, PME",
+      mechanicalEngineerAddress: prev.mechanicalEngineerAddress || "Sto. Tomas, Pampanga",
+      mechanicalEngineerPRC: prev.mechanicalEngineerPRC || "0044556",
+      mechanicalEngineerPRCValidity: prev.mechanicalEngineerPRCValidity || "2027-12-18",
+      mechanicalEngineerPTR: prev.mechanicalEngineerPTR || "PTR-ST-221100",
+      mechanicalEngineerPTRIssued: prev.mechanicalEngineerPTRIssued || "Jan 18, 2026",
+      mechanicalEngineerPTRIssuedAt: prev.mechanicalEngineerPTRIssuedAt || "Sto. Tomas",
+      mechanicalEngineerTIN: prev.mechanicalEngineerTIN || "678-901-234-000",
+
+      sanitaryEngineerName: prev.sanitaryEngineerName || "ENGR. ANDRES BONIFACIO, SE",
+      sanitaryEngineerAddress: prev.sanitaryEngineerAddress || "San Bartolome, Sto. Tomas, Pampanga",
+      sanitaryEngineerPRC: prev.sanitaryEngineerPRC || "0054321",
+      sanitaryEngineerPRCValidity: prev.sanitaryEngineerPRCValidity || "2027-11-30",
+      sanitaryEngineerPTR: prev.sanitaryEngineerPTR || "PTR-ST-5678901",
+      sanitaryEngineerPTRIssued: prev.sanitaryEngineerPTRIssued || "Jan 15, 2026",
+      sanitaryEngineerPTRIssuedAt: prev.sanitaryEngineerPTRIssuedAt || "Sto. Tomas",
+      sanitaryEngineerTIN: prev.sanitaryEngineerTIN || "567-890-123-000",
+
+      masterPlumberName: prev.masterPlumberName || "ENGR. DARIO K. AQUINO, RMP",
+      masterPlumberAddress: prev.masterPlumberAddress || "Sto. Tomas, Pampanga",
+      masterPlumberPRC: prev.masterPlumberPRC || "0011998",
+      masterPlumberPRCValidity: prev.masterPlumberPRCValidity || "2028-01-25",
+      masterPlumberPTR: prev.masterPlumberPTR || "PTR-ST-332211",
+      masterPlumberPTRIssued: prev.masterPlumberPTRIssued || "Jan 15, 2026",
+      masterPlumberPTRIssuedAt: prev.masterPlumberPTRIssuedAt || "Sto. Tomas",
+      masterPlumberTIN: prev.masterPlumberTIN || "567-890-123-000",
+
+      electronicsEngineerName: prev.electronicsEngineerName || "ENGR. ALAN T. SANTOS, PECE",
+      electronicsEngineerAddress: prev.electronicsEngineerAddress || "Sto. Tomas, Pampanga",
+      electronicsEngineerPRC: prev.electronicsEngineerPRC || "0022334",
+      electronicsEngineerPRCValidity: prev.electronicsEngineerPRCValidity || "2028-05-12",
+      electronicsEngineerPTR: prev.electronicsEngineerPTR || "PTR-ST-110099",
+      electronicsEngineerPTRIssued: prev.electronicsEngineerPTRIssued || "Jan 20, 2026",
+      electronicsEngineerPTRIssuedAt: prev.electronicsEngineerPTRIssuedAt || "Sto. Tomas",
+      electronicsEngineerTIN: prev.electronicsEngineerTIN || "789-012-345-000",
+
+      interiorDesignerName: prev.interiorDesignerName || "IDR. GABRIELA SILANG, PIID",
+      interiorDesignerAddress: prev.interiorDesignerAddress || "Poblacion, Sto. Tomas, Pampanga",
+      interiorDesignerPRC: prev.interiorDesignerPRC || "0021098",
+      interiorDesignerPRCValidity: prev.interiorDesignerPRCValidity || "2027-05-18",
+      interiorDesignerPTR: prev.interiorDesignerPTR || "PTR-ST-8901234",
+      interiorDesignerPTRIssued: prev.interiorDesignerPTRIssued || "Jan 22, 2026",
+      interiorDesignerPTRIssuedAt: prev.interiorDesignerPTRIssuedAt || "Sto. Tomas",
+      interiorDesignerTIN: prev.interiorDesignerTIN || "890-123-456-000",
+
+      // Supervisors:
+      electricalSupervisorName: prev.electricalSupervisorName || prev.electricalEngineerName || "ENGR. DANILO REYES, PEE",
+      electricalSupervisorAddress: prev.electricalSupervisorAddress || prev.electricalEngineerAddress || "Sto. Tomas, Pampanga",
+      electricalSupervisorPRC: prev.electricalSupervisorPRC || prev.electricalEngineerPRC || "0033421",
+      electricalSupervisorPRCValidity: prev.electricalSupervisorPRCValidity || prev.electricalEngineerPRCValidity || "2028-11-30",
+      electricalSupervisorPTR: prev.electricalSupervisorPTR || prev.electricalEngineerPTR || "PTR-ST-443322",
+      electricalSupervisorPTRIssued: prev.electricalSupervisorPTRIssued || prev.electricalEngineerPTRIssued || "Jan 12, 2026",
+      electricalSupervisorPTRIssuedAt: prev.electricalSupervisorPTRIssuedAt || prev.electricalEngineerPTRIssuedAt || "Sto. Tomas",
+      electricalSupervisorTIN: prev.electricalSupervisorTIN || prev.electricalEngineerTIN || "456-789-012-000",
+
+      mechanicalSupervisorName: prev.mechanicalSupervisorName || prev.mechanicalEngineerName || "ENGR. LEONARDO V. TORRES, PME",
+      mechanicalSupervisorAddress: prev.mechanicalSupervisorAddress || prev.mechanicalEngineerAddress || "Sto. Tomas, Pampanga",
+      mechanicalSupervisorPRC: prev.mechanicalSupervisorPRC || prev.mechanicalEngineerPRC || "0044556",
+      mechanicalSupervisorPRCValidity: prev.mechanicalSupervisorPRCValidity || prev.mechanicalEngineerPRCValidity || "2027-12-18",
+      mechanicalSupervisorPTR: prev.mechanicalSupervisorPTR || prev.mechanicalEngineerPTR || "PTR-ST-221100",
+      mechanicalSupervisorPTRIssued: prev.mechanicalSupervisorPTRIssued || prev.mechanicalEngineerPTRIssued || "Jan 18, 2026",
+      mechanicalSupervisorPTRIssuedAt: prev.mechanicalSupervisorPTRIssuedAt || prev.mechanicalEngineerPTRIssuedAt || "Sto. Tomas",
+      mechanicalSupervisorTIN: prev.mechanicalSupervisorTIN || prev.mechanicalEngineerTIN || "678-901-234-000",
+
+      sanitarySupervisorName: prev.sanitarySupervisorName || prev.sanitaryEngineerName || "ENGR. ANDRES BONIFACIO, SE",
+      sanitarySupervisorAddress: prev.sanitarySupervisorAddress || prev.sanitaryEngineerAddress || "San Bartolome, Sto. Tomas, Pampanga",
+      sanitarySupervisorPRC: prev.sanitarySupervisorPRC || prev.sanitaryEngineerPRC || "0054321",
+      sanitarySupervisorPRCValidity: prev.sanitarySupervisorPRCValidity || prev.sanitaryEngineerPRCValidity || "2027-11-30",
+      sanitarySupervisorPTR: prev.sanitarySupervisorPTR || prev.sanitaryEngineerPTR || "PTR-ST-5678901",
+      sanitarySupervisorPTRIssued: prev.sanitarySupervisorPTRIssued || prev.sanitaryEngineerPTRIssued || "Jan 15, 2026",
+      sanitarySupervisorPTRIssuedAt: prev.sanitarySupervisorPTRIssuedAt || prev.sanitaryEngineerPTRIssuedAt || "Sto. Tomas",
+      sanitarySupervisorTIN: prev.sanitarySupervisorTIN || prev.sanitaryEngineerTIN || "567-890-123-000",
+
+      plumbingSupervisorName: prev.plumbingSupervisorName || prev.masterPlumberName || "ENGR. DARIO K. AQUINO, RMP",
+      plumbingSupervisorAddress: prev.plumbingSupervisorAddress || prev.masterPlumberAddress || "Sto. Tomas, Pampanga",
+      plumbingSupervisorPRC: prev.plumbingSupervisorPRC || prev.masterPlumberPRC || "0011998",
+      plumbingSupervisorPRCValidity: prev.plumbingSupervisorPRCValidity || prev.masterPlumberPRCValidity || "2028-01-25",
+      plumbingSupervisorPTR: prev.plumbingSupervisorPTR || prev.masterPlumberPTR || "PTR-ST-332211",
+      plumbingSupervisorPTRIssued: prev.plumbingSupervisorPTRIssued || prev.masterPlumberPTRIssued || "Jan 15, 2026",
+      plumbingSupervisorPTRIssuedAt: prev.plumbingSupervisorPTRIssuedAt || prev.masterPlumberPTRIssuedAt || "Sto. Tomas",
+      plumbingSupervisorTIN: prev.plumbingSupervisorTIN || prev.masterPlumberTIN || "567-890-123-000",
+
+      electronicsSupervisorName: prev.electronicsSupervisorName || prev.electronicsEngineerName || "ENGR. ALAN T. SANTOS, PECE",
+      electronicsSupervisorAddress: prev.electronicsSupervisorAddress || prev.electronicsEngineerAddress || "Sto. Tomas, Pampanga",
+      electronicsSupervisorPRC: prev.electronicsSupervisorPRC || prev.electronicsEngineerPRC || "0022334",
+      electronicsSupervisorPRCValidity: prev.electronicsSupervisorPRCValidity || prev.electronicsEngineerPRCValidity || "2028-05-12",
+      electronicsSupervisorPTR: prev.electronicsSupervisorPTR || prev.electronicsEngineerPTR || "PTR-ST-110099",
+      electronicsSupervisorPTRIssued: prev.electronicsSupervisorPTRIssued || prev.electronicsEngineerPTRIssued || "Jan 20, 2026",
+      electronicsSupervisorPTRIssuedAt: prev.electronicsSupervisorPTRIssuedAt || prev.electronicsEngineerPTRIssuedAt || "Sto. Tomas",
+      electronicsSupervisorTIN: prev.electronicsSupervisorTIN || prev.electronicsEngineerTIN || "789-012-345-000",
+
+      interiorSupervisorName: prev.interiorSupervisorName || prev.interiorDesignerName || "IDR. GABRIELA SILANG, PIID",
+      interiorSupervisorAddress: prev.interiorSupervisorAddress || prev.interiorDesignerAddress || "Poblacion, Sto. Tomas, Pampanga",
+      interiorSupervisorPRC: prev.interiorSupervisorPRC || prev.interiorDesignerPRC || "0021098",
+      interiorSupervisorPRCValidity: prev.interiorSupervisorPRCValidity || prev.interiorDesignerPRCValidity || "2027-05-18",
+      interiorSupervisorPTR: prev.interiorSupervisorPTR || prev.interiorDesignerPTR || "PTR-ST-8901234",
+      interiorSupervisorPTRIssued: prev.interiorSupervisorPTRIssued || prev.interiorDesignerPTRIssued || "Jan 22, 2026",
+      interiorSupervisorPTRIssuedAt: prev.interiorSupervisorPTRIssuedAt || prev.interiorDesignerPTRIssuedAt || "Sto. Tomas",
+      interiorSupervisorTIN: prev.interiorSupervisorTIN || prev.interiorDesignerTIN || "890-123-456-000",
+    }));
+  };
+
+  const handleToggleSupervisorSame = (supKey: string, same: boolean) => {
+    handleFieldChange(`sameAsDesign${supKey.charAt(0).toUpperCase() + supKey.slice(1)}Supervisor` as any, same);
+    if (same) {
+      if (supKey === "elec") {
+        handleFieldChange("electricalSupervisorName", formData.electricalEngineerName || "ENGR. DANILO REYES, PEE");
+        handleFieldChange("electricalSupervisorAddress", formData.electricalEngineerAddress || "Sto. Tomas, Pampanga");
+        handleFieldChange("electricalSupervisorPRC", formData.electricalEngineerPRC || "0033421");
+        handleFieldChange("electricalSupervisorPRCValidity", formData.electricalEngineerPRCValidity || "2028-11-30");
+        handleFieldChange("electricalSupervisorPTR", formData.electricalEngineerPTR || "PTR-ST-443322");
+        handleFieldChange("electricalSupervisorPTRIssued", formData.electricalEngineerPTRIssued || "Jan 12, 2026");
+        handleFieldChange("electricalSupervisorPTRIssuedAt", formData.electricalEngineerPTRIssuedAt || "Sto. Tomas");
+        handleFieldChange("electricalSupervisorTIN", formData.electricalEngineerTIN || "456-789-012-000");
+        handleFieldChange("electricalSupervisorSignature", formData.electricalEngineerSignature || "");
+      } else if (supKey === "mech") {
+        handleFieldChange("mechanicalSupervisorName", formData.mechanicalEngineerName || "ENGR. LEONARDO V. TORRES, PME");
+        handleFieldChange("mechanicalSupervisorAddress", formData.mechanicalEngineerAddress || "Sto. Tomas, Pampanga");
+        handleFieldChange("mechanicalSupervisorPRC", formData.mechanicalEngineerPRC || "0044556");
+        handleFieldChange("mechanicalSupervisorPRCValidity", formData.mechanicalEngineerPRCValidity || "2027-12-18");
+        handleFieldChange("mechanicalSupervisorPTR", formData.mechanicalEngineerPTR || "PTR-ST-221100");
+        handleFieldChange("mechanicalSupervisorPTRIssued", formData.mechanicalEngineerPTRIssued || "Jan 18, 2026");
+        handleFieldChange("mechanicalSupervisorPTRIssuedAt", formData.mechanicalEngineerPTRIssuedAt || "Sto. Tomas");
+        handleFieldChange("mechanicalSupervisorTIN", formData.mechanicalEngineerTIN || "678-901-234-000");
+        handleFieldChange("mechanicalSupervisorSignature", formData.mechanicalEngineerSignature || "");
+      } else if (supKey === "sanitary") {
+        handleFieldChange("sanitarySupervisorName", formData.sanitaryEngineerName || "ENGR. ANDRES BONIFACIO, SE");
+        handleFieldChange("sanitarySupervisorAddress", formData.sanitaryEngineerAddress || "San Bartolome, Sto. Tomas, Pampanga");
+        handleFieldChange("sanitarySupervisorPRC", formData.sanitaryEngineerPRC || "0054321");
+        handleFieldChange("sanitarySupervisorPRCValidity", formData.sanitaryEngineerPRCValidity || "2027-11-30");
+        handleFieldChange("sanitarySupervisorPTR", formData.sanitaryEngineerPTR || "PTR-ST-5678901");
+        handleFieldChange("sanitarySupervisorPTRIssued", formData.sanitaryEngineerPTRIssued || "Jan 15, 2026");
+        handleFieldChange("sanitarySupervisorPTRIssuedAt", formData.sanitaryEngineerPTRIssuedAt || "Sto. Tomas");
+        handleFieldChange("sanitarySupervisorTIN", formData.sanitaryEngineerTIN || "567-890-123-000");
+        handleFieldChange("sanitarySupervisorSignature", formData.sanitaryEngineerSignature || "");
+      } else if (supKey === "plumbing") {
+        handleFieldChange("plumbingSupervisorName", formData.masterPlumberName || "ENGR. DARIO K. AQUINO, RMP");
+        handleFieldChange("plumbingSupervisorAddress", formData.masterPlumberAddress || "Sto. Tomas, Pampanga");
+        handleFieldChange("plumbingSupervisorPRC", formData.masterPlumberPRC || "0011998");
+        handleFieldChange("plumbingSupervisorPRCValidity", formData.masterPlumberPRCValidity || "2028-01-25");
+        handleFieldChange("plumbingSupervisorPTR", formData.masterPlumberPTR || "PTR-ST-332211");
+        handleFieldChange("plumbingSupervisorPTRIssued", formData.masterPlumberPTRIssued || "Jan 15, 2026");
+        handleFieldChange("plumbingSupervisorPTRIssuedAt", formData.masterPlumberPTRIssuedAt || "Sto. Tomas");
+        handleFieldChange("plumbingSupervisorTIN", formData.masterPlumberTIN || "567-890-123-000");
+        handleFieldChange("plumbingSupervisorSignature", formData.masterPlumberSignature || "");
+      } else if (supKey === "electronics") {
+        handleFieldChange("electronicsSupervisorName", formData.electronicsEngineerName || "ENGR. ALAN T. SANTOS, PECE");
+        handleFieldChange("electronicsSupervisorAddress", formData.electronicsEngineerAddress || "Sto. Tomas, Pampanga");
+        handleFieldChange("electronicsSupervisorPRC", formData.electronicsEngineerPRC || "0022334");
+        handleFieldChange("electronicsSupervisorPRCValidity", formData.electronicsEngineerPRCValidity || "2028-05-12");
+        handleFieldChange("electronicsSupervisorPTR", formData.electronicsEngineerPTR || "PTR-ST-110099");
+        handleFieldChange("electronicsSupervisorPTRIssued", formData.electronicsEngineerPTRIssued || "Jan 20, 2026");
+        handleFieldChange("electronicsSupervisorPTRIssuedAt", formData.electronicsEngineerPTRIssuedAt || "Sto. Tomas");
+        handleFieldChange("electronicsSupervisorTIN", formData.electronicsEngineerTIN || "789-012-345-000");
+        handleFieldChange("electronicsSupervisorSignature", formData.electronicsEngineerSignature || "");
+      } else if (supKey === "interior") {
+        handleFieldChange("interiorSupervisorName", formData.interiorDesignerName || "IDR. GABRIELA SILANG, PIID");
+        handleFieldChange("interiorSupervisorAddress", formData.interiorDesignerAddress || "Poblacion, Sto. Tomas, Pampanga");
+        handleFieldChange("interiorSupervisorPRC", formData.interiorDesignerPRC || "0021098");
+        handleFieldChange("interiorSupervisorPRCValidity", formData.interiorDesignerPRCValidity || "2027-05-18");
+        handleFieldChange("interiorSupervisorPTR", formData.interiorDesignerPTR || "PTR-ST-8901234");
+        handleFieldChange("interiorSupervisorPTRIssued", formData.interiorDesignerPTRIssued || "Jan 22, 2026");
+        handleFieldChange("interiorSupervisorPTRIssuedAt", formData.interiorDesignerPTRIssuedAt || "Sto. Tomas");
+        handleFieldChange("interiorSupervisorTIN", formData.interiorDesignerTIN || "890-123-456-000");
+        handleFieldChange("interiorSupervisorSignature", formData.interiorDesignerSignature || "");
+      }
+    }
+  };
+
   const handleClear = () => {
     setFormData({
       ...CALIBRATED_TEST_DATA,
@@ -815,7 +1089,163 @@ export default function FormTestingStudio() {
       } else if (selectedFormId === "CO") {
         generatedUrl = await generateCertificateOfOccupancyPdf(formData);
       } else if (selectedFormId === "CC") {
-        generatedUrl = await generateCertificateOfCompletionPdf(formData);
+        const bpNumber = formData.buildingPermitNo || (formData.applicationNo ? (formData.applicationNo.startsWith("BP-") ? formData.applicationNo : `BP-${formData.applicationNo.replace(/^APP-(TEST-)?/i, "")}`) : "BP-2026-0091");
+        const ccData: UnifiedPermitFormData = {
+          ...formData,
+          buildingPermitNo: bpNumber,
+          buildingPermitDateIssued: formData.buildingPermitDateIssued || formData.dateIssued || "Jan 12, 2026",
+          submissionDate: formData.submissionDate || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+          juratCity: (formData as any).juratCity || "Sto. Tomas, Pampanga",
+          juratDate: (formData as any).juratDate || formData.submissionDate || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+          // Page 2: Design Professionals
+          architectName: formData.architectName || "ARCH. MARIA ELENA SANTOS, UAP",
+          architectAddress: formData.architectAddress || "Sto. Tomas, Pampanga",
+          architectPRC: formData.architectPRC || "0045211",
+          architectPRCValidity: formData.architectPRCValidity || "2028-09-15",
+          architectPTR: formData.architectPTR || "PTR-ST-665544",
+          architectPTRIssued: formData.architectPTRIssued || "Jan 08, 2026",
+          architectPTRIssuedAt: formData.architectPTRIssuedAt || "Sto. Tomas",
+          architectTIN: formData.architectTIN || "234-567-890-000",
+
+          civilEngineerName: formData.civilEngineerName || "ENGR. ROBERTO CRUZ, CE",
+          civilEngineerAddress: formData.civilEngineerAddress || "Sto. Tomas, Pampanga",
+          civilEngineerPRC: formData.civilEngineerPRC || "0078923",
+          civilEngineerPRCValidity: formData.civilEngineerPRCValidity || "2028-11-24",
+          civilEngineerPTR: formData.civilEngineerPTR || "PTR-ST-2026-001",
+          civilEngineerPTRIssued: formData.civilEngineerPTRIssued || "Jan 08, 2026",
+          civilEngineerPTRIssuedAt: formData.civilEngineerPTRIssuedAt || "Sto. Tomas, Pampanga",
+          civilEngineerTIN: formData.civilEngineerTIN || "234-567-890-000",
+
+          electricalEngineerName: formData.electricalEngineerName || "ENGR. DANILO REYES, PEE",
+          electricalEngineerAddress: formData.electricalEngineerAddress || "Sto. Tomas, Pampanga",
+          electricalEngineerPRC: formData.electricalEngineerPRC || "0033421",
+          electricalEngineerPRCValidity: formData.electricalEngineerPRCValidity || "2028-11-30",
+          electricalEngineerPTR: formData.electricalEngineerPTR || "PTR-ST-443322",
+          electricalEngineerPTRIssued: formData.electricalEngineerPTRIssued || "Jan 12, 2026",
+          electricalEngineerPTRIssuedAt: formData.electricalEngineerPTRIssuedAt || "Sto. Tomas",
+          electricalEngineerTIN: formData.electricalEngineerTIN || "456-789-012-000",
+
+          mechanicalEngineerName: formData.mechanicalEngineerName || "ENGR. LEONARDO V. TORRES, PME",
+          mechanicalEngineerAddress: formData.mechanicalEngineerAddress || "Sto. Tomas, Pampanga",
+          mechanicalEngineerPRC: formData.mechanicalEngineerPRC || "0044556",
+          mechanicalEngineerPRCValidity: formData.mechanicalEngineerPRCValidity || "2027-12-18",
+          mechanicalEngineerPTR: formData.mechanicalEngineerPTR || "PTR-ST-221100",
+          mechanicalEngineerPTRDate: formData.mechanicalEngineerPTRDate || "Jan 18, 2026",
+          mechanicalEngineerPTRIssued: formData.mechanicalEngineerPTRIssued || "Jan 18, 2026",
+          mechanicalEngineerPTRIssuedAt: formData.mechanicalEngineerPTRIssuedAt || "Sto. Tomas",
+          mechanicalEngineerTIN: formData.mechanicalEngineerTIN || "678-901-234-000",
+
+          sanitaryEngineerName: formData.sanitaryEngineerName || "ENGR. ANDRES BONIFACIO, SE",
+          sanitaryEngineerAddress: formData.sanitaryEngineerAddress || "San Bartolome, Sto. Tomas, Pampanga",
+          sanitaryEngineerPRC: formData.sanitaryEngineerPRC || "0054321",
+          sanitaryEngineerPRCValidity: formData.sanitaryEngineerPRCValidity || "2027-11-30",
+          sanitaryEngineerPTR: formData.sanitaryEngineerPTR || "PTR-ST-5678901",
+          sanitaryEngineerPTRIssued: formData.sanitaryEngineerPTRIssued || "Jan 15, 2026",
+          sanitaryEngineerPTRIssuedAt: formData.sanitaryEngineerPTRIssuedAt || "Sto. Tomas",
+          sanitaryEngineerTIN: formData.sanitaryEngineerTIN || "567-890-123-000",
+
+          masterPlumberName: formData.masterPlumberName || "ENGR. DARIO K. AQUINO, RMP",
+          masterPlumberAddress: formData.masterPlumberAddress || "Sto. Tomas, Pampanga",
+          masterPlumberPRC: formData.masterPlumberPRC || "0011998",
+          masterPlumberPRCValidity: formData.masterPlumberPRCValidity || "2028-01-25",
+          masterPlumberPTR: formData.masterPlumberPTR || "PTR-ST-332211",
+          masterPlumberPTRIssued: formData.masterPlumberPTRIssued || "Jan 15, 2026",
+          masterPlumberPTRIssuedAt: formData.masterPlumberPTRIssuedAt || "Sto. Tomas",
+          masterPlumberTIN: formData.masterPlumberTIN || "567-890-123-000",
+
+          electronicsEngineerName: formData.electronicsEngineerName || "ENGR. ALAN T. SANTOS, PECE",
+          electronicsEngineerAddress: formData.electronicsEngineerAddress || "Sto. Tomas, Pampanga",
+          electronicsEngineerPRC: formData.electronicsEngineerPRC || "0022334",
+          electronicsEngineerPRCValidity: formData.electronicsEngineerPRCValidity || "2028-05-12",
+          electronicsEngineerPTR: formData.electronicsEngineerPTR || "PTR-ST-110099",
+          electronicsEngineerPTRIssued: formData.electronicsEngineerPTRIssued || "Jan 20, 2026",
+          electronicsEngineerPTRIssuedAt: formData.electronicsEngineerPTRIssuedAt || "Sto. Tomas",
+          electronicsEngineerTIN: formData.electronicsEngineerTIN || "789-012-345-000",
+
+          interiorDesignerName: formData.interiorDesignerName || "IDR. GABRIELA SILANG, PIID",
+          interiorDesignerAddress: formData.interiorDesignerAddress || "Poblacion, Sto. Tomas, Pampanga",
+          interiorDesignerPRC: formData.interiorDesignerPRC || "0021098",
+          interiorDesignerPRCValidity: formData.interiorDesignerPRCValidity || "2027-05-18",
+          interiorDesignerPTR: formData.interiorDesignerPTR || "PTR-ST-8901234",
+          interiorDesignerPTRIssued: formData.interiorDesignerPTRIssued || "Jan 22, 2026",
+          interiorDesignerPTRIssuedAt: formData.interiorDesignerPTRIssuedAt || "Sto. Tomas",
+          interiorDesignerTIN: formData.interiorDesignerTIN || "890-123-456-000",
+
+          // Page 2: Specialty Supervisors
+          electricalSupervisorName: formData.electricalSupervisorName || formData.electricalEngineerName || "ENGR. DANILO REYES, PEE",
+          electricalSupervisorAddress: formData.electricalSupervisorAddress || formData.electricalEngineerAddress || "Sto. Tomas, Pampanga",
+          electricalSupervisorPRC: formData.electricalSupervisorPRC || formData.electricalEngineerPRC || "0033421",
+          electricalSupervisorPRCValidity: formData.electricalSupervisorPRCValidity || formData.electricalEngineerPRCValidity || "2028-11-30",
+          electricalSupervisorPTR: formData.electricalSupervisorPTR || formData.electricalEngineerPTR || "PTR-ST-443322",
+          electricalSupervisorPTRIssued: formData.electricalSupervisorPTRIssued || formData.electricalEngineerPTRIssued || "Jan 12, 2026",
+          electricalSupervisorPTRIssuedAt: formData.electricalSupervisorPTRIssuedAt || formData.electricalEngineerPTRIssuedAt || "Sto. Tomas",
+          electricalSupervisorTIN: formData.electricalSupervisorTIN || formData.electricalEngineerTIN || "456-789-012-000",
+
+          mechanicalSupervisorName: formData.mechanicalSupervisorName || formData.mechanicalEngineerName || "ENGR. LEONARDO V. TORRES, PME",
+          mechanicalSupervisorAddress: formData.mechanicalSupervisorAddress || formData.mechanicalEngineerAddress || "Sto. Tomas, Pampanga",
+          mechanicalSupervisorPRC: formData.mechanicalSupervisorPRC || formData.mechanicalEngineerPRC || "0044556",
+          mechanicalSupervisorPRCValidity: formData.mechanicalSupervisorPRCValidity || formData.mechanicalEngineerPRCValidity || "2027-12-18",
+          mechanicalSupervisorPTR: formData.mechanicalSupervisorPTR || formData.mechanicalEngineerPTR || "PTR-ST-221100",
+          mechanicalSupervisorPTRIssued: formData.mechanicalSupervisorPTRIssued || formData.mechanicalEngineerPTRIssued || "Jan 18, 2026",
+          mechanicalSupervisorPTRIssuedAt: formData.mechanicalSupervisorPTRIssuedAt || formData.mechanicalEngineerPTRIssuedAt || "Sto. Tomas",
+          mechanicalSupervisorTIN: formData.mechanicalSupervisorTIN || formData.mechanicalEngineerTIN || "678-901-234-000",
+
+          sanitarySupervisorName: formData.sanitarySupervisorName || formData.sanitaryEngineerName || "ENGR. ANDRES BONIFACIO, SE",
+          sanitarySupervisorAddress: formData.sanitarySupervisorAddress || formData.sanitaryEngineerAddress || "San Bartolome, Sto. Tomas, Pampanga",
+          sanitarySupervisorPRC: formData.sanitarySupervisorPRC || formData.sanitaryEngineerPRC || "0054321",
+          sanitarySupervisorPRCValidity: formData.sanitarySupervisorPRCValidity || formData.sanitaryEngineerPRCValidity || "2027-11-30",
+          sanitarySupervisorPTR: formData.sanitarySupervisorPTR || formData.sanitaryEngineerPTR || "PTR-ST-5678901",
+          sanitarySupervisorPTRIssued: formData.sanitarySupervisorPTRIssued || formData.sanitaryEngineerPTRIssued || "Jan 15, 2026",
+          sanitarySupervisorPTRIssuedAt: formData.sanitarySupervisorPTRIssuedAt || formData.sanitaryEngineerPTRIssuedAt || "Sto. Tomas",
+          sanitarySupervisorTIN: formData.sanitarySupervisorTIN || formData.sanitaryEngineerTIN || "567-890-123-000",
+
+          plumbingSupervisorName: formData.plumbingSupervisorName || formData.masterPlumberName || "ENGR. DARIO K. AQUINO, RMP",
+          plumbingSupervisorAddress: formData.plumbingSupervisorAddress || formData.masterPlumberAddress || "Sto. Tomas, Pampanga",
+          plumbingSupervisorPRC: formData.plumbingSupervisorPRC || formData.masterPlumberPRC || "0011998",
+          plumbingSupervisorPRCValidity: formData.plumbingSupervisorPRCValidity || formData.masterPlumberPRCValidity || "2028-01-25",
+          plumbingSupervisorPTR: formData.plumbingSupervisorPTR || formData.masterPlumberPTR || "PTR-ST-332211",
+          plumbingSupervisorPTRIssued: formData.plumbingSupervisorPTRIssued || formData.masterPlumberPTRIssued || "Jan 15, 2026",
+          plumbingSupervisorPTRIssuedAt: formData.plumbingSupervisorPTRIssuedAt || formData.masterPlumberPTRIssuedAt || "Sto. Tomas",
+          plumbingSupervisorTIN: formData.plumbingSupervisorTIN || formData.masterPlumberTIN || "567-890-123-000",
+
+          electronicsSupervisorName: formData.electronicsSupervisorName || formData.electronicsEngineerName || "ENGR. ALAN T. SANTOS, PECE",
+          electronicsSupervisorAddress: formData.electronicsSupervisorAddress || formData.electronicsEngineerAddress || "Sto. Tomas, Pampanga",
+          electronicsSupervisorPRC: formData.electronicsSupervisorPRC || formData.electronicsEngineerPRC || "0022334",
+          electronicsSupervisorPRCValidity: formData.electronicsSupervisorPRCValidity || formData.electronicsEngineerPRCValidity || "2028-05-12",
+          electronicsSupervisorPTR: formData.electronicsSupervisorPTR || formData.electronicsEngineerPTR || "PTR-ST-110099",
+          electronicsSupervisorPTRIssued: formData.electronicsSupervisorPTRIssued || formData.electronicsEngineerPTRIssued || "Jan 20, 2026",
+          electronicsSupervisorPTRIssuedAt: formData.electronicsSupervisorPTRIssuedAt || formData.electronicsEngineerPTRIssuedAt || "Sto. Tomas",
+          electronicsSupervisorTIN: formData.electronicsSupervisorTIN || formData.electronicsEngineerTIN || "789-012-345-000",
+
+          interiorSupervisorName: formData.interiorSupervisorName || formData.interiorDesignerName || "IDR. GABRIELA SILANG, PIID",
+          interiorSupervisorAddress: formData.interiorSupervisorAddress || formData.interiorDesignerAddress || "Poblacion, Sto. Tomas, Pampanga",
+          interiorSupervisorPRC: formData.interiorSupervisorPRC || formData.interiorDesignerPRC || "0021098",
+          interiorSupervisorPRCValidity: formData.interiorSupervisorPRCValidity || formData.interiorDesignerPRCValidity || "2027-05-18",
+          interiorSupervisorPTR: formData.interiorSupervisorPTR || formData.interiorDesignerPTR || "PTR-ST-8901234",
+          interiorSupervisorPTRIssued: formData.interiorSupervisorPTRIssued || formData.interiorDesignerPTRIssued || "Jan 22, 2026",
+          interiorSupervisorPTRIssuedAt: formData.interiorSupervisorPTRIssuedAt || formData.interiorDesignerPTRIssuedAt || "Sto. Tomas",
+          interiorSupervisorTIN: formData.interiorSupervisorTIN || formData.interiorDesignerTIN || "890-123-456-000",
+
+          // Signatures for CC Page 1 & Page 2
+          architectSignature: formData.architectSignature || CALIBRATED_TEST_DATA.architectSignature,
+          civilEngineerSignature: formData.civilEngineerSignature || CALIBRATED_TEST_DATA.civilEngineerSignature,
+          electricalEngineerSignature: formData.electricalEngineerSignature || CALIBRATED_TEST_DATA.electricalEngineerSignature,
+          mechanicalEngineerSignature: formData.mechanicalEngineerSignature || CALIBRATED_TEST_DATA.mechanicalEngineerSignature,
+          sanitaryEngineerSignature: formData.sanitaryEngineerSignature || CALIBRATED_TEST_DATA.sanitaryEngineerSignature,
+          masterPlumberSignature: formData.masterPlumberSignature || CALIBRATED_TEST_DATA.masterPlumberSignature,
+          electronicsEngineerSignature: formData.electronicsEngineerSignature || CALIBRATED_TEST_DATA.electronicsEngineerSignature,
+          interiorDesignerSignature: formData.interiorDesignerSignature || CALIBRATED_TEST_DATA.interiorDesignerSignature,
+
+          electricalSupervisorSignature: formData.electricalSupervisorSignature || formData.electricalEngineerSignature || CALIBRATED_TEST_DATA.electricalSupervisorSignature,
+          mechanicalSupervisorSignature: formData.mechanicalSupervisorSignature || formData.mechanicalEngineerSignature || CALIBRATED_TEST_DATA.mechanicalSupervisorSignature,
+          sanitarySupervisorSignature: formData.sanitarySupervisorSignature || formData.sanitaryEngineerSignature || CALIBRATED_TEST_DATA.sanitarySupervisorSignature,
+          plumbingSupervisorSignature: formData.plumbingSupervisorSignature || formData.masterPlumberSignature || CALIBRATED_TEST_DATA.plumbingSupervisorSignature,
+          electronicsSupervisorSignature: formData.electronicsSupervisorSignature || formData.electronicsEngineerSignature || CALIBRATED_TEST_DATA.electronicsSupervisorSignature,
+          interiorSupervisorSignature: formData.interiorSupervisorSignature || formData.interiorDesignerSignature || CALIBRATED_TEST_DATA.interiorSupervisorSignature,
+          constructionSupervisorSignature: formData.constructionSupervisorSignature || (formData as any).supervisorSignature || CALIBRATED_TEST_DATA.constructionSupervisorSignature,
+          applicantSignature: formData.applicantSignature || CALIBRATED_TEST_DATA.applicantSignature,
+        };
+        generatedUrl = await generateCertificateOfCompletionPdf(ccData);
       } else if (selectedFormId === "CFEI") {
         generatedUrl = await generateCfeiPdf(formData);
       } else if (selectedFormId === "BFP") {
@@ -6139,48 +6569,161 @@ export default function FormTestingStudio() {
 
                   {selectedForm.id === "CC" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
                         <div>
-                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Building Permit Ref. No.</label>
-                          <input type="text" value={formData.applicationNo || ""} onChange={e => handleFieldChange("applicationNo", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Building Permit No. (Auto)</label>
+                          <input
+                            type="text"
+                            value={formData.buildingPermitNo || (formData.applicationNo ? (formData.applicationNo.startsWith("BP-") ? formData.applicationNo : `BP-${formData.applicationNo.replace(/^APP-(TEST-)?/i, "")}`) : "BP-2026-0091")}
+                            onChange={e => handleFieldChange("buildingPermitNo", e.target.value)}
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", fontWeight: "700", color: "#0369a1" }}
+                          />
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Construction Supervisor</label>
-                          <input type="text" value={formData.constructionSupervisorName || ""} onChange={e => handleFieldChange("constructionSupervisorName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>BP Date Issued</label>
+                          <input
+                            type="text"
+                            value={formData.buildingPermitDateIssued || formData.dateIssued || "Jan 12, 2026"}
+                            onChange={e => handleFieldChange("buildingPermitDateIssued", e.target.value)}
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Planned Start Date</label>
-                          <input type="text" value={formData.proposedStartDate || ""} onChange={e => handleFieldChange("proposedStartDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Actual Date of Completion</label>
-                          <input type="text" value={formData.actualCompletionDate || ""} onChange={e => handleFieldChange("actualCompletionDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Number of Units</label>
-                          <input type="text" value={formData.numberOfUnits || "1"} onChange={e => handleFieldChange("numberOfUnits", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Number of Storeys</label>
-                          <input type="text" value={formData.proposedStoreys || "2"} onChange={e => handleFieldChange("proposedStoreys", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Certificate Date (Auto)</label>
+                          <input
+                            type="text"
+                            value={formData.submissionDate || ""}
+                            onChange={e => handleFieldChange("submissionDate", e.target.value)}
+                            placeholder={new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
                         </div>
                       </div>
 
-                      {/* Design Professionals for CC */}
-                      <div style={{ marginTop: "0.5rem", padding: "0.75rem", borderRadius: "8px", background: "#ffffff", border: "1px solid #e2e8f0" }}>
-                        <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1d4ed8" }}>Design Professional (Plans & Specifications)</span>
+                      {/* Character of Occupancy & Group */}
+                      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "0.75rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Use or Character of Occupancy</label>
+                          <input
+                            type="text"
+                            value={formData.characterOfOccupancy || "SINGLE FAMILY DWELLING"}
+                            onChange={e => handleFieldChange("characterOfOccupancy", e.target.value)}
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Occupancy Group</label>
+                          <input
+                            type="text"
+                            value={(formData as any).occupancyGroup || "A"}
+                            onChange={e => handleFieldChange("occupancyGroup" as any, e.target.value)}
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Planned vs Actual Table */}
+                      <div style={{ padding: "0.75rem", borderRadius: "8px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#0369a1", display: "block", marginBottom: "0.5rem" }}>
+                          Planned vs Actual Table (5 Rows)
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.4rem", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.7rem", fontWeight: "700", color: "#475569" }}>Metric / Item</span>
+                          <span style={{ fontSize: "0.7rem", fontWeight: "700", color: "#1d4ed8", textAlign: "center" }}>Planned</span>
+                          <span style={{ fontSize: "0.7rem", fontWeight: "700", color: "#16a34a", textAlign: "center" }}>Actual</span>
+
+                          {/* Row 1 */}
+                          <span style={{ fontSize: "0.72rem", color: "#334155" }}>1. Start Date</span>
+                          <input type="text" value={formData.proposedStartDate || "2026-10-01"} onChange={e => handleFieldChange("proposedStartDate", e.target.value)} style={{ padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.75rem", textAlign: "center" }} />
+                          <input type="text" value={(formData as any).actualStartDate || formData.proposedStartDate || "2026-10-01"} onChange={e => handleFieldChange("actualStartDate" as any, e.target.value)} style={{ padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.75rem", textAlign: "center" }} />
+
+                          {/* Row 2 */}
+                          <span style={{ fontSize: "0.72rem", color: "#334155" }}>2. Completion Date</span>
+                          <input type="text" value={formData.expectedCompletionDate || "2027-04-30"} onChange={e => handleFieldChange("expectedCompletionDate", e.target.value)} style={{ padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.75rem", textAlign: "center" }} />
+                          <input type="text" value={formData.actualCompletionDate || "2027-04-30"} onChange={e => handleFieldChange("actualCompletionDate", e.target.value)} style={{ padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.75rem", textAlign: "center" }} />
+
+                          {/* Row 3 */}
+                          <span style={{ fontSize: "0.72rem", color: "#334155" }}>3. Floor Area (SQ.M.)</span>
+                          <input type="text" value={formData.floorArea || "185.50"} onChange={e => handleFieldChange("floorArea", e.target.value)} style={{ padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.75rem", textAlign: "center" }} />
+                          <input type="text" value={(formData as any).actualFloorArea || formData.floorArea || "185.50"} onChange={e => handleFieldChange("actualFloorArea" as any, e.target.value)} style={{ padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.75rem", textAlign: "center" }} />
+
+                          {/* Row 4 */}
+                          <span style={{ fontSize: "0.72rem", color: "#334155" }}>4. No. of Storeys</span>
+                          <input type="text" value={formData.proposedStoreys || "2"} onChange={e => handleFieldChange("proposedStoreys", e.target.value)} style={{ padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.75rem", textAlign: "center" }} />
+                          <input type="text" value={(formData as any).actualStoreys || formData.proposedStoreys || "2"} onChange={e => handleFieldChange("actualStoreys" as any, e.target.value)} style={{ padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.75rem", textAlign: "center" }} />
+
+                          {/* Row 5 */}
+                          <span style={{ fontSize: "0.72rem", color: "#334155" }}>5. No. of Units</span>
+                          <input type="text" value={formData.numberOfUnits || "1"} onChange={e => handleFieldChange("numberOfUnits", e.target.value)} style={{ padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.75rem", textAlign: "center" }} />
+                          <input type="text" value={(formData as any).actualUnits || formData.numberOfUnits || "1"} onChange={e => handleFieldChange("actualUnits" as any, e.target.value)} style={{ padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.75rem", textAlign: "center" }} />
+                        </div>
+                      </div>
+
+                      {/* Total Project Cost */}
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Summary of Actual Costs: Total Cost of Building (PHP)</label>
+                        <input
+                          type="text"
+                          value={(formData as any).actualProjectCost || formData.projectCost || "2,500,000.00"}
+                          onChange={e => handleFieldChange("actualProjectCost" as any, e.target.value)}
+                          style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1.5px solid #0284c7", fontSize: "0.85rem", fontWeight: "800", color: "#0369a1" }}
+                        />
+                      </div>
+
+                      {/* Construction Supervisor for CC */}
+                      <div style={{ marginTop: "0.25rem", padding: "0.75rem", borderRadius: "8px", background: "#ffffff", border: "1px solid #e2e8f0" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#0369a1" }}>Full-Time Supervisor of Inspector of Construction</span>
                         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.4rem" }}>
                           <div>
-                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Architect / Professional Name</label>
-                            <input type="text" value={formData.architectName || ""} onChange={e => handleFieldChange("architectName", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Supervisor Name</label>
+                            <input type="text" value={formData.constructionSupervisorName || "ENGR. ROBERTO CRUZ, CE"} onChange={e => handleFieldChange("constructionSupervisorName", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
                             <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PRC No.</label>
-                            <input type="text" value={formData.architectPRC || ""} onChange={e => handleFieldChange("architectPRC", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            <input type="text" value={formData.supervisorPRC || "0078923"} onChange={e => handleFieldChange("supervisorPRC", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PRC Validity</label>
+                            <input type="text" value={formData.supervisorPRCValidity || "2028-11-20"} onChange={e => handleFieldChange("supervisorPRCValidity", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                           <div>
                             <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PTR No.</label>
-                            <input type="text" value={formData.architectPTR || ""} onChange={e => handleFieldChange("architectPTR", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                            <input type="text" value={formData.supervisorPTR || "PTR-ST-2026-001"} onChange={e => handleFieldChange("supervisorPTR", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PTR Date Issued</label>
+                            <input type="text" value={formData.supervisorPTRIssued || "Jan 10, 2026"} onChange={e => handleFieldChange("supervisorPTRIssued", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PTR Issued At</label>
+                            <input type="text" value={formData.supervisorPTRIssuedAt || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("supervisorPTRIssuedAt", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>TIN</label>
+                            <input type="text" value={formData.supervisorTin || "456-789-012-000"} onChange={e => handleFieldChange("supervisorTin", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>CTC No.</label>
+                            <input type="text" value={formData.supervisorCtcNo || "CTC-2026-00841"} onChange={e => handleFieldChange("supervisorCtcNo", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>CTC Date Issued</label>
+                            <input type="text" value={formData.supervisorCtcDateIssued || "Jan 10, 2026"} onChange={e => handleFieldChange("supervisorCtcDateIssued", e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Notarial Jurat & Conforme */}
+                      <div style={{ marginTop: "0.25rem", padding: "0.75rem", borderRadius: "8px", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e293b" }}>Jurat & Notarial Details</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.5rem", marginTop: "0.4rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>City / Municipality of Jurat</label>
+                            <input type="text" value={(formData as any).juratCity || "Sto. Tomas, Pampanga"} onChange={e => handleFieldChange("juratCity" as any, e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Date of Notarization</label>
+                            <input type="text" value={(formData as any).juratDate || formData.submissionDate || ""} onChange={e => handleFieldChange("juratDate" as any, e.target.value)} placeholder="Sep 27, 2026" style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }} />
                           </div>
                         </div>
                       </div>
@@ -6242,6 +6785,652 @@ export default function FormTestingStudio() {
                         </div>
                       </div>
                     )}
+
+                {/* Certificate of Completion — Page 2: 8 Design Professionals & 6 Specialty Works Supervisors */}
+                {selectedForm.id === "CC" && (
+                  <div style={{ padding: "1.1rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #0284c7" }}>
+                    {/* Header with Title and Auto-Fill Button */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem", flexWrap: "wrap", gap: "8px" }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "0.88rem", fontWeight: "800", color: "#0369a1" }}>
+                            Certificate of Completion — Page 2 Signatories
+                          </span>
+                          <span style={{ fontSize: "0.68rem", padding: "2px 8px", borderRadius: "999px", background: "#e0f2fe", color: "#0369a1", fontWeight: "700" }}>
+                            14 Official Slots
+                          </span>
+                        </div>
+                        <p style={{ margin: "2px 0 0", fontSize: "0.72rem", color: "#64748b" }}>
+                          Official Sto. Tomas CC Page 2: 8 Design Professionals (Top) & 6 Specialty Supervisors (Bottom)
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleAutoFillCcPage2}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "6px 14px",
+                          borderRadius: "8px",
+                          background: "#0284c7",
+                          color: "#ffffff",
+                          fontSize: "0.76rem",
+                          fontWeight: "700",
+                          border: "none",
+                          cursor: "pointer",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                        }}
+                      >
+                        <Sparkles size={14} />
+                        Auto-Fill All 14 Page 2 Credentials
+                      </button>
+                    </div>
+
+                    {/* Sub-Category Switcher */}
+                    <div style={{ display: "flex", gap: "6px", background: "#e2e8f0", padding: "4px", borderRadius: "8px", marginBottom: "1rem" }}>
+                      <button
+                        type="button"
+                        onClick={() => setCcProfCategory("supervisors")}
+                        style={{
+                          flex: 1,
+                          padding: "7px 12px",
+                          borderRadius: "6px",
+                          border: "none",
+                          fontSize: "0.76rem",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          background: ccProfCategory === "supervisors" ? "#ffffff" : "transparent",
+                          color: ccProfCategory === "supervisors" ? "#0369a1" : "#64748b",
+                          boxShadow: ccProfCategory === "supervisors" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                          transition: "all 0.15s ease"
+                        }}
+                      >
+                        Supervisors of Specialty Works (6 Slots)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCcProfCategory("design")}
+                        style={{
+                          flex: 1,
+                          padding: "7px 12px",
+                          borderRadius: "6px",
+                          border: "none",
+                          fontSize: "0.76rem",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          background: ccProfCategory === "design" ? "#ffffff" : "transparent",
+                          color: ccProfCategory === "design" ? "#0369a1" : "#64748b",
+                          boxShadow: ccProfCategory === "design" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                          transition: "all 0.15s ease"
+                        }}
+                      >
+                        Design Professionals, Plans & Spec (8 Slots)
+                      </button>
+                    </div>
+
+                    {/* SUB-TAB 1: SUPERVISORS OF SPECIALTY WORKS */}
+                    {ccProfCategory === "supervisors" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                        {/* Specialty Works Pills */}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          {[
+                            { key: "sanitary", label: "Sanitary Works", name: (formData as any).sameAsDesignSanitarySupervisor ? formData.sanitaryEngineerName : formData.sanitarySupervisorName },
+                            { key: "plumbing", label: "Plumbing Works", name: (formData as any).sameAsDesignPlumbingSupervisor ? formData.masterPlumberName : formData.plumbingSupervisorName },
+                            { key: "electronics", label: "Electronics Works", name: (formData as any).sameAsDesignElectronicsSupervisor ? formData.electronicsEngineerName : formData.electronicsSupervisorName },
+                            { key: "interior", label: "Interior Design Works", name: (formData as any).sameAsDesignInteriorSupervisor ? formData.interiorDesignerName : formData.interiorSupervisorName },
+                            { key: "elec", label: "Electrical Works", name: (formData as any).sameAsDesignElecSupervisor ? formData.electricalEngineerName : formData.electricalSupervisorName },
+                            { key: "mech", label: "Mechanical Works", name: (formData as any).sameAsDesignMechSupervisor ? formData.mechanicalEngineerName : formData.mechanicalSupervisorName }
+                          ].map(sup => (
+                            <button
+                              key={sup.key}
+                              type="button"
+                              onClick={() => setCcActiveSupSlot(sup.key)}
+                              style={{
+                                padding: "6px 12px",
+                                borderRadius: "8px",
+                                border: ccActiveSupSlot === sup.key ? "1.5px solid #0284c7" : "1px solid #cbd5e1",
+                                background: ccActiveSupSlot === sup.key ? "#f0f9ff" : "#ffffff",
+                                color: ccActiveSupSlot === sup.key ? "#0369a1" : "#475569",
+                                fontSize: "0.76rem",
+                                fontWeight: "700",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px"
+                              }}
+                            >
+                              <span>{sup.label}</span>
+                              {sup.name && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }} />}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Active Specialty Supervisor Card */}
+                        {(() => {
+                          const supMap: Record<string, {
+                            title: string;
+                            supKey: string;
+                            nameKey: keyof UnifiedPermitFormData;
+                            addressKey: keyof UnifiedPermitFormData;
+                            prcKey: keyof UnifiedPermitFormData;
+                            valKey: keyof UnifiedPermitFormData;
+                            ptrKey: keyof UnifiedPermitFormData;
+                            ptrDateKey: keyof UnifiedPermitFormData;
+                            issuedAtKey: keyof UnifiedPermitFormData;
+                            tinKey: keyof UnifiedPermitFormData;
+                            sigKey: keyof UnifiedPermitFormData;
+                            sameKey: string;
+                            designName: string;
+                            designPrc: string;
+                          }> = {
+                            sanitary: {
+                              title: "SANITARY WORKS SUPERVISOR (BOX 11 - BOTTOM LEFT)",
+                              supKey: "sanitary",
+                              nameKey: "sanitarySupervisorName",
+                              addressKey: "sanitarySupervisorAddress",
+                              prcKey: "sanitarySupervisorPRC",
+                              valKey: "sanitarySupervisorPRCValidity",
+                              ptrKey: "sanitarySupervisorPTR",
+                              ptrDateKey: "sanitarySupervisorPTRIssued",
+                              issuedAtKey: "sanitarySupervisorPTRIssuedAt",
+                              tinKey: "sanitarySupervisorTIN",
+                              sigKey: "sanitarySupervisorSignature",
+                              sameKey: "sameAsDesignSanitarySupervisor",
+                              designName: formData.sanitaryEngineerName || "ENGR. ANDRES BONIFACIO, SE",
+                              designPrc: formData.sanitaryEngineerPRC || "0054321",
+                            },
+                            plumbing: {
+                              title: "PLUMBING WORKS SUPERVISOR (BOX 12 - BOTTOM RIGHT)",
+                              supKey: "plumbing",
+                              nameKey: "plumbingSupervisorName",
+                              addressKey: "plumbingSupervisorAddress",
+                              prcKey: "plumbingSupervisorPRC",
+                              valKey: "plumbingSupervisorPRCValidity",
+                              ptrKey: "plumbingSupervisorPTR",
+                              ptrDateKey: "plumbingSupervisorPTRIssued",
+                              issuedAtKey: "plumbingSupervisorPTRIssuedAt",
+                              tinKey: "plumbingSupervisorTIN",
+                              sigKey: "plumbingSupervisorSignature",
+                              sameKey: "sameAsDesignPlumbingSupervisor",
+                              designName: formData.masterPlumberName || "ENGR. DARIO K. AQUINO, RMP",
+                              designPrc: formData.masterPlumberPRC || "0011998",
+                            },
+                            electronics: {
+                              title: "ELECTRONICS WORKS SUPERVISOR (BOX 13 - BOTTOM LEFT)",
+                              supKey: "electronics",
+                              nameKey: "electronicsSupervisorName",
+                              addressKey: "electronicsSupervisorAddress",
+                              prcKey: "electronicsSupervisorPRC",
+                              valKey: "electronicsSupervisorPRCValidity",
+                              ptrKey: "electronicsSupervisorPTR",
+                              ptrDateKey: "electronicsSupervisorPTRIssued",
+                              issuedAtKey: "electronicsSupervisorPTRIssuedAt",
+                              tinKey: "electronicsSupervisorTIN",
+                              sigKey: "electronicsSupervisorSignature",
+                              sameKey: "sameAsDesignElectronicsSupervisor",
+                              designName: formData.electronicsEngineerName || "ENGR. ALAN T. SANTOS, PECE",
+                              designPrc: formData.electronicsEngineerPRC || "0022334",
+                            },
+                            interior: {
+                              title: "INTERIOR DESIGN WORKS SUPERVISOR (BOX 14 - BOTTOM RIGHT)",
+                              supKey: "interior",
+                              nameKey: "interiorSupervisorName",
+                              addressKey: "interiorSupervisorAddress",
+                              prcKey: "interiorSupervisorPRC",
+                              valKey: "interiorSupervisorPRCValidity",
+                              ptrKey: "interiorSupervisorPTR",
+                              ptrDateKey: "interiorSupervisorPTRIssued",
+                              issuedAtKey: "interiorSupervisorPTRIssuedAt",
+                              tinKey: "interiorSupervisorTIN",
+                              sigKey: "interiorSupervisorSignature",
+                              sameKey: "sameAsDesignInteriorSupervisor",
+                              designName: formData.interiorDesignerName || "IDR. GABRIELA SILANG, PIID",
+                              designPrc: formData.interiorDesignerPRC || "0021098",
+                            },
+                            elec: {
+                              title: "ELECTRICAL WORKS SUPERVISOR (BOX 9 - MID LEFT)",
+                              supKey: "elec",
+                              nameKey: "electricalSupervisorName",
+                              addressKey: "electricalSupervisorAddress",
+                              prcKey: "electricalSupervisorPRC",
+                              valKey: "electricalSupervisorPRCValidity",
+                              ptrKey: "electricalSupervisorPTR",
+                              ptrDateKey: "electricalSupervisorPTRIssued",
+                              issuedAtKey: "electricalSupervisorPTRIssuedAt",
+                              tinKey: "electricalSupervisorTIN",
+                              sigKey: "electricalSupervisorSignature",
+                              sameKey: "sameAsDesignElecSupervisor",
+                              designName: formData.electricalEngineerName || "ENGR. DANILO REYES, PEE",
+                              designPrc: formData.electricalEngineerPRC || "0033421",
+                            },
+                            mech: {
+                              title: "MECHANICAL WORKS SUPERVISOR (BOX 10 - MID RIGHT)",
+                              supKey: "mech",
+                              nameKey: "mechanicalSupervisorName",
+                              addressKey: "mechanicalSupervisorAddress",
+                              prcKey: "mechanicalSupervisorPRC",
+                              valKey: "mechanicalSupervisorPRCValidity",
+                              ptrKey: "mechanicalSupervisorPTR",
+                              ptrDateKey: "mechanicalSupervisorPTRIssued",
+                              issuedAtKey: "mechanicalSupervisorPTRIssuedAt",
+                              tinKey: "mechanicalSupervisorTIN",
+                              sigKey: "mechanicalSupervisorSignature",
+                              sameKey: "sameAsDesignMechSupervisor",
+                              designName: formData.mechanicalEngineerName || "ENGR. LEONARDO V. TORRES, PME",
+                              designPrc: formData.mechanicalEngineerPRC || "0044556",
+                            },
+                          };
+
+                          const cur = supMap[ccActiveSupSlot] || supMap.sanitary;
+                          const isSame = !!(formData as any)[cur.sameKey];
+
+                          return (
+                            <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "1rem" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "8px" }}>
+                                <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0369a1" }}>
+                                  {cur.title}
+                                </span>
+                                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.76rem", fontWeight: "700", color: "#166534", cursor: "pointer", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "4px 8px", borderRadius: "6px" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isSame}
+                                    onChange={e => handleToggleSupervisorSame(cur.supKey, e.target.checked)}
+                                    style={{ width: "15px", height: "15px" }}
+                                  />
+                                  Same as Design Professional
+                                </label>
+                              </div>
+
+                              {isSame ? (
+                                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "0.85rem", display: "flex", alignItems: "center", gap: "10px" }}>
+                                  <div style={{ width: "26px", height: "26px", borderRadius: "50%", background: "#16a34a", color: "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <CheckCircle2 size={16} />
+                                  </div>
+                                  <div>
+                                    <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#166534", display: "block" }}>
+                                      Synchronized with Design Professional: {cur.designName}
+                                    </span>
+                                    <span style={{ fontSize: "0.72rem", color: "#15803d" }}>
+                                      PRC: {cur.designPrc} — Page 2 of the Certificate of Completion automatically mirrors these credentials and signature.
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem" }}>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Supervisor Full Name</label>
+                                      <input
+                                        type="text"
+                                        value={(formData[cur.nameKey] as string) || ""}
+                                        onChange={e => handleFieldChange(cur.nameKey, e.target.value)}
+                                        placeholder="e.g. ENGR. ROBERTO CRUZ, CE"
+                                        style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", fontWeight: "700" }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Address</label>
+                                      <input
+                                        type="text"
+                                        value={(formData[cur.addressKey] as string) || ""}
+                                        onChange={e => handleFieldChange(cur.addressKey, e.target.value)}
+                                        placeholder="Sto. Tomas, Pampanga"
+                                        style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PRC No.</label>
+                                      <input
+                                        type="text"
+                                        value={(formData[cur.prcKey] as string) || ""}
+                                        onChange={e => handleFieldChange(cur.prcKey, e.target.value)}
+                                        placeholder="0078923"
+                                        style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PRC Validity</label>
+                                      <input
+                                        type="text"
+                                        value={(formData[cur.valKey] as string) || ""}
+                                        onChange={e => handleFieldChange(cur.valKey, e.target.value)}
+                                        placeholder="2028-11-20"
+                                        style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PTR No.</label>
+                                      <input
+                                        type="text"
+                                        value={(formData[cur.ptrKey] as string) || ""}
+                                        onChange={e => handleFieldChange(cur.ptrKey, e.target.value)}
+                                        placeholder="PTR-ST-2026-001"
+                                        style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PTR Date Issued</label>
+                                      <input
+                                        type="text"
+                                        value={(formData[cur.ptrDateKey] as string) || ""}
+                                        onChange={e => handleFieldChange(cur.ptrDateKey, e.target.value)}
+                                        placeholder="Jan 10, 2026"
+                                        style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Issued At</label>
+                                      <input
+                                        type="text"
+                                        value={(formData[cur.issuedAtKey] as string) || ""}
+                                        onChange={e => handleFieldChange(cur.issuedAtKey, e.target.value)}
+                                        placeholder="Sto. Tomas, Pampanga"
+                                        style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>TIN</label>
+                                      <input
+                                        type="text"
+                                        value={(formData[cur.tinKey] as string) || ""}
+                                        onChange={e => handleFieldChange(cur.tinKey, e.target.value)}
+                                        placeholder="456-789-012-000"
+                                        style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div style={{ marginTop: "0.75rem", paddingTop: "0.6rem", borderTop: "1px dashed #cbd5e1" }}>
+                                    <SignatureCreator
+                                      value={formData[cur.sigKey] as string}
+                                      onChange={sig => handleFieldChange(cur.sigKey, sig)}
+                                      label={`Supervisor E-Signature (${formData[cur.nameKey] || cur.title})`}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* SUB-TAB 2: DESIGN PROFESSIONALS */}
+                    {ccProfCategory === "design" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                        {/* Design Professional Pills */}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          {[
+                            { key: "arch", label: "Architectural", name: formData.architectName },
+                            { key: "civil", label: "Civil / Structural", name: formData.civilEngineerName },
+                            { key: "elec", label: "Electrical", name: formData.electricalEngineerName },
+                            { key: "mech", label: "Mechanical", name: formData.mechanicalEngineerName },
+                            { key: "sanitary", label: "Sanitary", name: formData.sanitaryEngineerName },
+                            { key: "plumbing", label: "Plumbing", name: formData.masterPlumberName },
+                            { key: "electronics", label: "Electronics", name: formData.electronicsEngineerName },
+                            { key: "interior", label: "Interior Design", name: formData.interiorDesignerName }
+                          ].map(dp => (
+                            <button
+                              key={dp.key}
+                              type="button"
+                              onClick={() => setCcActiveProfSlot(dp.key)}
+                              style={{
+                                padding: "6px 12px",
+                                borderRadius: "8px",
+                                border: ccActiveProfSlot === dp.key ? "1.5px solid #0284c7" : "1px solid #cbd5e1",
+                                background: ccActiveProfSlot === dp.key ? "#f0f9ff" : "#ffffff",
+                                color: ccActiveProfSlot === dp.key ? "#0369a1" : "#475569",
+                                fontSize: "0.76rem",
+                                fontWeight: "700",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px"
+                              }}
+                            >
+                              <span>{dp.label}</span>
+                              {dp.name && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }} />}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Active Design Professional Card */}
+                        {(() => {
+                          const profMap: Record<string, {
+                            title: string;
+                            nameKey: keyof UnifiedPermitFormData;
+                            addressKey: keyof UnifiedPermitFormData;
+                            prcKey: keyof UnifiedPermitFormData;
+                            valKey: keyof UnifiedPermitFormData;
+                            ptrKey: keyof UnifiedPermitFormData;
+                            ptrDateKey: keyof UnifiedPermitFormData;
+                            issuedAtKey: keyof UnifiedPermitFormData;
+                            tinKey: keyof UnifiedPermitFormData;
+                            sigKey: keyof UnifiedPermitFormData;
+                          }> = {
+                            arch: {
+                              title: "1. ARCHITECTURAL (BOX 1 - TOP LEFT)",
+                              nameKey: "architectName",
+                              addressKey: "architectAddress",
+                              prcKey: "architectPRC",
+                              valKey: "architectPRCValidity",
+                              ptrKey: "architectPTR",
+                              ptrDateKey: "architectPTRIssued",
+                              issuedAtKey: "architectPTRIssuedAt",
+                              tinKey: "architectTIN",
+                              sigKey: "architectSignature",
+                            },
+                            civil: {
+                              title: "2. CIVIL / STRUCTURAL (BOX 2 - TOP RIGHT)",
+                              nameKey: "civilEngineerName",
+                              addressKey: "civilEngineerAddress",
+                              prcKey: "civilEngineerPRC",
+                              valKey: "civilEngineerPRCValidity",
+                              ptrKey: "civilEngineerPTR",
+                              ptrDateKey: "civilEngineerPTRIssued",
+                              issuedAtKey: "civilEngineerPTRIssuedAt",
+                              tinKey: "civilEngineerTIN",
+                              sigKey: "civilEngineerSignature",
+                            },
+                            elec: {
+                              title: "3. ELECTRICAL (BOX 3 - ROW 2 LEFT)",
+                              nameKey: "electricalEngineerName",
+                              addressKey: "electricalEngineerAddress",
+                              prcKey: "electricalEngineerPRC",
+                              valKey: "electricalEngineerPRCValidity",
+                              ptrKey: "electricalEngineerPTR",
+                              ptrDateKey: "electricalEngineerPTRIssued",
+                              issuedAtKey: "electricalEngineerPTRIssuedAt",
+                              tinKey: "electricalEngineerTIN",
+                              sigKey: "electricalEngineerSignature",
+                            },
+                            mech: {
+                              title: "4. MECHANICAL (BOX 4 - ROW 2 RIGHT)",
+                              nameKey: "mechanicalEngineerName",
+                              addressKey: "mechanicalEngineerAddress",
+                              prcKey: "mechanicalEngineerPRC",
+                              valKey: "mechanicalEngineerPRCValidity",
+                              ptrKey: "mechanicalEngineerPTR",
+                              ptrDateKey: "mechanicalEngineerPTRIssued",
+                              issuedAtKey: "mechanicalEngineerPTRIssuedAt",
+                              tinKey: "mechanicalEngineerTIN",
+                              sigKey: "mechanicalEngineerSignature",
+                            },
+                            sanitary: {
+                              title: "5. SANITARY (BOX 5 - ROW 3 LEFT)",
+                              nameKey: "sanitaryEngineerName",
+                              addressKey: "sanitaryEngineerAddress",
+                              prcKey: "sanitaryEngineerPRC",
+                              valKey: "sanitaryEngineerPRCValidity",
+                              ptrKey: "sanitaryEngineerPTR",
+                              ptrDateKey: "sanitaryEngineerPTRIssued",
+                              issuedAtKey: "sanitaryEngineerPTRIssuedAt",
+                              tinKey: "sanitaryEngineerTIN",
+                              sigKey: "sanitaryEngineerSignature",
+                            },
+                            plumbing: {
+                              title: "6. PLUMBING (BOX 6 - ROW 3 RIGHT)",
+                              nameKey: "masterPlumberName",
+                              addressKey: "masterPlumberAddress",
+                              prcKey: "masterPlumberPRC",
+                              valKey: "masterPlumberPRCValidity",
+                              ptrKey: "masterPlumberPTR",
+                              ptrDateKey: "masterPlumberPTRIssued",
+                              issuedAtKey: "masterPlumberPTRIssuedAt",
+                              tinKey: "masterPlumberTIN",
+                              sigKey: "masterPlumberSignature",
+                            },
+                            electronics: {
+                              title: "7. ELECTRONICS (BOX 7 - ROW 4 LEFT)",
+                              nameKey: "electronicsEngineerName",
+                              addressKey: "electronicsEngineerAddress",
+                              prcKey: "electronicsEngineerPRC",
+                              valKey: "electronicsEngineerPRCValidity",
+                              ptrKey: "electronicsEngineerPTR",
+                              ptrDateKey: "electronicsEngineerPTRIssued",
+                              issuedAtKey: "electronicsEngineerPTRIssuedAt",
+                              tinKey: "electronicsEngineerTIN",
+                              sigKey: "electronicsEngineerSignature",
+                            },
+                            interior: {
+                              title: "8. INTERIOR DESIGN (BOX 8 - ROW 4 RIGHT)",
+                              nameKey: "interiorDesignerName",
+                              addressKey: "interiorDesignerAddress",
+                              prcKey: "interiorDesignerPRC",
+                              valKey: "interiorDesignerPRCValidity",
+                              ptrKey: "interiorDesignerPTR",
+                              ptrDateKey: "interiorDesignerPTRIssued",
+                              issuedAtKey: "interiorDesignerPTRIssuedAt",
+                              tinKey: "interiorDesignerTIN",
+                              sigKey: "interiorDesignerSignature",
+                            },
+                          };
+
+                          const cur = profMap[ccActiveProfSlot] || profMap.arch;
+
+                          return (
+                            <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "1rem" }}>
+                              <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#0369a1", display: "block", marginBottom: "0.75rem" }}>
+                                {cur.title}
+                              </span>
+
+                              <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr", gap: "0.5rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Professional Full Name</label>
+                                  <input
+                                    type="text"
+                                    value={(formData[cur.nameKey] as string) || ""}
+                                    onChange={e => handleFieldChange(cur.nameKey, e.target.value)}
+                                    placeholder="e.g. ARCH. MARIA ELENA SANTOS, UAP"
+                                    style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", fontWeight: "700" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Address</label>
+                                  <input
+                                    type="text"
+                                    value={(formData[cur.addressKey] as string) || ""}
+                                    onChange={e => handleFieldChange(cur.addressKey, e.target.value)}
+                                    placeholder="Sto. Tomas, Pampanga"
+                                    style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PRC No.</label>
+                                  <input
+                                    type="text"
+                                    value={(formData[cur.prcKey] as string) || ""}
+                                    onChange={e => handleFieldChange(cur.prcKey, e.target.value)}
+                                    placeholder="0045211"
+                                    style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PRC Validity</label>
+                                  <input
+                                    type="text"
+                                    value={(formData[cur.valKey] as string) || ""}
+                                    onChange={e => handleFieldChange(cur.valKey, e.target.value)}
+                                    placeholder="2028-09-15"
+                                    style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PTR No.</label>
+                                  <input
+                                    type="text"
+                                    value={(formData[cur.ptrKey] as string) || ""}
+                                    onChange={e => handleFieldChange(cur.ptrKey, e.target.value)}
+                                    placeholder="PTR-ST-665544"
+                                    style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PTR Date Issued</label>
+                                  <input
+                                    type="text"
+                                    value={(formData[cur.ptrDateKey] as string) || ""}
+                                    onChange={e => handleFieldChange(cur.ptrDateKey, e.target.value)}
+                                    placeholder="Jan 08, 2026"
+                                    style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Issued At</label>
+                                  <input
+                                    type="text"
+                                    value={(formData[cur.issuedAtKey] as string) || ""}
+                                    onChange={e => handleFieldChange(cur.issuedAtKey, e.target.value)}
+                                    placeholder="Sto. Tomas, Pampanga"
+                                    style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>TIN</label>
+                                  <input
+                                    type="text"
+                                    value={(formData[cur.tinKey] as string) || ""}
+                                    onChange={e => handleFieldChange(cur.tinKey, e.target.value)}
+                                    placeholder="234-567-890-000"
+                                    style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem" }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div style={{ marginTop: "0.75rem", paddingTop: "0.6rem", borderTop: "1px dashed #cbd5e1" }}>
+                                <SignatureCreator
+                                  value={formData[cur.sigKey] as string}
+                                  onChange={sig => handleFieldChange(cur.sigKey, sig)}
+                                  label={`Design Professional E-Signature (${formData[cur.nameKey] || cur.title})`}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Certificate of Occupancy Supervising Professional Block */}
                 {selectedForm.id === "CO" && (
@@ -6411,7 +7600,7 @@ export default function FormTestingStudio() {
 
 
                     {/* Architect - Box 3: Design Professional */}
-                    {(selectedForm.id === "AP" || selectedForm.id === "FP" || selectedForm.id === "SGP" || selectedForm.id === "CC") && (
+                    {(selectedForm.id === "AP" || selectedForm.id === "FP" || selectedForm.id === "SGP") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#1d4ed8" }}>
@@ -6576,7 +7765,7 @@ export default function FormTestingStudio() {
                     )}
 
                     {/* Civil Engineer - Box 3: Design Professional */}
-                    {(selectedForm.id === "BP" || selectedForm.id === "SP" || selectedForm.id === "DP" || selectedForm.id === "EXP" || selectedForm.id === "SGP" || selectedForm.id === "CO" || selectedForm.id === "CC") && (
+                    {(selectedForm.id === "BP" || selectedForm.id === "SP" || selectedForm.id === "DP" || selectedForm.id === "EXP" || selectedForm.id === "SGP" || selectedForm.id === "CO") && (
                       <div style={{ padding: "0.9rem", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#047857" }}>
                           Box 3: DESIGN PROFESSIONAL, PLANS AND SPECIFICATIONS (Civil / Structural Engineer)

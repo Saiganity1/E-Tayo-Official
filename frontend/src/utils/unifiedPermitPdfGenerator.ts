@@ -582,6 +582,7 @@ export interface UnifiedPermitFormData {
   electronicsSupervisorPRCValidity?: string;
   electronicsSupervisorPTR?: string;
   electronicsSupervisorPTRDate?: string;
+  electronicsSupervisorPTRIssued?: string;
   electronicsSupervisorPTRIssuedAt?: string;
   electronicsSupervisorTIN?: string;
   electronicsSupervisorSignedDate?: string;
@@ -599,6 +600,77 @@ export interface UnifiedPermitFormData {
   signSupervisorTIN?: string;
   signSupervisorSignature?: string;
   signSupervisorSignedDate?: string;
+
+  // Page 2: Design Professionals & Specialty Supervisors
+  sanitaryEngineerName?: string;
+  sanitaryEngineerAddress?: string;
+  sanitaryEngineerPRC?: string;
+  sanitaryEngineerPRCValidity?: string;
+  sanitaryEngineerPTR?: string;
+  sanitaryEngineerPTRIssued?: string;
+  sanitaryEngineerPTRIssuedAt?: string;
+  sanitaryEngineerTIN?: string;
+  sanitaryEngineerSignature?: string;
+
+  interiorDesignerName?: string;
+  interiorDesignerAddress?: string;
+  interiorDesignerPRC?: string;
+  interiorDesignerPRCValidity?: string;
+  interiorDesignerPTR?: string;
+  interiorDesignerPTRIssued?: string;
+  interiorDesignerPTRIssuedAt?: string;
+  interiorDesignerTIN?: string;
+  interiorDesignerSignature?: string;
+
+  electricalSupervisorName?: string;
+  electricalSupervisorAddress?: string;
+  electricalSupervisorPRC?: string;
+  electricalSupervisorPRCValidity?: string;
+  electricalSupervisorPTR?: string;
+  electricalSupervisorPTRIssued?: string;
+  electricalSupervisorPTRIssuedAt?: string;
+  electricalSupervisorTIN?: string;
+  electricalSupervisorSignature?: string;
+
+  mechanicalSupervisorName?: string;
+  mechanicalSupervisorAddress?: string;
+  mechanicalSupervisorPRC?: string;
+  mechanicalSupervisorPRCValidity?: string;
+  mechanicalSupervisorPTR?: string;
+  mechanicalSupervisorPTRIssued?: string;
+  mechanicalSupervisorPTRIssuedAt?: string;
+  mechanicalSupervisorTIN?: string;
+  mechanicalSupervisorSignature?: string;
+
+  sanitarySupervisorName?: string;
+  sanitarySupervisorAddress?: string;
+  sanitarySupervisorPRC?: string;
+  sanitarySupervisorPRCValidity?: string;
+  sanitarySupervisorPTR?: string;
+  sanitarySupervisorPTRIssued?: string;
+  sanitarySupervisorPTRIssuedAt?: string;
+  sanitarySupervisorTIN?: string;
+  sanitarySupervisorSignature?: string;
+
+  plumbingSupervisorName?: string;
+  plumbingSupervisorAddress?: string;
+  plumbingSupervisorPRC?: string;
+  plumbingSupervisorPRCValidity?: string;
+  plumbingSupervisorPTR?: string;
+  plumbingSupervisorPTRIssued?: string;
+  plumbingSupervisorPTRIssuedAt?: string;
+  plumbingSupervisorTIN?: string;
+  plumbingSupervisorSignature?: string;
+
+  interiorSupervisorName?: string;
+  interiorSupervisorAddress?: string;
+  interiorSupervisorPRC?: string;
+  interiorSupervisorPRCValidity?: string;
+  interiorSupervisorPTR?: string;
+  interiorSupervisorPTRIssued?: string;
+  interiorSupervisorPTRIssuedAt?: string;
+  interiorSupervisorTIN?: string;
+  interiorSupervisorSignature?: string;
 
   // Permit for Temporary Service Connection (NBC Form E-03)
   controlNo?: string;
@@ -5530,48 +5602,491 @@ export async function generateCertificateOfCompletionPdf(data: UnifiedPermitForm
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header
-  drawText(data.applicationNo || "BP-2026-0091", 320, 748.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 480, 748.0, 8, false);
+  const drawCenteredText = (text: string | undefined | null, centerX: number, y: number, size: number = 8.5, isBold: boolean = false) => {
+    if (!text) return;
+    let clean = safeText(text).trim();
+    const font = isBold ? fontBold : fontRegular;
+    const textWidth = font.widthOfTextAtSize(clean, size);
+    p1.drawText(clean, { x: centerX - textWidth / 2, y, size, font, color: darkNavy });
+  };
 
-  // Owner details: separated name
-  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
-  const ownerFormatted = `${lastName}, ${firstName} ${middleName ? middleName + " " : ""}${mi !== "N/A" ? mi : ""}`.trim();
-  drawText(ownerFormatted.toUpperCase(), 140, 690.0, 8.5, true);
-  drawText(data.applicantAddress || "Sto. Tomas, Pampanga", 150, 665.0, 7.5, false, 48);
-  // Zip Code & CONTACT NO.
-  drawText("2020", 340, 665.0, 7.5, false);
-  drawText(data.applicantPhone || "0917-123-4567", 440, 665.0, 7.5, true);
+  // Top-Right Date (Under "CERTIFICATE OF COMPLETION", centered above "DATE" line)
+  // Line: x=453.0 to 580.15, Center=516.58, Baseline Y=798.0
+  const autoDate =
+    formatDisplayDate(data.submissionDate || data.dateIssued || (data as any).certificateOfCompletionDate || (data as any).completionDate) ||
+    new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+  drawCenteredText(autoDate, 516.58, 798.0, 8.5, false);
 
-  // LOCATION OF CONSTRUCTION & USE on underline
-  drawText(`${data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd."}, Brgy. ${data.barangay || "Poblacion"}`, 150, 640.0, 7.5, false, 55);
-  const occDetail = resolveOccupancyDetailText(data);
-  const charOnly = occDetail.replace(/^GROUP\s+[A-Z0-9\-]+\s*-\s*/i, "");
-  drawText(charOnly, 228, 632.5, 7.5, true, 28);
-  const groupMatch = occDetail.match(/GROUP\s+([A-Z0-9\-]+)/i);
-  if (groupMatch) {
-    drawText(groupMatch[1], 480, 632.5, 7.5, true);
+  // Building Permit Reference No. & Date Issued
+  // Line 1: "Building Permit No. _________________ issued on" (Line: x=454.68 to 526.81, Center=490.75, Baseline Y=760.5)
+  const bpNo = (
+    data.buildingPermitNo ||
+    (data as any).bpNo ||
+    (data.applicationNo?.startsWith("BP-")
+      ? data.applicationNo
+      : data.applicationNo
+      ? `BP-${data.applicationNo.replace(/^APP-(TEST-)?/i, "")}`
+      : "BP-2026-0091")
+  ).trim();
+  drawCenteredText(bpNo, 490.75, 760.5, 8.0, true);
+
+  // Line 2: "___________ has been constructed and completed..." (Line: x=31.68 to 92.77, Center=62.22, Baseline Y=749.0)
+  const bpDateIssued =
+    formatDisplayDate(data.buildingPermitDateIssued || (data as any).bpDateIssued || data.dateIssued || data.permitIssuedDate) ||
+    "Jan 12, 2026";
+  drawCenteredText(bpDateIssued, 62.22, 749.0, 8.0, false);
+
+  // 1. Owner details: separated name placed precisely above sub-labels
+  // ( Last Name ) center: 186.64
+  // ( Given Name ) center: 350.74
+  // ( Middle Initial ) center: 530.74
+  // Baseline y = 688.5 (sits directly on the line above sub-labels)
+  const { lastName, firstName, mi } = parseApplicantName(data);
+  drawCenteredText((lastName || "").toUpperCase(), 186.64, 688.5, 8.5, true);
+  drawCenteredText((firstName || "").toUpperCase(), 350.74, 688.5, 8.5, true);
+  if (mi && mi !== "N/A") {
+    drawCenteredText(mi.toUpperCase(), 530.74, 688.5, 8.5, true);
   }
 
-  // Dates & Floor Area / Cost on underline
-  drawText(data.proposedStartDate || "Oct 01, 2026", 120, 572.0, 7.5, false);
-  drawText(data.actualCompletionDate || data.expectedCompletionDate || "Apr 30, 2027", 340, 572.0, 7.5, true);
-  drawText(`${data.floorArea || "185.50"} SQ. M.`, 140, 542.0, 8, true);
-  drawText(`PHP ${data.projectCost || "2,500,000.00"}`, 340, 542.0, 8, true);
+  // 2. Address of Owner, Zip Code & Contact No. (Baseline y = 665.0 on underlines)
+  const ownerAddress = data.applicantAddress || "Sto. Tomas, Pampanga";
+  drawText(ownerAddress, 145.0, 665.0, 7.5, false, 40);
+  drawCenteredText(data.applicantZipCode || "2020", 431.0, 665.0, 7.5, false);
+  drawCenteredText(data.applicantPhone || "0917-123-4567", 550.25, 665.0, 7.5, true);
 
-  // NO. OF STOREY(S) & NO. OF UNIT(S) in table/chart
-  drawText(data.proposedStoreys || "2", 140, 520.0, 8, true);
-  drawText(data.numberOfUnits || "1", 340, 520.0, 8, true);
+  // 3. Location of Construction (Baseline y = 647.0 on underline)
+  const projectLocation =
+    (data as any).projectLocation ||
+    `${data.projectAddress || "Lot 12, Blk 4, Sunset Valley Subd."}, Brgy. ${data.barangay || "Poblacion"}, Sto. Tomas`;
+  drawText(projectLocation, 192.0, 647.0, 7.5, false, 68);
 
-  // Full-time supervisor: moved higher (+5px)
-  const supName = data.constructionSupervisorName || data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE";
-  drawText(supName.toUpperCase(), 140, 285.0, 8.5, true);
+  // 4. Use or Character of Occupancy & Group (Baseline y = 629.5 on underlines)
+  const occDetail = resolveOccupancyDetailText(data);
+  const charOnly = (data.characterOfOccupancy || occDetail.replace(/^GROUP\s+[A-Z0-9\-]+\s*-\s*/i, "")).toUpperCase();
+  drawCenteredText(charOnly, 322.85, 629.5, 7.5, true);
+  const groupMatch = occDetail.match(/GROUP\s+([A-Z0-9\-]+)/i);
+  const groupCode = (data.occupancyGroup || (groupMatch ? groupMatch[1] : "A")).toUpperCase();
+  drawCenteredText(groupCode, 520.80, 629.5, 8.0, true);
 
-  // Conforme: Owner
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 140, 170.0, 8.5, true);
+  // 5. The Planned vs Actual Table
+  // Column 1 (PLANNED) Center = 303.62
+  // Column 2 (ACTUAL)  Center = 483.30
+  // Row 1: Start Construction (y = 602.5)
+  const plannedStart = formatDisplayDate(data.proposedStartDate) || "Oct 01, 2026";
+  const actualStart = formatDisplayDate((data as any).actualStartDate || data.proposedStartDate) || plannedStart;
+  drawCenteredText(plannedStart, 303.62, 602.5, 8.0, false);
+  drawCenteredText(actualStart, 483.30, 602.5, 8.0, false);
 
-  // BEFORE ME, at the City/Municipality of on underline
-  drawText("Sto. Tomas, Pampanga", 240, 140.0, 8, true);
+  // Row 2: Completion (y = 590.5)
+  const plannedEnd = formatDisplayDate(data.expectedCompletionDate) || "Apr 30, 2027";
+  const actualEnd = formatDisplayDate(data.actualCompletionDate || data.expectedCompletionDate) || "Apr 30, 2027";
+  drawCenteredText(plannedEnd, 303.62, 590.5, 8.0, false);
+  drawCenteredText(actualEnd, 483.30, 590.5, 8.0, false);
+
+  // Row 3: Total Floor Area (y = 578.5)
+  const plannedArea = `${data.floorArea || "185.50"} SQ. M.`;
+  const actualArea = `${data.actualFloorArea || data.floorArea || "185.50"} SQ. M.`;
+  drawCenteredText(plannedArea, 303.62, 578.5, 8.0, true);
+  drawCenteredText(actualArea, 483.30, 578.5, 8.0, true);
+
+  // Row 4: No. of Storeys (y = 566.5)
+  const plannedStoreys = `${data.proposedStoreys || "2"}`;
+  const actualStoreys = `${(data as any).actualStoreys || data.proposedStoreys || "2"}`;
+  drawCenteredText(plannedStoreys, 303.62, 566.5, 8.0, true);
+  drawCenteredText(actualStoreys, 483.30, 566.5, 8.0, true);
+
+  // Row 5: No. of Units (y = 554.5)
+  const plannedUnits = `${data.numberOfUnits || "1"}`;
+  const actualUnits = `${(data as any).actualUnits || data.numberOfUnits || "1"}`;
+  drawCenteredText(plannedUnits, 303.62, 554.5, 8.0, true);
+  drawCenteredText(actualUnits, 483.30, 554.5, 8.0, true);
+
+  // 6. Summary of Costs
+  // Optional detailed breakdown if provided
+  const matCost = (data as any).materialsCost;
+  if (matCost) drawCenteredText(matCost.replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim(), 484.25, 528.5, 7.5, false);
+  const cementVal = (data as any).cementBagsCost || (data as any).cementBags;
+  if (cementVal) drawCenteredText(String(cementVal).trim(), 273.8, 517.0, 7.5, false);
+  const lumberVal = (data as any).lumberCost || (data as any).lumberBdFt;
+  if (lumberVal) drawCenteredText(String(lumberVal).trim(), 276.15, 505.5, 7.5, false);
+  const rebarsVal = (data as any).reinforcingBarsCost || (data as any).reinforcingBarsKg;
+  if (rebarsVal) drawCenteredText(String(rebarsVal).trim(), 298.9, 494.0, 7.5, false);
+  const giSheetsVal = (data as any).giSheetsCost || (data as any).giSheets;
+  if (giSheetsVal) drawCenteredText(String(giSheetsVal).trim(), 286.1, 482.5, 7.5, false);
+  const steelVal = (data as any).structuralSteelCost || (data as any).structuralSteelKg;
+  if (steelVal) drawCenteredText(String(steelVal).trim(), 316.75, 471.0, 7.5, false);
+  const otherMatVal = (data as any).otherMaterialsCost;
+  if (otherMatVal) drawCenteredText(String(otherMatVal).trim(), 270.65, 459.5, 7.5, false);
+
+  const laborCost = (data as any).laborCost;
+  if (laborCost) drawCenteredText(laborCost.replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim(), 484.25, 448.0, 7.5, false);
+  const equipCost = (data as any).equipmentCost;
+  if (equipCost) drawCenteredText(equipCost.replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim(), 484.25, 425.0, 7.5, false);
+  const otherCost = (data as any).otherCosts;
+  if (otherCost) drawCenteredText(otherCost.replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim(), 484.25, 413.5, 7.5, false);
+
+  // Total Cost of Building / Structure: underline x=437.0 to 531.5, center=484.25, baseline y=390.5
+  // Note: Template has "P " already engraved, so we format without redundant PHP/P prefix
+  const rawCost = (data.actualProjectCost || data.projectCost || "2,500,000.00").replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim();
+  drawCenteredText(rawCost, 484.25, 390.5, 8.0, true);
+
+  // 7. Full-Time Supervisor / Inspector
+  // Underline at x=73.3 to 253.4, center=163.35, baseline y=350.0
+  const supName = data.constructionSupervisorName || data.civilEngineerName || data.architectName || "ENGR. ROBERTO CRUZ, CE";
+  drawCenteredText(supName.toUpperCase(), 163.35, 350.0, 8.5, true);
+
+  // Supervisor E-Signature
+  const supSig = data.constructionSupervisorSignature || (data as any).supervisorSignature || data.civilEngineerSignature || data.architectSignature;
+  if (supSig) {
+    try {
+      await embedSignatureImage(doc, p1, supSig, 113.35, 352.0, 100, 26);
+    } catch (e) {
+      console.warn("Failed embedding CC supervisor signature:", e);
+    }
+  }
+
+  // Supervisor Signature Date (line x=150.1 to 214.7, center=182.4, baseline y=311.5)
+  const supDate = (data as any).supervisorSignDate || autoDate;
+  drawCenteredText(supDate, 182.4, 311.5, 7.0, false);
+
+  // Supervisor Credentials Table
+  const supPrc = data.supervisorPRC || data.civilEngineerPRC || data.architectPRC || "0078923";
+  const supValidity = data.supervisorPRCValidity || data.civilEngineerPRCValidity || data.architectPRCValidity || "2028-11-20";
+  const supPtr = data.supervisorPTR || data.civilEngineerPTR || data.architectPTR || "PTR-ST-2026-001";
+  const supPtrDate = data.supervisorPTRIssued || data.civilEngineerPTRIssued || data.architectPTRIssued || "Jan 10, 2026";
+  const supPtrPlace = data.supervisorPTRIssuedAt || data.civilEngineerPTRIssuedAt || data.architectPTRIssuedAt || "Sto. Tomas";
+  const supTin = data.supervisorTin || data.civilEngineerTIN || data.architectTIN || "456-789-012-000";
+  const supCtc = data.supervisorCtcNo || "CTC-2026-00841";
+  const supCtcDate = data.supervisorCtcDateIssued || "Jan 10, 2026";
+  const supCtcPlace = data.supervisorCtcPlaceIssued || "Sto. Tomas";
+
+  drawText(supPrc, 76.0, 298.5, 7.0, false);
+  drawText(supValidity, 212.0, 298.5, 7.0, false);
+  drawText(supPtr, 76.0, 285.5, 7.0, false);
+  drawText(supPtrDate, 228.0, 285.5, 7.0, false);
+  drawText(supPtrPlace, 78.0, 273.0, 7.0, false);
+  drawText(supTin, 196.0, 273.0, 7.0, false);
+  drawText(supCtc, 72.0, 260.5, 5.8, false);
+  drawText(supCtcDate, 173.0, 260.5, 6.5, false);
+  drawText(supCtcPlace, 264.0, 260.5, 6.5, false);
+
+  // 7b. Contractor Details (if undertaken by contract)
+  const contractorName = (data as any).contractorName;
+  if (contractorName) {
+    drawText(contractorName.toUpperCase(), 385.0, 361.5, 7.0, true, 26);
+    drawText((data as any).contractorAddress, 365.0, 323.5, 7.0, false, 32);
+    drawText((data as any).contractorPcabLicense, 549.0, 361.5, 7.0, false);
+    drawText((data as any).contractorPcabValidity, 525.0, 349.0, 7.0, false);
+    drawText((data as any).contractorTin, 512.0, 336.5, 7.0, false);
+    drawText((data as any).contractorTel, 525.0, 323.5, 7.0, false);
+    const amoName = (data as any).authorizedManagingOfficer || (data as any).contractorAmo;
+    if (amoName) drawCenteredText(amoName.toUpperCase(), 410.8, 286.0, 7.5, true);
+    const amoDate = (data as any).contractorSignDate || autoDate;
+    drawCenteredText(amoDate, 548.0, 286.0, 7.0, false);
+    drawText((data as any).contractorCtcNo, 360.0, 247.5, 6.5, false);
+    drawText((data as any).contractorCtcDate, 454.0, 247.5, 6.5, false);
+    drawText((data as any).contractorCtcPlace, 552.0, 247.5, 6.5, false);
+  }
+
+  // 8. Conforme: Owner / Applicant
+  // Underline at y=233.0, center=183.35, baseline y=234.5
+  const ownerFullName = (data.applicantName || `${lastName}, ${firstName}`).toUpperCase();
+  drawCenteredText(ownerFullName, 183.35, 234.5, 8.5, true);
+
+  if (data.applicantSignature) {
+    try {
+      await embedSignatureImage(doc, p1, data.applicantSignature, 133.35, 236.0, 100, 26);
+    } catch (e) {
+      console.warn("Failed embedding CC owner signature:", e);
+    }
+  }
+
+  // 9. Jurat: City/Municipality of Sto. Tomas, Pampanga on underlines
+  // Line 1: CITY/ MUNICIPALITY OF _______________________} S.S (center = 197.8, baseline y = 187.5)
+  const juratCityHeader = ((data as any).juratCity || "STO. TOMAS, PAMPANGA").toUpperCase();
+  drawCenteredText(juratCityHeader, 197.8, 187.5, 8.0, true);
+  // Line 2: BEFORE ME, at the City/Municipality of ___________________________, on _________________________
+  const juratCityBody = (data as any).juratCity || "Sto. Tomas, Pampanga";
+  drawText(juratCityBody, 245.0, 167.0, 7.5, true);
+  const juratDate = (data as any).juratDate || autoDate;
+  drawCenteredText(juratDate, 500.7, 167.0, 7.5, false);
+
+  // ==========================================
+  // PAGE 2: DESIGN PROFESSIONALS & SPECIALTY SUPERVISORS
+  // ==========================================
+  if (doc.getPageCount() > 1) {
+    const p2 = doc.getPage(1);
+
+    const drawP2Text = (text: string | undefined | null, x: number, y: number, size: number = 7.0, isBold: boolean = false, maxWidth?: number) => {
+      if (!text) return;
+      let clean = safeText(text).trim();
+      if (maxWidth && clean.length > maxWidth) clean = clean.slice(0, maxWidth);
+      p2.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
+    };
+
+    const drawP2CenteredText = (text: string | undefined | null, centerX: number, y: number, size: number = 8.0, isBold: boolean = false) => {
+      if (!text) return;
+      let clean = safeText(text).trim();
+      const font = isBold ? fontBold : fontRegular;
+      const textWidth = font.widthOfTextAtSize(clean, size);
+      p2.drawText(clean, { x: centerX - textWidth / 2, y, size, font, color: darkNavy });
+    };
+
+    const drawP2CellText = (text: string | undefined | null, x: number, y: number, maxWidth: number, defaultSize: number = 6.5, isBold: boolean = false) => {
+      if (!text) return;
+      let clean = safeText(text).trim();
+      if (!clean) return;
+      const font = isBold ? fontBold : fontRegular;
+      let size = defaultSize;
+      const textWidth = font.widthOfTextAtSize(clean, size);
+      if (textWidth > maxWidth) {
+        size = Math.max(4.5, defaultSize * (maxWidth / textWidth));
+      }
+      p2.drawText(clean, { x, y, size, font, color: darkNavy });
+    };
+
+    interface ProfessionalBlockData {
+      name?: string | null;
+      signature?: string | null;
+      address?: string | null;
+      prc?: string | null;
+      validity?: string | null;
+      ptr?: string | null;
+      ptrDate?: string | null;
+      issuedAt?: string | null;
+      tin?: string | null;
+    }
+
+    const drawProfessionalBox = async (prof: ProfessionalBlockData, col: "left" | "right", yName: number) => {
+      if (!prof || !prof.name) return;
+      const centerX = col === "left" ? 169.95 : 449.5;
+      const isLeft = col === "left";
+
+      // 1. Signature over Printed Name (sits directly on underline)
+      drawP2CenteredText(prof.name.toUpperCase(), centerX, yName, 8.0, true);
+
+      if (prof.signature) {
+        try {
+          await embedSignatureImage(doc, p2, prof.signature, centerX - 50, yName + 2, 100, 22);
+        } catch (e) {
+          console.warn("Failed embedding p2 professional signature:", e);
+        }
+      }
+
+      // 2. Address (Row 1 below name: baseline is yName - 23.0)
+      const addrX = isLeft ? 88.0 : 366.0;
+      const addrMaxW = isLeft ? 218 : 220;
+      drawP2CellText(prof.address, addrX, yName - 23.0, addrMaxW, 6.5, false);
+
+      // 3. PRC No. & Validity (Row 2: baseline is yName - 35.0)
+      const prcX = isLeft ? 82.0 : 360.0;
+      const prcMaxW = isLeft ? 114 : 120;
+      const valX = isLeft ? 238.0 : 524.0;
+      const valMaxW = isLeft ? 68 : 61;
+      drawP2CellText(prof.prc, prcX, yName - 35.0, prcMaxW, 6.5, false);
+      drawP2CellText(prof.validity, valX, yName - 35.0, valMaxW, 6.5, false);
+
+      // 4. PTR No. & Date Issued (Row 3: baseline is yName - 47.0)
+      const ptrX = isLeft ? 82.0 : 360.0;
+      const ptrMaxW = isLeft ? 114 : 120;
+      const ptrDateX = isLeft ? 260.0 : 545.0;
+      const ptrDateMaxW = isLeft ? 47 : 40;
+      drawP2CellText(prof.ptr, ptrX, yName - 47.0, ptrMaxW, 6.5, false);
+      drawP2CellText(prof.ptrDate, ptrDateX, yName - 47.0, ptrDateMaxW, 6.5, false);
+
+      // 5. Issued At & TIN (Row 4: baseline is yName - 59.0)
+      const issuedX = isLeft ? 82.0 : 360.0;
+      const issuedMaxW = isLeft ? 114 : 120;
+      const tinX = isLeft ? 222.0 : 508.0;
+      const tinMaxW = isLeft ? 84 : 76;
+      drawP2CellText(prof.issuedAt, issuedX, yName - 59.0, issuedMaxW, 6.5, false);
+      drawP2CellText(prof.tin, tinX, yName - 59.0, tinMaxW, 6.5, false);
+    };
+
+    // SECTION A: DESIGN PROFESSIONALS, PLANS, AND SPECIFICATION
+    // 1. Architectural (Left, y = 839.5)
+    await drawProfessionalBox({
+      name: data.architectName || data.designProfessionalName,
+      signature: data.architectSignature,
+      address: data.architectAddress || data.applicantAddress || "Sto. Tomas, Pampanga",
+      prc: data.architectPRC,
+      validity: data.architectPRCValidity,
+      ptr: data.architectPTR,
+      ptrDate: data.architectPTRIssued,
+      issuedAt: data.architectPTRIssuedAt || "Sto. Tomas",
+      tin: data.architectTIN,
+    }, "left", 839.5);
+
+    // 2. Civil / Structural (Right, y = 839.5)
+    await drawProfessionalBox({
+      name: data.civilEngineerName || data.structuralEngineerName,
+      signature: data.civilEngineerSignature || data.structuralEngineerSignature,
+      address: data.civilEngineerAddress || "Sto. Tomas, Pampanga",
+      prc: data.civilEngineerPRC,
+      validity: data.civilEngineerPRCValidity,
+      ptr: data.civilEngineerPTR,
+      ptrDate: data.civilEngineerPTRIssued,
+      issuedAt: data.civilEngineerPTRIssuedAt || "Sto. Tomas",
+      tin: data.civilEngineerTIN,
+    }, "right", 839.5);
+
+    // 3. Electrical (Left, y = 721.0)
+    await drawProfessionalBox({
+      name: data.electricalEngineerName || (data as any).peeName,
+      signature: data.electricalEngineerSignature,
+      address: data.electricalEngineerAddress || "Sto. Tomas, Pampanga",
+      prc: data.electricalEngineerPRC,
+      validity: data.electricalEngineerPRCValidity,
+      ptr: data.electricalEngineerPTR,
+      ptrDate: data.electricalEngineerPTRIssued,
+      issuedAt: data.electricalEngineerPTRIssuedAt || "Sto. Tomas",
+      tin: data.electricalEngineerTIN,
+    }, "left", 721.0);
+
+    // 4. Mechanical (Right, y = 721.0)
+    await drawProfessionalBox({
+      name: data.mechanicalEngineerName || (data as any).pmeName,
+      signature: data.mechanicalEngineerSignature,
+      address: data.mechanicalEngineerAddress || "Sto. Tomas, Pampanga",
+      prc: data.mechanicalEngineerPRC,
+      validity: data.mechanicalEngineerPRCValidity,
+      ptr: data.mechanicalEngineerPTR,
+      ptrDate: data.mechanicalEngineerPTRIssued,
+      issuedAt: data.mechanicalEngineerPTRIssuedAt || "Sto. Tomas",
+      tin: data.mechanicalEngineerTIN,
+    }, "right", 721.0);
+
+    // 5. Sanitary (Left, y = 598.5)
+    await drawProfessionalBox({
+      name: data.sanitaryEngineerName,
+      signature: data.sanitaryEngineerSignature,
+      address: data.sanitaryEngineerAddress || "Sto. Tomas, Pampanga",
+      prc: data.sanitaryEngineerPRC,
+      validity: data.sanitaryEngineerPRCValidity,
+      ptr: data.sanitaryEngineerPTR,
+      ptrDate: data.sanitaryEngineerPTRIssued,
+      issuedAt: data.sanitaryEngineerPTRIssuedAt || "Sto. Tomas",
+      tin: data.sanitaryEngineerTIN,
+    }, "left", 598.5);
+
+    // 6. Plumbing (Right, y = 598.5)
+    await drawProfessionalBox({
+      name: data.masterPlumberName,
+      signature: data.masterPlumberSignature,
+      address: data.masterPlumberAddress || "Sto. Tomas, Pampanga",
+      prc: data.masterPlumberPRC,
+      validity: data.masterPlumberPRCValidity,
+      ptr: data.masterPlumberPTR,
+      ptrDate: data.masterPlumberPTRIssued,
+      issuedAt: data.masterPlumberPTRIssuedAt || "Sto. Tomas",
+      tin: data.masterPlumberTIN,
+    }, "right", 598.5);
+
+    // 7. Electronics (Left, y = 476.5)
+    await drawProfessionalBox({
+      name: data.electronicsEngineerName || (data as any).peceName,
+      signature: data.electronicsEngineerSignature,
+      address: data.electronicsEngineerAddress || "Sto. Tomas, Pampanga",
+      prc: data.electronicsEngineerPRC,
+      validity: data.electronicsEngineerPRCValidity,
+      ptr: data.electronicsEngineerPTR,
+      ptrDate: data.electronicsEngineerPTRIssued,
+      issuedAt: data.electronicsEngineerPTRIssuedAt || "Sto. Tomas",
+      tin: data.electronicsEngineerTIN,
+    }, "left", 476.5);
+
+    // 8. Interior Design (Right, y = 476.5)
+    await drawProfessionalBox({
+      name: data.interiorDesignerName,
+      signature: data.interiorDesignerSignature,
+      address: data.interiorDesignerAddress || "Sto. Tomas, Pampanga",
+      prc: data.interiorDesignerPRC,
+      validity: data.interiorDesignerPRCValidity,
+      ptr: data.interiorDesignerPTR,
+      ptrDate: data.interiorDesignerPTRIssued,
+      issuedAt: data.interiorDesignerPTRIssuedAt || "Sto. Tomas",
+      tin: data.interiorDesignerTIN,
+    }, "right", 476.5);
+
+    // SECTION B: SUPERVISORS OF SPECIALTY WORKS
+    // 9. Electrical Works Supervisor (Left, y = 342.5)
+    await drawProfessionalBox({
+      name: data.electricalSupervisorName || (data as any).elecSupervisorName || data.electricalEngineerName,
+      signature: data.electricalSupervisorSignature || data.electricalEngineerSignature,
+      address: data.electricalSupervisorAddress || data.electricalEngineerAddress || "Sto. Tomas, Pampanga",
+      prc: data.electricalSupervisorPRC || data.electricalEngineerPRC,
+      validity: data.electricalSupervisorPRCValidity || data.electricalEngineerPRCValidity,
+      ptr: data.electricalSupervisorPTR || data.electricalEngineerPTR,
+      ptrDate: data.electricalSupervisorPTRIssued || data.electricalEngineerPTRIssued,
+      issuedAt: data.electricalSupervisorPTRIssuedAt || data.electricalEngineerPTRIssuedAt || "Sto. Tomas",
+      tin: data.electricalSupervisorTIN || data.electricalEngineerTIN,
+    }, "left", 342.5);
+
+    // 10. Mechanical Works Supervisor (Right, y = 342.5)
+    await drawProfessionalBox({
+      name: data.mechanicalSupervisorName || (data as any).mechSupervisorName || data.mechanicalEngineerName,
+      signature: data.mechanicalSupervisorSignature || data.mechanicalEngineerSignature,
+      address: data.mechanicalSupervisorAddress || data.mechanicalEngineerAddress || "Sto. Tomas, Pampanga",
+      prc: data.mechanicalSupervisorPRC || data.mechanicalEngineerPRC,
+      validity: data.mechanicalSupervisorPRCValidity || data.mechanicalEngineerPRCValidity,
+      ptr: data.mechanicalSupervisorPTR || data.mechanicalEngineerPTR,
+      ptrDate: data.mechanicalSupervisorPTRIssued || data.mechanicalEngineerPTRIssued,
+      issuedAt: data.mechanicalSupervisorPTRIssuedAt || data.mechanicalEngineerPTRIssuedAt || "Sto. Tomas",
+      tin: data.mechanicalSupervisorTIN || data.mechanicalEngineerTIN,
+    }, "right", 342.5);
+
+    // 11. Sanitary Works Supervisor (Left, y = 210.0)
+    await drawProfessionalBox({
+      name: (data as any).sanitarySupervisorName || data.sanitaryEngineerName,
+      signature: (data as any).sanitarySupervisorSignature || data.sanitaryEngineerSignature,
+      address: (data as any).sanitarySupervisorAddress || data.sanitaryEngineerAddress || "Sto. Tomas, Pampanga",
+      prc: (data as any).sanitarySupervisorPRC || data.sanitaryEngineerPRC,
+      validity: (data as any).sanitarySupervisorPRCValidity || data.sanitaryEngineerPRCValidity,
+      ptr: (data as any).sanitarySupervisorPTR || data.sanitaryEngineerPTR,
+      ptrDate: (data as any).sanitarySupervisorPTRIssued || data.sanitaryEngineerPTRIssued,
+      issuedAt: (data as any).sanitarySupervisorPTRIssuedAt || data.sanitaryEngineerPTRIssuedAt || "Sto. Tomas",
+      tin: (data as any).sanitarySupervisorTIN || data.sanitaryEngineerTIN,
+    }, "left", 210.0);
+
+    // 12. Plumbing Works Supervisor (Right, y = 210.0)
+    await drawProfessionalBox({
+      name: (data as any).plumbingSupervisorName || data.masterPlumberName,
+      signature: (data as any).plumbingSupervisorSignature || data.masterPlumberSignature,
+      address: (data as any).plumbingSupervisorAddress || data.masterPlumberAddress || "Sto. Tomas, Pampanga",
+      prc: (data as any).plumbingSupervisorPRC || data.masterPlumberPRC,
+      validity: (data as any).plumbingSupervisorPRCValidity || data.masterPlumberPRCValidity,
+      ptr: (data as any).plumbingSupervisorPTR || data.masterPlumberPTR,
+      ptrDate: (data as any).plumbingSupervisorPTRIssued || data.masterPlumberPTRIssued,
+      issuedAt: (data as any).plumbingSupervisorPTRIssuedAt || data.masterPlumberPTRIssuedAt || "Sto. Tomas",
+      tin: (data as any).plumbingSupervisorTIN || data.masterPlumberTIN,
+    }, "right", 210.0);
+
+    // 13. Electronics Works Supervisor (Left, y = 82.0)
+    await drawProfessionalBox({
+      name: (data as any).electronicsSupervisorName || data.electronicsEngineerName,
+      signature: (data as any).electronicsSupervisorSignature || data.electronicsEngineerSignature,
+      address: (data as any).electronicsSupervisorAddress || data.electronicsEngineerAddress || "Sto. Tomas, Pampanga",
+      prc: (data as any).electronicsSupervisorPRC || data.electronicsEngineerPRC,
+      validity: (data as any).electronicsSupervisorPRCValidity || data.electronicsEngineerPRCValidity,
+      ptr: (data as any).electronicsSupervisorPTR || data.electronicsEngineerPTR,
+      ptrDate: (data as any).electronicsSupervisorPTRIssued || data.electronicsEngineerPTRIssued,
+      issuedAt: (data as any).electronicsSupervisorPTRIssuedAt || data.electronicsEngineerPTRIssuedAt || "Sto. Tomas",
+      tin: (data as any).electronicsSupervisorTIN || data.electronicsEngineerTIN,
+    }, "left", 82.0);
+
+    // 14. Interior Design Works Supervisor (Right, y = 82.0)
+    await drawProfessionalBox({
+      name: (data as any).interiorSupervisorName || data.interiorDesignerName,
+      signature: (data as any).interiorSupervisorSignature || data.interiorDesignerSignature,
+      address: (data as any).interiorSupervisorAddress || data.interiorDesignerAddress || "Sto. Tomas, Pampanga",
+      prc: (data as any).interiorSupervisorPRC || data.interiorDesignerPRC,
+      validity: (data as any).interiorSupervisorPRCValidity || data.interiorDesignerPRCValidity,
+      ptr: (data as any).interiorSupervisorPTR || data.interiorDesignerPTR,
+      ptrDate: (data as any).interiorSupervisorPTRIssued || data.interiorDesignerPTRIssued,
+      issuedAt: (data as any).interiorSupervisorPTRIssuedAt || data.interiorDesignerPTRIssuedAt || "Sto. Tomas",
+      tin: (data as any).interiorSupervisorTIN || data.interiorDesignerTIN,
+    }, "right", 82.0);
+  }
 
   return await doc.saveAsBase64({ dataUri: false });
 }
