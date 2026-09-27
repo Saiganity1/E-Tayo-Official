@@ -429,9 +429,9 @@ export default function SpatialMap() {
                       <div>
                         <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Status</div>
                         <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 
-                          app.status === 'APPROVED' ? '#10b981' : 
-                          app.status === 'REJECTED' ? '#ef4444' : 
-                          app.status === 'UNDER_REVIEW' ? '#3b82f6' : '#f59e0b'
+                          app.status.toLowerCase() === 'approved' || app.status.toLowerCase() === 'released' ? '#10b981' : 
+                          app.status.toLowerCase() === 'rejected' ? '#ef4444' : 
+                          app.status.toLowerCase() === 'under_review' ? '#3b82f6' : '#f59e0b'
                         }}>
                           {app.status.replace("_", " ")}
                         </div>

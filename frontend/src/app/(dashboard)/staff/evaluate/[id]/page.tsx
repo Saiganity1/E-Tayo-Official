@@ -139,6 +139,7 @@ export default function StaffEvaluatePage() {
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<boolean>(false);
   const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
+  const [rejectActionType, setRejectActionType] = useState<"deficiency" | "disapprove">("deficiency");
   const [selectedDeficiencies, setSelectedDeficiencies] = useState<string[]>([]);
   const [customDeficiencyNote, setCustomDeficiencyNote] = useState<string>("");
 
@@ -876,7 +877,7 @@ export default function StaffEvaluatePage() {
         }
 
         // 11. Temporary Service Connection (TSC)
-        if (pTypeObj.matrix?.temporaryServicePermit === 'required' || pTypeObj.matrix?.temporaryServicePermit === 'conditional' || (app as any).temporaryServicePermitNo || (app as any).temporaryPowerDuration) {
+        if ((pTypeObj.matrix as any)?.temporaryServicePermit === 'required' || (pTypeObj.matrix as any)?.temporaryServicePermit === 'conditional' || (app as any).temporaryServicePermitNo || (app as any).temporaryPowerDuration) {
           try {
             const tscB64 = await generateTemporaryServicePermitPdf(formData);
             const tscUrl = createBlobFromBase64(tscB64);
@@ -952,7 +953,7 @@ export default function StaffEvaluatePage() {
         }
 
         // 15. Bureau of Fire Protection Application (BFP)
-        if (pTypeObj.matrix?.fireSafetyEvaluationClearance === 'required' || (app as any).bfpNo || (app as any).fireSafetyEvaluationClearanceNo) {
+        if ((pTypeObj.matrix as any)?.fireSafetyEvaluationClearance === 'required' || (app as any).bfpNo || (app as any).fireSafetyEvaluationClearanceNo) {
           try {
             const bfpB64 = await generateBfpApplicationPdf(formData);
             const bfpUrl = createBlobFromBase64(bfpB64);
@@ -1456,30 +1457,35 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
 
     const applicantLabel = app.applicantName ? `${app.applicantName}` : app.applicantEmail || "Applicant";
     const permitTitle = isBuildingPermit ? "Building Permit & Technical Ancillaries" : "Locational Clearance";
+    const isDisapprove = rejectActionType === "disapprove";
 
     let combinedRemarks = "";
     if (selectedDeficiencies.length > 0) {
-      combinedRemarks += "Specific Deficiencies / Compliance Corrections Requested:\n" + selectedDeficiencies.map((d, i) => `${i + 1}. ${d}`).join("\n");
+      combinedRemarks += `${isDisapprove ? "Non-Compliance Grounds / Findings:" : "Specific Deficiencies / Compliance Corrections Requested:"}\n` + selectedDeficiencies.map((d, i) => `${i + 1}. ${d}`).join("\n");
     }
     if (customDeficiencyNote.trim()) {
-      combinedRemarks += (combinedRemarks ? "\n\nEvaluator Instructions:\n" : "") + customDeficiencyNote.trim();
+      combinedRemarks += (combinedRemarks ? "\n\nEvaluator Directives:\n" : "") + customDeficiencyNote.trim();
     }
     if (!combinedRemarks.trim()) {
-      combinedRemarks = decisionNotes || "Incomplete requirements or technical documentation adjustment requested by municipal evaluators.";
+      combinedRemarks = decisionNotes || (isDisapprove 
+        ? "Application formally disapproved due to municipal engineering non-compliance." 
+        : "Incomplete requirements or technical documentation adjustment requested by municipal evaluators.");
     }
 
-    const logSummary = `Staff ${staffName} (${staffEmail}) evaluated application ${app.id} (${applicantLabel}) - Status: REVISION REQUESTED`;
-    const logDetails = `Requirements revision requested for ${applicantLabel} (${permitTitle}). Deficiencies: ${combinedRemarks}`;
+    const statusVal: "rejected" | "incomplete_requirements" = isDisapprove ? "rejected" : "incomplete_requirements";
+    const actionLabel = isDisapprove ? "Application Disapproved / Rejected" : "Notice of Deficiencies / Revisions Requested";
+    const logSummary = `Staff ${staffName} (${staffEmail}) evaluated application ${app.id} (${applicantLabel}) - Status: ${isDisapprove ? "DISAPPROVED / REJECTED" : "REVISION REQUESTED"}`;
+    const logDetails = `${isDisapprove ? "Permit formally disapproved and closed" : "Requirements revision requested"} for ${applicantLabel} (${permitTitle}). Reason: ${combinedRemarks}`;
 
     const updatedApp = {
       ...app,
-      status: "incomplete_requirements" as const,
+      status: statusVal,
       remarks: combinedRemarks,
       historyLog: [
         ...(app.historyLog || []),
         {
           date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
-          action: "Notice of Deficiencies / Revisions Requested",
+          action: actionLabel,
           actor: staffName,
           details: combinedRemarks,
         }
@@ -1489,9 +1495,9 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
 
     try {
       await addSystemLog({
-        action: "EVALUATION_REVISION_REQUESTED",
+        action: isDisapprove ? "EVALUATION_REJECTED" : "EVALUATION_REVISION_REQUESTED",
         category: "application",
-        status: "warning",
+        status: isDisapprove ? "error" : "warning",
         user: staffEmail,
         message: logSummary,
         details: logDetails,
@@ -1512,7 +1518,7 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
           staffEmail: staffEmail || "staff@etayo.gov.ph",
           applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
           permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
-          action: "Incomplete Requirements",
+          action: isDisapprove ? "Application Rejected" : "Incomplete Requirements",
           comments: combinedRemarks,
         }),
       });
@@ -1520,8 +1526,29 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
       console.warn("Could not save evaluation log", e);
     }
 
+    try {
+      await dispatchPermitMessage({
+        applicationId: app.id,
+        recipientEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+        senderEmail: staffEmail,
+        content: `[Ref: ${app.id} - ${app.projectName || permitTitle}]
+${isDisapprove ? "❌ OFFICIAL APPLICATION DISAPPROVAL / REJECTION" : "⚠️ NOTICE OF DEFICIENCIES / REVISION REQUESTED"}
+
+${isDisapprove
+  ? `Your application ${app.id} has been formally disapproved by municipal evaluators due to non-compliance:\n\n${combinedRemarks}\n\nNotice: This application is officially closed. Per Sto. Tomas municipal regulations, you may now submit a new application with the corrected compliance.`
+  : `Evaluator has requested the following document revisions:\n\n${combinedRemarks}\n\nPlease update your attachments in Application Status.`
+}`,
+      });
+    } catch (e) {
+      console.warn("Could not dispatch message", e);
+    }
+
     setIsProcessing(false);
-    setSuccessMessage(`Application (${app.id}) has been tagged for requirements revision. Formal notice sent to ${applicantLabel}.`);
+    setSuccessMessage(
+      isDisapprove 
+        ? `Application (${app.id}) has been formally disapproved and closed. The applicant has been notified that they may submit a new application.`
+        : `Application (${app.id}) has been tagged for requirements revision. Formal notice sent to ${applicantLabel}.`
+    );
   };
 
   const commonDeficienciesList = isBuildingPermit
@@ -2302,27 +2329,57 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
                   )}
 
                   {app.status !== "approved" && app.status !== "released" && (
-                    <button
-                      onClick={() => setShowRejectModal(true)}
-                      disabled={isProcessing}
-                      style={{
-                        background: "white",
-                        color: "#dc2626",
-                        border: "1.5px solid #fca5a5",
-                        padding: "0.75rem 1rem",
-                        borderRadius: "10px",
-                        fontWeight: "700",
-                        fontSize: "0.86rem",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "6px",
-                        transition: "all 0.15s ease"
-                      }}
-                    >
-                      <XCircle size={16} /> Request Revisions / Issue Deficiency Notice
-                    </button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+                      <button
+                        onClick={() => {
+                          setRejectActionType("deficiency");
+                          setShowRejectModal(true);
+                        }}
+                        disabled={isProcessing}
+                        style={{
+                          background: "#fffbeb",
+                          color: "#b45309",
+                          border: "1.5px solid #fde68a",
+                          padding: "0.75rem 1rem",
+                          borderRadius: "10px",
+                          fontWeight: "700",
+                          fontSize: "0.86rem",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "6px",
+                          transition: "all 0.15s ease"
+                        }}
+                      >
+                        <AlertTriangle size={16} color="#d97706" /> Request Revisions / Issue Deficiency Notice
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setRejectActionType("disapprove");
+                          setShowRejectModal(true);
+                        }}
+                        disabled={isProcessing}
+                        style={{
+                          background: "white",
+                          color: "#dc2626",
+                          border: "1.5px solid #fca5a5",
+                          padding: "0.75rem 1rem",
+                          borderRadius: "10px",
+                          fontWeight: "700",
+                          fontSize: "0.86rem",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "6px",
+                          transition: "all 0.15s ease"
+                        }}
+                      >
+                        <XCircle size={16} /> Disapprove / Formal Rejection
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -2600,13 +2657,23 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
             maxHeight: "90vh",
             overflowY: "auto"
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
               <div>
-                <h3 style={{ fontSize: "1.3rem", fontWeight: "800", color: "#b91c1c", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-                  <AlertTriangle size={22} color="#dc2626" /> Issue Notice of Deficiencies / Request Revisions
+                <h3 style={{ fontSize: "1.3rem", fontWeight: "800", color: rejectActionType === "disapprove" ? "#b91c1c" : "#b45309", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                  {rejectActionType === "disapprove" ? (
+                    <>
+                      <XCircle size={22} color="#dc2626" /> Disapprove / Reject Application
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle size={22} color="#d97706" /> Issue Notice of Deficiencies / Request Revisions
+                    </>
+                  )}
                 </h3>
                 <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#64748b" }}>
-                  Select the specific technical deficiencies found in {app.id} to provide the applicant with clear corrective instructions.
+                  {rejectActionType === "disapprove"
+                    ? `Formally disapprove ${app.id}. This closes the permit and enables the applicant to create a new application.`
+                    : `Provide the applicant with specific corrective instructions to revise their documents.`}
                 </p>
               </div>
               <button
@@ -2617,9 +2684,69 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
               </button>
             </div>
 
+            {/* ACTION TYPE SELECTOR TABS */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "1.25rem", borderBottom: "1.5px solid #e2e8f0", paddingBottom: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setRejectActionType("deficiency")}
+                style={{
+                  background: rejectActionType === "deficiency" ? "#fef3c7" : "#f8fafc",
+                  color: rejectActionType === "deficiency" ? "#b45309" : "#64748b",
+                  border: rejectActionType === "deficiency" ? "1.5px solid #fde68a" : "1.5px solid #e2e8f0",
+                  borderRadius: "10px",
+                  padding: "8px 14px",
+                  fontWeight: "800",
+                  fontSize: "0.84rem",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                <AlertTriangle size={15} color="#d97706" />
+                <span>Request Revisions</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRejectActionType("disapprove")}
+                style={{
+                  background: rejectActionType === "disapprove" ? "#fee2e2" : "#f8fafc",
+                  color: rejectActionType === "disapprove" ? "#dc2626" : "#64748b",
+                  border: rejectActionType === "disapprove" ? "1.5px solid #fca5a5" : "1.5px solid #e2e8f0",
+                  borderRadius: "10px",
+                  padding: "8px 14px",
+                  fontWeight: "800",
+                  fontSize: "0.84rem",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                <XCircle size={15} color="#dc2626" />
+                <span>Disapprove / Formal Rejection</span>
+              </button>
+            </div>
+
+            {rejectActionType === "disapprove" && (
+              <div style={{
+                background: "#fef2f2",
+                border: "1px solid #fca5a5",
+                borderRadius: "10px",
+                padding: "10px 14px",
+                marginBottom: "1rem",
+                fontSize: "0.82rem",
+                color: "#991b1b",
+                lineHeight: "1.45"
+              }}>
+                <strong>⚠️ Formal Rejection Policy (Bawal Dumoble Rule):</strong> This will officially reject application {app.id}. Under the municipal 1-permit-per-project-type rule, closing this permit will release the applicant from the active permit block, allowing them to submit a brand new application.
+              </div>
+            )}
+
             <div style={{ marginBottom: "1.25rem" }}>
               <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "800", color: "#475569", marginBottom: "8px", textTransform: "uppercase" }}>
-                Select Common Compliance Deficiencies:
+                Select Grounds / Compliance Deficiencies:
               </label>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {commonDeficienciesList.map((item, idx) => {
@@ -2663,12 +2790,12 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
 
             <div style={{ marginBottom: "1.5rem" }}>
               <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "800", color: "#475569", marginBottom: "4px", textTransform: "uppercase" }}>
-                Specific Evaluator Remarks / Corrective Directives:
+                Specific Evaluator Remarks / Directives:
               </label>
               <textarea
                 value={customDeficiencyNote}
                 onChange={(e) => setCustomDeficiencyNote(e.target.value)}
-                placeholder="Enter specific notes or instructions for the applicant..."
+                placeholder={rejectActionType === "disapprove" ? "Enter formal grounds for disapproving this permit..." : "Enter specific notes or instructions for the applicant..."}
                 rows={3}
                 style={{
                   width: "100%",
@@ -2703,7 +2830,9 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
                 onClick={handleConfirmReject}
                 disabled={isProcessing}
                 style={{
-                  background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                  background: rejectActionType === "disapprove" 
+                    ? "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)" 
+                    : "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
                   color: "white",
                   border: "none",
                   borderRadius: "10px",
@@ -2711,10 +2840,14 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
                   fontSize: "0.88rem",
                   fontWeight: "800",
                   cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(220, 38, 38, 0.35)"
+                  boxShadow: rejectActionType === "disapprove" 
+                    ? "0 2px 8px rgba(220, 38, 38, 0.35)" 
+                    : "0 2px 8px rgba(217, 119, 6, 0.35)"
                 }}
               >
-                {isProcessing ? "Processing..." : "Send Formal Notice of Deficiencies"}
+                {isProcessing 
+                  ? "Processing..." 
+                  : (rejectActionType === "disapprove" ? "Confirm Formal Disapproval / Rejection" : "Send Notice of Deficiencies")}
               </button>
             </div>
           </div>

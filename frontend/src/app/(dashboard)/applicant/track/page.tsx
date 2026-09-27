@@ -268,7 +268,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     pending: activeApps.filter(a => a.status === "pending").length,
     review: activeApps.filter(a => a.status === "under_review").length,
     approved: activeApps.filter(a => ["approved", "released"].includes(a.status)).length,
-    action: activeApps.filter(a => a.status === "incomplete_requirements").length,
+    action: activeApps.filter(a => a.status === "incomplete_requirements" || a.status === "rejected").length,
     archivedTotal: archivedApps.length,
   };
 
@@ -290,6 +290,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         return { color: "#0038A8", bg: "#eff6ff", border: "#0038A8", icon: Search, label: "Under Evaluation", step: 2 };
       case "incomplete_requirements":
         return { color: "#dc2626", bg: "#fee2e2", border: "#ef4444", icon: AlertTriangle, label: "Action Required", step: 2 };
+      case "rejected":
+        return { color: "#dc2626", bg: "#fee2e2", border: "#ef4444", icon: XCircle, label: "Disapproved / Rejected", step: 0 };
       case "approved":
         return { color: "#059669", bg: "#d1fae5", border: "#10b981", icon: CheckCircle2, label: "Approved (Awaiting Payment)", step: 3 };
       case "released":
@@ -682,6 +684,85 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           </div>
         </div>
 
+        {/* FORMAL DISAPPROVAL / REJECTION BANNER */}
+        {app.status === "rejected" && (
+          <div style={{
+            background: "linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%)",
+            border: "1.5px solid #fca5a5",
+            borderRadius: "16px",
+            padding: "1.25rem 1.4rem",
+            marginBottom: "1.25rem",
+            boxShadow: "0 4px 14px rgba(220, 38, 38, 0.08)"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flex: 1, minWidth: "260px" }}>
+                <div style={{
+                  width: "42px",
+                  height: "42px",
+                  borderRadius: "12px",
+                  background: "#fee2e2",
+                  color: "#dc2626",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px solid #fca5a5",
+                  flexShrink: 0
+                }}>
+                  <XCircle size={24} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "900", color: "#991b1b" }}>
+                      Application Disapproved / Rejected
+                    </h4>
+                    <span style={{
+                      fontSize: "0.72rem",
+                      fontWeight: "800",
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      background: "#fee2e2",
+                      color: "#b91c1c",
+                      border: "1px solid #f87171"
+                    }}>
+                      Re-Application Allowed
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "0.85rem", color: "#7f1d1d", marginTop: "4px", lineHeight: "1.5" }}>
+                    {app.rejectionReason || app.evaluationNotes || app.feedback || (
+                      typeof app.remarks === "string" ? app.remarks : "This application has been formally disapproved by the municipal evaluating officer. Since active applications are limited to 1 permit per project type, this application is now closed and you are permitted to submit a brand new corrected application."
+                    )}
+                  </div>
+                  <div style={{ fontSize: "0.8rem", color: "#991b1b", marginTop: "6px", fontWeight: "600" }}>
+                    Per municipal policy: 1 permit per project type only. Because this application is disapproved, the slot is now open and you may submit a new application.
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <Link
+                  href={`/applicant/apply?reapplyFrom=${encodeURIComponent(app.id)}&type=${encodeURIComponent(typeof app.projectType === "object" ? (app.projectType as any)?.name || "" : app.projectType || "")}`}
+                  style={{
+                    background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                    color: "white",
+                    padding: "9px 18px",
+                    borderRadius: "10px",
+                    fontSize: "0.88rem",
+                    fontWeight: "800",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    boxShadow: "0 4px 12px rgba(220, 38, 38, 0.25)"
+                  }}
+                >
+                  <RotateCcw size={16} />
+                  <span>Apply Again (New Application)</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
         {app.status === "approved" && app.status !== "released" && !isActuallyReleasedApp(app) && (
           <div style={{
@@ -892,11 +973,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         {isApprovedLC && (
           connectedStage2App ? (
             <div style={{
-              background: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+              background: connectedStage2App.status === "rejected"
+                ? "linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%)"
+                : connectedStage2App.status === "approved" || connectedStage2App.status === "released"
                 ? "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)"
                 : "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
               border: `1.5px solid ${
-                connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                connectedStage2App.status === "rejected"
+                  ? "#fca5a5"
+                  : connectedStage2App.status === "approved" || connectedStage2App.status === "released"
                   ? "#86efac"
                   : "#fde68a"
               }`,
@@ -915,22 +1000,30 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                   width: "36px",
                   height: "36px",
                   borderRadius: "10px",
-                  background: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                  background: connectedStage2App.status === "rejected"
+                    ? "#fee2e2"
+                    : connectedStage2App.status === "approved" || connectedStage2App.status === "released"
                     ? "#dcfce7"
                     : "#fef3c7",
-                  color: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                  color: connectedStage2App.status === "rejected"
+                    ? "#dc2626"
+                    : connectedStage2App.status === "approved" || connectedStage2App.status === "released"
                     ? "#16a34a"
                     : "#d97706",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   border: `1px solid ${
-                    connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                    connectedStage2App.status === "rejected"
+                      ? "#fca5a5"
+                      : connectedStage2App.status === "approved" || connectedStage2App.status === "released"
                       ? "#bbf7d0"
                       : "#fcd34d"
                   }`
                 }}>
-                  {connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? (
+                  {connectedStage2App.status === "rejected" ? (
+                    <XCircle size={20} strokeWidth={2.5} />
+                  ) : connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? (
                     <CheckCircle2 size={20} strokeWidth={2.5} />
                   ) : (
                     <Clock size={20} strokeWidth={2.5} />
@@ -940,7 +1033,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                   <div style={{
                     fontSize: "0.92rem",
                     fontWeight: "800",
-                    color: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                    color: connectedStage2App.status === "rejected"
+                      ? "#991b1b"
+                      : connectedStage2App.status === "approved" || connectedStage2App.status === "released"
                       ? "#166534"
                       : "#92400e",
                     display: "flex",
@@ -951,6 +1046,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                     <span>
                       {connectedStage2App.status === "approved" || connectedStage2App.status === "released"
                         ? `Stage 2 Complete: Technical Permits Approved (${connectedStage2App.id})`
+                        : connectedStage2App.status === "rejected"
+                        ? `Stage 2 Disapproved / Rejected (${connectedStage2App.id})`
                         : `Stage 2 Connected: Technical Permits Awaiting Review (${connectedStage2App.id})`}
                     </span>
                     <span style={{
@@ -958,50 +1055,100 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       fontWeight: "800",
                       padding: "2px 8px",
                       borderRadius: "6px",
-                      background: connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "#dcfce7" : "#fef9c3",
-                      color: connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "#15803d" : "#b45309",
-                      border: `1px solid ${connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "#86efac" : "#fde047"}`
+                      background: connectedStage2App.status === "rejected"
+                        ? "#fee2e2"
+                        : connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "#dcfce7" : "#fef9c3",
+                      color: connectedStage2App.status === "rejected"
+                        ? "#b91c1c"
+                        : connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "#15803d" : "#b45309",
+                      border: `1px solid ${connectedStage2App.status === "rejected" ? "#f87171" : connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "#86efac" : "#fde047"}`
                     }}>
-                      {connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "Approved" : "Pending Review"}
+                      {connectedStage2App.status === "rejected" ? "Disapproved" : connectedStage2App.status === "approved" || connectedStage2App.status === "released" ? "Approved" : "Pending Review"}
                     </span>
                   </div>
                   <div style={{
                     fontSize: "0.82rem",
-                    color: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                    color: connectedStage2App.status === "rejected"
+                      ? "#7f1d1d"
+                      : connectedStage2App.status === "approved" || connectedStage2App.status === "released"
                       ? "#15803d"
                       : "#78350f",
                     marginTop: "2px"
                   }}>
-                    {connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                    {connectedStage2App.status === "rejected"
+                      ? `Your Stage 2 technical permit application was disapproved by the evaluator. Since 1 permit per project type is enforced, you can now file a brand new Stage 2 submission.`
+                      : connectedStage2App.status === "approved" || connectedStage2App.status === "released"
                       ? `Both your locational zoning clearance and technical permitting forms have been verified and approved.`
                       : `You have completed this step! Your Stage 2 permitting forms (${connectedStage2App.id}) are officially linked to this clearance and currently awaiting municipal approval.`}
                   </div>
                 </div>
               </div>
 
-              <Link 
-                href={`/applicant/track/${encodeURIComponent(connectedStage2App.id)}`}
-                style={{
-                  background: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
-                    ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
-                    : "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
-                  color: "white",
-                  padding: "8px 16px",
-                  borderRadius: "10px",
-                  fontSize: "0.85rem",
-                  fontWeight: "800",
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  boxShadow: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
-                    ? "0 4px 12px rgba(5, 150, 105, 0.25)"
-                    : "0 4px 12px rgba(217, 119, 6, 0.25)"
-                }}
-              >
-                <span>View Stage 2 Permits ({connectedStage2App.id})</span>
-                <ArrowRight size={15} />
-              </Link>
+              {connectedStage2App.status === "rejected" ? (
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                  <Link 
+                    href={`/applicant/track/${encodeURIComponent(connectedStage2App.id)}`}
+                    style={{
+                      background: "#ffffff",
+                      border: "1.5px solid #cbd5e1",
+                      color: "#334155",
+                      padding: "8px 14px",
+                      borderRadius: "10px",
+                      fontSize: "0.85rem",
+                      fontWeight: "700",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}
+                  >
+                    <span>View Remarks</span>
+                  </Link>
+                  <Link 
+                    href={`/applicant/apply?clearanceRef=${encodeURIComponent(app.id)}&step=3&reapplyFrom=${encodeURIComponent(connectedStage2App.id)}`}
+                    style={{
+                      background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                      color: "white",
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      fontSize: "0.85rem",
+                      fontWeight: "800",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 12px rgba(220, 38, 38, 0.25)"
+                    }}
+                  >
+                    <RotateCcw size={15} />
+                    <span>Re-Apply Stage 2 Permits</span>
+                  </Link>
+                </div>
+              ) : (
+                <Link 
+                  href={`/applicant/track/${encodeURIComponent(connectedStage2App.id)}`}
+                  style={{
+                    background: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                      ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
+                      : "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+                    color: "white",
+                    padding: "8px 16px",
+                    borderRadius: "10px",
+                    fontSize: "0.85rem",
+                    fontWeight: "800",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    boxShadow: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                      ? "0 4px 12px rgba(5, 150, 105, 0.25)"
+                      : "0 4px 12px rgba(217, 119, 6, 0.25)"
+                  }}
+                >
+                  <span>View Stage 2 Permits ({connectedStage2App.id})</span>
+                  <ArrowRight size={15} />
+                </Link>
+              )}
             </div>
           ) : (
             <div style={{
@@ -1156,7 +1303,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </button>
             )}
 
-            {/* Cancel Application Button (if not already cancelled or released) */}
+            {/* Cancel or Re-Apply Action Button */}
             {app.status === "cancelled" ? (
               <span style={{
                 background: "#fee2e2",
@@ -1172,6 +1319,27 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               }}>
                 <XCircle size={14} color="#dc2626" /> Cancelled
               </span>
+            ) : app.status === "rejected" ? (
+              <Link
+                href={`/applicant/apply?reapplyFrom=${encodeURIComponent(app.id)}&type=${encodeURIComponent(typeof app.projectType === "object" ? (app.projectType as any)?.name || "" : app.projectType || "")}`}
+                style={{
+                  background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                  color: "white",
+                  padding: "7px 14px",
+                  borderRadius: "10px",
+                  fontSize: "0.84rem",
+                  fontWeight: "800",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  boxShadow: "0 2px 8px rgba(220, 38, 38, 0.25)"
+                }}
+                title="Create a fresh application replacing this disapproved permit"
+              >
+                <RotateCcw size={14} />
+                <span>Re-Apply</span>
+              </Link>
             ) : app.status !== "released" ? (
               <button
                 type="button"

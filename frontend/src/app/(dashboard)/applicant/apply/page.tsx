@@ -9,7 +9,7 @@ import {
   Home, Building2, Factory, Landmark, Wrench, Zap, Clock, Copy, 
   ArrowRight, CheckCircle2, Shield, Droplets, Flame, Radio, FileCheck, X,
   BadgeCheck, Info, Compass, Eye, Printer, Download, FileUp, Trash2, Paperclip, AlertTriangle,
-  RefreshCw, Plus, RotateCcw, BookmarkCheck
+  RefreshCw, Plus, RotateCcw, BookmarkCheck, ExternalLink
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -282,6 +282,25 @@ export default function ApplyPage() {
     return list;
   }, [applications]);
 
+  // When re-applying from a disapproved application, auto-resolve project type if not explicitly set
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const reapplyId = urlParams.get("reapplyFrom");
+    if (reapplyId && !selectedProjectType && allAvailableApps.length > 0) {
+      const priorApp = allAvailableApps.find(a => a.id === reapplyId);
+      if (priorApp) {
+        const typeName = typeof priorApp.projectType === "object" ? (priorApp.projectType as any)?.name : priorApp.projectType;
+        const found = PROJECT_TYPES_MATRIX.find(
+          p => p.id === typeName || p.name.toLowerCase() === (typeName || "").toLowerCase()
+        );
+        if (found) {
+          setSelectedProjectType(found);
+        }
+      }
+    }
+  }, [allAvailableApps, selectedProjectType]);
+
   // Find locational clearance application ONLY when an explicit reference is selected (e.g. from Track page or Step 2 selection)
   const matchedClearanceApp = useMemo(() => {
     if (!selectedClearanceRef) return null;
@@ -326,13 +345,48 @@ export default function ApplyPage() {
     );
   }, [userClearances, selectedProjectType]);
 
-  // Check if a connected Stage 2 application has already been submitted for this Locational Clearance
-  const alreadySubmittedStage2App = useMemo(() => {
+  // Helper to find an ACTIVE (in-progress or approved) application for a given project type (bawal dumoble)
+  // Active = status is NOT "rejected" and NOT "cancelled"
+  const getActiveAppForProjectType = useCallback((projectTypeName: string) => {
+    return allAvailableApps.find((app: any) => {
+      if (app.status === "rejected" || app.status === "cancelled") return false;
+      const isLC = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
+      if (isLC) return false;
+      const aProjType = typeof app.projectType === "object" ? app.projectType?.name : app.projectType;
+      return Boolean(
+        aProjType && (
+          aProjType.toLowerCase() === projectTypeName.toLowerCase() ||
+          projectTypeName.toLowerCase().includes(aProjType.toLowerCase())
+        )
+      );
+    });
+  }, [allAvailableApps]);
+
+  // Helper to find a PREVIOUSLY REJECTED application for a given project type (so applicant can re-apply)
+  const getRejectedAppForProjectType = useCallback((projectTypeName: string) => {
+    return allAvailableApps.find((app: any) => {
+      if (app.status !== "rejected") return false;
+      const isLC = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
+      if (isLC) return false;
+      const aProjType = typeof app.projectType === "object" ? app.projectType?.name : app.projectType;
+      return Boolean(
+        aProjType && (
+          aProjType.toLowerCase() === projectTypeName.toLowerCase() ||
+          projectTypeName.toLowerCase().includes(aProjType.toLowerCase())
+        )
+      );
+    });
+  }, [allAvailableApps]);
+
+  // Check if an ACTIVE Stage 2 application has already been submitted for this Locational Clearance (bawal dumoble)
+  const activeExistingStage2App = useMemo(() => {
     if (!activeClearanceRef || activeClearanceRef === "EXEMPT") return null;
     return allAvailableApps.find(
       (app: any) =>
         app.id !== activeClearanceRef &&
         !(app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
+        app.status !== "rejected" &&
+        app.status !== "cancelled" &&
         (
           (app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === activeClearanceRef.trim().toLowerCase()) ||
           (matchedClearanceApp?.projectName && app.projectName && (
@@ -342,6 +396,39 @@ export default function ApplyPage() {
         )
     );
   }, [allAvailableApps, activeClearanceRef, matchedClearanceApp]);
+
+  // Check if a previous Stage 2 application was REJECTED (so user is allowed to re-apply)
+  const rejectedStage2App = useMemo(() => {
+    if (!activeClearanceRef || activeClearanceRef === "EXEMPT") return null;
+    return allAvailableApps.find(
+      (app: any) =>
+        app.id !== activeClearanceRef &&
+        !(app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
+        app.status === "rejected" &&
+        (
+          (app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === activeClearanceRef.trim().toLowerCase()) ||
+          (matchedClearanceApp?.projectName && app.projectName && (
+            app.projectName.toLowerCase().includes(matchedClearanceApp.projectName.toLowerCase()) ||
+            matchedClearanceApp.projectName.toLowerCase().includes(app.projectName.toLowerCase())
+          ))
+        )
+    );
+  }, [allAvailableApps, activeClearanceRef, matchedClearanceApp]);
+
+  // Alias for backward compatibility where alreadySubmittedStage2App was previously referenced
+  const alreadySubmittedStage2App = activeExistingStage2App;
+
+  // Active application for currently selected project type
+  const activeAppForCurrentProjectType = useMemo(() => {
+    if (!selectedProjectType) return null;
+    return getActiveAppForProjectType(selectedProjectType.name);
+  }, [selectedProjectType, getActiveAppForProjectType]);
+
+  // Rejected application for currently selected project type
+  const rejectedAppForCurrentProjectType = useMemo(() => {
+    if (!selectedProjectType) return null;
+    return getRejectedAppForProjectType(selectedProjectType.name);
+  }, [selectedProjectType, getRejectedAppForProjectType]);
 
   // Persist active clearance reference to localStorage so Sidebar dynamically shows "Existing Application"
   useEffect(() => {
@@ -620,6 +707,38 @@ export default function ApplyPage() {
   };
 
   const handleSubmitApplication = async () => {
+    // STRICT 1-PERMIT-PER-PROJECT VALIDATION: Block duplicate active application (bawal dumoble)
+    const activeDuplicateApp = allAvailableApps.find((app: any) => {
+      if (app.status === "rejected" || app.status === "cancelled") return false;
+      const isLC = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
+      if (isLC) return false;
+      
+      const aProjType = typeof app.projectType === "object" ? app.projectType?.name : app.projectType;
+      const sameType = Boolean(
+        aProjType && selectedProjectType && (
+          aProjType.toLowerCase() === selectedProjectType.name.toLowerCase() ||
+          selectedProjectType.name.toLowerCase().includes(aProjType.toLowerCase())
+        )
+      );
+
+      const sameClearance = Boolean(
+        activeClearanceRef && activeClearanceRef !== "EXEMPT" && app.locationalClearanceRef &&
+        app.locationalClearanceRef.trim().toLowerCase() === activeClearanceRef.trim().toLowerCase()
+      );
+
+      return sameType || sameClearance;
+    });
+
+    if (activeDuplicateApp) {
+      setSubmissionErrorAlert(
+        `Duplicate Application Blocked: You already have an active permit application (${activeDuplicateApp.id} - ${activeDuplicateApp.status}) for ${selectedProjectType.name}. Per Sto. Tomas municipal regulations, only one (1) active permit application is permitted per project type (bawal dumoble). If a previous application was rejected, only then can you file a new application.`
+      );
+      if (typeof document !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return;
+    }
+
     // STRICT VALIDATION: Block submission if any mandatory technical permit is missing
     if (!isAllMandatoryAttached) {
       const missingLabels = missingMandatoryPermits.map(k => PERMIT_FORM_METADATA[k]?.label || k).join(", ");
@@ -1140,6 +1259,90 @@ export default function ApplyPage() {
                 </div>
               )}
 
+              {/* ACTIVE PERMIT NOTICE (1-PERMIT-PER-PROJECT RULE / BAWAL DUMOBLE) */}
+              {activeAppForCurrentProjectType && (
+                <div className="animate-fade-in-up" style={{
+                  background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+                  border: "1.5px solid #fde68a",
+                  borderRadius: "12px",
+                  padding: "0.85rem 1.25rem",
+                  marginBottom: "0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                  boxShadow: "0 2px 8px rgba(217, 119, 6, 0.08)"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Clock size={20} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.9rem", fontWeight: "800", color: "#92400e", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <span>Active Permit In Progress: {activeAppForCurrentProjectType.id}</span>
+                        <span style={{ fontSize: "0.72rem", fontWeight: "800", padding: "2px 8px", borderRadius: "6px", background: "#fef9c3", color: "#b45309", border: "1px solid #fde047" }}>
+                          {activeAppForCurrentProjectType.status === "approved" || activeAppForCurrentProjectType.status === "released" ? "Approved" : "Under Review"}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "0.8rem", color: "#78350f", marginTop: "2px" }}>
+                        You already have an active permit application for <strong>{selectedProjectType.name}</strong>. Per Sto. Tomas municipal regulations, only one (1) active permit application is permitted per project type (bawal dumoble).
+                      </div>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/applicant/track/${encodeURIComponent(activeAppForCurrentProjectType.id)}`}
+                    style={{
+                      background: "#2563eb",
+                      color: "white",
+                      padding: "7px 15px",
+                      borderRadius: "8px",
+                      fontSize: "0.82rem",
+                      fontWeight: "800",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      boxShadow: "0 2px 6px rgba(37, 99, 235, 0.25)"
+                    }}
+                  >
+                    <span>Track Active Permit</span>
+                    <ArrowRight size={13} />
+                  </Link>
+                </div>
+              )}
+
+              {/* RE-APPLICATION NOTICE FOR PREVIOUSLY REJECTED APPLICATION */}
+              {rejectedAppForCurrentProjectType && !activeAppForCurrentProjectType && (
+                <div className="animate-fade-in-up" style={{
+                  background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
+                  border: "1.5px solid #a7f3d0",
+                  borderRadius: "12px",
+                  padding: "0.85rem 1.25rem",
+                  marginBottom: "0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                  boxShadow: "0 2px 8px rgba(5, 150, 105, 0.06)"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <RotateCcw size={18} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.9rem", fontWeight: "800", color: "#065f46" }}>
+                        Previous Application Disapproved ({rejectedAppForCurrentProjectType.id}) — New Application Permitted
+                      </div>
+                      <div style={{ fontSize: "0.8rem", color: "#047857", marginTop: "2px" }}>
+                        Your previous application for <strong>{selectedProjectType.name}</strong> was rejected. You are now creating a new replacement application with corrected compliance.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* SEARCH BAR (UNDER SELECTED PROJECT TYPE) */}
               <div style={{ marginBottom: "1rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
                 <div style={{ position: "relative", maxWidth: "420px" }}>
@@ -1194,11 +1397,18 @@ export default function ApplyPage() {
                   const theme = CATEGORY_THEMES[p.category] || CATEGORY_THEMES.Commercial;
                   const CatIcon = theme.icon;
                   const requiresClearance = p.matrix.zoningPermit !== 'not_required';
+                  const activeAppForP = getActiveAppForProjectType(p.name);
+                  const rejectedAppForP = getRejectedAppForProjectType(p.name);
 
                   return (
                     <div
                       key={p.id}
-                      onClick={() => setSelectedProjectType(p)}
+                      onClick={() => {
+                        setSelectedProjectType(p);
+                        if (activeAppForP) {
+                          setLockedNotice(`Duplicate Permit Blocked: You already have an active permit application (${activeAppForP.id} - ${activeAppForP.status}) for ${p.name}. Sto. Tomas municipal regulations enforce a strict 1-permit-per-project-type rule (bawal dumoble).`);
+                        }
+                      }}
                       className="project-card-item"
                       style={{
                         border: isSelected ? "2px solid #1d4ed8" : "1.5px solid #e2e8f0",
@@ -1283,6 +1493,38 @@ export default function ApplyPage() {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", marginTop: "0.2rem" }}>
                         {/* BADGES */}
                         <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", alignItems: "center", fontSize: "0.7rem", fontWeight: "700" }}>
+                          {activeAppForP ? (
+                            <span style={{
+                              background: isSelected ? "rgba(255, 255, 255, 0.2)" : "#fef3c7",
+                              color: isSelected ? "#ffffff" : "#b45309",
+                              border: isSelected ? "1px solid rgba(255, 255, 255, 0.35)" : "1px solid #fde68a",
+                              padding: "2px 8px",
+                              borderRadius: "5px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              fontWeight: "800"
+                            }}>
+                              <Clock size={11} color={isSelected ? "#fef3c7" : "#d97706"} />
+                              <span>Active: {activeAppForP.id}</span>
+                            </span>
+                          ) : rejectedAppForP ? (
+                            <span style={{
+                              background: isSelected ? "rgba(255, 255, 255, 0.2)" : "#f0fdf4",
+                              color: isSelected ? "#ffffff" : "#166534",
+                              border: isSelected ? "1px solid rgba(255, 255, 255, 0.35)" : "1px solid #86efac",
+                              padding: "2px 8px",
+                              borderRadius: "5px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              fontWeight: "800"
+                            }}>
+                              <RotateCcw size={11} color={isSelected ? "#86efac" : "#15803d"} />
+                              <span>Disapproved ({rejectedAppForP.id}) — Re-Apply Allowed</span>
+                            </span>
+                          ) : null}
+
                           <span style={{
                             background: isSelected ? "rgba(255, 255, 255, 0.18)" : "transparent",
                             color: isSelected ? "#ffffff" : "#334155",
@@ -1394,54 +1636,112 @@ export default function ApplyPage() {
                             <Eye size={12} /> Required Docs
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedProjectType(p);
-                              const pRequiresClearance = p.matrix.zoningPermit !== 'not_required';
-                              if (pRequiresClearance) {
-                                goToStep(2);
-                              } else {
-                                goToStep(3);
-                              }
-                            }}
-                            style={{
-                              background: isSelected ? "#ffffff" : "#ffffff",
-                              border: isSelected ? "1.5px solid #ffffff" : "1.5px solid #cbd5e1",
-                              color: isSelected ? "#1d4ed8" : "#1e293b",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              fontSize: "0.72rem",
-                              fontWeight: "800",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "4px",
-                              padding: "5px 12px",
-                              boxShadow: isSelected ? "0 2px 8px rgba(0, 0, 0, 0.18)" : "none",
-                              transition: "all 0.15s ease"
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.borderColor = "#2563eb";
-                                e.currentTarget.style.color = "#2563eb";
-                              } else {
-                                e.currentTarget.style.background = "#f8fafc";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.borderColor = "#cbd5e1";
-                                e.currentTarget.style.color = "#1e293b";
-                              } else {
-                                e.currentTarget.style.background = "#ffffff";
-                              }
-                            }}
-                            title="Select this Project Type and proceed"
-                          >
-                            <span>{isSelected ? "Selected" : "Select"}</span>
-                            <ChevronRight size={12} />
-                          </button>
+                          {activeAppForP ? (
+                            <Link
+                              href={`/applicant/track/${encodeURIComponent(activeAppForP.id)}`}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                background: "#fef3c7",
+                                border: "1.5px solid #f59e0b",
+                                color: "#b45309",
+                                borderRadius: "6px",
+                                fontSize: "0.72rem",
+                                fontWeight: "800",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "5px 12px",
+                                textDecoration: "none",
+                                boxShadow: "0 1px 4px rgba(0, 0, 0, 0.05)"
+                              }}
+                              title={`An active permit (${activeAppForP.id}) already exists. Click to view its tracking details.`}
+                            >
+                              <ExternalLink size={12} />
+                              <span>View Active ({activeAppForP.id})</span>
+                            </Link>
+                          ) : rejectedAppForP ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProjectType(p);
+                                const pRequiresClearance = p.matrix.zoningPermit !== 'not_required';
+                                if (pRequiresClearance) {
+                                  goToStep(2);
+                                } else {
+                                  goToStep(3);
+                                }
+                              }}
+                              style={{
+                                background: "#16a34a",
+                                border: "1.5px solid #16a34a",
+                                color: "#ffffff",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.72rem",
+                                fontWeight: "800",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "5px 12px",
+                                boxShadow: "0 2px 8px rgba(22, 163, 74, 0.3)",
+                                transition: "all 0.15s ease"
+                              }}
+                              title="Previous application was rejected. Click to start a new application."
+                            >
+                              <RotateCcw size={12} />
+                              <span>Re-Apply (New Application)</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProjectType(p);
+                                const pRequiresClearance = p.matrix.zoningPermit !== 'not_required';
+                                if (pRequiresClearance) {
+                                  goToStep(2);
+                                } else {
+                                  goToStep(3);
+                                }
+                              }}
+                              style={{
+                                background: isSelected ? "#ffffff" : "#ffffff",
+                                border: isSelected ? "1.5px solid #ffffff" : "1.5px solid #cbd5e1",
+                                color: isSelected ? "#1d4ed8" : "#1e293b",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.72rem",
+                                fontWeight: "800",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "5px 12px",
+                                boxShadow: isSelected ? "0 2px 8px rgba(0, 0, 0, 0.18)" : "none",
+                                transition: "all 0.15s ease"
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.borderColor = "#2563eb";
+                                  e.currentTarget.style.color = "#2563eb";
+                                } else {
+                                  e.currentTarget.style.background = "#f8fafc";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.borderColor = "#cbd5e1";
+                                  e.currentTarget.style.color = "#1e293b";
+                                } else {
+                                  e.currentTarget.style.background = "#ffffff";
+                                }
+                              }}
+                              title="Select this Project Type and proceed"
+                            >
+                              <span>{isSelected ? "Selected" : "Select"}</span>
+                              <ChevronRight size={12} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2095,118 +2395,167 @@ export default function ApplyPage() {
           {/* STEP 3: REQUIRED PERMIT FORMS */}
           {currentStep === 3 && (
             <div className="step-pane animate-fade-in-up">
-              {alreadySubmittedStage2App && (
+              {activeExistingStage2App ? (
                 <div style={{
-                  background: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released"
+                  background: activeExistingStage2App.status === "approved" || activeExistingStage2App.status === "released"
                     ? "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)"
                     : "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
                   border: `1.5px solid ${
-                    alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released"
+                    activeExistingStage2App.status === "approved" || activeExistingStage2App.status === "released"
                       ? "#86efac"
                       : "#fde68a"
                   }`,
-                  borderRadius: "14px",
-                  padding: "1.1rem 1.4rem",
+                  borderRadius: "18px",
+                  padding: "2rem",
                   marginBottom: "1.5rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: "12px",
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.04)"
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+                  textAlign: "center"
                 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <div style={{
-                      width: "38px",
-                      height: "38px",
-                      borderRadius: "10px",
-                      background: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#dcfce7" : "#fef3c7",
-                      color: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#16a34a" : "#d97706",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0
-                    }}>
-                      <Clock size={20} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <div style={{
-                        fontSize: "0.95rem",
-                        fontWeight: "800",
-                        color: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#166534" : "#92400e",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        flexWrap: "wrap"
-                      }}>
-                        <span>Stage 2 Application Already Submitted ({alreadySubmittedStage2App.id})</span>
-                        <span style={{
-                          fontSize: "0.72rem",
-                          fontWeight: "800",
-                          padding: "2px 8px",
-                          borderRadius: "6px",
-                          background: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#dcfce7" : "#fef9c3",
-                          color: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#15803d" : "#b45309",
-                          border: `1px solid ${alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#86efac" : "#fde047"}`
-                        }}>
-                          {alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "Approved" : "Pending Review"}
-                        </span>
-                      </div>
-                      <div style={{
-                        fontSize: "0.83rem",
-                        color: alreadySubmittedStage2App.status === "approved" || alreadySubmittedStage2App.status === "released" ? "#15803d" : "#78350f",
-                        marginTop: "2px"
-                      }}>
-                        You have already completed and submitted your technical permitting forms for Locational Clearance {activeClearanceRef}. You do not need to submit again.
-                      </div>
-                    </div>
+                  <div style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "16px",
+                    background: activeExistingStage2App.status === "approved" || activeExistingStage2App.status === "released" ? "#dcfce7" : "#fef3c7",
+                    color: activeExistingStage2App.status === "approved" || activeExistingStage2App.status === "released" ? "#16a34a" : "#d97706",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 1rem auto"
+                  }}>
+                    <Clock size={30} strokeWidth={2.5} />
                   </div>
 
-                  <Link
-                    href={`/applicant/track/${encodeURIComponent(alreadySubmittedStage2App.id)}`}
-                    style={{
-                      background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                      color: "white",
-                      padding: "9px 18px",
-                      borderRadius: "10px",
-                      fontSize: "0.86rem",
+                  <h3 style={{ fontSize: "1.35rem", fontWeight: "900", color: "#0f172a", margin: "0 0 0.5rem 0" }}>
+                    Active Permit In Progress: {activeExistingStage2App.id}
+                  </h3>
+                  
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginBottom: "1rem" }}>
+                    <span style={{
+                      fontSize: "0.78rem",
                       fontWeight: "800",
-                      textDecoration: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      boxShadow: "0 4px 12px rgba(37, 99, 235, 0.25)"
-                    }}
-                  >
-                    <span>View In Application Status</span>
-                    <ArrowRight size={15} />
-                  </Link>
-                </div>
-              )}
+                      padding: "3px 10px",
+                      borderRadius: "6px",
+                      background: activeExistingStage2App.status === "approved" || activeExistingStage2App.status === "released" ? "#dcfce7" : "#fef9c3",
+                      color: activeExistingStage2App.status === "approved" || activeExistingStage2App.status === "released" ? "#15803d" : "#b45309",
+                      border: `1px solid ${activeExistingStage2App.status === "approved" || activeExistingStage2App.status === "released" ? "#86efac" : "#fde047"}`
+                    }}>
+                      {activeExistingStage2App.status === "approved" || activeExistingStage2App.status === "released" ? "Approved" : "Pending Review"}
+                    </span>
+                    <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
+                      Clearance: {activeClearanceRef}
+                    </span>
+                  </div>
 
-              <TechnicalPermitFormsStep
-                projectType={selectedProjectType}
-                locationalClearanceRef={activeClearanceRef}
-                clearanceApp={matchedClearanceApp}
-                isClearanceRequired={isClearanceRequired}
-                applicantName={applicantName}
-                projectName={projectName}
-                setProjectName={setProjectName}
-                streetAddress={streetAddress}
-                setStreetAddress={setStreetAddress}
-                barangay={barangay}
-                setBarangay={setBarangay}
-                lotArea={lotArea}
-                setLotArea={setLotArea}
-                floorArea={floorArea}
-                setFloorArea={setFloorArea}
-                projectCost={projectCost}
-                setProjectCost={setProjectCost}
-                uploadedPermitDocs={uploadedPermitDocs}
-                setUploadedPermitDocs={setUploadedPermitDocs}
-                onProceedToMapping={() => goToStep(4)}
-                onBack={() => goToStep(2)}
-              />
+                  <p style={{ maxWidth: "620px", margin: "0 auto 1.5rem auto", fontSize: "0.92rem", color: "#475569", lineHeight: "1.55" }}>
+                    An active permit application has already been submitted and is currently being processed for <strong>{selectedProjectType.name}</strong>. Per Sto. Tomas municipal regulations, only one (1) active permit application is allowed per project type (bawal dumoble).
+                  </p>
+
+                  <div style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
+                    <Link
+                      href={`/applicant/track/${encodeURIComponent(activeExistingStage2App.id)}`}
+                      style={{
+                        background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                        color: "white",
+                        padding: "10px 22px",
+                        borderRadius: "12px",
+                        fontSize: "0.9rem",
+                        fontWeight: "800",
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)"
+                      }}
+                    >
+                      <span>Track Active Application</span>
+                      <ArrowRight size={16} />
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => goToStep(1)}
+                      style={{
+                        background: "#ffffff",
+                        border: "1.5px solid #cbd5e1",
+                        color: "#334155",
+                        padding: "10px 18px",
+                        borderRadius: "12px",
+                        fontSize: "0.9rem",
+                        fontWeight: "700",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Select Different Project Type
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {rejectedStage2App && (
+                    <div style={{
+                      background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
+                      border: "1.5px solid #a7f3d0",
+                      borderRadius: "14px",
+                      padding: "1rem 1.4rem",
+                      marginBottom: "1.5rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "12px",
+                      boxShadow: "0 2px 10px rgba(5, 150, 105, 0.05)"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{
+                          width: "38px",
+                          height: "38px",
+                          borderRadius: "10px",
+                          background: "#dcfce7",
+                          color: "#15803d",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0
+                        }}>
+                          <RotateCcw size={20} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "0.95rem", fontWeight: "800", color: "#065f46" }}>
+                            Re-Application for Stage 2 Permits
+                          </div>
+                          <div style={{ fontSize: "0.83rem", color: "#047857", marginTop: "2px" }}>
+                            Previous application <strong>{rejectedStage2App.id}</strong> was disapproved / rejected ({rejectedStage2App.remarks || 'compliance deficiencies'}). You are creating a new replacement application with corrected compliance.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <TechnicalPermitFormsStep
+                    projectType={selectedProjectType}
+                    locationalClearanceRef={activeClearanceRef}
+                    clearanceApp={matchedClearanceApp}
+                    isClearanceRequired={isClearanceRequired}
+                    applicantName={applicantName}
+                    projectName={projectName}
+                    setProjectName={setProjectName}
+                    streetAddress={streetAddress}
+                    setStreetAddress={setStreetAddress}
+                    barangay={barangay}
+                    setBarangay={setBarangay}
+                    lotArea={lotArea}
+                    setLotArea={setLotArea}
+                    floorArea={floorArea}
+                    setFloorArea={setFloorArea}
+                    projectCost={projectCost}
+                    setProjectCost={setProjectCost}
+                    uploadedPermitDocs={uploadedPermitDocs}
+                    setUploadedPermitDocs={setUploadedPermitDocs}
+                    onProceedToMapping={() => goToStep(4)}
+                    onBack={() => goToStep(2)}
+                  />
+                </>
+              )}
             </div>
           )}
 
@@ -2292,10 +2641,10 @@ export default function ApplyPage() {
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                           <span style={{ fontSize: "0.75rem", background: "#dcfce7", color: "#166534", padding: "2px 6px", borderRadius: "4px", fontWeight: "700" }}>
-                            {detectedZone.code || "ZONE"}
+                            {(detectedZone as any)?.code || "ZONE"}
                           </span>
                           <span style={{ fontWeight: "700", color: "#166534", fontSize: "0.95rem" }}>
-                            {detectedZone.name || detectedZone.zoneType || (detectedZone.barangay ? `Brgy. ${detectedZone.barangay}` : "Zoning Compliant")}
+                            {(detectedZone as any)?.name || detectedZone.zoneType || (detectedZone.barangay ? `Brgy. ${detectedZone.barangay}` : "Zoning Compliant")}
                           </span>
                         </div>
                         <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "#15803d" }}>
@@ -2466,7 +2815,7 @@ export default function ApplyPage() {
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
                     <span style={{ color: "#64748b", fontWeight: "600" }}>Zoning Classification:</span>
-                    <span style={{ color: "#0f172a", fontWeight: "700" }}>{detectedZone?.name || "R-1 (Low-Density Residential)"}</span>
+                    <span style={{ color: "#0f172a", fontWeight: "700" }}>{(detectedZone as any)?.name || detectedZone?.zoneType || "R-1 (Low-Density Residential)"}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
                     <span style={{ color: "#64748b", fontWeight: "600" }}>Total Lot / Floor Area:</span>

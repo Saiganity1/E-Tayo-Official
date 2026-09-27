@@ -6,7 +6,8 @@ export type ApplicationStatus =
   | 'incomplete_requirements'
   | 'approved'
   | 'released'
-  | 'rejected';
+  | 'rejected'
+  | 'cancelled';
 
 export interface Requirement {
   name: string;

@@ -24,7 +24,8 @@ import {
   Check, 
   Copy, 
   MapPin, 
-  Calendar 
+  Calendar,
+  XCircle
 } from "lucide-react";
 import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
@@ -314,6 +315,8 @@ export default function ApplicantDashboard() {
       case "approved": 
       case "released": return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved", border: "#10b981" };
       case "incomplete_requirements": return { color: "#dc2626", bg: "rgba(239, 68, 68, 0.15)", icon: AlertTriangle, label: "Action Required", border: "#ef4444" };
+      case "rejected": return { color: "#dc2626", bg: "rgba(239, 68, 68, 0.15)", icon: XCircle, label: "Disapproved / Rejected", border: "#dc2626" };
+      case "cancelled": return { color: "#dc2626", bg: "rgba(239, 68, 68, 0.15)", icon: XCircle, label: "Cancelled", border: "#dc2626" };
       default: return { color: "#64748b", bg: "rgba(100, 116, 139, 0.15)", icon: FileText, label: "Processing", border: "#cbd5e1" };
     }
   };
@@ -576,6 +579,7 @@ export default function ApplicantDashboard() {
                 <option value="under_review">Under Review</option>
                 <option value="approved">Approved</option>
                 <option value="incomplete_requirements">Action Required</option>
+                <option value="rejected">Disapproved / Rejected</option>
               </select>
             </div>
           </div>

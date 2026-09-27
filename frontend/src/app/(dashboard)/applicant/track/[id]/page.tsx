@@ -30,7 +30,9 @@ import {
   Banknote,
   X,
   Send,
-  Camera
+  Camera,
+  RotateCcw,
+  MessageSquare
 } from "lucide-react";
 import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
 import Link from "next/link";
@@ -543,6 +545,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       case "pending": return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", step: 1 };
       case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Evaluation", step: 2 };
       case "incomplete_requirements": return { color: "#ef4444", bg: "rgba(239, 68, 68, 0.15)", icon: AlertTriangle, label: "Action Required", step: 2 };
+      case "rejected": return { color: "#dc2626", bg: "rgba(220, 38, 38, 0.15)", icon: XCircle, label: "Disapproved / Rejected", step: 0 };
       case "approved": return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved (Awaiting Payment)", step: 3 };
       case "released": return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle, label: "Permit Released", step: 4 };
       case "cancelled": return { color: "#dc2626", bg: "rgba(220, 38, 38, 0.15)", icon: XCircle, label: "Cancelled by Applicant", step: 0 };
@@ -926,7 +929,26 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            {appData.status !== "cancelled" && appData.status !== "released" && (
+            {appData.status === "rejected" ? (
+              <Link
+                href={`/applicant/apply?reapplyFrom=${encodeURIComponent(appData.id)}&type=${encodeURIComponent(typeof appData.projectType === "object" ? (appData.projectType as any)?.name || "" : appData.projectType || "")}`}
+                style={{
+                  background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                  color: "#ffffff",
+                  padding: "8px 18px",
+                  borderRadius: "12px",
+                  fontWeight: "800",
+                  fontSize: "0.88rem",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 3px 10px rgba(220, 38, 38, 0.3)"
+                }}
+              >
+                <RotateCcw size={15} /> Re-Apply (New Permit)
+              </Link>
+            ) : appData.status !== "cancelled" && appData.status !== "released" ? (
               <button
                 type="button"
                 onClick={() => setShowCancelModal(true)}
@@ -947,7 +969,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               >
                 <XCircle size={15} color="#dc2626" /> Cancel Application
               </button>
-            )}
+            ) : null}
 
             <span style={{ 
               backgroundColor: statusConfig.bg, 
@@ -987,6 +1009,111 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               <span>{toastMsg.text}</span>
             </div>
           )}
+
+      {/* Standalone Top Card: FORMAL DISAPPROVAL / REJECTION NOTICE */}
+      {appData?.status === "rejected" && (
+        <div style={{
+          background: "linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%)",
+          border: "1.5px solid #fca5a5",
+          borderRadius: "20px",
+          padding: "1.4rem",
+          boxShadow: "0 6px 20px rgba(220, 38, 38, 0.08)",
+          marginBottom: "0.75rem"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem", flex: 1, minWidth: "280px" }}>
+              <div style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
+                background: "#fee2e2",
+                color: "#dc2626",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1.5px solid #fca5a5",
+                flexShrink: 0
+              }}>
+                <XCircle size={28} strokeWidth={2.5} />
+              </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: "900", color: "#991b1b" }}>
+                    Application Disapproved / Formal Rejection
+                  </h3>
+                  <span style={{
+                    fontSize: "0.75rem",
+                    fontWeight: "800",
+                    padding: "3px 10px",
+                    borderRadius: "8px",
+                    background: "#fee2e2",
+                    color: "#b91c1c",
+                    border: "1px solid #f87171"
+                  }}>
+                    Slot Available for Re-Application
+                  </span>
+                </div>
+                <div style={{ fontSize: "0.9rem", color: "#7f1d1d", marginTop: "6px", lineHeight: "1.55" }}>
+                  {appData.rejectionReason || appData.evaluationNotes || appData.feedback || (
+                    typeof appData.remarks === "string" ? appData.remarks : "This application has been formally disapproved by the municipal evaluation officer. In compliance with municipal permitting policy, each applicant is allowed only one active permit per project type. Because this application is concluded as rejected, you are now cleared to file a new application."
+                  )}
+                </div>
+                <div style={{
+                  marginTop: "10px",
+                  padding: "8px 12px",
+                  borderRadius: "10px",
+                  background: "rgba(254, 226, 226, 0.6)",
+                  border: "1px dashed #f87171",
+                  fontSize: "0.82rem",
+                  color: "#991b1b",
+                  fontWeight: "600"
+                }}>
+                  📌 <strong>Municipal Regulation Notice:</strong> Duplicate active permits for the same project type are prohibited (&quot;1 permit per project type only&quot;). Since this filing has been disapproved, your previous slot is released and you may now submit a new, corrected permit application.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <Link
+                href={`/applicant/messages?ref=${encodeURIComponent(appData.id)}`}
+                style={{
+                  background: "#ffffff",
+                  border: "1.5px solid #cbd5e1",
+                  color: "#334155",
+                  padding: "10px 18px",
+                  borderRadius: "12px",
+                  fontWeight: "700",
+                  fontSize: "0.9rem",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                <MessageSquare size={16} /> Contact Evaluator
+              </Link>
+              <Link
+                href={`/applicant/apply?reapplyFrom=${encodeURIComponent(appData.id)}&type=${encodeURIComponent(typeof appData.projectType === "object" ? (appData.projectType as any)?.name || "" : appData.projectType || "")}`}
+                style={{
+                  background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                  color: "#ffffff",
+                  padding: "10px 20px",
+                  borderRadius: "12px",
+                  fontWeight: "800",
+                  fontSize: "0.9rem",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 14px rgba(220, 38, 38, 0.3)"
+                }}
+              >
+                <RotateCcw size={16} /> Apply for New Permit
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Standalone Top Card: ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
           {appData?.status === "approved" && !isActuallyReleased && (
