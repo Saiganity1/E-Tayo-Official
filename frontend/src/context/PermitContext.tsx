@@ -998,24 +998,38 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return updated;
     });
 
-    // 2. Persist to backend database
+    // 2. Persist to backend database (only staff/admin can write to /api/logs)
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+      let isStaffOrAdmin = false;
+      if (userStr) {
+        try {
+          const u = JSON.parse(userStr);
+          const r = String(u.role || "").toUpperCase();
+          if (r.includes("ADMIN") || r.includes("STAFF")) isStaffOrAdmin = true;
+        } catch (e) {}
+      } else if (userRoleRef.current === "admin" || userRoleRef.current === "staff") {
+        isStaffOrAdmin = true;
+      }
 
-      await fetch(`${API_BASE_URL}/logs`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          action: rawAction,
-          userEmail: rawUser,
-          details: rawDetails,
-          ipAddress: "127.0.0.1",
-        })
-      });
+      if (isStaffOrAdmin) {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        await fetch(`${API_BASE_URL}/logs`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            action: rawAction,
+            userEmail: rawUser,
+            details: rawDetails,
+            ipAddress: "127.0.0.1",
+          })
+        });
+      }
     } catch (e) {
-      console.warn("Could not sync log to backend:", e);
+      // quiet fallback
     }
   };
 

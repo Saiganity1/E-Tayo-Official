@@ -270,104 +270,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
     const pollInterval = setInterval(() => {
       if (refreshApplications) refreshApplications();
-    }, 3000);
-
-    const directInterval = setInterval(async () => {
-      try {
-        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
-        const base = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-        const headers: Record<string, string> = { "Accept": "application/json" };
-        if (token) headers["Authorization"] = `Bearer ${token}`;
-
-        // 1. Background sync all applicant permits by email
-        const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-        let userEmail = "";
-        if (userStr) {
-          try {
-            const u = JSON.parse(userStr);
-            if (u.email) userEmail = u.email;
-          } catch (e) {}
-        }
-        if (userEmail) {
-          try {
-            let userAppsRes = await fetch(`${base}/permits?email=${encodeURIComponent(userEmail.trim())}`, { headers });
-            if (!userAppsRes.ok) {
-              userAppsRes = await fetch(`${base}/permits?email=${encodeURIComponent(userEmail.trim())}`, { headers: { "Accept": "application/json" } });
-            }
-            if (userAppsRes.ok) {
-              const userApps = await userAppsRes.json();
-              if (Array.isArray(userApps) && userApps.length > 0) {
-                userApps.forEach((uApp: any) => {
-                  if (!uApp || !uApp.id) return;
-                  const curId = String(uApp.id).trim();
-                  const lowId = curId.toLowerCase();
-                  const upId = curId.toUpperCase();
-                  const st = (uApp.status || "").toLowerCase().trim();
-                  if (st === "approved" || st === "released") {
-                    try {
-                      [curId, lowId, upId].forEach(k => {
-                        localStorage.setItem(`etayo_status_${k}`, uApp.status);
-                        localStorage.setItem(`etayo_approved_${k}`, "true");
-                        if (uApp.status === "released") {
-                          localStorage.setItem(`etayo_released_${k}`, "true");
-                          localStorage.setItem(`etayo_paid_${k}`, "true");
-                        }
-                        if (uApp.orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, uApp.orderOfPaymentNo);
-                        if (uApp.assessedFees) localStorage.setItem(`etayo_fees_${k}`, String(uApp.assessedFees));
-                      });
-                    } catch (e) {}
-                    updateApplication(uApp);
-                  }
-                });
-              }
-            }
-          } catch (e) {}
-        }
-
-        // 2. Poll individual unapproved applications
-        const list = applications || [];
-        for (const a of list) {
-          if (!a || !a.id) continue;
-          const aId = String(a.id).trim();
-          const aIdLower = aId.toLowerCase();
-          const aIdUpper = aId.toUpperCase();
-          const rawSt = (a.status || "").toLowerCase().trim();
-
-          if (rawSt !== "approved" && rawSt !== "released") {
-            let res = await fetch(`${base}/permits/${encodeURIComponent(aId)}`, { headers });
-            if (!res.ok) {
-              res = await fetch(`${base}/permits/${encodeURIComponent(aId)}`, { headers: { "Accept": "application/json" } });
-            }
-            if (!res.ok && aIdUpper !== aId) {
-              res = await fetch(`${base}/permits/${encodeURIComponent(aIdUpper)}`, { headers: { "Accept": "application/json" } });
-            }
-            if (res.ok) {
-              const live = await res.json();
-              if (live && live.id && (live.status === "approved" || live.status === "released")) {
-                const curId = String(live.id).trim();
-                const lowId = curId.toLowerCase();
-                const upId = curId.toUpperCase();
-                try {
-                  [curId, lowId, upId].forEach(k => {
-                    localStorage.setItem(`etayo_status_${k}`, live.status);
-                    localStorage.setItem(`etayo_approved_${k}`, "true");
-                    if (live.status === "released") {
-                      localStorage.setItem(`etayo_released_${k}`, "true");
-                      localStorage.setItem(`etayo_paid_${k}`, "true");
-                    }
-                    if (live.orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, live.orderOfPaymentNo);
-                    if (live.assessedFees) localStorage.setItem(`etayo_fees_${k}`, String(live.assessedFees));
-                  });
-                } catch (e) {}
-                updateApplication(live);
-                if (refreshApplications) refreshApplications();
-              }
-            }
-          }
-        }
-      } catch (e) {}
-    }, 2000);
+    }, 4000);
 
     return () => {
       if (typeof window !== "undefined") {
@@ -375,9 +278,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         window.removeEventListener("etayo_applications_updated", handleSync);
       }
       clearInterval(pollInterval);
-      clearInterval(directInterval);
     };
-  }, [refreshApplications, applications, updateApplication]);
+  }, [refreshApplications]);
 
   const handleCopyId = (id: string, e: React.MouseEvent) => {
     e.preventDefault();

@@ -88,7 +88,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/fees/**").hasAnyRole("ADMIN", "SUPERADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/fees/**").hasAnyRole("ADMIN", "SUPERADMIN")
 
-                        // 7. Audit Logging & System Diagnostics (Staff / Admin only)
+                        // 7. Audit Logging & System Diagnostics (Log writing allowed from frontend, reads restricted to Staff/Admin)
+                        .requestMatchers(HttpMethod.POST, "/api/logs/**").permitAll()
                         .requestMatchers("/api/logs/**").hasAnyRole("STAFF", "ADMIN", "SUPERADMIN")
 
                         // 8. Administrative Management Routes
