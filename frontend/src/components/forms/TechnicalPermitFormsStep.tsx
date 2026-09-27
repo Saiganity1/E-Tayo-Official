@@ -30,6 +30,7 @@ import {
   generateFencingPermitPdf,
   generateSignPermitPdf,
   generateTemporaryServicePermitPdf,
+  generateCertificateOfOccupancyPdf,
   UnifiedPermitFormData 
 } from "../../utils/unifiedPermitPdfGenerator";
 import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
@@ -112,6 +113,13 @@ export const FORM_OFFICIAL_DETAILS: Record<string, { officialTitle: string; nbcC
     icon: Hammer,
     color: "#b45309",
     desc: "Official excavation, earthworks, foundation fills, pile driving, and Civil Engineer supervisor sign-off."
+  },
+  certificateOfOccupancy: {
+    officialTitle: "UNIFIED APPLICATION FORM FOR CERTIFICATE OF OCCUPANCY",
+    nbcCode: "UNIFIED FORM CO",
+    icon: Award,
+    color: "#7e22ce",
+    desc: "Unified application for Certificate of Occupancy and Fire Safety Inspection Certificate (FSIC)."
   }
 };
 
@@ -860,6 +868,86 @@ export default function TechnicalPermitFormsStep({
   const [ptscDatePaid, setPtscDatePaid] = useState(() => (clearanceApp as any)?.dateReleased || (clearanceApp as any)?.paymentDate || "Sep 18, 2026");
   const [ptscOfficialReceiptNo, setPtscOfficialReceiptNo] = useState(() => (clearanceApp as any)?.officialReceiptNo || (clearanceApp as any)?.paymentReference || "OR-2026-004521");
   const [ptscDateIssued, setPtscDateIssued] = useState(() => (clearanceApp as any)?.dateReleased || "Sep 18, 2026");
+
+  // Certificate of Occupancy (CO) Specific State
+  const [coScope, setCoScope] = useState<"FULL" | "PARTIAL">("FULL");
+  const [coAppliesFsic, setCoAppliesFsic] = useState(true);
+  const [coBuildingPermitNo, setCoBuildingPermitNo] = useState(() => (clearanceApp as any)?.buildingPermitNo || "BP-2026-0091");
+  const [coDateIssued, setCoDateIssued] = useState(() => (clearanceApp as any)?.permitIssuedDate || "Sep 17, 2026");
+  const [coFsecNo, setCoFsecNo] = useState("FSEC-2026-0041");
+  const [coFsecDateIssued, setCoFsecDateIssued] = useState("Jan 15, 2026");
+  const [coSubmissionDate, setCoSubmissionDate] = useState("Sep 17, 2026");
+  const [coApplicantLastName, setCoApplicantLastName] = useState(() => applicantLastName || "");
+  const [coApplicantFirstName, setCoApplicantFirstName] = useState(() => applicantFirstName || "");
+  const [coApplicantMiddleInitial, setCoApplicantMiddleInitial] = useState(() => applicantMiddleName || "");
+  const [coApplicantAddress, setCoApplicantAddress] = useState(() => compiledFullAddress || "");
+  const [coApplicantZip, setCoApplicantZip] = useState(() => applicantZipCode || "2020");
+  const [coApplicantContactNo, setCoApplicantContactNo] = useState(() => applicantPhone || "0917-123-4567");
+  const [coProjectName, setCoProjectName] = useState(() => projectName || "DELA CRUZ TWO-STOREY RESIDENCE");
+  const [coProjectLocation, setCoProjectLocation] = useState(() => `${streetAddress || '123 Rizal St.'}, Brgy. ${barangay || 'Poblacion'}, Sto. Tomas, Pampanga`);
+  const [coCharacterOfOccupancy, setCoCharacterOfOccupancy] = useState(() => occupancyRuleVII || occupancyClass || "Residential");
+  const [coActualCompletionDate, setCoActualCompletionDate] = useState("Apr 30, 2027");
+  const [coActualFloorArea, setCoActualFloorArea] = useState(() => floorArea || "185.50");
+  const [coActualProjectCost, setCoActualProjectCost] = useState(() => projectCost || "2,500,000.00");
+  const [coProposedStoreys, setCoProposedStoreys] = useState("2");
+  const [coNumberOfUnits, setCoNumberOfUnits] = useState("1");
+  const [coProposedStartDate, setCoProposedStartDate] = useState("Oct 01, 2026");
+  const [coSupervisorRole, setCoSupervisorRole] = useState<"architect" | "civilEngineer">("civilEngineer");
+  const [coSupervisorName, setCoSupervisorName] = useState("ENGR. ROBERTO CRUZ, CE");
+  const [coSupervisorPRC, setCoSupervisorPRC] = useState("0078923");
+  const [coSupervisorPRCValidity, setCoSupervisorPRCValidity] = useState("2028-11-20");
+  const [coSupervisorPTR, setCoSupervisorPTR] = useState("PTR-ST-2026-001");
+  const [coSupervisorPTRIssued, setCoSupervisorPTRIssued] = useState("Jan 10, 2026");
+  const [coSupervisorPTRIssuedAt, setCoSupervisorPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
+  const [coSupervisorTIN, setCoSupervisorTIN] = useState("123-456-789-000");
+  const [coSupervisorCtcNo, setCoSupervisorCtcNo] = useState("CTC-2026-00841");
+  const [coSupervisorCtcDateIssued, setCoSupervisorCtcDateIssued] = useState("Jan 10, 2026");
+  const [coSupervisorCtcPlaceIssued, setCoSupervisorCtcPlaceIssued] = useState("Sto. Tomas");
+  const [coSupervisorSignature, setCoSupervisorSignature] = useState("");
+  const [coApplicantSignature, setCoApplicantSignature] = useState(() => applicantSignature || "");
+  const [coApplicantCtcNo, setCoApplicantCtcNo] = useState(() => (govIdNo || "CTC-2026-00192"));
+  const [coApplicantCtcDateIssued, setCoApplicantCtcDateIssued] = useState(() => (govIdDateIssued || "Jan 10, 2026"));
+  const [coApplicantCtcPlaceIssued, setCoApplicantCtcPlaceIssued] = useState(() => (govIdPlaceIssued || "Sto. Tomas, Pampanga"));
+
+  // CO Requirements Checklist States
+  const [coReqApprovedPlan, setCoReqApprovedPlan] = useState(true);
+  const [coReqCompletionForm, setCoReqCompletionForm] = useState(true);
+  const [coReqPhotocopyPtrPrc, setCoReqPhotocopyPtrPrc] = useState(true);
+  const [coReqMeggerTest, setCoReqMeggerTest] = useState(true);
+  const [coReqGoogleMap, setCoReqGoogleMap] = useState(false);
+  const [coReqPhotographs, setCoReqPhotographs] = useState(true);
+  const [coReqOwnersId, setCoReqOwnersId] = useState(true);
+  const [coReqAuthLetter, setCoReqAuthLetter] = useState(false);
+  const [coReqRepresentativeId, setCoReqRepresentativeId] = useState(false);
+  const [coReqOthers, setCoReqOthers] = useState(false);
+  const [coReqOthersSpecify, setCoReqOthersSpecify] = useState("");
+
+  const handleAutoFillCoFromSystem = () => {
+    setCoBuildingPermitNo((clearanceApp as any)?.buildingPermitNo || "BP-2026-0091");
+    setCoDateIssued((clearanceApp as any)?.permitIssuedDate || "Sep 17, 2026");
+    if (applicantLastName) setCoApplicantLastName(applicantLastName);
+    if (applicantFirstName) setCoApplicantFirstName(applicantFirstName);
+    if (applicantMiddleName) setCoApplicantMiddleInitial(applicantMiddleName);
+    if (compiledFullAddress) setCoApplicantAddress(compiledFullAddress);
+    if (applicantZipCode) setCoApplicantZip(applicantZipCode);
+    if (applicantPhone) setCoApplicantContactNo(applicantPhone);
+    if (projectName) setCoProjectName(projectName);
+    if (streetAddress || barangay) setCoProjectLocation(`${streetAddress || '123 Rizal St.'}, Brgy. ${barangay || 'Poblacion'}, Sto. Tomas, Pampanga`);
+    if (occupancyRuleVII || occupancyClass) setCoCharacterOfOccupancy(occupancyRuleVII || occupancyClass);
+    if (floorArea) setCoActualFloorArea(floorArea);
+    if (projectCost) setCoActualProjectCost(projectCost);
+    if (applicantSignature) setCoApplicantSignature(applicantSignature);
+    if (govIdNo) setCoApplicantCtcNo(govIdNo);
+    if (govIdDateIssued) setCoApplicantCtcDateIssued(govIdDateIssued);
+    if (govIdPlaceIssued) setCoApplicantCtcPlaceIssued(govIdPlaceIssued);
+    if (civilEngineerName) setCoSupervisorName(civilEngineerName);
+    if (civilEngineerPRC) setCoSupervisorPRC(civilEngineerPRC);
+    if (civilEngineerPTR) setCoSupervisorPTR(civilEngineerPTR);
+    if (civilEngineerPTRIssued) setCoSupervisorPTRIssued(civilEngineerPTRIssued);
+    if (civilEngineerPTRIssuedAt) setCoSupervisorPTRIssuedAt(civilEngineerPTRIssuedAt);
+    if (civilEngineerTIN) setCoSupervisorTIN(civilEngineerTIN);
+    if (civilEngineerSignature) setCoSupervisorSignature(civilEngineerSignature);
+  };
 
   const handleAutoFillPtscFromSystem = () => {
     setPtscApplicantNo(applicantNoStreet ? applicantNoStreet.split(" ")[0] : "123");
@@ -2102,6 +2190,68 @@ export default function TechnicalPermitFormsStep({
               ptscStartDate,
             };
             const b64 = await generateTemporaryServicePermitPdf(ptscPayload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "certificateOfOccupancy") {
+            const coPayload: UnifiedPermitFormData = {
+              ...payload,
+              buildingPermitNo: coBuildingPermitNo || payload.applicationNo || "BP-2026-0091",
+              applicationNo: coBuildingPermitNo || payload.applicationNo || "BP-2026-0091",
+              dateIssued: coDateIssued || payload.submissionDate || "Sep 17, 2026",
+              permitIssuedDate: coDateIssued || payload.submissionDate || "Sep 17, 2026",
+              buildingPermitDateIssued: coDateIssued || payload.submissionDate || "Sep 17, 2026",
+              submissionDate: coSubmissionDate || coDateIssued || payload.submissionDate || "Sep 17, 2026",
+              fsecNo: coFsecNo,
+              fsecDateIssued: coFsecDateIssued,
+              occupancyScope: coScope,
+              appliesFireSafetyInspectionCertificate: coAppliesFsic,
+              appliesFsic: coAppliesFsic,
+              applicantLastName: coApplicantLastName || payload.applicantLastName,
+              applicantFirstName: coApplicantFirstName || payload.applicantFirstName,
+              applicantMiddleInitial: coApplicantMiddleInitial || payload.applicantMiddleInitial,
+              applicantAddress: coApplicantAddress || payload.applicantAddress || compiledFullAddress,
+              applicantZipCode: coApplicantZip || payload.applicantZipCode || "2020",
+              applicantPhone: coApplicantContactNo || payload.applicantPhone || "0917-123-4567",
+              projectName: coProjectName || payload.projectName || "DELA CRUZ TWO-STOREY RESIDENCE",
+              projectLocation: coProjectLocation || payload.projectLocation,
+              characterOfOccupancy: coCharacterOfOccupancy || payload.characterOfOccupancy || "Residential",
+              actualCompletionDate: coActualCompletionDate,
+              actualFloorArea: coActualFloorArea,
+              floorArea: coActualFloorArea,
+              actualProjectCost: coActualProjectCost,
+              projectCost: coActualProjectCost,
+              proposedStoreys: coProposedStoreys,
+              numberOfUnits: coNumberOfUnits,
+              proposedStartDate: coProposedStartDate,
+              constructionSupervisorName: coSupervisorName,
+              civilEngineerName: coSupervisorRole === "civilEngineer" ? coSupervisorName : undefined,
+              architectName: coSupervisorRole === "architect" ? coSupervisorName : undefined,
+              supervisorPRC: coSupervisorPRC,
+              supervisorPRCValidity: coSupervisorPRCValidity,
+              supervisorPTR: coSupervisorPTR,
+              supervisorPTRIssued: coSupervisorPTRIssued,
+              supervisorPTRIssuedAt: coSupervisorPTRIssuedAt,
+              supervisorTin: coSupervisorTIN,
+              supervisorCtcNo: coSupervisorCtcNo,
+              supervisorCtcDateIssued: coSupervisorCtcDateIssued,
+              supervisorCtcPlaceIssued: coSupervisorCtcPlaceIssued,
+              supervisorSignature: coSupervisorSignature,
+              applicantSignature: coApplicantSignature || applicantSignature,
+              applicantCtcNo: coApplicantCtcNo || payload.applicantCtcNo || payload.govIdNo || "CTC-2026-00192",
+              applicantCtcDateIssued: coApplicantCtcDateIssued || payload.applicantCtcDateIssued || payload.govIdDateIssued || "Jan 10, 2026",
+              applicantCtcPlaceIssued: coApplicantCtcPlaceIssued || payload.applicantCtcPlaceIssued || payload.govIdPlaceIssued || "Sto. Tomas, Pampanga",
+              reqApprovedPlan: coReqApprovedPlan,
+              reqCompletionForm: coReqCompletionForm,
+              reqPhotocopyPtrPrc: coReqPhotocopyPtrPrc,
+              reqMeggerTest: coReqMeggerTest,
+              reqGoogleMap: coReqGoogleMap,
+              reqPhotographs: coReqPhotographs,
+              reqOwnersId: coReqOwnersId,
+              reqAuthLetter: coReqAuthLetter,
+              reqRepresentativeId: coReqRepresentativeId,
+              reqOthers: coReqOthers,
+              reqOthersSpecify: coReqOthersSpecify,
+            };
+            const b64 = await generateCertificateOfOccupancyPdf(coPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           }
         } catch (indivErr) {
@@ -11556,6 +11706,671 @@ export default function TechnicalPermitFormsStep({
                             <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e293b", display: "block" }}>Engr. GILBERT B. CRUZ</span>
                             <span style={{ fontSize: "0.68rem", color: "#64748b" }}>Municipal Building Official</span>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "certificateOfOccupancy" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                      {/* Auto-fill Status Banner */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1.5px solid #86efac", padding: "12px 16px", borderRadius: "10px", flexWrap: "wrap", gap: "10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#16a34a", color: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <CheckCircle2 size={18} />
+                          </div>
+                          <div>
+                            <span style={{ fontSize: "0.85rem", fontWeight: "800", color: "#166534", display: "block" }}>
+                              System Auto-Fill Active
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#15803d" }}>
+                              Building Permit details, owner verification, project address, and supervising engineer credentials are synchronized with official LGU records.
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAutoFillCoFromSystem}
+                          style={{
+                            background: "#16a34a",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 14px",
+                            fontSize: "0.78rem",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                          }}
+                        >
+                          <RefreshCw size={14} />
+                          Re-Sync from System
+                        </button>
+                      </div>
+
+                      {/* Header Section: Scope of Occupancy & FSIC (Exact Match to Official Form Header) */}
+                      <div style={{
+                        padding: "1.25rem",
+                        borderRadius: "12px",
+                        background: "#ffffff",
+                        border: "2px solid #1e293b",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                      }}>
+                        <div style={{ textAlign: "center", marginBottom: "1rem" }}>
+                          <h3 style={{ fontSize: "1.05rem", fontWeight: "900", color: "#0f172a", margin: "0 0 0.5rem 0", letterSpacing: "0.5px" }}>
+                            UNIFIED APPLICATION FORM FOR CERTIFICATE OF OCCUPANCY
+                          </h3>
+                          <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: "600" }}>
+                            Select the occupancy scope and fire safety inspection application status below
+                          </span>
+                        </div>
+
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: "2.5rem",
+                          marginBottom: "1rem",
+                          padding: "0.85rem",
+                          background: "#f8fafc",
+                          borderRadius: "10px",
+                          border: "1.5px solid #e2e8f0"
+                        }}>
+                          {(["FULL", "PARTIAL"] as const).map(scope => {
+                            const isSelected = coScope === scope;
+                            return (
+                              <button
+                                key={scope}
+                                type="button"
+                                onClick={() => setCoScope(scope)}
+                                style={{
+                                  padding: "8px 24px",
+                                  borderRadius: "8px",
+                                  border: isSelected ? "2px solid #16a34a" : "1.5px solid #cbd5e1",
+                                  background: isSelected ? "#ecfdf5" : "#ffffff",
+                                  color: isSelected ? "#15803d" : "#334155",
+                                  fontWeight: isSelected ? "900" : "700",
+                                  fontSize: "0.92rem",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                  transition: "all 0.15s ease",
+                                  boxShadow: isSelected ? "0 2px 6px rgba(22, 163, 74, 0.15)" : "none"
+                                }}
+                              >
+                                <span style={{ fontSize: "1.1rem" }}>{isSelected ? "☑" : "☐"}</span>
+                                <span>{scope}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* THIS ALSO APPLIES FOR: [ ] FIRE SAFETY INSPECTION CERTIFICATE */}
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          padding: "0.75rem 1rem",
+                          background: coAppliesFsic ? "#eff6ff" : "#f8fafc",
+                          borderRadius: "8px",
+                          border: coAppliesFsic ? "1.5px solid #3b82f6" : "1px solid #cbd5e1"
+                        }}>
+                          <label style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            cursor: "pointer",
+                            fontSize: "0.88rem",
+                            fontWeight: "800",
+                            color: coAppliesFsic ? "#1e40af" : "#475569"
+                          }}>
+                            <span>THIS ALSO APPLIES FOR:</span>
+                            <input
+                              type="checkbox"
+                              checked={coAppliesFsic}
+                              onChange={(e) => setCoAppliesFsic(e.target.checked)}
+                              style={{ width: "18px", height: "18px", accentColor: "#2563eb", cursor: "pointer" }}
+                            />
+                            <span>FIRE SAFETY INSPECTION CERTIFICATE</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Section 1: Building Permit Reference & Prior Approvals */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+                          Building Permit Reference & Prior Approvals
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                              Building Permit No. *
+                            </label>
+                            <input
+                              type="text"
+                              value={coBuildingPermitNo}
+                              onChange={(e) => setCoBuildingPermitNo(e.target.value)}
+                              placeholder="e.g. BP-2026-0091"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                              BP Date Issued *
+                            </label>
+                            <input
+                              type="text"
+                              value={coDateIssued}
+                              onChange={(e) => setCoDateIssued(e.target.value)}
+                              placeholder="e.g. Sep 17, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                              FSEC No. *
+                            </label>
+                            <input
+                              type="text"
+                              value={coFsecNo}
+                              onChange={(e) => setCoFsecNo(e.target.value)}
+                              placeholder="e.g. FSEC-2026-0041"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                              FSEC Date Issued *
+                            </label>
+                            <input
+                              type="text"
+                              value={coFsecDateIssued}
+                              onChange={(e) => setCoFsecDateIssued(e.target.value)}
+                              placeholder="e.g. Jan 15, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>
+                              Date of Application (Top Right) *
+                            </label>
+                            <input
+                              type="text"
+                              value={coSubmissionDate}
+                              onChange={(e) => setCoSubmissionDate(e.target.value)}
+                              placeholder="e.g. Sep 17, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 2: Owner / Applicant Details */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#ffffff", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+                          Owner / Applicant Information (Name of Owner Box)
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 0.6fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Last Name *</label>
+                            <input
+                              type="text"
+                              value={coApplicantLastName}
+                              onChange={(e) => setCoApplicantLastName(e.target.value)}
+                              placeholder="e.g. DELA CRUZ"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Given Name *</label>
+                            <input
+                              type="text"
+                              value={coApplicantFirstName}
+                              onChange={(e) => setCoApplicantFirstName(e.target.value)}
+                              placeholder="e.g. JUAN"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Middle Initial</label>
+                            <input
+                              type="text"
+                              value={coApplicantMiddleInitial}
+                              onChange={(e) => setCoApplicantMiddleInitial(e.target.value)}
+                              placeholder="e.g. M."
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "2fr 0.8fr 1fr", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Address of Applicant / Owner *</label>
+                            <input
+                              type="text"
+                              value={coApplicantAddress}
+                              onChange={(e) => setCoApplicantAddress(e.target.value)}
+                              placeholder="e.g. 123 Rizal St., Poblacion, Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>ZIP Code *</label>
+                            <input
+                              type="text"
+                              value={coApplicantZip}
+                              onChange={(e) => setCoApplicantZip(e.target.value)}
+                              placeholder="e.g. 2020"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Contact Number *</label>
+                            <input
+                              type="text"
+                              value={coApplicantContactNo}
+                              onChange={(e) => setCoApplicantContactNo(e.target.value)}
+                              placeholder="e.g. 0917-123-4567"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 3: Project Location & Actual Metrics */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#ffffff", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+                          Project Details & Actual Completion Metrics
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.5fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Name of Project *</label>
+                            <input
+                              type="text"
+                              value={coProjectName}
+                              onChange={(e) => setCoProjectName(e.target.value)}
+                              placeholder="e.g. DELA CRUZ TWO-STOREY RESIDENCE"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Location of Project *</label>
+                            <input
+                              type="text"
+                              value={coProjectLocation}
+                              onChange={(e) => setCoProjectLocation(e.target.value)}
+                              placeholder="e.g. 123 Rizal St., Poblacion, Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Use / Character of Occupancy *</label>
+                            <input
+                              type="text"
+                              value={coCharacterOfOccupancy}
+                              onChange={(e) => setCoCharacterOfOccupancy(e.target.value)}
+                              placeholder="e.g. Residential, Commercial"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              Actual Date of Completion *
+                            </label>
+                            <input
+                              type="text"
+                              value={coActualCompletionDate}
+                              onChange={(e) => setCoActualCompletionDate(e.target.value)}
+                              placeholder="Apr 30, 2027"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              Actual Gross Floor Area (sq.m.) *
+                            </label>
+                            <input
+                              type="text"
+                              value={coActualFloorArea}
+                              onChange={(e) => setCoActualFloorArea(e.target.value)}
+                              placeholder="185.50"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              Actual Project Cost (PHP) *
+                            </label>
+                            <input
+                              type="text"
+                              value={coActualProjectCost}
+                              onChange={(e) => setCoActualProjectCost(e.target.value)}
+                              placeholder="2,500,000.00"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              No. of Storey(s) *
+                            </label>
+                            <input
+                              type="text"
+                              value={coProposedStoreys}
+                              onChange={(e) => setCoProposedStoreys(e.target.value)}
+                              placeholder="2"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              No. of Unit(s) *
+                            </label>
+                            <input
+                              type="text"
+                              value={coNumberOfUnits}
+                              onChange={(e) => setCoNumberOfUnits(e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 4: Requirements Submitted Checklist */}
+                      <div style={{ padding: "1.1rem", borderRadius: "10px", background: "#f8fafc", border: "1.5px solid #cbd5e1" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", display: "block" }}>
+                              Requirements Submitted Checklist (Left Margin Boxes)
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Check the documents submitted as part of this Certificate of Occupancy application
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#dbeafe", color: "#1e40af", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            Official Sto. Tomas Checklist
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+                          {[
+                            { key: "reqApprovedPlan", checked: coReqApprovedPlan, setter: setCoReqApprovedPlan, label: "1. One (1) set of Approved Plan" },
+                            { key: "reqCompletionForm", checked: coReqCompletionForm, setter: setCoReqCompletionForm, label: "2. One (1) set of Certificate of Completion Form" },
+                            { key: "reqPhotocopyPtrPrc", checked: coReqPhotocopyPtrPrc, setter: setCoReqPhotocopyPtrPrc, label: "3. 1 photocopy of Valid PTR - PRC License of Supervising Professionals" },
+                            { key: "reqMeggerTest", checked: coReqMeggerTest, setter: setCoReqMeggerTest, label: "4. Megger Test result signed & sealed by PEE" },
+                            { key: "reqGoogleMap", checked: coReqGoogleMap, setter: setCoReqGoogleMap, label: "5. Google Map Location" },
+                            { key: "reqPhotographs", checked: coReqPhotographs, setter: setCoReqPhotographs, label: "6. Captioned Photographs of the Building" },
+                            { key: "reqOwnersId", checked: coReqOwnersId, setter: setCoReqOwnersId, label: "7. Photocopy of Valid ID of Owner" },
+                            { key: "reqAuthLetter", checked: coReqAuthLetter, setter: setCoReqAuthLetter, label: "8. Authorization Letter (if representative)" },
+                            { key: "reqRepresentativeId", checked: coReqRepresentativeId, setter: setCoReqRepresentativeId, label: "9. Photocopy of Valid ID of Representative" },
+                            { key: "reqOthers", checked: coReqOthers, setter: setCoReqOthers, label: "10. Others (Specify)" },
+                          ].map(item => (
+                            <label key={item.key} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.78rem", color: "#334155", cursor: "pointer", padding: "4px 6px", borderRadius: "6px", background: item.checked ? "#eff6ff" : "transparent" }}>
+                              <input
+                                type="checkbox"
+                                checked={item.checked}
+                                onChange={e => item.setter(e.target.checked)}
+                                style={{ width: "16px", height: "16px", accentColor: "#2563eb", cursor: "pointer" }}
+                              />
+                              <span>{item.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                        {coReqOthers && (
+                          <div style={{ marginTop: "0.75rem", paddingTop: "0.5rem", borderTop: "1px dashed #cbd5e1" }}>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>Specify Other Requirements:</label>
+                            <input
+                              type="text"
+                              value={coReqOthersSpecify}
+                              onChange={e => setCoReqOthersSpecify(e.target.value)}
+                              placeholder="e.g. As-Built Structural Certification, Fire Safety Compliance Report"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 5: Owner / Applicant Verification & Signature */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #3b82f6", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#1e3a8a", textTransform: "uppercase", display: "block" }}>
+                              Submitted By: Owner / Applicant
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Signature over printed name & Community Tax Certificate verification
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#64748b", marginBottom: "2px" }}>Owner/Applicant Full Name</label>
+                            <div style={{ fontSize: "0.84rem", fontWeight: "700", color: "#0f172a", padding: "7px 10px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              {coApplicantLastName ? `${coApplicantLastName}, ${coApplicantFirstName} ${coApplicantMiddleInitial}`.trim() : compiledFullName}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>C.T.C. No. *</label>
+                            <input
+                              type="text"
+                              value={coApplicantCtcNo}
+                              onChange={(e) => setCoApplicantCtcNo(e.target.value)}
+                              placeholder="e.g. CTC-2026-00192"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Date Issued *</label>
+                            <input
+                              type="text"
+                              value={coApplicantCtcDateIssued}
+                              onChange={(e) => setCoApplicantCtcDateIssued(e.target.value)}
+                              placeholder="e.g. Jan 10, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>Place Issued *</label>
+                            <input
+                              type="text"
+                              value={coApplicantCtcPlaceIssued}
+                              onChange={(e) => setCoApplicantCtcPlaceIssued(e.target.value)}
+                              placeholder="e.g. Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #bfdbfe" }}>
+                          <SignatureCreator
+                            value={coApplicantSignature || applicantSignature}
+                            onChange={(sig) => setCoApplicantSignature(sig)}
+                            label={`Owner / Applicant Digital Signature (Affixed Over Printed Name: ${coApplicantLastName ? `${coApplicantLastName}, ${coApplicantFirstName}` : compiledFullName})`}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Section 6: Supervising Professional Attestation */}
+                      <div style={{ background: "#ffffff", border: "1.5px solid #059669", borderRadius: "12px", padding: "1.25rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.84rem", fontWeight: "800", color: "#065f46", textTransform: "uppercase", display: "block" }}>
+                              Attested By: Full-Time Inspector or Supervisor of Construction
+                            </span>
+                            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                              Architect or Civil Engineer in charge of construction supervision (Sto. Tomas CO Bottom Table)
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.72rem", background: "#d1fae5", color: "#065f46", padding: "3px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            Signed & Sealed Over Printed Name
+                          </span>
+                        </div>
+
+                        {/* Supervisor Name & Role */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.65rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              Supervisor Full Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={coSupervisorName}
+                              onChange={(e) => setCoSupervisorName(e.target.value)}
+                              placeholder="e.g. ENGR. ROBERTO CRUZ, CE"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              Professional Role / Discipline
+                            </label>
+                            <select
+                              value={coSupervisorRole}
+                              onChange={(e) => setCoSupervisorRole(e.target.value as "architect" | "civilEngineer")}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            >
+                              <option value="civilEngineer">Civil Engineer</option>
+                              <option value="architect">Architect</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Table Row 1: PRC No. & Validity */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.65rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              PRC Registration No. *
+                            </label>
+                            <input
+                              type="text"
+                              value={coSupervisorPRC}
+                              onChange={(e) => setCoSupervisorPRC(e.target.value)}
+                              placeholder="e.g. 0078923"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              PRC Validity
+                            </label>
+                            <input
+                              type="text"
+                              value={coSupervisorPRCValidity}
+                              onChange={(e) => setCoSupervisorPRCValidity(e.target.value)}
+                              placeholder="e.g. 2028-11-20"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Table Row 2: PTR No., Date Issued, Issued at */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.65rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              PTR No. *
+                            </label>
+                            <input
+                              type="text"
+                              value={coSupervisorPTR}
+                              onChange={(e) => setCoSupervisorPTR(e.target.value)}
+                              placeholder="e.g. PTR-ST-2026-001"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              PTR Date Issued
+                            </label>
+                            <input
+                              type="text"
+                              value={coSupervisorPTRIssued}
+                              onChange={(e) => setCoSupervisorPTRIssued(e.target.value)}
+                              placeholder="e.g. Jan 10, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              PTR Issued at (Place)
+                            </label>
+                            <input
+                              type="text"
+                              value={coSupervisorPTRIssuedAt}
+                              onChange={(e) => setCoSupervisorPTRIssuedAt(e.target.value)}
+                              placeholder="e.g. Sto. Tomas, Pampanga"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Table Row 3: TIN, CTC No., CTC Date, CTC Issued at */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.65rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              TIN
+                            </label>
+                            <input
+                              type="text"
+                              value={coSupervisorTIN}
+                              onChange={(e) => setCoSupervisorTIN(e.target.value)}
+                              placeholder="e.g. 123-456-789-000"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              CTC No.
+                            </label>
+                            <input
+                              type="text"
+                              value={coSupervisorCtcNo}
+                              onChange={(e) => setCoSupervisorCtcNo(e.target.value)}
+                              placeholder="e.g. CTC-2026-00841"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              CTC Date Issued
+                            </label>
+                            <input
+                              type="text"
+                              value={coSupervisorCtcDateIssued}
+                              onChange={(e) => setCoSupervisorCtcDateIssued(e.target.value)}
+                              placeholder="e.g. Jan 10, 2026"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#334155", marginBottom: "2px" }}>
+                              CTC Issued at
+                            </label>
+                            <input
+                              type="text"
+                              value={coSupervisorCtcPlaceIssued}
+                              onChange={(e) => setCoSupervisorCtcPlaceIssued(e.target.value)}
+                              placeholder="e.g. Sto. Tomas"
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #a7f3d0" }}>
+                          <SignatureCreator
+                            value={coSupervisorSignature}
+                            onChange={setCoSupervisorSignature}
+                            label={`Supervising Professional E-Signature (Affixed Over Printed Name: ${coSupervisorName})`}
+                            required
+                          />
                         </div>
                       </div>
                     </div>

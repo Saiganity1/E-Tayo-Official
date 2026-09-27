@@ -407,6 +407,30 @@ export interface UnifiedPermitFormData {
   actualFloorArea?: string;
   constructionSupervisorName?: string;
   cfeiInspectorName?: string;
+  occupancyScope?: "FULL" | "PARTIAL";
+  appliesFireSafetyInspectionCertificate?: boolean;
+  appliesFsic?: boolean;
+  fsecNo?: string;
+  fsecDateIssued?: string;
+  buildingPermitDateIssued?: string;
+  supervisorCtcNo?: string;
+  supervisorCtcDateIssued?: string;
+  supervisorCtcPlaceIssued?: string;
+  supervisorTin?: string;
+  supervisorSignature?: string;
+
+  // Requirements Submitted Checkboxes (Certificate of Occupancy)
+  reqApprovedPlan?: boolean;
+  reqCompletionForm?: boolean;
+  reqPhotocopyPtrPrc?: boolean;
+  reqMeggerTest?: boolean;
+  reqGoogleMap?: boolean;
+  reqPhotographs?: boolean;
+  reqOwnersId?: boolean;
+  reqAuthLetter?: boolean;
+  reqRepresentativeId?: boolean;
+  reqOthers?: boolean;
+  reqOthersSpecify?: string;
 
   // Professional details
   architectName?: string;
@@ -707,8 +731,8 @@ function parseApplicantName(
     if (input.applicantLastName || input.applicantFirstName) {
       const last = (input.applicantLastName || "").toUpperCase();
       const first = (input.applicantFirstName || "").toUpperCase();
-      const mid = (input.applicantMiddleName || "").toUpperCase();
-      const mi = mid ? (mid.endsWith(".") ? mid : mid[0] + ".") : "N/A";
+      const mid = (input.applicantMiddleName || input.applicantMiddleInitial || "").toUpperCase();
+      const mi = input.applicantMiddleInitial ? input.applicantMiddleInitial.toUpperCase() : (mid ? (mid.endsWith(".") ? mid : mid[0] + ".") : "N/A");
       return { lastName: last, firstName: first, middleName: mid, mi };
     }
     nameStr = input.applicantName || "";
@@ -5305,40 +5329,183 @@ export async function generateCertificateOfOccupancyPdf(data: UnifiedPermitFormD
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header & References: BUILDING PERMIT NO. on underline
-  drawText(data.applicationNo || "BP-2026-0091", 160, 738.0, 8.5, true);
-  drawText(data.submissionDate || "Sep 17, 2026", 440, 738.0, 8, false);
+  const drawCenteredText = (text: string | undefined | null, centerX: number, y: number, size: number = 8.5, isBold: boolean = true) => {
+    if (!text) return;
+    let clean = safeText(text).trim();
+    const font = isBold ? fontBold : fontRegular;
+    const textWidth = font.widthOfTextAtSize(clean, size);
+    p1.drawText(clean, { x: centerX - textWidth / 2, y, size, font, color: darkNavy });
+  };
 
-  // Owner details: separated name
-  const { lastName, firstName, mi, middleName } = parseApplicantName(data);
-  const ownerFormatted = `${lastName}, ${firstName} ${middleName ? middleName + " " : ""}${mi !== "N/A" ? mi : ""}`.trim();
-  drawText(ownerFormatted.toUpperCase(), 140, 642.0, 8.5, true);
-  // ADDRESS OF APPLICANT / OWNER on underline
-  drawText(data.applicantAddress || "123 Rizal St., Brgy. Poblacion, Sto. Tomas, Pampanga", 180, 614.0, 7.5, false, 45);
+  const drawCenteredMark = (centerX: number, baselineY: number, size: number = 9.5) => {
+    const mark = "X";
+    const textWidth = fontBold.widthOfTextAtSize(mark, size);
+    p1.drawText(mark, {
+      x: centerX - textWidth / 2,
+      y: baselineY,
+      size,
+      font: fontBold,
+      color: darkNavy,
+    });
+  };
 
-  // Project details & Occupancy: moved higher onto underlines
-  drawText((data.projectName || "DELA CRUZ TWO-STOREY RESIDENCE").toUpperCase(), 140, 410.0, 8.5, true);
-  drawText(`${data.projectAddress || ""}, Brgy. ${data.barangay || "Poblacion"}, Sto. Tomas, Pampanga`, 140, 380.0, 7.5, false, 55);
-  drawText(resolveOccupancyDetailText(data), 285, 363.0, 7.5, true, 45);
+  // 1. Header Checkboxes: FULL vs PARTIAL
+  const scope = (data.occupancyScope || "FULL").toUpperCase();
+  if (scope === "PARTIAL") {
+    drawCenteredMark(343.68, 793.0, 10.5);
+  } else {
+    drawCenteredMark(200.33, 793.0, 10.5);
+  }
 
-  // Dates & Costs: moved higher onto underlines
-  drawText(data.proposedStartDate || "Oct 01, 2026", 140, 318.0, 7.5, false);
-  drawText(data.actualCompletionDate || data.expectedCompletionDate || "Apr 30, 2027", 380, 318.0, 7.5, true);
-  drawText(data.proposedStoreys || "2", 140, 303.0, 7.5, true);
-  drawText(data.numberOfUnits || "1", 380, 303.0, 7.5, true);
-  drawText(`${data.actualFloorArea || data.floorArea || "185.50"} sq.m.`, 140, 288.0, 8, true);
-  drawText(`PHP ${data.actualProjectCost || data.projectCost || "2,500,000.00"}`, 380, 288.0, 8, true);
+  // 2. THIS ALSO APPLIES FOR: [ ] FIRE SAFETY INSPECTION CERTIFICATE
+  const appliesFsic = data.appliesFireSafetyInspectionCertificate !== false && data.appliesFsic !== false;
+  if (appliesFsic) {
+    drawCenteredMark(267.48, 768.3, 10.5);
+  }
 
-  // Applicant Signature: moved higher
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 360, 200.0, 8.5, true);
-  drawText(data.govIdNo || "CTC-2026-00192", 360, 177.0, 7.5, false);
+  // 3. Header & References: BUILDING PERMIT NO., FSEC NO., and DATES ISSUED on underlines
+  drawText(data.buildingPermitNo || data.applicationNo || "BP-2026-0091", 215, 738.0, 8.5, true);
+  drawText(data.permitIssuedDate || data.buildingPermitDateIssued || data.dateIssued || data.submissionDate || "Sep 17, 2026", 215, 726.0, 8, false);
+  drawText(data.fsecNo || data.fpNo || "FSEC-2026-0041", 215, 714.0, 8.5, true);
+  drawText(data.fsecDateIssued || data.permitIssuedDate || data.dateIssued || data.submissionDate || "Sep 17, 2026", 215, 702.0, 8, false);
 
-  // Engineer Signature: moved higher
-  const supName = data.constructionSupervisorName || data.civilEngineerName || data.architectName || "Engr. Roberto Cruz, CE";
-  drawText(supName.toUpperCase(), 360, 90.0, 8.5, true);
+  // Date at top right: line is x=419.5 to 565.4, center=492.5, baseline y=674.0
+  drawCenteredText(data.submissionDate || data.dateIssued || "Sep 17, 2026", 492.5, 676.0, 8.5, false);
+
+  // 4. Owner details: separated name placed precisely above sub-labels
+  // ( Last Name ) center: 203.3
+  // ( Given Name ) center: 351.0
+  // ( Middle Initial ) center: 476.5
+  const { lastName, firstName, mi } = parseApplicantName(data);
+  drawCenteredText((lastName || "").toUpperCase(), 203.3, 641.5, 8.5, true);
+  drawCenteredText((firstName || "").toUpperCase(), 351.0, 641.5, 8.5, true);
+  if (mi && mi !== "N/A") {
+    drawCenteredText(mi.toUpperCase(), 476.5, 641.5, 8.5, true);
+  }
+
+  // ADDRESS OF APPLICANT / OWNER: starts after the label colon at x=215, line baseline y=613.6
+  let fullAddress = data.applicantAddress;
+  if (!fullAddress) {
+    const parts = [
+      data.applicantNo ? data.applicantNo + " " : "",
+      data.applicantStreet || data.streetAddress,
+      data.barangay ? `Brgy. ${data.barangay}` : "",
+      data.city || data.applicantCity || "Sto. Tomas",
+      data.province || "Pampanga"
+    ].filter(Boolean);
+    fullAddress = parts.join(", ");
+  }
+  drawText((fullAddress || "123 Rizal St., Brgy. Poblacion, Sto. Tomas, Pampanga").toUpperCase(), 215, 616.5, 7.5, false, 55);
+
+  // ZIP CODE & CONTACT NUMBER: on respective underlines (baseline y=601.5)
+  drawText(data.applicantZip || data.applicantZipCode || data.zipCode || "2020", 96, 604.0, 7.5, true);
+  drawText(data.applicantContactNo || data.contactNo || data.contactNumber || data.applicantPhone || "0917-123-4567", 328, 604.0, 7.5, true);
+
+  // 5. Requirements Submitted (10 Checkboxes at center X = 30.64)
+  if (data.reqApprovedPlan !== false) drawCenteredMark(30.64, 557.5, 9);
+  if (data.reqCompletionForm !== false) drawCenteredMark(30.64, 545.5, 9);
+  if (data.reqPhotocopyPtrPrc !== false) drawCenteredMark(30.64, 533.5, 9);
+  if (data.reqMeggerTest !== false) drawCenteredMark(30.64, 521.5, 9);
+  if (data.reqGoogleMap) drawCenteredMark(30.64, 497.5, 9);
+  if (data.reqPhotographs !== false) drawCenteredMark(30.64, 485.5, 9);
+  if (data.reqOwnersId !== false) drawCenteredMark(30.64, 473.5, 9);
+  if (data.reqAuthLetter) drawCenteredMark(30.64, 461.5, 9);
+  if (data.reqRepresentativeId) drawCenteredMark(30.64, 449.5, 9);
+  if (data.reqOthers || data.reqOthersSpecify) {
+    drawCenteredMark(30.64, 437.5, 9);
+    drawText(data.reqOthersSpecify, 98, 437.5, 7.5, false, 60);
+  }
+
+  // 6. Project details (5 items across 7 underlines)
+  drawText((data.projectName || "DELA CRUZ TWO-STOREY RESIDENCE").toUpperCase(), 138, 399.5, 8.5, true, 60);
+  const projLoc = data.projectLocation || data.projectAddress || `${data.streetAddress || "LOT 12, BLOCK 4, SUNSET VALLEY SUBD."}, Brgy. ${data.barangay || "Poblacion"}, Sto. Tomas, Pampanga`;
+  drawText(projLoc.toUpperCase(), 160, 387.5, 7.5, false, 65);
+  drawText(resolveOccupancyDetailText(data).toUpperCase(), 296, 363.0, 7.5, true, 50);
+  drawText(String(data.proposedStoreys || "2"), 208, 351.0, 8, true);
+  drawText(String(data.numberOfUnits || "1"), 186, 339.0, 8, true);
+  drawText(`${data.actualFloorArea || data.floorArea || "185.50"} SQ.M.`, 332, 327.0, 8, true);
+  drawText((data.actualCompletionDate || data.expectedCompletionDate || "APR 30, 2027").toUpperCase(), 232, 315.0, 8, true);
+
+  // 7. Submitted by: Applicant / Owner Sign-off
+  // Line is x=337.8 to 536.2 (center = 437.0, baseline y=263.4)
+  const ownerFullName = (data.applicantName || `${lastName}, ${firstName} ${mi && mi !== "N/A" ? mi : ""}`).trim().toUpperCase();
+  drawCenteredText(ownerFullName, 437.0, 267.0, 8.5, true);
+  drawText(data.applicantCtcNo || data.govIdNo || "CTC-2026-00192", 454, 236.0, 7.5, true);
+  drawText(data.applicantCtcDateIssued || data.govIdDateIssued || "Jan 10, 2026", 388, 227.0, 7.5, false);
+  drawText(data.applicantCtcPlaceIssued || data.govIdPlaceIssued || "Sto. Tomas, Pampanga", 394, 218.0, 7.5, false);
+
+  if (data.applicantSignature && data.applicantSignature.startsWith("data:image/")) {
+    try {
+      const sigImg = data.applicantSignature.includes("png")
+        ? await doc.embedPng(data.applicantSignature)
+        : await doc.embedJpg(data.applicantSignature);
+      p1.drawImage(sigImg, { x: 382, y: 268.0, width: 110, height: 32 });
+    } catch (e) {}
+  }
+
+  // 8. Attested By: Supervisor of Construction Sign-off & Table
+  // Line is x=359.9 to 548.4 (center = 454.0, baseline y=142.2)
+  const supName = (data.constructionSupervisorName || data.civilEngineerName || data.architectName || "ENGR. ROBERTO CRUZ, CE").toUpperCase();
+  drawCenteredText(supName, 454.0, 144.0, 8.5, true);
+
+  if ((data.supervisorSignature || data.civilEngineerSignature) && (data.supervisorSignature || data.civilEngineerSignature)!.startsWith("data:image/")) {
+    try {
+      const sigSrc = (data.supervisorSignature || data.civilEngineerSignature)!;
+      const sigImg = sigSrc.includes("png") ? await doc.embedPng(sigSrc) : await doc.embedJpg(sigSrc);
+      p1.drawImage(sigImg, { x: 399, y: 148.0, width: 110, height: 32 });
+    } catch (e) {}
+  }
+
+  // Table Row 1: PRC NO. & Validity (divider at 446.2, baseline y=104.7)
+  drawText(data.supervisorPRC || data.civilEngineerPRC || data.architectPRC || data.prcNo || "0078923", 370, 104.5, 7.5, true, 16);
+  drawText(data.supervisorPRCValidity || data.civilEngineerPRCValidity || data.architectPRCValidity || data.prcValidity || "2028-11-20", 478, 104.5, 7.5, true, 16);
+
+  // Table Row 2: PTR NO. & Date Issued (divider at 446.2, baseline y=91.9)
+  drawText(data.supervisorPTR || data.civilEngineerPTR || data.architectPTR || data.ptrNo || "PTR-ST-2026-001", 370, 91.8, 7.5, true, 16);
+  drawText(data.supervisorPTRIssued || data.civilEngineerPTRIssued || data.architectPTRIssued || data.ptrDateIssued || "Jan 10, 2026", 494, 91.8, 7.5, false, 14);
+
+  // Table Row 3: Issued at & TIN (divider at 446.2, baseline y=79.2)
+  const rawPtrIssuedAt = (data.supervisorPTRIssuedAt || data.civilEngineerPTRIssuedAt || data.architectPTRIssuedAt || data.ptrIssuedAt || data.ptrPlaceIssued || "Sto. Tomas").trim();
+  let ptrIssuedAtSize = 6.8;
+  const maxPtrW = 73.0;
+  const ptrW = fontRegular.widthOfTextAtSize(rawPtrIssuedAt, ptrIssuedAtSize);
+  if (ptrW > maxPtrW) {
+    ptrIssuedAtSize = Math.max(5.0, ptrIssuedAtSize * (maxPtrW / ptrW));
+  }
+  p1.drawText(rawPtrIssuedAt, { x: 370, y: 79.0, size: ptrIssuedAtSize, font: fontRegular, color: darkNavy });
+  drawText(data.supervisorTIN || data.supervisorTin || data.civilEngineerTIN || data.architectTIN || data.tin || "123-456-789-000", 468, 79.0, 7.5, true, 18);
+
+  // Table Row 4: CTC No., Date Issued, Issued at (dividers at 409.5, 492.3, baseline y=66.5)
+  const rawSupCtc = (data.supervisorCtcNo || "00841923").replace(/^[a-zA-Z\s-]+/g, "").trim() || (data.supervisorCtcNo || "00841923");
+  let supCtcSize = 6.2;
+  const maxSupCtcW = 40.0;
+  const supCtcW = fontBold.widthOfTextAtSize(rawSupCtc, supCtcSize);
+  if (supCtcW > maxSupCtcW) {
+    supCtcSize = Math.max(4.8, supCtcSize * (maxSupCtcW / supCtcW));
+  }
+  p1.drawText(rawSupCtc, { x: 367, y: 66.5, size: supCtcSize, font: fontBold, color: darkNavy });
+
+  const rawSupCtcDate = (data.supervisorCtcDateIssued || data.supervisorPTRIssued || "Jan 10, 2026").trim();
+  let supCtcDateSize = 5.8;
+  const maxSupCtcDateW = 36.5;
+  const supCtcDateW = fontRegular.widthOfTextAtSize(rawSupCtcDate, supCtcDateSize);
+  if (supCtcDateW > maxSupCtcDateW) {
+    supCtcDateSize = Math.max(4.8, supCtcDateSize * (maxSupCtcDateW / supCtcDateW));
+  }
+  p1.drawText(rawSupCtcDate, { x: 454, y: 66.5, size: supCtcDateSize, font: fontRegular, color: darkNavy });
+
+  const rawSupCtcPlace = (data.supervisorCtcPlaceIssued || data.supervisorPTRIssuedAt || "Sto. Tomas").trim();
+  let supCtcPlaceSize = 5.6;
+  const maxSupCtcPlaceW = 28.5;
+  const supCtcPlaceW = fontRegular.widthOfTextAtSize(rawSupCtcPlace, supCtcPlaceSize);
+  if (supCtcPlaceW > maxSupCtcPlaceW) {
+    supCtcPlaceSize = Math.max(4.5, supCtcPlaceSize * (maxSupCtcPlaceW / supCtcPlaceW));
+  }
+  p1.drawText(rawSupCtcPlace, { x: 528, y: 66.5, size: supCtcPlaceSize, font: fontRegular, color: darkNavy });
 
   return await doc.saveAsBase64({ dataUri: false });
 }
+
 
 /**
  * 16. OFFICIAL CERTIFICATE OF COMPLETION
