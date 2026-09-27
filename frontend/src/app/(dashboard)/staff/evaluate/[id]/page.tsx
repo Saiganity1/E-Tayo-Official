@@ -127,6 +127,58 @@ export default function StaffEvaluatePage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Automatically advance status from pending to under_review when staff opens evaluation page
+  const evalAutoStartedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!app || !app.id) return;
+    const curStatus = (app.status || "").toLowerCase().trim();
+    if (curStatus === "pending" && evalAutoStartedRef.current !== app.id) {
+      evalAutoStartedRef.current = app.id;
+      const curId = String(app.id).trim();
+      const lowerId = curId.toLowerCase();
+      const upperId = curId.toUpperCase();
+      [curId, lowerId, upperId].forEach(k => {
+        localStorage.setItem(`etayo_status_${k}`, "under_review");
+      });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("etayo_applications_updated"));
+      }
+
+      if (updateApplication) {
+        updateApplication({
+          ...app,
+          status: "under_review",
+          trackingSteps: (app.trackingSteps || []).map((step: any, idx: number) => {
+            if (idx === 0) return { ...step, status: "completed" };
+            if (idx === 1) return { ...step, status: "in-progress" };
+            return step;
+          })
+        });
+      }
+
+      (async () => {
+        try {
+          const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+          const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
+          const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (token) headers["Authorization"] = `Bearer ${token}`;
+          await fetch(`${apiBase}/permits/${encodeURIComponent(app.id)}/status`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({
+              status: "under_review",
+              remarks: "Under Technical Review & Evaluation by Municipal Staff"
+            })
+          });
+        } catch (err) {
+          console.warn("Could not patch permit status to under_review", err);
+        }
+      })();
+    }
+  }, [app, updateApplication]);
+
   // In-System Document Viewer State
   const [documents, setDocuments] = useState<ViewerDoc[]>([]);
   const [activeDocIndex, setActiveDocIndex] = useState<number>(0);

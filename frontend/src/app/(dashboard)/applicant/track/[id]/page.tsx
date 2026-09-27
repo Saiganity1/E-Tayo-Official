@@ -350,11 +350,17 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               const localDateApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${id}`) || localStorage.getItem(`etayo_date_approved_${lowerId}`)) : null;
               const localRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${id}`) || localStorage.getItem(`etayo_remarks_${lowerId}`)) : null;
 
+              const isLocalUnderReview = typeof window !== "undefined" && (
+                localStorage.getItem(`etayo_status_${id}`) === "under_review" ||
+                localStorage.getItem(`etayo_status_${lowerId}`) === "under_review" ||
+                localStorage.getItem(`etayo_status_${id.toUpperCase()}`) === "under_review"
+              );
+
               const effectiveStatus = isPaidLocal 
                 ? "released" 
                 : (isApprovedLocal 
                     ? "approved" 
-                    : (serverApp.status && serverApp.status !== "pending" ? serverApp.status : (base.status || serverApp.status)));
+                    : (isLocalUnderReview ? "under_review" : (serverApp.status && serverApp.status !== "pending" ? serverApp.status : (base.status || serverApp.status))));
 
               return {
                 ...base,
@@ -886,7 +892,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     }
     switch(status) {
       case "pending": return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", step: 1 };
-      case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Evaluation", step: 2 };
+      case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Review", step: 2 };
       case "incomplete_requirements": return { color: "#ef4444", bg: "rgba(239, 68, 68, 0.15)", icon: AlertTriangle, label: "Action Required", step: 2 };
       case "rejected": return { color: "#dc2626", bg: "rgba(220, 38, 38, 0.15)", icon: XCircle, label: "Disapproved / Rejected", step: 0 };
       case "cancelled": return { color: "#dc2626", bg: "rgba(220, 38, 38, 0.15)", icon: XCircle, label: "Cancelled by Applicant", step: 0 };

@@ -683,7 +683,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       case "pending":
         return { color: "#d97706", bg: "#fef3c7", border: "#f59e0b", icon: Clock, label: "Pending Review", step: 1 };
       case "under_review":
-        return { color: "#0038A8", bg: "#eff6ff", border: "#0038A8", icon: Search, label: "Under Evaluation", step: 2 };
+        return { color: "#0038A8", bg: "#eff6ff", border: "#0038A8", icon: Search, label: "Under Review", step: 2 };
       case "incomplete_requirements":
         return { color: "#dc2626", bg: "#fee2e2", border: "#ef4444", icon: AlertTriangle, label: "Action Required", step: 2 };
       case "rejected":
@@ -774,7 +774,16 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         localStorage.getItem(`etayo_status_${lowerAppId}`) === "released" ||
         localStorage.getItem(`etayo_status_${upperAppId}`) === "released"
       ));
-    const effectiveStatus = isActuallyReleased ? "released" : (isAppApproved ? "approved" : app.status);
+    const isLocalUnderReview = typeof window !== "undefined" && (
+      localStorage.getItem(`etayo_status_${appIdStr}`) === "under_review" ||
+      localStorage.getItem(`etayo_status_${lowerAppId}`) === "under_review" ||
+      localStorage.getItem(`etayo_status_${upperAppId}`) === "under_review"
+    );
+    const effectiveStatus = isActuallyReleased 
+      ? "released" 
+      : (isAppApproved 
+          ? "approved" 
+          : (isLocalUnderReview || rawAppStatus === "under_review" ? "under_review" : app.status));
     const statusConfig = getStatusConfig(effectiveStatus, app, connectedApp);
     const StatusIcon = statusConfig.icon;
     const isApprovedLC = isLocationalClearance && isAppApproved;
@@ -2166,17 +2175,30 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                           <h3 style={{ fontSize: "1.25rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
                             {dossier.projectName}
                           </h3>
-                          <span style={{
-                            fontSize: "0.75rem",
-                            fontWeight: "800",
-                            padding: "3px 9px",
-                            borderRadius: "999px",
-                            background: hasAction ? "#fee2e2" : hasPending ? "#fffbeb" : "#f0fdf4",
-                            color: hasAction ? "#b91c1c" : hasPending ? "#b45309" : "#16a34a",
-                            border: `1px solid ${hasAction ? "#fca5a5" : hasPending ? "#fde68a" : "#bbf7d0"}`
-                          }}>
-                            {hasAction ? "Action Required on Requirements" : hasPending ? `${dossier.pendingCount} Form${dossier.pendingCount > 1 ? "s" : ""} Awaiting Review` : "All Forms Approved ✓"}
-                          </span>
+                          {(() => {
+                            const isAnyUnderReview = dossier.applications.some(a => {
+                              const aId = String(a.id || "").trim();
+                              const raw = (a.status || "").toLowerCase().trim();
+                              return raw === "under_review" || (typeof window !== "undefined" && (
+                                localStorage.getItem(`etayo_status_${aId}`) === "under_review" ||
+                                localStorage.getItem(`etayo_status_${aId.toLowerCase()}`) === "under_review" ||
+                                localStorage.getItem(`etayo_status_${aId.toUpperCase()}`) === "under_review"
+                              ));
+                            });
+                            return (
+                              <span style={{
+                                fontSize: "0.75rem",
+                                fontWeight: "800",
+                                padding: "3px 9px",
+                                borderRadius: "999px",
+                                background: hasAction ? "#fee2e2" : isAnyUnderReview ? "#eff6ff" : hasPending ? "#fffbeb" : "#f0fdf4",
+                                color: hasAction ? "#b91c1c" : isAnyUnderReview ? "#1d4ed8" : hasPending ? "#b45309" : "#16a34a",
+                                border: `1px solid ${hasAction ? "#fca5a5" : isAnyUnderReview ? "#bfdbfe" : hasPending ? "#fde68a" : "#bbf7d0"}`
+                              }}>
+                                {hasAction ? "Action Required on Requirements" : isAnyUnderReview ? `${dossier.pendingCount} Form Under Review` : hasPending ? `${dossier.pendingCount} Form${dossier.pendingCount > 1 ? "s" : ""} Awaiting Review` : "All Forms Approved ✓"}
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.85rem", color: "#64748b", flexWrap: "wrap" }}>
@@ -2196,18 +2218,26 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         {dossier.applications.map((app, idx) => {
                           const badge = getPermitTypeBadge(app.permitType, app.id);
+                          const appKey = String(app.id || "").trim();
                           const isThisApproved = (app.status || "").toLowerCase() === "approved" ||
                             (app.status || "").toLowerCase() === "released" ||
                             Boolean(app.isReleased) ||
                             (typeof window !== "undefined" && (
-                              localStorage.getItem(`etayo_approved_${String(app.id || "").trim()}`) === "true" ||
-                              localStorage.getItem(`etayo_approved_${String(app.id || "").trim().toLowerCase()}`) === "true" ||
-                              localStorage.getItem(`etayo_approved_${String(app.id || "").trim().toUpperCase()}`) === "true" ||
-                              localStorage.getItem(`etayo_status_${String(app.id || "").trim()}`) === "approved" ||
-                              localStorage.getItem(`etayo_status_${String(app.id || "").trim().toLowerCase()}`) === "approved" ||
-                              localStorage.getItem(`etayo_status_${String(app.id || "").trim().toUpperCase()}`) === "approved"
+                              localStorage.getItem(`etayo_approved_${appKey}`) === "true" ||
+                              localStorage.getItem(`etayo_approved_${appKey.toLowerCase()}`) === "true" ||
+                              localStorage.getItem(`etayo_approved_${appKey.toUpperCase()}`) === "true" ||
+                              localStorage.getItem(`etayo_status_${appKey}`) === "approved" ||
+                              localStorage.getItem(`etayo_status_${appKey.toLowerCase()}`) === "approved" ||
+                              localStorage.getItem(`etayo_status_${appKey.toUpperCase()}`) === "approved"
                             ));
-                          const stConfig = getStatusConfig(isThisApproved ? "approved" : app.status, app);
+                          const isThisUnderReview = (app.status || "").toLowerCase() === "under_review" ||
+                            (typeof window !== "undefined" && (
+                              localStorage.getItem(`etayo_status_${appKey}`) === "under_review" ||
+                              localStorage.getItem(`etayo_status_${appKey.toLowerCase()}`) === "under_review" ||
+                              localStorage.getItem(`etayo_status_${appKey.toUpperCase()}`) === "under_review"
+                            ));
+                          const effSt = isThisApproved ? "approved" : (isThisUnderReview ? "under_review" : app.status);
+                          const stConfig = getStatusConfig(effSt, app);
                           return (
                             <React.Fragment key={app.id}>
                               <div style={{

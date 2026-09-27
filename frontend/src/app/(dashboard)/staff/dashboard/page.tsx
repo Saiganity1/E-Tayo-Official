@@ -15,7 +15,7 @@ import { groupApplicationsIntoProjectDossiers, ProjectDossier } from "@/utils/pr
 type ViewMode = "project" | "applicant" | "flat";
 
 export default function StaffDashboard() {
-  const { applications } = usePermitContext();
+  const { applications, updateApplication } = usePermitContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
@@ -23,6 +23,50 @@ export default function StaffDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>("project");
   const [expandedDossiers, setExpandedDossiers] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleStartEvaluation = (targetApp: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!targetApp || !targetApp.id) return;
+    const curStatus = (targetApp.status || "").toLowerCase().trim();
+    if (curStatus === "pending") {
+      const curId = String(targetApp.id).trim();
+      const lowerId = curId.toLowerCase();
+      const upperId = curId.toUpperCase();
+      [curId, lowerId, upperId].forEach(k => {
+        localStorage.setItem(`etayo_status_${k}`, "under_review");
+      });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("etayo_applications_updated"));
+      }
+      if (updateApplication) {
+        updateApplication({
+          ...targetApp,
+          status: "under_review",
+          trackingSteps: (targetApp.trackingSteps || []).map((step: any, idx: number) => {
+            if (idx === 0) return { ...step, status: "completed" };
+            if (idx === 1) return { ...step, status: "in-progress" };
+            return step;
+          })
+        });
+      }
+      try {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+        const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        fetch(`${apiBase}/permits/${encodeURIComponent(targetApp.id)}/status`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            status: "under_review",
+            remarks: "Staff evaluation initiated."
+          })
+        }).catch(() => {});
+      } catch (e) {}
+    }
+  };
 
   const copyToClipboard = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -524,7 +568,10 @@ export default function StaffDashboard() {
                       {nextPendingApp && (
                         <Link
                           href={`/staff/evaluate/${nextPendingApp.id}`}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartEvaluation(nextPendingApp, e);
+                          }}
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
@@ -670,11 +717,12 @@ export default function StaffDashboard() {
                                   alignItems: "center",
                                   gap: "5px"
                                 }}>
-                                  <StatusIcon size={13} /> {app.status.replace(/_/g, " ")}
+                                  <StatusIcon size={13} /> {app.status === "under_review" ? "Under Review" : (statusStyle.label || app.status.replace(/_/g, " "))}
                                 </span>
 
                                 <Link
                                   href={`/staff/evaluate/${app.id}`}
+                                  onClick={(e) => handleStartEvaluation(app, e)}
                                   style={{
                                     display: "inline-flex",
                                     alignItems: "center",
@@ -774,12 +822,13 @@ export default function StaffDashboard() {
                           letterSpacing: "0.05em",
                           display: "inline-block"
                         }}>
-                          {app.status.replace(/_/g, " ")}
+                          {app.status === "under_review" ? "Under Review" : app.status.replace(/_/g, " ")}
                         </span>
                       </td>
                       <td style={{ padding: "1.2rem 1.5rem" }}>
                         <Link 
                           href={`/staff/evaluate/${app.id}`} 
+                          onClick={(e) => handleStartEvaluation(app, e)}
                           style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "white", border: "1px solid #cbd5e1", color: "#0f172a", padding: "7px 14px", borderRadius: "10px", fontWeight: "700", fontSize: "0.85rem", textDecoration: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}
                         >
                           <Eye size={15} color="#2563eb" /> Evaluate

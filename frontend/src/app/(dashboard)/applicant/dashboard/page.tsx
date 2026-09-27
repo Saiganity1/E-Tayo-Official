@@ -278,15 +278,25 @@ export default function ApplicantDashboard() {
       localStorage.getItem(`etayo_status_${upperId}`) === "approved"
     );
 
+    const isLocalUnderReview = typeof window !== "undefined" && (
+      localStorage.getItem(`etayo_status_${id}`) === "under_review" ||
+      localStorage.getItem(`etayo_status_${lowerId}`) === "under_review" ||
+      localStorage.getItem(`etayo_status_${upperId}`) === "under_review"
+    );
+
     const isAppApproved = rawStatus === "approved" || appRawStatus === "approved" || isLocallyApproved;
 
     if (isAppApproved) {
       return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved", border: "#10b981" };
     }
 
+    if (isLocalUnderReview || rawStatus === "under_review" || appRawStatus === "under_review") {
+      return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Review", border: "#0038A8" };
+    }
+
     switch(status) {
       case "pending": return { color: "#d97706", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", border: "#f59e0b" };
-      case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Evaluation", border: "#0038A8" };
+      case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Review", border: "#0038A8" };
       case "approved": 
       case "released": return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved", border: "#10b981" };
       case "incomplete_requirements": return { color: "#dc2626", bg: "rgba(239, 68, 68, 0.15)", icon: AlertTriangle, label: "Action Required", border: "#ef4444" };
