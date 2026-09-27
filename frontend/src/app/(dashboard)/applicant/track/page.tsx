@@ -276,48 +276,45 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       try {
         const rawApi = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
         const base = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const headers: Record<string, string> = { "Accept": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
         const list = applications || [];
         for (const a of list) {
           if (!a || !a.id) continue;
-          const aId = String(a.id);
+          const aId = String(a.id).trim();
           const aIdLower = aId.toLowerCase();
-          const isLocallyApproved = typeof window !== "undefined" && (
-            localStorage.getItem(`etayo_approved_${aId}`) === "true" ||
-            localStorage.getItem(`etayo_approved_${aIdLower}`) === "true" ||
-            localStorage.getItem(`etayo_status_${aId}`) === "approved" ||
-            localStorage.getItem(`etayo_status_${aIdLower}`) === "approved"
-          );
-          if (a.status !== "approved" && a.status !== "released" && !isLocallyApproved) {
-            let res = await fetch(`${base}/permits/${encodeURIComponent(aId)}`);
-            if (!res.ok && aId.toUpperCase() !== aId) {
-              res = await fetch(`${base}/permits/${encodeURIComponent(aId.toUpperCase())}`);
+          const aIdUpper = aId.toUpperCase();
+          const rawSt = (a.status || "").toLowerCase().trim();
+
+          if (rawSt !== "approved" && rawSt !== "released") {
+            let res = await fetch(`${base}/permits/${encodeURIComponent(aId)}`, { headers });
+            if (!res.ok && aIdUpper !== aId) {
+              res = await fetch(`${base}/permits/${encodeURIComponent(aIdUpper)}`, { headers });
             }
             if (res.ok) {
               const live = await res.json();
               if (live && live.id && (live.status === "approved" || live.status === "released")) {
-                const curId = String(live.id);
+                const curId = String(live.id).trim();
                 const lowId = curId.toLowerCase();
+                const upId = curId.toUpperCase();
                 try {
-                  localStorage.setItem(`etayo_status_${curId}`, live.status);
-                  localStorage.setItem(`etayo_status_${lowId}`, live.status);
-                  localStorage.setItem(`etayo_approved_${curId}`, "true");
-                  localStorage.setItem(`etayo_approved_${lowId}`, "true");
-                  if (live.orderOfPaymentNo) {
-                    localStorage.setItem(`etayo_op_${curId}`, live.orderOfPaymentNo);
-                    localStorage.setItem(`etayo_op_${lowId}`, live.orderOfPaymentNo);
-                  }
-                  if (live.assessedFees) {
-                    localStorage.setItem(`etayo_fees_${curId}`, String(live.assessedFees));
-                    localStorage.setItem(`etayo_fees_${lowId}`, String(live.assessedFees));
-                  }
+                  [curId, lowId, upId].forEach(k => {
+                    localStorage.setItem(`etayo_status_${k}`, live.status);
+                    localStorage.setItem(`etayo_approved_${k}`, "true");
+                    if (live.orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, live.orderOfPaymentNo);
+                    if (live.assessedFees) localStorage.setItem(`etayo_fees_${k}`, String(live.assessedFees));
+                  });
                 } catch (e) {}
                 updateApplication(live);
+                if (refreshApplications) refreshApplications();
               }
             }
           }
         }
       } catch (e) {}
-    }, 3000);
+    }, 2500);
 
     return () => {
       if (typeof window !== "undefined") {
@@ -616,20 +613,27 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   };
 
   const getStatusConfig = (status: string, app?: any, connectedApp?: any) => {
-    const isReleased = status === "released" || isActuallyReleasedApp(app, connectedApp);
+    const isReleased = status === "released" || isActuallyReleasedApp(app, connectedApp) || Boolean(app?.isReleased);
     if (isReleased) {
       return { color: "#059669", bg: "#dcfce7", border: "#16a34a", icon: CheckCircle, label: "Permit Released", step: 4 };
     }
 
-    const id = String(app?.id || "");
+    const id = String(app?.id || "").trim();
     const lowerId = id.toLowerCase();
-    const isApproved = status === "approved" ||
-      (typeof window !== "undefined" && (
-        localStorage.getItem(`etayo_approved_${id}`) === "true" ||
-        localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
-        localStorage.getItem(`etayo_status_${id}`) === "approved" ||
-        localStorage.getItem(`etayo_status_${lowerId}`) === "approved"
-      ));
+    const upperId = id.toUpperCase();
+    const rawStatus = (status || "").toLowerCase().trim();
+    const appRawStatus = (app?.status || "").toLowerCase().trim();
+
+    const isLocallyApproved = typeof window !== "undefined" && (
+      localStorage.getItem(`etayo_approved_${id}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${upperId}`) === "true" ||
+      localStorage.getItem(`etayo_status_${id}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${lowerId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${upperId}`) === "approved"
+    );
+
+    const isApproved = rawStatus === "approved" || appRawStatus === "approved" || isLocallyApproved;
 
     if (isApproved) {
       const paymentInfo = checkUserConfirmedPayment(app, connectedApp);
@@ -654,7 +658,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       };
     }
 
-    switch(status) {
+    switch(rawStatus) {
       case "pending":
         return { color: "#d97706", bg: "#fef3c7", border: "#f59e0b", icon: Clock, label: "Pending Review", step: 1 };
       case "under_review":
@@ -733,16 +737,21 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const connectedLCApp = !isLocationalClearance ? connectedApp : null;
     const isActuallyReleased = isActuallyReleasedApp(app, connectedApp);
     const paymentInfo = checkUserConfirmedPayment(app, connectedApp);
-    const appIdStr = String(app.id || "");
+    const appIdStr = String(app.id || "").trim();
     const lowerAppId = appIdStr.toLowerCase();
-    const isAppApproved = app.status === "approved" || app.status === "released" || isActuallyReleased ||
+    const upperAppId = appIdStr.toUpperCase();
+    const rawAppStatus = (app.status || "").toLowerCase().trim();
+    const isAppApproved = rawAppStatus === "approved" || rawAppStatus === "released" || isActuallyReleased || Boolean(app.isReleased) ||
       (typeof window !== "undefined" && (
         localStorage.getItem(`etayo_approved_${appIdStr}`) === "true" ||
         localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
+        localStorage.getItem(`etayo_approved_${upperAppId}`) === "true" ||
         localStorage.getItem(`etayo_status_${appIdStr}`) === "approved" ||
-        localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved"
+        localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${upperAppId}`) === "approved"
       ));
-    const statusConfig = getStatusConfig(app.status, app, connectedApp);
+    const effectiveStatus = isActuallyReleased ? "released" : (isAppApproved ? "approved" : app.status);
+    const statusConfig = getStatusConfig(effectiveStatus, app, connectedApp);
     const StatusIcon = statusConfig.icon;
     const isApprovedLC = isLocationalClearance && isAppApproved;
     const isArchived = archivedIds.includes(app.id);
@@ -899,16 +908,16 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
             {[
-              { num: 1, title: "1. Filed", desc: "Submitted Online", active: statusConfig.step >= 1, current: statusConfig.step === 1 },
-              { num: 2, title: "2. Evaluation", desc: "Technical Review", active: statusConfig.step >= 2, current: statusConfig.step === 2 },
+              { num: 1, title: "1. Filed", desc: "Submitted Online", active: statusConfig.step >= 1, current: statusConfig.step === 1 && !isAppApproved },
+              { num: 2, title: "2. Evaluation", desc: "Technical Review", active: statusConfig.step >= 2 || isAppApproved, current: statusConfig.step === 2 && !isAppApproved },
               { 
                 num: 3, 
                 title: isLocationalClearance ? "3. Zoning Clearance" : "3. Endorsement", 
-                desc: (app.status === "approved" || app.status === "released" || isActuallyReleased) 
+                desc: (isAppApproved || app.status === "approved" || app.status === "released" || isActuallyReleased) 
                   ? "Approved & Endorsed ✓" 
                   : (isLocationalClearance ? "Zoning Review" : "Chief OBO Approval"), 
-                active: statusConfig.step >= 3, 
-                current: statusConfig.step === 3 
+                active: statusConfig.step >= 3 || isAppApproved, 
+                current: (statusConfig.step === 3 || isAppApproved) && !isActuallyReleased && !paymentInfo.confirmed 
               },
               { 
                 num: 4, 
@@ -2149,7 +2158,18 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         {dossier.applications.map((app, idx) => {
                           const badge = getPermitTypeBadge(app.permitType, app.id);
-                          const stConfig = getStatusConfig(app.status, app);
+                          const isThisApproved = (app.status || "").toLowerCase() === "approved" ||
+                            (app.status || "").toLowerCase() === "released" ||
+                            Boolean(app.isReleased) ||
+                            (typeof window !== "undefined" && (
+                              localStorage.getItem(`etayo_approved_${String(app.id || "").trim()}`) === "true" ||
+                              localStorage.getItem(`etayo_approved_${String(app.id || "").trim().toLowerCase()}`) === "true" ||
+                              localStorage.getItem(`etayo_approved_${String(app.id || "").trim().toUpperCase()}`) === "true" ||
+                              localStorage.getItem(`etayo_status_${String(app.id || "").trim()}`) === "approved" ||
+                              localStorage.getItem(`etayo_status_${String(app.id || "").trim().toLowerCase()}`) === "approved" ||
+                              localStorage.getItem(`etayo_status_${String(app.id || "").trim().toUpperCase()}`) === "approved"
+                            ));
+                          const stConfig = getStatusConfig(isThisApproved ? "approved" : app.status, app);
                           return (
                             <React.Fragment key={app.id}>
                               <div style={{

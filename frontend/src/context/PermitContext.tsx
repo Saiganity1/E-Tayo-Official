@@ -304,21 +304,27 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
 
       let userEmail = "";
+      let userName = "";
       let isStaffOrAdmin = userRoleRef.current === "admin" || userRoleRef.current === "staff";
       try {
         const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
         if (userStr) {
           const u = JSON.parse(userStr);
           if (u.email) userEmail = u.email;
+          if (u.name) userName = u.name;
           if (u.role === "ROLE_ADMIN" || u.role === "ROLE_SUPERADMIN" || u.role === "ROLE_STAFF" || u.role === "admin" || u.role === "staff") {
             isStaffOrAdmin = true;
           }
         }
       } catch (e) {}
 
-      const permitsUrl = (!isStaffOrAdmin && userEmail) 
-        ? `${API_BASE_URL}/permits?email=${encodeURIComponent(userEmail)}`
-        : `${API_BASE_URL}/permits`;
+      const params = new URLSearchParams();
+      if (!isStaffOrAdmin) {
+        if (userEmail) params.append("email", userEmail.trim());
+        if (userName) params.append("name", userName.trim());
+      }
+      const qStr = params.toString();
+      const permitsUrl = qStr ? `${API_BASE_URL}/permits?${qStr}` : `${API_BASE_URL}/permits`;
 
       const [appsRes, logsRes, feesRes] = await Promise.all([
         fetch(permitsUrl, { headers }).catch(e => ({ ok: false, json: async () => [] })),
@@ -334,6 +340,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       const cleanBackendApps = (backendApps || []).filter(a => !isDummyApp(a));
       
+      const matchPermitId = (a?: string, b?: string) => Boolean(a && b && a.trim().toLowerCase() === b.trim().toLowerCase());
+
       let mergedApps = cleanBackendApps;
       try {
         const cachedStr = localStorage.getItem("etayo_cached_applications");
@@ -342,13 +350,15 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const cleanCached = (cachedApps || []).filter(c => !isDummyApp(c));
 
           mergedApps = cleanBackendApps.map((bApp) => {
-            const foundCached = cleanCached.find((c) => c.id === bApp.id);
-            const id = bApp.id || "";
+            const foundCached = cleanCached.find((c) => matchPermitId(c.id, bApp.id));
+            const id = (bApp.id || "").trim();
             const lowerId = id.toLowerCase();
+            const upperId = id.toUpperCase();
 
             const isPaidLocal = typeof window !== "undefined" && (
               localStorage.getItem(`etayo_paid_${id}`) === "true" ||
               localStorage.getItem(`etayo_paid_${lowerId}`) === "true" ||
+              localStorage.getItem(`etayo_paid_${upperId}`) === "true" ||
               (foundCached as any)?.paymentStatus === "paid" ||
               foundCached?.status === "released" ||
               Boolean((foundCached as any)?.isReleased)
@@ -358,8 +368,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               isPaidLocal ||
               localStorage.getItem(`etayo_payment_confirmed_${id}`) === "true" ||
               localStorage.getItem(`etayo_payment_confirmed_${lowerId}`) === "true" ||
+              localStorage.getItem(`etayo_payment_confirmed_${upperId}`) === "true" ||
               Boolean(localStorage.getItem(`etayo_receipt_${id}`)) ||
               Boolean(localStorage.getItem(`etayo_receipt_${lowerId}`)) ||
+              Boolean(localStorage.getItem(`etayo_receipt_${upperId}`)) ||
               Boolean((foundCached as any)?.userConfirmedPayment) ||
               Boolean((bApp as any).userConfirmedPayment)
             );
@@ -368,20 +380,22 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               isPaidLocal ||
               localStorage.getItem(`etayo_approved_${id}`) === "true" ||
               localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
+              localStorage.getItem(`etayo_approved_${upperId}`) === "true" ||
               localStorage.getItem(`etayo_status_${id}`) === "approved" ||
               localStorage.getItem(`etayo_status_${lowerId}`) === "approved" ||
-              foundCached?.status === "approved" ||
-              bApp.status === "approved"
+              localStorage.getItem(`etayo_status_${upperId}`) === "approved" ||
+              (foundCached?.status || "").toLowerCase() === "approved" ||
+              (bApp.status || "").toLowerCase() === "approved"
             );
 
             const cachedReceiptUrl = typeof window !== "undefined" 
-              ? (localStorage.getItem(`etayo_receipt_${id}`) || localStorage.getItem(`etayo_receipt_${lowerId}`))
+              ? (localStorage.getItem(`etayo_receipt_${id}`) || localStorage.getItem(`etayo_receipt_${lowerId}`) || localStorage.getItem(`etayo_receipt_${upperId}`))
               : null;
 
-            const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${id}`) || localStorage.getItem(`etayo_op_${lowerId}`)) : null;
-            const storedFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${id}`) || localStorage.getItem(`etayo_fees_${lowerId}`)) : null;
-            const storedDateApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${id}`) || localStorage.getItem(`etayo_date_approved_${lowerId}`)) : null;
-            const storedRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${id}`) || localStorage.getItem(`etayo_remarks_${lowerId}`)) : null;
+            const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${id}`) || localStorage.getItem(`etayo_op_${lowerId}`) || localStorage.getItem(`etayo_op_${upperId}`)) : null;
+            const storedFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${id}`) || localStorage.getItem(`etayo_fees_${lowerId}`) || localStorage.getItem(`etayo_fees_${upperId}`)) : null;
+            const storedDateApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${id}`) || localStorage.getItem(`etayo_date_approved_${lowerId}`) || localStorage.getItem(`etayo_date_approved_${upperId}`)) : null;
+            const storedRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${id}`) || localStorage.getItem(`etayo_remarks_${lowerId}`) || localStorage.getItem(`etayo_remarks_${upperId}`)) : null;
 
             const effectiveStatus = isPaidLocal 
               ? "released" 
@@ -432,43 +446,39 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
           // Include any locally created applications not yet in backend into state without resubmitting
           cleanCached.forEach((c) => {
-            if (!mergedApps.some((m) => m.id === c.id)) {
+            if (!mergedApps.some((m) => matchPermitId(m.id, c.id))) {
               mergedApps.push(c);
             }
           });
 
-          // For any cached application that is still marked pending, actively check live status by ID
-          const pendingCached = cleanCached.filter(c => c && c.id);
-          if (pendingCached.length > 0) {
+          // Actively fetch live status by ID for all pending/under_review applications to catch fresh approvals immediately
+          const pendingApps = mergedApps.filter(m => m && m.id && (m.status === "pending" || m.status === "under_review"));
+          if (pendingApps.length > 0) {
             await Promise.all(
-              pendingCached.map(async (c) => {
+              pendingApps.map(async (m) => {
                 try {
-                  let singleRes = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(c.id)}`);
-                  if (!singleRes.ok && c.id.toUpperCase() !== c.id) {
-                    singleRes = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(c.id.toUpperCase())}`);
+                  const mId = encodeURIComponent(String(m.id).trim());
+                  let singleRes = await fetch(`${API_BASE_URL}/permits/${mId}`, { headers });
+                  if (!singleRes.ok && m.id.toUpperCase() !== m.id) {
+                    singleRes = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(m.id.toUpperCase().trim())}`, { headers });
                   }
                   if (singleRes.ok) {
                     const live = await singleRes.json();
                     if (live && live.id) {
-                      const idStr = String(live.id);
+                      const idStr = String(live.id).trim();
                       const idLower = idStr.toLowerCase();
+                      const idUpper = idStr.toUpperCase();
                       if (live.status === "approved" || live.status === "released") {
                         try {
-                          localStorage.setItem(`etayo_status_${idStr}`, live.status);
-                          localStorage.setItem(`etayo_status_${idLower}`, live.status);
-                          localStorage.setItem(`etayo_approved_${idStr}`, "true");
-                          localStorage.setItem(`etayo_approved_${idLower}`, "true");
-                          if (live.orderOfPaymentNo) {
-                            localStorage.setItem(`etayo_op_${idStr}`, live.orderOfPaymentNo);
-                            localStorage.setItem(`etayo_op_${idLower}`, live.orderOfPaymentNo);
-                          }
-                          if (live.assessedFees) {
-                            localStorage.setItem(`etayo_fees_${idStr}`, String(live.assessedFees));
-                            localStorage.setItem(`etayo_fees_${idLower}`, String(live.assessedFees));
-                          }
+                          [idStr, idLower, idUpper].forEach(k => {
+                            localStorage.setItem(`etayo_status_${k}`, live.status);
+                            localStorage.setItem(`etayo_approved_${k}`, "true");
+                            if (live.orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, live.orderOfPaymentNo);
+                            if (live.assessedFees) localStorage.setItem(`etayo_fees_${k}`, String(live.assessedFees));
+                          });
                         } catch (e) {}
                       }
-                      const mIdx = mergedApps.findIndex(m => m.id === live.id || (m.id && m.id.toLowerCase() === idLower));
+                      const mIdx = mergedApps.findIndex(x => matchPermitId(x.id, live.id));
                       if (mIdx !== -1) {
                         mergedApps[mIdx] = { 
                           ...mergedApps[mIdx], 
@@ -491,11 +501,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       // Guarantee all merged applications also reflect any approved or paid flags in localStorage
       mergedApps = mergedApps.map((mApp) => {
-        const mId = mApp.id || "";
+        const mId = String(mApp.id || "").trim();
         const mLower = mId.toLowerCase();
+        const mUpper = mId.toUpperCase();
         const mIsPaid = typeof window !== "undefined" && (
           localStorage.getItem(`etayo_paid_${mId}`) === "true" ||
           localStorage.getItem(`etayo_paid_${mLower}`) === "true" ||
+          localStorage.getItem(`etayo_paid_${mUpper}`) === "true" ||
           (mApp as any)?.paymentStatus === "paid" ||
           mApp.status === "released" ||
           Boolean((mApp as any)?.isReleased)
@@ -504,14 +516,16 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           mIsPaid ||
           localStorage.getItem(`etayo_approved_${mId}`) === "true" ||
           localStorage.getItem(`etayo_approved_${mLower}`) === "true" ||
+          localStorage.getItem(`etayo_approved_${mUpper}`) === "true" ||
           localStorage.getItem(`etayo_status_${mId}`) === "approved" ||
           localStorage.getItem(`etayo_status_${mLower}`) === "approved" ||
-          mApp.status === "approved"
+          localStorage.getItem(`etayo_status_${mUpper}`) === "approved" ||
+          (mApp.status || "").toLowerCase() === "approved"
         );
-        const mOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${mId}`) || localStorage.getItem(`etayo_op_${mLower}`)) : null;
-        const mFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${mId}`) || localStorage.getItem(`etayo_fees_${mLower}`)) : null;
-        const mDateApp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${mId}`) || localStorage.getItem(`etayo_date_approved_${mLower}`)) : null;
-        const mRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${mId}`) || localStorage.getItem(`etayo_remarks_${mLower}`)) : null;
+        const mOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${mId}`) || localStorage.getItem(`etayo_op_${mLower}`) || localStorage.getItem(`etayo_op_${mUpper}`)) : null;
+        const mFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${mId}`) || localStorage.getItem(`etayo_fees_${mLower}`) || localStorage.getItem(`etayo_fees_${mUpper}`)) : null;
+        const mDateApp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${mId}`) || localStorage.getItem(`etayo_date_approved_${mLower}`) || localStorage.getItem(`etayo_date_approved_${mUpper}`)) : null;
+        const mRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${mId}`) || localStorage.getItem(`etayo_remarks_${mLower}`) || localStorage.getItem(`etayo_remarks_${mUpper}`)) : null;
 
         const mEffectiveStatus = mIsPaid ? "released" : (mIsApproved ? "approved" : mApp.status);
 
@@ -748,59 +762,58 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const updateApplication = async (updatedApp: PermitApplication) => {
-    // 1. Optimistic UI update
-    setApplications((prev) =>
-      prev.map((app) => (app.id === updatedApp.id ? updatedApp : app))
-    );
+    const matchPermitId = (a?: string, b?: string) => Boolean(a && b && a.trim().toLowerCase() === b.trim().toLowerCase());
+
+    // 1. Optimistic UI update with case-insensitive ID matching
+    setApplications((prev) => {
+      const exists = prev.some((app) => matchPermitId(app.id, updatedApp.id));
+      if (exists) {
+        return prev.map((app) => (matchPermitId(app.id, updatedApp.id) ? { ...app, ...updatedApp } : app));
+      }
+      return [updatedApp, ...prev];
+    });
 
     // 2. Cache in localStorage immediately so refreshes never lose the approval or payment!
     try {
-      const id = String(updatedApp.id || "");
+      const id = String(updatedApp.id || "").trim();
       const lowerId = id.toLowerCase();
+      const upperId = id.toUpperCase();
 
-      localStorage.setItem(`etayo_status_${id}`, updatedApp.status);
-      localStorage.setItem(`etayo_status_${lowerId}`, updatedApp.status);
-
-      if (updatedApp.status === "approved" || updatedApp.status === "released") {
-        localStorage.setItem(`etayo_approved_${id}`, "true");
-        localStorage.setItem(`etayo_approved_${lowerId}`, "true");
-      }
-      if ((updatedApp as any).orderOfPaymentNo) {
-        localStorage.setItem(`etayo_op_${id}`, (updatedApp as any).orderOfPaymentNo);
-        localStorage.setItem(`etayo_op_${lowerId}`, (updatedApp as any).orderOfPaymentNo);
-      }
-      if ((updatedApp as any).assessedFees) {
-        localStorage.setItem(`etayo_fees_${id}`, String((updatedApp as any).assessedFees));
-        localStorage.setItem(`etayo_fees_${lowerId}`, String((updatedApp as any).assessedFees));
-      }
-      if ((updatedApp as any).dateApproved) {
-        localStorage.setItem(`etayo_date_approved_${id}`, (updatedApp as any).dateApproved);
-        localStorage.setItem(`etayo_date_approved_${lowerId}`, (updatedApp as any).dateApproved);
-      }
-      if ((updatedApp as any).remarks) {
-        localStorage.setItem(`etayo_remarks_${id}`, (updatedApp as any).remarks);
-        localStorage.setItem(`etayo_remarks_${lowerId}`, (updatedApp as any).remarks);
-      }
-
-      if ((updatedApp as any).userConfirmedPayment) {
-        localStorage.setItem(`etayo_payment_confirmed_${id}`, "true");
-        localStorage.setItem(`etayo_payment_confirmed_${lowerId}`, "true");
+      [id, lowerId, upperId].forEach(k => {
+        localStorage.setItem(`etayo_status_${k}`, updatedApp.status);
+        if (updatedApp.status === "approved" || updatedApp.status === "released") {
+          localStorage.setItem(`etayo_approved_${k}`, "true");
+        }
+        if ((updatedApp as any).orderOfPaymentNo) {
+          localStorage.setItem(`etayo_op_${k}`, (updatedApp as any).orderOfPaymentNo);
+        }
+        if ((updatedApp as any).assessedFees) {
+          localStorage.setItem(`etayo_fees_${k}`, String((updatedApp as any).assessedFees));
+        }
+        if ((updatedApp as any).dateApproved) {
+          localStorage.setItem(`etayo_date_approved_${k}`, (updatedApp as any).dateApproved);
+        }
+        if ((updatedApp as any).remarks) {
+          localStorage.setItem(`etayo_remarks_${k}`, (updatedApp as any).remarks);
+        }
+        if ((updatedApp as any).userConfirmedPayment) {
+          localStorage.setItem(`etayo_payment_confirmed_${k}`, "true");
+        }
         if ((updatedApp as any).paymentReference) {
-          localStorage.setItem(`etayo_payment_ref_${id}`, (updatedApp as any).paymentReference);
+          localStorage.setItem(`etayo_payment_ref_${k}`, (updatedApp as any).paymentReference);
         }
         if ((updatedApp as any).paymentMethod) {
-          localStorage.setItem(`etayo_payment_method_${id}`, (updatedApp as any).paymentMethod);
+          localStorage.setItem(`etayo_payment_method_${k}`, (updatedApp as any).paymentMethod);
         }
-      }
-      if ((updatedApp as any).paymentStatus === "paid" || updatedApp.status === "released") {
-        localStorage.setItem(`etayo_paid_${id}`, "true");
-        localStorage.setItem(`etayo_paid_${lowerId}`, "true");
-      }
+        if ((updatedApp as any).paymentStatus === "paid" || updatedApp.status === "released") {
+          localStorage.setItem(`etayo_paid_${k}`, "true");
+        }
+      });
 
       const stored = localStorage.getItem("etayo_cached_applications");
       const currentList: PermitApplication[] = stored ? JSON.parse(stored) : [];
-      const updatedList = currentList.some(a => a.id === updatedApp.id)
-        ? currentList.map(a => a.id === updatedApp.id ? updatedApp : a)
+      const updatedList = currentList.some(a => matchPermitId(a.id, updatedApp.id))
+        ? currentList.map(a => matchPermitId(a.id, updatedApp.id) ? { ...a, ...updatedApp } : a)
         : [updatedApp, ...currentList];
       localStorage.setItem("etayo_cached_applications", JSON.stringify(updatedList));
 

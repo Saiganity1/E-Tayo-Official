@@ -31,13 +31,41 @@ public class PermitController {
     @GetMapping
     public ResponseEntity<List<PermitApplication>> getAllPermits(
             @RequestParam(required = false) String email,
+            @RequestParam(required = false) String name,
             org.springframework.security.core.Authentication authentication) {
         
-        if (email != null && !email.trim().isEmpty()) {
-            String cleanEmail = email.trim();
+        String cleanEmail = (email != null && !email.trim().isEmpty()) ? email.trim() : null;
+        String cleanName = (name != null && !name.trim().isEmpty()) ? name.trim() : null;
+
+        if (cleanEmail != null || cleanName != null) {
+            String matchedName = null;
+            if (cleanEmail != null) {
+                com.etayo.backend.model.User userByEmail = userRepository.findByEmail(cleanEmail).orElse(null);
+                if (userByEmail != null && userByEmail.getName() != null) {
+                    matchedName = userByEmail.getName().trim();
+                }
+            }
+            final String finalMatchedName = matchedName;
+            final String queryName = cleanName;
+
             List<PermitApplication> applicantPermits = permitApplicationRepository.findAll().stream()
-                .filter(p -> (p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(cleanEmail))
-                          || (p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(cleanEmail)))
+                .filter(p -> {
+                    if (cleanEmail != null) {
+                        if (p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(cleanEmail)) return true;
+                        if (p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(cleanEmail)) return true;
+                    }
+                    if (finalMatchedName != null && p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(finalMatchedName)) {
+                        return true;
+                    }
+                    if (queryName != null && p.getApplicantName() != null && (
+                        p.getApplicantName().equalsIgnoreCase(queryName) ||
+                        p.getApplicantName().toLowerCase().contains(queryName.toLowerCase()) ||
+                        queryName.toLowerCase().contains(p.getApplicantName().toLowerCase())
+                    )) {
+                        return true;
+                    }
+                    return false;
+                })
                 .toList();
             return ResponseEntity.ok(applicantPermits);
         }

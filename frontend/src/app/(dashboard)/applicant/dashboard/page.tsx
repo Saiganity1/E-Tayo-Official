@@ -250,14 +250,22 @@ export default function ApplicantDashboard() {
   };
 
   const getStatusConfig = (status: string, app?: any) => {
-    const id = String(app?.id || "");
+    const id = String(app?.id || "").trim();
     const lowerId = id.toLowerCase();
-    const isAppApproved = status === "approved" || status === "released" || (typeof window !== "undefined" && (
+    const upperId = id.toUpperCase();
+    const rawStatus = (status || "").toLowerCase().trim();
+    const appRawStatus = (app?.status || "").toLowerCase().trim();
+
+    const isLocallyApproved = typeof window !== "undefined" && (
       localStorage.getItem(`etayo_approved_${id}`) === "true" ||
       localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${upperId}`) === "true" ||
       localStorage.getItem(`etayo_status_${id}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${lowerId}`) === "approved"
-    ));
+      localStorage.getItem(`etayo_status_${lowerId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${upperId}`) === "approved"
+    );
+
+    const isAppApproved = rawStatus === "approved" || rawStatus === "released" || appRawStatus === "approved" || appRawStatus === "released" || Boolean(app?.isReleased) || isLocallyApproved;
 
     if (isAppApproved) {
       return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved", border: "#10b981" };

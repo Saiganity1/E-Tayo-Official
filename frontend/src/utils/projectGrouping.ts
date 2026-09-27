@@ -246,13 +246,18 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       }
     }
 
-    const appId = String(app.id || "");
+    const appId = String(app.id || "").trim();
     const lowerAppId = appId.toLowerCase();
-    const isAppApproved = app.status === "approved" || app.status === "released" || (typeof window !== "undefined" && (
+    const upperAppId = appId.toUpperCase();
+    const rawStatus = String(app.status || "").toLowerCase().trim();
+
+    const isAppApproved = rawStatus === "approved" || rawStatus === "released" || Boolean((app as any)?.isReleased) || (typeof window !== "undefined" && (
       localStorage.getItem(`etayo_approved_${appId}`) === "true" ||
       localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${upperAppId}`) === "true" ||
       localStorage.getItem(`etayo_status_${appId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved"
+      localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${upperAppId}`) === "approved"
     ));
 
     if (matchedDossier) {
@@ -260,12 +265,12 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       matchedDossier.totalCount++;
       if (isAppApproved) {
         matchedDossier.approvedCount++;
-      } else if (app.status === "pending" || app.status === "under_review") {
+      } else if (rawStatus === "pending" || rawStatus === "under_review") {
         matchedDossier.pendingCount++;
-      } else if (app.status === "rejected") {
+      } else if (rawStatus === "rejected") {
         matchedDossier.rejectedCount++;
       }
-      if (app.status === "incomplete_requirements" || app.status === "rejected") {
+      if (rawStatus === "incomplete_requirements" || rawStatus === "rejected") {
         matchedDossier.actionRequiredCount = (matchedDossier.actionRequiredCount || 0) + 1;
       }
       // Keep projectName the cleanest / most descriptive base name
@@ -276,9 +281,9 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       }
     } else {
       const baseTitle = extractBaseProjectName(app);
-      const isPending = !isAppApproved && (app.status === "pending" || app.status === "under_review");
-      const isRejected = app.status === "rejected";
-      const isAction = app.status === "incomplete_requirements" || app.status === "rejected";
+      const isPending = !isAppApproved && (rawStatus === "pending" || rawStatus === "under_review");
+      const isRejected = rawStatus === "rejected";
+      const isAction = rawStatus === "incomplete_requirements" || rawStatus === "rejected";
 
       dossiers.push({
         id: `DOSSIER-${dossiers.length + 1}`,
