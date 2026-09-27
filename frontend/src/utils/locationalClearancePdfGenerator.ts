@@ -216,7 +216,7 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
   const page = pdfDoc.getPage(0);
-  const darkNavy = rgb(0.05, 0.12, 0.35); // Official document ink color
+  const darkNavy = rgb(0, 0, 0); // Official document ink color (Black)
 
   const drawText = (
     text: string | undefined | null,

@@ -95,7 +95,7 @@ export async function generateAnnexDPdf(data: LocationalClearanceFormData): Prom
   const pages = pdfDoc.getPages();
   const page1 = pages[0];
 
-  const navy = rgb(0.05, 0.12, 0.3); // Official dark navy text color
+  const navy = rgb(0, 0, 0); // Official black text color
 
   // Helper function to safely draw text
   const drawField = (

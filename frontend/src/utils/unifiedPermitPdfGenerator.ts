@@ -932,8 +932,8 @@ async function fetchTemplateBytes(templatePath: string): Promise<ArrayBuffer> {
   throw new Error(`Could not load template file: ${templatePath}`);
 }
 
-const darkNavy = rgb(0.05, 0.12, 0.35);
-const signatureBlue = rgb(0.04, 0.12, 0.45);
+const darkNavy = rgb(0, 0, 0); // Official black text color
+const signatureBlue = rgb(0, 0, 0);
 
 function toTitleCase(str: string): string {
   return str
@@ -3393,9 +3393,9 @@ export async function generateBfpApplicationPdf(data: UnifiedPermitFormData): Pr
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
   const fontReg = await doc.embedFont(StandardFonts.Helvetica);
 
-  const navy = rgb(0.05, 0.12, 0.35);
-  const red = rgb(0.75, 0.05, 0.10);
-  const gray = rgb(0.40, 0.40, 0.40);
+  const navy = rgb(0, 0, 0);
+  const red = rgb(0, 0, 0);
+  const gray = rgb(0.20, 0.20, 0.20);
   const border = rgb(0.80, 0.80, 0.80);
 
   const { width, height } = page.getSize();
@@ -6435,7 +6435,7 @@ export async function generateCfeiPdf(data: UnifiedPermitFormData): Promise<stri
         y,
         size,
         font: bold ? fontBold : fontRegular,
-        color: rgb(0.06, 0.09, 0.16),
+        color: rgb(0, 0, 0),
       });
     };
 
@@ -6448,7 +6448,7 @@ export async function generateCfeiPdf(data: UnifiedPermitFormData): Promise<stri
         y,
         size,
         font,
-        color: rgb(0.06, 0.09, 0.16),
+        color: rgb(0, 0, 0),
       });
     };
 
