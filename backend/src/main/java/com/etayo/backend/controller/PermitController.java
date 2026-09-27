@@ -36,7 +36,8 @@ public class PermitController {
         if (email != null && !email.trim().isEmpty()) {
             String cleanEmail = email.trim();
             List<PermitApplication> applicantPermits = permitApplicationRepository.findAll().stream()
-                .filter(p -> p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(cleanEmail))
+                .filter(p -> (p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(cleanEmail))
+                          || (p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(cleanEmail)))
                 .toList();
             return ResponseEntity.ok(applicantPermits);
         }
@@ -72,7 +73,7 @@ public class PermitController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PermitApplication> getPermitById(@PathVariable String id) {
-        return permitApplicationRepository.findById(id)
+        return permitApplicationRepository.findByIdIgnoreCase(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -346,7 +347,7 @@ public class PermitController {
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<PermitApplication> updatePermit(@PathVariable String id, @RequestBody PermitApplication permit) {
         permit.setId(id);
-        return permitApplicationRepository.findById(id).map(existing -> {
+        return permitApplicationRepository.findByIdIgnoreCase(id).map(existing -> {
             String oldStatus = existing.getStatus();
             existing.setStatus(permit.getStatus());
             if (permit.getRemarks() != null) existing.setRemarks(permit.getRemarks());
@@ -421,7 +422,7 @@ public class PermitController {
     @PatchMapping("/{id}/status")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<PermitApplication> updatePermitStatus(@PathVariable String id, @RequestBody java.util.Map<String, Object> payload) {
-        return permitApplicationRepository.findById(id).map(existing -> {
+        return permitApplicationRepository.findByIdIgnoreCase(id).map(existing -> {
             String oldStatus = existing.getStatus();
             if (payload.containsKey("status") && payload.get("status") != null) {
                 existing.setStatus(String.valueOf(payload.get("status")));

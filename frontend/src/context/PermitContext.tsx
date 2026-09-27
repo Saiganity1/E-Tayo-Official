@@ -443,7 +443,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             await Promise.all(
               pendingCached.map(async (c) => {
                 try {
-                  const singleRes = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(c.id)}`);
+                  let singleRes = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(c.id)}`);
+                  if (!singleRes.ok && c.id.toUpperCase() !== c.id) {
+                    singleRes = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(c.id.toUpperCase())}`);
+                  }
                   if (singleRes.ok) {
                     const live = await singleRes.json();
                     if (live && live.id) {
@@ -455,11 +458,23 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                           localStorage.setItem(`etayo_status_${idLower}`, live.status);
                           localStorage.setItem(`etayo_approved_${idStr}`, "true");
                           localStorage.setItem(`etayo_approved_${idLower}`, "true");
+                          if (live.orderOfPaymentNo) {
+                            localStorage.setItem(`etayo_op_${idStr}`, live.orderOfPaymentNo);
+                            localStorage.setItem(`etayo_op_${idLower}`, live.orderOfPaymentNo);
+                          }
+                          if (live.assessedFees) {
+                            localStorage.setItem(`etayo_fees_${idStr}`, String(live.assessedFees));
+                            localStorage.setItem(`etayo_fees_${idLower}`, String(live.assessedFees));
+                          }
                         } catch (e) {}
                       }
-                      const mIdx = mergedApps.findIndex(m => m.id === live.id);
+                      const mIdx = mergedApps.findIndex(m => m.id === live.id || (m.id && m.id.toLowerCase() === idLower));
                       if (mIdx !== -1) {
-                        mergedApps[mIdx] = { ...mergedApps[mIdx], ...live };
+                        mergedApps[mIdx] = { 
+                          ...mergedApps[mIdx], 
+                          ...live, 
+                          status: (live.status === "approved" || live.status === "released") ? live.status : (mergedApps[mIdx].status || live.status) 
+                        };
                       } else {
                         mergedApps.push(live);
                       }

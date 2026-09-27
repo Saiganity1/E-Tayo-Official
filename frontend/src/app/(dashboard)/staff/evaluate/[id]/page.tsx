@@ -233,13 +233,29 @@ export default function StaffEvaluatePage() {
   const cleanSeq = app?.id ? app.id.replace(/^[A-Za-z]+-/i, "") : "2026-0001";
   const orderOfPaymentNo = `OP-${cleanSeq}`;
   const [feeSchedule, setFeeSchedule] = useState({
+    locationalFee: 500,
     buildingFee: 3250,
     electricalFee: 1150,
     plumbingFee: 850,
     mechanicalFee: 450,
     zoningFee: 500,
   });
-  const totalFees = Object.values(feeSchedule).reduce((a, b) => a + b, 0);
+
+  // If app has an existing assessed fee, hydrate it
+  useEffect(() => {
+    if (app && (app as any).assessedFees) {
+      const feesNum = Number((app as any).assessedFees);
+      if (!isNaN(feesNum) && feesNum > 0) {
+        if (isLC) {
+          setFeeSchedule(prev => ({ ...prev, locationalFee: feesNum }));
+        }
+      }
+    }
+  }, [app?.id, isLC]);
+
+  const totalFees = isLC
+    ? (typeof feeSchedule.locationalFee === "number" ? feeSchedule.locationalFee : 500)
+    : (feeSchedule.buildingFee + feeSchedule.electricalFee + feeSchedule.plumbingFee + feeSchedule.mechanicalFee + feeSchedule.zoningFee);
 
   // Initialize contextual decision notes and sanitize activeLeftTab
   useEffect(() => {
@@ -252,7 +268,7 @@ export default function StaffEvaluatePage() {
       setDecisionNotes(
         "In view of the foregoing findings and evaluation of facts, it is hereby recommended that the application for Locational Clearance be APPROVED, considering that the proposed project is located within a designated zone under the approved Comprehensive Land Use Plan (CLUP) and Zoning Ordinance (Resolution No. 4810, Series of 2017) of the Municipality of Sto. Tomas, Pampanga."
       );
-      if (activeLeftTab === "checklist" || activeLeftTab === "fees") {
+      if (activeLeftTab === "checklist") {
         setActiveLeftTab("overview");
       }
     }
@@ -1857,7 +1873,7 @@ ${isDisapprove
               padding: "5px",
               border: "1.5px solid #e2e8f0",
               display: "grid",
-              gridTemplateColumns: isBuildingPermit ? "repeat(4, 1fr)" : "repeat(2, 1fr)",
+              gridTemplateColumns: isBuildingPermit ? "repeat(4, 1fr)" : "repeat(3, 1fr)",
               gap: "4px",
               boxShadow: "0 2px 6px rgba(0,0,0,0.02)"
             }}>
@@ -1868,6 +1884,7 @@ ${isDisapprove
                 { id: "decision", label: "Decision", icon: ShieldCheck },
               ] : [
                 { id: "overview", label: "Clearance Form", icon: FileText },
+                { id: "fees", label: "Fees / OP", icon: Calculator },
                 { id: "decision", label: "Decision", icon: ShieldCheck },
               ]).map(tab => {
                 const TabIcon = tab.icon;
@@ -2159,48 +2176,82 @@ ${isDisapprove
               </div>
             )}
 
-            {/* TAB CONTENT 3: REGULATORY FEES & ORDER OF PAYMENT (Building Permits only) */}
-            {isBuildingPermit && activeLeftTab === "fees" && (
+            {/* TAB CONTENT 3: REGULATORY FEES & ORDER OF PAYMENT */}
+            {activeLeftTab === "fees" && (
               <div style={{ background: "white", padding: "1.4rem", borderRadius: "16px", border: "1.5px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
                 <h3 style={{ fontSize: "1.05rem", fontWeight: "800", color: "#0f172a", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Calculator size={18} color="#2563eb" /> Regulatory Fees Assessment
+                  <Calculator size={18} color="#2563eb" /> 
+                  {isBuildingPermit ? "Regulatory Fees Assessment" : "Locational Clearance Fee Assessment"}
                 </h3>
                 <p style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "1rem" }}>
-                  Official schedule of fees assessed under the National Building Code (PD 1096) and Sto. Tomas Revenue Code.
+                  {isBuildingPermit 
+                    ? "Official schedule of fees assessed under the National Building Code (PD 1096) and Sto. Tomas Revenue Code."
+                    : "Official regulatory fee assessed for Locational Clearance under Sto. Tomas Comprehensive Land Use Plan & Revenue Code."}
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "1.25rem" }}>
-                  {[
-                    { key: "buildingFee", label: "Building Construction Permit Fee" },
-                    { key: "electricalFee", label: "Electrical Installation Inspection Fee" },
-                    { key: "plumbingFee", label: "Plumbing & Sanitary Inspection Fee" },
-                    { key: "mechanicalFee", label: "Mechanical / Ventilation Fee" },
-                    { key: "zoningFee", label: "Zoning & Municipal Filing Fee" },
-                  ].map(fee => (
-                    <div key={fee.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem", padding: "6px 0", borderBottom: "1px dashed #e2e8f0" }}>
-                      <span style={{ color: "#334155" }}>{fee.label}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        <span style={{ color: "#64748b", fontSize: "0.75rem" }}>PHP</span>
+                  {isBuildingPermit ? (
+                    [
+                      { key: "buildingFee", label: "Building Construction Permit Fee" },
+                      { key: "electricalFee", label: "Electrical Installation Inspection Fee" },
+                      { key: "plumbingFee", label: "Plumbing & Sanitary Inspection Fee" },
+                      { key: "mechanicalFee", label: "Mechanical / Ventilation Fee" },
+                      { key: "zoningFee", label: "Zoning & Municipal Filing Fee" },
+                    ].map(fee => (
+                      <div key={fee.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem", padding: "6px 0", borderBottom: "1px dashed #e2e8f0" }}>
+                        <span style={{ color: "#334155" }}>{fee.label}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ color: "#64748b", fontSize: "0.75rem" }}>PHP</span>
+                          <input
+                            type="number"
+                            value={(feeSchedule as any)[fee.key]}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setFeeSchedule(prev => ({ ...prev, [fee.key]: val }));
+                            }}
+                            style={{
+                              width: "110px",
+                              textAlign: "right",
+                              padding: "4px 8px",
+                              borderRadius: "6px",
+                              border: "1px solid #cbd5e1",
+                              fontSize: "0.85rem",
+                              fontWeight: "700"
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem", padding: "10px 12px", background: "#f8fafc", borderRadius: "10px", border: "1.5px solid #bfdbfe" }}>
+                      <div>
+                        <strong style={{ color: "#0f172a", display: "block" }}>Locational Clearance &amp; Zoning Fee</strong>
+                        <span style={{ color: "#64748b", fontSize: "0.75rem" }}>Municipal Planning &amp; Development Office (MPDO) Fee</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ color: "#64748b", fontSize: "0.8rem", fontWeight: "700" }}>PHP</span>
                         <input
                           type="number"
-                          value={(feeSchedule as any)[fee.key]}
+                          value={feeSchedule.locationalFee}
                           onChange={(e) => {
                             const val = parseFloat(e.target.value) || 0;
-                            setFeeSchedule(prev => ({ ...prev, [fee.key]: val }));
+                            setFeeSchedule(prev => ({ ...prev, locationalFee: val }));
                           }}
                           style={{
-                            width: "90px",
+                            width: "120px",
                             textAlign: "right",
-                            padding: "4px 6px",
-                            borderRadius: "6px",
-                            border: "1px solid #cbd5e1",
-                            fontSize: "0.85rem",
-                            fontWeight: "700"
+                            padding: "6px 10px",
+                            borderRadius: "8px",
+                            border: "1.5px solid #2563eb",
+                            fontSize: "0.95rem",
+                            fontWeight: "800",
+                            color: "#0f172a",
+                            background: "#ffffff"
                           }}
                         />
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
 
                 {/* Total and Order of Payment Card */}
@@ -2212,7 +2263,9 @@ ${isDisapprove
                   marginBottom: "1rem"
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                    <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#1e40af", textTransform: "uppercase" }}>Total Assessed Regulatory Fees</span>
+                    <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#1e40af", textTransform: "uppercase" }}>
+                      {isBuildingPermit ? "Total Assessed Regulatory Fees" : "Total Locational Clearance Fee"}
+                    </span>
                     <strong style={{ fontSize: "1.25rem", fontWeight: "900", color: "#1e3a8a" }}>
                       PHP {totalFees.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </strong>

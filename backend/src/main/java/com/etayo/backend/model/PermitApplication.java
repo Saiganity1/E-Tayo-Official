@@ -1,10 +1,12 @@
 package com.etayo.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
 @Table(name = "permit_applications")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PermitApplication {
 
     @Id

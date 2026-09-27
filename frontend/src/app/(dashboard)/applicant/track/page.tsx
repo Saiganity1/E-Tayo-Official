@@ -280,15 +280,37 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         for (const a of list) {
           if (!a || !a.id) continue;
           const aId = String(a.id);
+          const aIdLower = aId.toLowerCase();
           const isLocallyApproved = typeof window !== "undefined" && (
             localStorage.getItem(`etayo_approved_${aId}`) === "true" ||
-            localStorage.getItem(`etayo_status_${aId}`) === "approved"
+            localStorage.getItem(`etayo_approved_${aIdLower}`) === "true" ||
+            localStorage.getItem(`etayo_status_${aId}`) === "approved" ||
+            localStorage.getItem(`etayo_status_${aIdLower}`) === "approved"
           );
           if (a.status !== "approved" && a.status !== "released" && !isLocallyApproved) {
-            const res = await fetch(`${base}/permits/${encodeURIComponent(aId)}`);
+            let res = await fetch(`${base}/permits/${encodeURIComponent(aId)}`);
+            if (!res.ok && aId.toUpperCase() !== aId) {
+              res = await fetch(`${base}/permits/${encodeURIComponent(aId.toUpperCase())}`);
+            }
             if (res.ok) {
               const live = await res.json();
               if (live && live.id && (live.status === "approved" || live.status === "released")) {
+                const curId = String(live.id);
+                const lowId = curId.toLowerCase();
+                try {
+                  localStorage.setItem(`etayo_status_${curId}`, live.status);
+                  localStorage.setItem(`etayo_status_${lowId}`, live.status);
+                  localStorage.setItem(`etayo_approved_${curId}`, "true");
+                  localStorage.setItem(`etayo_approved_${lowId}`, "true");
+                  if (live.orderOfPaymentNo) {
+                    localStorage.setItem(`etayo_op_${curId}`, live.orderOfPaymentNo);
+                    localStorage.setItem(`etayo_op_${lowId}`, live.orderOfPaymentNo);
+                  }
+                  if (live.assessedFees) {
+                    localStorage.setItem(`etayo_fees_${curId}`, String(live.assessedFees));
+                    localStorage.setItem(`etayo_fees_${lowId}`, String(live.assessedFees));
+                  }
+                } catch (e) {}
                 updateApplication(live);
               }
             }

@@ -322,7 +322,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         const headers: Record<string, string> = { "Accept": "application/json" };
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        const res = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(appId)}`, { headers });
+        let res = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(appId)}`, { headers });
+        if (!res.ok && appId.toUpperCase() !== appId) {
+          res = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(appId.toUpperCase())}`, { headers });
+        }
         if (res.ok) {
           const serverApp = await res.json();
           if (serverApp && serverApp.id && isMounted) {
@@ -691,17 +694,6 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     return docs;
   }, [appData]);
 
-  if (!appData) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-center animate-fade-in-up" style={{ minHeight: "50vh" }}>
-        <div className="spinner mb-4" style={{ width: "44px", height: "44px", border: "4px solid rgba(0, 56, 168, 0.15)", borderTopColor: "#0038A8", borderRadius: "50%", animation: "spin 0.8s linear infinite" }}></div>
-        <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "#1e293b", margin: "0 0 6px 0" }}>Loading Application Dossier</h3>
-        <p style={{ color: "#64748b", margin: 0, fontSize: "0.95rem" }}>Retrieving verified permit records for <strong>{appId || "permit"}</strong>...</p>
-        <style dangerouslySetInnerHTML={{__html: `@keyframes spin { 100% { transform: rotate(360deg); } }`}} />
-      </div>
-    );
-  }
-
   // Find connected application (Locational Clearance <-> Stage 2 Technical Permits)
   const connectedApp = useMemo(() => {
     if (!appData || !applications) return null;
@@ -918,6 +910,17 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         : (paymentInfo.confirmed ? "Cashier verifying payment confirmation" : "Official clearance & permits released") 
     }
   ];
+
+  if (!appData) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center animate-fade-in-up" style={{ minHeight: "50vh" }}>
+        <div className="spinner mb-4" style={{ width: "44px", height: "44px", border: "4px solid rgba(0, 56, 168, 0.15)", borderTopColor: "#0038A8", borderRadius: "50%", animation: "spin 0.8s linear infinite" }}></div>
+        <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "#1e293b", margin: "0 0 6px 0" }}>Loading Application Dossier</h3>
+        <p style={{ color: "#64748b", margin: 0, fontSize: "0.95rem" }}>Retrieving verified permit records for <strong>{appId || "permit"}</strong>...</p>
+        <style dangerouslySetInnerHTML={{__html: `@keyframes spin { 100% { transform: rotate(360deg); } }`}} />
+      </div>
+    );
+  }
 
   const getFilledDocUrl = async (doc: any): Promise<string> => {
     if (doc.url && doc.url.startsWith("data:") && !doc.url.includes("placeholder")) {
