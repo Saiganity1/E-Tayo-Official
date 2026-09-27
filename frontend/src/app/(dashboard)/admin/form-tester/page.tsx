@@ -1309,11 +1309,83 @@ export default function FormTestingStudio() {
           electronicsSupervisorSignature: formData.electronicsSupervisorSignature || formData.electronicsEngineerSignature || CALIBRATED_TEST_DATA.electronicsSupervisorSignature,
           interiorSupervisorSignature: formData.interiorSupervisorSignature || formData.interiorDesignerSignature || CALIBRATED_TEST_DATA.interiorSupervisorSignature,
           constructionSupervisorSignature: formData.constructionSupervisorSignature || (formData as any).supervisorSignature || CALIBRATED_TEST_DATA.constructionSupervisorSignature,
-          applicantSignature: formData.applicantSignature || CALIBRATED_TEST_DATA.applicantSignature,
         };
         generatedUrl = await generateCertificateOfCompletionPdf(ccData);
       } else if (selectedFormId === "CFEI") {
-        generatedUrl = await generateCfeiPdf(formData);
+        const bpNumber = formData.buildingPermitNo || (formData.applicationNo ? (formData.applicationNo.startsWith("BP-") ? formData.applicationNo : `BP-${formData.applicationNo.replace(/^APP-(TEST-)?/i, "")}`) : "BP-2026-0091");
+        const cfeiData: UnifiedPermitFormData = {
+          ...formData,
+          buildingPermitNo: bpNumber,
+          buildingPermitDateIssued: formData.buildingPermitDateIssued || formData.dateIssued || "Jan 12, 2026",
+          applicantLastName: formData.applicantLastName || "DELA CRUZ",
+          applicantFirstName: formData.applicantFirstName || "JUAN",
+          applicantMiddleName: formData.applicantMiddleName || "SANTOS",
+          applicantAddress: formData.applicantAddress || "123 Rizal St.",
+          barangay: formData.barangay || "Poblacion",
+          lotNo: formData.lotNo || "12",
+          blockNo: formData.blockNo || "4",
+          projectAddress: formData.projectAddress || "Sunset Valley Subd.",
+          characterOfOccupancy: formData.characterOfOccupancy || formData.occupancyGroup || "Residential",
+          occupancyGroup: "A",
+          proposedStartDate: formData.proposedStartDate || "2026-10-01",
+          actualCompletionDate: formData.actualCompletionDate || formData.expectedCompletionDate || "2027-04-30",
+          electricalEngineerName: formData.electricalEngineerName || CALIBRATED_TEST_DATA.electricalEngineerName,
+          electricalEngineerPRC: formData.electricalEngineerPRC || CALIBRATED_TEST_DATA.electricalEngineerPRC,
+          electricalEngineerPRCValidity: formData.electricalEngineerPRCValidity || CALIBRATED_TEST_DATA.electricalEngineerPRCValidity,
+          electricalEngineerPTR: formData.electricalEngineerPTR || CALIBRATED_TEST_DATA.electricalEngineerPTR,
+          electricalEngineerPTRIssued: formData.electricalEngineerPTRIssued || CALIBRATED_TEST_DATA.electricalEngineerPTRIssued,
+          electricalEngineerPTRIssuedAt: formData.electricalEngineerPTRIssuedAt || CALIBRATED_TEST_DATA.electricalEngineerPTRIssuedAt,
+          electricalEngineerTIN: formData.electricalEngineerTIN || CALIBRATED_TEST_DATA.electricalEngineerTIN,
+          cfeiInspectorName: formData.cfeiInspectorName || CALIBRATED_TEST_DATA.cfeiInspectorName,
+          lightingOutletsCount: formData.lightingOutletsCount || CALIBRATED_TEST_DATA.lightingOutletsCount || "28",
+          convenienceOutletsCount: formData.convenienceOutletsCount || CALIBRATED_TEST_DATA.convenienceOutletsCount || "24",
+          acuOutletsCount: formData.acuOutletsCount || CALIBRATED_TEST_DATA.acuOutletsCount || "4",
+          cookingUnitOutletsCount: formData.cookingUnitOutletsCount || CALIBRATED_TEST_DATA.cookingUnitOutletsCount || "1",
+          waterHeaterOutletsCount: formData.waterHeaterOutletsCount || CALIBRATED_TEST_DATA.waterHeaterOutletsCount || "2",
+          waterPumpOutletsCount: formData.waterPumpOutletsCount || CALIBRATED_TEST_DATA.waterPumpOutletsCount || "1",
+          toggleSwitchCount: formData.toggleSwitchCount || CALIBRATED_TEST_DATA.toggleSwitchCount || "15",
+          bellBuzzerCount: formData.bellBuzzerCount || CALIBRATED_TEST_DATA.bellBuzzerCount || "1",
+          pushButtonsCount: formData.pushButtonsCount || CALIBRATED_TEST_DATA.pushButtonsCount || "1",
+          faDetectorCount: formData.faDetectorCount || CALIBRATED_TEST_DATA.faDetectorCount || "2",
+          otherWiringDevicesCount: formData.otherWiringDevicesCount || CALIBRATED_TEST_DATA.otherWiringDevicesCount || "1",
+          electricalContractorName: formData.electricalContractorName || CALIBRATED_TEST_DATA.electricalContractorName || "SAN PEDRO ELECTRICAL SERVICES & CONSTRUCTION CORP.",
+          electricalContractorPcab: formData.electricalContractorPcab || CALIBRATED_TEST_DATA.electricalContractorPcab || "PCAB-EL-48821",
+          electricalContractorPcabValidity: (formData as any).electricalContractorPcabValidity || "2027-10-31",
+          electricalContractorAddress: formData.electricalContractorAddress || CALIBRATED_TEST_DATA.electricalContractorAddress || "Sto. Tomas, Pampanga",
+          electricalContractorTel: formData.electricalContractorTel || CALIBRATED_TEST_DATA.electricalContractorTel || "(045) 982-4112 / 0917-889-4412",
+          cfeiInstallationType: (formData as any).cfeiInstallationType || "NEW",
+          cfeiWiringMethods: (formData as any).cfeiWiringMethods || ["CONDUITS"],
+          cfeiInspectorPrc: (formData as any).cfeiInspectorPrc || "PRC 0042189 / 2028-11-20",
+          cfeiOfficialName: (formData as any).cfeiOfficialName || "ENGR. GIOVANNI L. AQUINO",
+          cfeiOfficialPrc: (formData as any).cfeiOfficialPrc || "PRC 0031892 / 2027-08-15",
+          feePaid: formData.feePaid || (formData as any).cfeiFeePaid || "520.00",
+          officialReceiptNo: formData.officialReceiptNo || (formData as any).cfeiOrNo || "OR-2026-00892",
+          datePaid: formData.datePaid || (formData as any).cfeiDatePaid || formData.actualCompletionDate || "2027-04-30",
+          cfeiStoriesCount: (formData as any).cfeiStoriesCount || "2 (TWO)",
+          cfeiEstimatedCost: (formData as any).cfeiEstimatedCost || formData.estimatedCost || "1,850,000.00",
+          cfeiActualCost: (formData as any).cfeiActualCost || formData.actualCost || "1,850,000.00",
+          cfeiMaterialsCost: (formData as any).cfeiMaterialsCost,
+          cfeiWiresCost: (formData as any).cfeiWiresCost,
+          cfeiLightingCost: (formData as any).cfeiLightingCost,
+          cfeiConvenienceCost: (formData as any).cfeiConvenienceCost,
+          cfeiSwitchesCost: (formData as any).cfeiSwitchesCost,
+          cfeiOtherMaterialsCost: (formData as any).cfeiOtherMaterialsCost,
+          cfeiOtherCosts: (formData as any).cfeiOtherCosts,
+          cfeiOtherDevicesNote: (formData as any).cfeiOtherDevicesNote || "Emergency Lights & Exit Signs",
+          cfeiNatureOfWork: (formData as any).cfeiNatureOfWork || "NEW ELECTRICAL INSTALLATION FOR 2-STOREY RESIDENTIAL DWELLING",
+          cfeiVoltage: (formData as any).cfeiVoltage || "230V, 1-PHASE, 60HZ",
+          cfeiWireSize: (formData as any).cfeiWireSize || "30 MM² THHN COPPER",
+          cfeiPhone: (formData as any).cfeiPhone || formData.applicantTel || "(045) 982-4112",
+          cfeiRemarks: (formData as any).cfeiRemarks || "COMPLIED WITH 2017 PHILIPPINE ELECTRICAL CODE (PEC) AND LOCAL MUNICIPAL ORDINANCES.",
+          cfeiRemarksLine2: (formData as any).cfeiRemarksLine2 || "APPROVED FOR CONTINUOUS RESIDENTIAL ELECTRICAL SERVICE CONNECTION.",
+          cfeiComputedBy: (formData as any).cfeiComputedBy || "ENGR. DANILO REYES, PEE",
+          cfeiLoadRow1: (formData as any).cfeiLoadRow1,
+          cfeiLoadRow2: (formData as any).cfeiLoadRow2,
+          cfeiLoadRow3: (formData as any).cfeiLoadRow3,
+          cfeiLoadRow4: (formData as any).cfeiLoadRow4,
+          cfeiLoadRow5: (formData as any).cfeiLoadRow5,
+        };
+        generatedUrl = await generateCfeiPdf(cfeiData);
       } else if (selectedFormId === "BFP") {
         generatedUrl = await generateBfpApplicationPdf(formData);
       } else if (selectedFormId === "LC") {
@@ -1764,9 +1836,9 @@ export default function FormTestingStudio() {
                   <div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
                       <label style={{ display: "block", fontSize: "0.78rem", fontWeight: "700", color: "#475569" }}>
-                        {(selectedForm.id === "CO" || selectedForm.id === "CC")
+                        {(selectedForm.id === "CO" || selectedForm.id === "CC" || selectedForm.id === "CFEI")
                           ? "Building Permit Ref. No." 
-                          : (selectedForm.id === "CFEI" ? "Application Reference No." : "Application No.")}
+                          : "Application No."}
                       </label>
                       <span style={{ fontSize: "0.68rem", color: "#0284c7", fontWeight: "700", background: "#e0f2fe", padding: "1px 6px", borderRadius: "4px" }}>
                         Auto-gathered
@@ -1774,7 +1846,9 @@ export default function FormTestingStudio() {
                     </div>
                     <input
                       type="text"
-                      value={formData.applicationNo}
+                      value={(selectedForm.id === "CO" || selectedForm.id === "CC" || selectedForm.id === "CFEI")
+                        ? (formData.buildingPermitNo || (formData.applicationNo ? (formData.applicationNo.startsWith("BP-") ? formData.applicationNo : `BP-${formData.applicationNo.replace(/^APP-(TEST-)?/i, "")}`) : "BP-2026-0091"))
+                        : formData.applicationNo}
                       readOnly
                       style={{
                         width: "100%",
@@ -6965,22 +7039,313 @@ export default function FormTestingStudio() {
                   )}
 
                   {selectedForm.id === "CFEI" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>CFEI Reference No.</label>
-                        <input type="text" value={formData.applicationNo || ""} onChange={e => handleFieldChange("applicationNo", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>CFEI Reference No.</label>
+                          <input type="text" value={formData.applicationNo || ""} onChange={e => handleFieldChange("applicationNo", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Electrical Inspector</label>
+                          <input type="text" value={formData.cfeiInspectorName || ""} onChange={e => handleFieldChange("cfeiInspectorName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Total Connected Load (kVA)</label>
+                          <input type="text" value={formData.electricalConnectedLoad || ""} onChange={e => handleFieldChange("electricalConnectedLoad", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Date of Final Inspection</label>
+                          <input type="text" value={formData.actualCompletionDate || "2027-04-30"} onChange={e => handleFieldChange("actualCompletionDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Electrical Inspector</label>
-                        <input type="text" value={formData.cfeiInspectorName || ""} onChange={e => handleFieldChange("cfeiInspectorName", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Outlets & Wiring Devices Schedule */}
+                      <div style={{ padding: "0.75rem", borderRadius: "8px", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#0369a1" }}>⚡ Outlets / Devices / Equipment Schedule</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "0.5rem", marginTop: "0.4rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Lights</label>
+                            <input type="text" value={formData.lightingOutletsCount || "28"} onChange={e => handleFieldChange("lightingOutletsCount", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Convenience</label>
+                            <input type="text" value={formData.convenienceOutletsCount || "24"} onChange={e => handleFieldChange("convenienceOutletsCount", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>ACU Outlets</label>
+                            <input type="text" value={formData.acuOutletsCount || "4"} onChange={e => handleFieldChange("acuOutletsCount", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Cooking Unit</label>
+                            <input type="text" value={formData.cookingUnitOutletsCount || "1"} onChange={e => handleFieldChange("cookingUnitOutletsCount", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Water Heater</label>
+                            <input type="text" value={formData.waterHeaterOutletsCount || "2"} onChange={e => handleFieldChange("waterHeaterOutletsCount", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Water Pump</label>
+                            <input type="text" value={formData.waterPumpOutletsCount || "1"} onChange={e => handleFieldChange("waterPumpOutletsCount", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Switches</label>
+                            <input type="text" value={formData.toggleSwitchCount || "15"} onChange={e => handleFieldChange("toggleSwitchCount", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>FA Detectors</label>
+                            <input type="text" value={formData.faDetectorCount || "2"} onChange={e => handleFieldChange("faDetectorCount", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Total Connected Load (kVA)</label>
-                        <input type="text" value={formData.electricalConnectedLoad || ""} onChange={e => handleFieldChange("electricalConnectedLoad", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Electrical Contractor */}
+                      <div style={{ padding: "0.75rem", borderRadius: "8px", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e293b" }}>🏗️ Electrical Contractor (200A Main & Above)</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: "0.5rem", marginTop: "0.4rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Contractor Name</label>
+                            <input type="text" value={formData.electricalContractorName || ""} onChange={e => handleFieldChange("electricalContractorName", e.target.value)} placeholder="SAN PEDRO ELECTRICAL SERVICES" style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>PCAB Lic. No.</label>
+                            <input type="text" value={formData.electricalContractorPcab || ""} onChange={e => handleFieldChange("electricalContractorPcab", e.target.value)} placeholder="PCAB-EL-48821" style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Validity</label>
+                            <input type="text" value={(formData as any).electricalContractorPcabValidity || "2027-10-31"} onChange={e => handleFieldChange("electricalContractorPcabValidity" as any, e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#64748b" }}>Date of Final Inspection</label>
-                        <input type="text" value={formData.actualCompletionDate || "2027-04-30"} onChange={e => handleFieldChange("actualCompletionDate", e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+
+                      {/* Clearance Personnel */}
+                      <div style={{ padding: "0.75rem", borderRadius: "8px", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e293b" }}>🏛️ Sto. Tomas Building Official Clearance Personnel</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.4rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Inspector PRC Reg. No. & Validity</label>
+                            <input type="text" value={(formData as any).cfeiInspectorPrc || "PRC 0042189 / 2028-11-20"} onChange={e => handleFieldChange("cfeiInspectorPrc" as any, e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Building Office Electrical Engineer</label>
+                            <input type="text" value={(formData as any).cfeiOfficialName || "ENGR. GIOVANNI L. AQUINO"} onChange={e => handleFieldChange("cfeiOfficialName" as any, e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div style={{ gridColumn: "span 2" }}>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Electrical Engineer PRC Reg. No. & Validity</label>
+                            <input type="text" value={(formData as any).cfeiOfficialPrc || "PRC 0031892 / 2027-08-15"} onChange={e => handleFieldChange("cfeiOfficialPrc" as any, e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Official Receipt & Payment */}
+                      <div style={{ padding: "0.75rem", borderRadius: "8px", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#1e293b" }}>💳 Official Receipt & Fee Payment Clearance</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1fr", gap: "0.5rem", marginTop: "0.4rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Amount Paid (₱)</label>
+                            <input type="text" value={formData.feePaid || (formData as any).cfeiFeePaid || "520.00"} onChange={e => handleFieldChange("feePaid", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>O.R. No.</label>
+                            <input type="text" value={formData.officialReceiptNo || (formData as any).cfeiOrNo || "OR-2026-00892"} onChange={e => handleFieldChange("officialReceiptNo", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Date Paid</label>
+                            <input type="text" value={formData.datePaid || (formData as any).cfeiDatePaid || formData.actualCompletionDate || "2027-04-30"} onChange={e => handleFieldChange("datePaid", e.target.value)} style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* CFEI Page 2: Summary of Actual Costs & Technical Specifications */}
+                      <div style={{ padding: "0.85rem", borderRadius: "10px", background: "#fffbeb", border: "1.5px solid #fde68a" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: "800", color: "#92400e" }}>⚡ CFEI Page 2: Installation Costs & Technical Specs</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const raw = ((formData as any).cfeiActualCost || formData.actualCost || formData.estimatedCost || "1,850,000.00").replace(/[^0-9.]/g, "");
+                              const num = parseFloat(raw) || 1850000;
+                              const fmt = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                              const mat = num * 0.58;
+                              handleFieldChange("cfeiMaterialsCost" as any, fmt(mat));
+                              handleFieldChange("cfeiWiresCost" as any, fmt(mat * 0.30));
+                              handleFieldChange("cfeiLightingCost" as any, fmt(mat * 0.23));
+                              handleFieldChange("cfeiConvenienceCost" as any, fmt(mat * 0.18));
+                              handleFieldChange("cfeiSwitchesCost" as any, fmt(mat * 0.15));
+                              handleFieldChange("cfeiOtherMaterialsCost" as any, `${fmt(mat * 0.14)} (Distribution Panels, Breakers, Conduits)`);
+                              handleFieldChange("cfeiOtherCosts" as any, fmt(num * 0.42));
+                            }}
+                            style={{ padding: "3px 8px", borderRadius: "4px", background: "#d97706", color: "white", border: "none", fontSize: "0.7rem", fontWeight: "700", cursor: "pointer" }}
+                          >
+                            ⚡ Auto-Calculate Breakdown
+                          </button>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#78350f", fontWeight: "600" }}>Number of Stories</label>
+                            <input type="text" value={(formData as any).cfeiStoriesCount || "2 (TWO)"} onChange={e => handleFieldChange("cfeiStoriesCount" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#78350f", fontWeight: "600" }}>Estimated Cost (₱)</label>
+                            <input type="text" value={(formData as any).cfeiEstimatedCost || formData.estimatedCost || "1,850,000.00"} onChange={e => handleFieldChange("cfeiEstimatedCost" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#78350f", fontWeight: "600" }}>Actual Cost (₱)</label>
+                            <input type="text" value={(formData as any).cfeiActualCost || formData.actualCost || "1,850,000.00"} onChange={e => handleFieldChange("cfeiActualCost" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem", fontWeight: "700" }} />
+                          </div>
+                        </div>
+
+                        {/* Breakdown Fields */}
+                        <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "#ffffff", borderRadius: "6px", border: "1px solid #fde68a" }}>
+                          <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#92400e" }}>A) Materials Breakdown</span>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.4rem", marginTop: "0.3rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Materials Total (₱)</label>
+                              <input type="text" value={(formData as any).cfeiMaterialsCost || "1,073,000.00"} onChange={e => handleFieldChange("cfeiMaterialsCost" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>1. Electrical Wires (₱)</label>
+                              <input type="text" value={(formData as any).cfeiWiresCost || "321,900.00"} onChange={e => handleFieldChange("cfeiWiresCost" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>2. Lighting Outlets (₱)</label>
+                              <input type="text" value={(formData as any).cfeiLightingCost || "246,790.00"} onChange={e => handleFieldChange("cfeiLightingCost" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>3. Convenience Outlets (₱)</label>
+                              <input type="text" value={(formData as any).cfeiConvenienceCost || "193,140.00"} onChange={e => handleFieldChange("cfeiConvenienceCost" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>4. Switches (₱)</label>
+                              <input type="text" value={(formData as any).cfeiSwitchesCost || "160,950.00"} onChange={e => handleFieldChange("cfeiSwitchesCost" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>B) Other Costs (₱)</label>
+                              <input type="text" value={(formData as any).cfeiOtherCosts || "777,000.00"} onChange={e => handleFieldChange("cfeiOtherCosts" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div style={{ gridColumn: "span 2" }}>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Others (Specify)</label>
+                              <input type="text" value={(formData as any).cfeiOtherMaterialsCost || "150,220.00 (Distribution Panels, Breakers, Conduits)"} onChange={e => handleFieldChange("cfeiOtherMaterialsCost" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Box 1: Loads to be Connected & Wiring Devices */}
+                        <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "#ffffff", borderRadius: "6px", border: "1px solid #fde68a" }}>
+                          <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#92400e" }}>💡 Box 1: Loads to be Connected & Wiring Devices</span>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.3rem" }}>
+                            {/* Loads */}
+                            <div style={{ background: "#f8fafc", padding: "0.4rem", borderRadius: "4px", border: "1px solid #e2e8f0" }}>
+                              <span style={{ fontSize: "0.66rem", fontWeight: "700", color: "#475569", display: "block", marginBottom: "0.2rem" }}>Loads to be Connected:</span>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.3rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>LIGHT</label>
+                                  <input type="text" value={formData.lightingOutletsCount || "28"} onChange={e => handleFieldChange("lightingOutletsCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>SPO, COOKING UNIT</label>
+                                  <input type="text" value={formData.cookingUnitOutletsCount || "1"} onChange={e => handleFieldChange("cookingUnitOutletsCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>CONVENIENCE</label>
+                                  <input type="text" value={formData.convenienceOutletsCount || "24"} onChange={e => handleFieldChange("convenienceOutletsCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>SPO, WATER HEATER</label>
+                                  <input type="text" value={formData.waterHeaterOutletsCount || "2"} onChange={e => handleFieldChange("waterHeaterOutletsCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>SPO, AIRCON</label>
+                                  <input type="text" value={formData.acuOutletsCount || "4"} onChange={e => handleFieldChange("acuOutletsCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>SPO, WATER PUMP</label>
+                                  <input type="text" value={formData.waterPumpOutletsCount || "1"} onChange={e => handleFieldChange("waterPumpOutletsCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Devices */}
+                            <div style={{ background: "#f8fafc", padding: "0.4rem", borderRadius: "4px", border: "1px solid #e2e8f0" }}>
+                              <span style={{ fontSize: "0.66rem", fontWeight: "700", color: "#475569", display: "block", marginBottom: "0.2rem" }}>Wiring Devices:</span>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.3rem" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>TOGGLE SWITCH</label>
+                                  <input type="text" value={formData.toggleSwitchCount || "15"} onChange={e => handleFieldChange("toggleSwitchCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>FA DETECTORS</label>
+                                  <input type="text" value={formData.faDetectorCount || "2"} onChange={e => handleFieldChange("faDetectorCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>BELLS / BUZZERS</label>
+                                  <input type="text" value={formData.bellBuzzerCount || "1"} onChange={e => handleFieldChange("bellBuzzerCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>OTHERS (Qty)</label>
+                                  <input type="text" value={formData.otherWiringDevicesCount || "1"} onChange={e => handleFieldChange("otherWiringDevicesCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>PUSH BUTTONS</label>
+                                  <input type="text" value={formData.pushButtonsCount || "1"} onChange={e => handleFieldChange("pushButtonsCount", e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "0.62rem", color: "#64748b" }}>Others Note</label>
+                                  <input type="text" value={(formData as any).cfeiOtherDevicesNote || "Emergency Lights & Exit Signs"} onChange={e => handleFieldChange("cfeiOtherDevicesNote" as any, e.target.value)} style={{ width: "100%", padding: "3px 5px", borderRadius: "3px", border: "1px solid #cbd5e1", fontSize: "0.72rem" }} />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Technical Specifications */}
+                        <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "#ffffff", borderRadius: "6px", border: "1px solid #fde68a" }}>
+                          <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#92400e" }}>⚙️ Service Specs & Remarks</span>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.4rem", marginTop: "0.3rem" }}>
+                            <div style={{ gridColumn: "span 2" }}>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Nature of Works</label>
+                              <input type="text" value={(formData as any).cfeiNatureOfWork || "NEW ELECTRICAL INSTALLATION FOR 2-STOREY RESIDENTIAL DWELLING"} onChange={e => handleFieldChange("cfeiNatureOfWork" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Voltage</label>
+                              <input type="text" value={(formData as any).cfeiVoltage || "230V, 1-PHASE, 60HZ"} onChange={e => handleFieldChange("cfeiVoltage" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Wire Size</label>
+                              <input type="text" value={(formData as any).cfeiWireSize || "30 MM² THHN COPPER"} onChange={e => handleFieldChange("cfeiWireSize" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div style={{ gridColumn: "span 2" }}>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Remarks</label>
+                              <input type="text" value={(formData as any).cfeiRemarks || "COMPLIED WITH 2017 PHILIPPINE ELECTRICAL CODE (PEC) AND LOCAL MUNICIPAL ORDINANCES."} onChange={e => handleFieldChange("cfeiRemarks" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* LOAD Schedule Box */}
+                        <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "#ffffff", borderRadius: "6px", border: "1px solid #fde68a" }}>
+                          <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#92400e" }}>⚡ LOAD Schedule (Box 6)</span>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", marginTop: "0.3rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Row 1: Connected Load & Voltage</label>
+                              <input type="text" value={(formData as any).cfeiLoadRow1 || "TOTAL CONNECTED LOAD: 15.0 kVA  |  SERVICE VOLTAGE: 230V, 1Ø, 2-WIRE, 60 HZ"} onChange={e => handleFieldChange("cfeiLoadRow1" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Row 2: Overcurrent Protection</label>
+                              <input type="text" value={(formData as any).cfeiLoadRow2 || "MAIN OVERCURRENT PROTECTION: 60A, 2-POLE, 240V, 10 kAIC MOLDED CASE CIRCUIT BREAKER"} onChange={e => handleFieldChange("cfeiLoadRow2" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Row 3: Feeder & Service Entrance</label>
+                              <input type="text" value={(formData as any).cfeiLoadRow3 || "FEEDER / SERVICE ENTRANCE: 2 - 30 mm² THHN COPPER + 1 - 8.0 mm² GND IN 32mmø PVC CONDUIT"} onChange={e => handleFieldChange("cfeiLoadRow3" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Row 4: Branch Circuits</label>
+                              <input type="text" value={(formData as any).cfeiLoadRow4 || "BRANCH CIRCUITS: 8 CIRCUITS (LIGHTING, CONVENIENCE OUTLETS, ACU, COOKING RANGE, WATER HEATER)"} onChange={e => handleFieldChange("cfeiLoadRow4" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", color: "#64748b" }}>Row 5: Grounding System</label>
+                              <input type="text" value={(formData as any).cfeiLoadRow5 || "GROUNDING SYSTEM: 20 mmø x 3.0 m COPPER CLAD STEEL GROUND ROD (RESISTANCE < 5 OHMS)"} onChange={e => handleFieldChange("cfeiLoadRow5" as any, e.target.value)} style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.74rem" }} />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}

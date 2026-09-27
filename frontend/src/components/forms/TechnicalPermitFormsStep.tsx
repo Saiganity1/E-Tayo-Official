@@ -32,6 +32,7 @@ import {
   generateTemporaryServicePermitPdf,
   generateCertificateOfOccupancyPdf,
   generateCertificateOfCompletionPdf,
+  generateCfeiPdf,
   UnifiedPermitFormData 
 } from "../../utils/unifiedPermitPdfGenerator";
 import PermitMatrixGuideModal from "../modals/PermitMatrixGuideModal";
@@ -128,6 +129,13 @@ export const FORM_OFFICIAL_DETAILS: Record<string, { officialTitle: string; nbcC
     icon: CheckCircle2,
     color: "#0284c7",
     desc: "Official Certificate of Completion signed by supervising engineers, architects, and contractor."
+  },
+  cfei: {
+    officialTitle: "OFFICIAL CERTIFICATE OF FINAL ELECTRICAL INSPECTION (CFEI)",
+    nbcCode: "NBC FORM NO. 96006-E",
+    icon: Zap,
+    color: "#d97706",
+    desc: "Official Certificate of Final Electrical Inspection & Completion required for electrical energization."
   }
 };
 
@@ -182,9 +190,17 @@ export default function TechnicalPermitFormsStep({
   const [inputMode, setInputMode] = useState<"digital_fill" | "upload_scans">("digital_fill");
 
   // Mandatory technical permit keys for this project type (excluding zoning clearance which is Stage 1 / Step 2)
-  const mandatoryKeys = (Object.keys(projectType.matrix) as (keyof PermitFormMatrix)[]).filter(
-    (k) => projectType.matrix[k] === "required" && k !== "zoningPermit"
-  );
+  // Ensure CFEI is accessible whenever CFEI is required, or if building permit, electrical permit, or completion clearance is part of the project
+  const mandatoryKeys = useMemo(() => {
+    const keys = (Object.keys(projectType.matrix) as (keyof PermitFormMatrix)[]).filter(
+      (k) => (projectType.matrix[k] === "required" || (k === "cfei" && (projectType.matrix.cfei === "required" || projectType.matrix.certificateOfCompletion === "required"))) && k !== "zoningPermit"
+    );
+    // If project includes Building Permit or Electrical Permit, ensure CFEI is included in the fill-up form tabs
+    if (!keys.includes("cfei") && (projectType.matrix.buildingPermit === "required" || projectType.matrix.electricalPermit === "required" || projectType.id === "completion_clearance")) {
+      keys.push("cfei");
+    }
+    return keys;
+  }, [projectType]);
 
   // Active form tab currently viewed
   const [activeTab, setActiveTab] = useState<keyof PermitFormMatrix>(
@@ -1325,6 +1341,206 @@ export default function TechnicalPermitFormsStep({
     if (electronicsEngineerSignature) setCcElectronicsSig(electronicsEngineerSignature);
 
     setNotification("Certificate of Completion Form auto-filled from system records!");
+  };
+
+  // ========================================================
+  // CFEI: CERTIFICATE OF FINAL ELECTRICAL INSPECTION STATE
+  // ========================================================
+  const [cfeiBuildingPermitNo, setCfeiBuildingPermitNo] = useState(() => (clearanceApp as any)?.buildingPermitNo || ccBuildingPermitNo || "BP-2026-0091");
+  const [cfeiBpDateIssued, setCfeiBpDateIssued] = useState(() => (clearanceApp as any)?.permitIssuedDate || ccBpDateIssued || "Jan 12, 2026");
+  const [cfeiApplicantLastName, setCfeiApplicantLastName] = useState(() => applicantLastName || "DELA CRUZ");
+  const [cfeiApplicantFirstName, setCfeiApplicantFirstName] = useState(() => applicantFirstName || "JUAN");
+  const [cfeiApplicantMiddleName, setCfeiApplicantMiddleName] = useState(() => applicantMiddleName || "S.");
+  const [cfeiHouseNo, setCfeiHouseNo] = useState(() => {
+    const m = (streetAddress || "").match(/^(\d+[\w-]*)\s+/);
+    return m ? m[1] : "123";
+  });
+  const [cfeiStreet, setCfeiStreet] = useState(() => {
+    const clean = (streetAddress || "Rizal St.").replace(/^\d+[\w-]*\s+/, "");
+    return clean || "Rizal St.";
+  });
+  const [cfeiBarangay, setCfeiBarangay] = useState(() => barangay || "Poblacion");
+  const [cfeiLotNo, setCfeiLotNo] = useState(() => lotNo || "12");
+  const [cfeiBlockNo, setCfeiBlockNo] = useState(() => blockNo || "4");
+  const [cfeiProjectStreet, setCfeiProjectStreet] = useState(() => streetAddress || "Sunset Valley Subd.");
+  const [cfeiCharacterOfOccupancy, setCfeiCharacterOfOccupancy] = useState(() => occupancyRuleVII || occupancyClass || "Residential Dwelling");
+  const [cfeiProposedStartDate, setCfeiProposedStartDate] = useState(() => proposedStartDate || "2026-10-01");
+  const [cfeiActualCompletionDate, setCfeiActualCompletionDate] = useState(() => ccActualCompletionDate || expectedCompletionDate || "2027-04-30");
+  const [cfeiConnectedLoad, setCfeiConnectedLoad] = useState(() => electricalConnectedLoad || "15.0");
+  const [cfeiVoltage, setCfeiVoltage] = useState(() => electricalVoltage || "230V");
+  const [cfeiInChargeRole, setCfeiInChargeRole] = useState<"PEE" | "REE" | "RME">("PEE");
+  const [cfeiPeeName, setCfeiPeeName] = useState(() => electricalEngineerName || "ENGR. DANILO REYES, PEE");
+  const [cfeiPeePrc, setCfeiPeePrc] = useState(() => electricalEngineerPRC || "0033421");
+  const [cfeiPeePrcValidity, setCfeiPeePrcValidity] = useState(() => electricalEngineerPRCValidity || "2028-11-30");
+  const [cfeiPeeAddress, setCfeiPeeAddress] = useState(() => ccElecAddress || "Sto. Tomas, Pampanga");
+  const [cfeiPeePtr, setCfeiPeePtr] = useState(() => electricalEngineerPTR || "PTR-ST-443322");
+  const [cfeiPeePtrDate, setCfeiPeePtrDate] = useState(() => "Jan 12, 2026");
+  const [cfeiPeePtrPlace, setCfeiPeePtrPlace] = useState(() => electricalEngineerPTRIssued || "Sto. Tomas");
+  const [cfeiPeeCtcNo, setCfeiPeeCtcNo] = useState("CTC-2026-00841");
+  const [cfeiPeeCtcDate, setCfeiPeeCtcDate] = useState("Jan 10, 2026");
+  const [cfeiPeeTin, setCfeiPeeTin] = useState(() => electricalEngineerTIN || "456-789-012-000");
+  const [cfeiPeeSignature, setCfeiPeeSignature] = useState(() => electricalEngineerSignature || "");
+  const [cfeiInspectorName, setCfeiInspectorName] = useState("ENGR. GILBERT B. CRUZ");
+  const [cfeiInspectorPrc, setCfeiInspectorPrc] = useState("PRC 0042189 / 2028-11-20");
+  const [cfeiOfficialName, setCfeiOfficialName] = useState("ENGR. GIOVANNI L. AQUINO");
+  const [cfeiOfficialPrc, setCfeiOfficialPrc] = useState("PRC 0031892 / 2027-08-15");
+  const [cfeiFeePaid, setCfeiFeePaid] = useState("520.00");
+  const [cfeiOrNo, setCfeiOrNo] = useState("OR-2026-00892");
+  const [cfeiDatePaid, setCfeiDatePaid] = useState("2027-04-30");
+
+  // Outlets & Equipment (CFEI Box)
+  const [cfeiLightOutlets, setCfeiLightOutlets] = useState(() => lightingOutletsCount || "28");
+  const [cfeiConvenienceOutlets, setCfeiConvenienceOutlets] = useState(() => convenienceOutletsCount || "24");
+  const [cfeiAcuOutlets, setCfeiAcuOutlets] = useState(() => acuOutletsCount || "4");
+  const [cfeiCookingUnitOutlets, setCfeiCookingUnitOutlets] = useState(() => rangeOutletsCount || "1");
+  const [cfeiWaterHeaterOutlets, setCfeiWaterHeaterOutlets] = useState(() => waterHeaterOutletsCount || "2");
+  const [cfeiWaterPumpOutlets, setCfeiWaterPumpOutlets] = useState(() => waterPumpOutletsCount || "1");
+  const [cfeiToggleSwitches, setCfeiToggleSwitches] = useState(() => toggleSwitchCount || "15");
+  const [cfeiBellsBuzzers, setCfeiBellsBuzzers] = useState(() => bellBuzzerCount || "1");
+  const [cfeiPushButtons, setCfeiPushButtons] = useState(() => pushButtonsCount || "1");
+  const [cfeiFaDetectors, setCfeiFaDetectors] = useState(() => faDetectorCount || "2");
+  const [cfeiOtherDevices, setCfeiOtherDevices] = useState(() => otherWiringDevicesCount || "1");
+
+  // Electrical Contractor (CFEI)
+  const [cfeiContractorName, setCfeiContractorName] = useState(() => electricalContractorName || "SAN PEDRO ELECTRICAL SERVICES & CONSTRUCTION CORP.");
+  const [cfeiContractorPcab, setCfeiContractorPcab] = useState(() => electricalContractorPcab || "PCAB-EL-48821");
+  const [cfeiContractorValidity, setCfeiContractorValidity] = useState("2027-10-31");
+  const [cfeiContractorAddress, setCfeiContractorAddress] = useState(() => electricalContractorAddress || "Sto. Tomas, Pampanga");
+  const [cfeiContractorTel, setCfeiContractorTel] = useState(() => electricalContractorTel || "(045) 982-4112 / 0917-889-4412");
+
+  // Installation Type & Wiring
+  const [cfeiInstallationType, setCfeiInstallationType] = useState<"NEW" | "TEMPORARY" | "REMODEL/ALTERATION">("NEW");
+  const [cfeiWiringMethods, setCfeiWiringMethods] = useState<string[]>(["CONDUITS"]);
+
+  // CFEI Page 2: Costs, Loads & Detailed Technical Specifications
+  const [cfeiStoriesCount, setCfeiStoriesCount] = useState("2 (TWO)");
+  const [cfeiEstimatedCost, setCfeiEstimatedCost] = useState(() => projectCost || "1,850,000.00");
+  const [cfeiActualCost, setCfeiActualCost] = useState(() => projectCost || "1,850,000.00");
+  const [cfeiMaterialsCost, setCfeiMaterialsCost] = useState(() => {
+    const t = parseFloat((projectCost || "1,850,000.00").replace(/[^0-9.]/g, "")) || 1850000;
+    return (t * 0.58).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [cfeiWiresCost, setCfeiWiresCost] = useState(() => {
+    const t = parseFloat((projectCost || "1,850,000.00").replace(/[^0-9.]/g, "")) || 1850000;
+    return (t * 0.58 * 0.30).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [cfeiLightingCost, setCfeiLightingCost] = useState(() => {
+    const t = parseFloat((projectCost || "1,850,000.00").replace(/[^0-9.]/g, "")) || 1850000;
+    return (t * 0.58 * 0.23).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [cfeiConvenienceCost, setCfeiConvenienceCost] = useState(() => {
+    const t = parseFloat((projectCost || "1,850,000.00").replace(/[^0-9.]/g, "")) || 1850000;
+    return (t * 0.58 * 0.18).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [cfeiSwitchesCost, setCfeiSwitchesCost] = useState(() => {
+    const t = parseFloat((projectCost || "1,850,000.00").replace(/[^0-9.]/g, "")) || 1850000;
+    return (t * 0.58 * 0.15).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [cfeiOtherMaterialsCost, setCfeiOtherMaterialsCost] = useState("150,220.00 (Distribution Panels, Breakers, Conduits)");
+  const [cfeiOtherCosts, setCfeiOtherCosts] = useState(() => {
+    const t = parseFloat((projectCost || "1,850,000.00").replace(/[^0-9.]/g, "")) || 1850000;
+    return (t * 0.42).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [cfeiOtherDevicesNote, setCfeiOtherDevicesNote] = useState("Emergency Lights & Exit Signs");
+  const [cfeiNatureOfWork, setCfeiNatureOfWork] = useState("NEW ELECTRICAL INSTALLATION FOR 2-STOREY RESIDENTIAL DWELLING");
+  const [cfeiServiceVoltage, setCfeiServiceVoltage] = useState("230V, 1-PHASE, 60HZ");
+  const [cfeiWireSize, setCfeiWireSize] = useState("30 MM² THHN COPPER");
+  const [cfeiPhone, setCfeiPhone] = useState(() => applicantPhone || "(045) 982-4112");
+  const [cfeiRemarks, setCfeiRemarks] = useState("COMPLIED WITH 2017 PHILIPPINE ELECTRICAL CODE (PEC) AND LOCAL MUNICIPAL ORDINANCES.");
+  const [cfeiRemarksLine2, setCfeiRemarksLine2] = useState("APPROVED FOR CONTINUOUS RESIDENTIAL ELECTRICAL SERVICE CONNECTION.");
+  const [cfeiComputedBy, setCfeiComputedBy] = useState("ENGR. DANILO REYES, PEE");
+
+  // CFEI LOAD Box rows
+  const [cfeiLoadRow1, setCfeiLoadRow1] = useState("TOTAL CONNECTED LOAD: 15.0 kVA  |  SERVICE VOLTAGE: 230V, 1Ø, 2-WIRE, 60 HZ");
+  const [cfeiLoadRow2, setCfeiLoadRow2] = useState("MAIN OVERCURRENT PROTECTION: 60A, 2-POLE, 240V, 10 kAIC MOLDED CASE CIRCUIT BREAKER");
+  const [cfeiLoadRow3, setCfeiLoadRow3] = useState("FEEDER / SERVICE ENTRANCE: 2 - 30 mm² THHN COPPER + 1 - 8.0 mm² GND IN 32mmø PVC CONDUIT");
+  const [cfeiLoadRow4, setCfeiLoadRow4] = useState("BRANCH CIRCUITS: 8 CIRCUITS (LIGHTING, CONVENIENCE OUTLETS, ACU, COOKING RANGE, WATER HEATER)");
+  const [cfeiLoadRow5, setCfeiLoadRow5] = useState("GROUNDING SYSTEM: 20 mmø x 3.0 m COPPER CLAD STEEL GROUND ROD (RESISTANCE < 5 OHMS)");
+
+  const handleAutoCalculateCfeiCosts = (baseCostStr?: string) => {
+    const raw = (baseCostStr || cfeiActualCost || projectCost || "1,850,000.00").replace(/^(PHP|Php|P|\u20b1)\s*/i, "").trim();
+    const totalNum = parseFloat(raw.replace(/,/g, "")) || 1850000;
+    const fmt = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const matTotal = totalNum * 0.58;
+    setCfeiMaterialsCost(fmt(matTotal));
+    setCfeiWiresCost(fmt(matTotal * 0.30));
+    setCfeiLightingCost(fmt(matTotal * 0.23));
+    setCfeiConvenienceCost(fmt(matTotal * 0.18));
+    setCfeiSwitchesCost(fmt(matTotal * 0.15));
+    setCfeiOtherMaterialsCost(`${fmt(matTotal * 0.14)} (Distribution Panels, Breakers, Conduits)`);
+    setCfeiOtherCosts(fmt(totalNum * 0.42));
+  };
+
+  const handleAutoFillCfeiFromSystem = () => {
+    const bp = (clearanceApp as any)?.buildingPermitNo || ccBuildingPermitNo || "BP-2026-0091";
+    const bpDate = (clearanceApp as any)?.permitIssuedDate || ccBpDateIssued || "Jan 12, 2026";
+    setCfeiBuildingPermitNo(bp);
+    setCfeiBpDateIssued(bpDate);
+    if (applicantLastName) setCfeiApplicantLastName(applicantLastName);
+    if (applicantFirstName) setCfeiApplicantFirstName(applicantFirstName);
+    if (applicantMiddleName) setCfeiApplicantMiddleName(applicantMiddleName);
+
+    if (streetAddress) {
+      const m = streetAddress.match(/^(\d+[\w-]*)\s+(.*)$/);
+      if (m) {
+        setCfeiHouseNo(m[1]);
+        setCfeiStreet(m[2]);
+      } else {
+        setCfeiHouseNo("123");
+        setCfeiStreet(streetAddress);
+      }
+    }
+    if (barangay) setCfeiBarangay(barangay);
+
+    if (lotNo) setCfeiLotNo(lotNo);
+    if (blockNo) setCfeiBlockNo(blockNo);
+    if (streetAddress) setCfeiProjectStreet(streetAddress);
+
+    if (occupancyRuleVII || occupancyClass) setCfeiCharacterOfOccupancy(occupancyRuleVII || occupancyClass);
+    if (proposedStartDate) setCfeiProposedStartDate(proposedStartDate);
+    if (ccActualCompletionDate || expectedCompletionDate) setCfeiActualCompletionDate(ccActualCompletionDate || expectedCompletionDate);
+
+    if (electricalConnectedLoad) setCfeiConnectedLoad(electricalConnectedLoad);
+    if (electricalVoltage) setCfeiVoltage(electricalVoltage);
+
+    if (lightingOutletsCount) setCfeiLightOutlets(lightingOutletsCount);
+    if (convenienceOutletsCount) setCfeiConvenienceOutlets(convenienceOutletsCount);
+    if (acuOutletsCount) setCfeiAcuOutlets(acuOutletsCount);
+    if (rangeOutletsCount) setCfeiCookingUnitOutlets(rangeOutletsCount);
+    if (waterHeaterOutletsCount) setCfeiWaterHeaterOutlets(waterHeaterOutletsCount);
+    if (waterPumpOutletsCount) setCfeiWaterPumpOutlets(waterPumpOutletsCount);
+    if (toggleSwitchCount) setCfeiToggleSwitches(toggleSwitchCount);
+    if (bellBuzzerCount) setCfeiBellsBuzzers(bellBuzzerCount);
+    if (pushButtonsCount) setCfeiPushButtons(pushButtonsCount);
+    if (faDetectorCount) setCfeiFaDetectors(faDetectorCount);
+    if (otherWiringDevicesCount) setCfeiOtherDevices(otherWiringDevicesCount);
+
+    if (electricalEngineerName) setCfeiPeeName(electricalEngineerName);
+    if (electricalEngineerPRC) setCfeiPeePrc(electricalEngineerPRC);
+    if (electricalEngineerPRCValidity) setCfeiPeePrcValidity(electricalEngineerPRCValidity);
+    if (ccElecAddress) setCfeiPeeAddress(ccElecAddress);
+    if (electricalEngineerPTR) setCfeiPeePtr(electricalEngineerPTR);
+    if (electricalEngineerPTRIssued) setCfeiPeePtrPlace(electricalEngineerPTRIssued);
+    if (govIdNo) setCfeiPeeCtcNo(govIdNo);
+    if (govIdDateIssued) setCfeiPeeCtcDate(govIdDateIssued);
+    if (electricalEngineerTIN) setCfeiPeeTin(electricalEngineerTIN);
+    if (electricalEngineerSignature) setCfeiPeeSignature(electricalEngineerSignature);
+
+    if (electricalContractorName) setCfeiContractorName(electricalContractorName);
+    if (electricalContractorPcab) setCfeiContractorPcab(electricalContractorPcab);
+    if (electricalContractorAddress) setCfeiContractorAddress(electricalContractorAddress);
+    if (electricalContractorTel) setCfeiContractorTel(electricalContractorTel);
+
+    if (projectCost) {
+      setCfeiEstimatedCost(projectCost);
+      setCfeiActualCost(projectCost);
+      handleAutoCalculateCfeiCosts(projectCost);
+    }
+    if (applicantPhone) setCfeiPhone(applicantPhone);
+    if (ccPlannedStoreys || ccActualStoreys) setCfeiStoriesCount(`${ccActualStoreys || ccPlannedStoreys || "2"} (TWO)`);
+
+    setNotification("CFEI Form auto-filled from building permit & electrical engineering records!");
   };
 
   const handleAutoFillPtscFromSystem = () => {
@@ -2842,6 +3058,102 @@ export default function TechnicalPermitFormsStep({
               interiorSupervisorSignature: ccSameAsDesignInteriorSup ? ccInteriorSig : ccInteriorSupSig,
             };
             const b64 = await generateCertificateOfCompletionPdf(ccPayload);
+            formUrl = `data:application/pdf;base64,${b64}`;
+          } else if (key === "cfei") {
+            const cfeiPayload: UnifiedPermitFormData = {
+              ...payload,
+              buildingPermitNo: cfeiBuildingPermitNo || ccBuildingPermitNo || payload.buildingPermitNo || (payload.applicationNo ? `BP-${payload.applicationNo.replace(/^APP-(TEST-)?/i, "")}` : "BP-2026-0091"),
+              buildingPermitDateIssued: cfeiBpDateIssued || ccBpDateIssued || payload.buildingPermitDateIssued || "Jan 12, 2026",
+              applicantLastName: cfeiApplicantLastName || payload.applicantLastName,
+              applicantFirstName: cfeiApplicantFirstName || payload.applicantFirstName,
+              applicantMiddleName: cfeiApplicantMiddleName || payload.applicantMiddleName,
+              applicantAddress: cfeiHouseNo ? `${cfeiHouseNo} ${cfeiStreet}`.trim() : (cfeiStreet || payload.applicantAddress || compiledFullAddress),
+              barangay: cfeiBarangay || payload.barangay,
+              applicantMunicipality: "Sto. Tomas",
+              applicantProvince: "Pampanga",
+              lotNo: cfeiLotNo || payload.lotNo || "12",
+              blockNo: cfeiBlockNo || payload.blockNo || "4",
+              projectAddress: cfeiProjectStreet || payload.projectAddress || compiledFullAddress,
+              characterOfOccupancy: cfeiCharacterOfOccupancy || payload.characterOfOccupancy || "Residential",
+              occupancyGroup: cfeiCharacterOfOccupancy.toLowerCase().includes("commercial") ? "E" : (cfeiCharacterOfOccupancy.toLowerCase().includes("industrial") ? "F" : "A"),
+              proposedStartDate: cfeiProposedStartDate || payload.proposedStartDate || "2026-10-01",
+              actualCompletionDate: cfeiActualCompletionDate || payload.actualCompletionDate || payload.expectedCompletionDate || "2027-04-30",
+              electricalConnectedLoad: cfeiConnectedLoad || payload.electricalConnectedLoad || "15.0",
+              electricalVoltage: cfeiVoltage || payload.electricalVoltage || "230V",
+              electricalEngineerName: cfeiPeeName || payload.electricalEngineerName || "ENGR. DANILO REYES, PEE",
+              electricalEngineerPRC: cfeiPeePrc || payload.electricalEngineerPRC || "0033421",
+              electricalEngineerPRCValidity: cfeiPeePrcValidity || payload.electricalEngineerPRCValidity || "2028-11-30",
+              electricalEngineerAddress: cfeiPeeAddress || payload.electricalEngineerAddress || "Sto. Tomas, Pampanga",
+              electricalEngineerPTR: cfeiPeePtr || payload.electricalEngineerPTR || "PTR-ST-443322",
+              electricalEngineerPTRIssued: cfeiPeePtrDate || payload.electricalEngineerPTRIssued || "Jan 12, 2026",
+              electricalEngineerPTRIssuedAt: cfeiPeePtrPlace || payload.electricalEngineerPTRIssuedAt || "Sto. Tomas",
+              supervisorCtcNo: cfeiPeeCtcNo || payload.supervisorCtcNo || "CTC-2026-00841",
+              supervisorCtcDateIssued: cfeiPeeCtcDate || payload.supervisorCtcDateIssued || "Jan 10, 2026",
+              electricalEngineerTIN: cfeiPeeTin || payload.electricalEngineerTIN || "456-789-012-000",
+              electricalEngineerSignature: cfeiPeeSignature || payload.electricalEngineerSignature,
+              cfeiInspectorName: cfeiInspectorName || "ENGR. GILBERT B. CRUZ",
+
+              // Outlets & Equipment
+              lightingOutletsCount: cfeiLightOutlets || lightingOutletsCount || "28",
+              convenienceOutletsCount: cfeiConvenienceOutlets || convenienceOutletsCount || "24",
+              acuOutletsCount: cfeiAcuOutlets || acuOutletsCount || "4",
+              cookingUnitOutletsCount: cfeiCookingUnitOutlets || rangeOutletsCount || "1",
+              rangeOutletsCount: cfeiCookingUnitOutlets || rangeOutletsCount || "1",
+              waterHeaterOutletsCount: cfeiWaterHeaterOutlets || waterHeaterOutletsCount || "2",
+              waterPumpOutletsCount: cfeiWaterPumpOutlets || waterPumpOutletsCount || "1",
+              toggleSwitchCount: cfeiToggleSwitches || toggleSwitchCount || "15",
+              bellBuzzerCount: cfeiBellsBuzzers || bellBuzzerCount || "1",
+              pushButtonsCount: cfeiPushButtons || pushButtonsCount || "1",
+              faDetectorCount: cfeiFaDetectors || faDetectorCount || "2",
+              otherWiringDevicesCount: cfeiOtherDevices || otherWiringDevicesCount || "1",
+
+              // Electrical Contractor
+              electricalContractorName: cfeiContractorName || electricalContractorName || "SAN PEDRO ELECTRICAL SERVICES & CONSTRUCTION CORP.",
+              electricalContractorPcab: cfeiContractorPcab || electricalContractorPcab || "PCAB-EL-48821",
+              electricalContractorPcabValidity: cfeiContractorValidity || "2027-10-31",
+              electricalContractorAddress: cfeiContractorAddress || electricalContractorAddress || "Sto. Tomas, Pampanga",
+              electricalContractorTel: cfeiContractorTel || electricalContractorTel || "(045) 982-4112 / 0917-889-4412",
+
+              // Installation & Wiring
+              cfeiInstallationType: cfeiInstallationType || "NEW",
+              cfeiWiringMethods: cfeiWiringMethods || ["CONDUITS"],
+
+              // Officials & PRC Validity
+              cfeiInspectorPrc: cfeiInspectorPrc || "PRC 0042189 / 2028-11-20",
+              cfeiOfficialName: cfeiOfficialName || "ENGR. GIOVANNI L. AQUINO",
+              cfeiOfficialPrc: cfeiOfficialPrc || "PRC 0031892 / 2027-08-15",
+
+              // Official Receipt & Fee Payment
+              feePaid: cfeiFeePaid || "520.00",
+              officialReceiptNo: cfeiOrNo || "OR-2026-00892",
+              datePaid: cfeiDatePaid || "2027-04-30",
+
+              // CFEI Page 2: Costs, Loads & Detailed Technical Specs
+              cfeiStoriesCount: cfeiStoriesCount || "2 (TWO)",
+              cfeiEstimatedCost: cfeiEstimatedCost || projectCost || "1,850,000.00",
+              cfeiActualCost: cfeiActualCost || projectCost || "1,850,000.00",
+              cfeiMaterialsCost: cfeiMaterialsCost || "1,073,000.00",
+              cfeiWiresCost: cfeiWiresCost || "321,900.00",
+              cfeiLightingCost: cfeiLightingCost || "246,790.00",
+              cfeiConvenienceCost: cfeiConvenienceCost || "193,140.00",
+              cfeiSwitchesCost: cfeiSwitchesCost || "160,950.00",
+              cfeiOtherMaterialsCost: cfeiOtherMaterialsCost || "150,220.00 (Distribution Panels, Breakers, Conduits)",
+              cfeiOtherCosts: cfeiOtherCosts || "777,000.00",
+              cfeiOtherDevicesNote: cfeiOtherDevicesNote || "Emergency Lights & Exit Signs",
+              cfeiNatureOfWork: cfeiNatureOfWork || "NEW ELECTRICAL INSTALLATION FOR 2-STOREY RESIDENTIAL DWELLING",
+              cfeiVoltage: cfeiServiceVoltage || cfeiVoltage || "230V, 1-PHASE, 60HZ",
+              cfeiWireSize: cfeiWireSize || "30 MM² THHN COPPER",
+              cfeiPhone: cfeiPhone || applicantPhone || "(045) 982-4112",
+              cfeiRemarks: cfeiRemarks || "COMPLIED WITH 2017 PHILIPPINE ELECTRICAL CODE (PEC) AND LOCAL MUNICIPAL ORDINANCES.",
+              cfeiRemarksLine2: cfeiRemarksLine2 || "APPROVED FOR CONTINUOUS RESIDENTIAL ELECTRICAL SERVICE CONNECTION.",
+              cfeiComputedBy: cfeiComputedBy || cfeiPeeName || "ENGR. DANILO REYES, PEE",
+              cfeiLoadRow1: cfeiLoadRow1 || "TOTAL CONNECTED LOAD: 15.0 kVA  |  SERVICE VOLTAGE: 230V, 1Ø, 2-WIRE, 60 HZ",
+              cfeiLoadRow2: cfeiLoadRow2 || "MAIN OVERCURRENT PROTECTION: 60A, 2-POLE, 240V, 10 kAIC MOLDED CASE CIRCUIT BREAKER",
+              cfeiLoadRow3: cfeiLoadRow3 || "FEEDER / SERVICE ENTRANCE: 2 - 30 mm² THHN COPPER + 1 - 8.0 mm² GND IN 32mmø PVC CONDUIT",
+              cfeiLoadRow4: cfeiLoadRow4 || "BRANCH CIRCUITS: 8 CIRCUITS (LIGHTING, CONVENIENCE OUTLETS, ACU, COOKING RANGE, WATER HEATER)",
+              cfeiLoadRow5: cfeiLoadRow5 || "GROUNDING SYSTEM: 20 mmø x 3.0 m COPPER CLAD STEEL GROUND ROD (RESISTANCE < 5 OHMS)",
+            };
+            const b64 = await generateCfeiPdf(cfeiPayload);
             formUrl = `data:application/pdf;base64,${b64}`;
           }
         } catch (indivErr) {
@@ -14415,6 +14727,1474 @@ export default function TechnicalPermitFormsStep({
                     >
                       <Download size={16} color="#4f46e5" />
                       <span>Download Dossier PDF</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ======================================================== */}
+            {/* ACTIVE TAB: CFEI (CERTIFICATE OF FINAL ELECTRICAL INSPECTION) */}
+            {/* ======================================================== */}
+            {activeTab === "cfei" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                {/* Header Banner */}
+                <div style={{
+                  padding: "1.25rem 1.5rem",
+                  borderRadius: "14px",
+                  background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+                  border: "1.5px solid #fde68a",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "12px"
+                }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "0.72rem", background: "#d97706", color: "white", padding: "2px 8px", borderRadius: "999px", fontWeight: "800" }}>
+                        NBC FORM NO. 96006-E
+                      </span>
+                      <span style={{ fontSize: "0.72rem", background: "#fef08a", color: "#854d0e", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                        ELECTRICAL ENERGIZATION CLEARANCE
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: "1.15rem", fontWeight: "900", color: "#78350f", margin: 0 }}>
+                      Certificate of Final Electrical Inspection (CFEI) / Completion
+                    </h3>
+                    <p style={{ fontSize: "0.82rem", color: "#92400e", margin: "4px 0 0 0" }}>
+                      Official certification confirming that electrical installation complies with the Philippine Electrical Code (PEC) and approved plans on file with the Office of the Building Official.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAutoFillCfeiFromSystem}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 16px",
+                      borderRadius: "8px",
+                      background: "#d97706",
+                      color: "white",
+                      border: "none",
+                      fontSize: "0.82rem",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      boxShadow: "0 2px 8px rgba(217, 119, 6, 0.25)"
+                    }}
+                  >
+                    <RefreshCw size={14} />
+                    <span>Auto-Fill from Project / Application Data</span>
+                  </button>
+                </div>
+
+                {/* Section 1: Reference Building Permit (Auto-Gathered) */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#f8fafc",
+                  border: "1.5px solid #cbd5e1"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <div>
+                      <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                        1. Reference Building Permit Details
+                      </h4>
+                      <p style={{ fontSize: "0.76rem", color: "#64748b", margin: "2px 0 0 0" }}>
+                        Auto-gathered from project building permit clearance (as required by the National Building Code)
+                      </p>
+                    </div>
+                    <span style={{ fontSize: "0.72rem", background: "#e0f2fe", color: "#0284c7", padding: "3px 10px", borderRadius: "999px", fontWeight: "800" }}>
+                      Auto-Gathered
+                    </span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                        Building Permit No. *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiBuildingPermitNo}
+                        onChange={(e) => setCfeiBuildingPermitNo(e.target.value)}
+                        placeholder="e.g. BP-2026-0091"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700", color: "#0f172a" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "3px" }}>
+                        Building Permit Date Issued *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiBpDateIssued}
+                        onChange={(e) => setCfeiBpDateIssued(e.target.value)}
+                        placeholder="e.g. Jan 12, 2026"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", fontWeight: "700", color: "#0f172a" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Owner / Corporation Details */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#ffffff",
+                  border: "1.5px solid #e2e8f0"
+                }}>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: "0 0 10px 0" }}>
+                    2. Name of Owner / Corporation
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Last Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiApplicantLastName}
+                        onChange={(e) => setCfeiApplicantLastName(e.target.value)}
+                        placeholder="e.g. DELA CRUZ"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        First Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiApplicantFirstName}
+                        onChange={(e) => setCfeiApplicantFirstName(e.target.value)}
+                        placeholder="e.g. JUAN"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Middle Name / Initial
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiApplicantMiddleName}
+                        onChange={(e) => setCfeiApplicantMiddleName(e.target.value)}
+                        placeholder="e.g. S."
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Owner Address */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#ffffff",
+                  border: "1.5px solid #e2e8f0"
+                }}>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: "0 0 10px 0" }}>
+                    3. Address of Owner
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "100px 2fr 1.5fr 1.5fr", gap: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        House No.
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiHouseNo}
+                        onChange={(e) => setCfeiHouseNo(e.target.value)}
+                        placeholder="123"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Street *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiStreet}
+                        onChange={(e) => setCfeiStreet(e.target.value)}
+                        placeholder="Rizal St."
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Barangay *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiBarangay}
+                        onChange={(e) => setCfeiBarangay(e.target.value)}
+                        placeholder="Poblacion"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        City / Municipality
+                      </label>
+                      <input
+                        type="text"
+                        value="Sto. Tomas, Pampanga"
+                        readOnly
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#f8fafc", color: "#64748b" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 4: Location of Installation */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#ffffff",
+                  border: "1.5px solid #e2e8f0"
+                }}>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: "0 0 10px 0" }}>
+                    4. Location of Electrical Installation
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "80px 80px 2fr 1.5fr 1.5fr", gap: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Lot No.
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiLotNo}
+                        onChange={(e) => setCfeiLotNo(e.target.value)}
+                        placeholder="12"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Blk No.
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiBlockNo}
+                        onChange={(e) => setCfeiBlockNo(e.target.value)}
+                        placeholder="4"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Street / Subd. *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiProjectStreet}
+                        onChange={(e) => setCfeiProjectStreet(e.target.value)}
+                        placeholder="Sunset Valley Subd."
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Barangay *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiBarangay}
+                        onChange={(e) => setCfeiBarangay(e.target.value)}
+                        placeholder="Poblacion"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        City / Municipality
+                      </label>
+                      <input
+                        type="text"
+                        value="Sto. Tomas, Pampanga"
+                        readOnly
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#f8fafc", color: "#64748b" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 5: Occupancy & Installation Schedule */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#ffffff",
+                  border: "1.5px solid #e2e8f0"
+                }}>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: "0 0 10px 0" }}>
+                    5. Type of Occupancy & Installation Schedule
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Type of Occupancy or Use *
+                      </label>
+                      <select
+                        value={cfeiCharacterOfOccupancy}
+                        onChange={(e) => setCfeiCharacterOfOccupancy(e.target.value)}
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                      >
+                        <option value="Residential Dwelling">A. RESIDENTIAL DWELLING</option>
+                        <option value="Residential, Hotel, Apartment">B. RESIDENTIAL, HOTEL, APARTMENT</option>
+                        <option value="Education Recreation">C. EDUCATION RECREATION</option>
+                        <option value="Institutional">D. INSTITUTIONAL</option>
+                        <option value="Business and Mercantile">E. BUSINESS AND MERCANTILE</option>
+                        <option value="Industrial">F. INDUSTRIAL</option>
+                        <option value="Storage and Hazardous">G. STORAGE AND HAZARDOUS</option>
+                        <option value="Assembly Other Than Group I">H. ASSEMBLY OTHER THAN GROUP I</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Start of Installation Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={cfeiProposedStartDate}
+                        onChange={(e) => setCfeiProposedStartDate(e.target.value)}
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Date of Completion *
+                      </label>
+                      <input
+                        type="date"
+                        value={cfeiActualCompletionDate}
+                        onChange={(e) => setCfeiActualCompletionDate(e.target.value)}
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Connected Load (kVA)
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiConnectedLoad}
+                        onChange={(e) => setCfeiConnectedLoad(e.target.value)}
+                        placeholder="15.0"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 6: Outlets / Devices / Equipment Schedule */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#ffffff",
+                  border: "1.5px solid #e2e8f0"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", flexWrap: "wrap", gap: "8px" }}>
+                    <div>
+                      <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                        6. Outlets / Devices / Equipment Schedule
+                      </h4>
+                      <p style={{ fontSize: "0.76rem", color: "#64748b", margin: "2px 0 0 0" }}>
+                        Itemized breakdown of installed lighting, convenience receptacles, specialty outlets, and wiring devices
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCfeiLightOutlets("28");
+                        setCfeiConvenienceOutlets("24");
+                        setCfeiAcuOutlets("4");
+                        setCfeiCookingUnitOutlets("1");
+                        setCfeiWaterHeaterOutlets("2");
+                        setCfeiWaterPumpOutlets("1");
+                        setCfeiToggleSwitches("15");
+                        setCfeiBellsBuzzers("1");
+                        setCfeiPushButtons("1");
+                        setCfeiFaDetectors("2");
+                        setCfeiOtherDevices("1");
+                        setNotification("Standard electrical load device schedule applied!");
+                      }}
+                      style={{
+                        padding: "5px 12px",
+                        borderRadius: "6px",
+                        background: "#fef3c7",
+                        color: "#92400e",
+                        border: "1px solid #fde68a",
+                        fontSize: "0.76rem",
+                        fontWeight: "700",
+                        cursor: "pointer"
+                      }}
+                    >
+                      ⚡ Auto-Fill Standard Outlets
+                    </button>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    {/* Number of Outlets */}
+                    <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                      <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                        Number of Outlets
+                      </span>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>Light Outlets</label>
+                          <input type="text" value={cfeiLightOutlets} onChange={(e) => setCfeiLightOutlets(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>Convenience / Receptacle</label>
+                          <input type="text" value={cfeiConvenienceOutlets} onChange={(e) => setCfeiConvenienceOutlets(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>SPO, Aircon</label>
+                          <input type="text" value={cfeiAcuOutlets} onChange={(e) => setCfeiAcuOutlets(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>SPO, Cooking Unit</label>
+                          <input type="text" value={cfeiCookingUnitOutlets} onChange={(e) => setCfeiCookingUnitOutlets(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>SPO, Water Heater</label>
+                          <input type="text" value={cfeiWaterHeaterOutlets} onChange={(e) => setCfeiWaterHeaterOutlets(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>SPO, Water Pump</label>
+                          <input type="text" value={cfeiWaterPumpOutlets} onChange={(e) => setCfeiWaterPumpOutlets(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Number of Equipment / Wiring Devices */}
+                    <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                      <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#0369a1", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                        Equipment & Wiring Devices
+                      </span>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>Toggle Switches</label>
+                          <input type="text" value={cfeiToggleSwitches} onChange={(e) => setCfeiToggleSwitches(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>Bells / Buzzers</label>
+                          <input type="text" value={cfeiBellsBuzzers} onChange={(e) => setCfeiBellsBuzzers(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>Push Buttons</label>
+                          <input type="text" value={cfeiPushButtons} onChange={(e) => setCfeiPushButtons(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>FA Detectors (Smoke/Heat)</label>
+                          <input type="text" value={cfeiFaDetectors} onChange={(e) => setCfeiFaDetectors(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                        <div style={{ gridColumn: "span 2" }}>
+                          <label style={{ display: "block", fontSize: "0.72rem", color: "#475569" }}>Other Wiring Devices</label>
+                          <input type="text" value={cfeiOtherDevices} onChange={(e) => setCfeiOtherDevices(e.target.value)} style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 7: Person In-Charge of Installation (Professional Electrical Engineer) */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#ffffff",
+                  border: "2px solid #d97706",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <div>
+                      <h4 style={{ fontSize: "1rem", fontWeight: "900", color: "#78350f", margin: 0 }}>
+                        7. Person In-Charge of Installation (Electrical Professional)
+                      </h4>
+                      <p style={{ fontSize: "0.76rem", color: "#92400e", margin: "2px 0 0 0" }}>
+                        Professional Electrical Engineer (PEE) / Registered Electrical Engineer (REE) / Registered Master Electrician (RME)
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      {(["PEE", "REE", "RME"] as const).map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setCfeiInChargeRole(r)}
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: "6px",
+                            border: "none",
+                            fontSize: "0.74rem",
+                            fontWeight: "800",
+                            cursor: "pointer",
+                            background: cfeiInChargeRole === r ? "#d97706" : "#f1f5f9",
+                            color: cfeiInChargeRole === r ? "#ffffff" : "#475569"
+                          }}
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", marginBottom: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Engineer / Electrician Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiPeeName}
+                        onChange={(e) => setCfeiPeeName(e.target.value)}
+                        placeholder="ENGR. DANILO REYES, PEE"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        PRC Reg. No. *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiPeePrc}
+                        onChange={(e) => setCfeiPeePrc(e.target.value)}
+                        placeholder="0033421"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        PRC Validity *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiPeePrcValidity}
+                        onChange={(e) => setCfeiPeePrcValidity(e.target.value)}
+                        placeholder="2028-11-30"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Professional Address
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiPeeAddress}
+                        onChange={(e) => setCfeiPeeAddress(e.target.value)}
+                        placeholder="Sto. Tomas, Pampanga"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        PTR No. *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiPeePtr}
+                        onChange={(e) => setCfeiPeePtr(e.target.value)}
+                        placeholder="PTR-ST-443322"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        PTR Date Issued
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiPeePtrDate}
+                        onChange={(e) => setCfeiPeePtrDate(e.target.value)}
+                        placeholder="Jan 12, 2026"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        PTR Place Issued
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiPeePtrPlace}
+                        onChange={(e) => setCfeiPeePtrPlace(e.target.value)}
+                        placeholder="Sto. Tomas"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        CTC No.
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiPeeCtcNo}
+                        onChange={(e) => setCfeiPeeCtcNo(e.target.value)}
+                        placeholder="CTC-2026-00841"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        T.I.N. *
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiPeeTin}
+                        onChange={(e) => setCfeiPeeTin(e.target.value)}
+                        placeholder="456-789-012-000"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Digital Signature */}
+                  <div style={{ marginTop: "10px" }}>
+                    <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#78350f", marginBottom: "4px" }}>
+                      Digital Signature of Person In-Charge of Installation *
+                    </label>
+                    <SignatureCreator
+                      label="Electrical Professional Signature"
+                      value={cfeiPeeSignature}
+                      onChange={(sig) => setCfeiPeeSignature(sig)}
+                    />
+                  </div>
+                </div>
+
+                {/* Section 8: Electrical Contractor (200A Main & Above) */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#ffffff",
+                  border: "1.5px solid #e2e8f0"
+                }}>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: "0 0 10px 0" }}>
+                    8. Electrical Contractor Details (for 200A Main and Above)
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1.2fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Contractor Company Name
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiContractorName}
+                        onChange={(e) => setCfeiContractorName(e.target.value)}
+                        placeholder="SAN PEDRO ELECTRICAL SERVICES & CONSTRUCTION CORP."
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        PCAB License No.
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiContractorPcab}
+                        onChange={(e) => setCfeiContractorPcab(e.target.value)}
+                        placeholder="PCAB-EL-48821"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Validity
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiContractorValidity}
+                        onChange={(e) => setCfeiContractorValidity(e.target.value)}
+                        placeholder="2027-10-31"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Contractor Address
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiContractorAddress}
+                        onChange={(e) => setCfeiContractorAddress(e.target.value)}
+                        placeholder="Sto. Tomas, Pampanga"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Telefax / Contact No.
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiContractorTel}
+                        onChange={(e) => setCfeiContractorTel(e.target.value)}
+                        placeholder="(045) 982-4112 / 0917-889-4412"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 9: Installation Type & Wiring Method */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#ffffff",
+                  border: "1.5px solid #e2e8f0"
+                }}>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: "0 0 10px 0" }}>
+                    9. Type of Installation & Types of Wiring
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "16px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>
+                        Type of Installation:
+                      </label>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {(["NEW", "TEMPORARY", "REMODEL/ALTERATION"] as const).map((t) => (
+                          <label key={t} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", color: "#334155", cursor: "pointer" }}>
+                            <input
+                              type="radio"
+                              name="cfeiInstallType"
+                              value={t}
+                              checked={cfeiInstallationType === t}
+                              onChange={() => setCfeiInstallationType(t)}
+                            />
+                            <span>{t}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>
+                        Types of Wiring (Select all that apply):
+                      </label>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "8px" }}>
+                        {["CONDUITS", "CABLE", "OPEN WIRING", "ARMORED CABLE", "RACEWAYS"].map((w) => {
+                          const isChecked = cfeiWiringMethods.includes(w);
+                          return (
+                            <label
+                              key={w}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                fontSize: "0.8rem",
+                                padding: "6px 10px",
+                                borderRadius: "6px",
+                                background: isChecked ? "#eff6ff" : "#f8fafc",
+                                border: `1px solid ${isChecked ? "#93c5fd" : "#cbd5e1"}`,
+                                cursor: "pointer",
+                                color: isChecked ? "#1d4ed8" : "#475569",
+                                fontWeight: isChecked ? "700" : "500"
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setCfeiWiringMethods([...cfeiWiringMethods, w]);
+                                  } else {
+                                    setCfeiWiringMethods(cfeiWiringMethods.filter((item) => item !== w));
+                                  }
+                                }}
+                              />
+                              <span>{w}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 10: Municipal Clearance Personnel */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#f8fafc",
+                  border: "1.5px solid #cbd5e1"
+                }}>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: "0 0 10px 0" }}>
+                    10. Sto. Tomas Building Official Clearance Personnel
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                    {/* Inspected By */}
+                    <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #e2e8f0" }}>
+                      <span style={{ fontSize: "0.72rem", color: "#0284c7", fontWeight: "800", textTransform: "uppercase" }}>
+                        INSPECTED BY (Electrical Inspector)
+                      </span>
+                      <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b", fontWeight: "600" }}>Inspector Full Name</label>
+                          <input
+                            type="text"
+                            value={cfeiInspectorName}
+                            onChange={(e) => setCfeiInspectorName(e.target.value)}
+                            placeholder="ENGR. GILBERT B. CRUZ"
+                            style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b", fontWeight: "600" }}>PRC Reg. No. & Validity</label>
+                          <input
+                            type="text"
+                            value={cfeiInspectorPrc}
+                            onChange={(e) => setCfeiInspectorPrc(e.target.value)}
+                            placeholder="PRC 0042189 / 2028-11-20"
+                            style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Checked By */}
+                    <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #e2e8f0" }}>
+                      <span style={{ fontSize: "0.72rem", color: "#0284c7", fontWeight: "800", textTransform: "uppercase" }}>
+                        CHECKED BY (Electrical Engineer of the Building Office)
+                      </span>
+                      <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b", fontWeight: "600" }}>Building Office Engineer Full Name</label>
+                          <input
+                            type="text"
+                            value={cfeiOfficialName}
+                            onChange={(e) => setCfeiOfficialName(e.target.value)}
+                            placeholder="ENGR. GIOVANNI L. AQUINO"
+                            style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: "700" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b", fontWeight: "600" }}>PRC Reg. No. & Validity</label>
+                          <input
+                            type="text"
+                            value={cfeiOfficialPrc}
+                            onChange={(e) => setCfeiOfficialPrc(e.target.value)}
+                            placeholder="PRC 0031892 / 2027-08-15"
+                            style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 11: Official Receipt & Fee Payment Clearance */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#ffffff",
+                  border: "1.5px solid #e2e8f0"
+                }}>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#0f172a", margin: "0 0 10px 0" }}>
+                    11. Official Receipt & Fee Assessment (O.R. Payment Clearance)
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.5fr 1.5fr", gap: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Amount Paid (₱)
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiFeePaid}
+                        onChange={(e) => setCfeiFeePaid(e.target.value)}
+                        placeholder="520.00"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Official Receipt (O.R.) No.
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiOrNo}
+                        onChange={(e) => setCfeiOrNo(e.target.value)}
+                        placeholder="OR-2026-00892"
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: "700" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "600", color: "#475569", marginBottom: "3px" }}>
+                        Date of Payment
+                      </label>
+                      <input
+                        type="date"
+                        value={cfeiDatePaid}
+                        onChange={(e) => setCfeiDatePaid(e.target.value)}
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 12: CFEI Page 2 - Electrical Installation Costs & Technical Specifications */}
+                <div style={{
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  background: "#fffbeb",
+                  border: "1.5px solid #fde68a"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                    <div>
+                      <h4 style={{ fontSize: "0.95rem", fontWeight: "800", color: "#92400e", margin: 0 }}>
+                        ⚡ 12. CFEI Page 2: Summary of Electrical Installation Costs & Technical Specifications
+                      </h4>
+                      <p style={{ fontSize: "0.75rem", color: "#b45309", margin: "2px 0 0 0" }}>
+                        NBC Form No. 96006-E Page 2 — Stories, itemized electrical materials, loads, service specs, and remarks.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleAutoCalculateCfeiCosts()}
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: "6px",
+                        background: "#d97706",
+                        color: "white",
+                        border: "none",
+                        fontSize: "0.75rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px"
+                      }}
+                    >
+                      ⚡ Auto-Calculate Proportional Breakdown
+                    </button>
+                  </div>
+
+                  {/* Stories and Costs Header */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr 1.5fr", gap: "10px", marginBottom: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#78350f", marginBottom: "3px" }}>
+                        Number of Stories
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiStoriesCount}
+                        onChange={(e) => setCfeiStoriesCount(e.target.value)}
+                        placeholder="2 (TWO)"
+                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #fcd34d", fontSize: "0.82rem", background: "#ffffff", fontWeight: "700" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#78350f", marginBottom: "3px" }}>
+                        Estimated Cost (₱)
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiEstimatedCost}
+                        onChange={(e) => setCfeiEstimatedCost(e.target.value)}
+                        placeholder="1,850,000.00"
+                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #fcd34d", fontSize: "0.82rem", background: "#ffffff", fontWeight: "700" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.74rem", fontWeight: "700", color: "#78350f", marginBottom: "3px" }}>
+                        Actual Cost (₱)
+                      </label>
+                      <input
+                        type="text"
+                        value={cfeiActualCost}
+                        onChange={(e) => {
+                          setCfeiActualCost(e.target.value);
+                          handleAutoCalculateCfeiCosts(e.target.value);
+                        }}
+                        placeholder="1,850,000.00"
+                        style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #fcd34d", fontSize: "0.82rem", background: "#ffffff", fontWeight: "800", color: "#92400e" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Materials Breakdown Card */}
+                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: "8px", border: "1px solid #fde68a", marginBottom: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#92400e" }}>
+                        A) MATERIALS (Total Cost) ₱
+                      </span>
+                      <input
+                        type="text"
+                        value={cfeiMaterialsCost}
+                        onChange={(e) => setCfeiMaterialsCost(e.target.value)}
+                        placeholder="1,073,000.00"
+                        style={{ width: "160px", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.82rem", fontWeight: "800", textAlign: "right", color: "#0f172a" }}
+                      />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>1. Electrical wires (₱)</label>
+                        <input
+                          type="text"
+                          value={cfeiWiresCost}
+                          onChange={(e) => setCfeiWiresCost(e.target.value)}
+                          placeholder="321,900.00"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>2. Lighting Outlets (₱)</label>
+                        <input
+                          type="text"
+                          value={cfeiLightingCost}
+                          onChange={(e) => setCfeiLightingCost(e.target.value)}
+                          placeholder="246,790.00"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>3. Convenience Outlets (₱)</label>
+                        <input
+                          type="text"
+                          value={cfeiConvenienceCost}
+                          onChange={(e) => setCfeiConvenienceCost(e.target.value)}
+                          placeholder="193,140.00"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>4. Switches (₱)</label>
+                        <input
+                          type="text"
+                          value={cfeiSwitchesCost}
+                          onChange={(e) => setCfeiSwitchesCost(e.target.value)}
+                          placeholder="160,950.00"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div style={{ gridColumn: "span 2" }}>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Others (Specify)</label>
+                        <input
+                          type="text"
+                          value={cfeiOtherMaterialsCost}
+                          onChange={(e) => setCfeiOtherMaterialsCost(e.target.value)}
+                          placeholder="150,220.00 (Distribution Panels, Circuit Breakers, PVC Conduits)"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div style={{ gridColumn: "span 2", paddingTop: "6px", borderTop: "1px dashed #e2e8f0" }}>
+                        <label style={{ display: "block", fontSize: "0.7rem", fontWeight: "700", color: "#475569" }}>B) Other Costs (Professional fees, permits, equipment) ₱</label>
+                        <input
+                          type="text"
+                          value={cfeiOtherCosts}
+                          onChange={(e) => setCfeiOtherCosts(e.target.value)}
+                          placeholder="777,000.00"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.82rem", fontWeight: "700" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 1. Loads to be Connected & Wiring Devices (NBC Form 96006-E Box 1) */}
+                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: "8px", border: "1px solid #fde68a" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#92400e" }}>
+                        💡 1. Loads to be Connected & Equipment / Wiring Devices (Box 1)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCfeiLightOutlets("28");
+                          setCfeiConvenienceOutlets("24");
+                          setCfeiAcuOutlets("4");
+                          setCfeiCookingUnitOutlets("1");
+                          setCfeiWaterHeaterOutlets("2");
+                          setCfeiWaterPumpOutlets("1");
+                          setCfeiToggleSwitches("15");
+                          setCfeiBellsBuzzers("1");
+                          setCfeiPushButtons("1");
+                          setCfeiFaDetectors("2");
+                          setCfeiOtherDevices("1");
+                          setCfeiOtherDevicesNote("Emergency Lights & Exit Signs");
+                        }}
+                        style={{
+                          padding: "3px 8px",
+                          borderRadius: "4px",
+                          background: "#fef3c7",
+                          color: "#92400e",
+                          border: "1px solid #fcd34d",
+                          fontSize: "0.7rem",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Reset Standard Devices
+                      </button>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      {/* Left: Loads to be Connected */}
+                      <div style={{ background: "#f8fafc", padding: "8px 10px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                        <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#334155", display: "block", marginBottom: "6px" }}>
+                          Loads to be Connected:
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>LIGHT</label>
+                            <input
+                              type="number"
+                              value={cfeiLightOutlets}
+                              onChange={(e) => setCfeiLightOutlets(e.target.value)}
+                              placeholder="28"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>SPO, COOKING UNIT</label>
+                            <input
+                              type="number"
+                              value={cfeiCookingUnitOutlets}
+                              onChange={(e) => setCfeiCookingUnitOutlets(e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>CONVENIENCE/RECEPTACLE</label>
+                            <input
+                              type="number"
+                              value={cfeiConvenienceOutlets}
+                              onChange={(e) => setCfeiConvenienceOutlets(e.target.value)}
+                              placeholder="24"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>SPO, WATER HEATER</label>
+                            <input
+                              type="number"
+                              value={cfeiWaterHeaterOutlets}
+                              onChange={(e) => setCfeiWaterHeaterOutlets(e.target.value)}
+                              placeholder="2"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>SPO, AIRCON</label>
+                            <input
+                              type="number"
+                              value={cfeiAcuOutlets}
+                              onChange={(e) => setCfeiAcuOutlets(e.target.value)}
+                              placeholder="4"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>SPO, WATER PUMP</label>
+                            <input
+                              type="number"
+                              value={cfeiWaterPumpOutlets}
+                              onChange={(e) => setCfeiWaterPumpOutlets(e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Number of Equipment / Wiring Devices */}
+                      <div style={{ background: "#f8fafc", padding: "8px 10px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                        <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#334155", display: "block", marginBottom: "6px" }}>
+                          Number of Equipment / Wiring Devices:
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>TOGGLE SWITCH</label>
+                            <input
+                              type="number"
+                              value={cfeiToggleSwitches}
+                              onChange={(e) => setCfeiToggleSwitches(e.target.value)}
+                              placeholder="15"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>FA DETECTORS</label>
+                            <input
+                              type="number"
+                              value={cfeiFaDetectors}
+                              onChange={(e) => setCfeiFaDetectors(e.target.value)}
+                              placeholder="2"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>BELLS / BUZZERS</label>
+                            <input
+                              type="number"
+                              value={cfeiBellsBuzzers}
+                              onChange={(e) => setCfeiBellsBuzzers(e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>OTHERS (Qty)</label>
+                            <input
+                              type="number"
+                              value={cfeiOtherDevices}
+                              onChange={(e) => setCfeiOtherDevices(e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>PUSH BUTTONS</label>
+                            <input
+                              type="number"
+                              value={cfeiPushButtons}
+                              onChange={(e) => setCfeiPushButtons(e.target.value)}
+                              placeholder="1"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>Others Description / Note</label>
+                            <input
+                              type="text"
+                              value={cfeiOtherDevicesNote}
+                              onChange={(e) => setCfeiOtherDevicesNote(e.target.value)}
+                              placeholder="Emergency Lights & Exit Signs"
+                              style={{ width: "100%", padding: "4px 6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.76rem" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Technical Specifications */}
+                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: "8px", border: "1px solid #fde68a" }}>
+                    <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#92400e", display: "block", marginBottom: "8px" }}>
+                      ⚙️ Technical Specifications & Official Remarks
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                      <div style={{ gridColumn: "span 2" }}>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>2. Nature of Works</label>
+                        <input
+                          type="text"
+                          value={cfeiNatureOfWork}
+                          onChange={(e) => setCfeiNatureOfWork(e.target.value)}
+                          placeholder="NEW ELECTRICAL INSTALLATION FOR 2-STOREY RESIDENTIAL DWELLING"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem", fontWeight: "600" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>3. Type of Service: Voltage</label>
+                        <input
+                          type="text"
+                          value={cfeiServiceVoltage}
+                          onChange={(e) => setCfeiServiceVoltage(e.target.value)}
+                          placeholder="230V, 1-PHASE, 60HZ"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Size of Wire</label>
+                        <input
+                          type="text"
+                          value={cfeiWireSize}
+                          onChange={(e) => setCfeiWireSize(e.target.value)}
+                          placeholder="30 MM² THHN COPPER"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Contact / Phone</label>
+                        <input
+                          type="text"
+                          value={cfeiPhone}
+                          onChange={(e) => setCfeiPhone(e.target.value)}
+                          placeholder="(045) 982-4112"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Additional Devices Note</label>
+                        <input
+                          type="text"
+                          value={cfeiOtherDevicesNote}
+                          onChange={(e) => setCfeiOtherDevicesNote(e.target.value)}
+                          placeholder="Emergency Lights & Exit Signs"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div style={{ gridColumn: "span 2" }}>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>4. Remarks (Line 1)</label>
+                        <input
+                          type="text"
+                          value={cfeiRemarks}
+                          onChange={(e) => setCfeiRemarks(e.target.value)}
+                          placeholder="COMPLIED WITH 2017 PHILIPPINE ELECTRICAL CODE (PEC) AND LOCAL MUNICIPAL ORDINANCES."
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div style={{ gridColumn: "span 2" }}>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Remarks (Line 2)</label>
+                        <input
+                          type="text"
+                          value={cfeiRemarksLine2}
+                          onChange={(e) => setCfeiRemarksLine2(e.target.value)}
+                          placeholder="APPROVED FOR CONTINUOUS RESIDENTIAL ELECTRICAL SERVICE CONNECTION."
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div style={{ gridColumn: "span 2" }}>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "#64748b" }}>Electrical Fees Computed By</label>
+                        <input
+                          type="text"
+                          value={cfeiComputedBy}
+                          onChange={(e) => setCfeiComputedBy(e.target.value)}
+                          placeholder="ENGR. DANILO REYES, PEE"
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem", fontWeight: "700" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* LOAD Schedule (NBC Form 96006-E Middle Table) */}
+                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: "8px", border: "1px solid #fde68a", marginTop: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#92400e" }}>
+                        ⚡ LOAD Schedule (Electrical Equipment, Protection, Feeders & Grounding)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCfeiLoadRow1("TOTAL CONNECTED LOAD: 15.0 kVA  |  SERVICE VOLTAGE: 230V, 1Ø, 2-WIRE, 60 HZ");
+                          setCfeiLoadRow2("MAIN OVERCURRENT PROTECTION: 60A, 2-POLE, 240V, 10 kAIC MOLDED CASE CIRCUIT BREAKER");
+                          setCfeiLoadRow3("FEEDER / SERVICE ENTRANCE: 2 - 30 mm² THHN COPPER + 1 - 8.0 mm² GND IN 32mmø PVC CONDUIT");
+                          setCfeiLoadRow4("BRANCH CIRCUITS: 8 CIRCUITS (LIGHTING, CONVENIENCE OUTLETS, ACU, COOKING RANGE, WATER HEATER)");
+                          setCfeiLoadRow5("GROUNDING SYSTEM: 20 mmø x 3.0 m COPPER CLAD STEEL GROUND ROD (RESISTANCE < 5 OHMS)");
+                        }}
+                        style={{
+                          padding: "3px 8px",
+                          borderRadius: "4px",
+                          background: "#fef3c7",
+                          color: "#92400e",
+                          border: "1px solid #fcd34d",
+                          fontSize: "0.7rem",
+                          fontWeight: "700",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Reset Standard Load Specs
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>Row 1: Connected Load & Service Voltage</label>
+                        <input
+                          type="text"
+                          value={cfeiLoadRow1}
+                          onChange={(e) => setCfeiLoadRow1(e.target.value)}
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem", fontWeight: "600" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>Row 2: Main Overcurrent Protection</label>
+                        <input
+                          type="text"
+                          value={cfeiLoadRow2}
+                          onChange={(e) => setCfeiLoadRow2(e.target.value)}
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>Row 3: Feeder & Service Entrance</label>
+                        <input
+                          type="text"
+                          value={cfeiLoadRow3}
+                          onChange={(e) => setCfeiLoadRow3(e.target.value)}
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>Row 4: Branch Circuits Schedule</label>
+                        <input
+                          type="text"
+                          value={cfeiLoadRow4}
+                          onChange={(e) => setCfeiLoadRow4(e.target.value)}
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>Row 5: Grounding Electrode System</label>
+                        <input
+                          type="text"
+                          value={cfeiLoadRow5}
+                          onChange={(e) => setCfeiLoadRow5(e.target.value)}
+                          style={{ width: "100%", padding: "5px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Action Controls */}
+                <div style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  gap: "10px",
+                  paddingTop: "1rem",
+                  borderTop: "1.5px solid #e2e8f0"
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => handleSubmitSingleForm("cfei")}
+                    style={{
+                      padding: "10px 22px",
+                      borderRadius: "8px",
+                      background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+                      color: "white",
+                      border: "none",
+                      fontSize: "0.88rem",
+                      fontWeight: "800",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 2px 10px rgba(217, 119, 6, 0.3)"
+                    }}
+                  >
+                    <CheckCircle2 size={16} />
+                    <span>Save & Mark CFEI Completed</span>
+                  </button>
+                  {uploadedPermitDocs["cfei"]?.fileUrl && (
+                    <a
+                      href={uploadedPermitDocs["cfei"].fileUrl}
+                      download="CFEI_Sto_Tomas_Official_Filled.pdf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: "10px 18px",
+                        borderRadius: "8px",
+                        background: "#ffffff",
+                        color: "#0f172a",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "0.88rem",
+                        fontWeight: "700",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        textDecoration: "none"
+                      }}
+                    >
+                      <Download size={16} color="#d97706" />
+                      <span>Download CFEI PDF</span>
                     </a>
                   )}
                 </div>

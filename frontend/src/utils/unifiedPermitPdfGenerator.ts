@@ -514,15 +514,46 @@ export interface UnifiedPermitFormData {
   electricalEngineerPTRIssuedAt?: string;
   electricalEngineerTIN?: string;
   electricalEngineerTel?: string;
-  applicantCtcNo?: string;
+  electricalEngineerCtcNo?: string;
   electricalEngineerSignedDate?: string;
   electricalEngineerSignature?: string;
 
   // Electrical Contractor details (Box 3)
   electricalContractorName?: string;
   electricalContractorPcab?: string;
+  electricalContractorPcabValidity?: string;
   electricalContractorAddress?: string;
   electricalContractorTel?: string;
+  cfeiInstallationType?: string;
+  cfeiWiringMethods?: string[];
+  cfeiInspectorPrc?: string;
+  cfeiOfficialName?: string;
+  cfeiOfficialPrc?: string;
+
+  // CFEI Page 2: Electrical Costs & Technical Specifications
+  cfeiStoriesCount?: string;
+  cfeiEstimatedCost?: string;
+  cfeiActualCost?: string;
+  cfeiMaterialsCost?: string;
+  cfeiWiresCost?: string;
+  cfeiLightingCost?: string;
+  cfeiConvenienceCost?: string;
+  cfeiSwitchesCost?: string;
+  cfeiOtherMaterialsCost?: string;
+  cfeiOtherCosts?: string;
+  cfeiOtherDevicesNote?: string;
+  cfeiNatureOfWork?: string;
+  cfeiVoltage?: string;
+  cfeiWireSize?: string;
+  cfeiPhone?: string;
+  cfeiRemarks?: string;
+  cfeiRemarksLine2?: string;
+  cfeiComputedBy?: string;
+  cfeiLoadRow1?: string;
+  cfeiLoadRow2?: string;
+  cfeiLoadRow3?: string;
+  cfeiLoadRow4?: string;
+  cfeiLoadRow5?: string;
 
   // Person In-Charge of Installation (Box 4)
   sameAsDesignElectricalEngineer?: boolean;
@@ -745,6 +776,7 @@ export interface UnifiedPermitFormData {
   lotOwnerGovIdDateIssued?: string;
   lotOwnerGovIdPlaceIssued?: string;
   lotOwnerSignedDate?: string;
+
   [key: string]: any;
 }
 
@@ -6158,53 +6190,377 @@ export async function generateCfeiPdf(data: UnifiedPermitFormData): Promise<stri
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
   const p1 = doc.getPage(0);
 
-  const drawText = (text: string | undefined | null, x: number, y: number, size: number = 8, isBold: boolean = false, maxWidth?: number) => {
+  const drawText = (text: string | undefined | null, x: number, y: number, size: number = 7.5, isBold: boolean = false, maxWidth?: number) => {
     if (!text) return;
     let clean = safeText(text).trim();
     if (maxWidth && clean.length > maxWidth) clean = clean.slice(0, maxWidth);
     p1.drawText(clean, { x, y, size, font: isBold ? fontBold : fontRegular, color: darkNavy });
   };
 
-  // Header & Permit: Application Reference No. on underline
-  drawText(data.applicationNo || "CFEI-2026-0042", 420, 831.0, 8.5, true);
+  const drawCenteredText = (text: string | undefined | null, centerX: number, y: number, size: number = 7.5, isBold: boolean = false) => {
+    if (!text) return;
+    let clean = safeText(text).trim();
+    const font = isBold ? fontBold : fontRegular;
+    const textWidth = font.widthOfTextAtSize(clean, size);
+    p1.drawText(clean, { x: centerX - textWidth / 2, y, size, font, color: darkNavy });
+  };
 
-  // Owner: on underline
-  drawText((data.applicantName || "JUAN DELA CRUZ").toUpperCase(), 150, 784.0, 8.5, true);
-  // ADDRESS: NO. STREET on underline
-  drawText(data.applicantAddress || "123 Rizal St.", 150, 754.0, 7.5, false, 50);
-  // BARANGAY, CITY/MUNICIPALITY
-  drawText(`Brgy. ${data.barangay || "Poblacion"}, Sto. Tomas, Pampanga`, 150, 735.0, 7.5, false, 50);
+  const autoDate = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 
-  // Type of occupancy: X mark properly placed inside the box
-  drawText("X", 52, 686.0, 8.5, true); // [X] Residential Dwelling
+  // 1. Building Permit No. & Date Issued (Certification Paragraph)
+  // Underlines: BUILDING PERMIT NO. center x = 290.2, ISSUED ON center x = 414.55, baseline y = 824.5
+  let bpNo = data.buildingPermitNo;
+  if (!bpNo && data.applicationNo) {
+    if (data.applicationNo.startsWith("BP-")) {
+      bpNo = data.applicationNo;
+    } else {
+      bpNo = `BP-${data.applicationNo.replace(/^APP-(TEST-)?/i, "")}`;
+    }
+  }
+  if (!bpNo) bpNo = "BP-2026-0091";
 
-  // Dates
-  drawText(data.proposedStartDate || "Oct 01, 2026", 150, 644.0, 7.5, false);
-  drawText(data.actualCompletionDate || data.expectedCompletionDate || "Apr 30, 2027", 420, 644.0, 7.5, true);
+  const bpDate = data.buildingPermitDateIssued || data.dateIssued || autoDate;
+  drawCenteredText(bpNo, 290.2, 826.5, 7.5, true);
+  drawCenteredText(bpDate, 414.55, 826.5, 7.5, true);
 
-  // LOCATION OF INSTALLATION: LOT NO., BLK. NO., STREET, BARANGAY, & CITY/MUNICIPALITY
-  drawText(
-    `Lot ${data.lotNo || "12"}, Blk ${data.blockNo || "4"}, ${data.projectAddress || "Sunset Valley Subd."}, Brgy. ${data.barangay || "Poblacion"}, Sto. Tomas, Pampanga`,
-    150,
-    610.0,
-    7.5,
-    false,
-    55
-  );
+  // 2. Name of Owner / Corp: Last Name (center 199.0), First Name (center 335.0), Middle Name (center 476.0), baseline y = 772.5
+  let lastName = data.applicantLastName || "";
+  let firstName = data.applicantFirstName || "";
+  let middleName = data.applicantMiddleName || data.applicantMiddleInitial || "";
+  if (!lastName && data.applicantName) {
+    const parts = data.applicantName.split(",").map(p => p.trim());
+    if (parts.length > 1) {
+      lastName = parts[0];
+      const rest = parts[1].split(" ").filter(Boolean);
+      firstName = rest[0] || "";
+      middleName = rest.slice(1).join(" ") || "";
+    } else {
+      const rest = data.applicantName.split(" ").filter(Boolean);
+      lastName = rest[rest.length - 1] || "DELA CRUZ";
+      firstName = rest.slice(0, rest.length - 1).join(" ") || "JUAN";
+    }
+  }
+  drawCenteredText((lastName || "DELA CRUZ").toUpperCase(), 199.0, 772.5, 8.0, true);
+  drawCenteredText((firstName || "JUAN").toUpperCase(), 335.0, 772.5, 8.0, true);
+  drawCenteredText((middleName || "SANTOS").toUpperCase(), 476.0, 772.5, 8.0, true);
 
-  // Load
-  const loadSummary = `${data.electricalConnectedLoad || "15.0"} kVA / ${data.electricalVoltage || "230V"}, Single Phase, 60Hz`;
-  drawText(loadSummary, 150, 582.0, 8, true);
+  // 3. Owner Address
+  // NO. center x = 168.0, STREET start x = 282.0, baseline y = 758.0 (sits cleanly above underline)
+  // BARANGAY center x = 173.0, CITY/MUNICIPALITY center x = 467.5, baseline y = 745.5
+  const streetOnly = data.applicantAddress || "123 Rizal St.";
+  const matchNo = streetOnly.match(/^(\d+[\w-]*)\s+(.*)$/);
+  const houseNo = matchNo ? matchNo[1] : "123";
+  const streetName = matchNo ? matchNo[2] : streetOnly.replace(/^\d+\s*/, "");
+  drawCenteredText(houseNo, 168.0, 758.0, 7.5, false);
+  drawText(streetName || "Rizal St.", 282.0, 758.0, 7.5, false, 50);
+  drawCenteredText(data.barangay || "Poblacion", 173.0, 745.5, 7.5, false);
+  drawCenteredText(`${data.applicantMunicipality || "Sto. Tomas"}, ${data.applicantProvince || "Pampanga"}`, 467.5, 745.5, 7.5, false);
 
-  // PEE
-  const peeName = data.electricalEngineerName || "Engr. Danilo Reyes, PEE";
-  drawText(peeName.toUpperCase(), 120, 485.0, 8.5, true);
-  drawText(data.electricalEngineerPRC || "PRC-0033421", 320, 485.0, 7.5, false);
-  drawText(data.electricalEngineerPTR || "PTR-ST-2026-4412", 120, 458.0, 7.5, false);
+  // 4. Location of Installation
+  // LOT NO. center x = 238.25, BLK. NO. center x = 338.75, STREET start x = 415.0, baseline y = 731.0
+  // BARANGAY center x = 139.65, CITY/MUNICIPALITY center x = 434.1, baseline y = 718.5
+  drawCenteredText(data.lotNo || "12", 238.25, 731.0, 7.5, false);
+  drawCenteredText(data.blockNo || "4", 338.75, 731.0, 7.5, false);
+  drawText(data.projectAddress || "Sunset Valley Subd.", 415.0, 731.0, 7.5, false, 35);
+  drawCenteredText(data.barangay || "Poblacion", 139.65, 718.5, 7.5, false);
+  drawCenteredText("Sto. Tomas, Pampanga", 434.1, 718.5, 7.5, false);
 
-  // Electrical Inspector: on underline
-  const inspector = data.cfeiInspectorName || "Engr. GILBERT B. CRUZ, Electrical Inspector";
-  drawText(inspector.toUpperCase(), 120, 201.0, 8.5, true);
+  // 5. Type of Occupancy Checkbox
+  // Accurate box bounds: Col 1 x=[44.3..51.2], Col 2 x=[234.4..241.3], Col 3 x=[426.9..433.8]
+  const occ = (data.characterOfOccupancy || data.occupancyGroup || "A").toUpperCase();
+  if (occ.includes("RESIDENTIAL DWELLING") || occ === "A" || (occ.includes("RESIDENTIAL") && !occ.includes("HOTEL"))) {
+    drawText("X", 45.8, 695.5, 7.5, true);
+  } else if (occ.includes("HOTEL") || occ.includes("APARTMENT") || occ === "B") {
+    drawText("X", 45.8, 686.0, 7.5, true);
+  } else if (occ.includes("EDUCATION") || occ.includes("RECREATION") || occ === "C") {
+    drawText("X", 45.8, 677.0, 7.5, true);
+  } else if (occ.includes("INSTITUTIONAL") || occ === "D") {
+    drawText("X", 45.8, 668.0, 7.5, true);
+  } else if (occ.includes("COMMERCIAL") || occ.includes("BUSINESS") || occ.includes("MERCANTILE") || occ === "E") {
+    drawText("X", 235.8, 695.5, 7.5, true);
+  } else if (occ.includes("INDUSTRIAL") || occ === "F") {
+    drawText("X", 235.8, 686.5, 7.5, true);
+  } else if (occ.includes("STORAGE") || occ.includes("HAZARDOUS") || occ === "G") {
+    drawText("X", 235.8, 677.0, 7.5, true);
+  } else if (occ.includes("ASSEMBLY") || occ === "H") {
+    drawText("X", 235.8, 667.5, 7.5, true);
+  } else {
+    drawText("X", 45.8, 695.5, 7.5, true);
+  }
+
+  // 6. Installation Dates
+  // START OF INSTALLATION center x = 202.8, DATE OF COMPLETION center x = 492.8, baseline y = 643.5
+  drawCenteredText(data.proposedStartDate || "Oct 01, 2026", 202.8, 643.5, 7.5, false);
+  drawCenteredText(data.actualCompletionDate || data.expectedCompletionDate || "Apr 30, 2027", 492.8, 643.5, 7.5, true);
+
+  // 7. Outlets / Devices / Equipment Schedule
+  // Left Column: Outlets (baselines: 594.0, 584.8, 575.5)
+  drawCenteredText(data.lightingOutletsCount || "28", 30.7, 594.0, 7.5, true);
+  drawCenteredText(data.cookingUnitOutletsCount || data.rangeOutletsCount || "1", 194.25, 594.0, 7.5, true);
+  drawCenteredText(data.convenienceOutletsCount || "24", 30.7, 584.8, 7.5, true);
+  drawCenteredText(data.waterHeaterOutletsCount || "2", 194.5, 584.8, 7.5, true);
+  drawCenteredText(data.acuOutletsCount || "4", 30.7, 575.5, 7.5, true);
+  drawCenteredText(data.waterPumpOutletsCount || "1", 194.25, 575.5, 7.5, true);
+
+  // Right Column: Equipment / Wiring Devices
+  drawCenteredText(data.toggleSwitchCount || "15", 309.7, 594.0, 7.5, true);
+  drawCenteredText(data.faDetectorCount || "2", 452.35, 594.0, 7.5, true);
+  drawCenteredText(data.bellBuzzerCount || "1", 309.7, 584.8, 7.5, true);
+  drawCenteredText(data.otherWiringDevicesCount || "1", 452.5, 584.8, 7.5, true);
+  drawCenteredText(data.pushButtonsCount || "1", 309.7, 575.5, 7.5, true);
+
+  // 8. Person In-Charge of Installation
+  // Checkbox for role: PEE at x=24.8, REE at x=205.2, RME at x=396.6 (y=532.5)
+  const inChargeRole = ((data as any).installationInChargeRole || (data as any).cfeiInChargeRole || "PEE").toUpperCase();
+  if (inChargeRole.includes("MASTER") || inChargeRole.includes("RME")) {
+    drawText("X", 396.6, 532.5, 7.5, true);
+  } else if (inChargeRole.includes("REGISTERED") || inChargeRole.includes("REE")) {
+    drawText("X", 205.2, 532.5, 7.5, true);
+  } else {
+    drawText("X", 24.8, 532.5, 7.5, true);
+  }
+
+  const peeName = (data.installationInChargeName || data.electricalEngineerName || "ENGR. DANILO REYES, PEE").toUpperCase();
+  drawText(peeName, 62.0, 511.0, 8.0, true, 38);
+
+  const rawPrc = data.installationInChargePRC || data.electricalEngineerPRC || "0033421";
+  const cleanPrc = rawPrc.replace(/^[A-Za-z-]+/g, "").trim() || rawPrc;
+  drawCenteredText(cleanPrc, 513.0, 511.0, 7.5, false);
+
+  const prcVal = data.installationInChargePRCValidity || data.electricalEngineerPRCValidity || "2028-11-30";
+  drawCenteredText(prcVal, 504.0, 500.5, 7.5, false);
+
+  // Engineer E-Signature in SIGNATURE cell (y=490.0)
+  const eeSig = data.installationInChargeSignature || data.electricalEngineerSignature;
+  if (eeSig) {
+    try {
+      await embedSignatureImage(doc, p1, eeSig, 95.0, 490.0, 95, 20);
+    } catch (e) {
+      console.warn("Failed embedding PEE signature:", e);
+    }
+  }
+
+  // Address
+  const picAddress = data.installationInChargeAddress || data.electricalEngineerAddress || "Sto. Tomas, Pampanga";
+  drawText(picAddress, 75.0, 476.5, 7.5, false, 55);
+
+  // PTR Row (y = 460.5)
+  drawText(data.installationInChargePTR || data.electricalEngineerPTR || "PTR-ST-443322", 65.0, 460.5, 7.5, false);
+  drawText(data.installationInChargePTRIssued || data.electricalEngineerPTRIssuedDate || "Jan 12, 2026", 265.0, 460.5, 7.5, false);
+  drawText(data.installationInChargePTRIssuedAt || data.electricalEngineerPTRIssued || "Sto. Tomas", 460.0, 460.5, 7.5, false);
+
+  // CTC & TIN Row (y = 444.0)
+  drawText(data.supervisorCtcNo || data.applicantCtcNo || "CTC-2026-00841", 65.0, 444.0, 7.5, false);
+  drawText(data.supervisorCtcDateIssued || "Jan 10, 2026", 265.0, 444.0, 7.5, false);
+  drawText(data.installationInChargeTIN || data.electricalEngineerTIN || "456-789-012-000", 425.0, 444.0, 7.5, false);
+
+  // 9. Electrical Contractor (for 200 Ampere Main and Above)
+  const contractorName = (data.electricalContractorName || (data as any).cfeiContractorName || "SAN PEDRO ELECTRICAL SERVICES & CONSTRUCTION CORP.").toUpperCase();
+  const pcabLic = (data.electricalContractorPcab || (data as any).cfeiContractorPcab || "PCAB-EL-48821").toUpperCase();
+  const pcabVal = (data as any).electricalContractorPcabValidity || (data as any).cfeiContractorValidity || "2027-10-31";
+  const contractorAddr = (data.electricalContractorAddress || (data as any).cfeiContractorAddress || "Sto. Tomas, Pampanga").toUpperCase();
+  const contractorTel = data.electricalContractorTel || (data as any).cfeiContractorTel || "(045) 982-4112 / 0917-889-4412";
+
+  drawText(contractorName, 55.0, 401.0, 7.5, true, 36);
+  drawText(pcabLic, 350.0, 401.0, 7.5, false);
+  drawText(pcabVal, 335.0, 391.0, 7.0, false);
+  drawText(contractorAddr, 70.0, 375.0, 7.5, false, 55);
+  drawText(contractorTel, 450.0, 375.0, 7.5, false);
+
+  // 10. Type of Installation
+  // TEMPORARY at x=158.0, NEW at x=309.5, REMODEL/ALTERATION at x=428.6 (y=343.0)
+  const installType = ((data as any).cfeiInstallationType || data.scopeOfWork || "NEW").toUpperCase();
+  if (installType.includes("TEMPORARY")) {
+    drawText("X", 158.0, 343.0, 7.5, true);
+  } else if (installType.includes("REMODEL") || installType.includes("ALTERATION") || installType.includes("REPAIR")) {
+    drawText("X", 428.6, 343.0, 7.5, true);
+  } else {
+    drawText("X", 309.5, 343.0, 7.5, true); // [X] NEW
+  }
+
+  // 11. Types of Wiring
+  // OPEN WIRING at x=54.0, CONDUITS at x=153.8, CABLE at x=253.8, ARMORED CABLE at x=334.8, RACEWAYS at x=459.4, OTHERS at x=54.0 (y=318.2 / 305.4)
+  const wiringMethods = ((data as any).cfeiWiringMethods || (data as any).typesOfWiring || ["CONDUITS"]).map((w: string) => String(w).toUpperCase());
+  if (wiringMethods.some((w: string) => w.includes("OPEN"))) {
+    drawText("X", 54.0, 318.2, 7.5, true);
+  }
+  if (wiringMethods.some((w: string) => w.includes("CONDUIT")) || wiringMethods.length === 0 || !wiringMethods.some((w: string) => ["OPEN", "CABLE", "ARMORED", "RACEWAY"].some(m => w.includes(m)))) {
+    drawText("X", 153.8, 318.2, 7.5, true);
+  }
+  if (wiringMethods.some((w: string) => w.includes("CABLE") && !w.includes("ARMORED"))) {
+    drawText("X", 253.8, 318.2, 7.5, true);
+  }
+  if (wiringMethods.some((w: string) => w.includes("ARMORED"))) {
+    drawText("X", 334.8, 318.2, 7.5, true);
+  }
+  if (wiringMethods.some((w: string) => w.includes("RACEWAY"))) {
+    drawText("X", 459.4, 318.2, 7.5, true);
+  }
+  if (wiringMethods.some((w: string) => w.includes("OTHER"))) {
+    drawText("X", 54.0, 305.4, 7.5, true);
+  }
+
+  // 12. Electrical Inspector & Building Office Electrical Engineer
+  // Line 1: Names (baseline y = 244.0): Inspector center x = 119.6, Building Official center x = 479.1
+  const rawInspector = (data.cfeiInspectorName || "ENGR. GILBERT B. CRUZ").replace(/,\s*Electrical Inspector/i, "").trim().toUpperCase();
+  drawCenteredText(rawInspector, 119.6, 244.0, 8.5, true);
+  const eeOfficial = (data.cfeiOfficialName || (data as any).electricalOfficialName || "ENGR. GIOVANNI L. AQUINO").replace(/,\s*Electrical Engineer.*/i, "").trim().toUpperCase();
+  drawCenteredText(eeOfficial, 479.1, 244.0, 8.5, true);
+
+  // Line 2: PRC Reg. No. & Validity (baseline y = 191.0): Inspector center x = 119.3, Building Official center x = 479.1
+  const inspectorPrc = (data.cfeiInspectorPrc || (data as any).electricalInspectorPrc || "PRC 0042189 / 2028-11-20").toUpperCase();
+  drawCenteredText(inspectorPrc, 119.3, 191.0, 7.5, false);
+  const officialPrc = (data.cfeiOfficialPrc || (data as any).electricalOfficialPrc || "PRC 0031892 / 2027-08-15").toUpperCase();
+  drawCenteredText(officialPrc, 479.1, 191.0, 7.5, false);
+
+  // Line 3: Official Receipt & Fees Paid (baseline y = 157.0)
+  const rawFee = (data.feePaid || (data as any).cfeiFeePaid || "520.00").toString().replace(/^(PHP|P|₱)\s*/i, "").trim();
+  drawCenteredText(rawFee, 149.65, 157.0, 8.0, true);
+  const rawOr = (data.officialReceiptNo || (data as any).cfeiOrNo || "OR-2026-00892").toString().trim();
+  drawCenteredText(rawOr, 344.9, 157.0, 8.0, true);
+  const rawDatePaid = formatDisplayDate(data.datePaid || (data as any).cfeiDatePaid || data.actualCompletionDate || "2027-04-30");
+  drawCenteredText(rawDatePaid, 526.35, 157.0, 8.0, false);
+
+  // --- PAGE 2: NUMBER OF STORIES, COSTS, LOADS & DETAILED TECHNICAL SPECIFICATIONS ---
+  if (doc.getPageCount() > 1) {
+    const page2 = doc.getPage(1);
+    const drawText2 = (text: string, x: number, y: number, size = 8.0, bold = false, maxChars?: number) => {
+      if (!text) return;
+      let out = text;
+      if (maxChars && out.length > maxChars) {
+        out = out.substring(0, maxChars - 3) + "...";
+      }
+      page2.drawText(out, {
+        x,
+        y,
+        size,
+        font: bold ? fontBold : fontRegular,
+        color: rgb(0.06, 0.09, 0.16),
+      });
+    };
+
+    const drawCenteredText2 = (text: string, centerX: number, y: number, size = 8.0, bold = false) => {
+      if (!text) return;
+      const font = bold ? fontBold : fontRegular;
+      const width = font.widthOfTextAtSize(text, size);
+      page2.drawText(text, {
+        x: centerX - width / 2,
+        y,
+        size,
+        font,
+        color: rgb(0.06, 0.09, 0.16),
+      });
+    };
+
+    // 1. Stories, Estimated Cost & Actual Cost (aligned at column x = 120.0)
+    const stories = (data.cfeiStoriesCount || data.numberOfStories || "2 (TWO)").toString().toUpperCase();
+    drawText2(stories, 120.0, 950.5, 8.5, true);
+
+    const estCostVal = data.cfeiEstimatedCost || data.totalEstimatedCost || data.estimatedCost || data.costOfEquipment || "1,850,000.00";
+    drawText2(estCostVal.toString().replace(/^(PHP|P|₱)\s*/i, "").trim(), 120.0, 931.5, 8.5, true);
+
+    const rawActualCost = (data.cfeiActualCost || data.actualCost || data.ccTotalActualCost || estCostVal).toString().replace(/^(PHP|P|₱)\s*/i, "").trim();
+    drawText2(rawActualCost, 120.0, 908.5, 8.5, true);
+
+    const numericActual = parseFloat(rawActualCost.replace(/,/g, "")) || 1850000;
+    const fmtPesos = (val: number) => val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // 2. Materials & Cost Breakdown (all cleanly aligned in a vertical column starting at x = 162.0)
+    const matTotal = data.cfeiMaterialsCost || fmtPesos(numericActual * 0.58);
+    drawText2(matTotal.replace(/^(PHP|P|₱)\s*/i, "").trim(), 162.0, 894.5, 8.5, true);
+
+    const wiresCost = data.cfeiWiresCost || fmtPesos(numericActual * 0.58 * 0.30);
+    drawText2(wiresCost.replace(/^(PHP|P|₱)\s*/i, "").trim(), 162.0, 878.5, 8.0);
+
+    const lightingCost = data.cfeiLightingCost || fmtPesos(numericActual * 0.58 * 0.23);
+    drawText2(lightingCost.replace(/^(PHP|P|₱)\s*/i, "").trim(), 162.0, 868.0, 8.0);
+
+    const convCost = data.cfeiConvenienceCost || fmtPesos(numericActual * 0.58 * 0.18);
+    drawText2(convCost.replace(/^(PHP|P|₱)\s*/i, "").trim(), 162.0, 857.5, 8.0);
+
+    const switchesCost = data.cfeiSwitchesCost || fmtPesos(numericActual * 0.58 * 0.15);
+    drawText2(switchesCost.replace(/^(PHP|P|₱)\s*/i, "").trim(), 162.0, 847.0, 8.0);
+
+    const otherMatText = data.cfeiOtherMaterialsCost || `${fmtPesos(numericActual * 0.58 * 0.14)} (Distribution Panels, Circuit Breakers, PVC Conduits)`;
+    drawText2(otherMatText, 162.0, 836.5, 7.5);
+
+    const otherCosts = data.cfeiOtherCosts || fmtPesos(numericActual * 0.42);
+    drawText2(otherCosts.replace(/^(PHP|P|₱)\s*/i, "").trim(), 162.0, 826.0, 8.5, true);
+
+    // 3. Loads to be Connected (centered directly on respective ___ lines)
+    drawCenteredText2(data.lightingOutletsCount || "28", 30.7, 784.0, 8.5, true);
+    drawCenteredText2(data.convenienceOutletsCount || "24", 30.7, 775.0, 8.5, true);
+    drawCenteredText2(data.acuOutletsCount || "4", 30.7, 766.0, 8.5, true);
+    drawCenteredText2(data.cookingUnitOutletsCount || "1", 194.25, 784.0, 8.5, true);
+    drawCenteredText2(data.waterHeaterOutletsCount || "2", 194.5, 775.0, 8.5, true);
+    drawCenteredText2(data.waterPumpOutletsCount || "1", 194.25, 766.0, 8.5, true);
+
+    // 4. Number of Equipment / Wiring Devices
+    drawCenteredText2(data.toggleSwitchCount || "15", 309.7, 784.0, 8.5, true);
+    drawCenteredText2(data.bellBuzzerCount || "1", 309.7, 775.0, 8.5, true);
+    drawCenteredText2(data.pushButtonsCount || "1", 309.7, 766.0, 8.5, true);
+    drawCenteredText2(data.faDetectorCount || "2", 452.35, 784.0, 8.5, true);
+    drawCenteredText2(data.otherWiringDevicesCount || "1", 452.5, 775.0, 8.5, true);
+    drawCenteredText2(data.cfeiOtherDevicesNote || "Emergency Lights & Exit Signs", 512.7, 766.0, 7.5, false);
+
+    // 5. Technical Specifications (Nature of Works, Service Voltage, Wire Size, Phone, Remarks)
+    const natureWork = (data.cfeiNatureOfWork || "NEW ELECTRICAL INSTALLATION FOR 2-STOREY RESIDENTIAL DWELLING").toUpperCase();
+    drawText2(natureWork, 98.0, 744.0, 8.0, true, 80);
+
+    const voltage = (data.cfeiVoltage || "230V, 1-PHASE, 60HZ").toUpperCase();
+    drawCenteredText2(voltage, 195.75, 727.5, 7.5, true);
+
+    const wireSize = (data.cfeiWireSize || "30 mm² THHN COPPER").toUpperCase();
+    drawCenteredText2(wireSize, 365.55, 727.5, 7.5, true);
+
+    const cfeiPhoneVal = data.cfeiPhone || data.applicantTel || data.contactNumber || "(045) 982-4112";
+    drawCenteredText2(cfeiPhoneVal, 522.2, 727.5, 7.5, true);
+
+    const remarksL1 = data.cfeiRemarks || "COMPLIED WITH 2017 PHILIPPINE ELECTRICAL CODE (PEC) AND LOCAL MUNICIPAL ORDINANCES.";
+    drawText2(remarksL1, 72.0, 710.5, 7.5);
+    const remarksL2 = data.cfeiRemarksLine2 || "APPROVED FOR CONTINUOUS RESIDENTIAL ELECTRICAL SERVICE CONNECTION.";
+    drawText2(remarksL2, 72.0, 701.5, 7.5);
+
+    // 6. Electrical Fees (Left Box)
+    drawCenteredText2(rawFee, 119.4, 627.0, 8.0, true);
+    drawCenteredText2("0.00", 119.2, 617.5, 8.0);
+    drawCenteredText2(rawFee, 118.95, 608.5, 8.0, true);
+    const computedByVal = (data.cfeiComputedBy || peeName || "ENGR. DANILO REYES, PEE").toUpperCase();
+    drawCenteredText2(computedByVal, 184.85, 561.5, 8.0, true);
+
+    // 7. Professional In-Charge (Right Box)
+    drawText2(peeName, 370.0, 656.0, 8.5, true, 35);
+    drawText2(data.installationInChargeAddress || data.electricalEngineerAddress || "Sto. Tomas, Pampanga", 355.0, 642.0, 8.0, false, 45);
+    drawText2(cleanPrc, 365.0, 616.5, 8.0);
+    drawText2(prcVal, 485.0, 616.5, 8.0);
+    drawText2(data.installationInChargePTR || data.electricalEngineerPTR || "PTR-ST-443322", 345.0, 599.5, 8.0);
+    drawText2(data.installationInChargeTIN || data.electricalEngineerTIN || "456-789-012-000", 468.0, 599.5, 8.0);
+    drawText2(data.supervisorCtcNo || "CTC-2026-00841", 350.0, 585.0, 8.0);
+    drawText2(data.supervisorCtcDateIssued || "Jan 10, 2026", 370.0, 571.2, 8.0);
+    drawText2(data.electricalEngineerPTRIssued || "Sto. Tomas, Pampanga", 375.0, 557.5, 8.0);
+
+    // 8. LOAD Box (5 horizontal rows: y = 502.5, 483.5, 464.5, 445.5, 426.5)
+    const loadRow1 = (data as any).cfeiLoadRow1 || `TOTAL CONNECTED LOAD: ${data.electricalConnectedLoad || "15.0"} kVA  |  SERVICE VOLTAGE: 230V, 1Ø, 2-WIRE, 60 HZ`;
+    const loadRow2 = (data as any).cfeiLoadRow2 || `MAIN OVERCURRENT PROTECTION: 60A, 2-POLE, 240V, 10 kAIC MOLDED CASE CIRCUIT BREAKER`;
+    const loadRow3 = (data as any).cfeiLoadRow3 || `FEEDER / SERVICE ENTRANCE: 2 - 30 mm² THHN COPPER + 1 - 8.0 mm² GND IN 32mmø PVC CONDUIT`;
+    const loadRow4 = (data as any).cfeiLoadRow4 || `BRANCH CIRCUITS: 8 CIRCUITS (LIGHTING, CONVENIENCE OUTLETS, ACU, COOKING RANGE, WATER HEATER)`;
+    const loadRow5 = (data as any).cfeiLoadRow5 || `GROUNDING SYSTEM: 20 mmø x 3.0 m COPPER CLAD STEEL GROUND ROD (RESISTANCE < 5 OHMS)`;
+
+    drawCenteredText2(loadRow1, 305.5, 502.5, 7.5, true);
+    drawCenteredText2(loadRow2, 305.5, 483.5, 7.5, false);
+    drawCenteredText2(loadRow3, 305.5, 464.5, 7.5, false);
+    drawCenteredText2(loadRow4, 305.5, 445.5, 7.5, false);
+    drawCenteredText2(loadRow5, 305.5, 426.5, 7.5, false);
+
+    // 9. Nature of Work Bottom Sign-offs (aligned with underline centers)
+    drawCenteredText2(rawInspector, 175.85, 399.0, 8.0, true);
+    drawText2(rawFee, 58.0, 380.0, 8.0, true);
+    drawCenteredText2(rawOr, 214.65, 365.5, 8.0, true);
+    drawCenteredText2(rawDatePaid, 170.0, 355.0, 8.0, false);
+    drawCenteredText2(contractorName, 463.85, 393.0, 7.5, true);
+    const applicantFullName = (data.applicantName || `${firstName} ${lastName}`).trim().toUpperCase() || "JUAN S. DELA CRUZ";
+    drawCenteredText2(applicantFullName, 475.45, 360.0, 8.5, true);
+  }
 
   return await doc.saveAsBase64({ dataUri: false });
 }
