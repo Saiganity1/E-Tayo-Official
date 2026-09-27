@@ -1672,28 +1672,44 @@ ${isDisapprove
           </button>
 
           {/* Status Badge */}
-          <span style={{
-            background: app.status === "approved" ? "#dcfce7" : app.status === "incomplete_requirements" ? "#fee2e2" : "#fef3c7",
-            color: app.status === "approved" ? "#166534" : app.status === "incomplete_requirements" ? "#b91c1c" : "#92400e",
-            border: `1px solid ${app.status === "approved" ? "#86efac" : app.status === "incomplete_requirements" ? "#fca5a5" : "#fde68a"}`,
-            padding: "7px 16px",
-            borderRadius: "999px",
-            fontWeight: "800",
-            fontSize: "0.84rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.04em",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px"
-          }}>
-            <span style={{
-              width: "7px",
-              height: "7px",
-              borderRadius: "50%",
-              background: app.status === "approved" ? "#16a34a" : app.status === "incomplete_requirements" ? "#dc2626" : "#d97706"
-            }} />
-            {app.status === "approved" ? "Approved" : app.status === "incomplete_requirements" ? "Action Required" : "Pending Review"}
-          </span>
+          {(() => {
+            const st = (app.status || "pending").toLowerCase();
+            const badgeMap: Record<string, { bg: string; color: string; border: string; dot: string; label: string }> = {
+              released: { bg: "#dcfce7", color: "#166534", border: "#86efac", dot: "#16a34a", label: "Permit Released" },
+              approved: { bg: "#d1fae5", color: "#065f46", border: "#6ee7b7", dot: "#059669", label: "Approved" },
+              under_review: { bg: "#eff6ff", color: "#1e40af", border: "#bfdbfe", dot: "#2563eb", label: "Under Evaluation" },
+              incomplete_requirements: { bg: "#fee2e2", color: "#b91c1c", border: "#fca5a5", dot: "#dc2626", label: "Action Required" },
+              rejected: { bg: "#fee2e2", color: "#991b1b", border: "#f87171", dot: "#b91c1c", label: "Disapproved" },
+              cancelled: { bg: "#f1f5f9", color: "#475569", border: "#cbd5e1", dot: "#64748b", label: "Cancelled" },
+            };
+            const currentBadge = badgeMap[st] || { bg: "#fef3c7", color: "#92400e", border: "#fde68a", dot: "#d97706", label: "Pending Review" };
+
+            return (
+              <span style={{
+                background: currentBadge.bg,
+                color: currentBadge.color,
+                border: `1.5px solid ${currentBadge.border}`,
+                padding: "7px 16px",
+                borderRadius: "999px",
+                fontWeight: "800",
+                fontSize: "0.84rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+              }}>
+                <span style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  background: currentBadge.dot
+                }} />
+                {currentBadge.label}
+              </span>
+            );
+          })()}
 
           {/* Focus Mode View Toggle */}
           <button

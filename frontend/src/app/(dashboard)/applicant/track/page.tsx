@@ -31,7 +31,7 @@ interface ProjectDossier {
 
 export default function ApplicationStatusPage() {
   const router = useRouter();
-  const { applications, updateApplication, cancelApplication } = usePermitContext();
+  const { applications, updateApplication, cancelApplication, refreshApplications } = usePermitContext();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -264,7 +264,29 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         }
       }
     } catch (e) {}
-  }, []);
+
+    // Real-time multi-tab & cross-window sync listener
+    const handleSync = () => {
+      if (refreshApplications) refreshApplications();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", handleSync);
+      window.addEventListener("etayo_applications_updated", handleSync);
+    }
+
+    const pollInterval = setInterval(() => {
+      if (refreshApplications) refreshApplications();
+    }, 3000);
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", handleSync);
+        window.removeEventListener("etayo_applications_updated", handleSync);
+      }
+      clearInterval(pollInterval);
+    };
+  }, [refreshApplications]);
 
   const handleCopyId = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -577,7 +599,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           step: 4
         };
       }
-      return { color: "#059669", bg: "#d1fae5", border: "#10b981", icon: CheckCircle2, label: "Approved (Awaiting Payment)", step: 3 };
+      const isLC = (app?.permitType || "").toLowerCase().includes("locational") || (app?.id || "").toLowerCase().startsWith("lc-");
+      return { 
+        color: "#059669", 
+        bg: "#d1fae5", 
+        border: "#10b981", 
+        icon: CheckCircle2, 
+        label: isLC ? "Locational Clearance Approved" : "Application Approved", 
+        step: 3 
+      };
     }
 
     switch(status) {
@@ -932,7 +962,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             {[
               { num: 1, title: "1. Filed", desc: "Submitted Online", active: statusConfig.step >= 1, current: statusConfig.step === 1 },
               { num: 2, title: "2. Evaluation", desc: "Technical Review", active: statusConfig.step >= 2, current: statusConfig.step === 2 },
-              { num: 3, title: "3. Endorsement", desc: "Chief OBO Approval", active: statusConfig.step >= 3, current: statusConfig.step === 3 },
+              { 
+                num: 3, 
+                title: isLocationalClearance ? "3. Zoning Clearance" : "3. Endorsement", 
+                desc: (app.status === "approved" || app.status === "released" || isActuallyReleased) 
+                  ? "Approved & Endorsed ✓" 
+                  : (isLocationalClearance ? "Zoning Review" : "Chief OBO Approval"), 
+                active: statusConfig.step >= 3, 
+                current: statusConfig.step === 3 
+              },
               { 
                 num: 4, 
                 title: "4. Released", 

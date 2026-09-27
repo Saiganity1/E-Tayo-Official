@@ -32,7 +32,8 @@ import {
   Send,
   Camera,
   RotateCcw,
-  MessageSquare
+  MessageSquare,
+  ArrowRight
 } from "lucide-react";
 import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
 import Link from "next/link";
@@ -408,10 +409,31 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     // 4. Live polling every 3 seconds to auto-detect admin approval without manual refresh
     const pollTimer = setInterval(fetchFreshStatus, 3000);
 
+    // 5. Cross-tab & multi-window instant reactive update listener
+    const handleSync = (e?: any) => {
+      const updated = e?.detail;
+      if (updated && (updated.id === appId || (updated.id && appId && updated.id.toLowerCase() === appId.toLowerCase()))) {
+        setAppData((prev: any) => ({ ...prev, ...updated }));
+      } else {
+        const local = findLocal();
+        if (local) setAppData((prev: any) => ({ ...prev, ...local }));
+      }
+      fetchFreshStatus();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", handleSync);
+      window.addEventListener("etayo_applications_updated", handleSync);
+    }
+
     return () => {
       isMounted = false;
       clearTimeout(fallbackTimer);
       clearInterval(pollTimer);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", handleSync);
+        window.removeEventListener("etayo_applications_updated", handleSync);
+      }
     };
   }, [appId, applications]);
 
@@ -839,15 +861,31 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     return checkPaymentInfo(appData, connectedApp);
   }, [appData, connectedApp]);
 
+  const isLC = useMemo(() => {
+    return Boolean(
+      (appData?.permitType || "").toLowerCase().includes("locational") ||
+      (appData?.id || "").toLowerCase().startsWith("lc-") ||
+      (appId || "").toLowerCase().startsWith("lc-")
+    );
+  }, [appData, appId]);
+
+  const isApproved = Boolean(appData?.status === "approved" || appData?.status === "released" || isActuallyReleased);
+
   const getStatusDetails = (status: string) => {
-    if (isActuallyReleased) {
+    if (isActuallyReleased || status === "released") {
       return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle, label: "Permit Released", step: 4 };
     }
     if (status === "approved") {
       if (paymentInfo.confirmed) {
         return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Payment Submitted (Under Review)", step: 4 };
       }
-      return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved (Awaiting Payment)", step: 3 };
+      return { 
+        color: "#059669", 
+        bg: "rgba(5, 150, 105, 0.15)", 
+        icon: CheckCircle2, 
+        label: isLC ? "Locational Clearance Approved" : "Application Approved", 
+        step: 3 
+      };
     }
     switch(status) {
       case "pending": return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", step: 1 };
@@ -865,8 +903,20 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const timelineSteps = [
     { num: 1, title: "Application Submitted", desc: `Received on ${appData?.dateSubmitted || "Online Portal"}` },
     { num: 2, title: "Document Evaluation", desc: appData?.status === "incomplete_requirements" ? "Pending applicant action" : "Verifying attached requirements" },
-    { num: 3, title: "Final Approval", desc: isActuallyReleased ? "Approved & signed by municipal engineers" : "Awaiting signatures from municipal engineers" },
-    { num: 4, title: "Permit Release", desc: isActuallyReleased ? `Official clearance & permits released (OR #${appData?.officialReceiptNo || "Verified"})` : (paymentInfo.confirmed ? "Cashier verifying payment confirmation" : "Official clearance & permits released") }
+    { 
+      num: 3, 
+      title: isLC ? "Zoning Clearance Approved" : "Final Approval", 
+      desc: isApproved ? (isLC ? "Approved & signed by Zoning Administrator (MPDO)" : "Approved & signed by municipal officials") : "Awaiting signatures from municipal engineers" 
+    },
+    { 
+      num: 4, 
+      title: isLC ? "Clearance Active / Stage 2 Ready" : "Permit Release", 
+      desc: isActuallyReleased 
+        ? `Official clearance & permits released (OR #${appData?.officialReceiptNo || "Verified"})` 
+        : isLC && isApproved
+        ? "Stage 1 complete! Unlocked for Stage 2 Technical Permitting Forms"
+        : (paymentInfo.confirmed ? "Cashier verifying payment confirmation" : "Official clearance & permits released") 
+    }
   ];
 
   const getFilledDocUrl = async (doc: any): Promise<string> => {
@@ -1415,79 +1465,82 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         </div>
       )}
 
-      {/* Standalone Top Card: ORDER OF PAYMENT & SETTLEMENT ACTION CARD */}
-          {appData?.status === "approved" && !isActuallyReleased && (
-            <div style={{
-              background: paymentInfo.confirmed
-                ? "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)"
-                : "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
-              border: `1.5px solid ${paymentInfo.confirmed ? "#86efac" : "#fde68a"}`,
-              borderRadius: "20px",
-              padding: "1.4rem",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)",
-              marginBottom: "0.5rem"
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flex: 1, minWidth: "260px" }}>
-                  <div style={{
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "12px",
-                    background: paymentInfo.confirmed ? "#dcfce7" : "#fef3c7",
-                    color: paymentInfo.confirmed ? "#16a34a" : "#d97706",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: `1px solid ${paymentInfo.confirmed ? "#bbf7d0" : "#fcd34d"}`
+      {/* Standalone Top Card: APPLICATION APPROVED & ORDER OF PAYMENT / STAGE 2 UNLOCKED */}
+      {appData?.status === "approved" && !isActuallyReleased && (
+        <div style={{
+          background: isLC
+            ? "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)"
+            : paymentInfo.confirmed
+            ? "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)"
+            : "linear-gradient(135deg, #f0fdf4 0%, #fffbeb 100%)",
+          border: `1.5px solid ${isLC ? "#86efac" : paymentInfo.confirmed ? "#86efac" : "#6ee7b7"}`,
+          borderRadius: "20px",
+          padding: "1.4rem",
+          boxShadow: "0 4px 16px rgba(16, 185, 129, 0.08)",
+          marginBottom: "0.5rem"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flex: 1, minWidth: "260px" }}>
+              <div style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "12px",
+                background: "#dcfce7",
+                color: "#16a34a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid #86efac"
+              }}>
+                <CheckCircle2 size={24} strokeWidth={2.5} />
+              </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "800", color: "#166534" }}>
+                    {isLC
+                      ? "🎉 Locational Clearance Officially Approved by MPDO!"
+                      : paymentInfo.confirmed
+                      ? "Payment Confirmation Submitted (Awaiting Cashier Sign-off)"
+                      : "🎉 Application Formally Approved · Order of Payment Issued"}
+                  </h4>
+                  <span style={{
+                    fontSize: "0.72rem",
+                    fontWeight: "800",
+                    padding: "2px 8px",
+                    borderRadius: "6px",
+                    background: "#dcfce7",
+                    color: "#15803d",
+                    border: "1px solid #86efac"
                   }}>
-                    {paymentInfo.confirmed ? (
-                      <CheckCircle2 size={24} strokeWidth={2.5} />
-                    ) : (
-                      <CreditCard size={24} strokeWidth={2.5} />
-                    )}
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                      <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "800", color: paymentInfo.confirmed ? "#166534" : "#92400e" }}>
-                        {paymentInfo.confirmed
-                          ? "Payment Confirmation Submitted (Awaiting Cashier Sign-off)"
-                          : "Approved · Order of Payment Issued"}
-                      </h4>
-                      <span style={{
-                        fontSize: "0.72rem",
-                        fontWeight: "800",
-                        padding: "2px 8px",
-                        borderRadius: "6px",
-                        background: paymentInfo.confirmed ? "#dcfce7" : "#fee2e2",
-                        color: paymentInfo.confirmed ? "#15803d" : "#b91c1c",
-                        border: `1px solid ${paymentInfo.confirmed ? "#86efac" : "#fca5a5"}`
-                      }}>
-                        {paymentInfo.confirmed ? "Under Review" : "Payment Required"}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: "0.85rem", color: paymentInfo.confirmed ? "#15803d" : "#78350f", marginTop: "4px", lineHeight: "1.45" }}>
-                      {paymentInfo.confirmed ? (
-                        <>
-                          You submitted payment confirmation with Reference: <strong>{paymentInfo.reference}</strong> ({paymentInfo.method}). The Municipal Building Official cashier will verify and officially release your permits.
-                        </>
-                      ) : (
-                        <>
-                          Your application has passed evaluation! Please settle the assessed regulatory fee of <strong style={{ color: "#b45309", fontSize: "1rem" }}>PHP {((appData as any).assessedFees || 3795).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || "OP-2026"}</strong>) at the Municipal Treasury or online to unlock your official signed permits.
-                        </>
-                      )}
-                    </div>
-                  </div>
+                    {isLC ? "Step 3 Passed (Zoning Endorsed)" : paymentInfo.confirmed ? "Cashier Sign-off" : "Evaluation Approved"}
+                  </span>
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#15803d", marginTop: "4px", lineHeight: "1.45" }}>
+                  {isLC ? (
+                    <>
+                      Your Locational Clearance (<strong>{appData.id}</strong>) has been officially approved and signed by the Sto. Tomas Zoning Administrator / Municipal Planning and Development Office (MPDO). 
+                      Your Stage 1 zoning prerequisite is complete — you are cleared to proceed with Stage 2 Technical Permitting Forms.
+                    </>
+                  ) : paymentInfo.confirmed ? (
+                    <>
+                      You submitted payment confirmation with Reference: <strong>{paymentInfo.reference}</strong> ({paymentInfo.method}). The Municipal Building Official cashier will verify and officially release your permits.
+                    </>
+                  ) : (
+                    <>
+                      Great news! Your application has formally passed municipal evaluation. Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {((appData as any).assessedFees || 3795).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || "OP-2026"}</strong>) at the Municipal Treasury or online to receive your final signed release papers.
+                    </>
+                  )}
                 </div>
 
-                {!paymentInfo.confirmed ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                {/* If LC, direct action button to proceed to Stage 2 Technical Forms */}
+                {isLC && (
+                  <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                     <Link
-                      href={`/applicant/messages?ref=${appData.id}`}
+                      href={`/applicant/apply?clearanceRef=${encodeURIComponent(appData.id)}&step=3`}
                       style={{
-                        background: "#ffffff",
-                        color: "#059669",
-                        border: "1.5px solid #10b981",
-                        padding: "9px 16px",
+                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                        color: "white",
+                        padding: "9px 18px",
                         borderRadius: "10px",
                         fontWeight: "800",
                         fontSize: "0.88rem",
@@ -1495,85 +1548,115 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "6px",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
-                        transition: "all 0.15s ease"
+                        boxShadow: "0 3px 10px rgba(5, 150, 105, 0.25)"
                       }}
                     >
-                      <Send size={15} />
-                      <span>Send Receipt on Messages</span>
+                      <Sparkles size={16} />
+                      <span>Proceed to Step 3: Technical Permitting Forms</span>
+                      <ArrowRight size={15} />
                     </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaymentRefInput(`OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
-                        setPaymentReceiptFile(null);
-                        setShowPaymentModal(true);
-                      }}
-                      style={{
-                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                        color: "white",
-                        border: "none",
-                        padding: "10px 20px",
-                        borderRadius: "10px",
-                        fontWeight: "800",
-                        fontSize: "0.9rem",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
-                      }}
-                    >
-                      <CreditCard size={16} />
-                      <span>Confirm Payment Sent</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    <div style={{
-                      background: "#dcfce7",
-                      border: "1px solid #86efac",
-                      padding: "8px 14px",
-                      borderRadius: "10px",
-                      fontSize: "0.82rem",
-                      fontWeight: "700",
-                      color: "#166534",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px"
-                    }}>
-                      <Clock size={15} />
-                      <span>Cashier Verification Pending</span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleInstantRelease}
-                      title="Officially verify and release permit documents now"
-                      style={{
-                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                        color: "white",
-                        border: "none",
-                        padding: "8px 16px",
-                        borderRadius: "10px",
-                        fontSize: "0.84rem",
-                        fontWeight: "800",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        boxShadow: "0 2px 8px rgba(5, 150, 105, 0.25)"
-                      }}
-                    >
-                      <CheckCircle size={15} />
-                      <span>Verify & Release Now</span>
-                    </button>
                   </div>
                 )}
               </div>
             </div>
-          )}
+
+            {!isLC && (
+              !paymentInfo.confirmed ? (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <Link
+                    href={`/applicant/messages?ref=${appData.id}`}
+                    style={{
+                      background: "#ffffff",
+                      color: "#059669",
+                      border: "1.5px solid #10b981",
+                      padding: "9px 16px",
+                      borderRadius: "10px",
+                      fontWeight: "800",
+                      fontSize: "0.88rem",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+                      transition: "all 0.15s ease"
+                    }}
+                  >
+                    <Send size={15} />
+                    <span>Send Receipt on Messages</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentRefInput(`OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
+                      setPaymentReceiptFile(null);
+                      setShowPaymentModal(true);
+                    }}
+                    style={{
+                      background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                      color: "white",
+                      border: "none",
+                      padding: "10px 20px",
+                      borderRadius: "10px",
+                      fontWeight: "800",
+                      fontSize: "0.9rem",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
+                    }}
+                  >
+                    <CreditCard size={16} />
+                    <span>Confirm Payment Sent</span>
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <div style={{
+                    background: "#dcfce7",
+                    border: "1px solid #86efac",
+                    padding: "8px 14px",
+                    borderRadius: "10px",
+                    fontSize: "0.82rem",
+                    fontWeight: "700",
+                    color: "#166534",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}>
+                    <Clock size={15} />
+                    <span>Cashier Verification Pending</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleInstantRelease}
+                    title="Officially verify and release permit documents now"
+                    style={{
+                      background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                      color: "white",
+                      border: "none",
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      fontSize: "0.84rem",
+                      fontWeight: "800",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 2px 8px rgba(5, 150, 105, 0.25)"
+                    }}
+                  >
+                    <CheckCircle size={15} />
+                    <span>Verify & Release Now</span>
+                  </button>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Standalone Top Card: PERMIT OFFICIALLY RELEASED BANNER */}
           {(appData?.status === "released" || isActuallyReleased) && (
@@ -1694,8 +1777,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               <div style={{ position: "absolute", left: "20px", top: "20px", bottom: "20px", width: "3px", background: "#e2e8f0", zIndex: 0 }}></div>
               
               {timelineSteps.map((step) => {
-                const isActive = statusConfig.step === step.num;
-                const isPassed = statusConfig.step > step.num;
+                const isStep3Approved = step.num === 3 && (appData?.status === "approved" || appData?.status === "released" || isActuallyReleased);
+                const isActive = statusConfig.step === step.num && !isStep3Approved;
+                const isPassed = statusConfig.step > step.num || isStep3Approved;
                 
                 let circleColor = "#e2e8f0";
                 let iconColor = "#94a3b8";

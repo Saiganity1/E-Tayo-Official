@@ -367,15 +367,28 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               : null;
 
             if (foundCached) {
+              const effectiveStatus = isPaidLocal 
+                ? "released" 
+                : (bApp.status && bApp.status !== "pending" 
+                    ? bApp.status 
+                    : (foundCached.status || bApp.status));
+
+              const isApproved = effectiveStatus === "approved" || effectiveStatus === "released";
+
               return {
-                ...bApp,
                 ...foundCached,
-                status: isPaidLocal ? "released" : (bApp.status === "rejected" ? "rejected" : (foundCached.status || bApp.status)),
-                isReleased: isPaidLocal || Boolean((foundCached as any).isReleased) || Boolean((bApp as any).isReleased),
-                paymentStatus: isPaidLocal ? "paid" : ((foundCached as any).paymentStatus || (bApp as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : undefined)),
+                ...bApp,
+                status: effectiveStatus,
+                isReleased: isPaidLocal || effectiveStatus === "released" || Boolean((bApp as any).isReleased) || Boolean((foundCached as any).isReleased),
+                paymentStatus: isPaidLocal ? "paid" : (bApp.paymentStatus || (foundCached as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : undefined)),
                 userConfirmedPayment: isConfirmedLocal,
-                officialReceiptNo: (foundCached as any).officialReceiptNo || (bApp as any).officialReceiptNo,
-                paymentProofUrl: cachedReceiptUrl || (foundCached as any).paymentProofUrl || (bApp as any).paymentProofUrl
+                officialReceiptNo: (bApp as any).officialReceiptNo || (foundCached as any).officialReceiptNo,
+                orderOfPaymentNo: (bApp as any).orderOfPaymentNo || (foundCached as any).orderOfPaymentNo,
+                assessedFees: (bApp as any).assessedFees || (foundCached as any).assessedFees,
+                dateApproved: (bApp as any).dateApproved || (foundCached as any).dateApproved || (isApproved ? ((bApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
+                trackingSteps: (bApp.trackingSteps && bApp.trackingSteps.length > 0) ? bApp.trackingSteps : foundCached.trackingSteps,
+                historyLog: (bApp.historyLog && bApp.historyLog.length > 0) ? bApp.historyLog : foundCached.historyLog,
+                paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl || (foundCached as any).paymentProofUrl
               };
             }
 
@@ -507,6 +520,25 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       fetchData();
     }, 4000);
 
+    // 6. Cross-tab & multi-window instant reactive update listener
+    const handleSyncEvent = () => {
+      try {
+        const stored = localStorage.getItem("etayo_cached_applications");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setApplications(parsed.filter(a => !isDummyApp(a)));
+          }
+        }
+      } catch (err) {}
+      fetchData();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", handleSyncEvent);
+      window.addEventListener("etayo_applications_updated", handleSyncEvent);
+    }
+
     // Restore user role from login session
     try {
       const userStr = localStorage.getItem("user");
@@ -526,6 +558,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     return () => {
       clearInterval(pollInterval);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", handleSyncEvent);
+        window.removeEventListener("etayo_applications_updated", handleSyncEvent);
+      }
     };
   }, []);
 
@@ -636,6 +672,12 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         ? currentList.map(a => a.id === updatedApp.id ? updatedApp : a)
         : [updatedApp, ...currentList];
       localStorage.setItem("etayo_cached_applications", JSON.stringify(updatedList));
+
+      // Broadcast storage and custom event for instant cross-tab & multi-window sync!
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new CustomEvent("etayo_applications_updated", { detail: updatedApp }));
+      }
     } catch (e) {
       console.warn("Could not cache updated application to localStorage", e);
     }
