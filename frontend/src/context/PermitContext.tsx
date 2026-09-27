@@ -330,7 +330,12 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const permitsUrl = qStr ? `${API_BASE_URL}/permits?${qStr}` : `${API_BASE_URL}/permits`;
 
       const [appsRes, logsRes, feesRes] = await Promise.all([
-        fetch(permitsUrl, { headers }).catch(e => ({ ok: false, json: async () => [] })),
+        fetch(permitsUrl, { headers }).then(async r => {
+          if (!r.ok && token) {
+            return fetch(permitsUrl, { headers: { "Accept": "application/json" } });
+          }
+          return r;
+        }).catch(e => ({ ok: false, json: async () => [] })),
         isStaffOrAdmin 
           ? fetch(`${API_BASE_URL}/logs`, { headers }).catch(e => ({ ok: false, json: async () => [] }))
           : Promise.resolve({ ok: false, json: async () => [] } as any),
@@ -408,6 +413,21 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                       ? bApp.status 
                       : (foundCached?.status || bApp.status)));
 
+            if ((isApprovedLocal || isPaidLocal) && typeof window !== "undefined") {
+              try {
+                [id, lowerId, upperId].forEach(k => {
+                  if (k) {
+                    localStorage.setItem(`etayo_status_${k}`, (isPaidLocal || effectiveStatus === "released") ? "released" : "approved");
+                    localStorage.setItem(`etayo_approved_${k}`, "true");
+                    if (isPaidLocal || effectiveStatus === "released") {
+                      localStorage.setItem(`etayo_released_${k}`, "true");
+                      localStorage.setItem(`etayo_paid_${k}`, "true");
+                    }
+                  }
+                });
+              } catch (e) {}
+            }
+
             if (foundCached) {
               const isApproved = effectiveStatus === "approved" || effectiveStatus === "released";
 
@@ -464,6 +484,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                   let singleRes = await fetch(`${API_BASE_URL}/permits/${mId}`, { headers });
                   if (!singleRes.ok && m.id.toUpperCase() !== m.id) {
                     singleRes = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(m.id.toUpperCase().trim())}`, { headers });
+                  }
+                  if (!singleRes.ok) {
+                    singleRes = await fetch(`${API_BASE_URL}/permits/${mId}`, { headers: { "Accept": "application/json" } });
                   }
                   if (singleRes.ok) {
                     const live = await singleRes.json();
@@ -535,6 +558,17 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const mRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${mId}`) || localStorage.getItem(`etayo_remarks_${mLower}`) || localStorage.getItem(`etayo_remarks_${mUpper}`)) : null;
 
         const mEffectiveStatus = mIsPaid ? "released" : (mIsApproved ? "approved" : mApp.status);
+
+        if ((mIsApproved || mIsPaid) && typeof window !== "undefined") {
+          try {
+            [mId, mLower, mUpper].forEach(k => {
+              if (k) {
+                localStorage.setItem(`etayo_status_${k}`, mIsPaid ? "released" : "approved");
+                localStorage.setItem(`etayo_approved_${k}`, "true");
+              }
+            });
+          } catch (e) {}
+        }
 
         return {
           ...mApp,

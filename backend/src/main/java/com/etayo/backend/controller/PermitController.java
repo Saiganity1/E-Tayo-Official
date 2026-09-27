@@ -464,9 +464,9 @@ public class PermitController {
             if (permit.getProjectType() != null) existing.setProjectType(permit.getProjectType());
             if (permit.getDateSubmitted() != null) existing.setDateSubmitted(permit.getDateSubmitted());
             
-            return ResponseEntity.ok(permitApplicationRepository.save(existing));
+            return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(existing));
         }).orElseGet(() -> {
-            return ResponseEntity.ok(permitApplicationRepository.save(permit));
+            return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(permit));
         });
     }
 
@@ -496,7 +496,7 @@ public class PermitController {
                     );
                 } catch (Exception ignored) {}
             }
-            return ResponseEntity.ok(permitApplicationRepository.save(existing));
+            return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(existing));
         }).orElseGet(() -> {
             PermitApplication app = new PermitApplication();
             app.setId(id);
@@ -506,7 +506,7 @@ public class PermitController {
             if (payload.containsKey("remarks") && payload.get("remarks") != null) {
                 app.setRemarks(String.valueOf(payload.get("remarks")));
             }
-            return ResponseEntity.ok(permitApplicationRepository.save(app));
+            return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(app));
         });
     }
 

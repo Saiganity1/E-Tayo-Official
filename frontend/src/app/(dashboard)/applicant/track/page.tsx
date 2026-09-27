@@ -390,7 +390,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       ));
       return a.status === "pending" && !isAppApproved;
     }).length,
-    review: activeApps.filter(a => a.status === "under_review").length,
+    review: activeApps.filter(a => {
+      const isAppApproved = a.status === "approved" || a.status === "released" || (typeof window !== "undefined" && (
+        localStorage.getItem(`etayo_approved_${a.id}`) === "true" ||
+        localStorage.getItem(`etayo_approved_${(a.id || "").toLowerCase()}`) === "true" ||
+        localStorage.getItem(`etayo_status_${a.id}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${(a.id || "").toLowerCase()}`) === "approved"
+      ));
+      return a.status === "under_review" && !isAppApproved;
+    }).length,
     approved: activeApps.filter(a => ["approved", "released"].includes(a.status) || (typeof window !== "undefined" && (
       localStorage.getItem(`etayo_approved_${a.id}`) === "true" ||
       localStorage.getItem(`etayo_approved_${(a.id || "").toLowerCase()}`) === "true" ||

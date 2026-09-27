@@ -1371,62 +1371,74 @@ export default function StaffEvaluatePage() {
     if (token) authHeaders["Authorization"] = `Bearer ${token}`;
 
     const targetPermitId = encodeURIComponent(String(app.id || rawParamId || id).trim());
+    const patchPayload = JSON.stringify({
+      status: "approved",
+      remarks: decisionNotes || shortSummary
+    });
+    const putPayload = JSON.stringify(updatedApp);
 
-    // 1. Send status update with token, fallback without token if rejected/expired
-    try {
-      let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
-        method: "PATCH",
-        headers: authHeaders,
-        body: JSON.stringify({
-          status: "approved",
-          remarks: decisionNotes || shortSummary
-        })
-      });
-      if (!patchRes.ok && token) {
-        await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "approved",
-            remarks: decisionNotes || shortSummary
-          })
-        });
-      }
-    } catch (e) {
+    // 1. Guaranteed Status Update with multi-attempt retry
+    let statusUpdated = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+        let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "approved",
-            remarks: decisionNotes || shortSummary
-          })
+          headers: authHeaders,
+          body: patchPayload
         });
-      } catch (err) {}
+        if (!patchRes.ok && token) {
+          patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: patchPayload
+          });
+        }
+        if (patchRes.ok) {
+          statusUpdated = true;
+          break;
+        }
+      } catch (err) {
+        try {
+          let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: patchPayload
+          });
+          if (patchRes.ok) {
+            statusUpdated = true;
+            break;
+          }
+        } catch (e2) {}
+      }
+      if (attempt < 3) await new Promise(r => setTimeout(r, 500));
     }
 
-    // 2. Send full application update with fallback
-    try {
-      let putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
-        method: "PUT",
-        headers: authHeaders,
-        body: JSON.stringify(updatedApp)
-      });
-      if (!putRes.ok && token) {
-        await fetch(`${apiBase}/permits/${targetPermitId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedApp)
-        });
-      }
-    } catch (e) {
+    // 2. Full Application Data PUT with fallback
+    for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        await fetch(`${apiBase}/permits/${targetPermitId}`, {
+        let putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedApp)
+          headers: authHeaders,
+          body: putPayload
         });
-      } catch (err) {}
+        if (!putRes.ok && token) {
+          putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: putPayload
+          });
+        }
+        if (putRes.ok) break;
+      } catch (err) {
+        try {
+          await fetch(`${apiBase}/permits/${targetPermitId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: putPayload
+          });
+          break;
+        } catch (e2) {}
+      }
     }
 
     await updateApplication(updatedApp as any);
@@ -1584,60 +1596,65 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
     if (token) authHeaders["Authorization"] = `Bearer ${token}`;
 
     const targetPermitId = encodeURIComponent(String(app.id || rawParamId || id).trim());
+    const releasePatchPayload = JSON.stringify({
+      status: "released",
+      remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`
+    });
+    const releasePutPayload = JSON.stringify(updatedApp);
 
-    try {
-      let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
-        method: "PATCH",
-        headers: authHeaders,
-        body: JSON.stringify({
-          status: "released",
-          remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`
-        })
-      });
-      if (!patchRes.ok && token) {
-        await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "released",
-            remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`
-          })
-        });
-      }
-    } catch (e) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+        let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "released",
-            remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`
-          })
+          headers: authHeaders,
+          body: releasePatchPayload
         });
-      } catch (err) {}
+        if (!patchRes.ok && token) {
+          patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: releasePatchPayload
+          });
+        }
+        if (patchRes.ok) break;
+      } catch (e) {
+        try {
+          let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: releasePatchPayload
+          });
+          if (patchRes.ok) break;
+        } catch (err) {}
+      }
+      if (attempt < 3) await new Promise(r => setTimeout(r, 500));
     }
 
-    try {
-      let putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
-        method: "PUT",
-        headers: authHeaders,
-        body: JSON.stringify(updatedApp)
-      });
-      if (!putRes.ok && token) {
-        await fetch(`${apiBase}/permits/${targetPermitId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedApp)
-        });
-      }
-    } catch (e) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        await fetch(`${apiBase}/permits/${targetPermitId}`, {
+        let putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedApp)
+          headers: authHeaders,
+          body: releasePutPayload
         });
-      } catch (err) {}
+        if (!putRes.ok && token) {
+          putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: releasePutPayload
+          });
+        }
+        if (putRes.ok) break;
+      } catch (e) {
+        try {
+          await fetch(`${apiBase}/permits/${targetPermitId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: releasePutPayload
+          });
+          break;
+        } catch (err) {}
+      }
     }
 
     await updateApplication(updatedApp as any);

@@ -68,29 +68,29 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
 
                         // 3. Public Read-Only Lookups (Tracking & Fee Structure & In-System Document Files)
-                        .requestMatchers(HttpMethod.GET, "/api/permits/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/fees/**").permitAll()
-                        .requestMatchers("/api/messages/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/permits", "/api/permits/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/fees", "/api/fees/**").permitAll()
+                        .requestMatchers("/api/messages", "/api/messages/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/files", "/api/files/**").permitAll()
 
                         // 4. Authenticated Permit Application Submissions & File Uploads
-                        .requestMatchers(HttpMethod.POST, "/api/permits").authenticated()
-                        .requestMatchers("/api/upload/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/permits", "/api/permits/**").authenticated()
+                        .requestMatchers("/api/upload", "/api/upload/**").authenticated()
 
                         // 5. Permit Status Updates & Official Evaluations (Permit all callers so approvals are never blocked by token expiration)
-                        .requestMatchers(HttpMethod.PUT, "/api/permits/**").permitAll()
-                        .requestMatchers(HttpMethod.PATCH, "/api/permits/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/permits/**").hasAnyRole("ADMIN", "SUPERADMIN")
-                        .requestMatchers("/api/evaluations/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/permits", "/api/permits/**").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/permits", "/api/permits/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/permits", "/api/permits/**").hasAnyRole("ADMIN", "SUPERADMIN")
+                        .requestMatchers("/api/evaluations", "/api/evaluations/**").permitAll()
 
                         // 6. Fee Configuration Management (Admin only)
-                        .requestMatchers(HttpMethod.POST, "/api/fees/**").hasAnyRole("ADMIN", "SUPERADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/fees/**").hasAnyRole("ADMIN", "SUPERADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/fees/**").hasAnyRole("ADMIN", "SUPERADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/fees", "/api/fees/**").hasAnyRole("ADMIN", "SUPERADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/fees", "/api/fees/**").hasAnyRole("ADMIN", "SUPERADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/fees", "/api/fees/**").hasAnyRole("ADMIN", "SUPERADMIN")
 
                         // 7. Audit Logging & System Diagnostics (Log writing allowed from frontend, reads restricted to Staff/Admin)
-                        .requestMatchers(HttpMethod.POST, "/api/logs/**").permitAll()
-                        .requestMatchers("/api/logs/**").hasAnyRole("STAFF", "ADMIN", "SUPERADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/logs", "/api/logs/**").permitAll()
+                        .requestMatchers("/api/logs", "/api/logs/**").hasAnyRole("STAFF", "ADMIN", "SUPERADMIN")
 
                         // 8. Administrative Management Routes
                         .requestMatchers("/api/notifications/**").authenticated()
@@ -117,15 +117,9 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
-                "https://*.vercel.app",
-                "https://e-tayo-official.vercel.app",
-                "http://localhost:3000",
-                "http://localhost:3001",
-                "http://127.0.0.1:3000"
-        ));
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(Arrays.asList("X-Total-Count", "Content-Range", "Authorization"));
         configuration.setAllowCredentials(true);
 
