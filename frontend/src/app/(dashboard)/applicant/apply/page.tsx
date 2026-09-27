@@ -19,6 +19,7 @@ import LocationalClearanceGoogleForm from "../../../../components/forms/Location
 import UnifiedProjectGoogleForm from "../../../../components/forms/UnifiedProjectGoogleForm";
 import TechnicalPermitFormsStep from "../../../../components/forms/TechnicalPermitFormsStep";
 import { generateUnifiedPermitPdf } from "../../../../utils/unifiedPermitPdfGenerator";
+import { generateLocationalClearancePdf } from "../../../../utils/locationalClearancePdfGenerator";
 import { 
   PROJECT_TYPES_MATRIX, 
   ProjectTypeItem, 
@@ -476,82 +477,7 @@ export default function ApplyPage() {
   const [longitude, setLongitude] = useState("");
   const [detectedZone, setDetectedZone] = useState<{barangay?: string, zoneType?: string, description?: string} | null>(null);
 
-  // Automatically autofill project & applicant parameters from existing Application Status (matchedClearanceApp)
-  useEffect(() => {
-    if (!matchedClearanceApp) return;
 
-    // 1. Applicant Name
-    if (matchedClearanceApp.applicantName && (!applicantName || applicantName === "Applicant")) {
-      setApplicantName(matchedClearanceApp.applicantName);
-    }
-
-    // 2. Project Name
-    const rawProjectName = matchedClearanceApp.projectName || "";
-    const cleanProjectName = rawProjectName
-      .replace(/\s*-\s*Locational\s*Clearance/gi, "")
-      .replace(/\s*\(Locational\s*Clearance\)/gi, "")
-      .trim();
-    if (cleanProjectName) {
-      setProjectName(cleanProjectName);
-    } else if (selectedProjectType?.name && !projectName) {
-      setProjectName(`${selectedProjectType.name} Project`);
-    }
-
-    // 3. Address & Barangay parsing
-    const addr = (matchedClearanceApp as any).projectAddress || matchedClearanceApp.location?.address || "";
-    if (addr) {
-      const brgyMatch = addr.match(/Brgy\.?\s*([A-Za-z\s]+?)(?:,\s*Sto\.?\s*Tomas|$)/i);
-      if (brgyMatch && brgyMatch[1]) {
-        const foundBrgy = brgyMatch[1].trim();
-        setBarangay(foundBrgy);
-      } else if ((matchedClearanceApp as any).barangay) {
-        setBarangay((matchedClearanceApp as any).barangay);
-      }
-
-      const streetPart = addr.split(/Brgy\.?/i)[0].replace(/,\s*$/, "").trim();
-      if (streetPart) {
-        setStreetAddress(streetPart);
-      } else if ((matchedClearanceApp as any).streetAddress) {
-        setStreetAddress((matchedClearanceApp as any).streetAddress);
-      }
-    }
-
-    // 4. Lot Area, Floor Area, and Project Cost parsing
-    const desc = matchedClearanceApp.projectDescription || "";
-    const lotMatch = desc.match(/Lot:\s*([0-9.,]+)/i);
-    const bldgMatch = desc.match(/Bldg:\s*([0-9.,]+)/i);
-    const costMatch = desc.match(/Cost:\s*(?:Php\s*)?([0-9.,]+)/i);
-
-    const extractedLot = (matchedClearanceApp as any).lotArea || (lotMatch ? lotMatch[1] : "");
-    const extractedFloor = (matchedClearanceApp as any).floorArea || (matchedClearanceApp as any).bldgArea || (bldgMatch ? bldgMatch[1] : "");
-    const extractedCost = (matchedClearanceApp as any).projectCost || (costMatch ? costMatch[1] : "");
-
-    if (extractedLot) {
-      setLotArea(String(extractedLot));
-    } else if (!lotArea) {
-      setLotArea("180");
-    }
-
-    if (extractedFloor) {
-      setFloorArea(String(extractedFloor));
-    } else if (!floorArea) {
-      setFloorArea("120");
-    }
-
-    if (extractedCost) {
-      setProjectCost(String(extractedCost));
-    } else if (!projectCost) {
-      setProjectCost("1,600,000.00");
-    }
-
-    // 5. GPS Coordinates
-    if (matchedClearanceApp.location?.lat) {
-      setLatitude(String(matchedClearanceApp.location.lat));
-    }
-    if (matchedClearanceApp.location?.lng) {
-      setLongitude(String(matchedClearanceApp.location.lng));
-    }
-  }, [matchedClearanceApp, selectedProjectType]);
   
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -816,35 +742,66 @@ export default function ApplyPage() {
 
     const attachedUrls = Object.values(uploadedPermitDocs).map(d => d.fileUrl).filter(Boolean);
 
-    const newId = `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const isApplyingLC = selectedPermitType === "locational_clearance";
+    const newId = isApplyingLC
+      ? `LC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+      : `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const submissionDate = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-    const formattedFileName = `${newId}_${selectedProjectType.name.replace(/\s+/g, '_')}_Permit_Package.pdf`;
+    const formattedFileName = isApplyingLC
+      ? `${newId}_${selectedProjectType.name.replace(/\s+/g, '_')}_Locational_Clearance.pdf`
+      : `${newId}_${selectedProjectType.name.replace(/\s+/g, '_')}_Permit_Package.pdf`;
 
-    // Generate official unified PDF dossier package for this application
+    // Generate official PDF package for this application
     let finalFileUrl = "";
     try {
-      const generatedBase64 = await generateUnifiedPermitPdf({
-        applicationNo: newId,
-        locationalClearanceRef: activeClearanceRef || (isClearanceRequired ? "LC-APPROVED" : "EXEMPT"),
-        projectType: selectedProjectType,
-        applicantName,
-        applicantPhone: "0917-123-4567",
-        applicantEmail: "applicant@etayo.gov.ph",
-        applicantAddress: projectAddress,
-        projectName: projectName || `${selectedProjectType.name} Construction`,
-        projectAddress,
-        barangay,
-        lotArea: lotArea || "200",
-        floorArea: floorArea || "120",
-        projectCost: projectCost || "1,500,000.00",
-        scopeOfWork: "New Construction",
-        occupancyClass: "Group A - Residential",
-        proposedStoreys: "2",
-        activePermitForms: mandatoryPermitsToSubmit,
-        submissionDate
-      });
-      if (generatedBase64) {
-        finalFileUrl = `data:application/pdf;base64,${generatedBase64}`;
+      if (isApplyingLC) {
+        const generatedBase64 = await generateLocationalClearancePdf({
+          applicationNo: newId,
+          submissionDate,
+          applicantName: applicantName || "Applicant",
+          applicantAddress: projectAddress || "Sto. Tomas, Pampanga",
+          applicantPhone: "0917-123-4567",
+          applicantEmail: "applicant@etayo.gov.ph",
+          projectName: projectName || `${selectedProjectType.name} - Locational Clearance`,
+          projectType: selectedProjectType.name,
+          projectNature: "New Construction",
+          projectAddress: projectAddress || "Sto. Tomas, Pampanga",
+          barangay: barangay || "Sto. Tomas",
+          lotArea: lotArea || "200",
+          bldgArea: floorArea || "120",
+          rightOverLand: "Owner",
+          projectTenure: "Permanent",
+          existingLandUse: "Residential",
+          isTenanted: "No",
+          projectCost: projectCost || "1,500,000.00",
+        });
+        if (generatedBase64) {
+          finalFileUrl = `data:application/pdf;base64,${generatedBase64}`;
+        }
+      } else {
+        const generatedBase64 = await generateUnifiedPermitPdf({
+          applicationNo: newId,
+          locationalClearanceRef: activeClearanceRef || (isClearanceRequired ? "LC-APPROVED" : "EXEMPT"),
+          projectType: selectedProjectType,
+          applicantName,
+          applicantPhone: "0917-123-4567",
+          applicantEmail: "applicant@etayo.gov.ph",
+          applicantAddress: projectAddress,
+          projectName: projectName || `${selectedProjectType.name} Construction`,
+          projectAddress,
+          barangay,
+          lotArea: lotArea || "200",
+          floorArea: floorArea || "120",
+          projectCost: projectCost || "1,500,000.00",
+          scopeOfWork: "New Construction",
+          occupancyClass: "Group A - Residential",
+          proposedStoreys: "2",
+          activePermitForms: mandatoryPermitsToSubmit,
+          submissionDate
+        });
+        if (generatedBase64) {
+          finalFileUrl = `data:application/pdf;base64,${generatedBase64}`;
+        }
       }
     } catch (err) {
       console.warn("Notice: Client PDF generation skipped or fallback:", err);

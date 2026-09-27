@@ -316,44 +316,42 @@ export default function TechnicalPermitFormsStep({
     return { lastName, firstName, middleName: middleName ? (middleName.endsWith(".") ? middleName : middleName[0] + ".") : "" };
   };
 
-  const initialNameParts = parseNameParts(applicantName || clearanceApp?.applicantName || "Juan Dela Cruz");
+  const initialNameParts = applicantName ? parseNameParts(applicantName) : { lastName: "", firstName: "", middleName: "" };
   const [applicantLastName, setApplicantLastName] = useState(initialNameParts.lastName);
   const [applicantFirstName, setApplicantFirstName] = useState(initialNameParts.firstName);
   const [applicantMiddleName, setApplicantMiddleName] = useState(initialNameParts.middleName);
-  const [applicantTIN, setApplicantTIN] = useState("123-456-789-000");
-  const [constructionOwnedByEnterprise, setConstructionOwnedByEnterprise] = useState(
-    clearanceApp?.corporationName || clearanceApp?.constructionOwnedByEnterprise || "N/A (INDIVIDUAL)"
-  );
+  const [applicantTIN, setApplicantTIN] = useState("");
+  const [constructionOwnedByEnterprise, setConstructionOwnedByEnterprise] = useState("N/A (INDIVIDUAL)");
   const [formOfOwnership, setFormOfOwnership] = useState("INDIVIDUAL / OWNER");
-  const [govIdNo, setGovIdNo] = useState("CTC-2026-08912");
-  const [govIdDateIssued, setGovIdDateIssued] = useState("Jan 10, 2026");
-  const [govIdPlaceIssued, setGovIdPlaceIssued] = useState("Sto. Tomas, Pampanga");
+  const [govIdNo, setGovIdNo] = useState("");
+  const [govIdDateIssued, setGovIdDateIssued] = useState("");
+  const [govIdPlaceIssued, setGovIdPlaceIssued] = useState("");
   const [applicantSignature, setApplicantSignature] = useState<string>("");
-  const [applicantSignedDate, setApplicantSignedDate] = useState("Jan 08, 2026");
+  const [applicantSignedDate, setApplicantSignedDate] = useState("");
 
   // Box 6: WITH MY CONSENT: LOT OWNER
   const [lotOwnerConsent, setLotOwnerConsent] = useState(false);
-  const [lotOwnerName, setLotOwnerName] = useState<string>(clearanceApp?.lotOwnerName || "Maria Clara Dela Cruz");
-  const [lotOwnerAddress, setLotOwnerAddress] = useState<string>(clearanceApp?.lotOwnerAddress || "Sto. Tomas, Pampanga");
-  const [lotOwnerGovIdNo, setLotOwnerGovIdNo] = useState("CTC-2026-00871");
-  const [lotOwnerGovIdDateIssued, setLotOwnerGovIdDateIssued] = useState("Jan 12, 2026");
-  const [lotOwnerGovIdPlaceIssued, setLotOwnerGovIdPlaceIssued] = useState("Sto. Tomas, Pampanga");
-  const [lotOwnerSignedDate, setLotOwnerSignedDate] = useState("Jan 08, 2026");
+  const [lotOwnerName, setLotOwnerName] = useState<string>("");
+  const [lotOwnerAddress, setLotOwnerAddress] = useState<string>("");
+  const [lotOwnerGovIdNo, setLotOwnerGovIdNo] = useState("");
+  const [lotOwnerGovIdDateIssued, setLotOwnerGovIdDateIssued] = useState("");
+  const [lotOwnerGovIdPlaceIssued, setLotOwnerGovIdPlaceIssued] = useState("");
+  const [lotOwnerSignedDate, setLotOwnerSignedDate] = useState("");
   const [lotOwnerSignature, setLotOwnerSignature] = useState<string>("");
 
-  const [lotNo, setLotNo] = useState("Lot 12");
-  const [blockNo, setBlockNo] = useState("Block 4");
-  const [tctNo, setTctNo] = useState("TCT-042-20260012");
-  const [taxDecNo, setTaxDecNo] = useState("TD-2026-00124-ST");
+  const [lotNo, setLotNo] = useState("");
+  const [blockNo, setBlockNo] = useState("");
+  const [tctNo, setTctNo] = useState("");
+  const [taxDecNo, setTaxDecNo] = useState("");
 
   // Address & Contact Information (Box 1 Row 3)
-  const [applicantNoStreet, setApplicantNoStreet] = useState(streetAddress || "123 RIZAL ST.");
-  const [applicantBarangay, setApplicantBarangay] = useState(barangay || "POBLACION");
+  const [applicantNoStreet, setApplicantNoStreet] = useState(streetAddress || "");
+  const [applicantBarangay, setApplicantBarangay] = useState(barangay || "");
   const [applicantMunicipality, setApplicantMunicipality] = useState("STO. TOMAS");
   const [applicantProvince, setApplicantProvince] = useState("PAMPANGA");
   const [applicantZipCode, setApplicantZipCode] = useState("2020");
-  const [applicantPhone, setApplicantPhone] = useState("0917-123-4567");
-  const [applicantEmail, setApplicantEmail] = useState(clearanceApp?.applicantEmail || "juan.delacruz@example.com");
+  const [applicantPhone, setApplicantPhone] = useState("");
+  const [applicantEmail, setApplicantEmail] = useState("");
 
   const compiledFullAddress = useMemo(() => {
     return [applicantNoStreet, applicantBarangay ? `Brgy. ${applicantBarangay}` : "", applicantMunicipality, applicantProvince, applicantZipCode].filter(Boolean).join(", ") || "123 Rizal St., Poblacion, Sto. Tomas, Pampanga";
@@ -385,22 +383,22 @@ export default function TechnicalPermitFormsStep({
   const [occupancyRuleVII, setOccupancyRuleVII] = useState("Group A - Single Family Dwelling");
   const [occupancyClassificationDetail, setOccupancyClassificationDetail] = useState("Group A - Single Family Dwelling");
   const [occupancyOthers, setOccupancyOthers] = useState("");
-  const [buildingFootprint, setBuildingFootprint] = useState("120");
-  const [buildingHeight, setBuildingHeight] = useState("6.8");
+  const [buildingFootprint, setBuildingFootprint] = useState("");
+  const [buildingHeight, setBuildingHeight] = useState("");
   const [proposedStoreys, setProposedStoreys] = useState(
     projectType.id === "two_storey_house" ? "2" : projectType.id === "single_detached_house" ? "1" : "2"
   );
   const [numberOfUnits, setNumberOfUnits] = useState("1");
-  const [proposedStartDate, setProposedStartDate] = useState("2026-10-15");
-  const [expectedCompletionDate, setExpectedCompletionDate] = useState("2027-04-15");
+  const [proposedStartDate, setProposedStartDate] = useState("");
+  const [expectedCompletionDate, setExpectedCompletionDate] = useState("");
 
   // Estimated Cost Breakdown (PHP)
-  const [costBuilding, setCostBuilding] = useState("1,100,000.00");
-  const [costElectrical, setCostElectrical] = useState("180,000.00");
-  const [costPlumbing, setCostPlumbing] = useState("140,000.00");
-  const [costMechanical, setCostMechanical] = useState("80,000.00");
-  const [costElectronics, setCostElectronics] = useState("60,000.00");
-  const [costOthers, setCostOthers] = useState("40,000.00");
+  const [costBuilding, setCostBuilding] = useState("");
+  const [costElectrical, setCostElectrical] = useState("");
+  const [costPlumbing, setCostPlumbing] = useState("");
+  const [costMechanical, setCostMechanical] = useState("");
+  const [costElectronics, setCostElectronics] = useState("");
+  const [costOthers, setCostOthers] = useState("");
 
   // ==========================================
   // 3. ARCHITECTURAL PERMIT (AP) FIELDS
@@ -421,29 +419,29 @@ export default function TechnicalPermitFormsStep({
   const [ceilingFinishes, setCeilingFinishes] = useState("9mm Moisture-Resistant Gypsum Board on Heavy-Duty Metal Furring System");
   const [doorsSpec, setDoorsSpec] = useState("Solid Narra Hardwood Main Entrance Door, Molded Panel Interior Flush Doors");
   const [windowsSpec, setWindowsSpec] = useState("Powder-Coated Aluminum Casement & Sliding Windows with 6mm Tinted Glass");
-  const [architectName, setArchitectName] = useState("Arch. Maria Santos, UAP");
-  const [architectAddress, setArchitectAddress] = useState("Sto. Tomas, Pampanga");
-  const [architectPRC, setArchitectPRC] = useState("0045211");
-  const [architectPRCValidity, setArchitectPRCValidity] = useState("2028-09-15");
-  const [architectIAPOA, setArchitectIAPOA] = useState("IAPOA-2026-9988");
-  const [architectIAPOAValidity, setArchitectIAPOAValidity] = useState("2028-12-31");
-  const [architectPTR, setArchitectPTR] = useState("PTR-ST-665544");
-  const [architectPTRIssued, setArchitectPTRIssued] = useState("Jan 08, 2026");
-  const [architectPTRIssuedAt, setArchitectPTRIssuedAt] = useState("Sto. Tomas");
-  const [architectTIN, setArchitectTIN] = useState("234-567-890-000");
+  const [architectName, setArchitectName] = useState("");
+  const [architectAddress, setArchitectAddress] = useState("");
+  const [architectPRC, setArchitectPRC] = useState("");
+  const [architectPRCValidity, setArchitectPRCValidity] = useState("");
+  const [architectIAPOA, setArchitectIAPOA] = useState("");
+  const [architectIAPOAValidity, setArchitectIAPOAValidity] = useState("");
+  const [architectPTR, setArchitectPTR] = useState("");
+  const [architectPTRIssued, setArchitectPTRIssued] = useState("");
+  const [architectPTRIssuedAt, setArchitectPTRIssuedAt] = useState("");
+  const [architectTIN, setArchitectTIN] = useState("");
 
   // Box 4: Supervisor / In-Charge of Architectural Works
   const [sameAsDesignArchitect, setSameAsDesignArchitect] = useState(false);
-  const [supervisorArchitectName, setSupervisorArchitectName] = useState("ARCH. JUAN CARLOS REYES, UAP");
-  const [supervisorArchitectAddress, setSupervisorArchitectAddress] = useState("Sto. Tomas, Pampanga");
-  const [supervisorArchitectPRC, setSupervisorArchitectPRC] = useState("0056123");
-  const [supervisorArchitectPRCValidity, setSupervisorArchitectPRCValidity] = useState("2027-08-20");
-  const [supervisorArchitectIAPOA, setSupervisorArchitectIAPOA] = useState("IAPOA-2026-8877");
-  const [supervisorArchitectIAPOAValidity, setSupervisorArchitectIAPOAValidity] = useState("2027-12-31");
-  const [supervisorArchitectPTR, setSupervisorArchitectPTR] = useState("PTR-ST-778899");
-  const [supervisorArchitectPTRIssued, setSupervisorArchitectPTRIssued] = useState("Jan 10, 2026");
-  const [supervisorArchitectPTRIssuedAt, setSupervisorArchitectPTRIssuedAt] = useState("Sto. Tomas");
-  const [supervisorArchitectTIN, setSupervisorArchitectTIN] = useState("345-678-901-000");
+  const [supervisorArchitectName, setSupervisorArchitectName] = useState("");
+  const [supervisorArchitectAddress, setSupervisorArchitectAddress] = useState("");
+  const [supervisorArchitectPRC, setSupervisorArchitectPRC] = useState("");
+  const [supervisorArchitectPRCValidity, setSupervisorArchitectPRCValidity] = useState("");
+  const [supervisorArchitectIAPOA, setSupervisorArchitectIAPOA] = useState("");
+  const [supervisorArchitectIAPOAValidity, setSupervisorArchitectIAPOAValidity] = useState("");
+  const [supervisorArchitectPTR, setSupervisorArchitectPTR] = useState("");
+  const [supervisorArchitectPTRIssued, setSupervisorArchitectPTRIssued] = useState("");
+  const [supervisorArchitectPTRIssuedAt, setSupervisorArchitectPTRIssuedAt] = useState("");
+  const [supervisorArchitectTIN, setSupervisorArchitectTIN] = useState("");
 
   // NBC Form A-01 (Architectural Permit) Box 2 Subsections:
   // 2. Percentage of Site Occupancy
@@ -474,31 +472,31 @@ export default function TechnicalPermitFormsStep({
   const [masonrySpec, setMasonrySpec] = useState("150mm Exterior & 100mm Interior Non-Load Bearing CHB with #10 rebars @ 600mm O.C.");
   const [concreteStrength, setConcreteStrength] = useState("20.7 MPa (3,000 psi at 28 days)");
   const [steelGrade, setSteelGrade] = useState("Grade 40 (275 MPa) for ≤12mm, Grade 60 (414 MPa) for ≥16mm");
-  const [civilEngineerName, setCivilEngineerName] = useState("Engr. Roberto Cruz, CE");
-  const [civilEngineerAddress, setCivilEngineerAddress] = useState("Sto. Tomas, Pampanga");
-  const [civilEngineerPRC, setCivilEngineerPRC] = useState("PRC-CE-0078923");
-  const [civilEngineerPRCValidity, setCivilEngineerPRCValidity] = useState("2028-11-24");
-  const [civilEngineerPICE, setCivilEngineerPICE] = useState("PICE-2026-8812");
-  const [civilEngineerPTR, setCivilEngineerPTR] = useState("PTR-ST-2026-001");
-  const [civilEngineerPTRIssued, setCivilEngineerPTRIssued] = useState("Jan 08, 2026");
-  const [civilEngineerPTRIssuedAt, setCivilEngineerPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
-  const [civilEngineerTIN, setCivilEngineerTIN] = useState("234-567-890-000");
+  const [civilEngineerName, setCivilEngineerName] = useState("");
+  const [civilEngineerAddress, setCivilEngineerAddress] = useState("");
+  const [civilEngineerPRC, setCivilEngineerPRC] = useState("");
+  const [civilEngineerPRCValidity, setCivilEngineerPRCValidity] = useState("");
+  const [civilEngineerPICE, setCivilEngineerPICE] = useState("");
+  const [civilEngineerPTR, setCivilEngineerPTR] = useState("");
+  const [civilEngineerPTRIssued, setCivilEngineerPTRIssued] = useState("");
+  const [civilEngineerPTRIssuedAt, setCivilEngineerPTRIssuedAt] = useState("");
+  const [civilEngineerTIN, setCivilEngineerTIN] = useState("");
   const [civilEngineerSignature, setCivilEngineerSignature] = useState<string>("");
-  const [civilEngineerSignedDate, setCivilEngineerSignedDate] = useState("Jan 08, 2026");
+  const [civilEngineerSignedDate, setCivilEngineerSignedDate] = useState("");
 
   // Box 4: Supervisor / In-Charge of Civil/Structural Works
   const [sameAsDesignCivilEngineer, setSameAsDesignCivilEngineer] = useState(true);
-  const [supervisorCivilEngineerName, setSupervisorCivilEngineerName] = useState("Engr. Roberto Cruz, CE");
-  const [supervisorCivilEngineerAddress, setSupervisorCivilEngineerAddress] = useState("Sto. Tomas, Pampanga");
-  const [supervisorCivilEngineerPRC, setSupervisorCivilEngineerPRC] = useState("PRC-CE-0078923");
-  const [supervisorCivilEngineerPRCValidity, setSupervisorCivilEngineerPRCValidity] = useState("2028-11-24");
-  const [supervisorCivilEngineerPICE, setSupervisorCivilEngineerPICE] = useState("PICE-2026-8812");
-  const [supervisorCivilEngineerPTR, setSupervisorCivilEngineerPTR] = useState("PTR-ST-2026-001");
-  const [supervisorCivilEngineerPTRIssued, setSupervisorCivilEngineerPTRIssued] = useState("Jan 08, 2026");
-  const [supervisorCivilEngineerPTRIssuedAt, setSupervisorCivilEngineerPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
-  const [supervisorCivilEngineerTIN, setSupervisorCivilEngineerTIN] = useState("234-567-890-000");
+  const [supervisorCivilEngineerName, setSupervisorCivilEngineerName] = useState("");
+  const [supervisorCivilEngineerAddress, setSupervisorCivilEngineerAddress] = useState("");
+  const [supervisorCivilEngineerPRC, setSupervisorCivilEngineerPRC] = useState("");
+  const [supervisorCivilEngineerPRCValidity, setSupervisorCivilEngineerPRCValidity] = useState("");
+  const [supervisorCivilEngineerPICE, setSupervisorCivilEngineerPICE] = useState("");
+  const [supervisorCivilEngineerPTR, setSupervisorCivilEngineerPTR] = useState("");
+  const [supervisorCivilEngineerPTRIssued, setSupervisorCivilEngineerPTRIssued] = useState("");
+  const [supervisorCivilEngineerPTRIssuedAt, setSupervisorCivilEngineerPTRIssuedAt] = useState("");
+  const [supervisorCivilEngineerTIN, setSupervisorCivilEngineerTIN] = useState("");
   const [supervisorCivilEngineerSignature, setSupervisorCivilEngineerSignature] = useState<string>("");
-  const [supervisorCivilEngineerSignedDate, setSupervisorCivilEngineerSignedDate] = useState("Jan 08, 2026");
+  const [supervisorCivilEngineerSignedDate, setSupervisorCivilEngineerSignedDate] = useState("");
 
   // ==========================================
   // 5. ELECTRICAL PERMIT (EP) FIELDS
@@ -526,32 +524,32 @@ export default function TechnicalPermitFormsStep({
   const [pushButtonsCount, setPushButtonsCount] = useState("1");
   const [faDetectorCount, setFaDetectorCount] = useState("2");
   const [otherWiringDevicesCount, setOtherWiringDevicesCount] = useState("1");
-  const [electricalEngineerName, setElectricalEngineerName] = useState("Engr. Danilo Reyes, PEE");
-  const [electricalEngineerPRC, setElectricalEngineerPRC] = useState("PRC-PEE-0033421");
-  const [electricalEngineerPRCValidity, setElectricalEngineerPRCValidity] = useState("2027-09-30");
-  const [electricalEngineerIIEE, setElectricalEngineerIIEE] = useState("IIEE-2026-5541");
-  const [electricalEngineerPTR, setElectricalEngineerPTR] = useState("PTR-ST-2026-4412");
-  const [electricalEngineerPTRIssued, setElectricalEngineerPTRIssued] = useState("Sto. Tomas, Pampanga");
-  const [electricalEngineerTIN, setElectricalEngineerTIN] = useState("456-789-012-000");
+  const [electricalEngineerName, setElectricalEngineerName] = useState("");
+  const [electricalEngineerPRC, setElectricalEngineerPRC] = useState("");
+  const [electricalEngineerPRCValidity, setElectricalEngineerPRCValidity] = useState("");
+  const [electricalEngineerIIEE, setElectricalEngineerIIEE] = useState("");
+  const [electricalEngineerPTR, setElectricalEngineerPTR] = useState("");
+  const [electricalEngineerPTRIssued, setElectricalEngineerPTRIssued] = useState("");
+  const [electricalEngineerTIN, setElectricalEngineerTIN] = useState("");
   const [electricalEngineerSignature, setElectricalEngineerSignature] = useState<string>("");
-  const [electricalContractorName, setElectricalContractorName] = useState("VOLTMAX ELECTRICAL SERVICES & CONTRACTING INC.");
-  const [electricalContractorPcab, setElectricalContractorPcab] = useState("PCAB-EL-2026-9811");
-  const [electricalContractorAddress, setElectricalContractorAddress] = useState("San Fernando, Pampanga");
-  const [electricalContractorTel, setElectricalContractorTel] = useState("0918-777-8899");
+  const [electricalContractorName, setElectricalContractorName] = useState("");
+  const [electricalContractorPcab, setElectricalContractorPcab] = useState("");
+  const [electricalContractorAddress, setElectricalContractorAddress] = useState("");
+  const [electricalContractorTel, setElectricalContractorTel] = useState("");
 
   // Box 4: Person In-Charge of Installation
   const [sameAsDesignElectricalEngineer, setSameAsDesignElectricalEngineer] = useState(false);
   const [installationInChargeRole, setInstallationInChargeRole] = useState<"PEE" | "REE" | "RME">("PEE");
-  const [installationInChargeName, setInstallationInChargeName] = useState("Engr. Edgar C. Mendoza, REE");
-  const [installationInChargeAddress, setInstallationInChargeAddress] = useState("Sto. Tomas, Pampanga");
-  const [installationInChargePRC, setInstallationInChargePRC] = useState("PRC-REE-0045678");
-  const [installationInChargePRCValidity, setInstallationInChargePRCValidity] = useState("2028-08-20");
-  const [installationInChargeTel, setInstallationInChargeTel] = useState("0917-888-1234");
-  const [installationInChargePTR, setInstallationInChargePTR] = useState("PTR-ST-2026-5566");
-  const [installationInChargePTRIssued, setInstallationInChargePTRIssued] = useState("Jan 14, 2026");
-  const [installationInChargePTRIssuedAt, setInstallationInChargePTRIssuedAt] = useState("Sto. Tomas, Pampanga");
-  const [installationInChargeTIN, setInstallationInChargeTIN] = useState("345-678-901-000");
-  const [installationInChargeSignedDate, setInstallationInChargeSignedDate] = useState("Jan 15, 2026");
+  const [installationInChargeName, setInstallationInChargeName] = useState("");
+  const [installationInChargeAddress, setInstallationInChargeAddress] = useState("");
+  const [installationInChargePRC, setInstallationInChargePRC] = useState("");
+  const [installationInChargePRCValidity, setInstallationInChargePRCValidity] = useState("");
+  const [installationInChargeTel, setInstallationInChargeTel] = useState("");
+  const [installationInChargePTR, setInstallationInChargePTR] = useState("");
+  const [installationInChargePTRIssued, setInstallationInChargePTRIssued] = useState("");
+  const [installationInChargePTRIssuedAt, setInstallationInChargePTRIssuedAt] = useState("");
+  const [installationInChargeTIN, setInstallationInChargeTIN] = useState("");
+  const [installationInChargeSignedDate, setInstallationInChargeSignedDate] = useState("");
   const [installationInChargeSignature, setInstallationInChargeSignature] = useState<string>("");
 
   // ==========================================
@@ -668,31 +666,31 @@ export default function TechnicalPermitFormsStep({
   const [machinerySpeed, setMachinerySpeed] = useState("0.50 m/sec rated velocity");
   const [machineryPower, setMachineryPower] = useState("15 kW (20.0 HP), 3-Phase");
   const [machineryStoreys, setMachineryStoreys] = useState("Ground to 2nd Floor Level (2 Landings)");
-  const [mechanicalEngineerName, setMechanicalEngineerName] = useState("ENGR. LEONARDO V. TORRES, PME");
-  const [mechanicalEngineerAddress, setMechanicalEngineerAddress] = useState("Sto. Tomas, Pampanga");
-  const [mechanicalEngineerPRC, setMechanicalEngineerPRC] = useState("0044556");
-  const [mechanicalEngineerPRCValidity, setMechanicalEngineerPRCValidity] = useState("2027-12-18");
-  const [mechanicalEngineerPSME, setMechanicalEngineerPSME] = useState("PSME-2026-0912");
-  const [mechanicalEngineerPTR, setMechanicalEngineerPTR] = useState("PTR-ST-221100");
-  const [mechanicalEngineerPTRDate, setMechanicalEngineerPTRDate] = useState("Jan 10, 2026");
-  const [mechanicalEngineerPTRIssued, setMechanicalEngineerPTRIssued] = useState("Sto. Tomas, Pampanga");
-  const [mechanicalEngineerPTRIssuedAt, setMechanicalEngineerPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
-  const [mechanicalEngineerTIN, setMechanicalEngineerTIN] = useState("678-901-234-000");
-  const [mechanicalEngineerSignedDate, setMechanicalEngineerSignedDate] = useState("Jan 08, 2026");
+  const [mechanicalEngineerName, setMechanicalEngineerName] = useState("");
+  const [mechanicalEngineerAddress, setMechanicalEngineerAddress] = useState("");
+  const [mechanicalEngineerPRC, setMechanicalEngineerPRC] = useState("");
+  const [mechanicalEngineerPRCValidity, setMechanicalEngineerPRCValidity] = useState("");
+  const [mechanicalEngineerPSME, setMechanicalEngineerPSME] = useState("");
+  const [mechanicalEngineerPTR, setMechanicalEngineerPTR] = useState("");
+  const [mechanicalEngineerPTRDate, setMechanicalEngineerPTRDate] = useState("");
+  const [mechanicalEngineerPTRIssued, setMechanicalEngineerPTRIssued] = useState("");
+  const [mechanicalEngineerPTRIssuedAt, setMechanicalEngineerPTRIssuedAt] = useState("");
+  const [mechanicalEngineerTIN, setMechanicalEngineerTIN] = useState("");
+  const [mechanicalEngineerSignedDate, setMechanicalEngineerSignedDate] = useState("");
   const [mechanicalEngineerSignature, setMechanicalEngineerSignature] = useState<string>("");
 
   // Box 4: Supervisor/In-Charge of Mechanical Works
   const [sameAsDesignMechanicalEngineer, setSameAsDesignMechanicalEngineer] = useState(true);
   const [mechSupervisorRole, setMechSupervisorRole] = useState<"PME" | "ME">("PME");
-  const [mechSupervisorName, setMechSupervisorName] = useState("ENGR. LEONARDO V. TORRES, PME");
-  const [mechSupervisorAddress, setMechSupervisorAddress] = useState("Sto. Tomas, Pampanga");
-  const [mechSupervisorPRC, setMechSupervisorPRC] = useState("0044556");
-  const [mechSupervisorPRCValidity, setMechSupervisorPRCValidity] = useState("2027-12-18");
-  const [mechSupervisorPTR, setMechSupervisorPTR] = useState("PTR-ST-221100");
-  const [mechSupervisorPTRDate, setMechSupervisorPTRDate] = useState("Jan 10, 2026");
-  const [mechSupervisorPTRIssuedAt, setMechSupervisorPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
-  const [mechSupervisorTIN, setMechSupervisorTIN] = useState("678-901-234-000");
-  const [mechSupervisorSignedDate, setMechSupervisorSignedDate] = useState("Jan 08, 2026");
+  const [mechSupervisorName, setMechSupervisorName] = useState("");
+  const [mechSupervisorAddress, setMechSupervisorAddress] = useState("");
+  const [mechSupervisorPRC, setMechSupervisorPRC] = useState("");
+  const [mechSupervisorPRCValidity, setMechSupervisorPRCValidity] = useState("");
+  const [mechSupervisorPTR, setMechSupervisorPTR] = useState("");
+  const [mechSupervisorPTRDate, setMechSupervisorPTRDate] = useState("");
+  const [mechSupervisorPTRIssuedAt, setMechSupervisorPTRIssuedAt] = useState("");
+  const [mechSupervisorTIN, setMechSupervisorTIN] = useState("");
+  const [mechSupervisorSignedDate, setMechSupervisorSignedDate] = useState("");
   const [mechSupervisorSignature, setMechSupervisorSignature] = useState<string>("");
 
   const [mechanicalScopeOfWork, setMechanicalScopeOfWork] = useState("New Construction");
@@ -719,7 +717,7 @@ export default function TechnicalPermitFormsStep({
   const [compressedAirGas, setCompressedAirGas] = useState(false);
   const [pneumaticTubesConveyors, setPneumaticTubesConveyors] = useState(false);
   const [funicular, setFunicular] = useState(false);
-  const [mechanicalPreparedBy, setMechanicalPreparedBy] = useState("Engr. Antonio Gomez, PME");
+  const [mechanicalPreparedBy, setMechanicalPreparedBy] = useState("");
 
   // ==========================================
   // 9. ELECTRONICS PERMIT (EL) FIELDS
@@ -747,33 +745,33 @@ export default function TechnicalPermitFormsStep({
   const [computerProcessControls, setComputerProcessControls] = useState(false);
   const [buildingAutomationManagement, setBuildingAutomationManagement] = useState(false);
   const [buildingWiringFiberOptic, setBuildingWiringFiberOptic] = useState(true);
-  const [electronicsPreparedBy, setElectronicsPreparedBy] = useState("Engr. Carlos Lim, PECE");
+  const [electronicsPreparedBy, setElectronicsPreparedBy] = useState("");
 
   // Box 3: Professional Electronics Engineer (PECE)
-  const [electronicsEngineerName, setElectronicsEngineerName] = useState("Engr. Carlos Lim, PECE");
-  const [electronicsEngineerAddress, setElectronicsEngineerAddress] = useState("Sto. Tomas, Pampanga");
-  const [electronicsEngineerPRC, setElectronicsEngineerPRC] = useState("PRC-PECE-0038912");
-  const [electronicsEngineerPRCValidity, setElectronicsEngineerPRCValidity] = useState("2028-08-20");
-  const [electronicsEngineerIECEP, setElectronicsEngineerIECEP] = useState("IECEP-2026-4401");
-  const [electronicsEngineerPTR, setElectronicsEngineerPTR] = useState("PTR-ST-2026-7782");
-  const [electronicsEngineerPTRIssued, setElectronicsEngineerPTRIssued] = useState("Jan 05, 2026");
-  const [electronicsEngineerPTRIssuedAt, setElectronicsEngineerPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
-  const [electronicsEngineerTIN, setElectronicsEngineerTIN] = useState("789-012-345-000");
-  const [electronicsEngineerSignedDate, setElectronicsEngineerSignedDate] = useState("Jan 08, 2026");
+  const [electronicsEngineerName, setElectronicsEngineerName] = useState("");
+  const [electronicsEngineerAddress, setElectronicsEngineerAddress] = useState("");
+  const [electronicsEngineerPRC, setElectronicsEngineerPRC] = useState("");
+  const [electronicsEngineerPRCValidity, setElectronicsEngineerPRCValidity] = useState("");
+  const [electronicsEngineerIECEP, setElectronicsEngineerIECEP] = useState("");
+  const [electronicsEngineerPTR, setElectronicsEngineerPTR] = useState("");
+  const [electronicsEngineerPTRIssued, setElectronicsEngineerPTRIssued] = useState("");
+  const [electronicsEngineerPTRIssuedAt, setElectronicsEngineerPTRIssuedAt] = useState("");
+  const [electronicsEngineerTIN, setElectronicsEngineerTIN] = useState("");
+  const [electronicsEngineerSignedDate, setElectronicsEngineerSignedDate] = useState("");
   const [electronicsEngineerSignature, setElectronicsEngineerSignature] = useState("");
 
   // Box 4: Supervisor In-Charge of Electronics Works
   const [sameAsDesignElectronicsEngineer, setSameAsDesignElectronicsEngineer] = useState(true);
   const [electronicsSupervisorRole, setElectronicsSupervisorRole] = useState<"PECE" | "ECE">("PECE");
-  const [electronicsSupervisorName, setElectronicsSupervisorName] = useState("Engr. Carlos Lim, PECE");
-  const [electronicsSupervisorAddress, setElectronicsSupervisorAddress] = useState("Sto. Tomas, Pampanga");
-  const [electronicsSupervisorPRC, setElectronicsSupervisorPRC] = useState("PRC-PECE-0038912");
-  const [electronicsSupervisorPRCValidity, setElectronicsSupervisorPRCValidity] = useState("2028-08-20");
-  const [electronicsSupervisorPTR, setElectronicsSupervisorPTR] = useState("PTR-ST-2026-7782");
-  const [electronicsSupervisorPTRDate, setElectronicsSupervisorPTRDate] = useState("Jan 05, 2026");
-  const [electronicsSupervisorPTRIssuedAt, setElectronicsSupervisorPTRIssuedAt] = useState("Sto. Tomas, Pampanga");
-  const [electronicsSupervisorTIN, setElectronicsSupervisorTIN] = useState("789-012-345-000");
-  const [electronicsSupervisorSignedDate, setElectronicsSupervisorSignedDate] = useState("Jan 08, 2026");
+  const [electronicsSupervisorName, setElectronicsSupervisorName] = useState("");
+  const [electronicsSupervisorAddress, setElectronicsSupervisorAddress] = useState("");
+  const [electronicsSupervisorPRC, setElectronicsSupervisorPRC] = useState("");
+  const [electronicsSupervisorPRCValidity, setElectronicsSupervisorPRCValidity] = useState("");
+  const [electronicsSupervisorPTR, setElectronicsSupervisorPTR] = useState("");
+  const [electronicsSupervisorPTRDate, setElectronicsSupervisorPTRDate] = useState("");
+  const [electronicsSupervisorPTRIssuedAt, setElectronicsSupervisorPTRIssuedAt] = useState("");
+  const [electronicsSupervisorTIN, setElectronicsSupervisorTIN] = useState("");
+  const [electronicsSupervisorSignedDate, setElectronicsSupervisorSignedDate] = useState("");
   const [electronicsSupervisorSignature, setElectronicsSupervisorSignature] = useState("");
 
   // ==========================================
@@ -1829,134 +1827,7 @@ export default function TechnicalPermitFormsStep({
     }
   }, [notification]);
 
-  // Synchronize Box 1 & 2 land title and permit boundary fields from clearanceApp or Sto. Tomas defaults
-  useEffect(() => {
-    if (clearanceApp) {
-      if (clearanceApp.location?.lotNo || clearanceApp.lotNo) {
-        setLotNo(clearanceApp.location?.lotNo || clearanceApp.lotNo);
-      }
-      if (clearanceApp.location?.blockNo || clearanceApp.blockNo) {
-        setBlockNo(clearanceApp.location?.blockNo || clearanceApp.blockNo);
-      }
-      if (clearanceApp.tctNo) {
-        setTctNo(clearanceApp.tctNo);
-      }
-      if (clearanceApp.taxDecNo) {
-        setTaxDecNo(clearanceApp.taxDecNo);
-      }
-      if (clearanceApp.applicantLastName) setApplicantLastName(clearanceApp.applicantLastName);
-      if (clearanceApp.applicantFirstName) setApplicantFirstName(clearanceApp.applicantFirstName);
-      if (clearanceApp.applicantMiddleName) setApplicantMiddleName(clearanceApp.applicantMiddleName);
-      if (clearanceApp.applicantTIN) {
-        setApplicantTIN(clearanceApp.applicantTIN);
-      }
-      if (clearanceApp.corporationName || clearanceApp.constructionOwnedByEnterprise) {
-        setConstructionOwnedByEnterprise(clearanceApp.corporationName || clearanceApp.constructionOwnedByEnterprise);
-      }
-      if (clearanceApp.formOfOwnership) {
-        setFormOfOwnership(clearanceApp.formOfOwnership);
-      }
-      if (clearanceApp.govIdNo || clearanceApp.ctcNumber) {
-        setGovIdNo(clearanceApp.govIdNo || clearanceApp.ctcNumber);
-      }
-    }
 
-    // Guarantee default baseline values in parent state so fields are never empty
-    if (!projectName || projectName.trim() === "") {
-      const cleanName = clearanceApp?.projectName?.replace(/\s*-\s*Locational\s*Clearance/gi, "")?.trim();
-      setProjectName(cleanName || `${projectType.name} Construction`);
-    }
-    if (!streetAddress || streetAddress.trim() === "") {
-      setStreetAddress("Purok 3, Main Street");
-    }
-    if (!lotArea || lotArea.trim() === "") {
-      setLotArea("180");
-    }
-    if (!floorArea || floorArea.trim() === "") {
-      setFloorArea("120");
-    }
-    if (!projectCost || projectCost.trim() === "") {
-      setProjectCost("1,600,000.00");
-    }
-  }, [clearanceApp, projectType.name]);
-
-  const handleSyncFromClearance = () => {
-    if (clearanceApp) {
-      const cleanName = (clearanceApp.projectName || "").replace(/\s*-\s*Locational\s*Clearance/gi, "").trim();
-      setProjectName(cleanName || `${projectType.name} Construction`);
-      
-      const addr = clearanceApp.projectAddress || clearanceApp.location?.address || "";
-      if (addr) {
-        const brgyMatch = addr.match(/Brgy\.?\s*([A-Za-z\s]+?)(?:,\s*Sto\.?\s*Tomas|$)/i);
-        if (brgyMatch && brgyMatch[1]) setBarangay(brgyMatch[1].trim());
-        const streetPart = addr.split(/Brgy\.?/i)[0].replace(/,\s*$/, "").trim();
-        if (streetPart) setStreetAddress(streetPart);
-      }
-
-      const desc = clearanceApp.projectDescription || "";
-      const lotMatch = desc.match(/Lot:\s*([0-9.,]+)/i);
-      const bldgMatch = desc.match(/Bldg:\s*([0-9.,]+)/i);
-      const costMatch = desc.match(/Cost:\s*(?:Php\s*)?([0-9.,]+)/i);
-
-      if (lotMatch) setLotArea(lotMatch[1]);
-      if (bldgMatch) setFloorArea(bldgMatch[1]);
-      if (costMatch) setProjectCost(costMatch[1]);
-
-      if (clearanceApp.location?.lotNo) setLotNo(clearanceApp.location.lotNo);
-      if (clearanceApp.location?.blockNo) setBlockNo(clearanceApp.location.blockNo);
-      if (clearanceApp.tctNo) setTctNo(clearanceApp.tctNo);
-      if (clearanceApp.taxDecNo) setTaxDecNo(clearanceApp.taxDecNo);
-      if (clearanceApp.applicantLastName) setApplicantLastName(clearanceApp.applicantLastName);
-      if (clearanceApp.applicantFirstName) setApplicantFirstName(clearanceApp.applicantFirstName);
-      if (clearanceApp.applicantMiddleName) setApplicantMiddleName(clearanceApp.applicantMiddleName);
-      if (clearanceApp.applicantTIN) setApplicantTIN(clearanceApp.applicantTIN);
-      if (clearanceApp.corporationName || clearanceApp.constructionOwnedByEnterprise) {
-        setConstructionOwnedByEnterprise(clearanceApp.corporationName || clearanceApp.constructionOwnedByEnterprise);
-      }
-      if (clearanceApp.formOfOwnership) setFormOfOwnership(clearanceApp.formOfOwnership);
-    }
-    handleAutoFillDefaults();
-    setNotification("Re-synchronized all project and land title specifications from approved Locational Clearance.");
-    setTimeout(() => setNotification(null), 4000);
-  };
-
-  // Auto-Fill official Sto. Tomas standard baseline parameters
-  const handleAutoFillDefaults = () => {
-    setLotNo(prev => prev || "Lot 12");
-    setBlockNo(prev => prev || "Block 4");
-    setTctNo(prev => prev || "TCT-042-20260012");
-    setTaxDecNo(prev => prev || "TD-2026-00124-ST");
-    setApplicantTIN(prev => prev || "123-456-789-000");
-    if (!constructionOwnedByEnterprise) setConstructionOwnedByEnterprise("N/A (INDIVIDUAL)");
-    setFormOfOwnership(prev => prev || "INDIVIDUAL / OWNER");
-    setOccupancyClass(prev => prev || (projectType.category === "Commercial" ? "COMMERCIAL" : projectType.category === "Industrial" ? "INDUSTRIAL" : projectType.category === "Institutional" ? "INSTITUTIONAL" : "RESIDENTIAL"));
-    setBuildingFootprint("120");
-    setBuildingHeight("6.8");
-    setCostBuilding("1,100,000.00");
-    setCostElectrical("180,000.00");
-    setCostPlumbing("140,000.00");
-    setCostMechanical("80,000.00");
-    setCostElectronics("60,000.00");
-    setCostOthers("40,000.00");
-
-    if (!projectName) setProjectName(`${projectType.name} Construction`);
-    if (!streetAddress) setStreetAddress("Purok 3, Main Street");
-    if (!lotArea) setLotArea("180");
-    if (!floorArea) setFloorArea("120");
-    if (!projectCost) setProjectCost("1,600,000.00");
-    setGovIdDateIssued(prev => prev || "Jan 10, 2026");
-    setGovIdPlaceIssued(prev => prev || "Sto. Tomas, Pampanga");
-    setLotOwnerName(prev => prev || "Maria Clara Dela Cruz");
-    setLotOwnerAddress(prev => prev || "Sto. Tomas, Pampanga");
-    setLotOwnerGovIdNo(prev => prev || "CTC-2026-00871");
-    setLotOwnerGovIdDateIssued(prev => prev || "Jan 12, 2026");
-    setLotOwnerGovIdPlaceIssued(prev => prev || "Sto. Tomas, Pampanga");
-    setLotOwnerSignedDate(prev => prev || "Jan 08, 2026");
-    setSanitaryScopeOfWork(prev => prev || "NEW INSTALLATION");
-
-    setNotification("Auto-populated official Sto. Tomas NBCP engineering standards. You can inspect or modify any field.");
-    setTimeout(() => setNotification(null), 4000);
-  };
 
   // Auto-generate official PDF package and mark forms as completed
   const handleGenerateDigitalForms = async (e?: React.FormEvent) => {
@@ -3511,68 +3382,7 @@ export default function TechnicalPermitFormsStep({
           boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
           marginBottom: "1.5rem"
         }}>
-          {/* CLEARANCE AUTOFILL STATUS BANNER */}
-          {locationalClearanceRef && (
-            <div style={{
-              background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
-              border: "1.5px solid #86efac",
-              borderRadius: "14px",
-              padding: "0.85rem 1.25rem",
-              marginBottom: "1.5rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "10px",
-              boxShadow: "0 2px 8px rgba(16, 185, 129, 0.08)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "8px",
-                  background: "#dcfce7",
-                  color: "#16a34a",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0
-                }}>
-                  <CheckCircle2 size={18} />
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.88rem", fontWeight: "800", color: "#166534" }}>
-                    Auto-filled from Application Status ({locationalClearanceRef})
-                  </div>
-                  <div style={{ fontSize: "0.78rem", color: "#15803d" }}>
-                    Project identification, owner, land title boundaries, and Sto. Tomas NBCP standards loaded.
-                  </div>
-                </div>
-              </div>
 
-              <button
-                type="button"
-                onClick={handleSyncFromClearance}
-                style={{
-                  background: "#ffffff",
-                  border: "1.5px solid #86efac",
-                  color: "#166534",
-                  borderRadius: "8px",
-                  padding: "6px 12px",
-                  fontSize: "0.78rem",
-                  fontWeight: "700",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  transition: "all 0.15s ease"
-                }}
-              >
-                <RefreshCw size={13} color="#16a34a" />
-                <span>Re-sync Application Data</span>
-              </button>
-            </div>
-          )}
 
           {/* TABS HEADER WITH ACTIONS */}
           <div style={{
@@ -3630,158 +3440,6 @@ export default function TechnicalPermitFormsStep({
               })}
             </div>
           </div>
-
-          {/* CURRENT ACTIVE FORM TITLE & INSTRUCTION */}
-          {activeMeta && (() => {
-            const formDetail = FORM_OFFICIAL_DETAILS[activeTab] || {
-              officialTitle: `${activeMeta.label.toUpperCase()} APPLICATION`,
-              nbcCode: `NBC FORM ${activeMeta.code}`,
-              icon: FileText,
-              color: "#4f46e5",
-              desc: activeMeta.desc
-            };
-            const currentFormIndex = mandatoryKeys.indexOf(activeTab) + 1;
-            const isCompleted = isFormSatisfied(activeTab);
-
-            return (
-              <div style={{
-                background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-                borderRadius: "16px",
-                padding: "1.25rem 1.5rem",
-                marginBottom: "1.5rem",
-                color: "#0f172a",
-                boxShadow: "0 6px 20px rgba(217, 119, 6, 0.25)",
-                border: "1.5px solid #d97706",
-                position: "relative",
-                overflow: "hidden"
-              }}>
-                {/* Background decorative glow */}
-                <div style={{
-                  position: "absolute",
-                  top: "-50px",
-                  right: "-50px",
-                  width: "160px",
-                  height: "160px",
-                  borderRadius: "50%",
-                  background: "rgba(255, 255, 255, 0.25)",
-                  filter: "blur(40px)",
-                  pointerEvents: "none"
-                }} />
-
-                <div style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  gap: "14px",
-                  position: "relative",
-                  zIndex: 1
-                }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "6px" }}>
-                        <span style={{
-                          fontSize: "0.7rem",
-                          fontWeight: "900",
-                          padding: "3px 9px",
-                          borderRadius: "6px",
-                          background: activeTab === "fireBfpPermit" ? "#dc2626" : "#0f172a",
-                          color: "#ffffff",
-                          letterSpacing: "0.5px"
-                        }}>
-                          {activeTab === "fireBfpPermit" ? "CERTIFICATE UPLOAD ONLY" : `CURRENTLY ANSWERING: FORM ${currentFormIndex} OF ${mandatoryKeys.length}`}
-                        </span>
-                        <span style={{
-                          fontSize: "0.74rem",
-                          fontWeight: "800",
-                          color: "#1e293b",
-                          background: "rgba(0, 0, 0, 0.08)",
-                          padding: "2px 8px",
-                          borderRadius: "4px"
-                        }}>
-                          {formDetail.nbcCode}
-                        </span>
-                        <span style={{
-                          fontSize: "0.72rem",
-                          fontWeight: "800",
-                          color: "#78350f"
-                        }}>
-                          MUNICIPALITY OF STO. TOMAS, PAMPANGA
-                        </span>
-                      </div>
-
-                      <h2 style={{
-                        margin: 0,
-                        fontSize: "1.35rem",
-                        fontWeight: "900",
-                        color: "#0f172a",
-                        letterSpacing: "-0.01em",
-                        lineHeight: 1.2
-                      }}>
-                        {formDetail.officialTitle}
-                      </h2>
-                    </div>
-                  </div>
-
-                  {/* Form Status Badge */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    {isCompleted ? (
-                      <div style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        background: "#14532d",
-                        border: "1.5px solid #22c55e",
-                        color: "#86efac",
-                        padding: "7px 14px",
-                        borderRadius: "999px",
-                        fontSize: "0.82rem",
-                        fontWeight: "800",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)"
-                      }}>
-                        <CheckCircle2 size={16} /> Completed & Verified
-                      </div>
-                    ) : (
-                      <div style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        background: "rgba(255, 255, 255, 0.9)",
-                        border: "1.5px solid #d97706",
-                        color: "#92400e",
-                        padding: "7px 14px",
-                        borderRadius: "999px",
-                        fontSize: "0.82rem",
-                        fontWeight: "800",
-                        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)"
-                      }}>
-                        <Clock size={16} /> In Progress (Draft Saved)
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Sub-strip reminder for Box 1 / Box 2 auto-sync */}
-                {activeTab !== "fireBfpPermit" && (
-                  <div style={{
-                    marginTop: "12px",
-                    paddingTop: "10px",
-                    borderTop: "1px solid rgba(120, 53, 15, 0.2)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "0.76rem",
-                    color: "#78350f"
-                  }}>
-                    <Info size={14} style={{ flexShrink: 0, color: "#92400e" }} />
-                    <span>
-                      <strong style={{ color: "#451a03" }}>Auto-Sync Active:</strong> Box 1 (Owner/Applicant) and Box 2 (Project Location) details below will automatically synchronize across all your permit forms ({mandatoryKeys.map(k => PERMIT_FORM_METADATA[k]?.code).filter(c => c !== "FSEC").join(", ")}).
-                    </span>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
 
           <form onSubmit={handleGenerateDigitalForms}>
             {/* Universal NBC Universal Details (Hidden when on Fire / BFP Clearance) */}

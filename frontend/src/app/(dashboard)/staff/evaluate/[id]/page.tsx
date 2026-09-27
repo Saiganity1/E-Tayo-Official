@@ -93,11 +93,13 @@ export default function StaffEvaluatePage() {
 
   const app = applications.find((a) => a.id === id);
 
-  const isBuildingPermit = Boolean(
-    app?.permitType === "building_permit" ||
-    (app?.permitType && !app.permitType.includes("locational") && app.projectType && app.projectType !== "Locational Clearance") ||
-    (app?.id && !app.id.startsWith("LC-"))
+  const isLC = Boolean(
+    app?.permitType === "locational_clearance" ||
+    (app?.permitType && app.permitType.toLowerCase().includes("locational")) ||
+    (app?.projectType && typeof app.projectType === "string" && app.projectType.toLowerCase().includes("locational")) ||
+    (app?.id && app.id.toUpperCase().startsWith("LC-"))
   );
+  const isBuildingPermit = !isLC;
 
   const officeInfo = isBuildingPermit
     ? {
@@ -239,7 +241,7 @@ export default function StaffEvaluatePage() {
   });
   const totalFees = Object.values(feeSchedule).reduce((a, b) => a + b, 0);
 
-  // Initialize contextual decision notes
+  // Initialize contextual decision notes and sanitize activeLeftTab
   useEffect(() => {
     if (!app) return;
     if (isBuildingPermit) {
@@ -250,8 +252,11 @@ export default function StaffEvaluatePage() {
       setDecisionNotes(
         "In view of the foregoing findings and evaluation of facts, it is hereby recommended that the application for Locational Clearance be APPROVED, considering that the proposed project is located within a designated zone under the approved Comprehensive Land Use Plan (CLUP) and Zoning Ordinance (Resolution No. 4810, Series of 2017) of the Municipality of Sto. Tomas, Pampanga."
       );
+      if (activeLeftTab === "checklist" || activeLeftTab === "fees") {
+        setActiveLeftTab("overview");
+      }
     }
-  }, [app?.id, isBuildingPermit]);
+  }, [app?.id, isBuildingPermit, activeLeftTab]);
 
   useEffect(() => {
     if (!app) return;
@@ -312,8 +317,6 @@ export default function StaffEvaluatePage() {
         }
       }
 
-      const isBuildingPermit = app.permitType === "building_permit" || (!app.permitType?.includes("locational") && app.projectType && app.projectType !== "Locational Clearance");
-
       // If no valid local file or if it was solely a Google Drive link / template, dynamically generate the official filled PDF
       if (!primaryUrl || primaryUrl.includes("drive.google.com")) {
         try {
@@ -371,17 +374,17 @@ export default function StaffEvaluatePage() {
               applicantPhone: app.applicantPhone || "0917-000-0000",
               applicantEmail: app.applicantEmail || "",
               projectName: app.projectName || `${app.projectType || "Locational Clearance"} Project`,
-              projectType: app.projectType || "Locational Clearance",
-              projectNature: "New Construction",
+              projectType: typeof app.projectType === "object" ? (app.projectType as any)?.name : (app.projectType || "Locational Clearance"),
+              projectNature: (app as any).projectNature || "New Construction",
               projectAddress: app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga",
-              barangay: "Sto. Tomas",
-              lotArea: "200",
-              bldgArea: "120",
-              rightOverLand: "Owner",
-              projectTenure: "Permanent",
-              existingLandUse: "Residential",
+              barangay: (app as any).barangay || "Sto. Tomas",
+              lotArea: (app as any).lotArea || "200",
+              bldgArea: (app as any).floorArea || (app as any).bldgArea || "120",
+              rightOverLand: (app as any).rightOverLand || "Owner",
+              projectTenure: (app as any).projectTenure || "Permanent",
+              existingLandUse: (app as any).existingLandUse || "Residential",
               isTenanted: "No",
-              projectCost: app.estimatedFees ? `${app.estimatedFees * 500}` : "1,500,000.00",
+              projectCost: (app as any).projectCost || (app.estimatedFees ? `${app.estimatedFees * 500}` : "1,500,000.00"),
             });
 
             if (generatedBase64) {
@@ -411,7 +414,7 @@ export default function StaffEvaluatePage() {
         title: isBuildingPermit
           ? "Official Unified Building Permit & Ancillary Forms"
           : "Official Locational Clearance Form",
-        tabLabel: isBuildingPermit ? "Official Building Permit" : "Official Clearance Form",
+        tabLabel: isBuildingPermit ? "Official Building Permit" : "Locational Clearance",
         type: "pdf",
         url: primaryUrl || (isBuildingPermit ? "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf" : "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"),
         fileName: app.fileName || (isBuildingPermit ? `${app.id}_Unified_Permit.pdf` : `${app.id}_Locational_Clearance.pdf`),
@@ -1022,7 +1025,7 @@ export default function StaffEvaluatePage() {
 
           docs.push({
             id: `attachment-${idx}`,
-            title: `Technical Engineering Attachment ${idx}`,
+            title: isBuildingPermit ? `Technical Engineering Attachment ${idx}` : `Clearance Attachment ${idx}`,
             tabLabel: `Attachment ${idx}`,
             type: isImg ? "image" : "pdf",
             url: attUrl,
@@ -1755,16 +1758,19 @@ ${isDisapprove
               padding: "5px",
               border: "1.5px solid #e2e8f0",
               display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
+              gridTemplateColumns: isBuildingPermit ? "repeat(4, 1fr)" : "repeat(2, 1fr)",
               gap: "4px",
               boxShadow: "0 2px 6px rgba(0,0,0,0.02)"
             }}>
-              {[
+              {(isBuildingPermit ? [
                 { id: "overview", label: "Dossier", icon: FileText },
                 { id: "checklist", label: "Checklist", icon: ClipboardCheck },
                 { id: "fees", label: "Fees / OP", icon: Calculator },
                 { id: "decision", label: "Decision", icon: ShieldCheck },
-              ].map(tab => {
+              ] : [
+                { id: "overview", label: "Clearance Form", icon: FileText },
+                { id: "decision", label: "Decision", icon: ShieldCheck },
+              ]).map(tab => {
                 const TabIcon = tab.icon;
                 const isActive = activeLeftTab === tab.id;
                 return (
@@ -1794,7 +1800,7 @@ ${isDisapprove
               })}
             </div>
 
-            {/* TAB CONTENT 1: DOSSIER & PROFILE OVERVIEW */}
+            {/* TAB CONTENT 1: DOSSIER & PROFILE OVERVIEW / LOCATIONAL CLEARANCE FORM */}
             {activeLeftTab === "overview" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                 
@@ -1832,7 +1838,7 @@ ${isDisapprove
                 {/* Project Scope & Details */}
                 <div style={{ background: "white", padding: "1.4rem", borderRadius: "16px", border: "1.5px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
                   <h3 style={{ fontSize: "1.05rem", fontWeight: "800", color: "#0f172a", marginBottom: "0.9rem", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Building2 size={18} color="#2563eb" /> Project Scope & Specifications
+                    <Building2 size={18} color="#2563eb" /> {isBuildingPermit ? "Project Scope & Specifications" : "Locational Clearance Form Details"}
                   </h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.88rem" }}>
                     <div>
@@ -1852,12 +1858,29 @@ ${isDisapprove
                         </span>
                       </div>
                       <div>
-                        <span style={{ color: "#64748b", display: "block", fontSize: "0.72rem", fontWeight: "700", textTransform: "uppercase" }}>Occupancy Class</span>
+                        <span style={{ color: "#64748b", display: "block", fontSize: "0.72rem", fontWeight: "700", textTransform: "uppercase" }}>
+                          {isBuildingPermit ? "Occupancy Class" : "Existing Land Use"}
+                        </span>
                         <span style={{ fontWeight: "700", color: "#0f172a" }}>
-                          {(app as any).occupancyClass || "Group A - Residential"}
+                          {isBuildingPermit 
+                            ? ((app as any).occupancyClass || "Group A - Residential")
+                            : ((app as any).existingLandUse || "Residential")}
                         </span>
                       </div>
                     </div>
+
+                    {!isBuildingPermit && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+                        <div>
+                          <span style={{ color: "#64748b", display: "block", fontSize: "0.72rem", fontWeight: "700", textTransform: "uppercase" }}>Right Over Land</span>
+                          <span style={{ fontWeight: "600", color: "#1e293b" }}>{(app as any).rightOverLand || "Owner"}</span>
+                        </div>
+                        <div>
+                          <span style={{ color: "#64748b", display: "block", fontSize: "0.72rem", fontWeight: "700", textTransform: "uppercase" }}>Project Tenure</span>
+                          <span style={{ fontWeight: "600", color: "#1e293b" }}>{(app as any).projectTenure || "Permanent"}</span>
+                        </div>
+                      </div>
+                    )}
 
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.4rem", background: "#f8fafc", padding: "10px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                       <div>
@@ -1865,17 +1888,19 @@ ${isDisapprove
                         <strong style={{ fontSize: "0.85rem", color: "#0f172a" }}>{(app as any).lotArea || "200"} m²</strong>
                       </div>
                       <div>
-                        <span style={{ color: "#64748b", display: "block", fontSize: "0.68rem", fontWeight: "700" }}>FLOOR AREA</span>
-                        <strong style={{ fontSize: "0.85rem", color: "#0f172a" }}>{(app as any).floorArea || "120"} m²</strong>
+                        <span style={{ color: "#64748b", display: "block", fontSize: "0.68rem", fontWeight: "700" }}>{isBuildingPermit ? "FLOOR AREA" : "BLDG AREA"}</span>
+                        <strong style={{ fontSize: "0.85rem", color: "#0f172a" }}>{(app as any).floorArea || (app as any).bldgArea || "120"} m²</strong>
                       </div>
                       <div>
-                        <span style={{ color: "#64748b", display: "block", fontSize: "0.68rem", fontWeight: "700" }}>STOREYS</span>
-                        <strong style={{ fontSize: "0.85rem", color: "#0f172a" }}>{(app as any).proposedStoreys || "2"} Flrs</strong>
+                        <span style={{ color: "#64748b", display: "block", fontSize: "0.68rem", fontWeight: "700" }}>{isBuildingPermit ? "STOREYS" : "NATURE"}</span>
+                        <strong style={{ fontSize: "0.85rem", color: "#0f172a" }}>
+                          {isBuildingPermit ? `${(app as any).proposedStoreys || "2"} Flrs` : ((app as any).projectNature || "New Construction")}
+                        </strong>
                       </div>
                     </div>
 
-                    {/* Cross-Link: Zoning Clearance Ref */}
-                    {app.locationalClearanceRef && (
+                    {/* Cross-Link: Zoning Clearance Ref (Only for Building Permits) */}
+                    {isBuildingPermit && app.locationalClearanceRef && (
                       <div style={{
                         background: "#ecfdf5",
                         border: "1px solid #86efac",
@@ -1918,23 +1943,25 @@ ${isDisapprove
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#166534", marginBottom: "4px" }}>
                       <CheckCircle2 size={14} /> <span>Sec. E: CLUP/ZO Res. #4810 Verified</span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#166534" }}>
-                      <CheckCircle2 size={14} /> <span>Sec. F: Mandatory National Building Code Conditions Agreed</span>
-                    </div>
+                    {isBuildingPermit && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#166534" }}>
+                        <CheckCircle2 size={14} /> <span>Sec. F: Mandatory National Building Code Conditions Agreed</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
               </div>
             )}
 
-            {/* TAB CONTENT 2: TECHNICAL DISCIPLINES CHECKLIST */}
-            {activeLeftTab === "checklist" && (
+            {/* TAB CONTENT 2: TECHNICAL DISCIPLINES CHECKLIST (Building Permits only) */}
+            {isBuildingPermit && activeLeftTab === "checklist" && (
               <div style={{ background: "white", padding: "1.4rem", borderRadius: "16px", border: "1.5px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.9rem" }}>
                   <div>
                     <h3 style={{ fontSize: "1.05rem", fontWeight: "800", color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
                       <ClipboardCheck size={18} color="#2563eb" /> 
-                      {isBuildingPermit ? "Engineering Sign-off Checklist" : "Zoning Compliance Criteria"}
+                      Engineering Sign-off Checklist
                     </h3>
                     <p style={{ margin: "2px 0 0 0", fontSize: "0.78rem", color: "#64748b" }}>
                       {totalCompliantCount} of {totalChecklistItems} items verified compliant
@@ -1971,7 +1998,7 @@ ${isDisapprove
 
                 {/* Checklist items */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {(isBuildingPermit ? engineeringDisciplines : zoningCriteria).map((item) => {
+                  {engineeringDisciplines.map((item) => {
                     const isOk = item.status === "compliant";
                     const isDeficient = item.status === "deficiency";
                     return (
@@ -2033,8 +2060,8 @@ ${isDisapprove
               </div>
             )}
 
-            {/* TAB CONTENT 3: REGULATORY FEES & ORDER OF PAYMENT */}
-            {activeLeftTab === "fees" && (
+            {/* TAB CONTENT 3: REGULATORY FEES & ORDER OF PAYMENT (Building Permits only) */}
+            {isBuildingPermit && activeLeftTab === "fees" && (
               <div style={{ background: "white", padding: "1.4rem", borderRadius: "16px", border: "1.5px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
                 <h3 style={{ fontSize: "1.05rem", fontWeight: "800", color: "#0f172a", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "8px" }}>
                   <Calculator size={18} color="#2563eb" /> Regulatory Fees Assessment
@@ -2173,88 +2200,106 @@ ${isDisapprove
                 </div>
 
                 {/* Settlement Notice when Approved */}
-                {(app.status as string) === "approved" && (
-                  <div style={{
-                    background: (app as any).userConfirmedPayment ? "#f0fdf4" : "#fffbeb",
-                    border: `1.5px solid ${(app as any).userConfirmedPayment ? "#86efac" : "#fde68a"}`,
-                    borderRadius: "12px",
-                    padding: "0.85rem 1rem",
-                    marginBottom: "1rem"
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                      {(app as any).userConfirmedPayment ? (
-                        <CheckCircle2 size={16} color="#16a34a" />
-                      ) : (
-                        <Clock size={16} color="#d97706" />
-                      )}
-                      <strong style={{ fontSize: "0.84rem", color: (app as any).userConfirmedPayment ? "#166534" : "#92400e" }}>
-                        {(app as any).userConfirmedPayment ? "Applicant Confirmed Payment" : "Awaiting Fee Settlement"}
-                      </strong>
-                    </div>
-                    <div style={{ fontSize: "0.78rem", color: (app as any).userConfirmedPayment ? "#15803d" : "#78350f", lineHeight: "1.45" }}>
-                      {(app as any).userConfirmedPayment ? (
-                        <>
-                          Payment Reference: <strong>{(app as any).paymentReference || "OR Submitted"}</strong>
-                          {(app as any).paymentMethod && ` · ${(app as any).paymentMethod}`}
-                          <br />
-                          Assessed Amount: <strong>PHP {((app as any).assessedFees || totalFees).toLocaleString()}</strong>
-                          <br />
-                          <span style={{ color: "#166534", fontWeight: "700" }}>✓ Ready for cashier sign-off and permit paper release.</span>
-                          {/* Receipt Photo Preview if available */}
-                          {(() => {
-                            const rPhoto = (app as any).paymentProofUrl || (typeof window !== "undefined" ? localStorage.getItem("etayo_receipt_" + app.id) : null);
-                            if (!rPhoto) return null;
-                            return (
-                              <div style={{ marginTop: "8px" }}>
-                                <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#166534", display: "block", marginBottom: "4px" }}>
-                                  Applicant Submitted Receipt Photo:
-                                </span>
-                                <div
-                                  onClick={() => window.open(rPhoto, "_blank")}
-                                  style={{
-                                    borderRadius: "10px",
-                                    overflow: "hidden",
-                                    border: "1.5px solid #86efac",
-                                    background: "#0f172a",
-                                    maxHeight: "150px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: "pointer",
-                                    position: "relative"
-                                  }}
-                                  title="Click to view full receipt photo"
-                                >
-                                  <img src={rPhoto} alt="Receipt Proof" style={{ width: "100%", maxHeight: "150px", objectFit: "contain", display: "block" }} />
-                                  <div style={{
-                                    position: "absolute",
-                                    bottom: "4px",
-                                    right: "4px",
-                                    background: "rgba(0,0,0,0.75)",
-                                    color: "white",
-                                    padding: "2px 6px",
-                                    borderRadius: "4px",
-                                    fontSize: "0.68rem",
-                                    fontWeight: "700",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "3px"
-                                  }}>
-                                    <Eye size={10} /> View Photo
+                {(app.status as string) === "approved" && (() => {
+                  const isPaymentConfirmed = Boolean(
+                    (app as any).userConfirmedPayment ||
+                    (app as any).paymentStatus === "awaiting_verification" ||
+                    (app as any).paymentStatus === "paid" ||
+                    (typeof window !== "undefined" && (
+                      localStorage.getItem("etayo_payment_confirmed_" + app.id) === "true" ||
+                      localStorage.getItem("etayo_payment_confirmed_" + app.id.toLowerCase()) === "true" ||
+                      localStorage.getItem("etayo_paid_" + app.id) === "true" ||
+                      localStorage.getItem("etayo_paid_" + app.id.toLowerCase()) === "true" ||
+                      Boolean(localStorage.getItem("etayo_receipt_" + app.id)) ||
+                      Boolean(localStorage.getItem("etayo_receipt_" + app.id.toLowerCase()))
+                    ))
+                  );
+                  const storedRef = (app as any).paymentReference || (typeof window !== "undefined" ? (localStorage.getItem("etayo_payment_ref_" + app.id) || localStorage.getItem("etayo_or_" + app.id)) : null) || "OR Submitted";
+                  const storedMethod = (app as any).paymentMethod || (typeof window !== "undefined" ? localStorage.getItem("etayo_payment_method_" + app.id) : null);
+
+                  return (
+                    <div style={{
+                      background: isPaymentConfirmed ? "#f0fdf4" : "#fffbeb",
+                      border: `1.5px solid ${isPaymentConfirmed ? "#86efac" : "#fde68a"}`,
+                      borderRadius: "12px",
+                      padding: "0.85rem 1rem",
+                      marginBottom: "1rem"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                        {isPaymentConfirmed ? (
+                          <CheckCircle2 size={16} color="#16a34a" />
+                        ) : (
+                          <Clock size={16} color="#d97706" />
+                        )}
+                        <strong style={{ fontSize: "0.84rem", color: isPaymentConfirmed ? "#166534" : "#92400e" }}>
+                          {isPaymentConfirmed ? "Applicant Confirmed Payment" : "Awaiting Fee Settlement"}
+                        </strong>
+                      </div>
+                      <div style={{ fontSize: "0.78rem", color: isPaymentConfirmed ? "#15803d" : "#78350f", lineHeight: "1.45" }}>
+                        {isPaymentConfirmed ? (
+                          <>
+                            Payment Reference: <strong>{storedRef}</strong>
+                            {storedMethod && ` · ${storedMethod}`}
+                            <br />
+                            Assessed Amount: <strong>PHP {((app as any).assessedFees || totalFees).toLocaleString()}</strong>
+                            <br />
+                            <span style={{ color: "#166534", fontWeight: "700" }}>✓ Ready for cashier sign-off and permit paper release.</span>
+                            {/* Receipt Photo Preview if available */}
+                            {(() => {
+                              const rPhoto = (app as any).paymentProofUrl || (typeof window !== "undefined" ? (localStorage.getItem("etayo_receipt_" + app.id) || localStorage.getItem("etayo_receipt_" + app.id.toLowerCase())) : null);
+                              if (!rPhoto) return null;
+                              return (
+                                <div style={{ marginTop: "8px" }}>
+                                  <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#166534", display: "block", marginBottom: "4px" }}>
+                                    Applicant Submitted Receipt Photo:
+                                  </span>
+                                  <div
+                                    onClick={() => window.open(rPhoto, "_blank")}
+                                    style={{
+                                      borderRadius: "10px",
+                                      overflow: "hidden",
+                                      border: "1.5px solid #86efac",
+                                      background: "#0f172a",
+                                      maxHeight: "150px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      cursor: "pointer",
+                                      position: "relative"
+                                    }}
+                                    title="Click to view full receipt photo"
+                                  >
+                                    <img src={rPhoto} alt="Receipt Proof" style={{ width: "100%", maxHeight: "150px", objectFit: "contain", display: "block" }} />
+                                    <div style={{
+                                      position: "absolute",
+                                      bottom: "4px",
+                                      right: "4px",
+                                      background: "rgba(0,0,0,0.75)",
+                                      color: "white",
+                                      padding: "2px 6px",
+                                      borderRadius: "4px",
+                                      fontSize: "0.68rem",
+                                      fontWeight: "700",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "3px"
+                                    }}>
+                                      <Eye size={10} /> View Photo
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            );
-                          })()}
-                        </>
-                      ) : (
-                        <>
-                          Order of Payment <strong>{(app as any).orderOfPaymentNo || orderOfPaymentNo}</strong> for <strong>PHP {((app as any).assessedFees || totalFees).toLocaleString()}</strong> was messaged to the applicant. Click below once settled to release papers.
-                        </>
-                      )}
+                              );
+                            })()}
+                          </>
+                        ) : (
+                          <>
+                            Order of Payment <strong>{(app as any).orderOfPaymentNo || orderOfPaymentNo}</strong> for <strong>PHP {((app as any).assessedFees || totalFees).toLocaleString()}</strong> was messaged to the applicant. Click below once settled to release papers.
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Primary & Secondary Action Buttons */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
