@@ -212,15 +212,28 @@ export default function StaffDashboard() {
   return (
     <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1380px", margin: "0 auto", paddingBottom: "4rem" }}>
       {/* HEADER */}
-      <header style={{ marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem" }}>
+      <header className="page-header" style={{ 
+        background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(255, 255, 255, 0.9)",
+        boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
+        borderRadius: "20px",
+        padding: "1.25rem 1.75rem",
+        marginBottom: "1.25rem",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "1rem"
+      }}>
         <div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#eff6ff", padding: "4px 12px", borderRadius: "999px", fontSize: "0.8rem", fontWeight: "700", color: "#1d4ed8", marginBottom: "0.5rem" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#eff6ff", border: "1px solid #bfdbfe", padding: "4px 12px", borderRadius: "999px", fontSize: "0.8rem", fontWeight: "700", color: "#1d4ed8", marginBottom: "0.5rem" }}>
             <ShieldCheck size={14} /> Official Sto. Tomas Engineering Office
           </div>
-          <h1 style={{ fontSize: "2.15rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "0.75rem", margin: "0 0 0.25rem 0", letterSpacing: "-0.02em" }}>
-            <FileCheck size={32} color="#1d4ed8" /> Staff Evaluation Hub
+          <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", display: "flex", alignItems: "center", gap: "0.75rem", margin: "0 0 0.25rem 0", letterSpacing: "-0.02em" }}>
+            <FileCheck size={32} color="#0038A8" /> Staff Evaluation Hub
           </h1>
-          <p style={{ fontSize: "1rem", color: "#64748b", margin: 0 }}>
+          <p className="page-subtitle" style={{ fontSize: "0.95rem", color: "#475569", margin: 0 }}>
             Review, evaluate, and approve multi-step permit applications grouped by applicant project dossiers.
           </p>
         </div>
