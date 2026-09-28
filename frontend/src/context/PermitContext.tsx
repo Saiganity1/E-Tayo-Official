@@ -438,6 +438,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     localStorage.setItem(`etayo_approved_${k}`, "true");
                     if (bAppStatus === "released") {
                       localStorage.setItem(`etayo_released_${k}`, "true");
+                    } else if (bAppStatus === "approved") {
+                      localStorage.removeItem(`etayo_released_${k}`);
+                      localStorage.removeItem(`etayo_paid_${k}`);
                     }
                   }
                 });
@@ -633,6 +636,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               if (k) {
                 localStorage.setItem(`etayo_status_${k}`, mIsPaid ? "released" : "approved");
                 localStorage.setItem(`etayo_approved_${k}`, "true");
+                if (mIsPaid) {
+                  localStorage.setItem(`etayo_released_${k}`, "true");
+                } else {
+                  localStorage.removeItem(`etayo_released_${k}`);
+                }
               }
             });
           } catch (e) {}
@@ -664,6 +672,27 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               title: "3. Zoning Clearance",
               status: "completed" as const
             });
+          }
+
+          if (mEffectiveStatus === "released") {
+            const hasStep4 = mTracking.some((st: any) => {
+              const sName = String(st?.title || st?.name || "").toLowerCase();
+              return sName.includes("released") || sName.includes("4.");
+            });
+            if (!hasStep4) {
+              mTracking.push({
+                title: "4. Released",
+                status: "completed" as const
+              });
+            } else {
+              mTracking = mTracking.map((st: any) => {
+                const sName = String(st?.title || st?.name || "").toLowerCase();
+                if (sName.includes("released") || sName.includes("4.")) {
+                  return { ...st, status: "completed" as const };
+                }
+                return st;
+              });
+            }
           }
         }
 
@@ -981,7 +1010,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         { title: "2. Evaluation", status: "completed" as const },
         { title: "3. Zoning Clearance", status: "completed" as const }
       ];
-      const fixedSteps = rawSteps.map((st: any, idx: number) => {
+      let fixedSteps = rawSteps.map((st: any, idx: number) => {
         const sName = String(st?.title || st?.name || "").toLowerCase();
         if (idx === 0 || idx === 1 || sName.includes("filing") || sName.includes("submitted") || sName.includes("evaluation") || sName.includes("review")) {
           return { ...st, status: "completed" };
@@ -1001,6 +1030,28 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           status: "completed" as const
         });
       }
+
+      if (updatedApp.status === "released" || Boolean((updatedApp as any).isReleased)) {
+        const hasStep4 = fixedSteps.some((st: any) => {
+          const sName = String(st?.title || st?.name || "").toLowerCase();
+          return sName.includes("released") || sName.includes("4.");
+        });
+        if (!hasStep4) {
+          fixedSteps.push({
+            title: "4. Released",
+            status: "completed" as const
+          });
+        } else {
+          fixedSteps = fixedSteps.map((st: any) => {
+            const sName = String(st?.title || st?.name || "").toLowerCase();
+            if (sName.includes("released") || sName.includes("4.")) {
+              return { ...st, status: "completed" as const };
+            }
+            return st;
+          });
+        }
+      }
+
       updatedApp = {
         ...updatedApp,
         trackingSteps: fixedSteps

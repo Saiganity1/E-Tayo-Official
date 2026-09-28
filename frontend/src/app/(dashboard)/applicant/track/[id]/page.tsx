@@ -36,7 +36,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
-import { getConnectedProjectApp, isApplicationApproved } from "@/utils/projectGrouping";
+import { getConnectedProjectApp, isApplicationApproved, isApplicationReleased } from "@/utils/projectGrouping";
 import Link from "next/link";
 import { 
   generateUnifiedPermitPdf, 
@@ -761,28 +761,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
   const isActuallyReleased = useMemo(() => {
     if (!appData) return false;
-    const rawSt = String(appData.status || "").toLowerCase().trim();
-    if (rawSt === "pending" || rawSt === "under_review" || rawSt === "incomplete_requirements" || rawSt === "rejected" || rawSt === "cancelled") {
-      return false;
-    }
-    if (appData.status === "released" || Boolean(appData.isReleased)) return true;
-    if (appData.paymentStatus === "paid") return true;
-
-    if (typeof window !== "undefined") {
-      const id = String(appData.id || "");
-      if (localStorage.getItem(`etayo_paid_${id}`) === "true" || 
-          localStorage.getItem(`etayo_paid_${id.toLowerCase()}`) === "true" ||
-          localStorage.getItem(`etayo_released_${id}`) === "true" ||
-          localStorage.getItem(`etayo_released_${id.toLowerCase()}`) === "true") {
-        return true;
-      }
-    }
-
-    if (Array.isArray(appData.trackingSteps) && appData.trackingSteps.some((s: any) => s.title?.toLowerCase().includes("released") && s.status === "completed")) {
-      return true;
-    }
-
-    return false;
+    return isApplicationReleased(appData);
   }, [appData]);
 
   const paymentInfo = useMemo(() => {
@@ -802,14 +781,24 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const upperTrackId = curTrackId.toUpperCase();
   const rawAppStatus = String(appData?.status || "").toLowerCase().trim();
   const isApproved = isApplicationApproved(appData);
-  const isPending = !isApproved && (rawAppStatus === "pending" || !rawAppStatus);
+  const isPending = !isApproved && !isActuallyReleased && (rawAppStatus === "pending" || !rawAppStatus);
 
-  // Sync localStorage with verified approval
-  if (isApproved && typeof window !== "undefined" && curTrackId) {
+  // Sync localStorage with verified release / approval
+  if (isActuallyReleased && typeof window !== "undefined" && curTrackId) {
     try {
       [curTrackId, lowerTrackId, upperTrackId].forEach(k => {
-        localStorage.setItem(`etayo_status_${k}`, isActuallyReleased ? "released" : "approved");
+        localStorage.setItem(`etayo_status_${k}`, "released");
+        localStorage.setItem(`etayo_released_${k}`, "true");
+        localStorage.setItem(`etayo_paid_${k}`, "true");
         localStorage.setItem(`etayo_approved_${k}`, "true");
+      });
+    } catch (e) {}
+  } else if (isApproved && typeof window !== "undefined" && curTrackId) {
+    try {
+      [curTrackId, lowerTrackId, upperTrackId].forEach(k => {
+        localStorage.setItem(`etayo_status_${k}`, "approved");
+        localStorage.setItem(`etayo_approved_${k}`, "true");
+        localStorage.removeItem(`etayo_released_${k}`);
       });
     } catch (e) {}
   } else if (isPending && typeof window !== "undefined" && curTrackId) {

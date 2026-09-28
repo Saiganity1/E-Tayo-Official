@@ -18,7 +18,8 @@ import {
   getConnectedProjectApp, 
   extractBaseProjectName, 
   ProjectDossier,
-  isApplicationApproved 
+  isApplicationApproved,
+  isApplicationReleased 
 } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "flat";
@@ -457,34 +458,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   };
 
   const isActuallyReleasedApp = (app: any) => {
-    if (!app) return false;
-    const rawSt = (app.status || "").toLowerCase().trim();
-    if (rawSt === "pending" || rawSt === "under_review" || rawSt === "incomplete_requirements" || rawSt === "rejected" || rawSt === "cancelled") {
-      return false;
-    }
-    if (rawSt === "released" || Boolean(app.isReleased)) return true;
-
-    if (typeof window !== "undefined") {
-      const id = String(app.id || "").trim();
-      const lowerId = id.toLowerCase();
-      const upperId = id.toUpperCase();
-      if (
-        localStorage.getItem(`etayo_released_${id}`) === "true" || 
-        localStorage.getItem(`etayo_released_${lowerId}`) === "true" ||
-        localStorage.getItem(`etayo_released_${upperId}`) === "true" ||
-        localStorage.getItem(`etayo_status_${id}`) === "released" ||
-        localStorage.getItem(`etayo_status_${lowerId}`) === "released" ||
-        localStorage.getItem(`etayo_status_${upperId}`) === "released"
-      ) {
-        return true;
-      }
-    }
-
-    if (Array.isArray(app.trackingSteps) && app.trackingSteps.some((s: any) => s.title?.toLowerCase().includes("released") && s.status === "completed")) {
-      return true;
-    }
-
-    return false;
+    return isApplicationReleased(app);
   };
 
   const getStatusConfig = (status: string, app?: any) => {
@@ -607,14 +581,24 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const upperAppId = appIdStr.toUpperCase();
     const rawAppStatus = (app.status || "").toLowerCase().trim();
     const isAppApproved = isApplicationApproved(app);
-    const isPending = !isAppApproved && (rawAppStatus === "pending" || !rawAppStatus);
+    const isPending = !isAppApproved && !isActuallyReleased && (rawAppStatus === "pending" || !rawAppStatus);
 
-    // Keep localStorage in sync with approval
-    if (isAppApproved && typeof window !== "undefined" && appIdStr) {
+    // Keep localStorage in sync with release / approval
+    if (isActuallyReleased && typeof window !== "undefined" && appIdStr) {
       try {
         [appIdStr, lowerAppId, upperAppId].forEach(k => {
-          localStorage.setItem(`etayo_status_${k}`, isActuallyReleased ? "released" : "approved");
+          localStorage.setItem(`etayo_status_${k}`, "released");
+          localStorage.setItem(`etayo_released_${k}`, "true");
+          localStorage.setItem(`etayo_paid_${k}`, "true");
           localStorage.setItem(`etayo_approved_${k}`, "true");
+        });
+      } catch (e) {}
+    } else if (isAppApproved && typeof window !== "undefined" && appIdStr) {
+      try {
+        [appIdStr, lowerAppId, upperAppId].forEach(k => {
+          localStorage.setItem(`etayo_status_${k}`, "approved");
+          localStorage.setItem(`etayo_approved_${k}`, "true");
+          localStorage.removeItem(`etayo_released_${k}`);
         });
       } catch (e) {}
     } else if (isPending && typeof window !== "undefined" && appIdStr) {

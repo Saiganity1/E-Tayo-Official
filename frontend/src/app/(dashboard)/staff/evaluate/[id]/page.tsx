@@ -72,7 +72,7 @@ import {
   Clock
 } from "lucide-react";
 import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
-import { isApplicationApproved } from "@/utils/projectGrouping";
+import { isApplicationApproved, isApplicationReleased } from "@/utils/projectGrouping";
 
 interface ViewerDoc {
   id: string;
@@ -1390,6 +1390,8 @@ export default function StaffEvaluatePage() {
       [curId, lowerId, upperId].forEach(k => {
         localStorage.setItem(`etayo_status_${k}`, "approved");
         localStorage.setItem(`etayo_approved_${k}`, "true");
+        localStorage.removeItem(`etayo_released_${k}`);
+        localStorage.removeItem(`etayo_paid_${k}`);
         if (orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, orderOfPaymentNo);
         if (totalFees) localStorage.setItem(`etayo_fees_${k}`, String(totalFees));
         if (issuedDateFormatted) localStorage.setItem(`etayo_date_approved_${k}`, issuedDateFormatted);
@@ -1649,11 +1651,28 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
         localStorage.setItem(`etayo_paid_${k}`, "true");
         localStorage.setItem(`etayo_or_${k}`, orNumber);
       });
+
+      const stored = localStorage.getItem("etayo_cached_applications");
+      if (stored) {
+        const list = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          const updatedList = list.map((a: any) =>
+            (a.id === app.id || String(a.id).trim().toLowerCase() === String(app.id).trim().toLowerCase()) ? updatedApp : a
+          );
+          localStorage.setItem("etayo_cached_applications", JSON.stringify(updatedList));
+        }
+      }
+
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));
         window.dispatchEvent(new Event("etayo_applications_updated"));
       }
     } catch (e) {}
+
+    // Instantly update context optimistic state so user portal immediately turns green to Step 4
+    if (updateApplication) {
+      updateApplication(updatedApp as any);
+    }
 
     const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
     const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
@@ -2659,77 +2678,90 @@ ${isDisapprove
 
                 {/* Primary & Secondary Action Buttons */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  {((app.status as string) === "approved" || isApplicationApproved(app)) ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOfficialReceiptInput((app as any).paymentReference || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
-                        setShowPaymentModal(true);
-                      }}
-                      disabled={isProcessing}
-                      style={{
-                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                        color: "white",
-                        border: "none",
-                        padding: "0.95rem 1.25rem",
-                        borderRadius: "10px",
-                        fontWeight: "800",
-                        fontSize: "0.95rem",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "8px",
-                        boxShadow: "0 4px 14px rgba(5, 150, 105, 0.4)",
-                        transition: "all 0.2s ease"
-                      }}
-                    >
-                      <CheckCircle2 size={18} />
-                      <span>Confirmed Payment &amp; Release Permit</span>
-                    </button>
-                  ) : app.status === "released" ? (
-                    <div style={{
-                      background: "#dcfce7",
-                      border: "1.5px solid #86efac",
-                      borderRadius: "10px",
-                      padding: "0.85rem",
-                      textAlign: "center"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", color: "#166534", fontWeight: "800", fontSize: "0.9rem" }}>
-                        <CheckCircle2 size={18} color="#16a34a" />
-                        <span>Permit Officially Released (Done)</span>
-                      </div>
-                      <div style={{ fontSize: "0.75rem", color: "#15803d", marginTop: "4px" }}>
-                        Official Receipt No: <strong>{(app as any).officialReceiptNo || "Verified"}</strong> · {(app as any).dateReleased || "Released"}
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleApprove}
-                      disabled={isProcessing}
-                      style={{
-                        background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                        color: "white",
-                        border: "none",
-                        padding: "0.95rem 1.25rem",
-                        borderRadius: "10px",
-                        fontWeight: "800",
-                        fontSize: "0.95rem",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "8px",
-                        boxShadow: "0 4px 14px rgba(16, 185, 129, 0.35)",
-                        transition: "all 0.2s ease"
-                      }}
-                    >
-                      <CheckCircle2 size={18} /> 
-                      {isBuildingPermit ? "Approve & Issue Order of Payment" : "Approve Locational Clearance"}
-                    </button>
-                  )}
+                  {(() => {
+                    const isReleasedApp = (app.status as string) === "released" || Boolean((app as any).isReleased) || isApplicationReleased(app);
+                    const isApprovedApp = !isReleasedApp && ((app.status as string) === "approved" || isApplicationApproved(app));
 
-                  {app.status !== "approved" && app.status !== "released" && (
+                    if (isReleasedApp) {
+                      return (
+                        <div style={{
+                          background: "#dcfce7",
+                          border: "1.5px solid #86efac",
+                          borderRadius: "10px",
+                          padding: "0.85rem",
+                          textAlign: "center"
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", color: "#166534", fontWeight: "800", fontSize: "0.9rem" }}>
+                            <CheckCircle2 size={18} color="#16a34a" />
+                            <span>Permit Officially Released (Done)</span>
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "#15803d", marginTop: "4px" }}>
+                            Official Receipt No: <strong>{(app as any).officialReceiptNo || "Verified"}</strong> · {(app as any).dateReleased || "Released"}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (isApprovedApp) {
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOfficialReceiptInput((app as any).paymentReference || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
+                            setShowPaymentModal(true);
+                          }}
+                          disabled={isProcessing}
+                          style={{
+                            background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                            color: "white",
+                            border: "none",
+                            padding: "0.95rem 1.25rem",
+                            borderRadius: "10px",
+                            fontWeight: "800",
+                            fontSize: "0.95rem",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "8px",
+                            boxShadow: "0 4px 14px rgba(5, 150, 105, 0.4)",
+                            transition: "all 0.2s ease"
+                          }}
+                        >
+                          <CheckCircle2 size={18} />
+                          <span>Confirmed Payment &amp; Release Permit</span>
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <button
+                        onClick={handleApprove}
+                        disabled={isProcessing}
+                        style={{
+                          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                          color: "white",
+                          border: "none",
+                          padding: "0.95rem 1.25rem",
+                          borderRadius: "10px",
+                          fontWeight: "800",
+                          fontSize: "0.95rem",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          boxShadow: "0 4px 14px rgba(16, 185, 129, 0.35)",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        <CheckCircle2 size={18} /> 
+                        {isBuildingPermit ? "Approve & Issue Order of Payment" : "Approve Locational Clearance"}
+                      </button>
+                    );
+                  })()}
+
+                  {app.status !== "approved" && app.status !== "released" && !isApplicationApproved(app) && !isApplicationReleased(app) && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
                       <button
                         onClick={() => {

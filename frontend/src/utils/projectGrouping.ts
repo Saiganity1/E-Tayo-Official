@@ -49,15 +49,56 @@ export const isBuildingPermit = (app: any): boolean => {
 };
 
 /**
+ * Authoritative check if an application has reached Step 4 (Released)
+ */
+export const isApplicationReleased = (app: any): boolean => {
+  if (!app) return false;
+  const appId = String(app.id || "").trim();
+  const lowerAppId = appId.toLowerCase();
+  const upperAppId = appId.toUpperCase();
+  const rawStatus = String(app.status || "").toLowerCase().trim();
+
+  // If rejected or cancelled, cannot be released
+  if (rawStatus === "rejected" || rawStatus === "cancelled") {
+    return false;
+  }
+
+  // 1. Direct status on app object
+  if (rawStatus === "released" || Boolean((app as any).isReleased) || (app as any).paymentStatus === "paid") {
+    return true;
+  }
+
+  // 2. Check localStorage flags
+  if (typeof window !== "undefined" && appId) {
+    if (
+      localStorage.getItem(`etayo_released_${appId}`) === "true" ||
+      localStorage.getItem(`etayo_released_${lowerAppId}`) === "true" ||
+      localStorage.getItem(`etayo_released_${upperAppId}`) === "true" ||
+      localStorage.getItem(`etayo_paid_${appId}`) === "true" ||
+      localStorage.getItem(`etayo_paid_${lowerAppId}`) === "true" ||
+      localStorage.getItem(`etayo_paid_${upperAppId}`) === "true" ||
+      localStorage.getItem(`etayo_status_${appId}`) === "released" ||
+      localStorage.getItem(`etayo_status_${lowerAppId}`) === "released" ||
+      localStorage.getItem(`etayo_status_${upperAppId}`) === "released"
+    ) {
+      return true;
+    }
+  }
+
+  // 3. Check tracking steps
+  if (Array.isArray(app.trackingSteps) && app.trackingSteps.some((s: any) => 
+    (String(s.title || s.name || "").toLowerCase().includes("released") || String(s.title || s.name || "").toLowerCase().includes("4.")) && 
+    s.status === "completed"
+  )) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
  * Authoritative check if an application has reached Step 3 (Approved) or Step 4 (Released)
  * across all permit types (Locational Clearance, Building Permits, Ancillary, etc.)
- *
- * CRITICAL RULES:
- * 1. An application is NEVER approved if its status is "pending", "under_review", "rejected", or "cancelled",
- *    unless an admin has explicitly approved it (status === "approved" or admin decision records exist).
- * 2. Newly filed applications (with status "pending") MUST stay at Step 1 / Pending until the admin acts.
- * 3. Step 1 ("Locational Clearance Submitted") and Step 2 ("Zoning & MPDO Evaluation") must NEVER be mistaken
- *    for Step 3 (Approval). Only index >= 2 or explicit "3. Zoning Clearance" / "Approved" marks Step 3.
  */
 export const isApplicationApproved = (app: any): boolean => {
   if (!app) return false;
