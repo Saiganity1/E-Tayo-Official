@@ -463,11 +463,94 @@ public class PermitController {
             if (permit.getSketchImageUrl() != null && !permit.getSketchImageUrl().isEmpty()) existing.setSketchImageUrl(permit.getSketchImageUrl());
             if (permit.getProjectType() != null) existing.setProjectType(permit.getProjectType());
             if (permit.getDateSubmitted() != null) existing.setDateSubmitted(permit.getDateSubmitted());
-            
+
+            syncTrackingStepsForStatus(existing, existing.getStatus());
             return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(existing));
         }).orElseGet(() -> {
+            syncTrackingStepsForStatus(permit, permit.getStatus());
             return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(permit));
         });
+    }
+
+    private void syncTrackingStepsForStatus(PermitApplication app, String status) {
+        if (app == null || status == null) return;
+        String cleanStatus = status.trim().toLowerCase();
+        boolean isLC = (app.getPermitType() != null && app.getPermitType().toLowerCase().contains("locational")) 
+                    || (app.getId() != null && app.getId().toUpperCase().startsWith("LC-"));
+        String today = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy"));
+
+        if (app.getTrackingSteps() == null) {
+            app.setTrackingSteps(new java.util.ArrayList<>());
+        }
+        List<com.etayo.backend.model.TrackingStep> steps = app.getTrackingSteps();
+
+        if ("approved".equals(cleanStatus)) {
+            // 1. Mark all evaluation & submission steps as completed
+            for (com.etayo.backend.model.TrackingStep s : steps) {
+                if (s.getTitle() == null || !s.getTitle().toLowerCase().contains("released")) {
+                    s.setStatus("completed");
+                }
+            }
+            // 2. Ensure Step 3 approval step exists and is completed
+            boolean hasApprovalStep = steps.stream().anyMatch(s ->
+                s.getTitle() != null && (s.getTitle().toLowerCase().contains("approved") || s.getTitle().toLowerCase().contains("zoning clearance"))
+            );
+            if (!hasApprovalStep) {
+                com.etayo.backend.model.TrackingStep step3 = new com.etayo.backend.model.TrackingStep();
+                step3.setTitle(isLC ? "3. Zoning Clearance - Zoning Review Approved ✓" : "3. Endorsement - Technical Permits Approved ✓");
+                step3.setStatus("completed");
+                step3.setDate(today);
+                step3.setNotes(isLC 
+                    ? "Locational Clearance officially approved & signed by Sto. Tomas Zoning Administrator (MPDO)." 
+                    : "All technical engineering plans verified compliant with PD 1096 and approved by OBO.");
+                step3.setActor(isLC ? "Zoning Administrator (MPDO)" : "Office of the Building Official (OBO)");
+                steps.add(step3);
+            } else {
+                for (com.etayo.backend.model.TrackingStep s : steps) {
+                    if (s.getTitle() != null && (s.getTitle().toLowerCase().contains("approved") || s.getTitle().toLowerCase().contains("zoning clearance"))) {
+                        s.setStatus("completed");
+                        if (s.getDate() == null) s.setDate(today);
+                    }
+                }
+            }
+            // 3. Mark all requirements as approved
+            if (app.getRequirements() != null) {
+                for (com.etayo.backend.model.Requirement req : app.getRequirements()) {
+                    req.setStatus("approved");
+                }
+            }
+        } else if ("under_review".equals(cleanStatus)) {
+            if (!steps.isEmpty()) {
+                steps.get(0).setStatus("completed");
+            }
+            if (steps.size() > 1) {
+                steps.get(1).setStatus("in-progress");
+            } else {
+                com.etayo.backend.model.TrackingStep step2 = new com.etayo.backend.model.TrackingStep();
+                step2.setTitle(isLC ? "2. Evaluation - Zoning & MPDO Review" : "2. Evaluation - Technical Permitting Review");
+                step2.setStatus("in-progress");
+                step2.setDate(today);
+                step2.setNotes("Under active evaluation by municipal technical review committee.");
+                step2.setActor("Staff Evaluator");
+                steps.add(step2);
+            }
+        } else if ("released".equals(cleanStatus)) {
+            for (com.etayo.backend.model.TrackingStep s : steps) {
+                s.setStatus("completed");
+            }
+            boolean hasReleasedStep = steps.stream().anyMatch(s ->
+                s.getTitle() != null && s.getTitle().toLowerCase().contains("released")
+            );
+            if (!hasReleasedStep) {
+                com.etayo.backend.model.TrackingStep step4 = new com.etayo.backend.model.TrackingStep();
+                step4.setTitle("4. Released - Permit Officially Released ✓");
+                step4.setStatus("completed");
+                step4.setDate(today);
+                step4.setNotes("Official permits and clearances released for applicant download.");
+                step4.setActor("Engr. Gilbert Cruz, Municipal Building Official");
+                steps.add(step4);
+            }
+        }
     }
 
     @PatchMapping("/{id}/status")
@@ -476,11 +559,12 @@ public class PermitController {
         return findPermitFlexible(id).map(existing -> {
             String oldStatus = existing.getStatus();
             if (payload.containsKey("status") && payload.get("status") != null) {
-                existing.setStatus(String.valueOf(payload.get("status")));
+                existing.setStatus(String.valueOf(payload.get("status")).trim().toLowerCase());
             }
             if (payload.containsKey("remarks") && payload.get("remarks") != null) {
                 existing.setRemarks(String.valueOf(payload.get("remarks")));
             }
+            syncTrackingStepsForStatus(existing, existing.getStatus());
             if (oldStatus != null && !oldStatus.equalsIgnoreCase(existing.getStatus())) {
                 try {
                     auditLoggingService.logAction(
@@ -501,11 +585,12 @@ public class PermitController {
             PermitApplication app = new PermitApplication();
             app.setId(id);
             if (payload.containsKey("status") && payload.get("status") != null) {
-                app.setStatus(String.valueOf(payload.get("status")));
+                app.setStatus(String.valueOf(payload.get("status")).trim().toLowerCase());
             }
             if (payload.containsKey("remarks") && payload.get("remarks") != null) {
                 app.setRemarks(String.valueOf(payload.get("remarks")));
             }
+            syncTrackingStepsForStatus(app, app.getStatus());
             return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(app));
         });
     }

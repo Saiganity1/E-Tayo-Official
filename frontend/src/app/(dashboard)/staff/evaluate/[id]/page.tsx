@@ -139,6 +139,10 @@ export default function StaffEvaluatePage() {
   useEffect(() => {
     if (!app || !app.id) return;
     const curStatus = (app.status || "").toLowerCase().trim();
+    if (curStatus === "approved" || curStatus.includes("approv") || curStatus === "released") {
+      evalAutoStartedRef.current = app.id;
+      return;
+    }
     if (curStatus === "pending" && evalAutoStartedRef.current !== app.id) {
       evalAutoStartedRef.current = app.id;
       const curId = String(app.id).trim();
@@ -171,14 +175,25 @@ export default function StaffEvaluatePage() {
           const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
           const headers: Record<string, string> = { "Content-Type": "application/json" };
           if (token) headers["Authorization"] = `Bearer ${token}`;
-          await fetch(`${apiBase}/permits/${encodeURIComponent(app.id)}/status`, {
+          const encId = encodeURIComponent(app.id);
+          let patchRes = await fetch(`/api/permits/${encId}/status`, {
             method: "PATCH",
             headers,
             body: JSON.stringify({
               status: "under_review",
               remarks: "Under Technical Review & Evaluation by Municipal Staff"
             })
-          });
+          }).catch(() => null);
+          if (!patchRes || !patchRes.ok) {
+            await fetch(`${apiBase}/permits/${encId}/status`, {
+              method: "PATCH",
+              headers,
+              body: JSON.stringify({
+                status: "under_review",
+                remarks: "Under Technical Review & Evaluation by Municipal Staff"
+              })
+            }).catch(() => null);
+          }
         } catch (err) {
           console.warn("Could not patch permit status to under_review", err);
         }
@@ -1302,13 +1317,15 @@ export default function StaffEvaluatePage() {
 
       updatedTracking = [
         ...(app.trackingSteps || []).map((step) => {
-          if (step.title.toLowerCase().includes("zoning") || step.title.toLowerCase().includes("evaluation")) {
+          const sTitle = String(step.title || (step as any).name || "").toLowerCase();
+          if (sTitle.includes("zoning") || sTitle.includes("evaluation") || sTitle.includes("filing") || sTitle.includes("submitted")) {
             return { ...step, status: "completed" as const };
           }
           return step;
         }),
         {
-          title: "Locational Clearance Approved",
+          title: "3. Zoning Clearance",
+          name: "3. Zoning Clearance",
           status: "completed" as const,
           date: issuedDateFormatted,
           notes: shortSummary,
@@ -1377,68 +1394,48 @@ export default function StaffEvaluatePage() {
     });
     const putPayload = JSON.stringify(updatedApp);
 
-    // 1. Guaranteed Status Update with multi-attempt retry
+    // 1. Guaranteed Status Update with multi-attempt retry (proxy first)
     let statusUpdated = false;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+        let patchRes = await fetch(`/api/permits/${targetPermitId}/status`, {
           method: "PATCH",
           headers: authHeaders,
           body: patchPayload
-        });
-        if (!patchRes.ok && token) {
+        }).catch(() => null);
+        if (!patchRes || !patchRes.ok) {
           patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders,
             body: patchPayload
-          });
+          }).catch(() => null);
         }
-        if (patchRes.ok) {
+        if (patchRes && patchRes.ok) {
           statusUpdated = true;
           break;
         }
-      } catch (err) {
-        try {
-          let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: patchPayload
-          });
-          if (patchRes.ok) {
-            statusUpdated = true;
-            break;
-          }
-        } catch (e2) {}
-      }
-      if (attempt < 3) await new Promise(r => setTimeout(r, 500));
+      } catch (err) {}
+      if (attempt < 3) await new Promise(r => setTimeout(r, 400));
     }
 
-    // 2. Full Application Data PUT with fallback
+    // 2. Full Application Data PUT with fallback (proxy first)
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        let putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
+        let putRes = await fetch(`/api/permits/${targetPermitId}`, {
           method: "PUT",
           headers: authHeaders,
           body: putPayload
-        });
-        if (!putRes.ok && token) {
+        }).catch(() => null);
+        if (!putRes || !putRes.ok) {
           putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders,
             body: putPayload
-          });
+          }).catch(() => null);
         }
-        if (putRes.ok) break;
-      } catch (err) {
-        try {
-          await fetch(`${apiBase}/permits/${targetPermitId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: putPayload
-          });
-          break;
-        } catch (e2) {}
-      }
+        if (putRes && putRes.ok) break;
+      } catch (e) {}
+      if (attempt < 2) await new Promise(r => setTimeout(r, 400));
     }
 
     await updateApplication(updatedApp as any);
@@ -1604,57 +1601,40 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+        let patchRes = await fetch(`/api/permits/${targetPermitId}/status`, {
           method: "PATCH",
           headers: authHeaders,
           body: releasePatchPayload
-        });
-        if (!patchRes.ok && token) {
+        }).catch(() => null);
+        if (!patchRes || !patchRes.ok) {
           patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders,
             body: releasePatchPayload
-          });
+          }).catch(() => null);
         }
-        if (patchRes.ok) break;
-      } catch (e) {
-        try {
-          let patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: releasePatchPayload
-          });
-          if (patchRes.ok) break;
-        } catch (err) {}
-      }
-      if (attempt < 3) await new Promise(r => setTimeout(r, 500));
+        if (patchRes && patchRes.ok) break;
+      } catch (e) {}
+      if (attempt < 3) await new Promise(r => setTimeout(r, 400));
     }
 
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        let putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
+        let putRes = await fetch(`/api/permits/${targetPermitId}`, {
           method: "PUT",
           headers: authHeaders,
           body: releasePutPayload
-        });
-        if (!putRes.ok && token) {
+        }).catch(() => null);
+        if (!putRes || !putRes.ok) {
           putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders,
             body: releasePutPayload
-          });
+          }).catch(() => null);
         }
-        if (putRes.ok) break;
-      } catch (e) {
-        try {
-          await fetch(`${apiBase}/permits/${targetPermitId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: releasePutPayload
-          });
-          break;
-        } catch (err) {}
-      }
+        if (putRes && putRes.ok) break;
+      } catch (e) {}
+      if (attempt < 2) await new Promise(r => setTimeout(r, 400));
     }
 
     await updateApplication(updatedApp as any);

@@ -321,9 +321,24 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         const headers: Record<string, string> = { "Accept": "application/json" };
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        let res = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(appId)}`, { headers });
-        if (!res.ok && appId.toUpperCase() !== appId) {
-          res = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(appId.toUpperCase())}`, { headers });
+        const cleanId = String(appId).trim();
+        const proxyUrl = `/api/permits/${encodeURIComponent(cleanId)}`;
+        const directUrl = `${API_BASE_URL}/permits/${encodeURIComponent(cleanId)}`;
+
+        let res: Response | null = null;
+        try {
+          res = await fetch(proxyUrl, { headers, cache: "no-store" });
+        } catch (e) {
+          res = null;
+        }
+
+        if (!res || !res.ok) {
+          try {
+            res = await fetch(directUrl, { headers });
+            if (!res.ok && cleanId.toUpperCase() !== cleanId) {
+              res = await fetch(`${API_BASE_URL}/permits/${encodeURIComponent(cleanId.toUpperCase())}`, { headers });
+            }
+          } catch (e) {}
         }
         if (res.ok) {
           const serverApp = await res.json();
@@ -419,11 +434,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       }
     }, 1800);
 
-    // 4. Live polling every 25 seconds (only when tab is visible) to auto-detect admin approval without manual refresh
+    // 4. Live fast polling every 5 seconds (only when tab is visible) to auto-detect admin approval without manual refresh
     const pollTimer = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       fetchFreshStatus();
-    }, 25000);
+    }, 5000);
 
     // 5. Cross-tab & multi-window instant reactive update listener
     const handleSync = (e?: any) => {
@@ -437,9 +452,17 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       fetchFreshStatus();
     };
 
+    const handleVisibility = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        handleSync();
+      }
+    };
+
     if (typeof window !== "undefined") {
       window.addEventListener("storage", handleSync);
+      window.addEventListener("focus", handleSync);
       window.addEventListener("etayo_applications_updated", handleSync);
+      document.addEventListener("visibilitychange", handleVisibility);
     }
 
     return () => {
@@ -448,7 +471,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       clearInterval(pollTimer);
       if (typeof window !== "undefined") {
         window.removeEventListener("storage", handleSync);
+        window.removeEventListener("focus", handleSync);
         window.removeEventListener("etayo_applications_updated", handleSync);
+        document.removeEventListener("visibilitychange", handleVisibility);
       }
     };
   }, [appId, applications]);
@@ -862,8 +887,27 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const upperTrackId = curTrackId.toUpperCase();
   const isApproved = Boolean(
     appData?.status === "approved" || 
+    (appData?.status && String(appData.status).toLowerCase().includes("approv")) ||
     appData?.status === "released" || 
     isActuallyReleased ||
+    (Array.isArray(appData?.trackingSteps) && appData.trackingSteps.some((s: any) => {
+      const sName = String(s?.title || s?.name || "").toLowerCase();
+      const sStatus = String(s?.status || "").toLowerCase();
+      return sStatus === "completed" && (
+        sName.includes("zoning") ||
+        sName.includes("clearance") ||
+        sName.includes("approved") ||
+        sName.includes("3.") ||
+        sName.includes("step 3")
+      );
+    })) ||
+    (typeof appData?.remarks === "string" && (
+      appData.remarks.toLowerCase().includes("clearance approved") ||
+      appData.remarks.toLowerCase().includes("locational clearance approved") ||
+      appData.remarks.toLowerCase().includes("application approved") ||
+      appData.remarks.toLowerCase().includes("approved")
+    )) ||
+    Boolean((appData as any)?.dateApproved) ||
     (typeof window !== "undefined" && (
       localStorage.getItem(`etayo_approved_${curTrackId}`) === "true" ||
       localStorage.getItem(`etayo_approved_${lowerTrackId}`) === "true" ||
@@ -1794,16 +1838,17 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               <div style={{ position: "absolute", left: "20px", top: "20px", bottom: "20px", width: "3px", background: "#e2e8f0", zIndex: 0 }}></div>
               
               {timelineSteps.map((step) => {
-                const isStep2Approved = step.num === 2 && (isApproved || isActuallyReleased || statusConfig.step >= 2);
+                const isStep2Approved = step.num === 2 && (isApproved || isActuallyReleased || statusConfig.step >= 3);
                 const isStep3Approved = step.num === 3 && (isApproved || isActuallyReleased || statusConfig.step >= 3);
                 const isStep4Released = step.num === 4 && (isActuallyReleased || statusConfig.step >= 4);
 
                 const isPassed = (step.num === 1) ||
-                                 (step.num === 2 && isStep2Approved) ||
+                                 (step.num === 2 && (isApproved || isActuallyReleased || isStep2Approved)) ||
                                  (step.num === 3 && isStep3Approved) ||
                                  (step.num === 4 && isStep4Released);
 
-                const isActive = (step.num === 3 && isApproved && !isActuallyReleased) ||
+                const isActive = (step.num === 2 && !isApproved && !isActuallyReleased && (statusConfig.step === 2 || appData?.status === "under_review")) ||
+                                 (step.num === 3 && isApproved && !isActuallyReleased) ||
                                  (step.num === 4 && isStep4Released);
                 
                 let circleColor = "#e2e8f0";

@@ -258,20 +258,37 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       }
     } catch (e) {}
 
-    // Real-time multi-tab & cross-window sync listener
+    // Real-time multi-tab & cross-window sync listener with fast polling
     const handleSync = () => {
       if (refreshApplications) refreshApplications();
     };
 
+    const handleFocus = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        if (refreshApplications) refreshApplications();
+      }
+    };
+
+    // Auto-poll every 5s when tab is active to detect admin approval without delay
+    const pollTimer = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      if (refreshApplications) refreshApplications();
+    }, 5000);
+
     if (typeof window !== "undefined") {
       window.addEventListener("storage", handleSync);
       window.addEventListener("etayo_applications_updated", handleSync);
+      window.addEventListener("focus", handleFocus);
+      document.addEventListener("visibilitychange", handleFocus);
     }
 
     return () => {
+      clearInterval(pollTimer);
       if (typeof window !== "undefined") {
         window.removeEventListener("storage", handleSync);
         window.removeEventListener("etayo_applications_updated", handleSync);
+        window.removeEventListener("focus", handleFocus);
+        document.removeEventListener("visibilitychange", handleFocus);
       }
     };
   }, [refreshApplications]);
@@ -608,7 +625,26 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       localStorage.getItem(`etayo_status_${upperId}`) === "approved"
     );
 
-    const isApproved = rawStatus === "approved" || appRawStatus === "approved" || isLocallyApproved;
+    const hasApprovedTracking = Array.isArray(app?.trackingSteps) && app.trackingSteps.some((st: any) => {
+      const sName = String(st.title || st.name || "").toLowerCase();
+      const sStatus = String(st.status || "").toLowerCase();
+      return sStatus === "completed" && (
+        sName.includes("zoning") ||
+        sName.includes("clearance") ||
+        sName.includes("approved") ||
+        sName.includes("3.") ||
+        sName.includes("step 3")
+      );
+    });
+
+    const hasApprovalRemarks = Boolean(app?.dateApproved) || (
+      typeof app?.remarks === "string" && (
+        app.remarks.toLowerCase().includes("approved") ||
+        app.remarks.toLowerCase().includes("clearance approved")
+      )
+    );
+
+    const isApproved = rawStatus === "approved" || rawStatus.includes("approv") || appRawStatus === "approved" || appRawStatus.includes("approv") || isLocallyApproved || hasApprovedTracking || hasApprovalRemarks;
 
     if (isApproved) {
       const paymentInfo = checkUserConfirmedPayment(app, connectedApp);
@@ -716,7 +752,24 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const lowerAppId = appIdStr.toLowerCase();
     const upperAppId = appIdStr.toUpperCase();
     const rawAppStatus = (app.status || "").toLowerCase().trim();
-    const isAppApproved = rawAppStatus === "approved" || rawAppStatus === "released" || isActuallyReleased || Boolean(app.isReleased) ||
+    const isTrackingStepApproved = Array.isArray(app.trackingSteps) && app.trackingSteps.some((s: any) => {
+      const sName = String(s?.title || s?.name || "").toLowerCase();
+      const sStatus = String(s?.status || "").toLowerCase();
+      return sStatus === "completed" && (
+        sName.includes("zoning") ||
+        sName.includes("clearance") ||
+        sName.includes("approved") ||
+        sName.includes("3.") ||
+        sName.includes("step 3")
+      );
+    });
+    const isRemarksApproved = Boolean(app.dateApproved) || (typeof app.remarks === "string" && (
+      app.remarks.toLowerCase().includes("clearance approved") ||
+      app.remarks.toLowerCase().includes("locational clearance approved") ||
+      app.remarks.toLowerCase().includes("application approved") ||
+      app.remarks.toLowerCase().includes("approved")
+    ));
+    const isAppApproved = rawAppStatus === "approved" || rawAppStatus.includes("approv") || rawAppStatus === "released" || isActuallyReleased || Boolean(app.isReleased) || isTrackingStepApproved || isRemarksApproved || Boolean(app.dateApproved) ||
       (typeof window !== "undefined" && (
         localStorage.getItem(`etayo_approved_${appIdStr}`) === "true" ||
         localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
@@ -912,7 +965,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               { 
                 num: 3, 
                 title: isLocationalClearance ? "3. Zoning Clearance" : "3. Endorsement", 
-                desc: (isAppApproved || isActuallyReleased || app.status === "approved" || app.status === "released") 
+                desc: (isAppApproved || isActuallyReleased || app.status === "approved" || rawAppStatus.includes("approv") || app.status === "released") 
                   ? (isLocationalClearance ? "Zoning Review Approved ✓" : "Approved & Endorsed ✓") 
                   : (isLocationalClearance ? "Zoning Review" : "Chief OBO Approval"), 
                 active: isAppApproved || isActuallyReleased || statusConfig.step >= 3, 

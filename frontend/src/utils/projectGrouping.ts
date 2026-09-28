@@ -251,7 +251,16 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
     const upperAppId = appId.toUpperCase();
     const rawStatus = String(app.status || "").toLowerCase().trim();
 
-    const isAppApproved = rawStatus === "approved" || rawStatus === "released" || Boolean((app as any)?.isReleased) || (typeof window !== "undefined" && (
+    const hasApprovedTracking = Array.isArray((app as any)?.trackingSteps) && (app as any).trackingSteps.some((st: any) =>
+      st && (
+        (String(st.name || "").toLowerCase().includes("zoning") && String(st.status || "").toLowerCase() === "completed") ||
+        (String(st.name || "").toLowerCase().includes("clearance") && String(st.status || "").toLowerCase() === "completed") ||
+        (String(st.name || "").toLowerCase().includes("approved") && String(st.status || "").toLowerCase() === "completed")
+      )
+    );
+    const hasApprovalRemarks = Boolean((app as any)?.dateApproved) || String((app as any)?.remarks || "").toLowerCase().includes("approved");
+
+    const isAppApproved = rawStatus === "approved" || rawStatus.includes("approv") || rawStatus === "released" || Boolean((app as any)?.isReleased) || hasApprovedTracking || hasApprovalRemarks || (typeof window !== "undefined" && (
       localStorage.getItem(`etayo_approved_${appId}`) === "true" ||
       localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
       localStorage.getItem(`etayo_approved_${upperAppId}`) === "true" ||

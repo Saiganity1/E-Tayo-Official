@@ -325,19 +325,30 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (userName) params.append("name", userName.trim());
       }
       const qStr = params.toString();
-      const permitsUrl = qStr ? `${API_BASE_URL}/permits?${qStr}` : `${API_BASE_URL}/permits`;
+      const proxyPermitsUrl = qStr ? `/api/permits?${qStr}` : `/api/permits`;
+      const directPermitsUrl = qStr ? `${API_BASE_URL}/permits?${qStr}` : `${API_BASE_URL}/permits`;
 
-      const [appsRes, logsRes, feesRes] = await Promise.all([
-        fetch(permitsUrl, { headers }).then(async r => {
+      const fetchPermitsSafe = async (): Promise<Response> => {
+        if (typeof window !== "undefined") {
+          try {
+            const pRes = await fetch(proxyPermitsUrl, { headers, cache: "no-store" });
+            if (pRes.ok) return pRes;
+          } catch (e) {}
+        }
+        return fetch(directPermitsUrl, { headers }).then(async r => {
           if (!r.ok && token) {
-            return fetch(permitsUrl, { headers: { "Accept": "application/json" } });
+            return fetch(directPermitsUrl, { headers: { "Accept": "application/json" } });
           }
           return r;
-        }).catch(e => ({ ok: false, json: async () => [] })),
+        }).catch(e => ({ ok: false, json: async () => [] } as any));
+      };
+
+      const [appsRes, logsRes, feesRes] = await Promise.all([
+        fetchPermitsSafe(),
         isStaffOrAdmin 
-          ? fetch(`${API_BASE_URL}/logs`, { headers }).catch(e => ({ ok: false, json: async () => [] }))
+          ? fetch(typeof window !== "undefined" ? "/api/logs" : `${API_BASE_URL}/logs`, { headers }).catch(e => ({ ok: false, json: async () => [] }))
           : Promise.resolve({ ok: false, json: async () => [] } as any),
-        fetch(`${API_BASE_URL}/fees`, { headers }).catch(e => ({ ok: false, json: async () => [] }))
+        fetch(typeof window !== "undefined" ? "/api/fees" : `${API_BASE_URL}/fees`, { headers }).catch(e => ({ ok: false, json: async () => [] }))
       ]);
 
       // Check if Cloudflare or Render returned 429
@@ -524,9 +535,40 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           } catch (e) {}
         }
 
+        let mTracking = mApp.trackingSteps || [];
+        if (mIsApproved || mEffectiveStatus === "approved" || mEffectiveStatus === "released") {
+          const rawSteps = mTracking.length > 0 ? [...mTracking] : [
+            { name: "1. Filing", title: "1. Filing", status: "completed" },
+            { name: "2. Evaluation", title: "2. Evaluation", status: "completed" },
+            { name: "3. Zoning Clearance", title: "3. Zoning Clearance", status: "completed" }
+          ];
+          mTracking = rawSteps.map((st: any, idx: number) => {
+            const sName = String(st?.title || st?.name || "").toLowerCase();
+            if (idx === 0 || idx === 1 || sName.includes("filing") || sName.includes("submitted") || sName.includes("evaluation") || sName.includes("review")) {
+              return { ...st, status: "completed" };
+            }
+            if (idx === 2 || sName.includes("zoning") || sName.includes("clearance") || sName.includes("approved")) {
+              return { ...st, status: "completed" };
+            }
+            return st;
+          });
+          const hasStep3 = mTracking.some((st: any) => {
+            const sName = String(st?.title || st?.name || "").toLowerCase();
+            return sName.includes("zoning") || sName.includes("clearance") || sName.includes("approved") || sName.includes("3.");
+          });
+          if (!hasStep3) {
+            mTracking.push({
+              name: "3. Zoning Clearance",
+              title: "3. Zoning Clearance",
+              status: "completed"
+            });
+          }
+        }
+
         return {
           ...mApp,
           status: mEffectiveStatus,
+          trackingSteps: mTracking,
           orderOfPaymentNo: mOp || (mApp as any).orderOfPaymentNo,
           assessedFees: mFees ? Number(mFees) : (mApp as any).assessedFees,
           dateApproved: mDateApp || (mApp as any).dateApproved || (mIsApproved ? ((mApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
@@ -629,13 +671,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // 4. Fetch fresh data from backend immediately
     fetchData();
 
-    // 5. Set up periodic polling every 20 seconds for real-time multi-tab & multi-user sync (only if window is visible and user is logged in)
+    // 5. Set up periodic polling every 6 seconds for real-time multi-tab & multi-user sync (only if window is visible and user is logged in)
     const pollInterval = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       const currentToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       if (!currentToken) return; // Do not poll when logged out
       fetchData();
-    }, 20000);
+    }, 6000);
 
     // 6. Cross-tab & multi-window instant reactive update listener
     const handleSyncEvent = () => {
@@ -651,9 +693,17 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       fetchData();
     };
 
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        handleSyncEvent();
+      }
+    };
+
     if (typeof window !== "undefined") {
       window.addEventListener("storage", handleSyncEvent);
+      window.addEventListener("focus", handleSyncEvent);
       window.addEventListener("etayo_applications_updated", handleSyncEvent);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
     }
 
     // Restore user role from login session
@@ -677,7 +727,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       clearInterval(pollInterval);
       if (typeof window !== "undefined") {
         window.removeEventListener("storage", handleSyncEvent);
+        window.removeEventListener("focus", handleSyncEvent);
         window.removeEventListener("etayo_applications_updated", handleSyncEvent);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
       }
     };
   }, []);
@@ -761,6 +813,39 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const updateApplication = async (updatedApp: PermitApplication) => {
     const matchPermitId = (a?: string, b?: string) => Boolean(a && b && a.trim().toLowerCase() === b.trim().toLowerCase());
+
+    if (updatedApp.status === "approved" || (updatedApp.status as string) === "released") {
+      const rawSteps = (updatedApp.trackingSteps && updatedApp.trackingSteps.length > 0) ? [...updatedApp.trackingSteps] : [
+        { name: "1. Filing", title: "1. Filing", status: "completed" },
+        { name: "2. Evaluation", title: "2. Evaluation", status: "completed" },
+        { name: "3. Zoning Clearance", title: "3. Zoning Clearance", status: "completed" }
+      ];
+      const fixedSteps = rawSteps.map((st: any, idx: number) => {
+        const sName = String(st?.title || st?.name || "").toLowerCase();
+        if (idx === 0 || idx === 1 || sName.includes("filing") || sName.includes("submitted") || sName.includes("evaluation") || sName.includes("review")) {
+          return { ...st, status: "completed" };
+        }
+        if (idx === 2 || sName.includes("zoning") || sName.includes("clearance") || sName.includes("approved")) {
+          return { ...st, status: "completed" };
+        }
+        return st;
+      });
+      const hasStep3 = fixedSteps.some((st: any) => {
+        const sName = String(st?.title || st?.name || "").toLowerCase();
+        return sName.includes("zoning") || sName.includes("clearance") || sName.includes("approved") || sName.includes("3.");
+      });
+      if (!hasStep3) {
+        fixedSteps.push({
+          name: "3. Zoning Clearance",
+          title: "3. Zoning Clearance",
+          status: "completed"
+        });
+      }
+      updatedApp = {
+        ...updatedApp,
+        trackingSteps: fixedSteps
+      };
+    }
 
     // 1. Optimistic UI update with case-insensitive ID matching
     setApplications((prev) => {
@@ -861,52 +946,39 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       const targetId = encodeURIComponent(String(updatedApp.id).trim());
 
-      // 4. Fast PATCH status endpoint to guarantee DB update
+      // 4. Fast PATCH status endpoint to guarantee DB update (proxy first)
+      const patchBody = JSON.stringify({
+        status: updatedApp.status,
+        remarks: updatedApp.remarks || ""
+      });
       try {
-        let patchRes = await fetch(`${API_BASE_URL}/permits/${targetId}/status`, {
+        let patchRes = await fetch(`/api/permits/${targetId}/status`, {
           method: "PATCH",
           headers,
-          body: JSON.stringify({
-            status: updatedApp.status,
-            remarks: updatedApp.remarks || ""
-          })
-        });
-        if (!patchRes.ok && token) {
-          await fetch(`${API_BASE_URL}/permits/${targetId}/status`, {
+          body: patchBody
+        }).catch(() => null);
+        if (!patchRes || !patchRes.ok) {
+          patchRes = await fetch(`${API_BASE_URL}/permits/${targetId}/status`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              status: updatedApp.status,
-              remarks: updatedApp.remarks || ""
-            })
-          });
+            headers,
+            body: patchBody
+          }).catch(() => null);
         }
-      } catch (e) {
-        try {
-          await fetch(`${API_BASE_URL}/permits/${targetId}/status`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              status: updatedApp.status,
-              remarks: updatedApp.remarks || ""
-            })
-          });
-        } catch (err) {}
-      }
+      } catch (e) {}
 
-      // 5. Full PUT update for tracking steps, logs, requirements
+      // 5. Full PUT update for tracking steps, logs, requirements (proxy first)
       try {
-        let res = await fetch(`${API_BASE_URL}/permits/${targetId}`, {
+        let res = await fetch(`/api/permits/${targetId}`, {
           method: "PUT",
           headers,
           body: JSON.stringify(updatedApp)
-        });
-        if (!res.ok && token) {
+        }).catch(() => null);
+        if (!res || !res.ok) {
           res = await fetch(`${API_BASE_URL}/permits/${targetId}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify(updatedApp)
-          });
+          }).catch(() => null);
         }
         if (res && res.ok) {
           const saved: PermitApplication = await res.json();
