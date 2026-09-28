@@ -98,16 +98,27 @@ export const isApplicationApproved = (app: any): boolean => {
     return false;
   }
 
+  // 1. Direct status flags from backend — these are authoritative and ALWAYS win over stale localStorage
+  if (rawStatus === "approved" || rawStatus.includes("approv") || rawStatus === "released" || Boolean(app.isReleased)) {
+    // Also update localStorage to reflect the real backend status (clears stale "pending")
+    if (typeof window !== "undefined" && appId) {
+      try {
+        [appId, lowerAppId, upperAppId].forEach(k => {
+          if (k) {
+            localStorage.setItem(`etayo_status_${k}`, rawStatus === "released" ? "released" : "approved");
+            localStorage.setItem(`etayo_approved_${k}`, "true");
+          }
+        });
+      } catch (e) {}
+    }
+    return true;
+  }
+
   const localStatus = typeof window !== "undefined" && appId 
     ? (localStorage.getItem(`etayo_status_${appId}`) || localStorage.getItem(`etayo_status_${lowerAppId}`) || localStorage.getItem(`etayo_status_${upperAppId}`))
     : null;
   if (localStatus === "pending") {
     return false;
-  }
-
-  // 1. Direct status flags from backend or state
-  if (rawStatus === "approved" || rawStatus.includes("approv") || rawStatus === "released" || Boolean(app.isReleased)) {
-    return true;
   }
 
   // 2. Date approved is populated by admin

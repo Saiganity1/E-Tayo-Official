@@ -428,6 +428,22 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               };
             }
 
+            // SYNC FIX: When the backend says "approved" or "released", immediately update localStorage
+            // so any stale "pending" flag is cleared and the user sees the approval instantly on next render
+            if ((bAppStatus === "approved" || bAppStatus === "released") && typeof window !== "undefined" && id) {
+              try {
+                [id, lowerId, upperId].forEach(k => {
+                  if (k) {
+                    localStorage.setItem(`etayo_status_${k}`, bAppStatus);
+                    localStorage.setItem(`etayo_approved_${k}`, "true");
+                    if (bAppStatus === "released") {
+                      localStorage.setItem(`etayo_released_${k}`, "true");
+                    }
+                  }
+                });
+              } catch (e) {}
+            }
+
             const isPaidLocal = typeof window !== "undefined" && (
               localStorage.getItem(`etayo_paid_${id}`) === "true" ||
               localStorage.getItem(`etayo_paid_${lowerId}`) === "true" ||

@@ -1439,7 +1439,39 @@ export default function StaffEvaluatePage() {
       if (attempt < 2) await new Promise(r => setTimeout(r, 400));
     }
 
+    // 3. Verify backend actually persisted the status — retry PATCH if not (handles Render.com cold-start timeouts)
+    try {
+      await new Promise(r => setTimeout(r, 800)); // short wait for DB flush
+      let verified = false;
+      for (let vAttempt = 1; vAttempt <= 3; vAttempt++) {
+        try {
+          const verifyRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+            cache: "no-store"
+          }).catch(() => null);
+          if (verifyRes && verifyRes.ok) {
+            const verifyData = await verifyRes.json().catch(() => null);
+            if (verifyData && String(verifyData.status || "").toLowerCase().trim() === "approved") {
+              verified = true;
+              break;
+            }
+          }
+        } catch (e) {}
+        // Backend status not yet "approved" — retry the PATCH
+        if (vAttempt < 3) {
+          await new Promise(r => setTimeout(r, 1000));
+          await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+            method: "PATCH",
+            headers: authHeaders,
+            body: patchPayload
+          }).catch(() => null);
+        }
+      }
+    } catch (e) {}
+
     await updateApplication(updatedApp as any);
+
 
     // 1. Automatically dispatch official approval notice & Order of Payment with fee amount to applicant
     try {
