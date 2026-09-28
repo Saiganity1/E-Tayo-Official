@@ -771,11 +771,30 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [userRole]);
 
   const addApplication = async (newApp: PermitApplication) => {
+    // Ensure new application strictly defaults to pending status
+    if (!newApp.status) {
+      newApp.status = "pending";
+    }
+
     // 1. Optimistic UI update
     setApplications((prev) => [newApp, ...prev]);
 
-    // 2. Cache in localStorage immediately
+    // 2. Cache in localStorage immediately and reset any stale flags for this ID
     try {
+      const id = String(newApp.id || "").trim();
+      const lowerId = id.toLowerCase();
+      const upperId = id.toUpperCase();
+      [id, lowerId, upperId].forEach((k) => {
+        localStorage.removeItem(`etayo_approved_${k}`);
+        localStorage.removeItem(`etayo_released_${k}`);
+        localStorage.removeItem(`etayo_paid_${k}`);
+        localStorage.removeItem(`etayo_payment_confirmed_${k}`);
+        localStorage.removeItem(`etayo_payment_ref_${k}`);
+        localStorage.removeItem(`etayo_receipt_${k}`);
+        localStorage.removeItem(`etayo_or_${k}`);
+        localStorage.setItem(`etayo_status_${k}`, newApp.status || "pending");
+      });
+
       const stored = localStorage.getItem("etayo_cached_applications");
       const currentList: PermitApplication[] = stored ? JSON.parse(stored) : [];
       localStorage.setItem("etayo_cached_applications", JSON.stringify([newApp, ...currentList.filter(a => a.id !== newApp.id)]));

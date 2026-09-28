@@ -295,6 +295,11 @@ public class PermitController {
             System.err.println("Notice: Google Drive background backup skipped: " + e.getMessage());
         }
 
+        if (permit.getStatus() == null || permit.getStatus().trim().isEmpty()) {
+            permit.setStatus("pending");
+        }
+        syncTrackingStepsForStatus(permit, permit.getStatus());
+
         PermitApplication saved = permitApplicationRepository.save(permit);
         try {
             auditLoggingService.logAction(
@@ -517,6 +522,23 @@ public class PermitController {
             if (app.getRequirements() != null) {
                 for (com.etayo.backend.model.Requirement req : app.getRequirements()) {
                     req.setStatus("approved");
+                }
+            }
+        } else if ("pending".equals(cleanStatus)) {
+            if (!steps.isEmpty()) {
+                steps.get(0).setStatus("completed");
+            }
+            if (steps.size() > 1) {
+                steps.get(1).setStatus("in-progress");
+            }
+            for (int i = 2; i < steps.size(); i++) {
+                steps.get(i).setStatus("upcoming");
+            }
+            if (app.getRequirements() != null) {
+                for (com.etayo.backend.model.Requirement req : app.getRequirements()) {
+                    if (req.getStatus() == null || req.getStatus().equalsIgnoreCase("approved")) {
+                        req.setStatus("submitted");
+                    }
                 }
             }
         } else if ("under_review".equals(cleanStatus)) {

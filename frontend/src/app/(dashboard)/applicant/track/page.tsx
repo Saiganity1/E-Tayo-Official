@@ -160,64 +160,6 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     showToast("Payment confirmation & receipt submitted! Municipal cashier notified.", "success");
   };
 
-  const handleInstantRelease = async (appToRelease: any, connectedApp?: any) => {
-    const paymentInfo = checkUserConfirmedPayment(appToRelease, connectedApp);
-    const orNumber = paymentInfo.reference || (appToRelease as any).paymentReference || (appToRelease as any).officialReceiptNo || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
-    const releaseDateFormatted = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-    const id = String(appToRelease.id || "");
-    const other = connectedApp || (applications ? getConnectedApp(appToRelease, applications) : null);
-    const otherId = String(other?.id || "");
-
-    const updatedTracking = [
-      ...(appToRelease.trackingSteps || []).map((step: any) => ({ ...step, status: "completed" })),
-      {
-        title: "Permit Officially Released",
-        status: "completed",
-        date: releaseDateFormatted,
-        notes: `Payment confirmed under Official Receipt No. ${orNumber}. All official permits and clearances have been RELEASED and made available for applicant download.`
-      }
-    ];
-
-    const updatedApp = {
-      ...appToRelease,
-      status: "released",
-      paymentStatus: "paid",
-      isReleased: true,
-      officialReceiptNo: orNumber,
-      datePaid: releaseDateFormatted,
-      dateReleased: releaseDateFormatted,
-      trackingSteps: updatedTracking
-    };
-
-    try {
-      localStorage.setItem(`etayo_paid_${id}`, "true");
-      localStorage.setItem(`etayo_paid_${id.toLowerCase()}`, "true");
-      localStorage.setItem(`etayo_or_${id}`, orNumber);
-      if (otherId) {
-        localStorage.setItem(`etayo_paid_${otherId}`, "true");
-        localStorage.setItem(`etayo_paid_${otherId.toLowerCase()}`, "true");
-        localStorage.setItem(`etayo_or_${otherId}`, orNumber);
-      }
-    } catch (e) {}
-
-    await updateApplication(updatedApp as any);
-
-    if (other && updateApplication) {
-      const updatedOther = {
-        ...other,
-        status: "released",
-        paymentStatus: "paid",
-        isReleased: true,
-        officialReceiptNo: orNumber,
-        datePaid: releaseDateFormatted,
-        dateReleased: releaseDateFormatted
-      };
-      await updateApplication(updatedOther as any);
-    }
-
-    showToast("Permit officially verified & released! Documents unlocked.", "success");
-  };
-
   useEffect(() => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -447,12 +389,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     return getConnectedProjectApp(app, allApps);
   };
 
-  const checkUserConfirmedPayment = (app: any, connectedApp?: any): { confirmed: boolean; reference: string; method: string; date?: string; receiptUrl?: string } => {
+  const checkUserConfirmedPayment = (app: any): { confirmed: boolean; reference: string; method: string; date?: string; receiptUrl?: string } => {
     if (!app) return { confirmed: false, reference: "", method: "" };
 
-    const other = connectedApp || (applications ? getConnectedApp(app, applications) : null);
+    const rawSt = (app.status || "").toLowerCase().trim();
+    if (rawSt === "pending" || rawSt === "under_review" || rawSt === "incomplete_requirements" || rawSt === "rejected" || rawSt === "cancelled") {
+      return { confirmed: false, reference: "", method: "" };
+    }
+
     const id = String(app.id || "");
-    const otherId = String(other?.id || "");
 
     // 1. Direct properties on app
     if (Boolean((app as any).userConfirmedPayment)) {
@@ -475,40 +420,21 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       };
     }
 
-    // 2. Direct properties on connected application
-    if (other) {
-      if (Boolean((other as any).userConfirmedPayment) || other.paymentStatus === "awaiting_verification" || other.paymentStatus === "paid" || other.status === "released") {
-        return {
-          confirmed: true,
-          reference: (other as any).paymentReference || (other as any).officialReceiptNo || "OR-2026-SUBMITTED",
-          method: (other as any).paymentMethod || "Municipal Treasury / Online",
-          date: (other as any).paymentDate || (other as any).datePaid,
-          receiptUrl: (other as any).paymentProofUrl
-        };
-      }
-    }
-
-    // 3. LocalStorage flags
+    // 2. LocalStorage flags specifically for THIS application ID
     if (typeof window !== "undefined") {
       const receiptImg = localStorage.getItem(`etayo_receipt_${id}`) || 
-                         localStorage.getItem(`etayo_receipt_${id.toLowerCase()}`) ||
-                         (otherId ? (localStorage.getItem(`etayo_receipt_${otherId}`) || localStorage.getItem(`etayo_receipt_${otherId.toLowerCase()}`)) : null);
+                         localStorage.getItem(`etayo_receipt_${id.toLowerCase()}`);
 
       const isConfirmedLocal = localStorage.getItem(`etayo_payment_confirmed_${id}`) === "true" ||
-                               localStorage.getItem(`etayo_payment_confirmed_${id.toLowerCase()}`) === "true" ||
-                               (otherId && (localStorage.getItem(`etayo_payment_confirmed_${otherId}`) === "true" || localStorage.getItem(`etayo_payment_confirmed_${otherId.toLowerCase()}`) === "true"));
+                               localStorage.getItem(`etayo_payment_confirmed_${id.toLowerCase()}`) === "true";
 
       const isPaidLocal = localStorage.getItem(`etayo_paid_${id}`) === "true" ||
-                          localStorage.getItem(`etayo_paid_${id.toLowerCase()}`) === "true" ||
-                          (otherId && (localStorage.getItem(`etayo_paid_${otherId}`) === "true" || localStorage.getItem(`etayo_paid_${otherId.toLowerCase()}`) === "true"));
+                          localStorage.getItem(`etayo_paid_${id.toLowerCase()}`) === "true";
 
       const storedRef = localStorage.getItem(`etayo_payment_ref_${id}`) ||
-                        (otherId ? localStorage.getItem(`etayo_payment_ref_${otherId}`) : null) ||
-                        localStorage.getItem(`etayo_or_${id}`) ||
-                        (otherId ? localStorage.getItem(`etayo_or_${otherId}`) : null);
+                        localStorage.getItem(`etayo_or_${id}`);
 
-      const storedMethod = localStorage.getItem(`etayo_payment_method_${id}`) ||
-                           (otherId ? localStorage.getItem(`etayo_payment_method_${otherId}`) : null);
+      const storedMethod = localStorage.getItem(`etayo_payment_method_${id}`);
 
       if (isConfirmedLocal || isPaidLocal || Boolean(receiptImg) || Boolean(storedRef)) {
         return {
@@ -519,23 +445,19 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         };
       }
 
-      // 4. Check etayo_messages_history
+      // 3. Check etayo_messages_history strictly for THIS application ID
       try {
         const msgsStr = localStorage.getItem("etayo_messages_history");
         if (msgsStr) {
           const msgs = JSON.parse(msgsStr);
           if (Array.isArray(msgs)) {
             const hasPaymentMsg = msgs.some((m: any) => {
-              const matchesApp = m.applicationId === id || (otherId && m.applicationId === otherId) ||
-                (typeof m.content === "string" && (m.content.includes(id) || (otherId && m.content.includes(otherId))));
-              if (!matchesApp) return false;
+              if (m.applicationId !== id && m.applicationId !== id.toLowerCase()) return false;
               const content = (m.content || "").toUpperCase();
               return content.includes("PAYMENT CONFIRMATION") ||
                      content.includes("PAYMENT RECEIPT") ||
                      content.includes("OFFICIAL PAYMENT SETTLED") ||
-                     content.includes("PAYMENT VERIFIED") ||
-                     content.includes("ATTACHMENT:") ||
-                     content.includes("OR-2026");
+                     content.includes("PAYMENT VERIFIED");
             });
 
             if (hasPaymentMsg) {
@@ -553,9 +475,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     return { confirmed: false, reference: "", method: "" };
   };
 
-  const isActuallyReleasedApp = (app: any, connectedApp?: any) => {
+  const isActuallyReleasedApp = (app: any) => {
     if (!app) return false;
     const rawSt = (app.status || "").toLowerCase().trim();
+    if (rawSt === "pending" || rawSt === "under_review" || rawSt === "incomplete_requirements" || rawSt === "rejected" || rawSt === "cancelled") {
+      return false;
+    }
     if (rawSt === "released" || Boolean(app.isReleased)) return true;
 
     if (typeof window !== "undefined") {
@@ -578,34 +503,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       return true;
     }
 
-    const other = connectedApp || (applications ? getConnectedApp(app, applications) : null);
-    if (other) {
-      const otherRawSt = (other.status || "").toLowerCase().trim();
-      if (otherRawSt === "released" || Boolean(other.isReleased)) {
-        return true;
-      }
-      if (typeof window !== "undefined") {
-        const otherId = String(other.id || "").trim();
-        const otherLower = otherId.toLowerCase();
-        const otherUpper = otherId.toUpperCase();
-        if (
-          localStorage.getItem(`etayo_released_${otherId}`) === "true" || 
-          localStorage.getItem(`etayo_released_${otherLower}`) === "true" ||
-          localStorage.getItem(`etayo_released_${otherUpper}`) === "true" ||
-          localStorage.getItem(`etayo_status_${otherId}`) === "released" ||
-          localStorage.getItem(`etayo_status_${otherLower}`) === "released" ||
-          localStorage.getItem(`etayo_status_${otherUpper}`) === "released"
-        ) {
-          return true;
-        }
-      }
-    }
-
     return false;
   };
 
-  const getStatusConfig = (status: string, app?: any, connectedApp?: any) => {
-    const isReleased = status === "released" || isActuallyReleasedApp(app, connectedApp) || Boolean(app?.isReleased);
+  const getStatusConfig = (status: string, app?: any) => {
+    const isReleased = status === "released" || isActuallyReleasedApp(app) || Boolean(app?.isReleased);
     if (isReleased) {
       return { color: "#059669", bg: "#dcfce7", border: "#16a34a", icon: CheckCircle, label: "Permit Released", step: 4 };
     }
@@ -615,6 +517,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const upperId = id.toUpperCase();
     const rawStatus = (status || "").toLowerCase().trim();
     const appRawStatus = (app?.status || "").toLowerCase().trim();
+    const isExplicitlyPending = rawStatus === "pending" || rawStatus === "under_review" || rawStatus === "incomplete_requirements" || rawStatus === "rejected" || rawStatus === "cancelled" || appRawStatus === "pending" || appRawStatus === "under_review" || appRawStatus === "incomplete_requirements" || appRawStatus === "rejected" || appRawStatus === "cancelled";
 
     const isLocallyApproved = typeof window !== "undefined" && (
       localStorage.getItem(`etayo_approved_${id}`) === "true" ||
@@ -639,15 +542,16 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
     const hasApprovalRemarks = Boolean(app?.dateApproved) || (
       typeof app?.remarks === "string" && (
-        app.remarks.toLowerCase().includes("approved") ||
-        app.remarks.toLowerCase().includes("clearance approved")
+        app.remarks.toLowerCase().includes("clearance approved") ||
+        app.remarks.toLowerCase().includes("locational clearance approved") ||
+        app.remarks.toLowerCase().includes("application approved")
       )
     );
 
-    const isApproved = rawStatus === "approved" || rawStatus.includes("approv") || appRawStatus === "approved" || appRawStatus.includes("approv") || isLocallyApproved || hasApprovedTracking || hasApprovalRemarks;
+    const isApproved = !isExplicitlyPending && (rawStatus === "approved" || rawStatus.includes("approv") || appRawStatus === "approved" || appRawStatus.includes("approv") || isLocallyApproved || hasApprovedTracking || hasApprovalRemarks);
 
     if (isApproved) {
-      const paymentInfo = checkUserConfirmedPayment(app, connectedApp);
+      const paymentInfo = checkUserConfirmedPayment(app);
       if (paymentInfo.confirmed) {
         return {
           color: "#059669",
@@ -746,12 +650,13 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const connectedApp = getConnectedProjectApp(app, applications);
     const connectedStage2App = isLocationalClearance ? connectedApp : null;
     const connectedLCApp = !isLocationalClearance ? connectedApp : null;
-    const isActuallyReleased = isActuallyReleasedApp(app, connectedApp);
-    const paymentInfo = checkUserConfirmedPayment(app, connectedApp);
+    const isActuallyReleased = isActuallyReleasedApp(app);
+    const paymentInfo = checkUserConfirmedPayment(app);
     const appIdStr = String(app.id || "").trim();
     const lowerAppId = appIdStr.toLowerCase();
     const upperAppId = appIdStr.toUpperCase();
     const rawAppStatus = (app.status || "").toLowerCase().trim();
+    const isAppExplicitlyPending = rawAppStatus === "pending" || rawAppStatus === "under_review" || rawAppStatus === "incomplete_requirements" || rawAppStatus === "rejected" || rawAppStatus === "cancelled";
     const isTrackingStepApproved = Array.isArray(app.trackingSteps) && app.trackingSteps.some((s: any) => {
       const sName = String(s?.title || s?.name || "").toLowerCase();
       const sStatus = String(s?.status || "").toLowerCase();
@@ -766,10 +671,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const isRemarksApproved = Boolean(app.dateApproved) || (typeof app.remarks === "string" && (
       app.remarks.toLowerCase().includes("clearance approved") ||
       app.remarks.toLowerCase().includes("locational clearance approved") ||
-      app.remarks.toLowerCase().includes("application approved") ||
-      app.remarks.toLowerCase().includes("approved")
+      app.remarks.toLowerCase().includes("application approved")
     ));
-    const isAppApproved = rawAppStatus === "approved" || rawAppStatus.includes("approv") || rawAppStatus === "released" || isActuallyReleased || Boolean(app.isReleased) || isTrackingStepApproved || isRemarksApproved || Boolean(app.dateApproved) ||
+    const isAppApproved = !isAppExplicitlyPending && (rawAppStatus === "approved" || rawAppStatus.includes("approv") || rawAppStatus === "released" || isActuallyReleased || Boolean(app.isReleased) || isTrackingStepApproved || isRemarksApproved || Boolean(app.dateApproved) ||
       (typeof window !== "undefined" && (
         localStorage.getItem(`etayo_approved_${appIdStr}`) === "true" ||
         localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
@@ -780,7 +684,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         localStorage.getItem(`etayo_status_${appIdStr}`) === "released" ||
         localStorage.getItem(`etayo_status_${lowerAppId}`) === "released" ||
         localStorage.getItem(`etayo_status_${upperAppId}`) === "released"
-      ));
+      )));
     const isLocalUnderReview = typeof window !== "undefined" && (
       localStorage.getItem(`etayo_status_${appIdStr}`) === "under_review" ||
       localStorage.getItem(`etayo_status_${lowerAppId}`) === "under_review" ||
@@ -790,8 +694,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       ? "released" 
       : (isAppApproved 
           ? "approved" 
-          : (isLocalUnderReview || rawAppStatus === "under_review" ? "under_review" : app.status));
-    const statusConfig = getStatusConfig(effectiveStatus, app, connectedApp);
+          : (isLocalUnderReview || rawAppStatus === "under_review" ? "under_review" : (rawAppStatus || "pending")));
+    const statusConfig = getStatusConfig(effectiveStatus, app);
     const StatusIcon = statusConfig.icon;
     const isApprovedLC = isLocationalClearance && isAppApproved;
     const isArchived = archivedIds.includes(app.id);
@@ -1215,29 +1119,6 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                     <Clock size={14} />
                     <span>Cashier Verification Pending</span>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleInstantRelease(app, connectedStage2App)}
-                    title="Officially verify and release permit documents now"
-                    style={{
-                      background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                      color: "white",
-                      border: "none",
-                      padding: "8px 14px",
-                      borderRadius: "8px",
-                      fontSize: "0.82rem",
-                      fontWeight: "800",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      boxShadow: "0 2px 8px rgba(5, 150, 105, 0.25)"
-                    }}
-                  >
-                    <CheckCircle size={14} />
-                    <span>Verify & Release Now</span>
-                  </button>
                 </div>
               )}
             </div>

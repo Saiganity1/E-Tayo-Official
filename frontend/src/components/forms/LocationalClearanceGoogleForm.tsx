@@ -234,7 +234,7 @@ export default function LocationalClearanceGoogleForm({
           {
             name: "Application for Locational Clearance (Sto. Tomas)",
             required: true,
-            status: "approved",
+            status: "submitted",
             fileName: generatedFileName
           }
         ],

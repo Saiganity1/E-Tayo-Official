@@ -285,7 +285,7 @@ export default function UnifiedProjectGoogleForm({
         requirements: selectedForms.map(formKey => ({
           name: PERMIT_FORM_METADATA[formKey].label,
           required: true,
-          status: "approved",
+          status: "submitted",
           fileName: `${PERMIT_FORM_METADATA[formKey].code}_auto_generated.pdf`
         })),
         trackingSteps: [

@@ -712,10 +712,10 @@ export default function ApplyPage() {
       requirementsList.push({
         name: `${meta.label} (${meta.code})`,
         required: true,
-        status: "approved",
+        status: "submitted",
         fileName: doc?.fileName || `${meta.code}_${selectedProjectType.name.replace(/\s+/g, '_')}_Official_Filled.pdf`,
         fileSize: doc?.fileSize || "1.4 MB",
-        remarks: `Official ${meta.label} document submitted and verified`,
+        remarks: `Official ${meta.label} document submitted for engineering evaluation`,
         fileUrl: doc?.fileUrl || templatePath
       });
     });
@@ -730,7 +730,7 @@ export default function ApplyPage() {
           requirementsList.push({
             name: `${meta.label} (${meta.code}) [Conditional]`,
             required: false,
-            status: "approved",
+            status: "submitted",
             fileName: doc.fileName,
             fileSize: doc.fileSize,
             remarks: "Voluntarily attached conditional engineering document",
