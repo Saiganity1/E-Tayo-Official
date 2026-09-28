@@ -801,8 +801,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const lowerTrackId = curTrackId.toLowerCase();
   const upperTrackId = curTrackId.toUpperCase();
   const rawAppStatus = String(appData?.status || "").toLowerCase().trim();
-
-  const isApproved = isApplicationApproved(appData);
+  const isPending = rawAppStatus === "pending" || !rawAppStatus;
+  const isApproved = isPending ? false : isApplicationApproved(appData);
 
   // Sync localStorage with verified approval
   if (isApproved && typeof window !== "undefined" && curTrackId) {
@@ -812,13 +812,31 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         localStorage.setItem(`etayo_approved_${k}`, "true");
       });
     } catch (e) {}
+  } else if (isPending && typeof window !== "undefined" && curTrackId) {
+    try {
+      [curTrackId, lowerTrackId, upperTrackId].forEach(k => {
+        localStorage.removeItem(`etayo_approved_${k}`);
+        localStorage.removeItem(`etayo_released_${k}`);
+        localStorage.removeItem(`etayo_paid_${k}`);
+        localStorage.removeItem(`etayo_payment_confirmed_${k}`);
+        localStorage.removeItem(`etayo_receipt_${k}`);
+        localStorage.removeItem(`etayo_op_${k}`);
+        localStorage.removeItem(`etayo_fees_${k}`);
+        localStorage.removeItem(`etayo_date_approved_${k}`);
+        localStorage.setItem(`etayo_status_${k}`, "pending");
+      });
+    } catch (e) {}
   }
 
   const getStatusDetails = (status: string) => {
     if (isActuallyReleased || status === "released") {
       return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle, label: "Permit Released", step: 4 };
     }
-    if (status === "approved" || isApproved) {
+    const cleanSt = String(status || "").toLowerCase().trim();
+    if (cleanSt === "pending" || isPending) {
+      return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", step: 1 };
+    }
+    if (cleanSt === "approved" || isApproved) {
       if (paymentInfo.confirmed) {
         return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Payment Submitted (Under Review)", step: 3 };
       }

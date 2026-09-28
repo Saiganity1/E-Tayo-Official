@@ -284,6 +284,11 @@ export default function ApplicantDashboard() {
       localStorage.getItem(`etayo_status_${upperId}`) === "under_review"
     );
 
+    const isPending = rawStatus === "pending" || appRawStatus === "pending" || !rawStatus;
+    if (isPending) {
+      return { color: "#d97706", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", border: "#f59e0b" };
+    }
+
     const isAppApproved = isApplicationApproved(app);
 
     if (isAppApproved) {

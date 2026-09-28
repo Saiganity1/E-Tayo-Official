@@ -379,6 +379,54 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const id = (bApp.id || "").trim();
             const lowerId = id.toLowerCase();
             const upperId = id.toUpperCase();
+            const bAppStatus = String(bApp.status || "").toLowerCase().trim();
+
+            // STRICT AUTHORITATIVE RULE:
+            // If the backend database says "pending", an admin has NOT approved it!
+            // It MUST NEVER auto-approve or inherit stale approved cache/localStorage!
+            if (bAppStatus === "pending") {
+              if (typeof window !== "undefined" && id) {
+                try {
+                  [id, lowerId, upperId].forEach(k => {
+                    if (k) {
+                      localStorage.removeItem(`etayo_approved_${k}`);
+                      localStorage.removeItem(`etayo_released_${k}`);
+                      localStorage.removeItem(`etayo_paid_${k}`);
+                      localStorage.removeItem(`etayo_payment_confirmed_${k}`);
+                      localStorage.removeItem(`etayo_receipt_${k}`);
+                      localStorage.removeItem(`etayo_op_${k}`);
+                      localStorage.removeItem(`etayo_fees_${k}`);
+                      localStorage.removeItem(`etayo_date_approved_${k}`);
+                      localStorage.setItem(`etayo_status_${k}`, "pending");
+                    }
+                  });
+                } catch (e) {}
+              }
+
+              const pendingSteps = (bApp.trackingSteps && bApp.trackingSteps.length > 0)
+                ? bApp.trackingSteps.map((st: any, idx: number) => {
+                    if (idx === 0) return { ...st, status: "completed" };
+                    if (idx === 1) return { ...st, status: "in-progress" };
+                    return { ...st, status: "upcoming" };
+                  })
+                : [
+                    { title: "Application Submitted", status: "completed", date: bApp.dateSubmitted || "Today" },
+                    { title: "Under Evaluation", status: "in-progress", notes: "Reviewing documents and technical attachments." }
+                  ];
+
+              return {
+                ...(foundCached || {}),
+                ...bApp,
+                status: "pending",
+                isReleased: false,
+                paymentStatus: undefined,
+                userConfirmedPayment: false,
+                orderOfPaymentNo: undefined,
+                dateApproved: undefined,
+                remarks: bApp.remarks || null,
+                trackingSteps: pendingSteps
+              };
+            }
 
             const isPaidLocal = typeof window !== "undefined" && (
               localStorage.getItem(`etayo_paid_${id}`) === "true" ||
@@ -490,6 +538,51 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const mId = String(mApp.id || "").trim();
         const mLower = mId.toLowerCase();
         const mUpper = mId.toUpperCase();
+        const mRawStatus = String(mApp.status || "").toLowerCase().trim();
+
+        // 1. Strict guard: If application is pending, rejected, cancelled, or incomplete: NEVER approve or synthesize steps!
+        if (mRawStatus === "pending" || mRawStatus === "rejected" || mRawStatus === "cancelled" || mRawStatus === "incomplete_requirements") {
+          if (typeof window !== "undefined" && mId) {
+            try {
+              [mId, mLower, mUpper].forEach(k => {
+                if (k) {
+                  localStorage.removeItem(`etayo_approved_${k}`);
+                  localStorage.removeItem(`etayo_released_${k}`);
+                  localStorage.removeItem(`etayo_paid_${k}`);
+                  localStorage.removeItem(`etayo_payment_confirmed_${k}`);
+                  localStorage.removeItem(`etayo_receipt_${k}`);
+                  localStorage.removeItem(`etayo_op_${k}`);
+                  localStorage.removeItem(`etayo_fees_${k}`);
+                  localStorage.removeItem(`etayo_date_approved_${k}`);
+                  if (mRawStatus === "pending") {
+                    localStorage.setItem(`etayo_status_${k}`, "pending");
+                  }
+                }
+              });
+            } catch (e) {}
+          }
+
+          let cleanSteps = mApp.trackingSteps || [];
+          if (mRawStatus === "pending") {
+            cleanSteps = cleanSteps.map((st: any, idx: number) => {
+              if (idx === 0) return { ...st, status: "completed" };
+              if (idx === 1) return { ...st, status: "in-progress" };
+              return { ...st, status: "upcoming" };
+            });
+          }
+
+          return {
+            ...mApp,
+            status: mRawStatus,
+            trackingSteps: cleanSteps,
+            isReleased: false,
+            paymentStatus: undefined,
+            userConfirmedPayment: false,
+            orderOfPaymentNo: undefined,
+            dateApproved: undefined
+          };
+        }
+
         const mIsPaid = typeof window !== "undefined" && (
           localStorage.getItem(`etayo_paid_${mId}`) === "true" ||
           localStorage.getItem(`etayo_paid_${mLower}`) === "true" ||
@@ -614,7 +707,29 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const clean = parsed.filter(a => !isDummyApp(a));
+            const clean = parsed.filter(a => !isDummyApp(a)).map(a => {
+              const aId = String(a.id || "").trim();
+              const aStatus = String(a.status || "").toLowerCase().trim();
+              const localSt = typeof window !== "undefined" && aId ? localStorage.getItem(`etayo_status_${aId}`) : null;
+              if (aStatus === "pending" || localSt === "pending") {
+                return {
+                  ...a,
+                  status: "pending",
+                  isReleased: false,
+                  paymentStatus: undefined,
+                  userConfirmedPayment: false,
+                  orderOfPaymentNo: undefined,
+                  dateApproved: undefined,
+                  trackingSteps: (a.trackingSteps && a.trackingSteps.length > 0)
+                    ? a.trackingSteps.map((st: any, idx: number) => ({
+                        ...st,
+                        status: idx === 0 ? "completed" : idx === 1 ? "in-progress" : "upcoming"
+                      }))
+                    : a.trackingSteps
+                };
+              }
+              return a;
+            });
             setApplications(clean);
           }
         }

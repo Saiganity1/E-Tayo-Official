@@ -494,6 +494,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     }
 
     const rawStatus = (status || "").toLowerCase().trim();
+    if (rawStatus === "pending") {
+      return { color: "#d97706", bg: "#fef3c7", border: "#f59e0b", icon: Clock, label: "Pending Review", step: 1 };
+    }
+
     const isApproved = rawStatus === "approved" || rawStatus.includes("approv") || isApplicationApproved(app);
 
     if (isApproved) {
@@ -602,7 +606,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const lowerAppId = appIdStr.toLowerCase();
     const upperAppId = appIdStr.toUpperCase();
     const rawAppStatus = (app.status || "").toLowerCase().trim();
-    const isAppApproved = isApplicationApproved(app);
+    const isPending = rawAppStatus === "pending" || !rawAppStatus;
+    const isAppApproved = isPending ? false : isApplicationApproved(app);
 
     // Keep localStorage in sync with approval
     if (isAppApproved && typeof window !== "undefined" && appIdStr) {
@@ -612,13 +617,29 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           localStorage.setItem(`etayo_approved_${k}`, "true");
         });
       } catch (e) {}
+    } else if (isPending && typeof window !== "undefined" && appIdStr) {
+      try {
+        [appIdStr, lowerAppId, upperAppId].forEach(k => {
+          localStorage.removeItem(`etayo_approved_${k}`);
+          localStorage.removeItem(`etayo_released_${k}`);
+          localStorage.removeItem(`etayo_paid_${k}`);
+          localStorage.removeItem(`etayo_payment_confirmed_${k}`);
+          localStorage.removeItem(`etayo_receipt_${k}`);
+          localStorage.removeItem(`etayo_op_${k}`);
+          localStorage.removeItem(`etayo_fees_${k}`);
+          localStorage.removeItem(`etayo_date_approved_${k}`);
+          localStorage.setItem(`etayo_status_${k}`, "pending");
+        });
+      } catch (e) {}
     }
 
     const effectiveStatus = isActuallyReleased 
       ? "released" 
-      : (isAppApproved 
-          ? "approved" 
-          : (rawAppStatus === "under_review" ? "under_review" : (rawAppStatus || "pending")));
+      : (isPending 
+          ? "pending" 
+          : (isAppApproved 
+              ? "approved" 
+              : (rawAppStatus === "under_review" ? "under_review" : (rawAppStatus || "pending"))));
     const statusConfig = getStatusConfig(effectiveStatus, app);
     const StatusIcon = statusConfig.icon;
     const isApprovedLC = isLocationalClearance && isAppApproved;
@@ -1988,15 +2009,14 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                             {dossier.projectName}
                           </h3>
                           {(() => {
-                            const isAnyUnderReview = dossier.applications.some(a => {
+                            const isAnyPending = dossier.applications.some(a => {
+                              const raw = (a.status || "").toLowerCase().trim();
+                              return raw === "pending" || !raw;
+                            });
+                            const isAnyUnderReview = !isAnyPending && dossier.applications.some(a => {
                               if (isApplicationApproved(a)) return false;
                               const raw = (a.status || "").toLowerCase().trim();
                               return raw === "under_review";
-                            });
-                            const isAnyPending = dossier.applications.some(a => {
-                              if (isApplicationApproved(a)) return false;
-                              const raw = (a.status || "").toLowerCase().trim();
-                              return raw === "pending" || !raw;
                             });
                             return (
                               <span style={{
@@ -2008,7 +2028,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                                 color: hasAction ? "#b91c1c" : isAnyUnderReview ? "#1d4ed8" : isAnyPending ? "#b45309" : "#16a34a",
                                 border: `1px solid ${hasAction ? "#fca5a5" : isAnyUnderReview ? "#bfdbfe" : isAnyPending ? "#fde68a" : "#bbf7d0"}`
                               }}>
-                                {hasAction ? "Action Required on Requirements" : isAnyUnderReview ? `${dossier.pendingCount} Form Under Review` : isAnyPending ? `${dossier.pendingCount} Form${dossier.pendingCount > 1 ? "s" : ""} Awaiting Review` : "All Forms Approved ✓"}
+                                {hasAction ? "Action Required on Requirements" : isAnyUnderReview ? `${dossier.pendingCount || 1} Form Under Review` : isAnyPending ? `${dossier.pendingCount || 1} Form${(dossier.pendingCount || 1) > 1 ? "s" : ""} Awaiting Review` : "All Forms Approved ✓"}
                               </span>
                             );
                           })()}
@@ -2031,9 +2051,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         {dossier.applications.map((app, idx) => {
                           const badge = getPermitTypeBadge(app.permitType, app.id);
-                          const isThisApproved = isApplicationApproved(app);
+                          const isThisPending = (app.status || "").toLowerCase().trim() === "pending" || !app.status;
+                          const isThisApproved = isThisPending ? false : isApplicationApproved(app);
                           const isThisReleased = isActuallyReleasedApp(app) || (app.status || "").toLowerCase() === "released";
-                          const effSt = isThisReleased ? "released" : (isThisApproved ? "approved" : (app.status || "pending"));
+                          const effSt = isThisReleased ? "released" : (isThisPending ? "pending" : (isThisApproved ? "approved" : (app.status || "pending")));
                           const stConfig = getStatusConfig(effSt, app);
                           return (
                             <React.Fragment key={app.id}>

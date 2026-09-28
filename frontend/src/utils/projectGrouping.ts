@@ -51,6 +51,13 @@ export const isBuildingPermit = (app: any): boolean => {
 /**
  * Authoritative check if an application has reached Step 3 (Approved) or Step 4 (Released)
  * across all permit types (Locational Clearance, Building Permits, Ancillary, etc.)
+ *
+ * CRITICAL RULES:
+ * 1. An application is NEVER approved if its status is "pending", "under_review", "rejected", or "cancelled",
+ *    unless an admin has explicitly approved it (status === "approved" or admin decision records exist).
+ * 2. Newly filed applications (with status "pending") MUST stay at Step 1 / Pending until the admin acts.
+ * 3. Step 1 ("Locational Clearance Submitted") and Step 2 ("Zoning & MPDO Evaluation") must NEVER be mistaken
+ *    for Step 3 (Approval). Only index >= 2 or explicit "3. Zoning Clearance" / "Approved" marks Step 3.
  */
 export const isApplicationApproved = (app: any): boolean => {
   if (!app) return false;
@@ -59,43 +66,87 @@ export const isApplicationApproved = (app: any): boolean => {
   const upperAppId = appId.toUpperCase();
   const rawStatus = String(app.status || "").toLowerCase().trim();
 
-  // 1. Direct status flags
+  // Explicitly pending, rejected, cancelled, or action-required applications are NOT approved
+  if (rawStatus === "rejected" || rawStatus === "cancelled" || rawStatus === "incomplete_requirements") {
+    return false;
+  }
+
+  // If status is explicitly pending: an admin has NOT approved it yet!
+  if (!rawStatus || rawStatus === "pending" || rawStatus === "submitted" || rawStatus === "draft") {
+    if (typeof window !== "undefined" && appId) {
+      try {
+        localStorage.removeItem(`etayo_approved_${appId}`);
+        localStorage.removeItem(`etayo_approved_${lowerAppId}`);
+        localStorage.removeItem(`etayo_approved_${upperAppId}`);
+        localStorage.removeItem(`etayo_released_${appId}`);
+        localStorage.removeItem(`etayo_released_${lowerAppId}`);
+        localStorage.removeItem(`etayo_released_${upperAppId}`);
+        localStorage.removeItem(`etayo_paid_${appId}`);
+        localStorage.removeItem(`etayo_paid_${lowerAppId}`);
+        localStorage.removeItem(`etayo_paid_${upperAppId}`);
+        localStorage.removeItem(`etayo_payment_confirmed_${appId}`);
+        localStorage.removeItem(`etayo_op_${appId}`);
+        localStorage.removeItem(`etayo_fees_${appId}`);
+        localStorage.removeItem(`etayo_date_approved_${appId}`);
+        if (localStorage.getItem(`etayo_status_${appId}`) === "approved") {
+          localStorage.setItem(`etayo_status_${appId}`, "pending");
+          localStorage.setItem(`etayo_status_${lowerAppId}`, "pending");
+          localStorage.setItem(`etayo_status_${upperAppId}`, "pending");
+        }
+      } catch (e) {}
+    }
+    return false;
+  }
+
+  const localStatus = typeof window !== "undefined" && appId 
+    ? (localStorage.getItem(`etayo_status_${appId}`) || localStorage.getItem(`etayo_status_${lowerAppId}`) || localStorage.getItem(`etayo_status_${upperAppId}`))
+    : null;
+  if (localStatus === "pending") {
+    return false;
+  }
+
+  // 1. Direct status flags from backend or state
   if (rawStatus === "approved" || rawStatus.includes("approv") || rawStatus === "released" || Boolean(app.isReleased)) {
     return true;
   }
 
-  // 2. Date approved is populated
-  if (Boolean(app.dateApproved)) {
+  // 2. Date approved is populated by admin
+  if (Boolean(app.dateApproved) && rawStatus !== "under_review") {
     return true;
   }
 
-  // 3. Remarks indicate approval
-  if (typeof app.remarks === "string") {
+  // 3. Remarks explicitly indicate approval by admin/staff (and not pending / under review)
+  if (typeof app.remarks === "string" && app.remarks.trim()) {
     const rem = app.remarks.toLowerCase();
-    if (rem.includes("approved") && !rem.includes("not approved") && !rem.includes("disapproved")) {
+    if (
+      (rem.includes("approved") || rem.includes("clearance approved") || rem.includes("locational clearance approved")) &&
+      !rem.includes("not approved") &&
+      !rem.includes("disapproved") &&
+      !rem.includes("pending")
+    ) {
       return true;
     }
   }
 
-  // 4. Tracking steps have Step 3 or approval completed
-  if (Array.isArray(app.trackingSteps)) {
-    const hasApprovedStep = app.trackingSteps.some((st: any) => {
-      const sTitle = String(st?.title || st?.name || "").toLowerCase();
-      const sStatus = String(st?.status || "").toLowerCase();
-      return sStatus === "completed" && (
-        sTitle.includes("zoning") ||
-        sTitle.includes("clearance") ||
-        sTitle.includes("approved") ||
-        sTitle.includes("endorsement") ||
-        sTitle.includes("3.") ||
-        sTitle.includes("step 3")
-      );
-    });
-    if (hasApprovedStep) return true;
+  // 4. Tracking steps: ONLY check Step 3 (index >= 2) where status === "completed"
+  // NEVER check generic words on Step 1 or Step 2!
+  if (Array.isArray(app.trackingSteps) && app.trackingSteps.length >= 3) {
+    const step3 = app.trackingSteps[2];
+    const sTitle = String(step3?.title || step3?.name || "").toLowerCase();
+    const sStatus = String(step3?.status || "").toLowerCase();
+    if (sStatus === "completed" && (
+      sTitle.includes("approved") ||
+      sTitle.includes("3.") ||
+      sTitle.includes("step 3") ||
+      sTitle.includes("endorsement") ||
+      sTitle.includes("zoning clearance")
+    )) {
+      return true;
+    }
   }
 
-  // 5. Local storage persistence (works across tabs/reloads)
-  if (typeof window !== "undefined" && appId) {
+  // 5. Local storage persistence (ONLY for non-pending apps where admin approved in this browser session)
+  if (typeof window !== "undefined" && appId && rawStatus !== "under_review") {
     if (
       localStorage.getItem(`etayo_approved_${appId}`) === "true" ||
       localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
@@ -325,6 +376,20 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
         [appId, lowerAppId, upperAppId].forEach(k => {
           localStorage.setItem(`etayo_status_${k}`, (rawStatus === "released" || Boolean(app.isReleased)) ? "released" : "approved");
           localStorage.setItem(`etayo_approved_${k}`, "true");
+        });
+      } catch (e) {}
+    } else if ((rawStatus === "pending" || !rawStatus) && typeof window !== "undefined" && appId) {
+      try {
+        [appId, lowerAppId, upperAppId].forEach(k => {
+          localStorage.removeItem(`etayo_approved_${k}`);
+          localStorage.removeItem(`etayo_released_${k}`);
+          localStorage.removeItem(`etayo_paid_${k}`);
+          localStorage.removeItem(`etayo_payment_confirmed_${k}`);
+          localStorage.removeItem(`etayo_receipt_${k}`);
+          localStorage.removeItem(`etayo_op_${k}`);
+          localStorage.removeItem(`etayo_fees_${k}`);
+          localStorage.removeItem(`etayo_date_approved_${k}`);
+          localStorage.setItem(`etayo_status_${k}`, "pending");
         });
       } catch (e) {}
     }
