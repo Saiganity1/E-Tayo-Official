@@ -1089,7 +1089,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "900", color: "#166534" }}>
-                      🎉 Official Permits Released — Process Complete!
+                      Official Permits Released — Process Complete!
                     </h4>
                     <span style={{
                       fontSize: "0.72rem",
@@ -1104,7 +1104,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                     </span>
                   </div>
                   <div style={{ fontSize: "0.84rem", color: "#15803d", marginTop: "3px" }}>
-                    Settlement verified under Official Receipt No: <strong>{(app as any).officialReceiptNo || "OR-2026-OFFICIAL"}</strong>. All official building permits, ancillary clearances, and approved plans are now released and active.
+                    Settlement verified under Official Receipt No: <strong>{(app as any).officialReceiptNo || "OR-2026-OFFICIAL"}</strong>
                   </div>
                 </div>
               </div>
