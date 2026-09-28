@@ -15,6 +15,71 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   turbopack: {},
+  async redirects() {
+    return [
+      {
+        source: "/applicant",
+        destination: "/applicant/dashboard",
+        permanent: false,
+      },
+      {
+        source: "/staff",
+        destination: "/staff/dashboard",
+        permanent: false,
+      },
+      {
+        source: "/admin",
+        destination: "/admin/evaluations",
+        permanent: false,
+      },
+      {
+        source: "/track",
+        destination: "/applicant/track",
+        permanent: false,
+      },
+      {
+        source: "/dashboard",
+        destination: "/applicant/dashboard",
+        permanent: false,
+      },
+      {
+        source: "/apply",
+        destination: "/applicant/apply",
+        permanent: false,
+      },
+      {
+        source: "/status",
+        destination: "/applicant/track",
+        permanent: false,
+      },
+      {
+        source: "/map",
+        destination: "/applicant/map",
+        permanent: false,
+      },
+      {
+        source: "/messages",
+        destination: "/applicant/messages",
+        permanent: false,
+      },
+      {
+        source: "/evaluate",
+        destination: "/staff/dashboard",
+        permanent: false,
+      },
+      {
+        source: "/evaluations",
+        destination: "/admin/evaluations",
+        permanent: false,
+      },
+      {
+        source: "/templates",
+        destination: "/applicant/templates",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);
+

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { PermitApplication, SystemLog, FeeStructure, PermitType } from "../types";
 import { isApplicationApproved } from "../utils/projectGrouping";
+import { INITIAL_APPLICATIONS } from "../data/mock";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
 const API_BASE_URL = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
@@ -336,12 +337,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (pRes.ok) return pRes;
           } catch (e) {}
         }
-        return fetch(directPermitsUrl, { headers: { ...headers, "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache" }, cache: "no-store" }).then(async r => {
-          if (!r.ok && token) {
-            return fetch(directPermitsUrl, { headers: { "Accept": "application/json", "Cache-Control": "no-cache, no-store, must-revalidate" }, cache: "no-store" });
-          }
-          return r;
-        }).catch(e => ({ ok: false, json: async () => [] } as any));
+        return fetch(directPermitsUrl, { headers: { ...headers, "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache" }, cache: "no-store" })
+          .catch(() => ({ ok: false, json: async () => [] } as any));
       };
 
       const [appsRes, logsRes, feesRes] = await Promise.all([
@@ -707,6 +704,14 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         };
       });
 
+      // If applications list is still empty in a fresh browser session, seed with initial mock data
+      if (mergedApps.length === 0) {
+        const seedMock = (INITIAL_APPLICATIONS || []).filter(a => !isDummyApp(a));
+        if (seedMock.length > 0) {
+          mergedApps = seedMock;
+        }
+      }
+
       setApplications(mergedApps);
       try {
         localStorage.setItem("etayo_cached_applications", JSON.stringify(mergedApps));
@@ -987,13 +992,18 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const res = await fetch(`${API_BASE_URL}/permits`, {
+      let res = await fetch("/api/permits", {
         method: "POST",
         headers,
         body: JSON.stringify(newApp)
-      });
-      if (!res.ok) {
-        console.error("Failed to save permit to backend:", res.status, await res.text());
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        await fetch(`${API_BASE_URL}/permits`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(newApp)
+        }).catch(() => null);
       }
     } catch (e) {
       console.error("Failed to save permit", e);
