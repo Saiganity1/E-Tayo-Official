@@ -72,6 +72,7 @@ import {
   Clock
 } from "lucide-react";
 import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
+import { isApplicationApproved } from "@/utils/projectGrouping";
 
 interface ViewerDoc {
   id: string;
@@ -139,7 +140,7 @@ export default function StaffEvaluatePage() {
   useEffect(() => {
     if (!app || !app.id) return;
     const curStatus = (app.status || "").toLowerCase().trim();
-    if (curStatus === "approved" || curStatus.includes("approv") || curStatus === "released") {
+    if (curStatus === "approved" || curStatus.includes("approv") || curStatus === "released" || isApplicationApproved(app)) {
       evalAutoStartedRef.current = app.id;
       return;
     }

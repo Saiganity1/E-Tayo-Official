@@ -36,7 +36,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
-import { getConnectedProjectApp } from "@/utils/projectGrouping";
+import { getConnectedProjectApp, isApplicationApproved } from "@/utils/projectGrouping";
 import Link from "next/link";
 import { 
   generateUnifiedPermitPdf, 
@@ -801,42 +801,18 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const lowerTrackId = curTrackId.toLowerCase();
   const upperTrackId = curTrackId.toUpperCase();
   const rawAppStatus = String(appData?.status || "").toLowerCase().trim();
-  const isExplicitlyPending = rawAppStatus === "pending" || rawAppStatus === "under_review" || rawAppStatus === "incomplete_requirements" || rawAppStatus === "rejected" || rawAppStatus === "cancelled";
 
-  const isApproved = !isExplicitlyPending && Boolean(
-    appData?.status === "approved" || 
-    (appData?.status && String(appData.status).toLowerCase().includes("approv")) ||
-    appData?.status === "released" || 
-    isActuallyReleased ||
-    (Array.isArray(appData?.trackingSteps) && appData.trackingSteps.some((s: any) => {
-      const sName = String(s?.title || s?.name || "").toLowerCase();
-      const sStatus = String(s?.status || "").toLowerCase();
-      return sStatus === "completed" && (
-        sName.includes("zoning") ||
-        sName.includes("clearance") ||
-        sName.includes("approved") ||
-        sName.includes("3.") ||
-        sName.includes("step 3")
-      );
-    })) ||
-    (typeof appData?.remarks === "string" && (
-      appData.remarks.toLowerCase().includes("clearance approved") ||
-      appData.remarks.toLowerCase().includes("locational clearance approved") ||
-      appData.remarks.toLowerCase().includes("application approved")
-    )) ||
-    Boolean((appData as any)?.dateApproved) ||
-    (typeof window !== "undefined" && (
-      localStorage.getItem(`etayo_approved_${curTrackId}`) === "true" ||
-      localStorage.getItem(`etayo_approved_${lowerTrackId}`) === "true" ||
-      localStorage.getItem(`etayo_approved_${upperTrackId}`) === "true" ||
-      localStorage.getItem(`etayo_status_${curTrackId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${lowerTrackId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${upperTrackId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${curTrackId}`) === "released" ||
-      localStorage.getItem(`etayo_status_${lowerTrackId}`) === "released" ||
-      localStorage.getItem(`etayo_status_${upperTrackId}`) === "released"
-    ))
-  );
+  const isApproved = isApplicationApproved(appData);
+
+  // Sync localStorage with verified approval
+  if (isApproved && typeof window !== "undefined" && curTrackId) {
+    try {
+      [curTrackId, lowerTrackId, upperTrackId].forEach(k => {
+        localStorage.setItem(`etayo_status_${k}`, isActuallyReleased ? "released" : "approved");
+        localStorage.setItem(`etayo_approved_${k}`, "true");
+      });
+    } catch (e) {}
+  }
 
   const getStatusDetails = (status: string) => {
     if (isActuallyReleased || status === "released") {

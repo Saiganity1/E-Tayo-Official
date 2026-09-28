@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { PermitApplication, SystemLog, FeeStructure, PermitType } from "../types";
+import { isApplicationApproved } from "../utils/projectGrouping";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
 const API_BASE_URL = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
@@ -400,17 +401,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               Boolean((bApp as any).userConfirmedPayment)
             );
 
-            const isApprovedLocal = typeof window !== "undefined" && (
-              isPaidLocal ||
-              localStorage.getItem(`etayo_approved_${id}`) === "true" ||
-              localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
-              localStorage.getItem(`etayo_approved_${upperId}`) === "true" ||
-              localStorage.getItem(`etayo_status_${id}`) === "approved" ||
-              localStorage.getItem(`etayo_status_${lowerId}`) === "approved" ||
-              localStorage.getItem(`etayo_status_${upperId}`) === "approved" ||
-              (foundCached?.status || "").toLowerCase() === "approved" ||
-              (bApp.status || "").toLowerCase() === "approved"
-            );
+            const isApprovedLocal = isPaidLocal || isApplicationApproved(bApp) || (foundCached ? isApplicationApproved(foundCached) : false);
 
             const cachedReceiptUrl = typeof window !== "undefined" 
               ? (localStorage.getItem(`etayo_receipt_${id}`) || localStorage.getItem(`etayo_receipt_${lowerId}`) || localStorage.getItem(`etayo_receipt_${upperId}`))
@@ -507,16 +498,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           mApp.status === "released" ||
           Boolean((mApp as any)?.isReleased)
         );
-        const mIsApproved = typeof window !== "undefined" && (
-          mIsPaid ||
-          localStorage.getItem(`etayo_approved_${mId}`) === "true" ||
-          localStorage.getItem(`etayo_approved_${mLower}`) === "true" ||
-          localStorage.getItem(`etayo_approved_${mUpper}`) === "true" ||
-          localStorage.getItem(`etayo_status_${mId}`) === "approved" ||
-          localStorage.getItem(`etayo_status_${mLower}`) === "approved" ||
-          localStorage.getItem(`etayo_status_${mUpper}`) === "approved" ||
-          (mApp.status || "").toLowerCase() === "approved"
-        );
+        const mIsApproved = mIsPaid || isApplicationApproved(mApp);
         const mOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${mId}`) || localStorage.getItem(`etayo_op_${mLower}`) || localStorage.getItem(`etayo_op_${mUpper}`)) : null;
         const mFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${mId}`) || localStorage.getItem(`etayo_fees_${mLower}`) || localStorage.getItem(`etayo_fees_${mUpper}`)) : null;
         const mDateApp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${mId}`) || localStorage.getItem(`etayo_date_approved_${mLower}`) || localStorage.getItem(`etayo_date_approved_${mUpper}`)) : null;

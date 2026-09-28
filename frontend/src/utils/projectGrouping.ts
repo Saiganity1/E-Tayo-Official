@@ -49,6 +49,72 @@ export const isBuildingPermit = (app: any): boolean => {
 };
 
 /**
+ * Authoritative check if an application has reached Step 3 (Approved) or Step 4 (Released)
+ * across all permit types (Locational Clearance, Building Permits, Ancillary, etc.)
+ */
+export const isApplicationApproved = (app: any): boolean => {
+  if (!app) return false;
+  const appId = String(app.id || "").trim();
+  const lowerAppId = appId.toLowerCase();
+  const upperAppId = appId.toUpperCase();
+  const rawStatus = String(app.status || "").toLowerCase().trim();
+
+  // 1. Direct status flags
+  if (rawStatus === "approved" || rawStatus.includes("approv") || rawStatus === "released" || Boolean(app.isReleased)) {
+    return true;
+  }
+
+  // 2. Date approved is populated
+  if (Boolean(app.dateApproved)) {
+    return true;
+  }
+
+  // 3. Remarks indicate approval
+  if (typeof app.remarks === "string") {
+    const rem = app.remarks.toLowerCase();
+    if (rem.includes("approved") && !rem.includes("not approved") && !rem.includes("disapproved")) {
+      return true;
+    }
+  }
+
+  // 4. Tracking steps have Step 3 or approval completed
+  if (Array.isArray(app.trackingSteps)) {
+    const hasApprovedStep = app.trackingSteps.some((st: any) => {
+      const sTitle = String(st?.title || st?.name || "").toLowerCase();
+      const sStatus = String(st?.status || "").toLowerCase();
+      return sStatus === "completed" && (
+        sTitle.includes("zoning") ||
+        sTitle.includes("clearance") ||
+        sTitle.includes("approved") ||
+        sTitle.includes("endorsement") ||
+        sTitle.includes("3.") ||
+        sTitle.includes("step 3")
+      );
+    });
+    if (hasApprovedStep) return true;
+  }
+
+  // 5. Local storage persistence (works across tabs/reloads)
+  if (typeof window !== "undefined" && appId) {
+    if (
+      localStorage.getItem(`etayo_approved_${appId}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
+      localStorage.getItem(`etayo_approved_${upperAppId}`) === "true" ||
+      localStorage.getItem(`etayo_status_${appId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${upperAppId}`) === "approved" ||
+      localStorage.getItem(`etayo_status_${appId}`) === "released" ||
+      localStorage.getItem(`etayo_status_${lowerAppId}`) === "released" ||
+      localStorage.getItem(`etayo_status_${upperAppId}`) === "released"
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
  * Extracts a normalized, clean project title for grouping and display.
  * Strips out form/stage noise (e.g. "- Locational Clearance", "Installation & Construction")
  * and extracts meaningful names like "Single-Detached House", "Resort + Swimming Pool".
@@ -251,26 +317,17 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
     const upperAppId = appId.toUpperCase();
     const rawStatus = String(app.status || "").toLowerCase().trim();
 
-    const hasApprovedTracking = Array.isArray((app as any)?.trackingSteps) && (app as any).trackingSteps.some((st: any) =>
-      st && (
-        (String(st.name || "").toLowerCase().includes("zoning") && String(st.status || "").toLowerCase() === "completed") ||
-        (String(st.name || "").toLowerCase().includes("clearance") && String(st.status || "").toLowerCase() === "completed") ||
-        (String(st.name || "").toLowerCase().includes("approved") && String(st.status || "").toLowerCase() === "completed")
-      )
-    );
-    const hasApprovalRemarks = Boolean((app as any)?.dateApproved) || String((app as any)?.remarks || "").toLowerCase().includes("approved");
+    const isAppApproved = isApplicationApproved(app);
 
-    const isAppApproved = rawStatus === "approved" || rawStatus.includes("approv") || rawStatus === "released" || Boolean((app as any)?.isReleased) || hasApprovedTracking || hasApprovalRemarks || (typeof window !== "undefined" && (
-      localStorage.getItem(`etayo_approved_${appId}`) === "true" ||
-      localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
-      localStorage.getItem(`etayo_approved_${upperAppId}`) === "true" ||
-      localStorage.getItem(`etayo_status_${appId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${upperAppId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${appId}`) === "released" ||
-      localStorage.getItem(`etayo_status_${lowerAppId}`) === "released" ||
-      localStorage.getItem(`etayo_status_${upperAppId}`) === "released"
-    ));
+    // Keep localStorage in sync if approval is detected from backend or tracking steps
+    if (isAppApproved && typeof window !== "undefined" && appId) {
+      try {
+        [appId, lowerAppId, upperAppId].forEach(k => {
+          localStorage.setItem(`etayo_status_${k}`, (rawStatus === "released" || Boolean(app.isReleased)) ? "released" : "approved");
+          localStorage.setItem(`etayo_approved_${k}`, "true");
+        });
+      } catch (e) {}
+    }
 
     if (matchedDossier) {
       matchedDossier.applications.push(app);

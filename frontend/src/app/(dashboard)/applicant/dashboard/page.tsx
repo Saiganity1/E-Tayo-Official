@@ -30,7 +30,7 @@ import {
 import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
 import { PermitApplication } from "../../../../types";
-import { groupApplicationsIntoProjectDossiers, ProjectDossier } from "@/utils/projectGrouping";
+import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationApproved } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "flat";
 
@@ -284,7 +284,7 @@ export default function ApplicantDashboard() {
       localStorage.getItem(`etayo_status_${upperId}`) === "under_review"
     );
 
-    const isAppApproved = rawStatus === "approved" || appRawStatus === "approved" || isLocallyApproved;
+    const isAppApproved = isApplicationApproved(app);
 
     if (isAppApproved) {
       return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved", border: "#10b981" };
