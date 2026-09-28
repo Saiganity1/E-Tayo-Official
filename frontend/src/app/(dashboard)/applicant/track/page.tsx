@@ -606,8 +606,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const lowerAppId = appIdStr.toLowerCase();
     const upperAppId = appIdStr.toUpperCase();
     const rawAppStatus = (app.status || "").toLowerCase().trim();
-    const isPending = rawAppStatus === "pending" || !rawAppStatus;
-    const isAppApproved = isPending ? false : isApplicationApproved(app);
+    const isAppApproved = isApplicationApproved(app);
+    const isPending = !isAppApproved && (rawAppStatus === "pending" || !rawAppStatus);
 
     // Keep localStorage in sync with approval
     if (isAppApproved && typeof window !== "undefined" && appIdStr) {
@@ -635,11 +635,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
     const effectiveStatus = isActuallyReleased 
       ? "released" 
-      : (isPending 
-          ? "pending" 
-          : (isAppApproved 
-              ? "approved" 
-              : (rawAppStatus === "under_review" ? "under_review" : (rawAppStatus || "pending"))));
+      : (isAppApproved 
+          ? "approved" 
+          : (rawAppStatus === "under_review" ? "under_review" : (rawAppStatus || "pending")));
     const statusConfig = getStatusConfig(effectiveStatus, app);
     const StatusIcon = statusConfig.icon;
     const isApprovedLC = isLocationalClearance && isAppApproved;
@@ -2010,6 +2008,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                           </h3>
                           {(() => {
                             const isAnyPending = dossier.applications.some(a => {
+                              if (isApplicationApproved(a)) return false;
                               const raw = (a.status || "").toLowerCase().trim();
                               return raw === "pending" || !raw;
                             });

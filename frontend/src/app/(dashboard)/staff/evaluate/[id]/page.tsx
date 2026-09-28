@@ -1262,6 +1262,10 @@ export default function StaffEvaluatePage() {
   };
 
   const handleApprove = async () => {
+    if (!app) {
+      setIsProcessing(false);
+      return;
+    }
     setIsProcessing(true);
 
     const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
@@ -1316,23 +1320,38 @@ export default function StaffEvaluatePage() {
       actionTitle = "Locational Clearance Approved";
       actorLabel = `${staffName} / Zoning Administrator (MPDO)`;
 
-      updatedTracking = [
-        ...(app.trackingSteps || []).map((step) => {
-          const sTitle = String(step.title || (step as any).name || "").toLowerCase();
-          if (sTitle.includes("zoning") || sTitle.includes("evaluation") || sTitle.includes("filing") || sTitle.includes("submitted")) {
-            return { ...step, status: "completed" as const };
+      const hasStep3 = (app.trackingSteps || []).some((step: any) => {
+        const s = String(step.title || step.name || "").toLowerCase();
+        return s.includes("3.") || s.includes("zoning clearance") || s.includes("approval");
+      });
+
+      if (hasStep3) {
+        updatedTracking = (app.trackingSteps || []).map((step: any) => {
+          const sTitle = String(step.title || step.name || "").toLowerCase();
+          if (sTitle.includes("zoning") || sTitle.includes("evaluation") || sTitle.includes("filing") || sTitle.includes("submitted") || sTitle.includes("3.")) {
+            return { ...step, status: "completed" as const, date: step.date || issuedDateFormatted };
           }
           return step;
-        }),
-        {
-          title: "3. Zoning Clearance",
-          name: "3. Zoning Clearance",
-          status: "completed" as const,
-          date: issuedDateFormatted,
-          notes: shortSummary,
-          actor: actorLabel,
-        },
-      ];
+        });
+      } else {
+        updatedTracking = [
+          ...(app.trackingSteps || []).map((step) => {
+            const sTitle = String(step.title || (step as any).name || "").toLowerCase();
+            if (sTitle.includes("zoning") || sTitle.includes("evaluation") || sTitle.includes("filing") || sTitle.includes("submitted")) {
+              return { ...step, status: "completed" as const };
+            }
+            return step;
+          }),
+          {
+            title: "3. Zoning Clearance",
+            name: "3. Zoning Clearance",
+            status: "completed" as const,
+            date: issuedDateFormatted,
+            notes: shortSummary,
+            actor: actorLabel,
+          },
+        ];
+      }
     }
 
     const updatedHistory = [
@@ -1376,11 +1395,28 @@ export default function StaffEvaluatePage() {
         if (issuedDateFormatted) localStorage.setItem(`etayo_date_approved_${k}`, issuedDateFormatted);
         if (decisionNotes || shortSummary) localStorage.setItem(`etayo_remarks_${k}`, decisionNotes || shortSummary);
       });
+
+      const stored = localStorage.getItem("etayo_cached_applications");
+      if (stored) {
+        const list = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          const updatedList = list.map((a: any) =>
+            (a.id === app.id || String(a.id).trim().toLowerCase() === String(app.id).trim().toLowerCase()) ? updatedApp : a
+          );
+          localStorage.setItem("etayo_cached_applications", JSON.stringify(updatedList));
+        }
+      }
+
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));
         window.dispatchEvent(new Event("etayo_applications_updated"));
       }
     } catch (e) {}
+
+    // Instantly update context optimistic state
+    if (updateApplication) {
+      updateApplication(updatedApp as any);
+    }
 
     const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
     const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
@@ -2623,7 +2659,7 @@ ${isDisapprove
 
                 {/* Primary & Secondary Action Buttons */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  {(app.status as string) === "approved" ? (
+                  {((app.status as string) === "approved" || isApplicationApproved(app)) ? (
                     <button
                       type="button"
                       onClick={() => {

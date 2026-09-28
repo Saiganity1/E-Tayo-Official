@@ -279,7 +279,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             }
           } catch (e) {}
         }
-        if (res.ok) {
+        if (res && res.ok) {
           const serverApp = await res.json();
           if (serverApp && serverApp.id && isMounted) {
             setAppData((curr: any) => {
@@ -801,8 +801,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const lowerTrackId = curTrackId.toLowerCase();
   const upperTrackId = curTrackId.toUpperCase();
   const rawAppStatus = String(appData?.status || "").toLowerCase().trim();
-  const isPending = rawAppStatus === "pending" || !rawAppStatus;
-  const isApproved = isPending ? false : isApplicationApproved(appData);
+  const isApproved = isApplicationApproved(appData);
+  const isPending = !isApproved && (rawAppStatus === "pending" || !rawAppStatus);
 
   // Sync localStorage with verified approval
   if (isApproved && typeof window !== "undefined" && curTrackId) {

@@ -419,11 +419,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 ...bApp,
                 status: "pending",
                 isReleased: false,
-                paymentStatus: undefined,
+                paymentStatus: "unpaid" as const,
                 userConfirmedPayment: false,
                 orderOfPaymentNo: undefined,
                 dateApproved: undefined,
-                remarks: bApp.remarks || null,
+                remarks: bApp.remarks || undefined,
                 trackingSteps: pendingSteps
               };
             }
@@ -556,8 +556,21 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const mUpper = mId.toUpperCase();
         const mRawStatus = String(mApp.status || "").toLowerCase().trim();
 
-        // 1. Strict guard: If application is pending, rejected, cancelled, or incomplete: NEVER approve or synthesize steps!
-        if (mRawStatus === "pending" || mRawStatus === "rejected" || mRawStatus === "cancelled" || mRawStatus === "incomplete_requirements") {
+        const mIsLocallyApproved = typeof window !== "undefined" && Boolean(mId) && (
+          localStorage.getItem(`etayo_approved_${mId}`) === "true" ||
+          localStorage.getItem(`etayo_approved_${mLower}`) === "true" ||
+          localStorage.getItem(`etayo_approved_${mUpper}`) === "true" ||
+          localStorage.getItem(`etayo_status_${mId}`) === "approved" ||
+          localStorage.getItem(`etayo_status_${mLower}`) === "approved" ||
+          localStorage.getItem(`etayo_status_${mUpper}`) === "approved" ||
+          localStorage.getItem(`etayo_status_${mId}`) === "released" ||
+          localStorage.getItem(`etayo_status_${mLower}`) === "released" ||
+          localStorage.getItem(`etayo_status_${mUpper}`) === "released"
+        );
+        const mIsApproved = isApplicationApproved(mApp) || Boolean(mIsLocallyApproved);
+
+        // 1. Strict guard: If application is pending, rejected, cancelled, or incomplete AND has not been approved by admin:
+        if (!mIsApproved && (mRawStatus === "pending" || mRawStatus === "rejected" || mRawStatus === "cancelled" || mRawStatus === "incomplete_requirements")) {
           if (typeof window !== "undefined" && mId) {
             try {
               [mId, mLower, mUpper].forEach(k => {
@@ -592,7 +605,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             status: mRawStatus,
             trackingSteps: cleanSteps,
             isReleased: false,
-            paymentStatus: undefined,
+            paymentStatus: "unpaid" as const,
             userConfirmedPayment: false,
             orderOfPaymentNo: undefined,
             dateApproved: undefined
@@ -607,7 +620,6 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           mApp.status === "released" ||
           Boolean((mApp as any)?.isReleased)
         );
-        const mIsApproved = mIsPaid || isApplicationApproved(mApp);
         const mOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${mId}`) || localStorage.getItem(`etayo_op_${mLower}`) || localStorage.getItem(`etayo_op_${mUpper}`)) : null;
         const mFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${mId}`) || localStorage.getItem(`etayo_fees_${mLower}`) || localStorage.getItem(`etayo_fees_${mUpper}`)) : null;
         const mDateApp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${mId}`) || localStorage.getItem(`etayo_date_approved_${mLower}`) || localStorage.getItem(`etayo_date_approved_${mUpper}`)) : null;
@@ -629,9 +641,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         let mTracking = mApp.trackingSteps || [];
         if (mIsApproved || mEffectiveStatus === "approved" || mEffectiveStatus === "released") {
           const rawSteps = mTracking.length > 0 ? [...mTracking] : [
-            { name: "1. Filing", title: "1. Filing", status: "completed" },
-            { name: "2. Evaluation", title: "2. Evaluation", status: "completed" },
-            { name: "3. Zoning Clearance", title: "3. Zoning Clearance", status: "completed" }
+            { title: "1. Filing", status: "completed" as const },
+            { title: "2. Evaluation", status: "completed" as const },
+            { title: "3. Zoning Clearance", status: "completed" as const }
           ];
           mTracking = rawSteps.map((st: any, idx: number) => {
             const sName = String(st?.title || st?.name || "").toLowerCase();
@@ -649,9 +661,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           });
           if (!hasStep3) {
             mTracking.push({
-              name: "3. Zoning Clearance",
               title: "3. Zoning Clearance",
-              status: "completed"
+              status: "completed" as const
             });
           }
         }
@@ -727,7 +738,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               const aId = String(a.id || "").trim();
               const aStatus = String(a.status || "").toLowerCase().trim();
               const localSt = typeof window !== "undefined" && aId ? localStorage.getItem(`etayo_status_${aId}`) : null;
-              if (aStatus === "pending" || localSt === "pending") {
+              const isLocApproved = typeof window !== "undefined" && Boolean(aId) && (
+                localSt === "approved" ||
+                localSt === "released" ||
+                localStorage.getItem(`etayo_approved_${aId}`) === "true" ||
+                localStorage.getItem(`etayo_approved_${aId.toLowerCase()}`) === "true"
+              );
+              if (!isLocApproved && (aStatus === "pending" || localSt === "pending")) {
                 return {
                   ...a,
                   status: "pending",
@@ -741,6 +758,18 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                         ...st,
                         status: idx === 0 ? "completed" : idx === 1 ? "in-progress" : "upcoming"
                       }))
+                    : a.trackingSteps
+                };
+              }
+              if (isLocApproved) {
+                return {
+                  ...a,
+                  status: localSt === "released" ? "released" : "approved",
+                  trackingSteps: (a.trackingSteps && a.trackingSteps.length > 0)
+                    ? a.trackingSteps.map((st: any, idx: number) => {
+                        if (idx <= 2) return { ...st, status: "completed" };
+                        return st;
+                      })
                     : a.trackingSteps
                 };
               }
@@ -948,9 +977,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (updatedApp.status === "approved" || (updatedApp.status as string) === "released") {
       const rawSteps = (updatedApp.trackingSteps && updatedApp.trackingSteps.length > 0) ? [...updatedApp.trackingSteps] : [
-        { name: "1. Filing", title: "1. Filing", status: "completed" },
-        { name: "2. Evaluation", title: "2. Evaluation", status: "completed" },
-        { name: "3. Zoning Clearance", title: "3. Zoning Clearance", status: "completed" }
+        { title: "1. Filing", status: "completed" as const },
+        { title: "2. Evaluation", status: "completed" as const },
+        { title: "3. Zoning Clearance", status: "completed" as const }
       ];
       const fixedSteps = rawSteps.map((st: any, idx: number) => {
         const sName = String(st?.title || st?.name || "").toLowerCase();
@@ -968,9 +997,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
       if (!hasStep3) {
         fixedSteps.push({
-          name: "3. Zoning Clearance",
           title: "3. Zoning Clearance",
-          status: "completed"
+          status: "completed" as const
         });
       }
       updatedApp = {
