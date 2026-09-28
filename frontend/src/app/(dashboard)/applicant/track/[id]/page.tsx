@@ -1202,6 +1202,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1400px", margin: "0 auto", paddingBottom: "4rem" }}>
       {/* Page Header */}
       <header className="page-header" style={{ 
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
+        justifyContent: "flex-start",
+        gap: "0.75rem",
         background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
         backdropFilter: "blur(20px)",
         border: "1px solid rgba(255, 255, 255, 0.9)",
@@ -1210,26 +1215,30 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         padding: "1.25rem 1.75rem",
         marginBottom: "0.5rem"
       }}>
-        <button 
-          onClick={() => router.push("/applicant/track")} 
-          style={{ 
-            display: "inline-flex", 
-            alignItems: "center", 
-            gap: "0.5rem", 
-            color: "#64748b", 
-            fontWeight: "700", 
-            marginBottom: "0.75rem", 
-            background: "none", 
-            border: "none", 
-            cursor: "pointer", 
-            fontSize: "0.88rem",
-            padding: 0
-          }}
-        >
-          <ChevronLeft size={16} /> Back to Application Tracker
-        </button>
+        <div>
+          <button 
+            onClick={() => router.push("/applicant/track")} 
+            style={{ 
+              display: "inline-flex", 
+              alignItems: "center", 
+              gap: "0.5rem", 
+              color: "#64748b", 
+              fontWeight: "700", 
+              background: "none", 
+              border: "none", 
+              cursor: "pointer", 
+              fontSize: "0.88rem",
+              padding: 0,
+              transition: "color 0.15s ease"
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.color = "#0038A8")}
+            onMouseOut={(e) => (e.currentTarget.style.color = "#64748b")}
+          >
+            <ChevronLeft size={16} /> Back to Application Tracker
+          </button>
+        </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", width: "100%" }}>
           <div>
             <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
               {typeof appData.projectName === 'string' ? appData.projectName : (appData.projectName?.name || "Permit Application")}
