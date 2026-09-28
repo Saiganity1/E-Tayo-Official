@@ -19,21 +19,16 @@ export async function GET(req: Request) {
 
     // Call backend server-to-server (bypasses browser CORS)
     let res: Response | null = null;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
-        res = await fetch(targetUrl, {
-          method: "GET",
-          headers,
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (res.ok) break;
-      } catch (err) {
-        if (attempt === 2) throw err;
-        await new Promise(r => setTimeout(r, 400));
-      }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    try {
+      res = await fetch(targetUrl, {
+        method: "GET",
+        headers,
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
     }
 
     if (res && res.ok) {
