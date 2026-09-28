@@ -63,6 +63,25 @@ export const isApplicationReleased = (app: any): boolean => {
     return false;
   }
 
+  // CRITICAL RULE: If the application status is currently "approved" (Stage 3),
+  // it is waiting for Order of Payment settlement and is NOT yet Stage 4 (Released)!
+  // It only becomes released if the admin explicitly clicked Confirm Release.
+  if (rawStatus === "approved" || rawStatus === "under_review" || rawStatus === "pending") {
+    if (typeof window !== "undefined" && appId) {
+      if (
+        localStorage.getItem(`etayo_released_${appId}`) === "true" ||
+        localStorage.getItem(`etayo_released_${lowerAppId}`) === "true" ||
+        localStorage.getItem(`etayo_released_${upperAppId}`) === "true" ||
+        localStorage.getItem(`etayo_status_${appId}`) === "released" ||
+        localStorage.getItem(`etayo_status_${lowerAppId}`) === "released" ||
+        localStorage.getItem(`etayo_status_${upperAppId}`) === "released"
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // 1. Direct status on app object
   if (rawStatus === "released" || Boolean((app as any).isReleased) || (app as any).paymentStatus === "paid") {
     return true;
@@ -163,18 +182,20 @@ export const isApplicationApproved = (app: any): boolean => {
     }
   }
 
-  // 5. Tracking steps: check Step 3 (index >= 2) where status === "completed"
-  if (Array.isArray(app.trackingSteps) && app.trackingSteps.length >= 3) {
-    const step3 = app.trackingSteps[2];
-    const sTitle = String(step3?.title || step3?.name || "").toLowerCase();
-    const sStatus = String(step3?.status || "").toLowerCase();
-    if (sStatus === "completed" && (
-      sTitle.includes("approved") ||
-      sTitle.includes("3.") ||
-      sTitle.includes("step 3") ||
-      sTitle.includes("endorsement") ||
-      sTitle.includes("zoning clearance")
-    )) {
+  // 5. Tracking steps: check if any step indicates approval is completed
+  if (Array.isArray(app.trackingSteps)) {
+    const hasApproved = app.trackingSteps.some((st: any) => {
+      const sTitle = String(st?.title || st?.name || "").toLowerCase();
+      const sStatus = String(st?.status || "").toLowerCase();
+      return sStatus === "completed" && (
+        sTitle.includes("approved") ||
+        sTitle.includes("3.") ||
+        sTitle.includes("step 3") ||
+        sTitle.includes("endorsement") ||
+        sTitle.includes("zoning clearance")
+      );
+    });
+    if (hasApproved) {
       return true;
     }
   }

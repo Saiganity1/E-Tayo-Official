@@ -61,6 +61,16 @@ export default function ApplicationStatusPage() {
     setTimeout(() => setToastMsg(null), 3800);
   };
 
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    if (refreshApplications) await refreshApplications();
+    setTimeout(() => {
+      setIsRefreshing(false);
+      showToast("Tracking status synced with municipal server!", "success");
+    }, 600);
+  };
+
   const handleSubmitPaymentConfirm = async () => {
     if (!payingApp) return;
     setIsSubmittingPayment(true);
@@ -213,11 +223,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       }
     };
 
-    // Auto-poll every 5s when tab is active to detect admin approval without delay
+    // Auto-poll every 2.5s to detect admin approval without delay across windows/tabs
     const pollTimer = setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       if (refreshApplications) refreshApplications();
-    }, 5000);
+    }, 2500);
 
     if (typeof window !== "undefined") {
       window.addEventListener("storage", handleSync);
@@ -1822,11 +1831,34 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           )}
         </div>
 
-        {/* DOSSIER COUNT */}
-        <div style={{ display: "flex", alignItems: "center", width: "100%", marginTop: "0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f1f5f9" }}>
+        {/* DOSSIER COUNT & MANUAL SYNC BUTTON */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginTop: "0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f1f5f9" }}>
           <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: "600" }}>
             {`${projectDossiers.length} Project Dossier${projectDossiers.length !== 1 ? "s" : ""}`}
           </span>
+          <button
+            type="button"
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "#f1f5f9",
+              border: "1px solid #cbd5e1",
+              borderRadius: "8px",
+              padding: "5px 12px",
+              fontSize: "0.8rem",
+              fontWeight: "700",
+              color: "#334155",
+              cursor: "pointer",
+              transition: "all 0.15s ease"
+            }}
+            title="Click to fetch the latest approval and permit status directly from the municipal server"
+          >
+            <RefreshCw size={13} style={{ animation: isRefreshing ? "spin 1s linear infinite" : "none" }} />
+            <span>{isRefreshing ? "Syncing..." : "Sync Live Status"}</span>
+          </button>
         </div>
       </section>
 

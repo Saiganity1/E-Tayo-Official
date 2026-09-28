@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
 const BACKEND_API = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -10,7 +13,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const targetUrl = `${BACKEND_API}/permits/${cleanId}`;
 
     const authHeader = req.headers.get("authorization");
-    const headers: Record<string, string> = { "Accept": "application/json" };
+    const headers: Record<string, string> = { 
+      "Accept": "application/json",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache"
+    };
     if (authHeader) headers["Authorization"] = authHeader;
 
     let res = await fetch(targetUrl, { headers, cache: "no-store" });
@@ -20,7 +27,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     if (res.ok) {
       const data = await res.json();
-      return NextResponse.json(data);
+      return NextResponse.json(data, {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          "Pragma": "no-cache"
+        }
+      });
     }
 
     return NextResponse.json({ error: "Permit not found" }, { status: res.status });

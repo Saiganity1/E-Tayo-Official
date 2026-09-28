@@ -332,13 +332,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const fetchPermitsSafe = async (): Promise<Response> => {
         if (typeof window !== "undefined") {
           try {
-            const pRes = await fetch(proxyPermitsUrl, { headers, cache: "no-store" });
+            const pRes = await fetch(proxyPermitsUrl, { headers: { ...headers, "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache" }, cache: "no-store" });
             if (pRes.ok) return pRes;
           } catch (e) {}
         }
-        return fetch(directPermitsUrl, { headers }).then(async r => {
+        return fetch(directPermitsUrl, { headers: { ...headers, "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache" }, cache: "no-store" }).then(async r => {
           if (!r.ok && token) {
-            return fetch(directPermitsUrl, { headers: { "Accept": "application/json" } });
+            return fetch(directPermitsUrl, { headers: { "Accept": "application/json", "Cache-Control": "no-cache, no-store, must-revalidate" }, cache: "no-store" });
           }
           return r;
         }).catch(e => ({ ok: false, json: async () => [] } as any));
@@ -842,13 +842,12 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // 4. Fetch fresh data from backend immediately
     fetchData();
 
-    // 5. Set up periodic polling every 6 seconds for real-time multi-tab & multi-user sync (only if window is visible and user is logged in)
+    // 5. Set up periodic polling every 2.5 seconds for instant multi-tab & multi-window sync across Incognito and regular windows
     const pollInterval = setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       const currentToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       if (!currentToken) return; // Do not poll when logged out
       fetchData();
-    }, 6000);
+    }, 2500);
 
     // 6. Cross-tab & multi-window instant reactive update listener
     const handleSyncEvent = () => {

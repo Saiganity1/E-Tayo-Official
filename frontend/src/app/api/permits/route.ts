@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
 const BACKEND_API = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
@@ -11,7 +14,9 @@ export async function GET(req: Request) {
 
     const authHeader = req.headers.get("authorization");
     const headers: Record<string, string> = {
-      "Accept": "application/json"
+      "Accept": "application/json",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache"
     };
     if (authHeader) {
       headers["Authorization"] = authHeader;
@@ -25,6 +30,7 @@ export async function GET(req: Request) {
       res = await fetch(targetUrl, {
         method: "GET",
         headers,
+        cache: "no-store",
         signal: controller.signal
       });
     } finally {
@@ -33,7 +39,12 @@ export async function GET(req: Request) {
 
     if (res && res.ok) {
       const data = await res.json();
-      return NextResponse.json(data);
+      return NextResponse.json(data, {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          "Pragma": "no-cache"
+        }
+      });
     }
 
     // Fallback if backend returned 4xx or 5xx
