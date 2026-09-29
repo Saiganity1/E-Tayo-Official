@@ -5,7 +5,7 @@ import { PermitApplication, SystemLog, FeeStructure, PermitType } from "../types
 import { isApplicationApproved } from "../utils/projectGrouping";
 import { INITIAL_APPLICATIONS } from "../data/mock";
 
-const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
 const API_BASE_URL = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
 
 type UserRole = "public" | "applicant" | "staff" | "admin";

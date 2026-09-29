@@ -171,7 +171,7 @@ export default function StaffEvaluatePage() {
 
       (async () => {
         try {
-          const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+          const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
           const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
           const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
           const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -1420,7 +1420,7 @@ export default function StaffEvaluatePage() {
       updateApplication(updatedApp as any);
     }
 
-    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
     const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
@@ -1674,7 +1674,7 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
       updateApplication(updatedApp as any);
     }
 
-    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
     const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     const authHeaders: Record<string, string> = { "Content-Type": "application/json" };

@@ -51,7 +51,7 @@ export default function StaffDashboard() {
         });
       }
       try {
-        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
         const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         const headers: Record<string, string> = { "Content-Type": "application/json" };

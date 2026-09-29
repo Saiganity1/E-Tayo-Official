@@ -59,7 +59,7 @@ export default function LoginPage() {
       // 2. Fallback to direct backend if same-origin route didn't return data
       if (!data) {
         try {
-          const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+          const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
           const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/auth/login` : `${rawApi}/api/auth/login`;
           const response = await fetch(backendUrl, {
             method: "POST",

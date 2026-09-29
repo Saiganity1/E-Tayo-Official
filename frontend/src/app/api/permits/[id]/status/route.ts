@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { patchPermitStatus } from "@/app/api/permits/dataStore";
 
-const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
 const BACKEND_API = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
 
 export const dynamic = "force-dynamic";

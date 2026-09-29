@@ -192,7 +192,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     setTimeout(() => setToastMsg(null), 3800);
   };
 
-  const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official.onrender.com").replace(/\/+$/, "");
+  const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
   const API_BASE_URL = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
 
   useEffect(() => {
