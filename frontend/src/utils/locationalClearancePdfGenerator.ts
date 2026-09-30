@@ -478,26 +478,24 @@ export async function generateLocationalClearancePdf(data: LocationalClearancePd
     }
   };
 
-  // Box 18: Signature of Applicant
+  // Box 18: Signature of Applicant (E-Signature only, centered without name collision)
   if (data.applicantSignature) {
     const appSigImg = await embedSig(data.applicantSignature);
     if (appSigImg) {
-      page.drawImage(appSigImg, { x: 65, y: 309, width: 100, height: 19 });
+      page.drawImage(appSigImg, { x: 117, y: 317, width: 110, height: 19 });
     }
   }
 
-  // Box 19: Signature of Authorized Representative (Separate from Applicant)
+  // Box 19: Signature of Authorized Representative (E-Signature only, centered without name collision)
   if (data.representativeSignature) {
     const repSigImg = await embedSig(data.representativeSignature);
     if (repSigImg) {
-      page.drawImage(repSigImg, { x: 325, y: 309, width: 100, height: 19 });
+      page.drawImage(repSigImg, { x: 385, y: 317, width: 110, height: 19 });
     }
   }
 
-  drawText(data.applicantName?.toUpperCase(), 70, 316, 8, true);
-  if (data.representativeName && data.representativeName.trim()) {
-    drawText(data.representativeName.toUpperCase(), 330, 316, 8, true);
-  }
+  // Note: Boxes 18 & 19 are strictly for applicant/representative E-signatures only.
+  // Applicant name is already documented in Box 1 and Representative in Box 5.
 
   // --- NOTARY / JURAT (Intentionally left clean for Notary Public) ---
 
