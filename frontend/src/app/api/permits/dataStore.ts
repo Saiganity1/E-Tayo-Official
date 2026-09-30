@@ -221,8 +221,20 @@ export function updatePermit(updatedApp: PermitApplication): PermitApplication {
   const cleanId = updatedApp.id.trim().toLowerCase();
   const existing = getPermitById(updatedApp.id) || {};
   const merged = { ...existing, ...updatedApp };
+  if (updatedApp.isArchived !== undefined) {
+    merged.isArchived = updatedApp.isArchived;
+  }
   store.set(cleanId, merged as PermitApplication);
   return merged as PermitApplication;
+}
+
+export function archivePermit(id: string, isArchived: boolean): PermitApplication | null {
+  const existing = getPermitById(id);
+  if (!existing) return null;
+  existing.isArchived = isArchived;
+  const cleanId = id.trim().toLowerCase();
+  store.set(cleanId, existing);
+  return existing;
 }
 
 export function patchPermitStatus(id: string, status: string, remarks?: string): PermitApplication | null {

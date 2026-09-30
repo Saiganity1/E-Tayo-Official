@@ -20,6 +20,7 @@ interface PermitContextProps {
   setSelectedPermitType: (type: PermitType) => void;
   addApplication: (app: PermitApplication) => void;
   updateApplication: (app: PermitApplication) => void;
+  archiveApplication: (id: string, isArchived: boolean) => Promise<void>;
   cancelApplication: (id: string, reason?: string) => Promise<void>;
   refreshApplications: () => Promise<void>;
   updateFeeMultiplier: (id: string, value: number) => void;
@@ -367,6 +368,28 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       let mergedApps = cleanBackendApps;
       try {
         const cachedStr = localStorage.getItem("etayo_cached_applications");
+        let storedArchivedIds: string[] = [];
+        try {
+          const s = typeof window !== "undefined" ? localStorage.getItem("etayo_archived_application_ids") : null;
+          if (s) {
+            const parsed = JSON.parse(s);
+            if (Array.isArray(parsed)) storedArchivedIds = parsed;
+          }
+        } catch (e) {}
+
+        const isAppLocallyArchived = (appId?: string) => {
+          if (!appId || typeof window === "undefined") return false;
+          const clean = appId.trim();
+          const lower = clean.toLowerCase();
+          const upper = clean.toUpperCase();
+          return (
+            localStorage.getItem(`etayo_archived_${clean}`) === "true" ||
+            localStorage.getItem(`etayo_archived_${lower}`) === "true" ||
+            localStorage.getItem(`etayo_archived_${upper}`) === "true" ||
+            storedArchivedIds.some(x => (x || "").trim().toLowerCase() === lower)
+          );
+        };
+
         if (cachedStr) {
           const cachedApps: PermitApplication[] = JSON.parse(cachedStr);
           const cleanCached = (cachedApps || []).filter(c => !isDummyApp(c));
@@ -377,6 +400,19 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const lowerId = id.toLowerCase();
             const upperId = id.toUpperCase();
             const bAppStatus = String(bApp.status || "").toLowerCase().trim();
+
+            const isArchived = isAppLocallyArchived(id) || Boolean(bApp.isArchived) || Boolean(foundCached?.isArchived);
+            if (isArchived && typeof window !== "undefined" && id) {
+              try {
+                localStorage.setItem(`etayo_archived_${id}`, "true");
+                localStorage.setItem(`etayo_archived_${lowerId}`, "true");
+                localStorage.setItem(`etayo_archived_${upperId}`, "true");
+                if (!storedArchivedIds.some(x => (x || "").trim().toLowerCase() === lowerId)) {
+                  storedArchivedIds.push(id);
+                  localStorage.setItem("etayo_archived_application_ids", JSON.stringify(storedArchivedIds));
+                }
+              } catch (e) {}
+            }
 
             // STRICT AUTHORITATIVE RULE:
             // If the backend database says "pending", an admin has NOT approved it!
@@ -415,6 +451,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 ...(foundCached || {}),
                 ...bApp,
                 status: "pending",
+                isArchived,
                 isReleased: false,
                 paymentStatus: "unpaid" as const,
                 userConfirmedPayment: false,
@@ -506,6 +543,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 ...foundCached,
                 ...bApp,
                 status: effectiveStatus,
+                isArchived,
                 isReleased: isPaidLocal || effectiveStatus === "released" || Boolean((bApp as any).isReleased) || Boolean((foundCached as any).isReleased),
                 paymentStatus: isPaidLocal ? "paid" : (bApp.paymentStatus || (foundCached as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : undefined)),
                 userConfirmedPayment: isConfirmedLocal,
@@ -524,6 +562,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               return {
                 ...bApp,
                 status: effectiveStatus,
+                isArchived,
                 isReleased: isPaidLocal || Boolean((bApp as any).isReleased),
                 paymentStatus: isPaidLocal ? "paid" : ((bApp as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : (isApprovedLocal ? "awaiting_payment" : undefined))),
                 userConfirmedPayment: isConfirmedLocal,
@@ -535,7 +574,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               };
             }
 
-            return bApp;
+            return {
+              ...bApp,
+              isArchived
+            };
           });
 
           // Include any locally created applications not yet in backend into state without resubmitting
@@ -555,6 +597,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const mLower = mId.toLowerCase();
         const mUpper = mId.toUpperCase();
         const mRawStatus = String(mApp.status || "").toLowerCase().trim();
+
+        const mIsArchived = typeof window !== "undefined" && Boolean(mId) && (
+          localStorage.getItem(`etayo_archived_${mId}`) === "true" ||
+          localStorage.getItem(`etayo_archived_${mLower}`) === "true" ||
+          localStorage.getItem(`etayo_archived_${mUpper}`) === "true" ||
+          Boolean(mApp.isArchived)
+        );
 
         const mIsLocallyApproved = typeof window !== "undefined" && Boolean(mId) && (
           localStorage.getItem(`etayo_approved_${mId}`) === "true" ||
@@ -603,6 +652,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           return {
             ...mApp,
             status: mRawStatus,
+            isArchived: mIsArchived,
             trackingSteps: cleanSteps,
             isReleased: false,
             paymentStatus: "unpaid" as const,
@@ -696,6 +746,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return {
           ...mApp,
           status: mEffectiveStatus,
+          isArchived: mIsArchived,
           trackingSteps: mTracking,
           orderOfPaymentNo: mOp || (mApp as any).orderOfPaymentNo,
           assessedFees: mFees ? Number(mFees) : (mApp as any).assessedFees,
@@ -770,18 +821,27 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (Array.isArray(parsed) && parsed.length > 0) {
             const clean = parsed.filter(a => !isDummyApp(a)).map(a => {
               const aId = String(a.id || "").trim();
+              const aLower = aId.toLowerCase();
+              const aUpper = aId.toUpperCase();
               const aStatus = String(a.status || "").toLowerCase().trim();
               const localSt = typeof window !== "undefined" && aId ? localStorage.getItem(`etayo_status_${aId}`) : null;
               const isLocApproved = typeof window !== "undefined" && Boolean(aId) && (
                 localSt === "approved" ||
                 localSt === "released" ||
                 localStorage.getItem(`etayo_approved_${aId}`) === "true" ||
-                localStorage.getItem(`etayo_approved_${aId.toLowerCase()}`) === "true"
+                localStorage.getItem(`etayo_approved_${aLower}`) === "true" ||
+                localStorage.getItem(`etayo_approved_${aUpper}`) === "true"
               );
+              const isArchived = Boolean(a.isArchived) || (typeof window !== "undefined" && Boolean(aId) && (
+                localStorage.getItem(`etayo_archived_${aId}`) === "true" ||
+                localStorage.getItem(`etayo_archived_${aLower}`) === "true" ||
+                localStorage.getItem(`etayo_archived_${aUpper}`) === "true"
+              ));
               if (!isLocApproved && (aStatus === "pending" || localSt === "pending")) {
                 return {
                   ...a,
                   status: "pending",
+                  isArchived,
                   isReleased: false,
                   paymentStatus: undefined,
                   userConfirmedPayment: false,
@@ -799,6 +859,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 return {
                   ...a,
                   status: localSt === "released" ? "released" : "approved",
+                  isArchived,
                   trackingSteps: (a.trackingSteps && a.trackingSteps.length > 0)
                     ? a.trackingSteps.map((st: any, idx: number) => {
                         if (idx <= 2) return { ...st, status: "completed" };
@@ -807,7 +868,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     : a.trackingSteps
                 };
               }
-              return a;
+              return {
+                ...a,
+                isArchived
+              };
             });
             setApplications(clean);
           }
@@ -1111,7 +1175,30 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if ((updatedApp as any).paymentStatus === "paid" || updatedApp.status === "released") {
           localStorage.setItem(`etayo_paid_${k}`, "true");
         }
+        if (updatedApp.isArchived !== undefined) {
+          if (updatedApp.isArchived) {
+            localStorage.setItem(`etayo_archived_${k}`, "true");
+          } else {
+            localStorage.removeItem(`etayo_archived_${k}`);
+          }
+        }
       });
+
+      if (updatedApp.isArchived !== undefined) {
+        try {
+          const s = localStorage.getItem("etayo_archived_application_ids");
+          let list: string[] = s ? JSON.parse(s) : [];
+          if (!Array.isArray(list)) list = [];
+          if (updatedApp.isArchived) {
+            if (!list.some(x => x.trim().toLowerCase() === lowerId)) {
+              list.push(id);
+            }
+          } else {
+            list = list.filter(x => x.trim().toLowerCase() !== lowerId);
+          }
+          localStorage.setItem("etayo_archived_application_ids", JSON.stringify(list));
+        } catch (e) {}
+      }
 
       const stored = localStorage.getItem("etayo_cached_applications");
       const currentList: PermitApplication[] = stored ? JSON.parse(stored) : [];
@@ -1211,6 +1298,96 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     } catch (e) {
       console.error("Error in updateApplication:", e);
+    }
+  };
+
+  const archiveApplication = async (id: string, isArchived: boolean = true) => {
+    if (!id) return;
+    const cleanId = id.trim();
+    const lowerId = cleanId.toLowerCase();
+    const upperId = cleanId.toUpperCase();
+    const matchPermitId = (a?: string, b?: string) => Boolean(a && b && a.trim().toLowerCase() === b.trim().toLowerCase());
+
+    // 1. Optimistic state update
+    setApplications((prev) =>
+      prev.map((app) => (matchPermitId(app.id, cleanId) ? { ...app, isArchived } : app))
+    );
+
+    // 2. Persist to localStorage across keys & lists
+    if (typeof window !== "undefined") {
+      try {
+        [cleanId, lowerId, upperId].forEach(k => {
+          if (k) {
+            if (isArchived) {
+              localStorage.setItem(`etayo_archived_${k}`, "true");
+            } else {
+              localStorage.removeItem(`etayo_archived_${k}`);
+            }
+          }
+        });
+
+        const savedArchived = localStorage.getItem("etayo_archived_application_ids");
+        let list: string[] = savedArchived ? JSON.parse(savedArchived) : [];
+        if (!Array.isArray(list)) list = [];
+
+        if (isArchived) {
+          if (!list.some(x => x.trim().toLowerCase() === lowerId)) {
+            list.push(cleanId);
+          }
+        } else {
+          list = list.filter(x => x.trim().toLowerCase() !== lowerId);
+        }
+        localStorage.setItem("etayo_archived_application_ids", JSON.stringify(list));
+
+        // Update etayo_cached_applications
+        const storedCached = localStorage.getItem("etayo_cached_applications");
+        if (storedCached) {
+          const parsed = JSON.parse(storedCached);
+          if (Array.isArray(parsed)) {
+            const updatedCache = parsed.map((app: any) =>
+              matchPermitId(app.id, cleanId) ? { ...app, isArchived } : app
+            );
+            localStorage.setItem("etayo_cached_applications", JSON.stringify(updatedCache));
+          }
+        }
+
+        // Broadcast events
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("etayo_archive_changed"));
+        window.dispatchEvent(new CustomEvent("etayo_applications_updated", { detail: { id: cleanId, isArchived } }));
+      } catch (err) {
+        console.warn("Failed to persist archive state locally", err);
+      }
+    }
+
+    // 3. Notify server endpoints (Next.js proxy and backend) with graceful timeout
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const targetId = encodeURIComponent(cleanId);
+
+      // Dedicated archive endpoint
+      fetch(`/api/permits/${targetId}/archive?archived=${isArchived}`, {
+        method: "PATCH",
+        headers
+      }).catch(() => null);
+
+      // Also PUT to ensure full record update
+      fetch(`/api/permits/${targetId}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ id: cleanId, isArchived })
+      }).catch(() => null);
+
+      // Direct backend archive
+      fetch(`${API_BASE_URL}/permits/${targetId}/archive?archived=${isArchived}`, {
+        method: "PATCH",
+        headers
+      }).catch(() => null);
+    } catch (e) {
+      console.warn("Failed to notify backend of archive status", e);
     }
   };
 
@@ -1351,6 +1528,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSelectedPermitType,
         addApplication,
         updateApplication,
+        archiveApplication,
         cancelApplication,
         refreshApplications,
         updateFeeMultiplier,

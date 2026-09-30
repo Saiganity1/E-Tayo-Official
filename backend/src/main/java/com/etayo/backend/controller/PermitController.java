@@ -468,6 +468,7 @@ public class PermitController {
             if (permit.getSketchImageUrl() != null && !permit.getSketchImageUrl().isEmpty()) existing.setSketchImageUrl(permit.getSketchImageUrl());
             if (permit.getProjectType() != null) existing.setProjectType(permit.getProjectType());
             if (permit.getDateSubmitted() != null) existing.setDateSubmitted(permit.getDateSubmitted());
+            if (permit.getIsArchived() != null) existing.setIsArchived(permit.getIsArchived());
 
             syncTrackingStepsForStatus(existing, existing.getStatus());
             return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(existing));
@@ -475,6 +476,17 @@ public class PermitController {
             syncTrackingStepsForStatus(permit, permit.getStatus());
             return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(permit));
         });
+    }
+
+    @PatchMapping("/{id}/archive")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<PermitApplication> setArchiveStatus(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "true") boolean archived) {
+        return findPermitFlexible(id).map(app -> {
+            app.setIsArchived(archived);
+            return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(app));
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     private void syncTrackingStepsForStatus(PermitApplication app, String status) {

@@ -67,6 +67,7 @@ export interface PermitApplication {
   sketchImageUrl?: string;
   projectType?: string;
   dateApproved?: string;
+  isArchived?: boolean;
 }
 
 export interface SystemLog {

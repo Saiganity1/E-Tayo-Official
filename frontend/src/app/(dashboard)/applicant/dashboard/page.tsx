@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { 
   Search, 
@@ -35,7 +35,7 @@ import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationAppr
 type ViewMode = "project" | "flat";
 
 export default function ApplicantDashboard() {
-  const { applications } = usePermitContext();
+  const { applications, archiveApplication } = usePermitContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [userName, setUserName] = useState("Applicant");
@@ -143,14 +143,32 @@ export default function ApplicantDashboard() {
       });
   }, [applications, userEmail, userName]);
 
+  const isAppArchived = useCallback((app: PermitApplication): boolean => {
+    if (app.isArchived) return true;
+    const appId = String(app.id || "").trim().toLowerCase();
+    if (!appId) return false;
+    if (archivedIds.some(x => String(x || "").trim().toLowerCase() === appId)) return true;
+    if (typeof window !== "undefined") {
+      const origId = String(app.id || "").trim();
+      if (
+        localStorage.getItem(`etayo_archived_${origId}`) === "true" ||
+        localStorage.getItem(`etayo_archived_${appId}`) === "true" ||
+        localStorage.getItem(`etayo_archived_${origId.toUpperCase()}`) === "true"
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }, [archivedIds]);
+
   // Exclude all archived applications so they NEVER appear in Recent Applications
   const activeApplicantApps = useMemo(() => {
-    return applicantApps.filter(app => !archivedIds.includes(app.id));
-  }, [applicantApps, archivedIds]);
+    return applicantApps.filter(app => !isAppArchived(app));
+  }, [applicantApps, isAppArchived]);
 
   const archivedCount = useMemo(() => {
-    return applicantApps.filter(app => archivedIds.includes(app.id)).length;
-  }, [applicantApps, archivedIds]);
+    return applicantApps.filter(app => isAppArchived(app)).length;
+  }, [applicantApps, isAppArchived]);
 
   // Filter individual applications by search and status
   const filteredApps = useMemo(() => {
@@ -238,7 +256,11 @@ export default function ApplicantDashboard() {
   const handleArchiveCard = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const next = Array.from(new Set([...archivedIds, id]));
+    const cleanId = String(id || "").trim();
+    if (archiveApplication) {
+      archiveApplication(cleanId, true);
+    }
+    const next = Array.from(new Set([...archivedIds, cleanId]));
     setArchivedIds(next);
     try {
       localStorage.setItem("etayo_archived_application_ids", JSON.stringify(next));
@@ -246,7 +268,7 @@ export default function ApplicantDashboard() {
         window.dispatchEvent(new Event("etayo_archive_changed"));
       }
     } catch (err) {}
-    showToast(`Application ${id} moved to archive.`, "info");
+    showToast(`Application ${cleanId} moved to archive.`, "info");
   };
 
   const getStatusConfig = (status: string, app?: any) => {

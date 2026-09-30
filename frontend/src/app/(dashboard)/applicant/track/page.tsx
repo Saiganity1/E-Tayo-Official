@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { PermitApplication } from "@/types";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { 
   Search, Plus, Clock, CheckCircle2, AlertTriangle, 
@@ -26,7 +27,7 @@ type ViewMode = "project" | "flat";
 
 export default function ApplicationStatusPage() {
   const router = useRouter();
-  const { applications, updateApplication, cancelApplication, refreshApplications } = usePermitContext();
+  const { applications, updateApplication, archiveApplication, cancelApplication, refreshApplications } = usePermitContext();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -213,11 +214,25 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     } catch (e) {}
 
     // Real-time multi-tab & cross-window sync listener with fast polling
+    const syncArchived = () => {
+      try {
+        const savedArchived = localStorage.getItem("etayo_archived_application_ids");
+        if (savedArchived) {
+          const parsed = JSON.parse(savedArchived);
+          if (Array.isArray(parsed)) {
+            setArchivedIds(parsed);
+          }
+        }
+      } catch (e) {}
+    };
+
     const handleSync = () => {
+      syncArchived();
       if (refreshApplications) refreshApplications();
     };
 
     const handleFocus = () => {
+      syncArchived();
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
         if (refreshApplications) refreshApplications();
       }
@@ -225,11 +240,13 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
     // Auto-poll every 2.5s to detect admin approval without delay across windows/tabs
     const pollTimer = setInterval(() => {
+      syncArchived();
       if (refreshApplications) refreshApplications();
     }, 2500);
 
     if (typeof window !== "undefined") {
       window.addEventListener("storage", handleSync);
+      window.addEventListener("etayo_archive_changed", syncArchived);
       window.addEventListener("etayo_applications_updated", handleSync);
       window.addEventListener("focus", handleFocus);
       document.addEventListener("visibilitychange", handleFocus);
@@ -239,6 +256,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       clearInterval(pollTimer);
       if (typeof window !== "undefined") {
         window.removeEventListener("storage", handleSync);
+        window.removeEventListener("etayo_archive_changed", syncArchived);
         window.removeEventListener("etayo_applications_updated", handleSync);
         window.removeEventListener("focus", handleFocus);
         document.removeEventListener("visibilitychange", handleFocus);
@@ -258,8 +276,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const handleArchiveApp = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const cleanId = String(id || "").trim();
+    if (archiveApplication) {
+      archiveApplication(cleanId, true);
+    }
     setArchivedIds(prev => {
-      const next = Array.from(new Set([...prev, id]));
+      const next = Array.from(new Set([...prev, cleanId]));
       try {
         localStorage.setItem("etayo_archived_application_ids", JSON.stringify(next));
         if (typeof window !== "undefined") {
@@ -268,14 +290,19 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       } catch (err) {}
       return next;
     });
-    showToast(`Application ${id} moved to archive.`, "info");
+    showToast(`Application ${cleanId} moved to archive.`, "info");
   };
 
   const handleUnarchiveApp = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const cleanId = String(id || "").trim();
+    const lower = cleanId.toLowerCase();
+    if (archiveApplication) {
+      archiveApplication(cleanId, false);
+    }
     setArchivedIds(prev => {
-      const next = prev.filter(x => x !== id);
+      const next = prev.filter(x => String(x || "").trim().toLowerCase() !== lower);
       try {
         localStorage.setItem("etayo_archived_application_ids", JSON.stringify(next));
         if (typeof window !== "undefined") {
@@ -284,8 +311,26 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       } catch (err) {}
       return next;
     });
-    showToast(`Application ${id} restored to active list.`, "success");
+    showToast(`Application ${cleanId} restored to active list.`, "success");
   };
+
+  const isAppArchived = useCallback((app: PermitApplication): boolean => {
+    if (app.isArchived) return true;
+    const appId = String(app.id || "").trim().toLowerCase();
+    if (!appId) return false;
+    if (archivedIds.some(x => String(x || "").trim().toLowerCase() === appId)) return true;
+    if (typeof window !== "undefined") {
+      const origId = String(app.id || "").trim();
+      if (
+        localStorage.getItem(`etayo_archived_${origId}`) === "true" ||
+        localStorage.getItem(`etayo_archived_${appId}`) === "true" ||
+        localStorage.getItem(`etayo_archived_${origId.toUpperCase()}`) === "true"
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }, [archivedIds]);
 
   // Strictly filter applications for the active logged-in applicant (NO leak for guests or incognito)
   const myApplications = useMemo(() => {
@@ -308,12 +353,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   }, [applications, isLoggedIn, currentUser]);
 
   const activeApps = useMemo(() => {
-    return myApplications.filter(a => !archivedIds.includes(a.id));
-  }, [myApplications, archivedIds]);
+    return myApplications.filter(a => !isAppArchived(a));
+  }, [myApplications, isAppArchived]);
 
   const archivedApps = useMemo(() => {
-    return myApplications.filter(a => archivedIds.includes(a.id));
-  }, [myApplications, archivedIds]);
+    return myApplications.filter(a => isAppArchived(a));
+  }, [myApplications, isAppArchived]);
 
   const currentPool = activeTab === "active" ? activeApps : archivedApps;
 
@@ -635,7 +680,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const StatusIcon = statusConfig.icon;
     // Show Stage 2 progression banner ONLY if LC is officially Released (not when it's only Step 3 / Approved)
     const isReleasedLC = isLocationalClearance && (isActuallyReleased || (app.status || "").toLowerCase() === "released");
-    const isArchived = archivedIds.includes(app.id);
+    const isArchived = isAppArchived(app);
 
     return (
       <div 

@@ -56,6 +56,8 @@ public class PermitApplication {
     @Column(columnDefinition = "TEXT")
     private String sketchImageUrl;
 
+    private Boolean isArchived = false;
+
     // Getters and Setters
 
     public String getId() { return id; }
@@ -106,4 +108,6 @@ public class PermitApplication {
     public void setProjectType(String projectType) { this.projectType = projectType; }
     public String getLocationalClearanceRef() { return locationalClearanceRef; }
     public void setLocationalClearanceRef(String locationalClearanceRef) { this.locationalClearanceRef = locationalClearanceRef; }
+    public Boolean getIsArchived() { return isArchived != null && isArchived; }
+    public void setIsArchived(Boolean isArchived) { this.isArchived = isArchived; }
 }
