@@ -132,7 +132,7 @@ public class DataSourceConfig {
         String dbFilePath = new File(dataDir, "etayodb").getAbsolutePath().replace("\\", "/");
         log.info("Connecting to canonical persistent database at: {}", dbFilePath);
 
-        config.setJdbcUrl("jdbc:h2:file:" + dbFilePath + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=USER;AUTO_SERVER=TRUE");
+        config.setJdbcUrl("jdbc:h2:file:" + dbFilePath + ";DB_CLOSE_DELAY=-1;NON_KEYWORDS=USER;AUTO_SERVER=TRUE");
         config.setUsername("sa");
         config.setPassword("password");
         config.setDriverClassName("org.h2.Driver");
