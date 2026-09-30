@@ -140,7 +140,25 @@ export default function StaffEvaluatePage() {
   useEffect(() => {
     if (!app || !app.id) return;
     const curStatus = (app.status || "").toLowerCase().trim();
-    if (curStatus === "approved" || curStatus.includes("approv") || curStatus === "released" || isApplicationApproved(app)) {
+    const curId = String(app.id).trim();
+    const isApprovedOrReleased =
+      curStatus === "approved" ||
+      curStatus.includes("approv") ||
+      curStatus === "released" ||
+      isApplicationApproved(app) ||
+      (typeof window !== "undefined" && (
+        localStorage.getItem(`etayo_approved_${curId}`) === "true" ||
+        localStorage.getItem(`etayo_approved_${curId.toLowerCase()}`) === "true" ||
+        localStorage.getItem(`etayo_approved_${curId.toUpperCase()}`) === "true" ||
+        localStorage.getItem(`etayo_status_${curId}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${curId.toLowerCase()}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${curId.toUpperCase()}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${curId}`) === "released" ||
+        localStorage.getItem(`etayo_status_${curId.toLowerCase()}`) === "released" ||
+        localStorage.getItem(`etayo_status_${curId.toUpperCase()}`) === "released"
+      ));
+
+    if (isApprovedOrReleased) {
       evalAutoStartedRef.current = app.id;
       return;
     }

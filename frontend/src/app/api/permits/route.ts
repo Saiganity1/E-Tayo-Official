@@ -43,8 +43,8 @@ export async function GET(req: Request) {
         if (text.trim().startsWith("[") || text.trim().startsWith("{")) {
           const data = JSON.parse(text);
           if (Array.isArray(data) && data.length > 0) {
-            data.forEach(item => savePermit(item));
-            return NextResponse.json(data, {
+            const mergedList = data.map(item => savePermit(item));
+            return NextResponse.json(mergedList, {
               headers: {
                 "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
                 "Pragma": "no-cache"

@@ -489,6 +489,58 @@ public class PermitController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @PatchMapping("/{id}/status")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<PermitApplication> patchStatus(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> body) {
+        return findPermitFlexible(id).map(app -> {
+            String oldStatus = app.getStatus();
+            if (body.containsKey("status") && body.get("status") != null) {
+                app.setStatus(body.get("status").toString().trim().toLowerCase());
+            }
+            if (body.containsKey("remarks") && body.get("remarks") != null) {
+                app.setRemarks(body.get("remarks").toString().trim());
+            }
+            if (body.containsKey("paymentStatus") && body.get("paymentStatus") != null) {
+                app.setPaymentStatus(body.get("paymentStatus").toString().trim().toLowerCase());
+            }
+            if (body.containsKey("isArchived") && body.get("isArchived") != null) {
+                try {
+                    app.setIsArchived(Boolean.parseBoolean(body.get("isArchived").toString()));
+                } catch (Exception ignored) {}
+            }
+
+            syncTrackingStepsForStatus(app, app.getStatus());
+
+            if (oldStatus != null && !oldStatus.equalsIgnoreCase(app.getStatus())) {
+                try {
+                    auditLoggingService.logAction(
+                        "PERMIT_STATUS_UPDATED_" + (app.getStatus() != null ? app.getStatus().toUpperCase() : "UNKNOWN"),
+                        "Staff/Admin",
+                        String.format("Application %s status changed from '%s' to '%s'. Remarks: %s",
+                            id, oldStatus, app.getStatus(), app.getRemarks() != null ? app.getRemarks() : "None")
+                    );
+                } catch (Exception ignored) {}
+            }
+
+            return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(app));
+        }).orElseGet(() -> {
+            PermitApplication newApp = new PermitApplication();
+            newApp.setId(id);
+            if (body.containsKey("status") && body.get("status") != null) {
+                newApp.setStatus(body.get("status").toString().trim().toLowerCase());
+            } else {
+                newApp.setStatus("approved");
+            }
+            if (body.containsKey("remarks") && body.get("remarks") != null) {
+                newApp.setRemarks(body.get("remarks").toString().trim());
+            }
+            syncTrackingStepsForStatus(newApp, newApp.getStatus());
+            return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(newApp));
+        });
+    }
+
     private void syncTrackingStepsForStatus(PermitApplication app, String status) {
         if (app == null || status == null) return;
         String cleanStatus = status.trim().toLowerCase();

@@ -36,8 +36,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         if (text.trim().startsWith("{")) {
           const data = JSON.parse(text);
           if (data && data.id) {
-            savePermit(data);
-            return NextResponse.json(data, {
+            const saved = savePermit(data);
+            return NextResponse.json(saved, {
               headers: {
                 "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
                 "Pragma": "no-cache"

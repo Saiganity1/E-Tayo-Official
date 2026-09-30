@@ -414,10 +414,28 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               } catch (e) {}
             }
 
+            const isApprovedOrReleasedLocally = typeof window !== "undefined" && Boolean(id) && (
+              localStorage.getItem(`etayo_approved_${id}`) === "true" ||
+              localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
+              localStorage.getItem(`etayo_approved_${upperId}`) === "true" ||
+              localStorage.getItem(`etayo_status_${id}`) === "approved" ||
+              localStorage.getItem(`etayo_status_${lowerId}`) === "approved" ||
+              localStorage.getItem(`etayo_status_${upperId}`) === "approved" ||
+              localStorage.getItem(`etayo_status_${id}`) === "released" ||
+              localStorage.getItem(`etayo_status_${lowerId}`) === "released" ||
+              localStorage.getItem(`etayo_status_${upperId}`) === "released" ||
+              foundCached?.status === "approved" ||
+              foundCached?.status === "released" ||
+              Boolean((foundCached as any)?.isReleased) ||
+              isApplicationApproved(bApp) ||
+              (foundCached ? isApplicationApproved(foundCached) : false)
+            );
+
             // STRICT AUTHORITATIVE RULE:
-            // If the backend database says "pending", an admin has NOT approved it!
-            // It MUST NEVER auto-approve or inherit stale approved cache/localStorage!
-            if (bAppStatus === "pending") {
+            // If the application is truly pending AND has NOT been approved/released locally by staff:
+            // Clean up any stray flags and keep it pending.
+            // But if staff has already approved or released it, NEVER regress back to "pending"!
+            if (bAppStatus === "pending" && !isApprovedOrReleasedLocally) {
               if (typeof window !== "undefined" && id) {
                 try {
                   [id, lowerId, upperId].forEach(k => {

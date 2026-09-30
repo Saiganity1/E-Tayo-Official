@@ -212,6 +212,25 @@ export function savePermit(newApp: PermitApplication): PermitApplication {
     newApp.id = `APP-2026-${Math.floor(1000 + Math.random() * 9000)}`;
   }
   const cleanId = newApp.id.trim().toLowerCase();
+  const existing = getPermitById(newApp.id);
+  if (existing) {
+    const existingStatus = String(existing.status || "").toLowerCase().trim();
+    const newStatus = String(newApp.status || "").toLowerCase().trim();
+    // Protect against status regression from stale payloads:
+    // If local in-memory store has an approved or released application, do NOT let a stale GET "pending" or "under_review" overwrite it!
+    if ((existingStatus === "approved" || existingStatus === "released") && (newStatus === "pending" || newStatus === "under_review")) {
+      newApp.status = existing.status;
+      if (existing.dateApproved && !newApp.dateApproved) newApp.dateApproved = existing.dateApproved;
+      if (existing.remarks && !newApp.remarks) newApp.remarks = existing.remarks;
+      if (existing.paymentStatus && !newApp.paymentStatus) newApp.paymentStatus = existing.paymentStatus;
+      if (existing.trackingSteps && (!newApp.trackingSteps || newApp.trackingSteps.length === 0)) {
+        newApp.trackingSteps = existing.trackingSteps;
+      }
+    }
+    if (existing.isArchived && !newApp.isArchived) {
+      newApp.isArchived = true;
+    }
+  }
   store.set(cleanId, newApp);
   return newApp;
 }
@@ -220,6 +239,15 @@ export function updatePermit(updatedApp: PermitApplication): PermitApplication {
   if (!updatedApp.id) return updatedApp;
   const cleanId = updatedApp.id.trim().toLowerCase();
   const existing = getPermitById(updatedApp.id) || {};
+  const existingStatus = String((existing as any).status || "").toLowerCase().trim();
+  const newStatus = String(updatedApp.status || "").toLowerCase().trim();
+
+  // Protect against status regression from stale payloads
+  if ((existingStatus === "approved" || existingStatus === "released") && (newStatus === "pending" || newStatus === "under_review")) {
+    updatedApp.status = (existing as any).status;
+    if ((existing as any).dateApproved && !updatedApp.dateApproved) updatedApp.dateApproved = (existing as any).dateApproved;
+  }
+
   const merged = { ...existing, ...updatedApp };
   if (updatedApp.isArchived !== undefined) {
     merged.isArchived = updatedApp.isArchived;
