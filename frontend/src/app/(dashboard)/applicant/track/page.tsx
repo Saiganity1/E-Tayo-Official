@@ -633,7 +633,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           : (rawAppStatus === "under_review" ? "under_review" : (rawAppStatus || "pending")));
     const statusConfig = getStatusConfig(effectiveStatus, app);
     const StatusIcon = statusConfig.icon;
-    const isApprovedLC = isLocationalClearance && isAppApproved;
+    // Show Stage 2 progression banner ONLY if LC is officially Released (not when it's only Step 3 / Approved)
+    const isReleasedLC = isLocationalClearance && (isActuallyReleased || (app.status || "").toLowerCase() === "released");
     const isArchived = archivedIds.includes(app.id);
 
     return (
@@ -1132,8 +1133,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           </div>
         )}
 
-        {/* BANNER FOR APPROVED LOCATIONAL CLEARANCE */}
-        {isApprovedLC && (
+        {/* BANNER FOR RELEASED LOCATIONAL CLEARANCE (LILITAW LANG PAG RELEASED NA, HINDI SA STEP 3) */}
+        {isReleasedLC && (
           connectedStage2App ? (
             <div style={{
               background: connectedStage2App.status === "rejected"
@@ -1336,7 +1337,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                     Stage 1 Prerequisite Passed! Clearance Ref: {app.id}
                   </div>
                   <div style={{ fontSize: "0.8rem", color: "#15803d" }}>
-                    Your locational zoning is officially approved. You can now proceed to Stage 2 Technical Permitting Forms with all fields prefilled.
+                    Your locational zoning is officially approved and released. You can now proceed to Stage 2 Technical Permitting Forms with all fields prefilled.
                   </div>
                 </div>
               </div>

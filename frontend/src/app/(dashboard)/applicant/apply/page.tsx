@@ -20,6 +20,7 @@ import UnifiedProjectGoogleForm from "../../../../components/forms/UnifiedProjec
 import TechnicalPermitFormsStep from "../../../../components/forms/TechnicalPermitFormsStep";
 import { generateUnifiedPermitPdf } from "../../../../utils/unifiedPermitPdfGenerator";
 import { generateLocationalClearancePdf } from "../../../../utils/locationalClearancePdfGenerator";
+import { isApplicationReleased } from "../../../../utils/projectGrouping";
 import { 
   PROJECT_TYPES_MATRIX, 
   ProjectTypeItem, 
@@ -310,13 +311,14 @@ export default function ApplyPage() {
 
   const isClearanceApproved = Boolean(
     matchedClearanceApp && (
-      matchedClearanceApp.status?.toLowerCase() === "approved" || 
-      matchedClearanceApp.status?.toLowerCase() === "released"
+      matchedClearanceApp.status?.toLowerCase() === "released" || 
+      isApplicationReleased(matchedClearanceApp)
     )
   );
 
   const isClearancePending = Boolean(
-    matchedClearanceApp && (
+    matchedClearanceApp && !isClearanceApproved && (
+      matchedClearanceApp.status?.toLowerCase() === "approved" ||
       matchedClearanceApp.status?.toLowerCase() === "pending" || 
       matchedClearanceApp.status?.toLowerCase() === "under_review" ||
       matchedClearanceApp.status?.toLowerCase() === "in_progress"
@@ -338,10 +340,10 @@ export default function ApplyPage() {
     );
   }, [allAvailableApps]);
 
-  // Existing approved clearances matching currently selected project type (available for linking in Step 2)
+  // Existing approved & released clearances matching currently selected project type (available for linking in Step 2)
   const matchingApprovedClearances = useMemo(() => {
     return userClearances.filter(a =>
-      (a.status?.toLowerCase() === "approved" || a.status?.toLowerCase() === "released") &&
+      (a.status?.toLowerCase() === "released" || isApplicationReleased(a)) &&
       (a.projectType === selectedProjectType?.name || (a.projectName && a.projectName.includes(selectedProjectType?.name)))
     );
   }, [userClearances, selectedProjectType]);
@@ -1909,7 +1911,7 @@ export default function ApplyPage() {
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", marginBottom: "0.3rem" }}>
                         <span style={{ fontWeight: "800", color: "#065f46", fontSize: "1.1rem", letterSpacing: "-0.01em" }}>
-                          Locational Clearance Approved by Admin
+                          Locational Clearance Released & Approved
                         </span>
                         <div style={{
                           display: "inline-flex",
@@ -1924,7 +1926,7 @@ export default function ApplyPage() {
                           fontWeight: "700"
                         }}>
                           <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981" }}></span>
-                          Ref: {activeClearanceRef || "Approved"}
+                          Ref: {activeClearanceRef || "Released"}
                           <button
                             type="button"
                             onClick={() => handleCopyRef(activeClearanceRef || "LC-APPROVED")}
@@ -1936,7 +1938,7 @@ export default function ApplyPage() {
                         </div>
                       </div>
                       <p style={{ margin: 0, color: "#166534", fontSize: "0.9rem", lineHeight: "1.45" }}>
-                        Your Locational Clearance for <strong>{selectedProjectType.name}</strong> has been officially approved by the Sto. Tomas Zoning Administrator / MPDO. You are cleared to proceed to <strong>Step 3: Required Permit Forms</strong>.
+                        Your Locational Clearance for <strong>{selectedProjectType.name}</strong> has been officially approved and released by the Sto. Tomas Zoning Administrator / MPDO. You are cleared to proceed to <strong>Step 3: Required Permit Forms</strong>.
                       </p>
                     </div>
                   </div>
@@ -2020,7 +2022,7 @@ export default function ApplyPage() {
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                           <span style={{
-                            background: "#d97706",
+                            background: matchedClearanceApp?.status?.toLowerCase() === "approved" ? "#059669" : "#d97706",
                             color: "white",
                             fontSize: "0.72rem",
                             fontWeight: "800",
@@ -2028,7 +2030,7 @@ export default function ApplyPage() {
                             borderRadius: "6px",
                             letterSpacing: "0.5px"
                           }}>
-                            AWAITING ADMIN APPROVAL
+                            {matchedClearanceApp?.status?.toLowerCase() === "approved" ? "APPROVED · AWAITING RELEASE" : "AWAITING ADMIN APPROVAL"}
                           </span>
                           <span style={{ fontSize: "0.82rem", color: "#92400e", fontWeight: "700" }}>
                             Ref: {matchedClearanceApp?.id}
@@ -2043,7 +2045,9 @@ export default function ApplyPage() {
                           </button>
                         </div>
                         <h3 style={{ margin: 0, fontSize: "1.4rem", fontWeight: "900", color: "#78350f" }}>
-                          Locational Clearance Under Review
+                          {matchedClearanceApp?.status?.toLowerCase() === "approved"
+                            ? "Locational Clearance Approved (Pending Official Release)"
+                            : "Locational Clearance Under Review"}
                         </h3>
                       </div>
                     </div>
@@ -2084,7 +2088,9 @@ export default function ApplyPage() {
                     marginBottom: "1.5rem"
                   }}>
                     <p style={{ margin: "0 0 0.75rem 0", color: "#78350f", fontSize: "0.95rem", lineHeight: "1.6", fontWeight: "600" }}>
-                      Your <strong>Application for Locational Clearance</strong> for <strong>{selectedProjectType.name}</strong> was submitted on <strong>{matchedClearanceApp?.dateSubmitted || "recently"}</strong> and is currently being evaluated by the <strong>Sto. Tomas MPDO & Zoning Administrator</strong>.
+                      {matchedClearanceApp?.status?.toLowerCase() === "approved"
+                        ? <>Your <strong>Application for Locational Clearance</strong> for <strong>{selectedProjectType.name}</strong> is approved, but has not yet been officially released (Stage 4). Once payment/order of payment is settled and the clearance is released, <strong>Step 3: Required Permit Forms</strong> will unlock automatically.</>
+                        : <>Your <strong>Application for Locational Clearance</strong> for <strong>{selectedProjectType.name}</strong> was submitted on <strong>{matchedClearanceApp?.dateSubmitted || "recently"}</strong> and is currently being evaluated by the <strong>Sto. Tomas MPDO & Zoning Administrator</strong>.</>}
                     </p>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", background: "#fef3c7", padding: "12px 14px", borderRadius: "10px", border: "1px solid #fde68a" }}>
                       <AlertTriangle size={20} color="#d97706" style={{ flexShrink: 0, marginTop: "2px" }} />

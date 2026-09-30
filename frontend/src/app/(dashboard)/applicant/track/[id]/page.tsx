@@ -1467,10 +1467,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                   <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "800", color: "#166534" }}>
-                    {isLC
-                      ? "🎉 Locational Clearance Officially Approved by MPDO!"
-                      : paymentInfo.confirmed
+                    {paymentInfo.confirmed
                       ? "Payment Confirmation Submitted (Awaiting Cashier Sign-off)"
+                      : isLC
+                      ? "🎉 Locational Clearance Approved · Order of Payment Issued"
                       : "🎉 Application Formally Approved · Order of Payment Issued"}
                   </h4>
                   <span style={{
@@ -1482,18 +1482,18 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                     color: "#15803d",
                     border: "1px solid #86efac"
                   }}>
-                    {isLC ? "Step 3 Passed (Zoning Endorsed)" : paymentInfo.confirmed ? "Cashier Sign-off" : "Evaluation Approved"}
+                    {paymentInfo.confirmed ? "Cashier Sign-off" : isLC ? "Step 3 Passed (Zoning Endorsed)" : "Evaluation Approved"}
                   </span>
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "#15803d", marginTop: "4px", lineHeight: "1.45" }}>
-                  {isLC ? (
-                    <>
-                      Your Locational Clearance (<strong>{appData.id}</strong>) has been officially approved and signed by the Sto. Tomas Zoning Administrator / Municipal Planning and Development Office (MPDO). 
-                      Your Stage 1 zoning prerequisite is complete — you are cleared to proceed with Stage 2 Technical Permitting Forms.
-                    </>
-                  ) : paymentInfo.confirmed ? (
+                  {paymentInfo.confirmed ? (
                     <>
                       You submitted payment confirmation with Reference: <strong>{paymentInfo.reference}</strong> ({paymentInfo.method}). The Municipal Building Official cashier will verify and officially release your permits.
+                    </>
+                  ) : isLC ? (
+                    <>
+                      Your Locational Clearance (<strong>{appData.id}</strong>) has been officially approved by the Sto. Tomas Zoning Administrator / Municipal Planning and Development Office (MPDO). 
+                      Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {((appData as any).assessedFees || 3795).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || "OP-2026"}</strong>) at the Municipal Treasury or online. Your official clearance papers will be released once settled.
                     </>
                   ) : (
                     <>
@@ -1501,37 +1501,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                     </>
                   )}
                 </div>
-
-                {/* If LC, direct action button to proceed to Stage 2 Technical Forms */}
-                {isLC && (
-                  <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                    <Link
-                      href={`/applicant/apply?clearanceRef=${encodeURIComponent(appData.id)}&step=3`}
-                      style={{
-                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                        color: "white",
-                        padding: "9px 18px",
-                        borderRadius: "10px",
-                        fontWeight: "800",
-                        fontSize: "0.88rem",
-                        textDecoration: "none",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        boxShadow: "0 3px 10px rgba(5, 150, 105, 0.25)"
-                      }}
-                    >
-                      <Sparkles size={16} />
-                      <span>Proceed to Step 3: Technical Permitting Forms</span>
-                      <ArrowRight size={15} />
-                    </Link>
-                  </div>
-                )}
               </div>
             </div>
 
-            {!isLC && (
-              !paymentInfo.confirmed ? (
+            {!paymentInfo.confirmed ? (
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                   <Link
                     href={`/applicant/messages?ref=${appData.id}`}
@@ -1600,7 +1573,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                   </div>
                 </div>
               )
-            )}
+            }
           </div>
         </div>
       )}
@@ -1613,43 +1586,74 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               borderRadius: "20px",
               padding: "1.4rem",
               boxShadow: "0 4px 16px rgba(16, 185, 129, 0.08)",
-        marginBottom: "0.5rem"
+              marginBottom: "0.5rem"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                <div style={{
-                  width: "46px",
-                  height: "46px",
-                  borderRadius: "14px",
-                  background: "#dcfce7",
-                  color: "#16a34a",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "1px solid #86efac"
-                }}>
-                  <CheckCircle size={28} strokeWidth={2.5} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <div style={{
+                    width: "46px",
+                    height: "46px",
+                    borderRadius: "14px",
+                    background: "#dcfce7",
+                    color: "#16a34a",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "1px solid #86efac"
+                  }}>
+                    <CheckCircle size={28} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <h4 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "900", color: "#166534" }}>
+                        {isLC
+                          ? "Locational Clearance Officially Released — Stage 1 Complete!"
+                          : "Official Permits Released — Process Complete!"}
+                      </h4>
+                      <span style={{
+                        fontSize: "0.72rem",
+                        fontWeight: "800",
+                        padding: "2px 8px",
+                        borderRadius: "6px",
+                        background: "#dcfce7",
+                        color: "#15803d",
+                        border: "1px solid #86efac"
+                      }}>
+                        Step 4 Complete
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "0.85rem", color: "#15803d", marginTop: "3px" }}>
+                      {isLC ? (
+                        "Your locational zoning clearance is officially released. You can now proceed to Stage 2 Technical Permitting Forms with all fields prefilled."
+                      ) : (
+                        <>Payment verified under Official Receipt No: <strong>{(appData as any).officialReceiptNo || "OR-2026-OFFICIAL"}</strong></>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <h4 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "900", color: "#166534" }}>
-                      Official Permits Released — Process Complete!
-                    </h4>
-                    <span style={{
-                      fontSize: "0.72rem",
+
+                {isLC && (
+                  <Link
+                    href={`/applicant/apply?clearanceRef=${encodeURIComponent(appData.id)}&step=3`}
+                    style={{
+                      background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                      color: "white",
+                      padding: "10px 20px",
+                      borderRadius: "10px",
                       fontWeight: "800",
-                      padding: "2px 8px",
-                      borderRadius: "6px",
-                      background: "#dcfce7",
-                      color: "#15803d",
-                      border: "1px solid #86efac"
-                    }}>
-                      Step 4 Complete
-                    </span>
-                  </div>
-                  <div style={{ fontSize: "0.85rem", color: "#15803d", marginTop: "3px" }}>
-                    Payment verified under Official Receipt No: <strong>{(appData as any).officialReceiptNo || "OR-2026-OFFICIAL"}</strong>
-                  </div>
-                </div>
+                      fontSize: "0.88rem",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
+                    }}
+                  >
+                    <Sparkles size={16} />
+                    <span>Proceed to Step 3: Technical Permitting Forms</span>
+                    <ArrowRight size={15} />
+                  </Link>
+                )}
               </div>
             </div>
           )}
