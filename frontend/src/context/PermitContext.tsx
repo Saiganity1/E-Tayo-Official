@@ -90,7 +90,10 @@ const normalizeLog = (raw: any): SystemLog => {
 };
 
 const isDummyApp = (app: PermitApplication) => {
-  return app.id === "LC-2025-0001" && (app.applicantName === "Juan Dela Cruz" || app.applicantEmail === "juan.delacruz@email.com");
+  return (
+    (app.id === "LC-2025-0001" && (app.applicantName === "Juan Dela Cruz" || app.applicantEmail === "juan.delacruz@email.com")) ||
+    app.id === "APP-2026-6636"
+  );
 };
 
 export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs: SystemLog[] = []): SystemLog[] => {
@@ -393,6 +396,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (cachedStr) {
           const cachedApps: PermitApplication[] = JSON.parse(cachedStr);
           const cleanCached = (cachedApps || []).filter(c => !isDummyApp(c));
+          if (cleanCached.length !== cachedApps.length) {
+            try {
+              localStorage.setItem("etayo_cached_applications", JSON.stringify(cleanCached));
+            } catch (e) {}
+          }
 
           mergedApps = cleanBackendApps.map((bApp) => {
             const foundCached = cleanCached.find((c) => matchPermitId(c.id, bApp.id));
@@ -892,6 +900,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               };
             });
             setApplications(clean);
+            if (clean.length !== parsed.length) {
+              try {
+                localStorage.setItem("etayo_cached_applications", JSON.stringify(clean));
+              } catch (e) {}
+            }
           }
         }
       } catch (e) {

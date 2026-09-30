@@ -889,13 +889,13 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       ? appData.projectType
       : (PROJECT_TYPES_MATRIX.find(p => p.name.toLowerCase() === (typeof appData?.projectType === "string" ? appData.projectType.toLowerCase() : "") || p.id === appData?.projectType) || PROJECT_TYPES_MATRIX[0]);
 
-    const cleanSeq = appData?.id ? String(appData.id).replace(/^[A-Za-z]+-/i, "") : "2026-6636";
+    const cleanSeq = appData?.id ? String(appData.id).replace(/^[A-Za-z]+-/i, "") : "2026-0001";
     const issuedDate = (appData as any)?.permitIssuedDate || (appData as any)?.dateIssued || (appData?.status === "approved" || appData?.status === "released" ? (appData?.dateApproved || appData?.dateSubmitted || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined);
     const activePresets = getSystemActivePresets();
     
     const formData: UnifiedPermitFormData = {
       ...activePresets,
-      applicationNo: appData?.id || "APP-2026-6636",
+      applicationNo: appData?.id || "APP-2026-0001",
       status: (isApproved && appData?.status !== "released") ? "approved" : appData?.status,
       isApproved: appData?.status === "approved" || appData?.status === "released" || isApproved,
       buildingPermitNo: appData?.buildingPermitNo || (pTypeObj.matrix?.buildingPermit === 'required' || !pTypeObj ? `BP-${cleanSeq}` : undefined),

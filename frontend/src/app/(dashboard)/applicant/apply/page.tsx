@@ -137,6 +137,7 @@ export default function ApplyPage() {
   const [manualClearanceInput, setManualClearanceInput] = useState("");
   const [manualClearanceError, setManualClearanceError] = useState("");
   const [applicantName, setApplicantName] = useState("Applicant");
+  const [applicantEmail, setApplicantEmail] = useState("");
   const [isCheckingClearance, setIsCheckingClearance] = useState(false);
 
   // Project Type Matrix State (Step 1)
@@ -182,6 +183,24 @@ export default function ApplyPage() {
       if (userStr) {
         const userObj = JSON.parse(userStr);
         if (userObj.name) setApplicantName(userObj.name);
+        if (userObj.email) setApplicantEmail(userObj.email);
+      }
+    } catch (e) {}
+
+    // Purge any stale dummy mock applications from local cache
+    try {
+      const cached = localStorage.getItem("etayo_cached_applications");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter((a: any) => a && a.id !== "APP-2026-6636");
+          if (filtered.length !== parsed.length) {
+            localStorage.setItem("etayo_cached_applications", JSON.stringify(filtered));
+          }
+        }
+      }
+      if (localStorage.getItem("etayo_active_clearance_ref") === "APP-2026-6636") {
+        localStorage.removeItem("etayo_active_clearance_ref");
       }
     } catch (e) {}
 
@@ -267,6 +286,33 @@ export default function ApplyPage() {
   // Check whether the currently selected project type requires / conditionally requires Locational Clearance
   const isClearanceRequired = selectedProjectType ? selectedProjectType.matrix.zoningPermit !== 'not_required' : true;
 
+  // Helper to determine if an application is a dummy/mock seed that should not block applicants
+  const isIgnoredDummyApp = useCallback((app: any) => {
+    if (!app) return true;
+    const appId = String(app.id || "").trim();
+    if (appId === "APP-2026-6636") return true;
+    if (appId === "LC-2025-0001" && (app.applicantName === "Juan Dela Cruz" || app.applicantEmail === "juan.delacruz@email.com")) return true;
+    return false;
+  }, []);
+
+  // Helper to verify if an application belongs to the current logged-in applicant
+  const isAppOwnedByCurrentUser = useCallback((app: any) => {
+    if (!app || isIgnoredDummyApp(app)) return false;
+    const curEmail = (applicantEmail || "").trim().toLowerCase();
+    const curName = (applicantName || "").trim().toLowerCase();
+
+    const appEmail = (app.applicantEmail || app.userEmail || (typeof app.user === "string" ? app.user : "") || "").trim().toLowerCase();
+    const appName = (app.applicantName || app.userName || "").trim().toLowerCase();
+
+    if (curEmail && appEmail && (appEmail === curEmail || appEmail.includes(curEmail) || curEmail.includes(appEmail))) {
+      return true;
+    }
+    if (curName && curName !== "applicant" && appName && (appName === curName || appName.includes(curName) || curName.includes(appName))) {
+      return true;
+    }
+    return false;
+  }, [applicantEmail, applicantName, isIgnoredDummyApp]);
+
   // Combine applications with localStorage cached applications to avoid false negative flickers during async refreshes
   const allAvailableApps = useMemo(() => {
     let list = applications || [];
@@ -281,8 +327,8 @@ export default function ApplyPage() {
         }
       } catch (e) {}
     }
-    return list;
-  }, [applications]);
+    return list.filter((a: any) => !isIgnoredDummyApp(a));
+  }, [applications, isIgnoredDummyApp]);
 
   // When re-applying from a disapproved application, auto-resolve project type if not explicitly set
   useEffect(() => {
@@ -336,9 +382,10 @@ export default function ApplyPage() {
   // Filter available clearances the user might already have submitted in the system
   const userClearances = useMemo(() => {
     return allAvailableApps.filter(
-      (app) => app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))
+      (app) => (app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
+        (!applicantEmail || isAppOwnedByCurrentUser(app))
     );
-  }, [allAvailableApps]);
+  }, [allAvailableApps, applicantEmail, isAppOwnedByCurrentUser]);
 
   // Existing approved & released clearances matching currently selected project type (available for linking in Step 2)
   const matchingApprovedClearances = useMemo(() => {
@@ -348,10 +395,12 @@ export default function ApplyPage() {
     );
   }, [userClearances, selectedProjectType]);
 
-  // Helper to find an ACTIVE (in-progress or approved) application for a given project type (bawal dumoble)
-  // Active = status is NOT "rejected" and NOT "cancelled"
+  // Helper to find an ACTIVE (in-progress or approved) application for a given project type
+  // Active = status is NOT "rejected" and NOT "cancelled" and belongs to the current applicant
   const getActiveAppForProjectType = useCallback((projectTypeName: string) => {
     return allAvailableApps.find((app: any) => {
+      if (isIgnoredDummyApp(app)) return false;
+      if (!isAppOwnedByCurrentUser(app)) return false;
       if (app.status === "rejected" || app.status === "cancelled") return false;
       const isLC = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
       if (isLC) return false;
@@ -363,11 +412,13 @@ export default function ApplyPage() {
         )
       );
     });
-  }, [allAvailableApps]);
+  }, [allAvailableApps, isIgnoredDummyApp, isAppOwnedByCurrentUser]);
 
   // Helper to find a PREVIOUSLY REJECTED application for a given project type (so applicant can re-apply)
   const getRejectedAppForProjectType = useCallback((projectTypeName: string) => {
     return allAvailableApps.find((app: any) => {
+      if (isIgnoredDummyApp(app)) return false;
+      if (!isAppOwnedByCurrentUser(app)) return false;
       if (app.status !== "rejected") return false;
       const isLC = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
       if (isLC) return false;
@@ -379,44 +430,40 @@ export default function ApplyPage() {
         )
       );
     });
-  }, [allAvailableApps]);
+  }, [allAvailableApps, isIgnoredDummyApp, isAppOwnedByCurrentUser]);
 
-  // Check if an ACTIVE Stage 2 application has already been submitted for this Locational Clearance (bawal dumoble)
+  // Check if an ACTIVE Stage 2 application has already been submitted for this Locational Clearance
   const activeExistingStage2App = useMemo(() => {
     if (!activeClearanceRef || activeClearanceRef === "EXEMPT") return null;
     return allAvailableApps.find(
       (app: any) =>
+        !isIgnoredDummyApp(app) &&
+        isAppOwnedByCurrentUser(app) &&
         app.id !== activeClearanceRef &&
         !(app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
         app.status !== "rejected" &&
         app.status !== "cancelled" &&
         (
-          (app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === activeClearanceRef.trim().toLowerCase()) ||
-          (matchedClearanceApp?.projectName && app.projectName && (
-            app.projectName.toLowerCase().includes(matchedClearanceApp.projectName.toLowerCase()) ||
-            matchedClearanceApp.projectName.toLowerCase().includes(app.projectName.toLowerCase())
-          ))
+          app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === activeClearanceRef.trim().toLowerCase()
         )
     );
-  }, [allAvailableApps, activeClearanceRef, matchedClearanceApp]);
+  }, [allAvailableApps, activeClearanceRef, isIgnoredDummyApp, isAppOwnedByCurrentUser]);
 
   // Check if a previous Stage 2 application was REJECTED (so user is allowed to re-apply)
   const rejectedStage2App = useMemo(() => {
     if (!activeClearanceRef || activeClearanceRef === "EXEMPT") return null;
     return allAvailableApps.find(
       (app: any) =>
+        !isIgnoredDummyApp(app) &&
+        isAppOwnedByCurrentUser(app) &&
         app.id !== activeClearanceRef &&
         !(app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
         app.status === "rejected" &&
         (
-          (app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === activeClearanceRef.trim().toLowerCase()) ||
-          (matchedClearanceApp?.projectName && app.projectName && (
-            app.projectName.toLowerCase().includes(matchedClearanceApp.projectName.toLowerCase()) ||
-            matchedClearanceApp.projectName.toLowerCase().includes(app.projectName.toLowerCase())
-          ))
+          app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === activeClearanceRef.trim().toLowerCase()
         )
     );
-  }, [allAvailableApps, activeClearanceRef, matchedClearanceApp]);
+  }, [allAvailableApps, activeClearanceRef, isIgnoredDummyApp, isAppOwnedByCurrentUser]);
 
   // Alias for backward compatibility where alreadySubmittedStage2App was previously referenced
   const alreadySubmittedStage2App = activeExistingStage2App;
@@ -635,31 +682,27 @@ export default function ApplyPage() {
   };
 
   const handleSubmitApplication = async () => {
-    // STRICT 1-PERMIT-PER-PROJECT VALIDATION: Block duplicate active application (bawal dumoble)
+    // Only check for duplicate if this exact Locational Clearance already has an active stage 2 building permit by this applicant
     const activeDuplicateApp = allAvailableApps.find((app: any) => {
+      if (isIgnoredDummyApp(app)) return false;
+      if (!isAppOwnedByCurrentUser(app)) return false;
       if (app.status === "rejected" || app.status === "cancelled") return false;
       const isLC = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
       if (isLC) return false;
-      
-      const aProjType = typeof app.projectType === "object" ? app.projectType?.name : app.projectType;
-      const sameType = Boolean(
-        aProjType && selectedProjectType && (
-          aProjType.toLowerCase() === selectedProjectType.name.toLowerCase() ||
-          selectedProjectType.name.toLowerCase().includes(aProjType.toLowerCase())
-        )
-      );
 
       const sameClearance = Boolean(
-        activeClearanceRef && activeClearanceRef !== "EXEMPT" && app.locationalClearanceRef &&
+        activeClearanceRef &&
+        activeClearanceRef !== "EXEMPT" &&
+        app.locationalClearanceRef &&
         app.locationalClearanceRef.trim().toLowerCase() === activeClearanceRef.trim().toLowerCase()
       );
 
-      return sameType || sameClearance;
+      return sameClearance;
     });
 
     if (activeDuplicateApp) {
       setSubmissionErrorAlert(
-        `Duplicate Application Blocked: You already have an active permit application (${activeDuplicateApp.id} - ${activeDuplicateApp.status}) for ${selectedProjectType.name}. Per Sto. Tomas municipal regulations, only one (1) active permit application is permitted per project type (bawal dumoble). If a previous application was rejected, only then can you file a new application.`
+        `Duplicate Application Blocked: You already have an active permit application (${activeDuplicateApp.id} - ${activeDuplicateApp.status}) referencing Locational Clearance ${activeClearanceRef}. If a previous application was rejected, only then can you file a new application.`
       );
       if (typeof document !== "undefined") {
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1364,9 +1407,7 @@ export default function ApplyPage() {
                       key={p.id}
                       onClick={() => {
                         setSelectedProjectType(p);
-                        if (activeAppForP) {
-                          setLockedNotice(`Duplicate Permit Blocked: You already have an active permit application (${activeAppForP.id} - ${activeAppForP.status}) for ${p.name}. Sto. Tomas municipal regulations enforce a strict 1-permit-per-project-type rule (bawal dumoble).`);
-                        }
+                        setLockedNotice(null);
                       }}
                       className="project-card-item"
                       style={{

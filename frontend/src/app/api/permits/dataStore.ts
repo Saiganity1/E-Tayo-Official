@@ -48,49 +48,6 @@ const SEED_APPLICATIONS: PermitApplication[] = [
     ]
   },
   {
-    id: "APP-2026-6636",
-    permitType: "building_permit",
-    projectName: "Single-Detached House Installation & Construction",
-    applicantName: "Paul Payumo",
-    applicantEmail: "mdpsicot.student@ua.edu.ph",
-    applicantPhone: "0917-123-4567",
-    applicantAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
-    projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
-    projectDescription: "Construction of a 1-storey single-detached residential house.",
-    status: "pending",
-    dateSubmitted: "September 29, 2026",
-    estimatedFees: 3795,
-    paymentStatus: "unpaid",
-    projectType: "Single-Detached House",
-    locationalClearanceRef: "LC-2026-6494",
-    location: {
-      lat: 15.0163,
-      lng: 120.7188,
-      address: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga"
-    },
-    requirements: [
-      { name: "Unified Building Permit Application Form", required: true, status: "approved", fileName: "unified_application.pdf", fileSize: "2.4 MB" },
-      { name: "Architectural Documents & Plans", required: true, status: "approved", fileName: "architectural_plans.pdf", fileSize: "4.8 MB" },
-      { name: "Civil / Structural Documents", required: true, status: "approved", fileName: "structural_analysis.pdf", fileSize: "3.9 MB" },
-      { name: "Electrical Documents", required: true, status: "approved", fileName: "electrical_plans.pdf", fileSize: "2.2 MB" },
-      { name: "Sanitary / Plumbing Documents", required: true, status: "approved", fileName: "plumbing_plans.pdf", fileSize: "1.9 MB" }
-    ],
-    trackingSteps: [
-      { title: "1. Filed", status: "completed", date: "September 29, 2026", notes: "Submitted Online", actor: "Paul Payumo" },
-      { title: "2. Technical Evaluation", status: "current", notes: "Reviewing Architectural & Engineering Plans" },
-      { title: "3. Final Approval", status: "upcoming", notes: "Building Official Sign-off" },
-      { title: "4. Permit Release", status: "upcoming", notes: "Official Permit Documents" }
-    ],
-    historyLog: [
-      {
-        date: "September 29, 2026, 12:15 AM",
-        action: "Application Submitted",
-        actor: "Paul Payumo",
-        details: "Unified Building Permit application package submitted online."
-      }
-    ]
-  },
-  {
     id: "LC-2025-0001",
     permitType: "locational_clearance",
     projectName: "Dela Cruz Warehouse",
@@ -164,6 +121,9 @@ if (!globalForPermits._etayoPermitStore) {
 }
 
 const store = globalForPermits._etayoPermitStore;
+if (store.has("app-2026-6636")) {
+  store.delete("app-2026-6636");
+}
 
 export function getAllPermits(emailFilter?: string, nameFilter?: string): PermitApplication[] {
   const all = Array.from(store.values());
