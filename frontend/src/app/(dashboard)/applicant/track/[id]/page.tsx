@@ -1504,76 +1504,47 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
             </div>
 
-            {!paymentInfo.confirmed ? (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                  <Link
-                    href={`/applicant/messages?ref=${appData.id}`}
-                    style={{
-                      background: "#ffffff",
-                      color: "#059669",
-                      border: "1.5px solid #10b981",
-                      padding: "9px 16px",
-                      borderRadius: "10px",
-                      fontWeight: "800",
-                      fontSize: "0.88rem",
-                      textDecoration: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
-                      transition: "all 0.15s ease"
-                    }}
-                  >
-                    <Send size={15} />
-                    <span>Send Receipt on Messages</span>
-                  </Link>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <Link
+                href={`/applicant/messages?ref=${appData.id}`}
+                style={{
+                  background: "#ffffff",
+                  color: "#059669",
+                  border: "1.5px solid #10b981",
+                  padding: "9px 16px",
+                  borderRadius: "10px",
+                  fontWeight: "800",
+                  fontSize: "0.88rem",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+                  transition: "all 0.15s ease"
+                }}
+              >
+                <Send size={15} />
+                <span>Send Receipt on Messages</span>
+              </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentRefInput(`OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
-                      setPaymentReceiptFile(null);
-                      setShowPaymentModal(true);
-                    }}
-                    style={{
-                      background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                      color: "white",
-                      border: "none",
-                      padding: "10px 20px",
-                      borderRadius: "10px",
-                      fontWeight: "800",
-                      fontSize: "0.9rem",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
-                    }}
-                  >
-                    <CreditCard size={16} />
-                    <span>Confirm Payment Sent</span>
-                  </button>
+              {paymentInfo.confirmed && (
+                <div style={{
+                  background: "#dcfce7",
+                  border: "1px solid #86efac",
+                  padding: "8px 14px",
+                  borderRadius: "10px",
+                  fontSize: "0.82rem",
+                  fontWeight: "700",
+                  color: "#166534",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}>
+                  <Clock size={15} />
+                  <span>Cashier Verification Pending</span>
                 </div>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                  <div style={{
-                    background: "#dcfce7",
-                    border: "1px solid #86efac",
-                    padding: "8px 14px",
-                    borderRadius: "10px",
-                    fontSize: "0.82rem",
-                    fontWeight: "700",
-                    color: "#166534",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px"
-                  }}>
-                    <Clock size={15} />
-                    <span>Cashier Verification Pending</span>
-                  </div>
-                </div>
-              )
-            }
+              )}
+            </div>
           </div>
         </div>
       )}
