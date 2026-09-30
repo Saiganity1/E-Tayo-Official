@@ -1084,8 +1084,8 @@ export default function StaffEvaluatePage() {
         }
       }
 
-      // 2. VICINITY SKETCH MAP (if available)
-      if (app.sketchImageUrl) {
+      // 2. VICINITY SKETCH MAP (Only for Building Permits; Locational Clearance embeds the sketch inside the official form)
+      if (isBuildingPermit && app.sketchImageUrl) {
         let sketchUrl = app.sketchImageUrl;
         if (sketchUrl.startsWith("/api/files/")) {
           sketchUrl = `${apiBase}${sketchUrl}`;
@@ -1101,9 +1101,9 @@ export default function StaffEvaluatePage() {
         });
       }
 
-      // 3. ADDITIONAL ATTACHMENTS (if multiple files were submitted)
-      if (rawFileUrl && rawFileUrl.includes(",")) {
-        const extraParts = rawFileUrl.split(",").filter((p) => p.trim() && !p.includes("drive.google.com"));
+      // 3. ADDITIONAL ATTACHMENTS (Only for Building Permits when multiple genuine files were submitted; Locational Clearance is only one form)
+      if (isBuildingPermit && rawFileUrl && !rawFileUrl.startsWith("data:") && rawFileUrl.includes(",")) {
+        const extraParts = rawFileUrl.split(/,(?=(?:https?:\/\/|\/api\/))/).filter((p) => p.trim() && !p.includes("drive.google.com"));
         for (let idx = 0; idx < extraParts.length; idx++) {
           if (idx === 0) continue; // skip primary form
           const part = extraParts[idx];
@@ -1134,7 +1134,7 @@ export default function StaffEvaluatePage() {
 
           docs.push({
             id: `attachment-${idx}`,
-            title: isBuildingPermit ? `Technical Engineering Attachment ${idx}` : `Clearance Attachment ${idx}`,
+            title: `Technical Engineering Attachment ${idx}`,
             tabLabel: `Attachment ${idx}`,
             type: isImg ? "image" : "pdf",
             url: attUrl,
