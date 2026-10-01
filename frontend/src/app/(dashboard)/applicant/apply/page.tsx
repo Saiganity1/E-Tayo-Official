@@ -769,14 +769,30 @@ export default function ApplyPage() {
         const meta = PERMIT_FORM_METADATA[key];
         const doc = uploadedPermitDocs[key];
         const templatePath = getPermitFormTemplate(key, selectedProjectType);
-        const resolvedDocUrl = (doc?.fileUrl && !doc.fileUrl.startsWith("data:")) ? doc.fileUrl : templatePath;
+        const isBfp = key === "fireBfpPermit";
+        const isUserUpload = isBfp || !doc?.isDigitallyGenerated;
+        const resolvedDocUrl = isUserUpload 
+          ? (doc?.fileUrl || (isBfp ? "" : templatePath)) 
+          : ((doc?.fileUrl && !doc.fileUrl.startsWith("data:")) ? doc.fileUrl : templatePath);
+
+        if (doc?.fileUrl && doc.fileName) {
+          try {
+            localStorage.setItem(`att_${doc.fileName}`, doc.fileUrl);
+            localStorage.setItem(`etayo_att_${doc.fileName}`, doc.fileUrl);
+            if (isBfp) {
+              localStorage.setItem("etayo_bfp_file_data", doc.fileUrl);
+              localStorage.setItem("etayo_bfp_file_name", doc.fileName);
+            }
+          } catch (e) {}
+        }
+
         requirementsList.push({
           name: `${meta.label} (${meta.code})`,
           required: true,
           status: "submitted",
           fileName: doc?.fileName || `${meta.code}_${selectedProjectType.name.replace(/\s+/g, '_')}_Official_Filled.pdf`,
           fileSize: doc?.fileSize || "1.4 MB",
-          remarks: `Official ${meta.label} document submitted for engineering evaluation`,
+          remarks: isBfp ? "Official Bureau of Fire Protection Clearance Certificate" : `Official ${meta.label} document submitted for engineering evaluation`,
           fileUrl: resolvedDocUrl
         });
       });
@@ -851,6 +867,8 @@ export default function ApplyPage() {
           address: projectAddress || matchedClearanceApp?.projectAddress || 'Sto. Tomas, Pampanga',
         },
         requirements: requirementsList,
+        bfpUploadedFile: uploadedPermitDocs['fireBfpPermit']?.fileUrl,
+        bfpUploadedFileName: uploadedPermitDocs['fireBfpPermit']?.fileName,
         trackingSteps: [
           { title: 'Application Submitted', status: 'completed', date: submissionDate, notes: `Application dossier filed online with ${requirementsList.length} verified engineering attachments.` },
           { title: 'Initial Document Verification', status: 'upcoming', notes: 'Reviewing all technical engineering attachments for completeness and licensed PRC sign-offs.' }

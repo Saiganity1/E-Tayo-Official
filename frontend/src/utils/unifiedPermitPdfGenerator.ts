@@ -3608,7 +3608,7 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
     : ["architecturalPermit", "civilStructuralPermit", "electricalPermit", "sanitaryPermit"];
 
   for (const formKey of activeForms) {
-    if (formKey === "buildingPermit" || formKey === "zoningPermit") {
+    if (formKey === "buildingPermit" || formKey === "zoningPermit" || formKey === "fireBfpPermit") {
       continue;
     }
 
@@ -3626,8 +3626,6 @@ export async function generateUnifiedPermitPdf(data: UnifiedPermitFormData): Pro
         formBase64 = await generateMechanicalPermitPdf(data);
       } else if (formKey === "electronicsPermit") {
         formBase64 = await generateElectronicsPermitPdf(data);
-      } else if (formKey === "fireBfpPermit") {
-        formBase64 = await generateBfpApplicationPdf(data);
       } else if (formKey === "demolitionPermit") {
         formBase64 = await generateDemolitionPermitPdf(data);
       } else if (formKey === "fencingPermit") {

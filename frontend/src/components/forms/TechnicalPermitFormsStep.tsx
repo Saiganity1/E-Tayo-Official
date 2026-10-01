@@ -26,7 +26,6 @@ import {
   generateElectronicsPermitPdf,
   generateDemolitionPermitPdf,
   generateExcavationPermitPdf,
-  generateBfpApplicationPdf,
   generateFencingPermitPdf,
   generateSignPermitPdf,
   generateTemporaryServicePermitPdf,
@@ -3180,6 +3179,17 @@ export default function TechnicalPermitFormsStep({
             isDigitallyGenerated: false
           }
         }));
+
+        try {
+          localStorage.setItem(`att_${file.name}`, base64Data);
+          localStorage.setItem(`etayo_att_${file.name}`, base64Data);
+          if (key === "fireBfpPermit") {
+            localStorage.setItem("etayo_bfp_file_data", base64Data);
+            localStorage.setItem("etayo_bfp_file_name", file.name);
+            localStorage.setItem("etayo_bfp_file_size", sizeStr);
+          }
+        } catch (e) {}
+
         setActiveUploadingKey(null);
       };
       reader.onerror = () => {

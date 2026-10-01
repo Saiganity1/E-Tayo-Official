@@ -49,7 +49,6 @@ import {
   generateElectronicsPermitPdf,
   generateDemolitionPermitPdf,
   generateExcavationPermitPdf,
-  generateBfpApplicationPdf,
   generateFencingPermitPdf,
   generateSignPermitPdf,
   generateTemporaryServicePermitPdf,
@@ -604,7 +603,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         code: "FSEC",
         title: "Fire Safety Evaluation Clearance (FSEC / BFP)",
         desc: "BFP Life Safety Standards, Fire Exits, Extinguishers & Egress Widths",
-        template: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
+        template: "", // External BFP clearance - no municipal template; user uploads their own certificate
         badgeBg: "#fee2e2",
         badgeColor: "#b91c1c",
         iconBg: "#fef2f2",
@@ -630,9 +629,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         );
 
         const code = matched ? matched.code : `REQ-${i + 1}`;
+        const isBfpDoc = code === "FSEC" || code === "BFP" || reqName.toLowerCase().includes("bfp") || reqName.toLowerCase().includes("fire safety");
         const title = matched ? matched.title : reqName;
-        const desc = matched ? matched.desc : (req.remarks || "Official engineering attachment submitted");
-        const template = matched ? matched.template : (primaryFileUrl || "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf");
+        const desc = matched ? matched.desc : (req.remarks || (isBfpDoc ? "Official Bureau of Fire Protection Clearance Certificate" : "Official engineering attachment submitted"));
+        const template = isBfpDoc ? "" : (matched ? matched.template : (primaryFileUrl || "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf"));
         const fileName = req.fileName || `${code}_${projNameClean}_Official_Filled.pdf`;
         const fileSize = req.fileSize || "1.4 MB";
         const badgeBg = matched ? matched.badgeBg : "#f1f5f9";
@@ -640,6 +640,22 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         const iconBg = matched ? matched.iconBg : "#f8fafc";
         const iconColor = matched ? matched.iconColor : "#475569";
         const iconType = matched ? matched.iconType : ("file" as const);
+
+        // Retrieve actual uploaded file if available (including localStorage cache for uploaded scans/images)
+        let resolvedReqUrl = req.fileUrl;
+        if ((!resolvedReqUrl || resolvedReqUrl.includes("/templates/")) && typeof window !== "undefined") {
+          if (req.fileName) {
+            const cached = localStorage.getItem(`att_${req.fileName}`) || 
+                           localStorage.getItem(`etayo_att_${req.fileName}`) ||
+                           localStorage.getItem(`etayo_receipt_${req.fileName}`);
+            if (cached) resolvedReqUrl = cached;
+          }
+          if (!resolvedReqUrl && isBfpDoc) {
+            const bfpCached = localStorage.getItem(`etayo_bfp_${curTrackId}`) || 
+                              localStorage.getItem("etayo_bfp_file_data");
+            if (bfpCached) resolvedReqUrl = bfpCached;
+          }
+        }
 
         if (!docs.some(d => d.title === title || d.code === code)) {
           docs.push({
@@ -650,7 +666,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             desc,
             fileName,
             fileSize,
-            url: resolveUrl(req.fileUrl || template),
+            url: resolveUrl(resolvedReqUrl || template),
             template: template,
             downloadName: fileName,
             badgeBg,
@@ -663,6 +679,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       });
     } else if (pTypeStr === "building_permit" || pTypeStr.includes("building")) {
       standardTechnicalForms.forEach((f, i) => {
+        // Skip BFP if applicant hasn't uploaded their own certificate (no municipal template)
+        if (f.code === "FSEC" || f.key === "fireBfpPermit") return;
         docs.push({
           id: `std-form-${i}`,
           title: f.title,
@@ -962,6 +980,31 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   }
 
   const getFilledDocUrl = async (doc: any): Promise<string> => {
+    // 1. FOR BFP / FSEC: Strictly NO synthesized forms! Return the user's uploaded certificate file only.
+    const isBfpDoc = doc.code === "BFP" || 
+                     doc.code === "FSEC" || 
+                     doc.key === "fireBfpPermit" || 
+                     (typeof doc.title === "string" && (doc.title.toLowerCase().includes("fire safety") || doc.title.toLowerCase().includes("bfp"))) ||
+                     (typeof doc.fileName === "string" && (doc.fileName.toLowerCase().includes("bfp") || doc.fileName.toLowerCase().includes("fsec")));
+
+    if (isBfpDoc) {
+      if (doc.url && !doc.url.includes("/templates/")) {
+        return doc.url;
+      }
+      if (typeof window !== "undefined") {
+        if (doc.fileName) {
+          const cached = localStorage.getItem(`att_${doc.fileName}`) || 
+                         localStorage.getItem(`etayo_att_${doc.fileName}`) ||
+                         localStorage.getItem(`etayo_receipt_${doc.fileName}`);
+          if (cached) return cached;
+        }
+        const bfpCached = localStorage.getItem(`etayo_bfp_${curTrackId}`) || 
+                          localStorage.getItem("etayo_bfp_file_data");
+        if (bfpCached) return bfpCached;
+      }
+      return doc.url || "";
+    }
+
     // Only return early if doc.url is an intact, valid data URI with actual base64 content
     if (doc.url && doc.url.startsWith("data:") && !doc.url.includes("placeholder")) {
       const parts = doc.url.split("base64,");
@@ -1177,9 +1220,6 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       } else if (doc.code === "CFEI") {
         const b64 = await generateCfeiPdf(formData);
         return `data:application/pdf;base64,${b64}`;
-      } else if (doc.code === "BFP" || doc.code === "FSEC") {
-        const b64 = await generateBfpApplicationPdf(formData);
-        return `data:application/pdf;base64,${b64}`;
       } else if (doc.code === "LC" || doc.code === "LC-DOSSIER") {
         const b64 = await generateLocationalClearancePdf({
           applicationNo: appData?.locationalClearanceRef || appData?.id || "LC-2026-9307",
@@ -1229,14 +1269,19 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const openDocumentSafely = (url: string, fallbackTemplateUrl?: string) => {
     let targetUrl = url;
     if (!targetUrl || (targetUrl.startsWith("data:") && (!targetUrl.includes("base64,") || targetUrl.split("base64,")[1].trim().length < 100))) {
-      targetUrl = fallbackTemplateUrl || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf";
+      if (fallbackTemplateUrl) {
+        targetUrl = fallbackTemplateUrl;
+      } else {
+        alert("The uploaded document is not available. Please ensure your certificate file is uploaded.");
+        return;
+      }
     }
 
     if (targetUrl.startsWith("data:")) {
       try {
         const parts = targetUrl.split("base64,");
         if (parts.length >= 2 && parts[1].trim()) {
-          const contentType = parts[0].replace("data:", "").replace(";base64", "").trim() || "application/pdf";
+          const contentType = parts[0].replace("data:", "").replace(";base64", "").trim() || "application/octet-stream";
           const rawBase64 = parts[1].trim();
           const byteChars = atob(rawBase64);
           const byteNumbers = new Uint8Array(byteChars.length);
@@ -1265,14 +1310,17 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
   const downloadDocumentSafely = async (url: string, filename: string, fallbackTemplateUrl?: string) => {
     let targetUrl = url;
-    const cleanFilename = filename ? (filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`) : "Document.pdf";
+    const hasExtension = /\.[a-zA-Z0-9]+$/.test(filename || "");
+    const cleanFilename = filename 
+      ? (hasExtension ? filename : `${filename}.pdf`) 
+      : "Document.pdf";
 
     // If targetUrl is missing or is an invalid data: URI, fall back to template
     if (!targetUrl || (targetUrl.startsWith("data:") && (!targetUrl.includes("base64,") || targetUrl.split("base64,")[1].trim().length < 100))) {
       if (fallbackTemplateUrl) {
         targetUrl = fallbackTemplateUrl;
       } else {
-        console.warn("No valid URL or fallback available for download");
+        alert("The uploaded document is not available for download. Please ensure your certificate file is uploaded.");
         return;
       }
     }
@@ -1282,7 +1330,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       try {
         const parts = targetUrl.split("base64,");
         if (parts.length >= 2 && parts[1].trim()) {
-          const contentType = parts[0].replace("data:", "").replace(";base64", "").trim() || "application/pdf";
+          const contentType = parts[0].replace("data:", "").replace(";base64", "").trim() || "application/octet-stream";
           const rawBase64 = parts[1].trim();
           const byteChars = atob(rawBase64);
           const byteNumbers = new Uint8Array(byteChars.length);

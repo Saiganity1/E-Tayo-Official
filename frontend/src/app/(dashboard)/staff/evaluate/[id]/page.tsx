@@ -15,7 +15,6 @@ import {
   generateElectronicsPermitPdf,
   generateDemolitionPermitPdf,
   generateExcavationPermitPdf,
-  generateBfpApplicationPdf,
   generateFencingPermitPdf,
   generateSignPermitPdf,
   generateTemporaryServicePermitPdf,
@@ -1083,23 +1082,36 @@ export default function StaffEvaluatePage() {
           }
         }
 
-        // 15. Bureau of Fire Protection Application (BFP)
-        if ((pTypeObj.matrix as any)?.fireSafetyEvaluationClearance === 'required' || (app as any).bfpNo || (app as any).fireSafetyEvaluationClearanceNo) {
-          try {
-            const bfpB64 = await generateBfpApplicationPdf(formData);
-            const bfpUrl = createBlobFromBase64(bfpB64);
-            docs.push({
-              id: "bfp-application-tab",
-              title: "Bureau of Fire Protection Application Form (BFP-01)",
-              tabLabel: "BFP Form",
-              type: "pdf",
-              url: bfpUrl,
-              fileName: `${app.id}_BFP_Application.pdf`,
-              isOfficialForm: true,
-            });
-          } catch (e) {
-            console.error("Failed to generate BFP PDF", e);
+        // 15. Bureau of Fire Protection Clearance (Applicant-uploaded certificate only — NO synthetic BFP forms!)
+        const bfpReq = Array.isArray(app.requirements) ? app.requirements.find((r: any) => {
+          const n = (r?.name || "").toLowerCase();
+          const fn = (r?.fileName || "").toLowerCase();
+          return n.includes("bfp") || n.includes("fire safety") || n.includes("fsec") || fn.includes("bfp") || fn.includes("fsec");
+        }) : null;
+
+        let bfpFileUrl = bfpReq?.fileUrl || (app as any).bfpUploadedFile;
+        if ((!bfpFileUrl || bfpFileUrl.includes("/templates/")) && typeof window !== "undefined") {
+          if (bfpReq?.fileName) {
+            const cached = localStorage.getItem(`att_${bfpReq.fileName}`) || localStorage.getItem(`etayo_att_${bfpReq.fileName}`);
+            if (cached) bfpFileUrl = cached;
           }
+          if (!bfpFileUrl) {
+            const bfpCached = localStorage.getItem(`etayo_bfp_${app.id}`) || localStorage.getItem("etayo_bfp_file_data");
+            if (bfpCached) bfpFileUrl = bfpCached;
+          }
+        }
+
+        if (bfpFileUrl && !bfpFileUrl.includes("/templates/")) {
+          const isImg = bfpFileUrl.includes(".png") || bfpFileUrl.includes(".jpg") || bfpFileUrl.includes(".jpeg") || bfpFileUrl.startsWith("data:image/") || (bfpReq?.fileName && /\.(png|jpe?g|webp)$/i.test(bfpReq.fileName));
+          docs.push({
+            id: "bfp-clearance-tab",
+            title: "Fire Safety Evaluation Clearance (FSEC / BFP) - Applicant Upload",
+            tabLabel: "BFP Clearance",
+            type: isImg ? "image" : "pdf",
+            url: bfpFileUrl,
+            fileName: bfpReq?.fileName || `${app.id}_BFP_Clearance.${isImg ? "png" : "pdf"}`,
+            isOfficialForm: false,
+          });
         }
       }
 
