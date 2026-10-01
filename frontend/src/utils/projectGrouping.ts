@@ -439,6 +439,8 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
     const upperAppId = appId.toUpperCase();
     const rawStatus = String(app.status || "").toLowerCase().trim();
 
+    const isAppApproved = isApplicationApproved(app);
+
     const isLocalUnderReview = typeof window !== "undefined" && Boolean(appId) && (
       localStorage.getItem(`etayo_status_${appId}`) === "under_review" ||
       localStorage.getItem(`etayo_status_${lowerAppId}`) === "under_review" ||
