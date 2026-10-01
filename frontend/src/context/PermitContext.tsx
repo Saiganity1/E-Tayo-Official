@@ -294,9 +294,17 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return;
       }
 
+      // If user is on an unauthenticated/auth page (e.g. /login, /register, /), skip background data fetching
+      if (typeof window !== "undefined") {
+        const path = window.location.pathname;
+        if (path === "/login" || path === "/register" || path === "/") {
+          return;
+        }
+      }
+
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       
-      // If user is unauthenticated (e.g. on /login or guest), do not flood the backend
+      // If user is unauthenticated, do not flood the backend
       if (!token) {
         setApplications([]);
         return;
@@ -987,12 +995,18 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // 4. Fetch fresh data from backend immediately
     fetchData();
 
-    // 5. Set up periodic polling every 2.5 seconds for instant multi-tab & multi-window sync across Incognito and regular windows
+    // 5. Set up periodic polling for instant multi-tab & multi-window sync across windows (only on dashboard routes)
     const pollInterval = setInterval(() => {
+      if (typeof window !== "undefined") {
+        const path = window.location.pathname;
+        if (path === "/login" || path === "/register" || path === "/") {
+          return; // Never poll on auth/landing pages
+        }
+      }
       const currentToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       if (!currentToken) return; // Do not poll when logged out
       fetchData();
-    }, 2500);
+    }, 4000);
 
     // 6. Cross-tab & multi-window instant reactive update listener
     const handleSyncEvent = () => {

@@ -102,9 +102,9 @@ export default function LocationalClearanceGoogleForm({
   const [preferredMode, setPreferredMode] = useState<"Pick-up" | "Mail to Applicant" | "Mail to Representative">("Pick-up");
 
   // --- BOXES 18-19: CERTIFICATION & SKETCH ATTACHMENT ---
-  const [ctcNumber, setCtcNumber] = useState("CTC-2026-0891234");
-  const [ctcIssuedAt, setCtcIssuedAt] = useState("Sto. Tomas, Pampanga");
-  const [ctcIssuedOn, setCtcIssuedOn] = useState("Jan 15, 2026");
+  const [ctcNumber, setCtcNumber] = useState("");
+  const [ctcIssuedAt, setCtcIssuedAt] = useState("");
+  const [ctcIssuedOn, setCtcIssuedOn] = useState("");
   const [certifiedTruth, setCertifiedTruth] = useState(false);
 
   // Vicinity map / Sketch file
@@ -1171,30 +1171,6 @@ export default function LocationalClearanceGoogleForm({
                   <strong>Affidavit of Undertaking & Certification:</strong> I hereby certify that the above statements and information provided in this Application for Locational Clearance are true and correct to the best of my knowledge, and that any misrepresentation shall be sufficient ground for the denial or revocation of this clearance pursuant to municipal zoning laws of Sto. Tomas, Pampanga.
                 </div>
               </label>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginTop: "1rem" }}>
-                <input
-                  type="text"
-                  placeholder="CTC / Valid ID Number"
-                  value={ctcNumber}
-                  onChange={(e) => setCtcNumber(e.target.value)}
-                  style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.8rem", background: "white" }}
-                />
-                <input
-                  type="text"
-                  placeholder="Issued at"
-                  value={ctcIssuedAt}
-                  onChange={(e) => setCtcIssuedAt(e.target.value)}
-                  style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.8rem", background: "white" }}
-                />
-                <input
-                  type="text"
-                  placeholder="Date issued"
-                  value={ctcIssuedOn}
-                  onChange={(e) => setCtcIssuedOn(e.target.value)}
-                  style={{ padding: "7px 10px", borderRadius: "6px", border: "1px solid #93c5fd", fontSize: "0.8rem", background: "white" }}
-                />
-              </div>
             </div>
           </div>
 

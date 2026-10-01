@@ -33,7 +33,9 @@ Thumbs.db
 
 # Logs
 *.log
-logs/
+/logs/
+/backend/logs/
+!frontend/src/app/api/logs/
 
 # Uploads
 uploads/
