@@ -186,6 +186,27 @@ public class UserController {
     }
 
     /**
+     * Demote a user from ROLE_STAFF back to ROLE_APPLICANT. Only ADMIN can access this.
+     */
+    @PutMapping("/{id}/demote")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    public ResponseEntity<Map<String, String>> demoteToApplicant(@PathVariable Long id) {
+        Map<String, String> response = new HashMap<>();
+        
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            response.put("error", "User not found");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        user.setRole(Role.ROLE_APPLICANT);
+        userRepository.save(user);
+
+        response.put("message", "User " + user.getName() + " unassigned from Staff successfully");
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Change user password. Only ADMIN and SUPERADMIN can execute this.
      */
     @PutMapping("/{id}/change-password")

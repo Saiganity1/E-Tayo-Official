@@ -92,18 +92,15 @@ public class DataSeeder implements CommandLineRunner {
             System.out.println("Created initial municipal admin: admin@etayo.gov.ph");
         }
 
-        // Dummy Staff User for Audit Logging Demo
-        String staffEmail = "staff@etayo.gov.ph";
-        if (!userRepository.existsByEmail(staffEmail)) {
-            User staff = new User(
-                    staffEmail,
-                    passwordEncoder.encode("password123"),
-                    Role.ROLE_STAFF,
-                    "Staff User"
-            );
-            userRepository.save(staff);
-            System.out.println("Created default STAFF user: " + staffEmail);
-        }
+        // Remove any automatic / dummy staff accounts - Admin assigns staff manually
+        userRepository.findByEmail("staff@etayo.gov.ph").ifPresent(user -> {
+            userRepository.delete(user);
+            System.out.println("Cleaned up automatic staff: staff@etayo.gov.ph");
+        });
+        userRepository.findByEmail("dave.sicat@etayo.gov.ph").ifPresent(user -> {
+            userRepository.delete(user);
+            System.out.println("Cleaned up automatic staff: dave.sicat@etayo.gov.ph");
+        });
 
         // Clean up legacy dummy evaluation logs if present
         try {

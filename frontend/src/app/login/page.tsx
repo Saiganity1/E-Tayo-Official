@@ -88,15 +88,16 @@ export default function LoginPage() {
         if (sanitizedEmail.includes("admin")) {
           fallbackRole = "ROLE_ADMIN";
           fallbackName = "Municipal Administrator";
-        } else if (sanitizedEmail.includes("staff") || sanitizedEmail.includes("sicat") || sanitizedEmail.includes("evaluator")) {
+        } else if (sanitizedEmail.includes("staff") || sanitizedEmail.includes("evaluator")) {
           fallbackRole = "ROLE_STAFF";
-          fallbackName = "Dave Sicat";
+          const userPart = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+          fallbackName = userPart || "Staff Evaluator";
         } else if (sanitizedEmail === "mdpsicat.student@ua.edu.ph" || sanitizedEmail.includes("paul") || sanitizedEmail.includes("payumo")) {
           fallbackRole = "ROLE_APPLICANT";
           fallbackName = "Paul Payumo";
         } else {
-          const userPart = sanitizedEmail.split("@")[0];
-          fallbackName = userPart.charAt(0).toUpperCase() + userPart.slice(1);
+          const userPart = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+          fallbackName = userPart || "Applicant";
         }
 
         data = {

@@ -33,7 +33,14 @@ export default function AdminUsersPage() {
       if (!res || !res.ok) throw new Error("Failed to fetch users");
       
       const data = await res.json();
-      setUsers(data);
+      if (Array.isArray(data)) {
+        setUsers(data.filter((u: any) => {
+          const email = String(u.email || "").toLowerCase().trim();
+          return email !== "staff@etayo.gov.ph" && email !== "dave.sicat@etayo.gov.ph";
+        }));
+      } else {
+        setUsers([]);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {

@@ -95,8 +95,8 @@ export default function StaffEvaluatePage() {
   const { applications, updateApplication, addSystemLog } = usePermitContext();
 
   const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-  let activeStaffName = "Dave Sicat";
-  let activeStaffEmail = "dave.sicat@etayo.gov.ph";
+  let activeStaffName = "Staff Evaluator";
+  let activeStaffEmail = "staff@etayo.gov.ph";
   if (userStr) {
     try {
       const u = JSON.parse(userStr);

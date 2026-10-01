@@ -25,10 +25,11 @@ const isDummyEvaluation = (item: any) => {
 
 export async function GET(
   req: Request,
-  { params }: { params: { email: string } }
+  { params }: { params: Promise<{ email: string }> }
 ) {
   try {
-    const rawEmail = decodeURIComponent(params.email || "").trim().toLowerCase();
+    const resolvedParams = await params;
+    const rawEmail = decodeURIComponent(resolvedParams?.email || "").trim().toLowerCase();
     const authHeader = req.headers.get("authorization");
     const headers: Record<string, string> = { "Accept": "application/json" };
     if (authHeader) headers["Authorization"] = authHeader;
