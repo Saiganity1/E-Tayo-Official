@@ -18,7 +18,7 @@ import {
   AttachmentPreviewModal, 
   ParsedAttachment 
 } from "../../../../components/chat/ChatAttachmentRenderer";
-import { ensureApplicationConversationMessages, dispatchPermitMessage } from "../../../../utils/permitMessaging";
+import { ensureApplicationConversationMessages, dispatchPermitMessage, getAuthoritativePermitFee } from "../../../../utils/permitMessaging";
 
 // Canned official municipal responses for fast staff dispatch
 const CANNED_RESPONSES = [
@@ -395,8 +395,7 @@ export default function AdminMessagesPage() {
     try {
       const orNumber = officialReceiptInput.trim() || (releaseModalApp as any).paymentReference || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
       const releaseDateFormatted = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-      const isLC = releaseModalApp?.permitType === "locational_clearance" || String(releaseModalApp?.id || "").toUpperCase().startsWith("LC-");
-      const assessedAmount = ((releaseModalApp as any).assessedFees || (releaseModalApp as any).estimatedFees || (isLC ? 500 : 3795)).toLocaleString();
+      const assessedAmount = getAuthoritativePermitFee(releaseModalApp, releaseModalApp?.id).toLocaleString();
 
       const updatedTracking = [
         ...(releaseModalApp.trackingSteps || []).map((step: any) => ({ ...step, status: "completed" })),
@@ -1227,7 +1226,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                           </div>
                           <div>
                             <div style={{ fontWeight: "800", color: hasReceipt ? "#166534" : "#92400e" }}>
-                              {relevantApp.id} · Order of Payment: PHP {((relevantApp as any).assessedFees || (relevantApp as any).estimatedFees || (relevantApp?.permitType === "locational_clearance" || String(relevantApp?.id || "").toUpperCase().startsWith("LC-") ? 500 : 3795)).toLocaleString()} ({(relevantApp as any).orderOfPaymentNo || `OP-${relevantApp.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`})
+                              {relevantApp.id} · Order of Payment: PHP {getAuthoritativePermitFee(relevantApp, relevantApp?.id).toLocaleString()} ({(relevantApp as any).orderOfPaymentNo || `OP-${relevantApp.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`})
                             </div>
                             <div style={{ fontSize: "0.76rem", color: hasReceipt ? "#15803d" : "#78350f" }}>
                               {hasReceipt
@@ -1987,7 +1986,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px dashed #cbd5e1" }}>
                 <span style={{ fontSize: "0.86rem", fontWeight: "700", color: "#334155" }}>Total Regulatory Amount:</span>
                 <span style={{ fontSize: "1.25rem", fontWeight: "900", color: "#059669" }}>
-                  PHP {((releaseModalApp as any).assessedFees || (releaseModalApp as any).estimatedFees || (releaseModalApp?.permitType === "locational_clearance" || String(releaseModalApp?.id || "").toUpperCase().startsWith("LC-") ? 500 : 3795)).toLocaleString()}
+                  PHP {getAuthoritativePermitFee(releaseModalApp, releaseModalApp?.id).toLocaleString()}
                 </span>
               </div>
             </div>

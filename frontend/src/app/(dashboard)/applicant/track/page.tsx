@@ -13,7 +13,7 @@ import {
   Building2, DollarSign, Eye, RefreshCw, FolderKanban, List, ChevronDown,
   CreditCard, Receipt, Banknote, Download, X, Send, Camera
 } from "lucide-react";
-import { dispatchPermitMessage } from "../../../../utils/permitMessaging";
+import { dispatchPermitMessage, getAuthoritativePermitFee } from "../../../../utils/permitMessaging";
 import { 
   groupApplicationsIntoProjectDossiers, 
   getConnectedProjectApp, 
@@ -77,7 +77,7 @@ export default function ApplicationStatusPage() {
     setIsSubmittingPayment(true);
     const refNo = paymentRefInput.trim() || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
     const isPayingLC = payingApp.permitType === "locational_clearance" || String(payingApp.id || "").toUpperCase().startsWith("LC-");
-    const assessedAmountStr = `PHP ${(payingApp.assessedFees || payingApp.estimatedFees || (isPayingLC ? 500 : 3795)).toLocaleString()}`;
+    const assessedAmountStr = `PHP ${getAuthoritativePermitFee(payingApp, payingApp.id).toLocaleString()}`;
     const payingId = String(payingApp.id || "");
 
     const connectedApp = applications ? getConnectedApp(payingApp, applications) : null;
@@ -1126,7 +1126,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       </>
                     ) : (
                       <>
-                        Your application is approved! Settle the assessed regulatory amount of <strong style={{ color: "#b45309", fontSize: "0.95rem" }}>PHP {((app as any).assessedFees || (app as any).estimatedFees || ((app as any).permitType === "locational_clearance" || String(app.id || "").toUpperCase().startsWith("LC-") ? 500 : 3795)).toLocaleString()}</strong> (Ref: <strong>{app.orderOfPaymentNo || `OP-${app.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) to immediately unlock and release your official signed permits.
+                        Your application is approved! Settle the assessed regulatory amount of <strong style={{ color: "#b45309", fontSize: "0.95rem" }}>PHP {getAuthoritativePermitFee(app, app.id).toLocaleString()}</strong> (Ref: <strong>{app.orderOfPaymentNo || `OP-${app.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) to immediately unlock and release your official signed permits.
                       </>
                     )}
                   </div>
@@ -2460,7 +2460,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px dashed #cbd5e1" }}>
                 <span style={{ fontSize: "0.86rem", fontWeight: "700", color: "#334155" }}>Amount Assessed:</span>
                 <span style={{ fontSize: "1.25rem", fontWeight: "900", color: "#059669" }}>
-                  PHP {((payingApp as any).assessedFees || (payingApp as any).estimatedFees || (payingApp.permitType === "locational_clearance" || String(payingApp.id || "").toUpperCase().startsWith("LC-") ? 500 : 3795)).toLocaleString()}
+                  PHP {getAuthoritativePermitFee(payingApp, payingApp.id).toLocaleString()}
                 </span>
               </div>
             </div>

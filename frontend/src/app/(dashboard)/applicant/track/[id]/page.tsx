@@ -35,7 +35,7 @@ import {
   MessageSquare,
   ArrowRight
 } from "lucide-react";
-import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
+import { dispatchPermitMessage, getAuthoritativePermitFee } from "../../../../../utils/permitMessaging";
 import { getConnectedProjectApp, isApplicationApproved, isApplicationReleased } from "@/utils/projectGrouping";
 import Link from "next/link";
 import { 
@@ -94,8 +94,7 @@ export default function ApplicationTrackDetail() {
     if (!appData) return;
     setIsSubmittingPayment(true);
     const refNo = paymentRefInput.trim() || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
-    const isPayingLC = appData.permitType === "locational_clearance" || String(appData.id || "").toUpperCase().startsWith("LC-");
-    const assessedAmountStr = `PHP ${((appData as any).assessedFees || (appData as any).estimatedFees || (isPayingLC ? 500 : 3795)).toLocaleString()}`;
+    const assessedAmountStr = `PHP ${getAuthoritativePermitFee(appData, appData.id).toLocaleString()}`;
     const curId = String(appData.id || "");
 
     const connectedApp = applications ? getConnectedProjectApp(appData, applications) : null;
@@ -1652,7 +1651,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                     </>
                   ) : (
                     <>
-                      Great news! Your application has formally passed municipal evaluation. Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {((appData as any).assessedFees || (appData as any).estimatedFees || 3795).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) at the Municipal Treasury or online to receive your final signed release papers.
+                      Great news! Your application has formally passed municipal evaluation. Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {getAuthoritativePermitFee(appData, appData.id).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) at the Municipal Treasury or online to receive your final signed release papers.
                     </>
                   )}
                 </div>
@@ -2282,7 +2281,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px dashed #cbd5e1" }}>
                 <span style={{ fontSize: "0.86rem", fontWeight: "700", color: "#334155" }}>Amount Assessed:</span>
                 <span style={{ fontSize: "1.25rem", fontWeight: "900", color: "#059669" }}>
-                  PHP {((appData as any).assessedFees || (appData as any).estimatedFees || (isLC ? 500 : 3795)).toLocaleString()}
+                  PHP {getAuthoritativePermitFee(appData, appData.id).toLocaleString()}
                 </span>
               </div>
             </div>

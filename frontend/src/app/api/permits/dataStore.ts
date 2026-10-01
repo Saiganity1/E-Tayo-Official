@@ -62,8 +62,8 @@ const SEED_APPLICATIONS: PermitApplication[] = [
     projectDescription: "Construction of second floor house extension and residential building improvements.",
     status: "pending",
     dateSubmitted: "October 01, 2026",
-    estimatedFees: 3795,
-    assessedFees: 3795,
+    estimatedFees: 6200,
+    assessedFees: 6200,
     orderOfPaymentNo: "OP-2026-1061",
     paymentStatus: "unpaid",
     projectType: "Single-Detached House",
@@ -330,15 +330,39 @@ export function archivePermit(id: string, isArchived: boolean): PermitApplicatio
   return existing;
 }
 
-export function patchPermitStatus(id: string, status: string, remarks?: string): PermitApplication | null {
+export function patchPermitStatus(
+  id: string,
+  status: string,
+  remarks?: string,
+  extra?: {
+    assessedFees?: number;
+    estimatedFees?: number;
+    orderOfPaymentNo?: string;
+    paymentStatus?: string;
+    dateApproved?: string;
+  }
+): PermitApplication | null {
   const existing = getPermitById(id);
   if (!existing) return null;
 
   existing.status = status as any;
   if (remarks !== undefined) existing.remarks = remarks;
 
+  if (extra?.assessedFees !== undefined && !isNaN(Number(extra.assessedFees)) && Number(extra.assessedFees) > 0) {
+    existing.assessedFees = Number(extra.assessedFees);
+  }
+  if (extra?.estimatedFees !== undefined && !isNaN(Number(extra.estimatedFees)) && Number(extra.estimatedFees) > 0) {
+    existing.estimatedFees = Number(extra.estimatedFees);
+  }
+  if (extra?.orderOfPaymentNo) {
+    existing.orderOfPaymentNo = extra.orderOfPaymentNo;
+  }
+  if (extra?.paymentStatus) {
+    existing.paymentStatus = extra.paymentStatus as any;
+  }
+
   if (status === "approved" || status === "released") {
-    existing.dateApproved = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+    existing.dateApproved = extra?.dateApproved || existing.dateApproved || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
     if (status === "released") {
       existing.paymentStatus = "paid";
     }

@@ -14,7 +14,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const body = await req.json();
 
     // 1. Immediately update local data store
-    const patched = patchPermitStatus(cleanId, body.status, body.remarks);
+    const patched = patchPermitStatus(cleanId, body.status, body.remarks, {
+      assessedFees: body.assessedFees !== undefined ? Number(body.assessedFees) : undefined,
+      estimatedFees: body.estimatedFees !== undefined ? Number(body.estimatedFees) : undefined,
+      orderOfPaymentNo: body.orderOfPaymentNo,
+      paymentStatus: body.paymentStatus,
+      dateApproved: body.dateApproved
+    });
 
     // 2. Try remote backend in background
     const targetUrl = `${BACKEND_API}/permits/${encodeURIComponent(cleanId)}/status`;

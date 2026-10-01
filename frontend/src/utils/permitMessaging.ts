@@ -89,6 +89,36 @@ export const getCachedMessages = (userEmail?: string, appId?: string): SystemPer
   }
 };
 
+export const getAuthoritativePermitFee = (app?: any, rawAppId?: string): number => {
+  const id = String(app?.id || rawAppId || "").trim();
+  const lowerId = id.toLowerCase();
+  const upperId = id.toUpperCase();
+  const isLC = (app?.permitType || "").toLowerCase().includes("locational") || upperId.startsWith("LC-");
+
+  // 1. Highest Priority: Explicitly saved fee by admin/staff in localStorage
+  if (typeof window !== "undefined" && id) {
+    const stored = localStorage.getItem(`etayo_fees_${id}`) || 
+                   localStorage.getItem(`etayo_fees_${lowerId}`) || 
+                   localStorage.getItem(`etayo_fees_${upperId}`);
+    if (stored && !isNaN(Number(stored)) && Number(stored) > 0) {
+      return Number(stored);
+    }
+  }
+
+  // 2. Application object assessedFees
+  if (app && (app as any).assessedFees && !isNaN(Number((app as any).assessedFees)) && Number((app as any).assessedFees) > 0) {
+    return Number((app as any).assessedFees);
+  }
+
+  // 3. Application object estimatedFees
+  if (app && (app as any).estimatedFees && !isNaN(Number((app as any).estimatedFees)) && Number((app as any).estimatedFees) > 0) {
+    return Number((app as any).estimatedFees);
+  }
+
+  // 4. Default standard municipal fee: LC = 500, Building Permit (standard Sto. Tomas schedule) = 6200
+  return isLC ? 500 : 6200;
+};
+
 /**
  * Ensures that any approved, under-payment, or released applications have their official
  * system/admin messages generated in the conversation thread if not already present.
@@ -109,25 +139,8 @@ export const ensureApplicationConversationMessages = (
     const appId = String(app.id || "").trim();
     const isLC = app.permitType === "locational_clearance" || appId.toUpperCase().startsWith("LC-");
 
-    // 1. Resolve accurate assessed fee (localStorage -> app.assessedFees -> app.estimatedFees -> LC 500 / BP 3795)
-    let assessedNum: number = 0;
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(`etayo_fees_${appId}`) || 
-                     localStorage.getItem(`etayo_fees_${appId.toLowerCase()}`) || 
-                     localStorage.getItem(`etayo_fees_${appId.toUpperCase()}`);
-      if (stored && !isNaN(Number(stored)) && Number(stored) > 0) {
-        assessedNum = Number(stored);
-      }
-    }
-    if (!assessedNum && (app as any).assessedFees && !isNaN(Number((app as any).assessedFees)) && Number((app as any).assessedFees) > 0) {
-      assessedNum = Number((app as any).assessedFees);
-    }
-    if (!assessedNum && (app as any).estimatedFees && !isNaN(Number((app as any).estimatedFees)) && Number((app as any).estimatedFees) > 0) {
-      assessedNum = Number((app as any).estimatedFees);
-    }
-    if (!assessedNum) {
-      assessedNum = isLC ? 500 : 3795;
-    }
+    // 1. Resolve accurate authoritative assessed fee (localStorage -> app.assessedFees -> app.estimatedFees -> LC 500 / BP 6200)
+    const assessedNum = getAuthoritativePermitFee(app, appId);
     const assessedAmt = assessedNum.toLocaleString();
 
     // 2. Resolve accurate Order of Payment Reference (never standalone "OP-2026")
@@ -164,11 +177,12 @@ export const ensureApplicationConversationMessages = (
       let contentChanged = false;
 
       // Correct outdated fee
-      if (!content.includes(`PHP ${assessedAmt}`) || (content.includes("PHP 3,795") && assessedNum !== 3795)) {
+      if (!content.includes(`PHP ${assessedAmt}`) || content.includes("PHP 3,795")) {
         content = content
           .replace(/(?:Assessed Regulatory Fee|Total Assessed Regulatory Amount):\s*PHP\s*[\d,]+/gi, `Assessed Regulatory Fee: PHP ${assessedAmt}`)
           .replace(/fee of\s*PHP\s*[\d,]+/gi, `fee of PHP ${assessedAmt}`)
-          .replace(/Amount:\s*PHP\s*[\d,]+/gi, `Amount: PHP ${assessedAmt}`);
+          .replace(/Amount:\s*PHP\s*[\d,]+/gi, `Amount: PHP ${assessedAmt}`)
+          .replace(/PHP\s*3,795/gi, `PHP ${assessedAmt}`);
         contentChanged = true;
       }
 
@@ -254,8 +268,10 @@ ${cachedReceipt ? `\n[Attachment: payment-receipt.jpg|${cachedReceipt}]` : ""}`
       } else {
         const exReceipt = result[existingReceiptIdx];
         let rContent = exReceipt.content || "";
-        if (!rContent.includes(`PHP ${assessedAmt}`) || (rContent.includes("PHP 3,795") && assessedNum !== 3795)) {
-          rContent = rContent.replace(/Amount:\s*PHP\s*[\d,]+/gi, `Amount: PHP ${assessedAmt}`);
+        if (!rContent.includes(`PHP ${assessedAmt}`) || rContent.includes("PHP 3,795")) {
+          rContent = rContent
+            .replace(/Amount:\s*PHP\s*[\d,]+/gi, `Amount: PHP ${assessedAmt}`)
+            .replace(/PHP\s*3,795/gi, `PHP ${assessedAmt}`);
           result[existingReceiptIdx] = { ...exReceipt, content: rContent };
           updated = true;
         }
@@ -291,8 +307,10 @@ All official permit papers, ancillary clearances, and approved plans for ${appId
       } else {
         const exRel = result[existingReleaseIdx];
         let relContent = exRel.content || "";
-        if (!relContent.includes(`PHP ${assessedAmt}`) || (relContent.includes("PHP 3,795") && assessedNum !== 3795)) {
-          relContent = relContent.replace(/Payment of\s*PHP\s*[\d,]+/gi, `Payment of PHP ${assessedAmt}`);
+        if (!relContent.includes(`PHP ${assessedAmt}`) || relContent.includes("PHP 3,795")) {
+          relContent = relContent
+            .replace(/Payment of\s*PHP\s*[\d,]+/gi, `Payment of PHP ${assessedAmt}`)
+            .replace(/PHP\s*3,795/gi, `PHP ${assessedAmt}`);
           result[existingReleaseIdx] = { ...exRel, content: relContent };
           updated = true;
         }

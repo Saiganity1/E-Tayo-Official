@@ -13,7 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
 import { usePermitContext } from "../../../../context/PermitContext";
-import { dispatchPermitMessage, ensureApplicationConversationMessages } from "../../../../utils/permitMessaging";
+import { dispatchPermitMessage, ensureApplicationConversationMessages, getAuthoritativePermitFee } from "../../../../utils/permitMessaging";
 import { 
   MessageBubbleContent, 
   AttachmentPreviewModal, 
@@ -277,12 +277,28 @@ export default function ApplicantMessagesPage() {
       setMessages(prev => {
         const email = currentUserEmail || "applicant@etayo.gov.ph";
         const synced = ensureApplicationConversationMessages(applications, email, prev);
-        if (synced.length !== prev.length) {
+        const hasContentChanged = synced.some((sm, idx) => prev[idx]?.content !== sm.content);
+        if (synced.length !== prev.length || hasContentChanged) {
           return synced;
         }
         return prev;
       });
     }
+
+    const handleFeesSync = () => {
+      if (applications && applications.length > 0) {
+        setMessages(prev => {
+          const email = currentUserEmail || "applicant@etayo.gov.ph";
+          return ensureApplicationConversationMessages(applications, email, prev);
+        });
+      }
+    };
+    window.addEventListener("etayo_fees_updated", handleFeesSync);
+    window.addEventListener("storage", handleFeesSync);
+    return () => {
+      window.removeEventListener("etayo_fees_updated", handleFeesSync);
+      window.removeEventListener("storage", handleFeesSync);
+    };
   }, [applications, currentUserEmail]);
 
   // Auto-scroll strictly inside the message container (never scrolls the outer browser window)
@@ -318,12 +334,11 @@ export default function ApplicantMessagesPage() {
     // 2. Discover all application threads from applications context or userCreatedThreadIds
     (applications || []).forEach(app => {
       const isApproved = app.status === "approved" || app.status === "released" || Boolean((app as any).orderOfPaymentNo);
-      const isLC = app.permitType === "locational_clearance" || String(app.id || "").toUpperCase().startsWith("LC-");
-      const defaultFee = isLC ? 500 : 3795;
+      const assessedFee = getAuthoritativePermitFee(app, app.id);
       const defaultLastMsg = app.status === "released"
         ? "🎉 Official Permits Released"
         : isApproved
-          ? `💰 Order of Payment: PHP ${((app as any).assessedFees || (app as any).estimatedFees || defaultFee).toLocaleString()} issued`
+          ? `💰 Order of Payment: PHP ${assessedFee.toLocaleString()} issued`
           : "Application filed and queued";
 
       threadMap[app.id] = {
@@ -697,8 +712,10 @@ export default function ApplicantMessagesPage() {
     try {
       const isLC = activeApp?.permitType === "locational_clearance" || String(activeApp?.id || "").toUpperCase().startsWith("LC-");
       const cleanSeq = activeApp?.id ? activeApp.id.replace(/^[A-Za-z]+-/i, "") : "2026";
-      const assessedAmt = ((activeApp as any)?.assessedFees || (activeApp as any)?.estimatedFees || (isLC ? 500 : 3795)).toLocaleString();
-      const opNo = (activeApp as any)?.orderOfPaymentNo || `OP-${cleanSeq}`;
+      const authoritativeFee = getAuthoritativePermitFee(activeApp, activeThreadId);
+      const assessedAmt = authoritativeFee.toLocaleString();
+      const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${activeThreadId}`) || localStorage.getItem(`etayo_op_${String(activeThreadId).toLowerCase()}`)) : null;
+      const opNo = (activeApp as any)?.orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
       const orRef = receiptRefInput.trim() || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
 
       const receiptMsgContent = `[Ref: ${activeThreadId} - Payment Receipt] Official payment settled for ${activeThreadId} (Order of Payment Ref: ${opNo}, Amount: PHP ${assessedAmt}).\nOfficial Receipt / Reference: ${orRef}.\nAttached is the photo of my payment receipt for municipal verification.\n[Attachment: ${receiptModalFile.name}|${receiptModalFile.dataUrl}]`;
@@ -1215,9 +1232,17 @@ export default function ApplicantMessagesPage() {
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <CreditCard size={15} color={(activeApp as any).userConfirmedPayment ? "#16a34a" : "#d97706"} />
-                <span style={{ fontWeight: "700", color: (activeApp as any).userConfirmedPayment ? "#166534" : "#92400e" }}>
-                  Order of Payment: PHP {((activeApp as any).assessedFees || (activeApp as any).estimatedFees || (activeApp?.permitType === "locational_clearance" || String(activeApp?.id || "").toUpperCase().startsWith("LC-") ? 500 : 3795)).toLocaleString()} ({(activeApp as any).orderOfPaymentNo || `OP-${activeApp?.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`})
-                </span>
+                {(() => {
+                  const feeNum = getAuthoritativePermitFee(activeApp, activeThreadId);
+                  const cleanSeq = activeApp?.id ? activeApp.id.replace(/^[A-Za-z]+-/i, "") : "2026";
+                  const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${activeThreadId}`) || localStorage.getItem(`etayo_op_${String(activeThreadId).toLowerCase()}`)) : null;
+                  const opNo = (activeApp as any).orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
+                  return (
+                    <span style={{ fontWeight: "700", color: (activeApp as any).userConfirmedPayment ? "#166534" : "#92400e" }}>
+                      Order of Payment: PHP {feeNum.toLocaleString()} ({opNo})
+                    </span>
+                  );
+                })()}
                 <span style={{ color: "#94a3b8" }}>•</span>
                 <span style={{ color: (activeApp as any).userConfirmedPayment ? "#15803d" : "#78350f" }}>
                   {(activeApp as any).userConfirmedPayment
@@ -1951,6 +1976,43 @@ export default function ApplicantMessagesPage() {
                 <X size={20} />
               </button>
             </div>
+
+            {/* Assessed Regulatory Fee & OP Badge */}
+            {(() => {
+              const feeNum = getAuthoritativePermitFee(activeApp, activeThreadId);
+              const cleanSeq = activeApp?.id ? activeApp.id.replace(/^[A-Za-z]+-/i, "") : "2026";
+              const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${activeThreadId}`) || localStorage.getItem(`etayo_op_${String(activeThreadId).toLowerCase()}`)) : null;
+              const opNo = (activeApp as any)?.orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
+              return (
+                <div style={{
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: "12px",
+                  padding: "10px 14px",
+                  marginBottom: "1rem",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}>
+                  <div>
+                    <span style={{ fontSize: "0.75rem", color: "#166534", fontWeight: "700", display: "block" }}>
+                      Assessed Regulatory Fee
+                    </span>
+                    <strong style={{ fontSize: "1.15rem", color: "#14532d", fontWeight: "900" }}>
+                      PHP {feeNum.toLocaleString()}
+                    </strong>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <span style={{ fontSize: "0.75rem", color: "#166534", fontWeight: "700", display: "block" }}>
+                      Order of Payment Reference
+                    </span>
+                    <span style={{ fontFamily: "monospace", fontSize: "0.85rem", fontWeight: "700", color: "#15803d" }}>
+                      {opNo}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Photo Preview Container */}
             <div style={{

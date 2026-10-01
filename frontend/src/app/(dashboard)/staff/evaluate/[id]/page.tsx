@@ -350,6 +350,25 @@ export default function StaffEvaluatePage() {
     ? (typeof feeSchedule.locationalFee === "number" ? feeSchedule.locationalFee : 500)
     : (feeSchedule.buildingFee + feeSchedule.electricalFee + feeSchedule.plumbingFee + feeSchedule.mechanicalFee + feeSchedule.zoningFee);
 
+  // Auto-sync assessed fee schedule to localStorage and notify other tabs immediately
+  useEffect(() => {
+    if (!app?.id || !totalFees) return;
+    const curId = String(app.id).trim();
+    const lowerId = curId.toLowerCase();
+    const upperId = curId.toUpperCase();
+    [curId, lowerId, upperId].forEach(k => {
+      try {
+        localStorage.setItem(`etayo_fees_${k}`, String(totalFees));
+        if (orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, orderOfPaymentNo);
+      } catch (e) {}
+    });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("etayo_fees_updated", {
+        detail: { appId: app.id, fees: totalFees, orderOfPaymentNo }
+      }));
+    }
+  }, [app?.id, totalFees, orderOfPaymentNo]);
+
   // Initialize contextual decision notes and sanitize activeLeftTab
   useEffect(() => {
     if (!app) return;

@@ -6,6 +6,7 @@ import {
   Eye, X, ZoomIn, ZoomOut, Check, Sparkles, Shield, AlertCircle, Landmark
 } from "lucide-react";
 import Link from "next/link";
+import { getAuthoritativePermitFee } from "@/utils/permitMessaging";
 
 export interface ParsedAttachment {
   fileName: string;
@@ -120,7 +121,8 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
     const isLC = ref.toUpperCase().startsWith("LC-");
     const cleanSeq = ref ? ref.replace(/^[A-Za-z]+-/i, "") : "2026";
     const fallbackOp = `OP-${cleanSeq || "2026"}`;
-    const fallbackFee = isLC ? "PHP 500" : "PHP 3,795";
+    const authoritativeNum = getAuthoritativePermitFee(undefined, ref);
+    const authoritativeFeeStr = `PHP ${authoritativeNum.toLocaleString()}`;
 
     let fee = cleanText.match(/(?:Assessed Regulatory Fee|Total Assessed Regulatory Amount):\s*(PHP\s*[\d,]+)/i)?.[1];
     let op = cleanText.match(/(?:Order of Payment Reference|Order of Payment Ref|Order of Payment No\.?):\s*([^\n\r]+)/i)?.[1]?.trim();
@@ -131,9 +133,7 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
                          localStorage.getItem(`etayo_fees_${ref.toLowerCase()}`) || 
                          localStorage.getItem(`etayo_fees_${ref.toUpperCase()}`);
       if (storedFees && !isNaN(Number(storedFees)) && Number(storedFees) > 0) {
-        if (!fee || fee === "PHP 3,795" || Number(storedFees) !== 3795) {
-          fee = `PHP ${Number(storedFees).toLocaleString()}`;
-        }
+        fee = `PHP ${Number(storedFees).toLocaleString()}`;
       }
       const storedOp = localStorage.getItem(`etayo_op_${ref}`) || 
                        localStorage.getItem(`etayo_op_${ref.toLowerCase()}`) || 
@@ -143,7 +143,9 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
       }
     }
 
-    if (!fee || (isLC && fee === "PHP 3,795")) fee = fallbackFee;
+    if (!fee || fee === "PHP 3,795" || (authoritativeNum !== 3795 && fee !== authoritativeFeeStr)) {
+      fee = authoritativeFeeStr;
+    }
     if (!op || op === "OP-2026") op = fallbackOp;
 
     return (
@@ -283,18 +285,20 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
     const orNo = cleanText.match(/Official Receipt No:\s*([^\n\r]+)/i)?.[1] || "OR-2026-94812";
     const ref = cleanText.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)/i)?.[1]?.trim() || "";
     const isLC = ref.toUpperCase().startsWith("LC-");
+    const authoritativeNum = getAuthoritativePermitFee(undefined, ref);
+    const authoritativeFeeStr = `PHP ${authoritativeNum.toLocaleString()}`;
     let fee = cleanText.match(/Payment of\s*(PHP\s*[\d,]+)/i)?.[1];
     if (typeof window !== "undefined" && ref) {
       const storedFees = localStorage.getItem(`etayo_fees_${ref}`) || 
                          localStorage.getItem(`etayo_fees_${ref.toLowerCase()}`) || 
                          localStorage.getItem(`etayo_fees_${ref.toUpperCase()}`);
       if (storedFees && !isNaN(Number(storedFees)) && Number(storedFees) > 0) {
-        if (!fee || fee === "PHP 3,795" || Number(storedFees) !== 3795) {
-          fee = `PHP ${Number(storedFees).toLocaleString()}`;
-        }
+        fee = `PHP ${Number(storedFees).toLocaleString()}`;
       }
     }
-    if (!fee || (isLC && fee === "PHP 3,795")) fee = isLC ? "PHP 500" : "PHP 3,795";
+    if (!fee || fee === "PHP 3,795" || (authoritativeNum !== 3795 && fee !== authoritativeFeeStr)) {
+      fee = authoritativeFeeStr;
+    }
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "620px" }}>
