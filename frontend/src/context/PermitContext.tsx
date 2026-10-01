@@ -795,7 +795,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       setApplications(mergedApps);
       try {
-        localStorage.setItem("etayo_cached_applications", JSON.stringify(mergedApps));
+        localStorage.setItem("etayo_cached_applications", JSON.stringify(mergedApps.map(a => sanitizeAppForStorage(a))));
       } catch (e) {}
 
       let backendLogs: SystemLog[] = [];
@@ -1044,14 +1044,34 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [userRole]);
 
-  const addApplication = async (newApp: PermitApplication) => {
+  const sanitizeAppForStorage = (app: PermitApplication): PermitApplication => {
+    if (!app) return app;
+    const clean: any = { ...app };
+    if (typeof clean.fileUrl === "string" && clean.fileUrl.startsWith("data:") && clean.fileUrl.length > 500) {
+      clean.fileUrl = "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf";
+    }
+    if (Array.isArray(clean.requirements)) {
+      clean.requirements = clean.requirements.map((r: any) => {
+        if (!r) return r;
+        const cleanR = { ...r };
+        if (typeof cleanR.fileUrl === "string" && cleanR.fileUrl.startsWith("data:") && cleanR.fileUrl.length > 500) {
+          cleanR.fileUrl = "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf";
+        }
+        return cleanR;
+      });
+    }
+    return clean;
+  };
+
+  const addApplication = async (rawApp: PermitApplication) => {
+    const newApp = sanitizeAppForStorage(rawApp);
     // Ensure new application strictly defaults to pending status
     if (!newApp.status) {
       newApp.status = "pending";
     }
 
     // 1. Optimistic UI update
-    setApplications((prev) => [newApp, ...prev]);
+    setApplications((prev) => [newApp, ...prev.filter(a => a.id !== newApp.id)]);
 
     // 2. Cache in localStorage immediately and reset any stale flags for this ID
     try {
@@ -1071,8 +1091,17 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       const stored = localStorage.getItem("etayo_cached_applications");
       const currentList: PermitApplication[] = stored ? JSON.parse(stored) : [];
-      localStorage.setItem("etayo_cached_applications", JSON.stringify([newApp, ...currentList.filter(a => a.id !== newApp.id)]));
-    } catch (e) {}
+      const cleanList = currentList.map(a => sanitizeAppForStorage(a)).filter(a => a.id !== newApp.id);
+      localStorage.setItem("etayo_cached_applications", JSON.stringify([newApp, ...cleanList]));
+
+      // Broadcast storage and custom event for instant cross-tab & multi-window sync!
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new CustomEvent("etayo_applications_updated", { detail: newApp }));
+      }
+    } catch (e) {
+      console.warn("Could not cache application to localStorage:", e);
+    }
 
     // 3. Immediately create accurate audit log for this submission
     const applicantLabel = newApp.applicantName || newApp.applicantEmail || "Applicant";
@@ -1237,9 +1266,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       const stored = localStorage.getItem("etayo_cached_applications");
       const currentList: PermitApplication[] = stored ? JSON.parse(stored) : [];
-      const updatedList = currentList.some(a => matchPermitId(a.id, updatedApp.id))
-        ? currentList.map(a => matchPermitId(a.id, updatedApp.id) ? { ...a, ...updatedApp } : a)
-        : [updatedApp, ...currentList];
+      const cleanList = currentList.map(a => sanitizeAppForStorage(a));
+      const cleanUpdatedApp = sanitizeAppForStorage(updatedApp);
+      const updatedList = cleanList.some(a => matchPermitId(a.id, cleanUpdatedApp.id))
+        ? cleanList.map(a => matchPermitId(a.id, cleanUpdatedApp.id) ? { ...a, ...cleanUpdatedApp } : a)
+        : [cleanUpdatedApp, ...cleanList];
       localStorage.setItem("etayo_cached_applications", JSON.stringify(updatedList));
 
       // Broadcast storage and custom event for instant cross-tab & multi-window sync!

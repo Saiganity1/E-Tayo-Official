@@ -13405,26 +13405,6 @@ export default function TechnicalPermitFormsStep({
                           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                             <button
                               type="button"
-                              onClick={() => handleAutoCalculateCcCostBreakdown()}
-                              style={{
-                                background: "#0284c7",
-                                color: "#ffffff",
-                                border: "none",
-                                borderRadius: "6px",
-                                padding: "4px 10px",
-                                fontSize: "0.72rem",
-                                fontWeight: "700",
-                                cursor: "pointer",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "4px"
-                              }}
-                            >
-                              <Sparkles size={12} />
-                              Auto-Calculate Breakdown
-                            </button>
-                            <button
-                              type="button"
                               onClick={() => setCcShowCostBreakdown(!ccShowCostBreakdown)}
                               style={{
                                 background: ccShowCostBreakdown ? "#e0f2fe" : "#f1f5f9",
@@ -14526,28 +14506,6 @@ export default function TechnicalPermitFormsStep({
                       Official certification confirming that electrical installation complies with the Philippine Electrical Code (PEC) and approved plans on file with the Office of the Building Official.
                     </p>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAutoFillCfeiFromSystem}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "8px 16px",
-                      borderRadius: "8px",
-                      background: "#d97706",
-                      color: "white",
-                      border: "none",
-                      fontSize: "0.82rem",
-                      fontWeight: "700",
-                      cursor: "pointer",
-                      boxShadow: "0 2px 8px rgba(217, 119, 6, 0.25)"
-                    }}
-                  >
-                    <RefreshCw size={14} />
-                    <span>Auto-Fill from Project / Application Data</span>
-                  </button>
                 </div>
 
                 {/* Section 1: Reference Building Permit (Auto-Gathered) */}
@@ -14866,35 +14824,6 @@ export default function TechnicalPermitFormsStep({
                         Itemized breakdown of installed lighting, convenience receptacles, specialty outlets, and wiring devices
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCfeiLightOutlets("28");
-                        setCfeiConvenienceOutlets("24");
-                        setCfeiAcuOutlets("4");
-                        setCfeiCookingUnitOutlets("1");
-                        setCfeiWaterHeaterOutlets("2");
-                        setCfeiWaterPumpOutlets("1");
-                        setCfeiToggleSwitches("15");
-                        setCfeiBellsBuzzers("1");
-                        setCfeiPushButtons("1");
-                        setCfeiFaDetectors("2");
-                        setCfeiOtherDevices("1");
-                        setNotification("Standard electrical load device schedule applied!");
-                      }}
-                      style={{
-                        padding: "5px 12px",
-                        borderRadius: "6px",
-                        background: "#fef3c7",
-                        color: "#92400e",
-                        border: "1px solid #fde68a",
-                        fontSize: "0.76rem",
-                        fontWeight: "700",
-                        cursor: "pointer"
-                      }}
-                    >
-                      ⚡ Auto-Fill Standard Outlets
-                    </button>
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -15415,25 +15344,6 @@ export default function TechnicalPermitFormsStep({
                         NBC Form No. 96006-E Page 2 — Stories, itemized electrical materials, loads, service specs, and remarks.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleAutoCalculateCfeiCosts()}
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: "6px",
-                        background: "#d97706",
-                        color: "white",
-                        border: "none",
-                        fontSize: "0.75rem",
-                        fontWeight: "700",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "5px"
-                      }}
-                    >
-                      ⚡ Auto-Calculate Proportional Breakdown
-                    </button>
                   </div>
 
                   {/* Stories and Costs Header */}

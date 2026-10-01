@@ -769,6 +769,7 @@ export default function ApplyPage() {
         const meta = PERMIT_FORM_METADATA[key];
         const doc = uploadedPermitDocs[key];
         const templatePath = getPermitFormTemplate(key, selectedProjectType);
+        const resolvedDocUrl = (doc?.fileUrl && !doc.fileUrl.startsWith("data:")) ? doc.fileUrl : templatePath;
         requirementsList.push({
           name: `${meta.label} (${meta.code})`,
           required: true,
@@ -776,7 +777,7 @@ export default function ApplyPage() {
           fileName: doc?.fileName || `${meta.code}_${selectedProjectType.name.replace(/\s+/g, '_')}_Official_Filled.pdf`,
           fileSize: doc?.fileSize || "1.4 MB",
           remarks: `Official ${meta.label} document submitted for engineering evaluation`,
-          fileUrl: doc?.fileUrl || templatePath
+          fileUrl: resolvedDocUrl
         });
       });
 
@@ -786,6 +787,7 @@ export default function ApplyPage() {
           const meta = PERMIT_FORM_METADATA[key as keyof PermitFormMatrix];
           const doc = uploadedPermitDocs[key];
           const templatePath = getPermitFormTemplate(key as keyof PermitFormMatrix, selectedProjectType);
+          const resolvedDocUrl = (doc?.fileUrl && !doc.fileUrl.startsWith("data:")) ? doc.fileUrl : templatePath;
           if (meta && doc) {
             requirementsList.push({
               name: `${meta.label} (${meta.code}) [Conditional]`,
@@ -794,13 +796,11 @@ export default function ApplyPage() {
               fileName: doc.fileName,
               fileSize: doc.fileSize,
               remarks: "Voluntarily attached conditional engineering document",
-              fileUrl: doc.fileUrl || templatePath
+              fileUrl: resolvedDocUrl
             });
           }
         }
       });
-
-      const attachedUrls = Object.values(uploadedPermitDocs).map(d => d.fileUrl).filter(Boolean);
 
       const isApplyingLC = selectedPermitType === "locational_clearance";
       const newId = isApplyingLC
@@ -811,74 +811,10 @@ export default function ApplyPage() {
         ? `${newId}_${selectedProjectType.name.replace(/\s+/g, '_')}_Locational_Clearance.pdf`
         : `${newId}_${selectedProjectType.name.replace(/\s+/g, '_')}_Permit_Package.pdf`;
 
-      // Generate official PDF package for this application
-      let finalFileUrl = "";
-      try {
-        if (isApplyingLC) {
-          const generatedBase64 = await generateLocationalClearancePdf({
-            applicationNo: newId,
-            submissionDate,
-            applicantName: applicantName || "Applicant",
-            applicantAddress: projectAddress || "Sto. Tomas, Pampanga",
-            applicantPhone: "0917-123-4567",
-            applicantEmail: "applicant@etayo.gov.ph",
-            projectName: projectName || `${selectedProjectType.name} - Locational Clearance`,
-            projectType: selectedProjectType.name,
-            projectNature: "New Construction",
-            projectAddress: projectAddress || "Sto. Tomas, Pampanga",
-            barangay: barangay || "Sto. Tomas",
-            lotArea: lotArea || "200",
-            bldgArea: floorArea || "120",
-            rightOverLand: "Owner",
-            projectTenure: "Permanent",
-            existingLandUse: "Residential",
-            isTenanted: "No",
-            projectCost: projectCost || "1,500,000.00",
-          });
-          if (generatedBase64) {
-            finalFileUrl = `data:application/pdf;base64,${generatedBase64}`;
-          }
-        } else {
-          const generatedBase64 = await generateUnifiedPermitPdf({
-            applicationNo: newId,
-            locationalClearanceRef: activeClearanceRef || (isClearanceRequired ? "LC-APPROVED" : "EXEMPT"),
-            projectType: selectedProjectType,
-            applicantName,
-            applicantPhone: "0917-123-4567",
-            applicantEmail: "applicant@etayo.gov.ph",
-            applicantAddress: projectAddress,
-            projectName: projectName || `${selectedProjectType.name} Construction`,
-            projectAddress,
-            barangay,
-            lotArea: lotArea || "200",
-            floorArea: floorArea || "120",
-            projectCost: projectCost || "1,500,000.00",
-            scopeOfWork: "New Construction",
-            occupancyClass: "Group A - Residential",
-            proposedStoreys: "2",
-            activePermitForms: mandatoryPermitsToSubmit,
-            submissionDate
-          });
-          if (generatedBase64) {
-            finalFileUrl = `data:application/pdf;base64,${generatedBase64}`;
-          }
-        }
-      } catch (err) {
-        console.warn("Notice: Client PDF generation skipped or fallback:", err);
-      }
-      // Collect all valid document base64 data URIs so all filled forms and attachments reach Google Drive
-      const docList: string[] = [];
-      if (finalFileUrl && finalFileUrl.startsWith("data:")) {
-        docList.push(finalFileUrl);
-      }
-      for (const url of attachedUrls) {
-        if (typeof url === "string" && url.startsWith("data:") && !docList.includes(url)) {
-          docList.push(url);
-        }
-      }
-      const combinedFileUrl = docList.length > 0 
-        ? docList.join(",") 
-        : (finalFileUrl || attachedUrls[0] || uploadedFileUrl || "");
+      // Keep application metadata lightweight (<15KB) so it saves instantly in localStorage and Vercel/Render without 413 or QuotaExceeded errors
+      const cleanPrimaryFileUrl = (uploadedFileUrl && !uploadedFileUrl.startsWith("data:"))
+        ? uploadedFileUrl
+        : "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf";
 
       const curUser = typeof window !== "undefined" ? (() => {
         try {
@@ -904,7 +840,7 @@ export default function ApplyPage() {
         applicantName: finalApplicantName,
         applicantEmail: finalApplicantEmail,
         userEmail: finalApplicantEmail,
-        fileUrl: combinedFileUrl,
+        fileUrl: cleanPrimaryFileUrl,
         fileName: formattedFileName,
         locationalClearanceRef: finalClearanceRef,
         clearanceRef: finalClearanceRef,

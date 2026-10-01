@@ -3,6 +3,109 @@ import { PermitApplication } from "@/types";
 // Seed baseline permits including Paul Payumo's active application
 const SEED_APPLICATIONS: PermitApplication[] = [
   {
+    id: "LC-2026-6133",
+    permitType: "locational_clearance",
+    projectName: "Paul Second Floor house - Locational Clearance",
+    applicantName: "Paul Payumo",
+    applicantEmail: "mdpsicot.student@ua.edu.ph",
+    applicantPhone: "0917-123-4567",
+    applicantAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+    projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+    projectDescription: "Locational Clearance for Paul Second Floor house in Brgy. San Bartolome.",
+    status: "released",
+    dateSubmitted: "October 01, 2026",
+    estimatedFees: 2500,
+    assessedFees: 2500,
+    orderOfPaymentNo: "OP-2026-6133",
+    paymentStatus: "paid",
+    officialReceiptNo: "OR-2026-69723",
+    projectType: "Single-Detached House",
+    location: {
+      lat: 15.0163,
+      lng: 120.7188,
+      address: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+      lotNo: "3",
+      blockNo: "2"
+    },
+    requirements: [
+      { name: "Locational Clearance Application Form", required: true, status: "approved", fileName: "Locational_Clearance_LC-2026-6133.pdf", fileSize: "840 KB" },
+      { name: "Certified True Copy of Transfer Certificate of Title (TCT)", required: true, status: "approved", fileName: "tct_title_deed.pdf", fileSize: "2.1 MB" },
+      { name: "Barangay Clearance for Locational Clearance", required: true, status: "approved", fileName: "brgy_clearance_san_bartolome.pdf", fileSize: "890 KB" },
+      { name: "Site Development Plan with Vicinity Map", required: true, status: "approved", fileName: "site_dev_plan.pdf", fileSize: "3.2 MB" },
+      { name: "Latest Tax Declaration & Real Property Tax Receipt", required: true, status: "approved", fileName: "tax_dec_receipt.pdf", fileSize: "1.1 MB" },
+      { name: "Lot Plan signed and sealed by a Geodetic Engineer", required: true, status: "approved", fileName: "lot_plan_geodetic.pdf", fileSize: "1.8 MB" }
+    ],
+    trackingSteps: [
+      { title: "1. Filed", status: "completed", date: "October 01, 2026", notes: "Submitted Online", actor: "Paul Payumo" },
+      { title: "2. Evaluation", status: "completed", notes: "Technical Review by Zoning Officer" },
+      { title: "3. Zoning Clearance", status: "completed", notes: "Zoning Review & Approved" },
+      { title: "4. Released", status: "completed", notes: "Settlement verified under OR-2026-69723" }
+    ],
+    historyLog: [
+      {
+        date: "October 01, 2026, 08:30 PM",
+        action: "Permit Released",
+        actor: "Zoning Administrator",
+        details: "Locational clearance certificate issued and released."
+      }
+    ]
+  },
+  {
+    id: "APP-2026-1061",
+    permitType: "building_permit",
+    projectName: "Paul Second Floor house",
+    applicantName: "Paul Payumo",
+    applicantEmail: "mdpsicot.student@ua.edu.ph",
+    applicantPhone: "0917-123-4567",
+    applicantAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+    projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+    projectDescription: "Construction of second floor house extension and residential building improvements.",
+    status: "pending",
+    dateSubmitted: "October 01, 2026",
+    estimatedFees: 3795,
+    assessedFees: 3795,
+    orderOfPaymentNo: "OP-2026-1061",
+    paymentStatus: "unpaid",
+    projectType: "Single-Detached House",
+    locationalClearanceRef: "LC-2026-6133",
+    clearanceRef: "LC-2026-6133",
+    connectedClearanceId: "LC-2026-6133",
+    fileUrl: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
+    fileName: "APP-2026-1061_Single-Detached_House_Permit_Package.pdf",
+    location: {
+      lat: 15.0163,
+      lng: 120.7188,
+      address: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+      lotNo: "3",
+      blockNo: "2"
+    },
+    requirements: [
+      { name: "Locational Clearance (LC)", required: true, status: "approved", fileName: "Locational_Clearance_LC-2026-6133.pdf", fileSize: "840 KB", remarks: "Zoning clearance reference: LC-2026-6133" },
+      { name: "Unified Application Form for Building Permit (UAF-BP)", required: true, status: "submitted", fileName: "UAF-BP_Single-Detached_House_Official_Filled.pdf", fileSize: "1.4 MB", remarks: "Official Unified Application Form document submitted for engineering evaluation", fileUrl: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf" },
+      { name: "Architectural Permit (ARCH)", required: true, status: "submitted", fileName: "ARCH_Single-Detached_House_Official_Filled.pdf", fileSize: "1.4 MB", remarks: "Official Architectural Permit document submitted for engineering evaluation", fileUrl: "/templates/Architectural-Permit-Cruz-Final.pdf" },
+      { name: "Civil / Structural Permit (STRUC)", required: true, status: "submitted", fileName: "STRUC_Single-Detached_House_Official_Filled.pdf", fileSize: "1.4 MB", remarks: "Official Civil / Structural Permit document submitted for engineering evaluation", fileUrl: "/templates/Structural-Permit-Cruz-Final.pdf" },
+      { name: "Electrical Permit (ELEC)", required: true, status: "submitted", fileName: "ELEC_Single-Detached_House_Official_Filled.pdf", fileSize: "1.4 MB", remarks: "Official Electrical Permit document submitted for engineering evaluation", fileUrl: "/templates/Electrical-Permit-Cruz-Final.pdf" },
+      { name: "Sanitary / Plumbing Permit (PLUMB)", required: true, status: "submitted", fileName: "PLUMB_Single-Detached_House_Official_Filled.pdf", fileSize: "1.4 MB", remarks: "Official Sanitary / Plumbing Permit document submitted for engineering evaluation", fileUrl: "/templates/Sanitary-Plumbing-Permit-Cruz-Final.pdf" },
+      { name: "Mechanical Permit (MECH)", required: true, status: "submitted", fileName: "MECH_Single-Detached_House_Official_Filled.pdf", fileSize: "1.4 MB", remarks: "Official Mechanical Permit document submitted for engineering evaluation", fileUrl: "/templates/Mechanical-Permit-Cruz-Final.pdf" },
+      { name: "Fire / BFP Clearance (FSEC)", required: true, status: "submitted", fileName: "FSEC_Single-Detached_House_Official_Filled.pdf", fileSize: "1.4 MB", remarks: "Official Fire Safety Evaluation Clearance document submitted for engineering evaluation", fileUrl: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf" },
+      { name: "Certificate of Completion (CC)", required: true, status: "submitted", fileName: "CC_Single-Detached_House_Official_Filled.pdf", fileSize: "1.4 MB", remarks: "Official Certificate of Completion document submitted for engineering evaluation", fileUrl: "/templates/Certificate-of-Completion-Cruz-Final.pdf" }
+    ],
+    trackingSteps: [
+      { title: "Application Submitted", status: "completed", date: "October 01, 2026", notes: "Application dossier filed online with 8 verified engineering attachments." },
+      { title: "Initial Document Verification", status: "in-progress", notes: "Reviewing all technical engineering attachments for completeness and licensed PRC sign-offs." },
+      { title: "Technical Engineering Evaluation", status: "upcoming", notes: "Review by Municipal Building Official, Structural & Electrical Engineers." },
+      { title: "Order of Payment & Issuance", status: "upcoming", notes: "Assessment of municipal fees and permit issuance." }
+    ],
+    historyLog: [
+      {
+        date: "October 01, 2026, 11:00 PM",
+        action: "Application Submitted",
+        actor: "Paul Payumo",
+        details: "Applied for Single-Detached House with 8 mandatory engineering permits under Locational Clearance LC-2026-6133."
+      }
+    ]
+  },
+  {
     id: "LC-2026-6494",
     permitType: "locational_clearance",
     projectName: "Single-Detached House - Locational Clearance",
