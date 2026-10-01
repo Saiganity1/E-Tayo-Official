@@ -59,10 +59,17 @@ export default function NotificationBell() {
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/notifications/${email}`, {
+      let res = await fetch(`/api/notifications/${encodeURIComponent(email)}`, {
         headers
-      });
-      if (res.ok) {
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/notifications/${encodeURIComponent(email)}` : `${rawApi}/api/notifications/${encodeURIComponent(email)}`;
+        res = await fetch(backendUrl, { headers }).catch(() => null);
+      }
+
+      if (res && res.ok) {
         const data = await res.json();
         setNotifications(data);
       }
@@ -77,10 +84,11 @@ export default function NotificationBell() {
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/notifications/${id}/read`, {
+      fetch(`/api/notifications/${id}/read`, {
         method: "PUT",
         headers
-      });
+      }).catch(() => null);
+
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     } catch (err) {
       console.error("Failed to mark notification as read", err);
@@ -94,10 +102,11 @@ export default function NotificationBell() {
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/notifications/read-all/${userEmail}`, {
+      fetch(`/api/notifications/read-all/${encodeURIComponent(userEmail)}`, {
         method: "PUT",
         headers
-      });
+      }).catch(() => null);
+
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch (err) {
       console.error("Failed to mark all as read", err);

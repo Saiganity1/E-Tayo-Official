@@ -33,11 +33,18 @@ export default function AdminStaffPage() {
   const fetchStaff = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/users?role=ROLE_STAFF`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      let res = await fetch("/api/users?role=ROLE_STAFF", {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        res = await fetch(`${rawApi}/api/users?role=ROLE_STAFF`, {
+          headers: token ? { "Authorization": `Bearer ${token}` } : {}
+        }).catch(() => null);
+      }
       
-      if (!res.ok) throw new Error("Failed to fetch staff");
+      if (!res || !res.ok) throw new Error("Failed to fetch staff");
       
       const data = await res.json();
       setUsers(data);
@@ -58,14 +65,15 @@ export default function AdminStaffPage() {
     setLogs([]);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/evaluations/staff/${staff.email}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+      const res = await fetch(`${rawApi}/api/evaluations/staff/${encodeURIComponent(staff.email)}`, {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      }).catch(() => null);
       
-      if (!res.ok) throw new Error("Failed to fetch logs");
-      
-      const data = await res.json();
-      setLogs(data);
+      if (res && res.ok) {
+        const data = await res.json();
+        setLogs(data);
+      }
     } catch (err: any) {
       console.error(err);
     } finally {

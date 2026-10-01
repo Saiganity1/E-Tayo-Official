@@ -29,13 +29,23 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth/send-otp`, {
+      let response = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
-      });
+      }).catch(() => null);
 
-      if (!response.ok) {
+      if (!response || !response.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/auth/send-otp` : `${rawApi}/api/auth/send-otp`;
+        response = await fetch(backendUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }).catch(() => null);
+      }
+
+      if (response && !response.ok) {
         let errorMessage = "Failed to send verification code";
         try {
           const errorData = await response.json();
@@ -60,13 +70,23 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth/register`, {
+      let response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password, otp }),
-      });
+      }).catch(() => null);
 
-      if (!response.ok) {
+      if (!response || !response.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/auth/register` : `${rawApi}/api/auth/register`;
+        response = await fetch(backendUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password, otp }),
+        }).catch(() => null);
+      }
+
+      if (response && !response.ok) {
         let errorMessage = "Registration failed";
         try {
           const errorData = await response.json();

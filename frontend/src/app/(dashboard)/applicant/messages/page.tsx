@@ -194,7 +194,8 @@ export default function ApplicantMessagesPage() {
           setMessages(finalized);
         };
 
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/messages/history?user1=${email}&user2=${MANG_TOMAS.email}`)
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        fetch(`${rawApi}/api/messages/history?user1=${encodeURIComponent(email)}&user2=${encodeURIComponent(MANG_TOMAS.email)}`)
           .then(res => res.json())
           .then(data => {
             mergeWithLocal(Array.isArray(data) ? data : []);
@@ -214,13 +215,18 @@ export default function ApplicantMessagesPage() {
         };
         window.addEventListener("etayo_new_message", handleCustomMsg);
 
-        // Setup WebSocket
-        let wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
-        if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-          wsUrl = wsUrl.replace('ws://', 'wss://');
+        // Setup WebSocket with secure wss:// fallback to deployed backend
+        let wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+        if (!wsUrl || !wsUrl.trim()) {
+          wsUrl = rawApi.startsWith("https://")
+            ? rawApi.replace(/^https:\/\//, "wss://") + "/ws"
+            : (rawApi.startsWith("http://") ? rawApi.replace(/^http:\/\//, "ws://") + "/ws" : "wss://e-tayo-official-by0b.onrender.com/ws");
+        }
+        if (typeof window !== 'undefined' && window.location.protocol === 'https:' && wsUrl.startsWith("ws://")) {
+          wsUrl = wsUrl.replace(/^ws:\/\//, 'wss://');
         }
         if (!wsUrl.endsWith('/ws')) {
-          wsUrl = wsUrl.replace(/\/$/, '') + '/ws';
+          wsUrl = wsUrl.replace(/\/+$/, '') + '/ws';
         }
 
         const client = new Client({
@@ -730,7 +736,7 @@ export default function ApplicantMessagesPage() {
     const uploadHeaders: Record<string, string> = {};
     if (token) uploadHeaders["Authorization"] = `Bearer ${token}`;
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/upload`, {
+    fetch("/api/upload", {
       method: "POST",
       headers: uploadHeaders,
       body: formData

@@ -394,7 +394,7 @@ export default function StaffEvaluatePage() {
     const resolveDocs = async () => {
       setIsGeneratingDoc(true);
       const docs: ViewerDoc[] = [];
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
 
       // 1. PRIMARY DOCUMENT (Locational Clearance or Unified Permit Form)
       let primaryUrl = "";
@@ -1645,17 +1645,28 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/evaluations`, {
+      const evalPayload = JSON.stringify({
+        staffEmail: staffEmail || "staff@etayo.gov.ph",
+        applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+        permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
+        action: "Approved",
+        comments: decisionNotes || shortSummary,
+      });
+
+      let evalRes = await fetch("/api/evaluations", {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          staffEmail: staffEmail || "staff@etayo.gov.ph",
-          applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
-          permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
-          action: "Approved",
-          comments: decisionNotes || shortSummary,
-        }),
-      });
+        body: evalPayload,
+      }).catch(() => null);
+
+      if (!evalRes || !evalRes.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        await fetch(`${rawApi}/api/evaluations`, {
+          method: "POST",
+          headers,
+          body: evalPayload,
+        }).catch(() => null);
+      }
     } catch (e) {
       console.warn("Could not save evaluation log", e);
     }
@@ -1930,17 +1941,28 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/evaluations`, {
+      const evalPayload = JSON.stringify({
+        staffEmail: staffEmail || "staff@etayo.gov.ph",
+        applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+        permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
+        action: isDisapprove ? "Application Rejected" : "Incomplete Requirements",
+        comments: combinedRemarks,
+      });
+
+      let evalRes = await fetch("/api/evaluations", {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          staffEmail: staffEmail || "staff@etayo.gov.ph",
-          applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
-          permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
-          action: isDisapprove ? "Application Rejected" : "Incomplete Requirements",
-          comments: combinedRemarks,
-        }),
-      });
+        body: evalPayload,
+      }).catch(() => null);
+
+      if (!evalRes || !evalRes.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        await fetch(`${rawApi}/api/evaluations`, {
+          method: "POST",
+          headers,
+          body: evalPayload,
+        }).catch(() => null);
+      }
     } catch (e) {
       console.warn("Could not save evaluation log", e);
     }

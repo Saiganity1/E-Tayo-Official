@@ -19,11 +19,18 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/users?role=ROLE_APPLICANT`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      let res = await fetch("/api/users?role=ROLE_APPLICANT", {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        res = await fetch(`${rawApi}/api/users?role=ROLE_APPLICANT`, {
+          headers: token ? { "Authorization": `Bearer ${token}` } : {}
+        }).catch(() => null);
+      }
       
-      if (!res.ok) throw new Error("Failed to fetch users");
+      if (!res || !res.ok) throw new Error("Failed to fetch users");
       
       const data = await res.json();
       setUsers(data);
@@ -46,12 +53,20 @@ export default function AdminUsersPage() {
     setPromoting(id);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/users/${id}/promote`, {
+      let res = await fetch(`/api/users/${id}/promote`, {
         method: "PUT",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        res = await fetch(`${rawApi}/api/users/${id}/promote`, {
+          method: "PUT",
+          headers: token ? { "Authorization": `Bearer ${token}` } : {}
+        }).catch(() => null);
+      }
       
-      if (!res.ok) throw new Error("Promotion failed");
+      if (!res || !res.ok) throw new Error("Promotion failed");
       
       alert("User promoted to Staff successfully!");
       fetchUsers();

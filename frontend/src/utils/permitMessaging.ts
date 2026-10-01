@@ -61,12 +61,21 @@ export const dispatchPermitMessage = async ({
 
   // 3. Attempt POST to backend /api/messages/send
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-    await fetch(`${apiUrl}/api/messages/send`, {
+    let res = await fetch("/api/messages/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newMsg)
-    });
+    }).catch(() => null);
+
+    if (!res || !res.ok) {
+      const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+      const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/messages/send` : `${rawApi}/api/messages/send`;
+      await fetch(backendUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMsg)
+      }).catch(() => null);
+    }
   } catch (e) {
     // Non-blocking: will fall back to local storage cache
   }

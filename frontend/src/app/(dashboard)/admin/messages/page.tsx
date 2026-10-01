@@ -128,8 +128,9 @@ export default function AdminMessagesPage() {
   const loadConversations = async () => {
     setIsRefreshing(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/messages/conversations?user=staff@etayo.gov.ph`);
-      if (res.ok) {
+      const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+      const res = await fetch(`${rawApi}/api/messages/conversations?user=staff@etayo.gov.ph`).catch(() => null);
+      if (res && res.ok) {
         const data = await res.json();
         const serverContacts = data.filter((c: string) => c !== "staff@etayo.gov.ph");
         
@@ -170,12 +171,18 @@ export default function AdminMessagesPage() {
         setCurrentUserEmail(parsedUser.email || "admin@etayo.gov.ph");
         if (parsedUser.name) setCurrentUserName(parsedUser.name);
 
-        let wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
-        if (typeof window !== "undefined" && window.location.protocol === "https:") {
-          wsUrl = wsUrl.replace("ws://", "wss://");
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        let wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+        if (!wsUrl || !wsUrl.trim()) {
+          wsUrl = rawApi.startsWith("https://")
+            ? rawApi.replace(/^https:\/\//, "wss://") + "/ws"
+            : (rawApi.startsWith("http://") ? rawApi.replace(/^http:\/\//, "ws://") + "/ws" : "wss://e-tayo-official-by0b.onrender.com/ws");
+        }
+        if (typeof window !== "undefined" && window.location.protocol === "https:" && wsUrl.startsWith("ws://")) {
+          wsUrl = wsUrl.replace(/^ws:\/\//, "wss://");
         }
         if (!wsUrl.endsWith("/ws")) {
-          wsUrl = wsUrl.replace(/\/$/, "") + "/ws";
+          wsUrl = wsUrl.replace(/\/+$/, "") + "/ws";
         }
 
         const client = new Client({
@@ -259,7 +266,8 @@ export default function AdminMessagesPage() {
         setActiveThreadId("all"); // Reset filter to all messages on contact switch
       };
 
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/messages/history?user1=${staffInbox}&user2=${applicantEmail}`)
+      const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+      fetch(`${rawApi}/api/messages/history?user1=${encodeURIComponent(staffInbox)}&user2=${encodeURIComponent(applicantEmail)}`)
         .then(res => res.json())
         .then(data => {
           mergeWithLocal(Array.isArray(data) ? data : []);
@@ -322,7 +330,7 @@ export default function AdminMessagesPage() {
     const uploadHeaders: Record<string, string> = {};
     if (token) uploadHeaders["Authorization"] = `Bearer ${token}`;
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/upload`, {
+    fetch("/api/upload", {
       method: "POST",
       headers: uploadHeaders,
       body: formData

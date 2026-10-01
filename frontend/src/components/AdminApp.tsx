@@ -39,8 +39,8 @@ interface UserRecord {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
-  ? `${process.env.NEXT_PUBLIC_API_URL}/api` 
-  : "http://localhost:8080/api";
+  ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "")}/api` 
+  : "https://e-tayo-official-by0b.onrender.com/api";
 
 export default function AdminApp() {
   const router = useRouter();

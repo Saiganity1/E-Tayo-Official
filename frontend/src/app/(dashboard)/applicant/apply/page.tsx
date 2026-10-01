@@ -617,14 +617,22 @@ export default function ApplyPage() {
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-      const res = await fetch(`${apiBase}/api/upload`, {
+      let res = await fetch("/api/upload", {
         method: "POST",
         headers: token ? { "Authorization": `Bearer ${token}` } : {},
         body: formData,
-      });
+      }).catch(() => null);
 
-      if (!res.ok) {
+      if (!res || !res.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        res = await fetch(`${rawApi}/api/upload`, {
+          method: "POST",
+          headers: token ? { "Authorization": `Bearer ${token}` } : {},
+          body: formData,
+        }).catch(() => null);
+      }
+
+      if (!res || !res.ok) {
         throw new Error("Failed to upload document file");
       }
 
@@ -676,15 +684,22 @@ export default function ApplyPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/upload`, {
+      let response = await fetch("/api/upload", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
         body: formData,
-      });
+      }).catch(() => null);
 
-      if (!response.ok) {
+      if (!response || !response.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        response = await fetch(`${rawApi}/api/upload`, {
+          method: "POST",
+          headers: token ? { "Authorization": `Bearer ${token}` } : {},
+          body: formData,
+        }).catch(() => null);
+      }
+
+      if (!response || !response.ok) {
         throw new Error("Failed to upload files");
       }
 

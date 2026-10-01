@@ -420,7 +420,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const resolvedDocuments = React.useMemo(() => {
     if (!appData) return [];
 
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
     const resolveUrl = (u: string) => {
       if (!u || typeof u !== "string") return "";
       const trimmed = u.trim();
