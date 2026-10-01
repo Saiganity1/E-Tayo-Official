@@ -481,7 +481,9 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
                       cursor: "pointer",
                       border: isMe ? "1.5px solid rgba(255, 255, 255, 0.45)" : "1.5px solid #cbd5e1",
                       background: "#0f172a",
-                      maxHeight: "240px",
+                      maxHeight: "220px",
+                      maxWidth: "420px",
+                      width: "100%",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -495,7 +497,7 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
                       alt={att.fileName}
                       style={{
                         width: "100%",
-                        maxHeight: "240px",
+                        maxHeight: "220px",
                         objectFit: "contain",
                         display: "block"
                       }}
@@ -533,7 +535,8 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
                     justifyContent: "space-between",
                     gap: "12px",
                     boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-                    maxWidth: "100%"
+                    maxWidth: "420px",
+                    width: "100%"
                   }}
                 >
               <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>

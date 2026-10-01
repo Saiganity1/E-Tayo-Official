@@ -1744,66 +1744,80 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
       updateApplication(updatedApp as any);
     }
 
-    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
-    const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
-    if (token) authHeaders["Authorization"] = `Bearer ${token}`;
+    // Immediately unblock UI and show success confirmation so there is ZERO lag
+    setIsProcessing(false);
+    setSuccessMessage(`Payment confirmed under OR #${orNumber}! Application ${app.id} has been officially RELEASED. Step 4 (Released) is now active and green on the applicant's portal.`);
 
-    const targetPermitId = encodeURIComponent(String(app.id || rawParamId || id).trim());
-    const releasePatchPayload = JSON.stringify({
-      status: "released",
-      remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`
-    });
-    const releasePutPayload = JSON.stringify(updatedApp);
+    // Perform remote backend synchronization and dispatch notification non-blockingly in background
+    (async () => {
+      const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+      const apiBase = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) authHeaders["Authorization"] = `Bearer ${token}`;
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
+      const targetPermitId = encodeURIComponent(String(app.id || rawParamId || id).trim());
+      const releasePatchPayload = JSON.stringify({
+        status: "released",
+        remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`
+      });
+      const releasePutPayload = JSON.stringify(updatedApp);
+
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
         let patchRes = await fetch(`/api/permits/${targetPermitId}/status`, {
           method: "PATCH",
           headers: authHeaders,
-          body: releasePatchPayload
+          body: releasePatchPayload,
+          signal: controller.signal
         }).catch(() => null);
+        clearTimeout(timeoutId);
+
         if (!patchRes || !patchRes.ok) {
-          patchRes = await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
+          const c2 = new AbortController();
+          const t2 = setTimeout(() => c2.abort(), 3500);
+          await fetch(`${apiBase}/permits/${targetPermitId}/status`, {
             method: "PATCH",
             headers: authHeaders,
-            body: releasePatchPayload
+            body: releasePatchPayload,
+            signal: c2.signal
           }).catch(() => null);
+          clearTimeout(t2);
         }
-        if (patchRes && patchRes.ok) break;
       } catch (e) {}
-      if (attempt < 3) await new Promise(r => setTimeout(r, 400));
-    }
 
-    for (let attempt = 1; attempt <= 2; attempt++) {
       try {
+        const c3 = new AbortController();
+        const t3 = setTimeout(() => c3.abort(), 3500);
         let putRes = await fetch(`/api/permits/${targetPermitId}`, {
           method: "PUT",
           headers: authHeaders,
-          body: releasePutPayload
+          body: releasePutPayload,
+          signal: c3.signal
         }).catch(() => null);
+        clearTimeout(t3);
+
         if (!putRes || !putRes.ok) {
-          putRes = await fetch(`${apiBase}/permits/${targetPermitId}`, {
+          const c4 = new AbortController();
+          const t4 = setTimeout(() => c4.abort(), 3500);
+          await fetch(`${apiBase}/permits/${targetPermitId}`, {
             method: "PUT",
             headers: authHeaders,
-            body: releasePutPayload
+            body: releasePutPayload,
+            signal: c4.signal
           }).catch(() => null);
+          clearTimeout(t4);
         }
-        if (putRes && putRes.ok) break;
       } catch (e) {}
-      if (attempt < 2) await new Promise(r => setTimeout(r, 400));
-    }
 
-    await updateApplication(updatedApp as any);
-
-    // Dispatch automated release notification to applicant
-    try {
-      await dispatchPermitMessage({
-        applicationId: app.id,
-        recipientEmail: app.applicantEmail || "applicant@etayo.gov.ph",
-        senderEmail: staffEmail,
-        content: `[Ref: ${app.id} - ${app.projectName || (isBuildingPermit ? "Building Permit" : "Locational Clearance")}]
+      // Dispatch automated release notification to applicant
+      try {
+        await dispatchPermitMessage({
+          applicationId: app.id,
+          recipientEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+          senderEmail: staffEmail,
+          content: `[Ref: ${app.id} - ${app.projectName || (isBuildingPermit ? "Building Permit" : "Locational Clearance")}]
 🎉 OFFICIAL PERMITS RELEASED!
 
 Good day ${applicantLabel},
@@ -1814,25 +1828,23 @@ Your official ${isBuildingPermit ? "Building Permit & Ancillary Permitting Clear
 You may now download and print your official approved permits directly from your Permit Tracking Dashboard. Step 4 (Released) is now marked complete (Green).
 
 Thank you for building safely and legally with the Municipality of Sto. Tomas, Pampanga.`,
-      });
-    } catch (e) {
-      console.warn("Could not dispatch release message", e);
-    }
+        });
+      } catch (e) {
+        console.warn("Could not dispatch release message", e);
+      }
 
-    // Add system audit log
-    try {
-      await addSystemLog({
-        action: "PERMIT_RELEASED",
-        category: "application",
-        status: "success",
-        user: staffEmail,
-        message: `Permit ${app.id} officially RELEASED to ${applicantLabel} (OR #${orNumber})`,
-        details: `Payment complete (${assessedAmountStr}) verified by ${staffName}. Permits released.`,
-      });
-    } catch (e) {}
-
-    setIsProcessing(false);
-    setSuccessMessage(`Payment confirmed under OR #${orNumber}! Application ${app.id} has been officially RELEASED. Step 4 (Released) is now active and green on the applicant's portal.`);
+      // Add system audit log
+      try {
+        await addSystemLog({
+          action: "PERMIT_RELEASED",
+          category: "application",
+          status: "success",
+          user: staffEmail,
+          message: `Permit ${app.id} officially RELEASED to ${applicantLabel} (OR #${orNumber})`,
+          details: `Payment complete (${assessedAmountStr}) verified by ${staffName}. Permits released.`,
+        });
+      } catch (e) {}
+    })().catch(console.warn);
   };
 
   const handleConfirmReject = async () => {

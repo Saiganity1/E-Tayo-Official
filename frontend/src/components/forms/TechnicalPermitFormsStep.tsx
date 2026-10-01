@@ -1667,16 +1667,36 @@ export default function TechnicalPermitFormsStep({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Completed forms tracking with localStorage persistence
+  // Completed forms tracking with localStorage persistence scoped strictly to the current clearance ref / application
   const [completedForms, setCompletedForms] = useState<Record<string, boolean>>(() => {
     try {
       if (typeof window !== "undefined") {
-        const saved = localStorage.getItem(`etayo_completed_forms_${projectType.id}`);
+        // Purge any stale legacy global key that was erroneously checking all forms across all applications
+        localStorage.removeItem(`etayo_completed_forms_${projectType.id}`);
+
+        const storageKey = `etayo_completed_forms_${locationalClearanceRef || 'draft'}`;
+        const saved = localStorage.getItem(storageKey);
         if (saved) return JSON.parse(saved);
       }
     } catch (e) {}
     return {};
   });
+
+  // Re-sync completedForms if locationalClearanceRef changes
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(`etayo_completed_forms_${projectType.id}`);
+        const storageKey = `etayo_completed_forms_${locationalClearanceRef || 'draft'}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          setCompletedForms(JSON.parse(saved));
+        } else {
+          setCompletedForms({});
+        }
+      }
+    } catch (e) {}
+  }, [locationalClearanceRef, projectType.id]);
 
   // Sync active tab if projectType changes
   useEffect(() => {
@@ -1692,14 +1712,17 @@ export default function TechnicalPermitFormsStep({
   // Digital technical permits handled directly by the municipal online portal
   const digitalMandatoryKeys = mandatoryKeys.filter((k) => k !== "fireBfpPermit");
 
-  // A form is satisfied if:
+  // A form is satisfied ONLY if:
   // - for fireBfpPermit: user has uploaded the BFP Clearance (FSEC) file
   // - for digital permits: user has completed the online form OR attached a signed copy
   const isFormSatisfied = (key: string) => {
     if (key === "fireBfpPermit") {
-      return Boolean(uploadedPermitDocs["fireBfpPermit"]);
+      return Boolean(uploadedPermitDocs["fireBfpPermit"]?.fileUrl || uploadedPermitDocs["fireBfpPermit"]);
     }
-    return Boolean(uploadedPermitDocs[key] || completedForms[key]);
+    return Boolean(
+      (uploadedPermitDocs[key] && (uploadedPermitDocs[key].fileUrl || uploadedPermitDocs[key].fileName)) || 
+      completedForms[key]
+    );
   };
 
   const satisfiedKeys = mandatoryKeys.filter(isFormSatisfied);
@@ -1724,7 +1747,7 @@ export default function TechnicalPermitFormsStep({
         occupancyOthers,
         savedAt: new Date().toISOString(),
       };
-      localStorage.setItem(`etayo_permit_form_draft_${projectType.id}`, JSON.stringify(draft));
+      localStorage.setItem(`etayo_permit_form_draft_${locationalClearanceRef || projectType.id}`, JSON.stringify(draft));
     } catch (e) {}
   };
 
@@ -1732,7 +1755,8 @@ export default function TechnicalPermitFormsStep({
   useEffect(() => {
     try {
       if (typeof window !== "undefined") {
-        const saved = localStorage.getItem(`etayo_permit_form_draft_${projectType.id}`);
+        const saved = localStorage.getItem(`etayo_permit_form_draft_${locationalClearanceRef || projectType.id}`) ||
+                           localStorage.getItem(`etayo_permit_form_draft_${projectType.id}`);
         if (saved) {
           const draft = JSON.parse(saved);
           if (draft.projectName && !projectName) setProjectName(draft.projectName);
@@ -1748,7 +1772,7 @@ export default function TechnicalPermitFormsStep({
         }
       }
     } catch (e) {}
-  }, [projectType.id]);
+  }, [projectType.id, locationalClearanceRef]);
 
   // Submit single form handler
   const handleSubmitSingleForm = (tabKey: string) => {
@@ -1775,7 +1799,8 @@ export default function TechnicalPermitFormsStep({
     setCompletedForms((prev) => {
       const next = { ...prev, [tabKey]: true };
       try {
-        localStorage.setItem(`etayo_completed_forms_${projectType.id}`, JSON.stringify(next));
+        const storageKey = `etayo_completed_forms_${locationalClearanceRef || 'draft'}`;
+        localStorage.setItem(storageKey, JSON.stringify(next));
       } catch (e) {}
       return next;
     });

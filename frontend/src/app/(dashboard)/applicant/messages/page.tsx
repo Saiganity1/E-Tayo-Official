@@ -13,7 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
 import { usePermitContext } from "../../../../context/PermitContext";
-import { dispatchPermitMessage, ensureApplicationConversationMessages, getAuthoritativePermitFee } from "../../../../utils/permitMessaging";
+import { dispatchPermitMessage, ensureApplicationConversationMessages, getAuthoritativePermitFee, SystemPermitMessage } from "../../../../utils/permitMessaging";
 import { 
   groupApplicationsIntoProjectDossiers, 
   areAppsInSameProject, 
@@ -235,6 +235,13 @@ export default function ApplicantMessagesPage() {
                   if (prev.some(m => m.id && m.id === receivedMessage.id)) return prev;
                   return [...prev, receivedMessage];
                 });
+                try {
+                  const raw = localStorage.getItem("etayo_messages_history");
+                  const cur: any[] = raw ? JSON.parse(raw) : [];
+                  if (!cur.some(m => m.id && m.id === receivedMessage.id)) {
+                    localStorage.setItem("etayo_messages_history", JSON.stringify([...cur, receivedMessage]));
+                  }
+                } catch (e) {}
               } catch (e) {
                 console.error("Failed to parse incoming message", e);
               }
@@ -504,7 +511,7 @@ export default function ApplicantMessagesPage() {
 
     if (targetIds.length === 0) return [];
 
-    const threadMsgs = messages.filter(msg => {
+    let threadMsgs = messages.filter(msg => {
       const msgTid = getMessageThreadId(msg);
       if (targetIds.includes(msgTid)) return true;
       if (msg.applicationId && targetIds.includes(msg.applicationId)) return true;
@@ -516,11 +523,41 @@ export default function ApplicantMessagesPage() {
       const email = currentUserEmail || "applicant@etayo.gov.ph";
       const synthesized = ensureApplicationConversationMessages(activeThread.applications, email, []);
       if (synthesized.length > 0) {
-        return synthesized.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        threadMsgs = synthesized;
       }
     }
 
-    return threadMsgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    // Deduplicate duplicate receipts: If the user sent their own receipt photo or message in this thread, drop synthetic auto-receipt-${appId}
+    const hasManualReceipt = threadMsgs.some(m => 
+      !m.id?.startsWith("auto-receipt-") && 
+      (m.content?.includes("[Attachment:") || m.content?.includes("payment-receipt") || m.content?.includes("Official payment settled"))
+    );
+    if (hasManualReceipt) {
+      threadMsgs = threadMsgs.filter(m => !m.id?.startsWith("auto-receipt-"));
+    }
+
+    // Deduplicate identical duplicate message IDs or exact contents
+    const seen = new Set<string>();
+    threadMsgs = threadMsgs.filter(m => {
+      const key = `${m.id || ''}-${(m.content || '').slice(0, 50)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Strictly chronological sort: by timestamp ascending, with logical ordering tie-breaker
+    return threadMsgs.sort((a, b) => {
+      const timeA = new Date(a.timestamp || 0).getTime();
+      const timeB = new Date(b.timestamp || 0).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      const getPriority = (m: any) => {
+        if (m.content?.includes("ORDER OF PAYMENT") || m.content?.includes("APPLICATION APPROVED")) return 1;
+        if (m.content?.includes("Payment Receipt") || m.content?.includes("[Attachment:")) return 2;
+        if (m.content?.includes("PERMITS RELEASED") || m.content?.includes("PAYMENT VERIFIED")) return 3;
+        return 2;
+      };
+      return getPriority(a) - getPriority(b);
+    });
   }, [messages, activeThreadId, activeThread, currentUserEmail]);
 
   // Send message handler
@@ -548,6 +585,32 @@ export default function ApplicantMessagesPage() {
       || activeApp 
       || activeThread?.primaryApp;
 
+    const localMsg: SystemPermitMessage = {
+      id: `local-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      senderEmail: currentUserEmail,
+      recipientEmail: MANG_TOMAS.email,
+      content: finalContent,
+      applicationId: targetRefId,
+      timestamp: new Date().toISOString()
+    };
+
+    // Immediately persist locally so chats NEVER disappear on reload or re-render
+    try {
+      const raw = localStorage.getItem("etayo_messages_history");
+      const curList: SystemPermitMessage[] = raw ? JSON.parse(raw) : [];
+      if (!curList.some(m => m.id === localMsg.id)) {
+        localStorage.setItem("etayo_messages_history", JSON.stringify([...curList, localMsg]));
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("etayo_new_message", { detail: localMsg }));
+      }
+    } catch (e) {}
+
+    setMessages(prev => {
+      if (prev.some(m => m.id === localMsg.id)) return prev;
+      return [...prev, localMsg];
+    });
+
     if (stompClient.current && connected) {
       setIsSending(true);
       try {
@@ -555,16 +618,6 @@ export default function ApplicantMessagesPage() {
           destination: "/app/chat.sendMessage",
           body: JSON.stringify(payload),
         });
-
-        const localMsg = {
-          id: `local-${Date.now()}`,
-          senderEmail: currentUserEmail,
-          recipientEmail: MANG_TOMAS.email,
-          content: finalContent,
-          applicationId: targetRefId,
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, localMsg]);
 
         if (attachedFile && targetAppForPayment && (targetAppForPayment.status === "approved" || targetAppForPayment.status === "released")) {
           try {
@@ -592,7 +645,12 @@ export default function ApplicantMessagesPage() {
     } else {
       // Fallback
       dispatchPermitMessage(payload).then(newMsg => {
-        setMessages(prev => [...prev, newMsg]);
+        setMessages(prev => {
+          if (prev.some(m => m.id === newMsg.id || m.id === localMsg.id)) {
+            return prev.map(m => m.id === localMsg.id ? newMsg : m);
+          }
+          return [...prev, newMsg];
+        });
 
         if (attachedFile && targetAppForPayment && (targetAppForPayment.status === "approved" || targetAppForPayment.status === "released")) {
           try {
@@ -1543,8 +1601,8 @@ export default function ApplicantMessagesPage() {
 
                     return (
                       <div style={{
-                        maxWidth: isNotice ? "680px" : "82%",
-                        width: isNotice ? "100%" : "auto",
+                        maxWidth: isNotice ? "680px" : "480px",
+                        width: isNotice ? "100%" : "fit-content",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: isMe ? "flex-end" : "flex-start"

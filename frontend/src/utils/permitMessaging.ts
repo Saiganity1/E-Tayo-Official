@@ -163,6 +163,32 @@ export const ensureApplicationConversationMessages = (
     const projName = app.projectName || (isLC ? "Locational Clearance" : "Building Permit");
     const applicantName = app.applicantName || "Applicant";
 
+    // Compute realistic chronological timestamps: Approval / Order of Payment -> Payment Receipt -> Permit Release
+    const now = Date.now();
+    let approvalTime = app.dateApproved 
+      ? new Date(app.dateApproved).getTime() 
+      : (app.dateSubmitted ? new Date(app.dateSubmitted).getTime() : now - 14400000);
+    const approvalDateObj = new Date(approvalTime);
+    if (approvalDateObj.getHours() === 0 && approvalDateObj.getMinutes() === 0) {
+      // If parsed as midnight (00:00:00), shift to 9:00 AM on that day
+      approvalDateObj.setHours(9, 0, 0, 0);
+      approvalTime = approvalDateObj.getTime();
+    }
+
+    let receiptTime = (app as any).datePaymentSubmitted 
+      ? new Date((app as any).datePaymentSubmitted).getTime() 
+      : (approvalTime + 3600000); // 1 hour after approval by default
+    if (receiptTime <= approvalTime) {
+      receiptTime = approvalTime + 1800000; // Guarantee receipt is after approval
+    }
+
+    let releaseTime = (app as any).dateReleased 
+      ? new Date((app as any).dateReleased).getTime() 
+      : (receiptTime + 3600000); // 1 hour after payment by default
+    if (releaseTime <= receiptTime) {
+      releaseTime = receiptTime + 1800000; // Guarantee release is after receipt
+    }
+
     // 1. Ensure Official Approval & Order of Payment Message exists & has correct fee
     const existingMsgIndex = result.findIndex(m => {
       const tid = m.applicationId || (m.content && m.content.includes(appId));
@@ -175,6 +201,12 @@ export const ensureApplicationConversationMessages = (
       const existing = result[existingMsgIndex];
       let content = existing.content || "";
       let contentChanged = false;
+
+      // Ensure timestamp is before receipt
+      if (new Date(existing.timestamp).getTime() >= receiptTime) {
+        result[existingMsgIndex] = { ...existing, timestamp: new Date(approvalTime).toISOString() };
+        updated = true;
+      }
 
       // Correct outdated fee
       if (!content.includes(`PHP ${assessedAmt}`) || content.includes("PHP 3,795")) {
@@ -201,7 +233,7 @@ export const ensureApplicationConversationMessages = (
 
       if (contentChanged) {
         result[existingMsgIndex] = {
-          ...existing,
+          ...result[existingMsgIndex],
           content
         };
         updated = true;
@@ -232,7 +264,7 @@ export const ensureApplicationConversationMessages = (
         actualSender: isLC ? "Zoning Administrator, MPDO" : "Engr. Gilbert Cruz, Municipal Building Official",
         recipientEmail: userEmail || app.applicantEmail || "applicant@etayo.gov.ph",
         applicationId: appId,
-        timestamp: app.dateApproved ? new Date(app.dateApproved).toISOString() : (app.dateSubmitted ? new Date(app.dateSubmitted).toISOString() : new Date(Date.now() - 3600000).toISOString()),
+        timestamp: new Date(approvalTime).toISOString(),
         content: `[Ref: ${appId} - ${projName}]
 ${approvalNoticeTitle}
 
@@ -267,39 +299,60 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
     const hasConfirmedPayment = Boolean((app as any).userConfirmedPayment || cachedReceipt);
 
     if (hasConfirmedPayment) {
-      const existingReceiptIdx = result.findIndex(m => {
+      // Check if user already has a manual message with attachment or receipt in chat
+      const hasManualUserReceipt = result.some(m => {
         const tid = m.applicationId || (m.content && m.content.includes(appId));
-        return (tid === appId || (m.content && m.content.includes(appId))) && 
-          (m.content.includes("Payment Receipt") || m.content.includes("PAYMENT CONFIRMATION") || m.content.includes("payment receipt"));
+        const isMatch = tid === appId || (m.content && m.content.includes(appId));
+        const isNotAuto = !m.id?.startsWith("auto-receipt-");
+        const hasAttachmentOrPayment = m.content?.includes("[Attachment:") || 
+                                       m.content?.includes("payment-receipt") || 
+                                       m.content?.includes("Payment Receipt") || 
+                                       m.content?.includes("payment receipt");
+        return isMatch && isNotAuto && hasAttachmentOrPayment;
       });
 
-      if (existingReceiptIdx === -1) {
-        const orRef = (app as any).paymentReference || "OR-2026-94812";
-        const channel = (app as any).paymentMethod || "Municipal Treasury Cashier (On-site)";
-        const receiptMsg: SystemPermitMessage = {
-          id: `auto-receipt-${appId}`,
-          senderEmail: userEmail || app.applicantEmail || "applicant@etayo.gov.ph",
-          actualSender: applicantName,
-          recipientEmail: "staff@etayo.gov.ph",
-          applicationId: appId,
-          timestamp: (app as any).datePaymentSubmitted ? new Date((app as any).datePaymentSubmitted).toISOString() : new Date(Date.now() - 1800000).toISOString(),
-          content: `[Ref: ${appId} - Payment Receipt] Official payment settled for ${appId} (Order of Payment: ${opNo}, Amount: PHP ${assessedAmt}).
+      if (hasManualUserReceipt) {
+        // User already sent their receipt directly in conversation! Purge any duplicate auto-receipt
+        const autoReceiptIdx = result.findIndex(m => m.id === `auto-receipt-${appId}`);
+        if (autoReceiptIdx !== -1) {
+          result.splice(autoReceiptIdx, 1);
+          updated = true;
+        }
+      } else {
+        const existingReceiptIdx = result.findIndex(m => {
+          const tid = m.applicationId || (m.content && m.content.includes(appId));
+          return (m.id === `auto-receipt-${appId}`) || ((tid === appId || (m.content && m.content.includes(appId))) && 
+            (m.content.includes("Payment Receipt") || m.content.includes("PAYMENT CONFIRMATION") || m.content.includes("payment receipt")));
+        });
+
+        if (existingReceiptIdx === -1) {
+          const orRef = (app as any).paymentReference || "OR-2026-94812";
+          const channel = (app as any).paymentMethod || "Municipal Treasury Cashier (On-site)";
+          const receiptMsg: SystemPermitMessage = {
+            id: `auto-receipt-${appId}`,
+            senderEmail: userEmail || app.applicantEmail || "applicant@etayo.gov.ph",
+            actualSender: applicantName,
+            recipientEmail: "staff@etayo.gov.ph",
+            applicationId: appId,
+            timestamp: new Date(receiptTime).toISOString(),
+            content: `[Ref: ${appId} - Payment Receipt] Official payment settled for ${appId} (Order of Payment: ${opNo}, Amount: PHP ${assessedAmt}).
 Official Receipt / Reference: ${orRef}
 Payment Channel: ${channel}
 Attached is the photo of my payment receipt for municipal cashier verification.
 ${cachedReceipt ? `\n[Attachment: payment-receipt.jpg|${cachedReceipt}]` : ""}`
-        };
-        result.push(receiptMsg);
-        updated = true;
-      } else {
-        const exReceipt = result[existingReceiptIdx];
-        let rContent = exReceipt.content || "";
-        if (!rContent.includes(`PHP ${assessedAmt}`) || rContent.includes("PHP 3,795")) {
-          rContent = rContent
-            .replace(/Amount:\s*PHP\s*[\d,]+/gi, `Amount: PHP ${assessedAmt}`)
-            .replace(/PHP\s*3,795/gi, `PHP ${assessedAmt}`);
-          result[existingReceiptIdx] = { ...exReceipt, content: rContent };
+          };
+          result.push(receiptMsg);
           updated = true;
+        } else {
+          const exReceipt = result[existingReceiptIdx];
+          let rContent = exReceipt.content || "";
+          if (!rContent.includes(`PHP ${assessedAmt}`) || rContent.includes("PHP 3,795")) {
+            rContent = rContent
+              .replace(/Amount:\s*PHP\s*[\d,]+/gi, `Amount: PHP ${assessedAmt}`)
+              .replace(/PHP\s*3,795/gi, `PHP ${assessedAmt}`);
+            result[existingReceiptIdx] = { ...exReceipt, content: rContent };
+            updated = true;
+          }
         }
       }
     }
@@ -320,7 +373,7 @@ ${cachedReceipt ? `\n[Attachment: payment-receipt.jpg|${cachedReceipt}]` : ""}`
           actualSender: "Engr. Gilbert Cruz, Municipal Building Official",
           recipientEmail: userEmail || app.applicantEmail || "applicant@etayo.gov.ph",
           applicationId: appId,
-          timestamp: (app as any).dateReleased ? new Date((app as any).dateReleased).toISOString() : new Date().toISOString(),
+          timestamp: new Date(releaseTime).toISOString(),
           content: `[Ref: ${appId} - Permit Released]
 🎉 PAYMENT VERIFIED & OFFICIAL PERMITS RELEASED!
 
@@ -350,6 +403,18 @@ All official permit papers, ancillary clearances, and approved plans for ${appId
     } catch (e) {}
   }
 
-  result.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+  // Strictly chronological sorting with logical hierarchy tie-breaker
+  result.sort((a, b) => {
+    const timeA = new Date(a.timestamp || 0).getTime();
+    const timeB = new Date(b.timestamp || 0).getTime();
+    if (timeA !== timeB) return timeA - timeB;
+    const getOrder = (m: any) => {
+      if (m.content?.includes("ORDER OF PAYMENT") || m.content?.includes("APPLICATION APPROVED")) return 1;
+      if (m.content?.includes("Payment Receipt") || m.content?.includes("[Attachment:")) return 2;
+      if (m.content?.includes("PERMITS RELEASED") || m.content?.includes("PAYMENT VERIFIED")) return 3;
+      return 2;
+    };
+    return getOrder(a) - getOrder(b);
+  });
   return result;
 };
