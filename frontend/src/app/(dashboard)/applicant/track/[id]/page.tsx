@@ -88,6 +88,7 @@ export default function ApplicationTrackDetail() {
   const [paymentReceiptFile, setPaymentReceiptFile] = useState<{ name: string; dataUrl: string } | null>(null);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "info" } | null>(null);
+  const [actionLoadingDocId, setActionLoadingDocId] = useState<string | null>(null);
 
   const handleSubmitPaymentConfirm = async () => {
     if (!appData) return;
@@ -423,13 +424,44 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
     const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
     const resolveUrl = (u: string) => {
-      if (!u) return "";
+      if (!u || typeof u !== "string") return "";
       const trimmed = u.trim();
+      if (trimmed.startsWith("data:")) {
+        const parts = trimmed.split("base64,");
+        if (parts.length < 2 || parts[1].trim().length < 100) {
+          return "";
+        }
+        return trimmed;
+      }
       return trimmed.startsWith("/api/files/") ? `${apiBase}${trimmed}` : trimmed;
     };
 
-    const rawUrls = (typeof appData.fileUrl === "string" ? appData.fileUrl : "").split(",").map((s: string) => s.trim()).filter(Boolean);
-    const primaryFileUrl = resolveUrl(rawUrls[0] || "");
+    const parseFileUrls = (raw: string): string[] => {
+      if (!raw || typeof raw !== "string") return [];
+      const trimmed = raw.trim();
+      if (!trimmed) return [];
+      if (trimmed.includes(",http") || trimmed.includes(",data:") || trimmed.includes(",/api/")) {
+        return trimmed.split(/,(?=(?:data:|https?:\/\/|\/api\/))/i).map(s => s.trim()).filter(Boolean);
+      }
+      if (trimmed.startsWith("data:")) {
+        return [trimmed];
+      }
+      return trimmed.split(",").map(s => s.trim()).filter(Boolean);
+    };
+
+    const isValidDocUrl = (u: string) => {
+      if (!u || typeof u !== "string") return false;
+      const trimmed = u.trim();
+      if (trimmed.startsWith("data:")) {
+        const parts = trimmed.split("base64,");
+        return parts.length >= 2 && parts[1].trim().length > 100;
+      }
+      return trimmed.length > 3 && !trimmed.startsWith("undefined");
+    };
+
+    const rawUrls = parseFileUrls(typeof appData.fileUrl === "string" ? appData.fileUrl : "");
+    const validFileUrls = rawUrls.filter(isValidDocUrl);
+    const primaryFileUrl = resolveUrl(validFileUrls[0] || "");
     const isDrive = (typeof appData.fileUrl === "string" ? appData.fileUrl : "").includes("drive.google.com");
     
     const rawProjName = typeof appData.projectName === "string" 
@@ -446,6 +478,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       fileName: string;
       fileSize: string;
       url: string;
+      template?: string;
       downloadName: string;
       badgeBg: string;
       badgeColor: string;
@@ -456,6 +489,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     }> = [];
 
     const pTypeStr = String(appData.permitType || "locational_clearance").toLowerCase();
+    const masterTemplate = pTypeStr === "locational_clearance"
+      ? "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf"
+      : "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf";
 
     // 1. MASTER UNIFIED PERMIT PACKAGE (Compiled Dossier)
     if (primaryFileUrl || pTypeStr === "building_permit" || pTypeStr === "locational_clearance") {
@@ -469,7 +505,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         desc: "Complete compiled DPWH & LGU permit package with technical certifications",
         fileName: appData.fileName || `${appData.id}_${projNameClean}_Permit_Package.pdf`,
         fileSize: "2.4 MB",
-        url: primaryFileUrl || (pTypeStr === "locational_clearance" ? "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf" : "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf"),
+        url: primaryFileUrl || masterTemplate,
+        template: masterTemplate,
         downloadName: appData.fileName || `${appData.id}_${projNameClean}_Permit_Package.pdf`,
         badgeBg: "#dbeafe",
         badgeColor: "#1e40af",
@@ -491,6 +528,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         fileName: `Locational_Clearance_${appData.locationalClearanceRef}.pdf`,
         fileSize: "840 KB",
         url: "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
+        template: "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf",
         downloadName: `Locational_Clearance_${appData.locationalClearanceRef}.pdf`,
         badgeBg: "#dcfce7",
         badgeColor: "#15803d",
@@ -614,6 +652,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             fileName,
             fileSize,
             url: resolveUrl(req.fileUrl || template),
+            template: template,
             downloadName: fileName,
             badgeBg,
             badgeColor,
@@ -634,6 +673,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           fileName: `${f.code}_${projNameClean}_Official_Filled.pdf`,
           fileSize: "1.4 MB",
           url: f.template,
+          template: f.template,
           downloadName: `${f.code}_${projNameClean}_Official_Filled.pdf`,
           badgeBg: f.badgeBg,
           badgeColor: f.badgeColor,
@@ -882,8 +922,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   }
 
   const getFilledDocUrl = async (doc: any): Promise<string> => {
+    // Only return early if doc.url is an intact, valid data URI with actual base64 content
     if (doc.url && doc.url.startsWith("data:") && !doc.url.includes("placeholder")) {
-      return doc.url;
+      const parts = doc.url.split("base64,");
+      if (parts.length >= 2 && parts[1].trim().length > 200) {
+        return doc.url;
+      }
     }
 
     const pTypeObj: ProjectTypeItem = (appData?.projectType && typeof appData.projectType === "object")
@@ -1101,21 +1145,25 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           applicationNo: appData?.locationalClearanceRef || appData?.id || "LC-2026-9307",
           submissionDate: appData?.dateSubmitted || new Date().toLocaleDateString(),
           applicantName: appData?.applicantName || "Paul Payumo",
+          applicantFirstName: (appData as any)?.applicantFirstName,
+          applicantLastName: (appData as any)?.applicantLastName,
+          applicantMiddleName: (appData as any)?.applicantMiddleName,
           applicantAddress: appData?.projectAddress || appData?.applicantAddress || "Sto. Tomas, Pampanga",
           applicantPhone: appData?.applicantPhone || "0917-000-0000",
           applicantEmail: appData?.applicantEmail || "",
           projectName: typeof appData?.projectName === "string" ? appData.projectName : `${pTypeObj.name} Project`,
           projectType: pTypeObj.name,
-          projectNature: "New Construction",
+          projectNature: (appData as any)?.projectNature || "New Construction",
           projectAddress: typeof appData?.projectAddress === "string" ? appData.projectAddress : (appData?.location?.address || "Sto. Tomas, Pampanga"),
           barangay: appData?.barangay || "Sto. Tomas",
           lotArea: appData?.lotArea || "200",
           bldgArea: appData?.floorArea || "120",
-          rightOverLand: "Owner",
-          projectTenure: "Permanent",
-          existingLandUse: "Residential",
-          isTenanted: "No",
+          rightOverLand: (appData as any)?.rightOverLand || "Owner",
+          projectTenure: (appData as any)?.projectTenure || "Permanent",
+          existingLandUse: (appData as any)?.existingLandUse || "Residential",
+          isTenanted: (appData as any)?.isTenanted || "No",
           projectCost: appData?.projectCost || "1,500,000.00",
+          sketchImageBase64: (appData as any)?.sketchImageUrl || (appData as any)?.sketchImageBase64,
         });
         return `data:application/pdf;base64,${b64}`;
       } else if (doc.code === "BP-DOSSIER") {
@@ -1123,66 +1171,131 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         return `data:application/pdf;base64,${b64}`;
       }
     } catch (e) {
-      console.warn("Could not generate filled form, using default doc.url:", e);
+      console.warn("Could not generate filled form, using default fallback:", e);
     }
 
-    return doc.url;
+    // Safety fallback: if doc.url is an invalid or truncated data: URI, return the template URL
+    if (doc.url && doc.url.startsWith("data:")) {
+      const parts = doc.url.split("base64,");
+      if (parts.length >= 2 && parts[1].trim().length > 200) {
+        return doc.url;
+      }
+      return doc.template || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf";
+    }
+
+    return doc.url || doc.template || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf";
   };
 
-  const openDocumentSafely = (url: string) => {
-    if (!url) return;
-    if (url.startsWith("data:")) {
-      try {
-        const parts = url.split("base64,");
-        const contentType = parts[0].replace("data:", "").replace(";base64", "") || "application/pdf";
-        const byteChars = atob(parts[1]);
-        const byteNumbers = new Uint8Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) {
-          byteNumbers[i] = byteChars.charCodeAt(i);
-        }
-        const blob = new Blob([byteNumbers], { type: contentType });
-        const blobUrl = URL.createObjectURL(blob);
-        window.open(blobUrl, "_blank");
-        return;
-      } catch (e) {
-        console.warn("Could not create blob URL, opening directly", e);
-      }
+  const openDocumentSafely = (url: string, fallbackTemplateUrl?: string) => {
+    let targetUrl = url;
+    if (!targetUrl || (targetUrl.startsWith("data:") && (!targetUrl.includes("base64,") || targetUrl.split("base64,")[1].trim().length < 100))) {
+      targetUrl = fallbackTemplateUrl || "/templates/LOCATIONAL-CLEARANCE-Sto-Tomas.pdf";
     }
-    window.open(url, "_blank");
+
+    if (targetUrl.startsWith("data:")) {
+      try {
+        const parts = targetUrl.split("base64,");
+        if (parts.length >= 2 && parts[1].trim()) {
+          const contentType = parts[0].replace("data:", "").replace(";base64", "").trim() || "application/pdf";
+          const rawBase64 = parts[1].trim();
+          const byteChars = atob(rawBase64);
+          const byteNumbers = new Uint8Array(byteChars.length);
+          for (let i = 0; i < byteChars.length; i++) {
+            byteNumbers[i] = byteChars.charCodeAt(i);
+          }
+          const blob = new Blob([byteNumbers], { type: contentType });
+          const blobUrl = URL.createObjectURL(blob);
+          window.open(blobUrl, "_blank");
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+          return;
+        }
+      } catch (e) {
+        console.warn("Could not create blob URL for data URL:", e);
+      }
+
+      if (fallbackTemplateUrl) {
+        window.open(fallbackTemplateUrl, "_blank");
+        return;
+      }
+      return;
+    }
+
+    window.open(targetUrl, "_blank");
   };
 
-  const downloadDocumentSafely = (url: string, filename: string) => {
-    if (!url) return;
-    if (url.startsWith("data:")) {
-      try {
-        const parts = url.split("base64,");
-        const contentType = parts[0].replace("data:", "").replace(";base64", "") || "application/pdf";
-        const byteChars = atob(parts[1]);
-        const byteNumbers = new Uint8Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) {
-          byteNumbers[i] = byteChars.charCodeAt(i);
-        }
-        const blob = new Blob([byteNumbers], { type: contentType });
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(blobUrl);
+  const downloadDocumentSafely = async (url: string, filename: string, fallbackTemplateUrl?: string) => {
+    let targetUrl = url;
+    const cleanFilename = filename ? (filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`) : "Document.pdf";
+
+    // If targetUrl is missing or is an invalid data: URI, fall back to template
+    if (!targetUrl || (targetUrl.startsWith("data:") && (!targetUrl.includes("base64,") || targetUrl.split("base64,")[1].trim().length < 100))) {
+      if (fallbackTemplateUrl) {
+        targetUrl = fallbackTemplateUrl;
+      } else {
+        console.warn("No valid URL or fallback available for download");
         return;
-      } catch (e) {
-        console.warn("Blob download fallback", e);
       }
     }
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.target = "_blank";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+
+    // 1. Data URI -> Decode into Blob and download
+    if (targetUrl.startsWith("data:")) {
+      try {
+        const parts = targetUrl.split("base64,");
+        if (parts.length >= 2 && parts[1].trim()) {
+          const contentType = parts[0].replace("data:", "").replace(";base64", "").trim() || "application/pdf";
+          const rawBase64 = parts[1].trim();
+          const byteChars = atob(rawBase64);
+          const byteNumbers = new Uint8Array(byteChars.length);
+          for (let i = 0; i < byteChars.length; i++) {
+            byteNumbers[i] = byteChars.charCodeAt(i);
+          }
+          const blob = new Blob([byteNumbers], { type: contentType });
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = blobUrl;
+          a.download = cleanFilename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+          return;
+        }
+      } catch (e) {
+        console.warn("Blob download error from base64:", e);
+        if (fallbackTemplateUrl && fallbackTemplateUrl !== targetUrl) {
+          targetUrl = fallbackTemplateUrl;
+        }
+      }
+    }
+
+    // 2. Relative or Remote URL -> Fetch as Blob so download filename is guaranteed and no network failure occurs
+    if (targetUrl.startsWith("/") || targetUrl.startsWith("http://") || targetUrl.startsWith("https://")) {
+      try {
+        const res = await fetch(targetUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = blobUrl;
+          a.download = cleanFilename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+          return;
+        }
+      } catch (fetchErr) {
+        console.warn("Direct blob fetch failed, falling back to direct anchor download:", fetchErr);
+      }
+
+      // Direct fallback
+      const a = document.createElement("a");
+      a.href = targetUrl;
+      a.download = cleanFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   };
 
   const renderDocIcon = (iconType: string) => {
@@ -1817,9 +1930,18 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "flex-end", paddingTop: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
                         <button
                           type="button"
+                          disabled={actionLoadingDocId === `${doc.id}-view` || actionLoadingDocId === `${doc.id}-download`}
                           onClick={async () => {
-                            const u = await getFilledDocUrl(doc);
-                            openDocumentSafely(u);
+                            try {
+                              setActionLoadingDocId(`${doc.id}-view`);
+                              const u = await getFilledDocUrl(doc);
+                              openDocumentSafely(u, doc.template);
+                            } catch (err) {
+                              console.error("View document error:", err);
+                              if (doc.template) window.open(doc.template, "_blank");
+                            } finally {
+                              setActionLoadingDocId(null);
+                            }
                           }}
                           className="btn-outline"
                           style={{ 
@@ -1828,7 +1950,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                             display: "inline-flex", 
                             alignItems: "center", 
                             gap: "5px", 
-                            cursor: "pointer",
+                            cursor: actionLoadingDocId ? "wait" : "pointer",
                             background: "#ffffff",
                             border: "1px solid #cbd5e1",
                             borderRadius: "8px",
@@ -1836,14 +1958,33 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                             color: "#334155"
                           }}
                         >
-                          <Eye size={13} color="#0038A8" /> View Document
+                          {actionLoadingDocId === `${doc.id}-view` ? (
+                            <>
+                              <RefreshCw size={13} className="animate-spin" color="#0038A8" /> Preparing...
+                            </>
+                          ) : (
+                            <>
+                              <Eye size={13} color="#0038A8" /> View Document
+                            </>
+                          )}
                         </button>
 
                         <button
                           type="button"
+                          disabled={actionLoadingDocId === `${doc.id}-view` || actionLoadingDocId === `${doc.id}-download`}
                           onClick={async () => {
-                            const u = await getFilledDocUrl(doc);
-                            downloadDocumentSafely(u, doc.downloadName);
+                            try {
+                              setActionLoadingDocId(`${doc.id}-download`);
+                              const u = await getFilledDocUrl(doc);
+                              await downloadDocumentSafely(u, doc.downloadName, doc.template);
+                            } catch (err) {
+                              console.error("Download document error:", err);
+                              if (doc.template) {
+                                await downloadDocumentSafely(doc.template, doc.downloadName);
+                              }
+                            } finally {
+                              setActionLoadingDocId(null);
+                            }
                           }}
                           className="btn-primary"
                           style={{ 
@@ -1852,7 +1993,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                             display: "inline-flex", 
                             alignItems: "center", 
                             gap: "5px", 
-                            cursor: "pointer",
+                            cursor: actionLoadingDocId ? "wait" : "pointer",
                             background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                             border: "none",
                             borderRadius: "8px",
@@ -1860,7 +2001,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                             color: "#ffffff"
                           }}
                         >
-                          <Download size={13} /> Download
+                          {actionLoadingDocId === `${doc.id}-download` ? (
+                            <>
+                              <RefreshCw size={13} className="animate-spin" /> Preparing...
+                            </>
+                          ) : (
+                            <>
+                              <Download size={13} /> Download
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
