@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   ArrowRight,
   Calendar,
-  RotateCcw
+  RotateCcw,
+  UserCheck
 } from "lucide-react";
 import Link from "next/link";
 import { SystemLog } from "../../../../types";
@@ -639,10 +640,10 @@ export default function StaffEvaluationsPage() {
                           {log.details || log.message}
                         </p>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", fontSize: "0.78rem", color: "#64748b" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                            <User size={13} color="#94a3b8" />
-                            <strong>{log.user || "Staff Evaluator"}</strong>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontSize: "0.8rem", color: "#64748b" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", padding: "2px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                            <UserCheck size={13} color="#16a34a" />
+                            Evaluated by: {log.user || "Dave Sicat"}
                           </span>
                           <span>•</span>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
@@ -652,7 +653,7 @@ export default function StaffEvaluationsPage() {
                           {applicant && (
                             <>
                               <span>•</span>
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", padding: "1px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#eff6ff", color: "#1e40af", border: "1px solid #bfdbfe", padding: "2px 8px", borderRadius: "6px", fontWeight: "700" }}>
                                 Applicant: {applicant}
                               </span>
                             </>

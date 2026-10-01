@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Client } from "@stomp/stompjs";
-import { format } from "date-fns";
 import { formatPhilippineDateTime, formatPhilippineDate, formatPhilippineTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { dispatchPermitMessage, ensureApplicationConversationMessages, getAuthoritativePermitFee } from "../../../../utils/permitMessaging";
@@ -77,13 +76,14 @@ export default function StaffMessagesPage() {
   // Thread Categorization within Selected Applicant's Chat
   const [activeThreadId, setActiveThreadId] = useState<string>("all");
 
-  // Collapsible Dossier Sidebar
-  const [showDossier, setShowDossier] = useState(true);
+  // Collapsible Dossier Sidebar (Default false for 75%+ wide readable chat)
+  const [showDossier, setShowDossier] = useState(false);
 
   const staffFileInputRef = useRef<HTMLInputElement>(null);
   const stompClient = useRef<Client | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Helper to extract thread/application ID from message
   const getMessageThreadId = (msg: any): string => {
@@ -109,11 +109,12 @@ export default function StaffMessagesPage() {
 
   // Helper to resolve applicant metadata from applications
   const getApplicantData = (email: string) => {
+    const cleanEmail = email.toLowerCase().trim();
     const matchingApps = applications.filter(
-      a => a.applicantEmail && a.applicantEmail.toLowerCase() === email.toLowerCase()
+      a => a.applicantEmail && a.applicantEmail.toLowerCase().trim() === cleanEmail
     );
     const primaryApp = matchingApps[0];
-    const name = primaryApp?.applicantName || email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const name = primaryApp?.applicantName || cleanEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     const phone = primaryApp?.applicantPhone || "Not provided";
     const address = primaryApp?.applicantAddress || primaryApp?.projectAddress || "Santo Tomas, Pampanga";
     return {
@@ -125,33 +126,53 @@ export default function StaffMessagesPage() {
     };
   };
 
-  // Fetch unique conversations on load
+  // Fetch unique conversations on load with strict deduplication
   const loadConversations = async () => {
     setIsRefreshing(true);
     try {
       const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
       const res = await fetch(`${rawApi}/api/messages/conversations?user=staff@etayo.gov.ph`).catch(() => null);
+      let serverContacts: string[] = [];
       if (res && res.ok) {
         const data = await res.json();
-        const serverContacts = data.filter((c: string) => c !== "staff@etayo.gov.ph");
-        
-        // Also include applicants who have applications in the system
-        const appApplicants = Array.from(
-          new Set(
-            applications
-              .map(a => a.applicantEmail?.toLowerCase())
-              .filter((e): e is string => Boolean(e) && e !== "staff@etayo.gov.ph")
-          )
-        );
-
-        const merged = Array.from(new Set([...serverContacts, ...appApplicants]));
-        setContacts(merged);
-
-        // If no applicant currently selected, select the first one with messages or apps
-        if (!applicantEmail && merged.length > 0) {
-          setApplicantEmail(merged[0]);
+        if (Array.isArray(data)) {
+          serverContacts = data
+            .map((c: string) => (c || "").trim().toLowerCase())
+            .filter((c: string) => c && c !== "staff@etayo.gov.ph" && c !== "admin@etayo.gov.ph");
         }
       }
+      
+      // Also include applicants who have applications in the system
+      const appApplicants = applications
+        .map(a => a.applicantEmail?.trim().toLowerCase())
+        .filter((e): e is string => Boolean(e) && e !== "staff@etayo.gov.ph" && e !== "admin@etayo.gov.ph");
+
+      // Check localStorage cached messages for any other applicant emails
+      let localApplicants: string[] = [];
+      try {
+        const raw = localStorage.getItem("etayo_messages_history");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((m: any) => {
+              const r = (m.recipientEmail || "").trim().toLowerCase();
+              const s = (m.senderEmail || "").trim().toLowerCase();
+              if (r && r !== "staff@etayo.gov.ph" && r !== "admin@etayo.gov.ph") localApplicants.push(r);
+              if (s && s !== "staff@etayo.gov.ph" && s !== "admin@etayo.gov.ph") localApplicants.push(s);
+            });
+          }
+        }
+      } catch (e) {}
+
+      // Unique set of emails
+      const uniqueEmails = Array.from(new Set([...serverContacts, ...appApplicants, ...localApplicants])).filter(Boolean);
+      setContacts(uniqueEmails);
+
+      // If no applicant currently selected, select the first one
+      setApplicantEmail(curr => {
+        if (curr && uniqueEmails.includes(curr.toLowerCase())) return curr.toLowerCase();
+        return uniqueEmails.length > 0 ? uniqueEmails[0] : null;
+      });
     } catch (err) {
       console.error("Failed to load conversations", err);
     } finally {
@@ -195,19 +216,28 @@ export default function StaffMessagesPage() {
 
             const handleIncomingMessage = (message: any) => {
               const receivedMessage = JSON.parse(message.body);
-              const sender = receivedMessage.senderEmail;
-              const recipient = receivedMessage.recipientEmail;
+              const sender = (receivedMessage.senderEmail || "").trim().toLowerCase();
+              const recipient = (receivedMessage.recipientEmail || "").trim().toLowerCase();
 
-              if (sender !== "staff@etayo.gov.ph") {
-                setContacts(prev => prev.includes(sender) ? prev : [sender, ...prev]);
-              } else if (recipient !== "staff@etayo.gov.ph") {
-                setContacts(prev => prev.includes(recipient) ? prev : [recipient, ...prev]);
+              const otherParty = sender !== "staff@etayo.gov.ph" && sender !== "admin@etayo.gov.ph"
+                ? sender
+                : (recipient !== "staff@etayo.gov.ph" && recipient !== "admin@etayo.gov.ph" ? recipient : null);
+
+              if (otherParty) {
+                setContacts(prev => {
+                  const normalized = prev.map(p => p.toLowerCase());
+                  if (!normalized.includes(otherParty)) {
+                    return [otherParty, ...prev];
+                  }
+                  return prev;
+                });
               }
 
               setApplicantEmail(currentApplicant => {
-                if (sender === currentApplicant || (sender === "staff@etayo.gov.ph" && recipient === currentApplicant)) {
+                const curNorm = currentApplicant?.toLowerCase();
+                if (sender === curNorm || recipient === curNorm) {
                   setMessages(prev => {
-                    const exists = prev.find(m => m.id === receivedMessage.id);
+                    const exists = prev.find(m => m.id === receivedMessage.id || (m.content === receivedMessage.content && Math.abs(new Date(m.timestamp).getTime() - new Date(receivedMessage.timestamp).getTime()) < 3000));
                     if (exists) return prev;
                     return [...prev, receivedMessage];
                   });
@@ -246,6 +276,7 @@ export default function StaffMessagesPage() {
   // Fetch chat history whenever selected applicant changes
   useEffect(() => {
     if (applicantEmail) {
+      const cleanEmail = applicantEmail.toLowerCase().trim();
       const staffInbox = "staff@etayo.gov.ph";
       const mergeWithLocal = (apiData: any[]) => {
         let localMsgs: any[] = [];
@@ -255,20 +286,22 @@ export default function StaffMessagesPage() {
         } catch (e) {}
         const merged = [...apiData];
         localMsgs.forEach((lm: any) => {
+          const r = (lm.recipientEmail || "").toLowerCase().trim();
+          const s = (lm.senderEmail || "").toLowerCase().trim();
           if (
-            (lm.recipientEmail === applicantEmail || lm.senderEmail === applicantEmail) &&
+            (r === cleanEmail || s === cleanEmail || !r || r === "applicant@etayo.gov.ph") &&
             !merged.some((m: any) => m.id === lm.id || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
           ) {
             merged.push(lm);
           }
         });
-        const finalized = ensureApplicationConversationMessages(applications || [], applicantEmail, merged);
+        const finalized = ensureApplicationConversationMessages(applications || [], cleanEmail, merged);
         setMessages(finalized);
         setActiveThreadId("all");
       };
 
       const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
-      fetch(`${rawApi}/api/messages/history?user1=${encodeURIComponent(staffInbox)}&user2=${encodeURIComponent(applicantEmail)}`)
+      fetch(`${rawApi}/api/messages/history?user1=${encodeURIComponent(staffInbox)}&user2=${encodeURIComponent(cleanEmail)}`)
         .then(res => res.json())
         .then(data => {
           mergeWithLocal(Array.isArray(data) ? data : []);
@@ -277,17 +310,6 @@ export default function StaffMessagesPage() {
           console.error("Failed to load history", err);
           mergeWithLocal([]);
         });
-
-      const handleCustomMsg = (e: any) => {
-        if (e.detail && (e.detail.recipientEmail === applicantEmail || e.detail.senderEmail === applicantEmail)) {
-          setMessages((prev: any[]) => {
-            if (prev.some(m => m.id === e.detail.id)) return prev;
-            return [...prev, e.detail];
-          });
-        }
-      };
-      window.addEventListener("etayo_new_message", handleCustomMsg);
-      return () => window.removeEventListener("etayo_new_message", handleCustomMsg);
     }
   }, [applicantEmail]);
 
@@ -304,7 +326,7 @@ export default function StaffMessagesPage() {
     }
   }, [applications, applicantEmail]);
 
-  // Scroll strictly inside messages container (never scrolls the browser window)
+  // Scroll strictly inside messages container
   useEffect(() => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -391,21 +413,31 @@ export default function StaffMessagesPage() {
       });
 
       // Optimistic append
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `staff-${Date.now()}`,
-          senderEmail: "staff@etayo.gov.ph",
-          actualSender: currentUserEmail,
-          recipientEmail: applicantEmail,
-          content: taggedContent,
-          applicationId: activeThreadId !== "all" && activeThreadId !== "general" ? activeThreadId : null,
-          timestamp: new Date().toISOString()
-        }
-      ]);
+      const newMsg = {
+        id: `staff-${Date.now()}`,
+        senderEmail: "staff@etayo.gov.ph",
+        actualSender: currentUserEmail,
+        recipientEmail: applicantEmail,
+        content: taggedContent,
+        applicationId: activeThreadId !== "all" && activeThreadId !== "general" ? activeThreadId : null,
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, newMsg]);
+
+      // Cache locally
+      try {
+        const raw = localStorage.getItem("etayo_messages_history");
+        const list = raw ? JSON.parse(raw) : [];
+        list.push(newMsg);
+        localStorage.setItem("etayo_messages_history", JSON.stringify(list));
+      } catch (err) {}
 
       setInputMessage("");
       setStaffAttachedFile(null);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
     }
   };
 
@@ -462,14 +494,6 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
     }
   };
 
-  const getValidDate = (ts: any) => {
-    if (!ts) return new Date();
-    if (typeof ts === "string" && !ts.endsWith("Z")) {
-      return new Date(ts + "Z");
-    }
-    return new Date(ts);
-  };
-
   // Selected applicant metadata
   const selectedApplicantData = useMemo(() => {
     if (!applicantEmail) return null;
@@ -479,15 +503,16 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
   // Compute all available threads for the active applicant
   const applicantThreads = useMemo(() => {
     if (!selectedApplicantData) return { allCount: 0, generalCount: 0, threads: [] };
-    const threadMap = new Map<string, { id: string; title: string; count: number; status?: string }>();
+    const threadMap = new Map<string, { id: string; title: string; count: number; status?: string; permitType?: string }>();
 
     // Add applicant's registered permits from context
     selectedApplicantData.applications.forEach(app => {
       threadMap.set(app.id, {
         id: app.id,
-        title: `${app.id} · ${app.projectName || "Permit"}`,
+        title: app.projectName ? `${app.id} · ${app.projectName}` : app.id,
         count: 0,
-        status: app.status
+        status: app.status,
+        permitType: app.permitType
       });
     });
 
@@ -537,7 +562,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
   const filteredContacts = useMemo(() => {
     return contacts.filter(email => {
       const data = getApplicantData(email);
-      const s = searchContact.toLowerCase();
+      const s = searchContact.toLowerCase().trim();
       const matchesSearch = 
         email.toLowerCase().includes(s) ||
         data.name.toLowerCase().includes(s) ||
@@ -569,109 +594,136 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
     }
   };
 
+  // Helper for grouping messages by date in Philippine Standard Time
+  const getDateLabel = (isoDate: string) => {
+    try {
+      const d = new Date(isoDate);
+      const today = new Date();
+      const dStr = d.toLocaleDateString("en-US", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric" });
+      const todayStr = today.toLocaleDateString("en-US", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric" });
+      if (dStr === todayStr) return "Today";
+      return dStr;
+    } catch (e) {
+      return "Conversation";
+    }
+  };
+
+  // Find active permit object if a specific thread is selected
+  const activePermitApp = useMemo(() => {
+    if (activeThreadId === "all" || activeThreadId === "general") return null;
+    return applications.find(a => a.id === activeThreadId) || null;
+  }, [activeThreadId, applications]);
+
   return (
-    <div className="admin-messages-container animate-fade-in-up" style={{ maxWidth: "1600px", margin: "0 auto", paddingBottom: "2rem" }}>
+    <div className="staff-messages-container animate-fade-in-up" style={{ maxWidth: "1680px", margin: "0 auto", paddingBottom: "1.5rem" }}>
       
       {/* ========================================================================= */}
       {/* 1. EXECUTIVE MUNICIPAL BANNER & HEADER */}
       {/* ========================================================================= */}
       <header className="page-header" style={{
-        marginBottom: "1.5rem",
+        marginBottom: "1.25rem",
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "flex-start",
+        alignItems: "center",
         flexWrap: "wrap",
-        gap: "1.25rem",
+        gap: "1rem",
         background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-        padding: "1.75rem 2rem",
-        borderRadius: "24px",
-        boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.2)",
+        padding: "1.25rem 1.75rem",
+        borderRadius: "20px",
+        boxShadow: "0 8px 20px -4px rgba(15, 23, 42, 0.2)",
         color: "white"
       }}>
-        <div style={{ maxWidth: "720px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-            <span style={{
-              background: "rgba(59, 130, 246, 0.2)",
-              color: "#93c5fd",
-              padding: "4px 10px",
-              borderRadius: "20px",
-              fontSize: "0.75rem",
-              fontWeight: "700",
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              border: "1px solid rgba(147, 197, 253, 0.3)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px"
-            }}>
-              <Landmark size={12} /> Sto. Tomas OBO Permitting Desk
-            </span>
-            <span style={{
-              background: "rgba(34, 197, 94, 0.2)",
-              color: "#86efac",
-              padding: "4px 10px",
-              borderRadius: "20px",
-              fontSize: "0.75rem",
-              fontWeight: "700",
-              border: "1px solid rgba(134, 239, 172, 0.3)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px"
-            }}>
-              <span style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: connected ? "#22c55e" : "#ef4444",
-                boxShadow: connected ? "0 0 8px #22c55e" : "none"
-              }} />
-              {connected ? "Gateway Online · Live Dispatch" : "Reconnecting STOMP..."}
-            </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            borderRadius: "14px",
+            background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
+            flexShrink: 0
+          }}>
+            <MessageSquare size={24} color="#ffffff" />
           </div>
-
-          <h1 style={{ fontSize: "2rem", fontWeight: "800", margin: "0 0 6px 0", letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: "10px" }}>
-            <MessageSquare size={30} color="#60a5fa" /> Permitting Communications Desk
-          </h1>
-          <p style={{ fontSize: "0.95rem", color: "#94a3b8", margin: 0, lineHeight: 1.5 }}>
-            Official municipal dispatch console for citizen inquiries, requirements verification, and inspection coordination.
-          </p>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+              <span style={{
+                background: "rgba(59, 130, 246, 0.2)",
+                color: "#93c5fd",
+                padding: "3px 8px",
+                borderRadius: "14px",
+                fontSize: "0.72rem",
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                border: "1px solid rgba(147, 197, 253, 0.3)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px"
+              }}>
+                <Landmark size={12} /> Sto. Tomas Permitting Desk
+              </span>
+              <span style={{
+                background: connected ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
+                color: connected ? "#86efac" : "#fca5a5",
+                padding: "3px 8px",
+                borderRadius: "14px",
+                fontSize: "0.72rem",
+                fontWeight: "700",
+                border: `1px solid ${connected ? "rgba(134, 239, 172, 0.3)" : "rgba(252, 165, 165, 0.3)"}`,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px"
+              }}>
+                <span style={{
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  background: connected ? "#22c55e" : "#ef4444",
+                  boxShadow: connected ? "0 0 6px #22c55e" : "none"
+                }} />
+                {connected ? "Gateway Online (PHT)" : "Reconnecting STOMP..."}
+              </span>
+            </div>
+            <h1 style={{ fontSize: "1.45rem", fontWeight: "800", margin: 0, letterSpacing: "-0.01em" }}>
+              Staff Communications Console
+            </h1>
+          </div>
         </div>
 
         {/* Quick KPI Stats & Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
           <div style={{
             background: "rgba(255, 255, 255, 0.08)",
             border: "1px solid rgba(255, 255, 255, 0.12)",
-            padding: "10px 16px",
-            borderRadius: "16px",
+            padding: "8px 14px",
+            borderRadius: "12px",
             display: "flex",
             alignItems: "center",
-            gap: "12px"
+            gap: "10px"
           }}>
-            <div style={{ background: "rgba(59, 130, 246, 0.25)", color: "#60a5fa", padding: "8px", borderRadius: "10px" }}>
-              <User size={18} />
-            </div>
+            <User size={16} color="#93c5fd" />
             <div>
-              <div style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase" }}>Active Citizens</div>
-              <div style={{ fontSize: "1.25rem", fontWeight: "800", color: "#ffffff" }}>{contacts.length}</div>
+              <div style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: "600" }}>CITIZENS</div>
+              <div style={{ fontSize: "1.1rem", fontWeight: "800", color: "#ffffff", lineHeight: 1 }}>{contacts.length}</div>
             </div>
           </div>
 
           <div style={{
             background: "rgba(255, 255, 255, 0.08)",
             border: "1px solid rgba(255, 255, 255, 0.12)",
-            padding: "10px 16px",
-            borderRadius: "16px",
+            padding: "8px 14px",
+            borderRadius: "12px",
             display: "flex",
             alignItems: "center",
-            gap: "12px"
+            gap: "10px"
           }}>
-            <div style={{ background: "rgba(16, 185, 129, 0.25)", color: "#34d399", padding: "8px", borderRadius: "10px" }}>
-              <FileText size={18} />
-            </div>
+            <FileText size={16} color="#86efac" />
             <div>
-              <div style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase" }}>Total Permits</div>
-              <div style={{ fontSize: "1.25rem", fontWeight: "800", color: "#ffffff" }}>{applications.length}</div>
+              <div style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: "600" }}>TOTAL PERMITS</div>
+              <div style={{ fontSize: "1.1rem", fontWeight: "800", color: "#ffffff", lineHeight: 1 }}>{applications.length}</div>
             </div>
           </div>
 
@@ -685,33 +737,34 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
               background: "white",
               border: "none",
               color: "#0f172a",
-              padding: "11px 18px",
-              borderRadius: "14px",
+              padding: "9px 16px",
+              borderRadius: "12px",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              gap: "7px",
               fontWeight: "700",
-              fontSize: "0.88rem",
+              fontSize: "0.85rem",
               cursor: isRefreshing ? "not-allowed" : "pointer",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-              transition: "all 0.2s"
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              transition: "all 0.15s"
             }}
           >
-            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} color="#2563eb" />
-            Sync Desk
+            <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} color="#2563eb" />
+            Refresh
           </button>
         </div>
       </header>
 
       {/* ========================================================================= */}
-      {/* 2. MAIN 3-COLUMN DESK LAYOUT */}
+      {/* 2. MAIN WORKSPACE LAYOUT (290px DIRECTORY + 1FR CHAT [+ 340px DOSSIER]) */}
       {/* ========================================================================= */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: showDossier ? "340px 1fr 340px" : "340px 1fr",
-        gap: "1.5rem",
-        height: "calc(100vh - 270px)",
-        minHeight: "680px"
+        gridTemplateColumns: showDossier ? "290px 1fr 340px" : "290px 1fr",
+        gap: "1.25rem",
+        height: "calc(100vh - 215px)",
+        minHeight: "680px",
+        transition: "grid-template-columns 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
       }}>
         
         {/* ======================================================================= */}
@@ -719,48 +772,48 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
         {/* ======================================================================= */}
         <div style={{
           background: "#ffffff",
-          borderRadius: "20px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 4px 20px -4px rgba(0, 0, 0, 0.05)",
+          borderRadius: "18px",
+          border: "1.5px solid #e2e8f0",
+          boxShadow: "0 4px 16px -2px rgba(0, 0, 0, 0.04)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden"
         }}>
           {/* Directory Header & Search */}
-          <div style={{ padding: "1.25rem", borderBottom: "1px solid #f1f5f9" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <MessageSquare size={18} color="#2563eb" />
-                <h2 style={{ fontSize: "1.05rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>Citizen Inquiries</h2>
+          <div style={{ padding: "1.1rem", borderBottom: "1px solid #f1f5f9" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                <MessageSquare size={17} color="#2563eb" />
+                <h2 style={{ fontSize: "1rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>Citizens</h2>
               </div>
               <span style={{
                 background: "#eff6ff",
                 color: "#2563eb",
-                fontSize: "0.75rem",
+                fontSize: "0.72rem",
                 fontWeight: "700",
                 padding: "2px 8px",
-                borderRadius: "12px",
+                borderRadius: "10px",
                 border: "1px solid #bfdbfe"
               }}>
-                {filteredContacts.length} Active
+                {filteredContacts.length}
               </span>
             </div>
 
             {/* Search Input */}
-            <div style={{ position: "relative", marginBottom: "10px" }}>
-              <Search size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+            <div style={{ position: "relative", marginBottom: "8px" }}>
+              <Search size={14} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
               <input
                 type="text"
                 value={searchContact}
                 onChange={e => setSearchContact(e.target.value)}
-                placeholder="Search citizen, email, or permit #..."
+                placeholder="Search citizen or permit..."
                 style={{
                   width: "100%",
-                  padding: "8px 12px 8px 34px",
-                  borderRadius: "12px",
-                  border: "1px solid #e2e8f0",
+                  padding: "7px 10px 7px 30px",
+                  borderRadius: "10px",
+                  border: "1.5px solid #e2e8f0",
                   background: "#f8fafc",
-                  fontSize: "0.85rem",
+                  fontSize: "0.82rem",
                   color: "#0f172a",
                   outline: "none"
                 }}
@@ -768,9 +821,9 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
               {searchContact && (
                 <button
                   onClick={() => setSearchContact("")}
-                  style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}
+                  style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               )}
             </div>
@@ -780,15 +833,14 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
               <button
                 onClick={() => setContactFilter("all")}
                 style={{
-                  padding: "4px 10px",
+                  padding: "3px 9px",
                   borderRadius: "8px",
-                  fontSize: "0.75rem",
-                  fontWeight: "600",
+                  fontSize: "0.72rem",
+                  fontWeight: "700",
                   border: "none",
                   cursor: "pointer",
                   background: contactFilter === "all" ? "#2563eb" : "#f1f5f9",
-                  color: contactFilter === "all" ? "#ffffff" : "#64748b",
-                  transition: "all 0.15s"
+                  color: contactFilter === "all" ? "#ffffff" : "#64748b"
                 }}
               >
                 All
@@ -796,34 +848,33 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
               <button
                 onClick={() => setContactFilter("with_permits")}
                 style={{
-                  padding: "4px 10px",
+                  padding: "3px 9px",
                   borderRadius: "8px",
-                  fontSize: "0.75rem",
-                  fontWeight: "600",
+                  fontSize: "0.72rem",
+                  fontWeight: "700",
                   border: "none",
                   cursor: "pointer",
                   background: contactFilter === "with_permits" ? "#2563eb" : "#f1f5f9",
-                  color: contactFilter === "with_permits" ? "#ffffff" : "#64748b",
-                  transition: "all 0.15s"
+                  color: contactFilter === "with_permits" ? "#ffffff" : "#64748b"
                 }}
               >
-                With Active Permits
+                With Permits
               </button>
             </div>
           </div>
 
           {/* Directory Contact List */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
             {filteredContacts.length === 0 ? (
-              <div style={{ padding: "40px 20px", textAlign: "center", color: "#94a3b8" }}>
-                <Inbox size={36} style={{ margin: "0 auto 10px auto", opacity: 0.5 }} />
-                <p style={{ fontSize: "0.9rem", fontWeight: "600", margin: "0 0 4px 0" }}>No conversations found</p>
-                <p style={{ fontSize: "0.78rem", margin: 0 }}>Try clearing the search query.</p>
+              <div style={{ padding: "30px 15px", textAlign: "center", color: "#94a3b8" }}>
+                <Inbox size={32} style={{ margin: "0 auto 8px auto", opacity: 0.4 }} />
+                <p style={{ fontSize: "0.85rem", fontWeight: "600", margin: "0 0 2px 0" }}>No citizens found</p>
+                <p style={{ fontSize: "0.75rem", margin: 0 }}>Try clearing your search query.</p>
               </div>
             ) : (
               filteredContacts.map((email, idx) => {
                 const data = getApplicantData(email);
-                const isSelected = applicantEmail?.toLowerCase() === email.toLowerCase();
+                const isSelected = applicantEmail?.toLowerCase().trim() === email.toLowerCase().trim();
                 const latestBadge = getStatusBadge(data.latestStatus);
 
                 return (
@@ -831,16 +882,16 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                     key={idx}
                     onClick={() => setApplicantEmail(email)}
                     style={{
-                      padding: "12px",
-                      borderRadius: "14px",
+                      padding: "10px 12px",
+                      borderRadius: "12px",
                       cursor: "pointer",
-                      transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-                      background: isSelected ? "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)" : "#ffffff",
-                      border: isSelected ? "1.5px solid #60a5fa" : "1px solid #f1f5f9",
-                      boxShadow: isSelected ? "0 4px 12px rgba(37, 99, 235, 0.1)" : "0 1px 3px rgba(0,0,0,0.02)",
+                      transition: "all 0.15s ease",
+                      background: isSelected ? "#eff6ff" : "#ffffff",
+                      border: isSelected ? "1.5px solid #3b82f6" : "1px solid #f1f5f9",
+                      boxShadow: isSelected ? "0 2px 8px rgba(37, 99, 235, 0.12)" : "none",
                       display: "flex",
                       alignItems: "center",
-                      gap: "12px",
+                      gap: "10px",
                       position: "relative"
                     }}
                   >
@@ -849,9 +900,9 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                       <div style={{
                         position: "absolute",
                         left: "0",
-                        top: "12px",
-                        bottom: "12px",
-                        width: "4px",
+                        top: "8px",
+                        bottom: "8px",
+                        width: "3.5px",
                         background: "#2563eb",
                         borderRadius: "0 4px 4px 0"
                       }} />
@@ -859,30 +910,29 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
 
                     {/* Avatar with Initials */}
                     <div style={{
-                      width: "42px",
-                      height: "42px",
-                      borderRadius: "12px",
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "10px",
                       background: isSelected 
                         ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" 
                         : "linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)",
                       color: isSelected ? "#ffffff" : "#334155",
                       fontWeight: "800",
-                      fontSize: "1rem",
+                      fontSize: "0.95rem",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      flexShrink: 0,
-                      boxShadow: isSelected ? "0 2px 8px rgba(37, 99, 235, 0.3)" : "none"
+                      flexShrink: 0
                     }}>
                       {data.name.charAt(0).toUpperCase()}
                     </div>
 
                     {/* Contact Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", marginBottom: "2px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px", marginBottom: "2px" }}>
                         <p style={{
                           margin: 0,
-                          fontSize: "0.9rem",
+                          fontSize: "0.88rem",
                           fontWeight: "700",
                           color: isSelected ? "#1e40af" : "#0f172a",
                           whiteSpace: "nowrap",
@@ -894,12 +944,12 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                         {data.applications.length > 0 && (
                           <span style={{
                             fontSize: "0.68rem",
-                            fontWeight: "700",
-                            background: isSelected ? "#ffffff" : "#eff6ff",
-                            color: "#2563eb",
-                            padding: "2px 6px",
-                            borderRadius: "8px",
-                            border: "1px solid #bfdbfe",
+                            fontWeight: "800",
+                            background: isSelected ? "#ffffff" : "#f1f5f9",
+                            color: isSelected ? "#2563eb" : "#475569",
+                            padding: "1px 6px",
+                            borderRadius: "6px",
+                            border: "1px solid #e2e8f0",
                             flexShrink: 0
                           }}>
                             {data.applications.length} {data.applications.length === 1 ? "Permit" : "Permits"}
@@ -908,8 +958,8 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                       </div>
 
                       <p style={{
-                        margin: "0 0 6px 0",
-                        fontSize: "0.75rem",
+                        margin: 0,
+                        fontSize: "0.74rem",
                         color: "#64748b",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
@@ -920,15 +970,15 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
 
                       {/* Primary Application Tag Pill if available */}
                       {data.applications.length > 0 && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
                           <span style={{
                             fontSize: "0.68rem",
-                            fontWeight: "600",
+                            fontWeight: "700",
                             background: latestBadge.bg,
                             color: latestBadge.color,
                             border: `1px solid ${latestBadge.border}`,
-                            padding: "1px 6px",
-                            borderRadius: "6px"
+                            padding: "1px 5px",
+                            borderRadius: "5px"
                           }}>
                             {data.applications[0].id} · {latestBadge.label}
                           </span>
@@ -947,9 +997,9 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
         {/* ======================================================================= */}
         <div style={{
           background: "#ffffff",
-          borderRadius: "20px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 4px 20px -4px rgba(0, 0, 0, 0.05)",
+          borderRadius: "18px",
+          border: "1.5px solid #e2e8f0",
+          boxShadow: "0 4px 16px -2px rgba(0, 0, 0, 0.04)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -967,46 +1017,46 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
               background: "radial-gradient(circle at 50% 30%, #f8fafc 0%, #ffffff 70%)"
             }}>
               <div style={{
-                width: "72px",
-                height: "72px",
-                borderRadius: "24px",
+                width: "64px",
+                height: "64px",
+                borderRadius: "20px",
                 background: "#eff6ff",
                 color: "#2563eb",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                marginBottom: "1.25rem",
-                boxShadow: "0 8px 16px -4px rgba(37, 99, 235, 0.15)"
+                marginBottom: "1rem",
+                boxShadow: "0 6px 14px -3px rgba(37, 99, 235, 0.15)"
               }}>
-                <Landmark size={36} />
+                <Landmark size={32} />
               </div>
-              <h2 style={{ fontSize: "1.35rem", fontWeight: "800", color: "#0f172a", margin: "0 0 8px 0" }}>
+              <h2 style={{ fontSize: "1.3rem", fontWeight: "800", color: "#0f172a", margin: "0 0 6px 0" }}>
                 Santo Tomas Permitting Helpdesk
               </h2>
-              <p style={{ fontSize: "0.92rem", color: "#64748b", maxWidth: "420px", margin: "0 0 1.5rem 0", lineHeight: 1.5 }}>
-                Select an applicant from the left directory to review their permit inquiries, view uploaded blueprints, and dispatch official notices.
+              <p style={{ fontSize: "0.92rem", color: "#64748b", maxWidth: "420px", margin: "0 0 1.25rem 0", lineHeight: 1.5 }}>
+                Select an applicant from the left directory to review their inquiries, evaluate permits, and dispatch official notices.
               </p>
               <div style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
                 background: "#f1f5f9",
-                padding: "8px 16px",
-                borderRadius: "12px",
-                fontSize: "0.82rem",
+                padding: "7px 14px",
+                borderRadius: "10px",
+                fontSize: "0.8rem",
                 color: "#475569",
                 fontWeight: "600"
               }}>
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: connected ? "#22c55e" : "#ef4444" }} />
-                {connected ? "Gateway Online · Ready for Communications" : "Reconnecting STOMP Service..."}
+                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: connected ? "#22c55e" : "#ef4444" }} />
+                {connected ? "Gateway Online (Philippine Time)" : "Connecting STOMP..."}
               </div>
             </div>
           ) : (
             <>
               {/* Top Chat Header */}
               <div style={{
-                padding: "1rem 1.5rem",
-                borderBottom: "1px solid #f1f5f9",
+                padding: "0.9rem 1.4rem",
+                borderBottom: "1.5px solid #f1f5f9",
                 background: "#ffffff",
                 display: "flex",
                 alignItems: "center",
@@ -1018,7 +1068,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                   <div style={{
                     width: "44px",
                     height: "44px",
-                    borderRadius: "14px",
+                    borderRadius: "12px",
                     background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
                     color: "white",
                     display: "flex",
@@ -1026,14 +1076,15 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                     justifyContent: "center",
                     fontWeight: "800",
                     fontSize: "1.1rem",
-                    boxShadow: "0 4px 10px rgba(37, 99, 235, 0.2)"
+                    boxShadow: "0 3px 8px rgba(37, 99, 235, 0.2)",
+                    flexShrink: 0
                   }}>
                     {selectedApplicantData.name.charAt(0).toUpperCase()}
                   </div>
 
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <h2 style={{ fontSize: "1.08rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                      <h2 style={{ fontSize: "1.15rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
                         {selectedApplicantData.name}
                       </h2>
                       <span style={{
@@ -1045,17 +1096,18 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                         borderRadius: "10px",
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: "4px"
+                        gap: "4px",
+                        border: "1px solid #a7f3d0"
                       }}>
                         <BadgeCheck size={12} /> Verified Citizen
                       </span>
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
-                      <span style={{ fontSize: "0.78rem", color: "#64748b" }}>{applicantEmail}</span>
-                      <span style={{ fontSize: "0.78rem", color: "#cbd5e1" }}>•</span>
+                      <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "500" }}>{applicantEmail}</span>
+                      <span style={{ fontSize: "0.82rem", color: "#cbd5e1" }}>•</span>
                       <span style={{
-                        fontSize: "0.75rem",
+                        fontSize: "0.78rem",
                         color: connected ? "#16a34a" : "#dc2626",
                         fontWeight: "600",
                         display: "inline-flex",
@@ -1073,30 +1125,31 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                 <button
                   onClick={() => setShowDossier(prev => !prev)}
                   style={{
-                    background: showDossier ? "#eff6ff" : "#f8fafc",
-                    border: showDossier ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
-                    color: showDossier ? "#2563eb" : "#475569",
+                    background: showDossier ? "#2563eb" : "#f8fafc",
+                    border: showDossier ? "1.5px solid #1d4ed8" : "1.5px solid #e2e8f0",
+                    color: showDossier ? "#ffffff" : "#334155",
                     padding: "8px 14px",
-                    borderRadius: "12px",
-                    fontSize: "0.82rem",
+                    borderRadius: "11px",
+                    fontSize: "0.84rem",
                     fontWeight: "700",
                     display: "flex",
                     alignItems: "center",
-                    gap: "6px",
+                    gap: "7px",
                     cursor: "pointer",
-                    transition: "all 0.15s"
+                    transition: "all 0.15s ease",
+                    boxShadow: showDossier ? "0 2px 8px rgba(37, 99, 235, 0.25)" : "none"
                   }}
                   title="Toggle Applicant & Permit Dossier"
                 >
                   <Briefcase size={15} />
-                  <span>Permit Dossier</span>
+                  <span>{showDossier ? "Hide Dossier" : "Permit Dossier"}</span>
                   {selectedApplicantData.applications.length > 0 && (
                     <span style={{
-                      background: showDossier ? "#2563eb" : "#e2e8f0",
+                      background: showDossier ? "rgba(255,255,255,0.25)" : "#e2e8f0",
                       color: showDossier ? "#ffffff" : "#475569",
                       padding: "1px 6px",
-                      borderRadius: "10px",
-                      fontSize: "0.7rem",
+                      borderRadius: "8px",
+                      fontSize: "0.72rem",
                       fontWeight: "800"
                     }}>
                       {selectedApplicantData.applications.length}
@@ -1106,30 +1159,32 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
               </div>
 
               {/* =============================================================== */}
-              {/* APPLICATION THREAD CATEGORIZATION FILTER BAR */}
+              {/* APPLICATION THREAD SELECTOR (CLEAN, NO UGLY SCROLLBARS) */}
               {/* =============================================================== */}
               <div style={{
                 background: "#f8fafc",
-                borderBottom: "1px solid #e2e8f0",
-                padding: "8px 1.5rem",
+                borderBottom: "1.5px solid #e2e8f0",
+                padding: "8px 1.4rem",
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                overflowX: "auto"
+                overflowX: "auto",
+                scrollbarWidth: "none",
+                msOverflowStyle: "none"
               }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px", marginRight: "4px" }}>
-                  <Filter size={13} /> Thread:
+                <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#64748b", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px", marginRight: "2px", flexShrink: 0 }}>
+                  <Filter size={13} /> Threads:
                 </span>
 
                 {/* All Messages Tab */}
                 <button
                   onClick={() => setActiveThreadId("all")}
                   style={{
-                    padding: "5px 12px",
-                    borderRadius: "20px",
-                    fontSize: "0.78rem",
+                    padding: "6px 14px",
+                    borderRadius: "10px",
+                    fontSize: "0.82rem",
                     fontWeight: "700",
-                    border: activeThreadId === "all" ? "1.5px solid #2563eb" : "1px solid #e2e8f0",
+                    border: activeThreadId === "all" ? "1.5px solid #2563eb" : "1.5px solid #e2e8f0",
                     background: activeThreadId === "all" ? "#2563eb" : "#ffffff",
                     color: activeThreadId === "all" ? "#ffffff" : "#475569",
                     cursor: "pointer",
@@ -1137,10 +1192,22 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                     alignItems: "center",
                     gap: "6px",
                     whiteSpace: "nowrap",
-                    transition: "all 0.15s"
+                    flexShrink: 0,
+                    transition: "all 0.15s",
+                    boxShadow: activeThreadId === "all" ? "0 2px 6px rgba(37, 99, 235, 0.2)" : "none"
                   }}
                 >
-                  <Layers size={13} /> All Messages ({applicantThreads.allCount})
+                  <Layers size={14} />
+                  <span>All Messages</span>
+                  <span style={{
+                    background: activeThreadId === "all" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                    color: activeThreadId === "all" ? "#ffffff" : "#64748b",
+                    padding: "1px 6px",
+                    borderRadius: "6px",
+                    fontSize: "0.72rem"
+                  }}>
+                    {applicantThreads.allCount}
+                  </span>
                 </button>
 
                 {/* Individual Permit Threads */}
@@ -1152,30 +1219,39 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                       key={thread.id}
                       onClick={() => setActiveThreadId(thread.id)}
                       style={{
-                        padding: "5px 12px",
-                        borderRadius: "20px",
-                        fontSize: "0.78rem",
+                        padding: "6px 14px",
+                        borderRadius: "10px",
+                        fontSize: "0.82rem",
                         fontWeight: "700",
-                        border: isActive ? "1.5px solid #2563eb" : "1px solid #e2e8f0",
+                        border: isActive ? "1.5px solid #2563eb" : "1.5px solid #e2e8f0",
                         background: isActive ? "#2563eb" : "#ffffff",
-                        color: isActive ? "#ffffff" : "#475569",
+                        color: isActive ? "#ffffff" : "#334155",
                         cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
                         whiteSpace: "nowrap",
-                        transition: "all 0.15s"
+                        flexShrink: 0,
+                        transition: "all 0.15s",
+                        boxShadow: isActive ? "0 2px 6px rgba(37, 99, 235, 0.2)" : "none"
                       }}
                     >
-                      <Building2 size={13} />
-                      <span>{thread.title}</span>
+                      <Building2 size={14} />
+                      <span>{thread.id}</span>
+                      <span style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        background: statusBadge.color,
+                        display: "inline-block"
+                      }} />
                       {thread.count > 0 && (
                         <span style={{
                           background: isActive ? "rgba(255, 255, 255, 0.25)" : "#eff6ff",
                           color: isActive ? "#ffffff" : "#2563eb",
-                          fontSize: "0.7rem",
+                          fontSize: "0.72rem",
                           padding: "1px 6px",
-                          borderRadius: "10px"
+                          borderRadius: "6px"
                         }}>
                           {thread.count}
                         </span>
@@ -1189,11 +1265,11 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                   <button
                     onClick={() => setActiveThreadId("general")}
                     style={{
-                      padding: "5px 12px",
-                      borderRadius: "20px",
-                      fontSize: "0.78rem",
+                      padding: "6px 14px",
+                      borderRadius: "10px",
+                      fontSize: "0.82rem",
                       fontWeight: "700",
-                      border: activeThreadId === "general" ? "1.5px solid #2563eb" : "1px solid #e2e8f0",
+                      border: activeThreadId === "general" ? "1.5px solid #2563eb" : "1.5px solid #e2e8f0",
                       background: activeThreadId === "general" ? "#2563eb" : "#ffffff",
                       color: activeThreadId === "general" ? "#ffffff" : "#475569",
                       cursor: "pointer",
@@ -1201,203 +1277,146 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                       alignItems: "center",
                       gap: "6px",
                       whiteSpace: "nowrap",
+                      flexShrink: 0,
                       transition: "all 0.15s"
                     }}
                   >
-                    <MessageSquare size={13} /> General Inquiries ({applicantThreads.generalCount})
+                    <MessageSquare size={14} />
+                    <span>General Inquiries</span>
+                    <span style={{
+                      background: activeThreadId === "general" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                      padding: "1px 6px",
+                      borderRadius: "6px",
+                      fontSize: "0.72rem"
+                    }}>
+                      {applicantThreads.generalCount}
+                    </span>
                   </button>
                 )}
               </div>
 
-              {/* Active Thread Notice Banner */}
-              {activeThreadId !== "all" && (
+              {/* =============================================================== */}
+              {/* STICKY PERMIT CONTEXT BANNER WHEN A SPECIFIC THREAD IS ACTIVE */}
+              {/* =============================================================== */}
+              {activePermitApp && (
                 <div style={{
-                  background: "#eff6ff",
-                  borderBottom: "1px solid #bfdbfe",
-                  padding: "6px 1.5rem",
+                  padding: "10px 1.4rem",
+                  background: activePermitApp.status === "approved" ? "#f0fdf4" : "#eff6ff",
+                  borderBottom: `1.5px solid ${activePermitApp.status === "approved" ? "#86efac" : "#bfdbfe"}`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  fontSize: "0.78rem",
-                  color: "#1e40af"
+                  flexWrap: "wrap",
+                  gap: "10px"
                 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Info size={14} />
-                    <span>
-                      Viewing thread for <strong>{activeThreadId}</strong>. Responses sent will automatically carry this permit reference.
-                    </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "9px",
+                      background: activePermitApp.status === "approved" ? "#dcfce7" : "#dbeafe",
+                      color: activePermitApp.status === "approved" ? "#16a34a" : "#2563eb",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}>
+                      <Building2 size={18} />
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "0.92rem", fontWeight: "800", color: "#0f172a" }}>
+                          {activePermitApp.id}
+                        </span>
+                        <span style={{ fontSize: "0.82rem", color: "#475569", fontWeight: "600" }}>
+                          {activePermitApp.projectName || "Permit Application"}
+                        </span>
+                        <span style={{
+                          fontSize: "0.7rem",
+                          fontWeight: "800",
+                          background: getStatusBadge(activePermitApp.status).bg,
+                          color: getStatusBadge(activePermitApp.status).color,
+                          border: `1px solid ${getStatusBadge(activePermitApp.status).border}`,
+                          padding: "2px 7px",
+                          borderRadius: "6px"
+                        }}>
+                          {getStatusBadge(activePermitApp.status).label}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                        Messages sent in this thread are automatically tagged to {activePermitApp.id}.
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setActiveThreadId("all")}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#2563eb",
-                      fontWeight: "700",
-                      cursor: "pointer",
-                      fontSize: "0.75rem"
-                    }}
-                  >
-                    View All
-                  </button>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Link
+                      href={`/staff/evaluate/${activePermitApp.id}`}
+                      target="_blank"
+                      style={{
+                        background: "#ffffff",
+                        border: "1.5px solid #cbd5e1",
+                        color: "#1e40af",
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        fontSize: "0.78rem",
+                        fontWeight: "700",
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px"
+                      }}
+                    >
+                      <span>Open Workspace</span>
+                      <ExternalLink size={12} />
+                    </Link>
+
+                    {activePermitApp.status === "approved" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReleaseModalApp(activePermitApp);
+                          setOfficialReceiptInput((activePermitApp as any).paymentReference || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
+                        }}
+                        style={{
+                          background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                          color: "white",
+                          border: "none",
+                          padding: "6px 14px",
+                          borderRadius: "8px",
+                          fontSize: "0.8rem",
+                          fontWeight: "800",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          boxShadow: "0 2px 6px rgba(5, 150, 105, 0.3)"
+                        }}
+                      >
+                        <CheckCircle2 size={14} />
+                        <span>Confirm Payment &amp; Release</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* Payment Settlement & Release Action Banner */}
-              {(() => {
-                const relevantApp = (applications || []).find(a => a.id === activeThreadId) || (selectedApplicantData?.applications?.find(a => (a.status as string) === "approved" || (a.status as string) === "released"));
-                if (!relevantApp) return null;
-                let cachedReceipt = (relevantApp as any)?.paymentProofUrl || (typeof window !== "undefined" ? localStorage.getItem("etayo_receipt_" + relevantApp.id) : null);
-                if (!cachedReceipt) {
-                  const receiptMsg = messages.find(m => m.content && (m.content.includes("Receipt") || m.content.includes("Payment") || m.content.includes(relevantApp.id)) && m.content.includes("[Attachment:"));
-                  if (receiptMsg) {
-                    const match = receiptMsg.content.match(/\[Attachment:\s*([^|\]]+)\|([^\]]+)\]/i);
-                    if (match && match[2]) cachedReceipt = match[2];
-                  }
-                }
-                const hasReceipt = Boolean((relevantApp as any)?.userConfirmedPayment || cachedReceipt);
-
-                if ((relevantApp.status as string) === "approved") {
-                  return (
-                    <div style={{
-                      padding: "10px 1.5rem",
-                      background: hasReceipt ? "#f0fdf4" : "#fffbeb",
-                      borderBottom: `1.5px solid ${hasReceipt ? "#86efac" : "#fde68a"}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: "10px"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div style={{
-                          width: "38px",
-                          height: "38px",
-                          borderRadius: "10px",
-                          background: hasReceipt ? "#dcfce7" : "#fef3c7",
-                          color: hasReceipt ? "#16a34a" : "#d97706",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0
-                        }}>
-                          <CreditCard size={18} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "0.86rem", fontWeight: "800", color: hasReceipt ? "#166534" : "#92400e" }}>
-                            Payment Assessment: PHP {getAuthoritativePermitFee(relevantApp, relevantApp?.id).toLocaleString()} · {(relevantApp as any).orderOfPaymentNo || `OP-${relevantApp.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`} ({relevantApp.id})
-                          </div>
-                          <div style={{ fontSize: "0.76rem", color: hasReceipt ? "#15803d" : "#78350f" }}>
-                            {hasReceipt
-                              ? "✓ Applicant submitted payment receipt photo in this conversation. Check photo and confirm payment below."
-                              : "Order of Payment issued. Awaiting applicant payment receipt photo in this conversation."}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        {cachedReceipt && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPreviewAttachment({
-                                fileName: "applicant_receipt.jpg",
-                                fileUrl: cachedReceipt,
-                                isImage: true,
-                                isPdf: false,
-                                isDoc: false
-                              });
-                            }}
-                            style={{
-                              background: "#ffffff",
-                              border: "1.5px solid #cbd5e1",
-                              color: "#334155",
-                              padding: "7px 12px",
-                              borderRadius: "9px",
-                              fontSize: "0.8rem",
-                              fontWeight: "700",
-                              cursor: "pointer",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "5px"
-                            }}
-                          >
-                            <ImageIcon size={14} color="#2563eb" />
-                            <span>Inspect Receipt</span>
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setReleaseModalApp(relevantApp);
-                            setOfficialReceiptInput((relevantApp as any).paymentReference || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
-                            setReceiptPhotoPreview(cachedReceipt);
-                          }}
-                          style={{
-                            background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                            color: "white",
-                            border: "none",
-                            padding: "7px 16px",
-                            borderRadius: "9px",
-                            fontSize: "0.84rem",
-                            fontWeight: "800",
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)"
-                          }}
-                        >
-                          <CheckCircle2 size={16} />
-                          <span>Confirmed Payment &amp; Release Permit</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                }
-
-                if ((relevantApp.status as string) === "released") {
-                  return (
-                    <div style={{
-                      padding: "8px 1.5rem",
-                      background: "#dcfce7",
-                      borderBottom: "1.5px solid #86efac",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      fontSize: "0.8rem",
-                      color: "#166534",
-                      fontWeight: "700"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <CheckCircle2 size={16} color="#16a34a" />
-                        <span>Permit Officially Released for {relevantApp.id} · OR No: {(relevantApp as any).officialReceiptNo || "Verified"}</span>
-                      </div>
-                      <span style={{ fontSize: "0.72rem", background: "#86efac", padding: "2px 8px", borderRadius: "6px" }}>Step 4 Complete ✓</span>
-                    </div>
-                  );
-                }
-
-                return null;
-              })()}
-
               {/* =============================================================== */}
-              {/* MESSAGES SCROLL FEED */}
+              {/* MESSAGES SCROLL FEED (LARGE LEGIBLE FONT, CRISP SPACING) */}
               {/* =============================================================== */}
               <div 
                 ref={messagesContainerRef}
                 style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: "1.5rem",
-                background: "#f8fafc",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.25rem",
-                backgroundImage: "radial-gradient(#e2e8f0 1px, transparent 1px)",
-                backgroundSize: "24px 24px"
-              }}>
+                  flex: 1,
+                  overflowY: "auto",
+                  padding: "1.5rem",
+                  background: "#f8fafc",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1.25rem",
+                  backgroundImage: "radial-gradient(#e2e8f0 1.2px, transparent 1.2px)",
+                  backgroundSize: "28px 28px"
+                }}
+              >
                 {filteredMessages.length === 0 ? (
                   <div style={{
                     flex: 1,
@@ -1406,165 +1425,152 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                     alignItems: "center",
                     justifyContent: "center",
                     color: "#94a3b8",
-                    padding: "2rem"
+                    padding: "2.5rem"
                   }}>
-                    <Clock size={36} style={{ marginBottom: "8px", opacity: 0.5 }} />
-                    <p style={{ fontSize: "0.95rem", fontWeight: "700", margin: "0 0 4px 0", color: "#475569" }}>
-                      No messages in this category
+                    <Clock size={40} style={{ marginBottom: "10px", opacity: 0.4 }} />
+                    <p style={{ fontSize: "1.05rem", fontWeight: "800", margin: "0 0 4px 0", color: "#334155" }}>
+                      No messages in this view
                     </p>
-                    <p style={{ fontSize: "0.82rem", margin: 0 }}>
+                    <p style={{ fontSize: "0.88rem", margin: 0, color: "#64748b" }}>
                       {activeThreadId === "all"
-                        ? "Say hello or send an official update using the composer below."
-                        : `No messages currently tagged for ${activeThreadId}.`}
+                        ? "Dispatch an official update using the composer below."
+                        : `No messages currently tagged for thread ${activeThreadId}.`}
                     </p>
                   </div>
                 ) : (
                   filteredMessages.map((msg, idx) => {
                     const isMe = msg.senderEmail === currentUserEmail || msg.senderEmail === "staff@etayo.gov.ph";
                     const msgThreadId = getMessageThreadId(msg);
+                    const currentDateLabel = getDateLabel(msg.timestamp);
+                    const prevDateLabel = idx > 0 ? getDateLabel(filteredMessages[idx - 1].timestamp) : null;
+                    const showDateDivider = idx === 0 || currentDateLabel !== prevDateLabel;
 
                     return (
-                      <div
-                        key={idx}
-                        style={{
-                          display: "flex",
-                          justifyContent: isMe ? "flex-end" : "flex-start",
-                          width: "100%"
-                        }}
-                      >
-                        <div style={{
-                          maxWidth: "75%",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: isMe ? "flex-end" : "flex-start"
-                        }}>
-                          {/* Sender Identity Pill */}
-                          <div style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            marginBottom: "4px",
-                            fontSize: "0.72rem",
-                            fontWeight: "700",
-                            color: isMe ? "#1d4ed8" : "#475569"
-                          }}>
-                            {isMe ? (
-                              <>
-                                <span style={{
-                                  background: "#eff6ff",
-                                  color: "#1d4ed8",
-                                  padding: "2px 8px",
-                                  borderRadius: "8px",
-                                  border: "1px solid #bfdbfe",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "4px"
-                                }}>
-                                  <ShieldCheck size={11} /> Sto. Tomas OBO Dispatch
-                                </span>
-                                {msg.actualSender && (
-                                  <span style={{ color: "#64748b" }}>
-                                    ({msg.actualSender.split("@")[0]})
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <span>{selectedApplicantData.name}</span>
-                                {msgThreadId !== "general" && (
-                                  <span
-                                    onClick={() => setActiveThreadId(msgThreadId)}
-                                    style={{
-                                      background: "#e0e7ff",
-                                      color: "#3730a3",
-                                      padding: "1px 6px",
-                                      borderRadius: "6px",
-                                      cursor: "pointer",
-                                      fontSize: "0.68rem"
-                                    }}
-                                    title="Click to filter by this permit thread"
-                                  >
-                                    Ref: {msgThreadId}
-                                  </span>
-                                )}
-                              </>
-                            )}
+                      <React.Fragment key={msg.id || idx}>
+                        {/* Date Divider */}
+                        {showDateDivider && (
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", margin: "0.75rem 0" }}>
+                            <span style={{
+                              background: "#e2e8f0",
+                              color: "#475569",
+                              padding: "4px 14px",
+                              borderRadius: "14px",
+                              fontSize: "0.74rem",
+                              fontWeight: "800",
+                              letterSpacing: "0.04em",
+                              textTransform: "uppercase"
+                            }}>
+                              {currentDateLabel}
+                            </span>
                           </div>
+                        )}
 
-                          {/* Bubble Container */}
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: isMe ? "flex-end" : "flex-start",
+                            width: "100%"
+                          }}
+                        >
                           <div style={{
-                            padding: "0.9rem 1.15rem",
-                            borderRadius: isMe ? "20px 20px 4px 20px" : "20px 20px 20px 4px",
-                            background: isMe
-                              ? "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)"
-                              : "#ffffff",
-                            color: isMe ? "#ffffff" : "#0f172a",
-                            boxShadow: isMe
-                              ? "0 4px 14px rgba(37, 99, 235, 0.25)"
-                              : "0 2px 8px rgba(0, 0, 0, 0.05)",
-                            border: isMe ? "none" : "1px solid #e2e8f0"
+                            maxWidth: "78%",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: isMe ? "flex-end" : "flex-start"
                           }}>
-                            <MessageBubbleContent
-                              content={msg.content}
-                              isMe={isMe}
-                              onOpenAttachment={att => setPreviewAttachment(att)}
-                            />
-
-                            {/* In-Bubble Quick "Confirmed Payment" action for admin */}
-                            {!isMe && (msg.content.includes("Payment") || msg.content.includes("Receipt") || msg.content.includes("Attachment")) && (() => {
-                              const msgApp = (applications || []).find(a => a.id === msgThreadId) || (applications || []).find(a => msg.content.includes(a.id)) || (selectedApplicantData?.applications?.find(a => (a.status as string) === "approved"));
-                              if (!msgApp || (msgApp.status as string) !== "approved") return null;
-                              let cReceipt = (msgApp as any)?.paymentProofUrl || (typeof window !== "undefined" ? localStorage.getItem("etayo_receipt_" + msgApp.id) : null);
-                              if (!cReceipt && msg.content.includes("[Attachment:")) {
-                                const match = msg.content.match(/\[Attachment:\s*([^|\]]+)\|([^\]]+)\]/i);
-                                if (match && match[2]) cReceipt = match[2];
-                              }
-                              return (
-                                <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed #cbd5e1" }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setReleaseModalApp(msgApp);
-                                      setOfficialReceiptInput((msgApp as any).paymentReference || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`);
-                                      setReceiptPhotoPreview(cReceipt);
-                                    }}
-                                    style={{
-                                      background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                                      color: "white",
-                                      border: "none",
-                                      padding: "6px 14px",
-                                      borderRadius: "8px",
-                                      fontSize: "0.78rem",
-                                      fontWeight: "800",
-                                      cursor: "pointer",
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: "5px",
-                                      boxShadow: "0 2px 6px rgba(5, 150, 105, 0.25)"
-                                    }}
-                                  >
-                                    <CheckCircle2 size={14} />
-                                    <span>Check Receipt &amp; Confirmed Payment</span>
-                                  </button>
-                                </div>
-                              );
-                            })()}
-
+                            {/* Sender Identity Pill */}
                             <div style={{
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "flex-end",
-                              gap: "4px",
-                              marginTop: "6px",
-                              fontSize: "0.68rem",
-                              color: isMe ? "rgba(255, 255, 255, 0.8)" : "#94a3b8"
+                              gap: "8px",
+                              marginBottom: "5px",
+                              fontSize: "0.78rem",
+                              fontWeight: "700",
+                              color: isMe ? "#1d4ed8" : "#475569"
                             }}>
-                              <Clock size={10} />
-                              <span>{formatPhilippineDateTime(msg.timestamp)}</span>
+                              {isMe ? (
+                                <>
+                                  <span style={{
+                                    background: "#eff6ff",
+                                    color: "#1d4ed8",
+                                    padding: "2px 8px",
+                                    borderRadius: "8px",
+                                    border: "1px solid #bfdbfe",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "5px",
+                                    fontSize: "0.74rem"
+                                  }}>
+                                    <ShieldCheck size={13} /> Sto. Tomas Municipal Staff
+                                  </span>
+                                  {msg.actualSender && (
+                                    <span style={{ color: "#64748b", fontSize: "0.74rem" }}>
+                                      ({msg.actualSender.split("@")[0]})
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <span style={{ fontWeight: "800", color: "#0f172a" }}>{selectedApplicantData.name}</span>
+                                  {msgThreadId !== "general" && (
+                                    <span
+                                      onClick={() => setActiveThreadId(msgThreadId)}
+                                      style={{
+                                        background: "#e0e7ff",
+                                        color: "#3730a3",
+                                        padding: "2px 7px",
+                                        borderRadius: "6px",
+                                        cursor: "pointer",
+                                        fontSize: "0.72rem",
+                                        fontWeight: "800"
+                                      }}
+                                      title="Click to view only this permit's thread"
+                                    >
+                                      Permit: {msgThreadId}
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+
+                            {/* Upgraded Bubble Container with Large Legible Font (15px) */}
+                            <div style={{
+                              padding: "1rem 1.25rem",
+                              borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                              background: isMe
+                                ? "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)"
+                                : "#ffffff",
+                              color: isMe ? "#ffffff" : "#0f172a",
+                              boxShadow: isMe
+                                ? "0 4px 16px rgba(37, 99, 235, 0.22)"
+                                : "0 3px 12px rgba(15, 23, 42, 0.06)",
+                              border: isMe ? "none" : "1.5px solid #e2e8f0",
+                              fontSize: "0.96rem",
+                              lineHeight: "1.6",
+                              letterSpacing: "0.01em"
+                            }}>
+                              <MessageBubbleContent
+                                content={msg.content}
+                                isMe={isMe}
+                                onOpenAttachment={att => setPreviewAttachment(att)}
+                              />
+
+                              <div style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "flex-end",
+                                gap: "5px",
+                                marginTop: "8px",
+                                fontSize: "0.74rem",
+                                color: isMe ? "rgba(255, 255, 255, 0.82)" : "#94a3b8"
+                              }}>
+                                <Clock size={11} />
+                                <span>{formatPhilippineDateTime(msg.timestamp)}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </React.Fragment>
                     );
                   })
                 )}
@@ -1575,26 +1581,31 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
               {/* CANNED OFFICIAL RESPONSES STRIP */}
               {/* =============================================================== */}
               <div style={{
-                padding: "8px 1.25rem",
+                padding: "8px 1.4rem",
                 background: "#ffffff",
-                borderTop: "1px solid #f1f5f9",
+                borderTop: "1.5px solid #f1f5f9",
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                overflowX: "auto"
+                overflowX: "auto",
+                scrollbarWidth: "none",
+                msOverflowStyle: "none"
               }}>
-                <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-                  <Sparkles size={12} color="#f59e0b" /> Quick Reply:
+                <span style={{ fontSize: "0.74rem", fontWeight: "800", color: "#64748b", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+                  <Sparkles size={13} color="#f59e0b" /> Quick Reply:
                 </span>
                 {CANNED_RESPONSES.map(canned => (
                   <button
                     key={canned.id}
-                    onClick={() => setInputMessage(canned.text)}
+                    onClick={() => {
+                      setInputMessage(canned.text);
+                      if (textareaRef.current) textareaRef.current.focus();
+                    }}
                     style={{
-                      padding: "5px 10px",
-                      borderRadius: "10px",
-                      fontSize: "0.75rem",
-                      fontWeight: "600",
+                      padding: "5px 11px",
+                      borderRadius: "9px",
+                      fontSize: "0.78rem",
+                      fontWeight: "700",
                       background: "#f8fafc",
                       border: "1px solid #e2e8f0",
                       color: "#334155",
@@ -1603,6 +1614,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "4px",
+                      flexShrink: 0,
                       transition: "all 0.15s"
                     }}
                     onMouseEnter={e => {
@@ -1625,38 +1637,38 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
               {/* Attachment Preview Pill if staff selected a file */}
               {staffAttachedFile && (
                 <div style={{
-                  padding: "6px 1.25rem",
+                  padding: "8px 1.4rem",
                   background: "#eff6ff",
-                  borderTop: "1px solid #bfdbfe",
+                  borderTop: "1.5px solid #bfdbfe",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  fontSize: "0.8rem",
+                  fontSize: "0.85rem",
                   color: "#1e40af"
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Paperclip size={14} />
+                    <Paperclip size={16} />
                     <span>Attached Document: <strong>{staffAttachedFile.name}</strong></span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setStaffAttachedFile(null)}
-                    style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}
+                    style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center" }}
                   >
-                    <X size={14} />
+                    <X size={16} />
                   </button>
                 </div>
               )}
 
-              {/* Input Area */}
+              {/* Upgraded Multiline Auto-Expanding Textarea Composer */}
               <div style={{
-                padding: "1rem 1.25rem",
+                padding: "1rem 1.4rem",
                 background: "#ffffff",
-                borderTop: "1px solid #e2e8f0"
+                borderTop: "1.5px solid #e2e8f0"
               }}>
                 <form
                   onSubmit={e => sendMessage(e)}
-                  style={{ display: "flex", gap: "10px", alignItems: "center" }}
+                  style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}
                 >
                   <input
                     type="file"
@@ -1668,58 +1680,77 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                   <button
                     type="button"
                     onClick={() => staffFileInputRef.current?.click()}
-                    title="Attach Blueprint or Municipal Document"
+                    title="Attach Document or Blueprint"
                     style={{
                       background: "#f1f5f9",
-                      border: "1px solid #cbd5e1",
+                      border: "1.5px solid #cbd5e1",
                       color: "#475569",
-                      width: "42px",
-                      height: "42px",
+                      width: "44px",
+                      height: "44px",
                       borderRadius: "12px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       cursor: "pointer",
                       flexShrink: 0,
+                      marginBottom: "2px",
                       transition: "all 0.15s"
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = "#e2e8f0"}
                     onMouseLeave={e => e.currentTarget.style.background = "#f1f5f9"}
                   >
-                    <Paperclip size={18} />
+                    <Paperclip size={19} />
                   </button>
 
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={e => setInputMessage(e.target.value)}
-                    placeholder={
-                      activeThreadId !== "all" && activeThreadId !== "general"
-                        ? `Type official response regarding ${activeThreadId}...`
-                        : "Type official municipal reply..."
-                    }
-                    style={{
-                      flex: 1,
-                      background: "#f8fafc",
-                      border: "1.5px solid #e2e8f0",
-                      borderRadius: "14px",
-                      padding: "10px 16px",
-                      fontSize: "0.92rem",
-                      color: "#0f172a",
-                      outline: "none",
-                      transition: "all 0.2s"
-                    }}
-                    onFocus={e => {
-                      e.currentTarget.style.background = "#ffffff";
-                      e.currentTarget.style.borderColor = "#3b82f6";
-                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.15)";
-                    }}
-                    onBlur={e => {
-                      e.currentTarget.style.borderColor = "#e2e8f0";
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
-                    disabled={!connected}
-                  />
+                  <div style={{ flex: 1, position: "relative" }}>
+                    <textarea
+                      ref={textareaRef}
+                      rows={1}
+                      value={inputMessage}
+                      onChange={e => {
+                        setInputMessage(e.target.value);
+                        e.target.style.height = "auto";
+                        e.target.style.height = `${Math.min(e.target.scrollHeight, 130)}px`;
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                      placeholder={
+                        activeThreadId !== "all" && activeThreadId !== "general"
+                          ? `Type official response regarding ${activeThreadId}... (Enter to send, Shift+Enter for newline)`
+                          : "Type official municipal reply... (Enter to send, Shift+Enter for newline)"
+                      }
+                      style={{
+                        width: "100%",
+                        minHeight: "44px",
+                        maxHeight: "130px",
+                        background: "#f8fafc",
+                        border: "1.5px solid #e2e8f0",
+                        borderRadius: "14px",
+                        padding: "10px 14px",
+                        fontSize: "0.96rem",
+                        color: "#0f172a",
+                        outline: "none",
+                        resize: "none",
+                        fontFamily: "inherit",
+                        lineHeight: 1.5,
+                        transition: "all 0.15s"
+                      }}
+                      onFocus={e => {
+                        e.currentTarget.style.background = "#ffffff";
+                        e.currentTarget.style.borderColor = "#3b82f6";
+                        e.currentTarget.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.15)";
+                      }}
+                      onBlur={e => {
+                        e.currentTarget.style.borderColor = "#e2e8f0";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                      disabled={!connected}
+                    />
+                  </div>
 
                   <button
                     type="submit"
@@ -1729,16 +1760,18 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                       color: "#ffffff",
                       border: "none",
                       borderRadius: "14px",
-                      padding: "10px 20px",
-                      height: "42px",
+                      padding: "10px 22px",
+                      height: "44px",
                       display: "flex",
                       alignItems: "center",
                       gap: "8px",
-                      fontWeight: "700",
-                      fontSize: "0.9rem",
+                      fontWeight: "800",
+                      fontSize: "0.92rem",
                       cursor: (!connected || (!inputMessage.trim() && !staffAttachedFile)) ? "not-allowed" : "pointer",
-                      opacity: (!connected || (!inputMessage.trim() && !staffAttachedFile)) ? 0.5 : 1,
-                      boxShadow: "0 4px 12px rgba(37, 99, 235, 0.25)",
+                      opacity: (!connected || (!inputMessage.trim() && !staffAttachedFile)) ? 0.45 : 1,
+                      boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)",
+                      flexShrink: 0,
+                      marginBottom: "2px",
                       transition: "all 0.15s"
                     }}
                   >
@@ -1757,78 +1790,78 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
         {showDossier && selectedApplicantData && (
           <div style={{
             background: "#ffffff",
-            borderRadius: "20px",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 4px 20px -4px rgba(0, 0, 0, 0.05)",
+            borderRadius: "18px",
+            border: "1.5px solid #e2e8f0",
+            boxShadow: "0 4px 16px -2px rgba(0, 0, 0, 0.04)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden"
           }}>
             {/* Dossier Header */}
             <div style={{
-              padding: "1.25rem",
+              padding: "1.1rem",
               borderBottom: "1px solid #f1f5f9",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between"
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <Briefcase size={18} color="#2563eb" />
+                <Briefcase size={17} color="#2563eb" />
                 <h3 style={{ fontSize: "1rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>Permit Dossier</h3>
               </div>
               <button
                 onClick={() => setShowDossier(false)}
-                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}
+                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "flex" }}
                 title="Collapse Panel"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
             {/* Dossier Scrollable Body */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "1.1rem", display: "flex", flexDirection: "column", gap: "1.1rem" }}>
               
               {/* Citizen Card */}
               <div style={{
                 background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
-                borderRadius: "16px",
-                padding: "1.25rem",
+                borderRadius: "14px",
+                padding: "1.1rem",
                 border: "1px solid #e2e8f0"
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
                   <div style={{
-                    width: "48px",
-                    height: "48px",
-                    borderRadius: "14px",
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "12px",
                     background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                     color: "white",
                     fontWeight: "800",
-                    fontSize: "1.2rem",
+                    fontSize: "1.1rem",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: "0 4px 10px rgba(37, 99, 235, 0.2)"
+                    boxShadow: "0 3px 8px rgba(37, 99, 235, 0.2)"
                   }}>
                     {selectedApplicantData.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: "800", color: "#0f172a" }}>
+                    <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#0f172a" }}>
                       {selectedApplicantData.name}
                     </h4>
-                    <span style={{ fontSize: "0.78rem", color: "#64748b" }}>Registered Applicant</span>
+                    <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Registered Citizen</span>
                   </div>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.8rem", color: "#334155" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
                     <User size={13} color="#64748b" />
                     <span style={{ wordBreak: "break-all" }}>{applicantEmail}</span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
                     <Phone size={13} color="#64748b" />
                     <span>{selectedApplicantData.phone}</span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
                     <MapPin size={13} color="#64748b" />
                     <span>{selectedApplicantData.address}</span>
                   </div>
@@ -1837,18 +1870,18 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
 
               {/* Linked Applications Section */}
               <div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <h4 style={{ margin: 0, fontSize: "0.88rem", fontWeight: "800", color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                    Submitted Permits ({selectedApplicantData.applications.length})
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <h4 style={{ margin: 0, fontSize: "0.82rem", fontWeight: "800", color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    Permits on Record ({selectedApplicantData.applications.length})
                   </h4>
                 </div>
 
                 {selectedApplicantData.applications.length === 0 ? (
-                  <div style={{ padding: "20px", textAlign: "center", color: "#94a3b8", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
-                    <p style={{ margin: 0, fontSize: "0.82rem" }}>No submitted permits found for this citizen.</p>
+                  <div style={{ padding: "18px", textAlign: "center", color: "#94a3b8", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                    <p style={{ margin: 0, fontSize: "0.8rem" }}>No permits recorded for this citizen.</p>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     {selectedApplicantData.applications.map((app, aIdx) => {
                       const badge = getStatusBadge(app.status);
                       const isFiltered = activeThreadId === app.id;
@@ -1859,42 +1892,42 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                           style={{
                             background: isFiltered ? "#eff6ff" : "#ffffff",
                             border: isFiltered ? "1.5px solid #3b82f6" : "1px solid #e2e8f0",
-                            borderRadius: "14px",
-                            padding: "12px",
-                            boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+                            borderRadius: "12px",
+                            padding: "10px",
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.02)",
                             transition: "all 0.15s"
                           }}
                         >
-                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px", marginBottom: "6px" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "6px", marginBottom: "4px" }}>
                             <div>
-                              <span style={{ fontSize: "0.88rem", fontWeight: "800", color: "#0f172a", display: "block" }}>
+                              <span style={{ fontSize: "0.85rem", fontWeight: "800", color: "#0f172a", display: "block" }}>
                                 {app.id}
                               </span>
-                              <span style={{ fontSize: "0.78rem", fontWeight: "600", color: "#475569" }}>
+                              <span style={{ fontSize: "0.76rem", fontWeight: "600", color: "#475569" }}>
                                 {app.projectName || "Permit Application"}
                               </span>
                             </div>
                             <span style={{
-                              fontSize: "0.7rem",
+                              fontSize: "0.68rem",
                               fontWeight: "700",
                               background: badge.bg,
                               color: badge.color,
                               border: `1px solid ${badge.border}`,
-                              padding: "2px 8px",
-                              borderRadius: "8px",
+                              padding: "2px 7px",
+                              borderRadius: "6px",
                               flexShrink: 0
                             }}>
                               {badge.label}
                             </span>
                           </div>
 
-                          <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "10px", display: "flex", flexDirection: "column", gap: "3px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <div style={{ fontSize: "0.74rem", color: "#64748b", marginBottom: "8px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                               <Building2 size={12} />
                               <span style={{ textTransform: "capitalize" }}>{app.permitType?.replace(/_/g, " ")}</span>
                             </div>
                             {app.projectAddress && (
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                                 <MapPin size={12} />
                                 <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                   {app.projectAddress}
@@ -1904,20 +1937,19 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                           </div>
 
                           {/* Action Links */}
-                          <div style={{ display: "flex", gap: "8px" }}>
+                          <div style={{ display: "flex", gap: "6px" }}>
                             <button
                               onClick={() => setActiveThreadId(app.id)}
                               style={{
                                 flex: 1,
-                                padding: "6px 10px",
-                                borderRadius: "8px",
-                                fontSize: "0.75rem",
+                                padding: "5px 8px",
+                                borderRadius: "7px",
+                                fontSize: "0.72rem",
                                 fontWeight: "700",
                                 background: isFiltered ? "#2563eb" : "#f1f5f9",
                                 color: isFiltered ? "#ffffff" : "#334155",
                                 border: "none",
-                                cursor: "pointer",
-                                transition: "all 0.15s"
+                                cursor: "pointer"
                               }}
                             >
                               {isFiltered ? "Active Thread" : "Filter Thread"}
@@ -1927,9 +1959,9 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                               href={`/staff/evaluate/${app.id}`}
                               style={{
                                 flex: 1,
-                                padding: "6px 10px",
-                                borderRadius: "8px",
-                                fontSize: "0.75rem",
+                                padding: "5px 8px",
+                                borderRadius: "7px",
+                                fontSize: "0.72rem",
                                 fontWeight: "700",
                                 background: "white",
                                 color: "#2563eb",
@@ -1938,13 +1970,12 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                                 alignItems: "center",
                                 justifyContent: "center",
                                 gap: "4px",
-                                textDecoration: "none",
-                                transition: "all 0.15s"
+                                textDecoration: "none"
                               }}
                               target="_blank"
                             >
-                              <span>Workspace</span>
-                              <ExternalLink size={12} />
+                              <span>Evaluate</span>
+                              <ExternalLink size={11} />
                             </Link>
                           </div>
                         </div>
@@ -1954,21 +1985,21 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                 )}
               </div>
 
-              {/* Quick Municipal Guidance Box */}
+              {/* Quick Guidance Box */}
               <div style={{
                 background: "#f0fdf4",
                 border: "1px solid #bbf7d0",
-                borderRadius: "14px",
-                padding: "12px",
-                fontSize: "0.78rem",
+                borderRadius: "12px",
+                padding: "10px",
+                fontSize: "0.76rem",
                 color: "#166534"
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "700", marginBottom: "4px" }}>
-                  <ShieldCheck size={15} />
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "700", marginBottom: "3px" }}>
+                  <ShieldCheck size={14} />
                   <span>Sto. Tomas OBO Protocol</span>
                 </div>
                 <p style={{ margin: 0, lineHeight: 1.4 }}>
-                  Official notices sent through this desk are recorded into the municipal audit trail. Citizens receive real-time notifications on their portal.
+                  Notices sent through this console update the applicant portal in real-time under Philippine Standard Time.
                 </p>
               </div>
 
@@ -2014,7 +2045,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                     Verify Payment &amp; Release Permit
                   </h3>
                   <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                    Check applicant receipt photo and confirm payment to release permit
+                    Confirm payment to release official permit and clearance documents
                   </div>
                 </div>
               </div>
@@ -2051,45 +2082,21 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                 <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
                   Applicant Uploaded Receipt Photo:
                 </label>
-                <div style={{
-                  background: "#0f172a",
-                  borderRadius: "14px",
-                  overflow: "hidden",
-                  border: "1.5px solid #cbd5e1",
-                  maxHeight: "220px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer"
-                }}
-                onClick={() => {
-                  setPreviewAttachment({
-                    fileName: "applicant_receipt.jpg",
-                    fileUrl: receiptPhotoPreview,
-                    isImage: true,
-                    isPdf: false,
-                    isDoc: false
-                  });
-                }}
-                title="Click to view full image"
-                >
-                  <img
-                    src={receiptPhotoPreview}
-                    alt="Applicant Receipt Photo"
-                    style={{ width: "100%", maxHeight: "220px", objectFit: "contain", display: "block" }}
-                  />
-                </div>
-                <div style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: "700", marginTop: "4px" }}>
-                  ✓ Receipt photo submitted in conversation
+                <div style={{ borderRadius: "12px", overflow: "hidden", border: "1.5px solid #cbd5e1", background: "#000", maxHeight: "220px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <img src={receiptPhotoPreview} alt="Receipt preview" style={{ maxWidth: "100%", maxHeight: "220px", objectFit: "contain" }} />
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <div style={{ marginBottom: "1.25rem", padding: "10px 14px", background: "#fef3c7", borderRadius: "10px", border: "1px solid #fde68a", fontSize: "0.82rem", color: "#92400e" }}>
+                ℹ️ Official Receipt settlement can be verified directly if settled at Municipal Hall Cashier.
+              </div>
+            )}
 
-            {/* Form Fields */}
+            {/* Input Form */}
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "5px" }}>
-                  Official Receipt (OR) Number / Cashier Ref: <span style={{ color: "#dc2626" }}>*</span>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  Official Receipt (OR) Number:
                 </label>
                 <input
                   type="text"
@@ -2098,38 +2105,36 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                   placeholder="e.g. OR-2026-94812"
                   style={{
                     width: "100%",
-                    padding: "0.75rem",
+                    padding: "9px 12px",
                     borderRadius: "10px",
                     border: "1.5px solid #cbd5e1",
                     fontSize: "0.9rem",
-                    fontWeight: "700",
-                    color: "#0f172a"
+                    outline: "none"
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "5px" }}>
-                  Certifying Cashier / Building Official Signatory:
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
+                  Certifying Cashier / Building Official:
                 </label>
                 <input
                   type="text"
                   value={certifyingCashierInput}
                   onChange={(e) => setCertifyingCashierInput(e.target.value)}
-                  placeholder="Engr. Gilbert Cruz, Municipal Building Official"
                   style={{
                     width: "100%",
-                    padding: "0.75rem",
+                    padding: "9px 12px",
                     borderRadius: "10px",
                     border: "1.5px solid #cbd5e1",
-                    fontSize: "0.88rem",
-                    color: "#0f172a"
+                    fontSize: "0.9rem",
+                    outline: "none"
                   }}
                 />
               </div>
             </div>
 
-            {/* Modal Actions */}
+            {/* Action Buttons */}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
                 type="button"

@@ -102,12 +102,20 @@ public class DataSeeder implements CommandLineRunner {
                     "Staff User"
             );
             userRepository.save(staff);
-            System.out.println("Created dummy STAFF user");
-            
-            // Generate Initial Staff Evaluation Logs
-            evaluationLogRepository.save(new EvaluationLog(staffEmail, "citizen@example.com", "Building Permit", "Approved", "All documents verified.", LocalDateTime.now().minusDays(2)));
-            evaluationLogRepository.save(new EvaluationLog(staffEmail, "business@example.com", "Business Permit", "Rejected", "Missing DTI Registration.", LocalDateTime.now().minusDays(1)));
+            System.out.println("Created default STAFF user: " + staffEmail);
         }
+
+        // Clean up legacy dummy evaluation logs if present
+        try {
+            evaluationLogRepository.findAll().forEach(l -> {
+                if (l != null && (
+                    "citizen@example.com".equalsIgnoreCase(l.getApplicantEmail()) ||
+                    "business@example.com".equalsIgnoreCase(l.getApplicantEmail())
+                )) {
+                    evaluationLogRepository.delete(l);
+                }
+            });
+        } catch (Exception ignored) {}
 
         // Ensure default dummy applicant account is removed if present
         userRepository.findByEmail("applicant@etayo.gov.ph").ifPresent(user -> {
@@ -126,9 +134,6 @@ public class DataSeeder implements CommandLineRunner {
         if (feeStructureRepository.count() == 0) {
             seedFees();
         }
-        if (systemAuditLogRepository.count() == 0) {
-            seedLogs();
-        }
     }
 
     private void seedFees() {
@@ -139,24 +144,5 @@ public class DataSeeder implements CommandLineRunner {
         f1.setCategory("locational_clearance");
         feeStructureRepository.save(f1);
         System.out.println("Seeded FeeStructure FEE-001");
-    }
-    
-    private void seedLogs() {
-        String staffEmail = "staff@etayo.gov.ph";
-        com.etayo.backend.model.SystemAuditLog log1 = new com.etayo.backend.model.SystemAuditLog(
-            "SYSTEM_STARTUP",
-            staffEmail,
-            "e-Tayo Municipal Online System initialized and operational.",
-            "127.0.0.1"
-        );
-        com.etayo.backend.model.SystemAuditLog log2 = new com.etayo.backend.model.SystemAuditLog(
-            "USER_LOGIN",
-            "admin@etayo.gov.ph",
-            "Administrator logged in to Admin Portal",
-            "127.0.0.1"
-        );
-        systemAuditLogRepository.save(log1);
-        systemAuditLogRepository.save(log2);
-        System.out.println("Seeded SystemAuditLogs");
     }
 }

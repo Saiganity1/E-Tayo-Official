@@ -21,6 +21,17 @@ import {
   Fingerprint
 } from "lucide-react";
 
+const isDummySecurityLog = (log: any): boolean => {
+  if (!log) return true;
+  const id = String(log.id || "");
+  const u = String(log.user || log.userEmail || "").toLowerCase();
+  const det = String(log.details || "").toLowerCase();
+  if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return true;
+  if (u.includes("citizen@example.com") || u.includes("business@example.com")) return true;
+  if (det.includes("multi-factor session verified · ip: 127.0.0.1") || det.includes("role_staff · zoning & permitting unit")) return true;
+  return false;
+};
+
 export default function SecurityAuthPage() {
   const { systemLogs, clearLogs, refreshApplications } = usePermitContext();
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,6 +41,7 @@ export default function SecurityAuthPage() {
 
   // Filter logs specifically for security, logins, auth, and sessions
   const securityLogs = systemLogs.filter(log => {
+    if (isDummySecurityLog(log)) return false;
     if (log.category === "security") return true;
     const act = (log.action || "").toUpperCase();
     const det = (log.details || "").toLowerCase();

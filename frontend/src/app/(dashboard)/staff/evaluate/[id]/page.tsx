@@ -68,8 +68,10 @@ import {
   CreditCard,
   Banknote,
   Receipt,
-  Clock
+  Clock,
+  UserCheck
 } from "lucide-react";
+import { formatPhilippineDateTime } from "@/utils/philippineTime";
 import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
 import { isApplicationApproved, isApplicationReleased } from "@/utils/projectGrouping";
 
@@ -91,6 +93,17 @@ export default function StaffEvaluatePage() {
   const rawParamId = typeof params?.id === "string" ? decodeURIComponent(params.id).trim() : "";
   const id = rawParamId;
   const { applications, updateApplication, addSystemLog } = usePermitContext();
+
+  const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+  let activeStaffName = "Dave Sicat";
+  let activeStaffEmail = "dave.sicat@etayo.gov.ph";
+  if (userStr) {
+    try {
+      const u = JSON.parse(userStr);
+      if (u.name && u.name.trim()) activeStaffName = u.name.trim();
+      if (u.email && u.email.trim()) activeStaffEmail = u.email.trim();
+    } catch (e) {}
+  }
 
   const matchPermitId = (a?: string, b?: string) => {
     if (!a || !b) return false;
@@ -1318,13 +1331,13 @@ export default function StaffEvaluatePage() {
     setIsProcessing(true);
 
     const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-    let staffName = "Staff Evaluator";
-    let staffEmail = "staff@etayo.gov.ph";
+    let staffName = activeStaffName || "Dave Sicat";
+    let staffEmail = activeStaffEmail || "dave.sicat@etayo.gov.ph";
     if (userStr) {
       try {
         const u = JSON.parse(userStr);
-        if (u.name) staffName = u.name;
-        if (u.email) staffEmail = u.email;
+        if (u.name && u.name.trim()) staffName = u.name.trim();
+        if (u.email && u.email.trim()) staffEmail = u.email.trim();
       } catch (e) {}
     }
 
@@ -1353,7 +1366,7 @@ export default function StaffEvaluatePage() {
           title: "Technical Engineering Evaluation Passed",
           status: "completed" as const,
           date: issuedDateFormatted,
-          notes: "All mandatory engineering permits (Architectural, Structural, Electrical, Sanitary, Fire Clearance) evaluated and verified compliant.",
+          notes: `All mandatory engineering permits evaluated and verified compliant by ${staffName}.`,
           actor: actorLabel,
         },
         {
@@ -1406,10 +1419,10 @@ export default function StaffEvaluatePage() {
     const updatedHistory = [
       ...(app.historyLog || []),
       {
-        date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        date: formatPhilippineDateTime(new Date()),
         action: actionTitle,
         actor: staffName,
-        details: decisionNotes || shortSummary,
+        details: `${staffName} evaluated and approved this application. Remarks: ${decisionNotes || shortSummary}`,
       },
     ];
 
@@ -1417,6 +1430,10 @@ export default function StaffEvaluatePage() {
       ...app,
       status: "approved" as const,
       paymentStatus: "awaiting_payment" as const,
+      evaluatedBy: staffName,
+      evaluatorEmail: staffEmail,
+      assignedStaff: staffName,
+      evaluatedAt: new Date().toISOString(),
       userConfirmedPayment: (app as any).userConfirmedPayment || false,
       dateApproved: (app as any).dateApproved || issuedDateFormatted,
       dateIssued: (app as any).dateIssued || issuedDateFormatted,
@@ -1440,6 +1457,8 @@ export default function StaffEvaluatePage() {
       [curId, lowerId, upperId].forEach(k => {
         localStorage.setItem(`etayo_status_${k}`, "approved");
         localStorage.setItem(`etayo_approved_${k}`, "true");
+        localStorage.setItem(`etayo_evaluated_by_${k}`, staffName);
+        localStorage.setItem(`etayo_evaluator_email_${k}`, staffEmail);
         localStorage.removeItem(`etayo_released_${k}`);
         localStorage.removeItem(`etayo_paid_${k}`);
         if (orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, orderOfPaymentNo);
@@ -1629,11 +1648,12 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
         action: "EVALUATION_APPROVED",
         category: "application",
         status: "success",
-        user: staffEmail,
-        message: `Staff ${staffName} (${staffEmail}) evaluated application ${app.id} (${applicantLabel}) - Status: APPROVED`,
+        user: staffName,
+        userEmail: staffEmail,
+        message: `${staffName} evaluated application ${app.id} (${applicantLabel}) - Status: APPROVED`,
         details: isBuildingPermit
-          ? `Building Permit Approved for ${applicantLabel}. Order of Payment ${orderOfPaymentNo} (PHP ${totalFees.toLocaleString()}) issued. Remarks: ${decisionNotes || shortSummary}`
-          : `Locational Clearance Approved for ${applicantLabel}. Compliant with CLUP & Zoning Ordinance. Remarks: ${decisionNotes || shortSummary}`,
+          ? `${staffName} (${staffEmail}) evaluated and approved Building Permit for ${applicantLabel}. Order of Payment ${orderOfPaymentNo} (PHP ${totalFees.toLocaleString()}) issued. Remarks: ${decisionNotes || shortSummary}`
+          : `${staffName} (${staffEmail}) evaluated and approved Locational Clearance for ${applicantLabel}. Compliant with CLUP & Zoning Ordinance. Remarks: ${decisionNotes || shortSummary}`,
       });
     } catch (e) {
       console.warn("Could not save system log", e);
@@ -1650,7 +1670,9 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
         applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
         permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
         action: "Approved",
-        comments: decisionNotes || shortSummary,
+        comments: `${staffName} approved: ${decisionNotes || shortSummary}`,
+        applicationId: app.id,
+        timestamp: new Date().toISOString()
       });
 
       let evalRes = await fetch("/api/evaluations", {
@@ -1875,13 +1897,13 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
     setShowRejectModal(false);
 
     const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-    let staffName = "Staff Evaluator";
-    let staffEmail = "staff@etayo.gov.ph";
+    let staffName = activeStaffName || "Dave Sicat";
+    let staffEmail = activeStaffEmail || "dave.sicat@etayo.gov.ph";
     if (userStr) {
       try {
         const u = JSON.parse(userStr);
-        if (u.name) staffName = u.name;
-        if (u.email) staffEmail = u.email;
+        if (u.name && u.name.trim()) staffName = u.name.trim();
+        if (u.email && u.email.trim()) staffEmail = u.email.trim();
       } catch (e) {}
     }
 
@@ -1904,31 +1926,50 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
 
     const statusVal: "rejected" | "incomplete_requirements" = isDisapprove ? "rejected" : "incomplete_requirements";
     const actionLabel = isDisapprove ? "Application Disapproved / Rejected" : "Notice of Deficiencies / Revisions Requested";
-    const logSummary = `Staff ${staffName} (${staffEmail}) evaluated application ${app.id} (${applicantLabel}) - Status: ${isDisapprove ? "DISAPPROVED / REJECTED" : "REVISION REQUESTED"}`;
-    const logDetails = `${isDisapprove ? "Permit formally disapproved and closed" : "Requirements revision requested"} for ${applicantLabel} (${permitTitle}). Reason: ${combinedRemarks}`;
+    const logSummary = `${staffName} evaluated application ${app.id} (${applicantLabel}) - Status: ${isDisapprove ? "DISAPPROVED / REJECTED" : "REVISION REQUESTED"}`;
+    const logDetails = `${staffName} (${staffEmail}) ${isDisapprove ? "formally disapproved" : "requested requirements revision"} for ${applicantLabel} (${permitTitle}). Reason: ${combinedRemarks}`;
 
     const updatedApp = {
       ...app,
       status: statusVal,
+      evaluatedBy: staffName,
+      evaluatorEmail: staffEmail,
+      assignedStaff: staffName,
+      evaluatedAt: new Date().toISOString(),
       remarks: combinedRemarks,
       historyLog: [
         ...(app.historyLog || []),
         {
-          date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+          date: formatPhilippineDateTime(new Date()),
           action: actionLabel,
           actor: staffName,
-          details: combinedRemarks,
+          details: `${staffName}: ${combinedRemarks}`,
         }
       ]
     };
     await updateApplication(updatedApp);
 
     try {
+      const curId = String(app.id || "").trim();
+      const lowerId = curId.toLowerCase();
+      const upperId = curId.toUpperCase();
+      [curId, lowerId, upperId].forEach(k => {
+        localStorage.setItem(`etayo_status_${k}`, statusVal);
+        localStorage.setItem(`etayo_evaluated_by_${k}`, staffName);
+        localStorage.setItem(`etayo_evaluator_email_${k}`, staffEmail);
+        localStorage.removeItem(`etayo_approved_${k}`);
+        localStorage.removeItem(`etayo_released_${k}`);
+        localStorage.removeItem(`etayo_paid_${k}`);
+      });
+    } catch (e) {}
+
+    try {
       await addSystemLog({
         action: isDisapprove ? "EVALUATION_REJECTED" : "EVALUATION_REVISION_REQUESTED",
         category: "application",
         status: isDisapprove ? "error" : "warning",
-        user: staffEmail,
+        user: staffName,
+        userEmail: staffEmail,
         message: logSummary,
         details: logDetails,
       });
@@ -1946,7 +1987,9 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
         applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
         permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
         action: isDisapprove ? "Application Rejected" : "Incomplete Requirements",
-        comments: combinedRemarks,
+        comments: `${staffName}: ${combinedRemarks}`,
+        applicationId: app.id,
+        timestamp: new Date().toISOString()
       });
 
       let evalRes = await fetch("/api/evaluations", {
@@ -2146,6 +2189,52 @@ ${isDisapprove
                 }} />
                 {currentBadge.label}
               </span>
+            );
+          })()}
+
+          {/* Evaluator Attribution Badge */}
+          {(() => {
+            const evaluatedByName = app?.evaluatedBy || (app as any)?.assignedStaff || (typeof window !== "undefined" && app?.id ? localStorage.getItem(`etayo_evaluated_by_${app.id}`) : null);
+            const isEvaluated = (app?.status === "approved" || app?.status === "released" || app?.status === "incomplete_requirements" || app?.status === "rejected" || Boolean(evaluatedByName));
+
+            if (isEvaluated && evaluatedByName) {
+              return (
+                <div style={{
+                  background: "#f0fdf4",
+                  border: "1.5px solid #86efac",
+                  padding: "6px 14px",
+                  borderRadius: "999px",
+                  color: "#166534",
+                  fontSize: "0.84rem",
+                  fontWeight: "800",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+                }}>
+                  <UserCheck size={15} color="#16a34a" />
+                  <span><strong>{evaluatedByName}</strong> evaluated this application</span>
+                </div>
+              );
+            }
+
+            return (
+              <div style={{
+                background: "#eff6ff",
+                border: "1.5px solid #bfdbfe",
+                padding: "6px 14px",
+                borderRadius: "999px",
+                color: "#1d4ed8",
+                fontSize: "0.84rem",
+                fontWeight: "800",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+              }}>
+                <ShieldCheck size={15} color="#2563eb" />
+                <span>Assigned Evaluator: <strong>{activeStaffName}</strong></span>
+              </div>
             );
           })()}
 
@@ -2794,6 +2883,26 @@ ${isDisapprove
 
                 {/* Primary & Secondary Action Buttons */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {/* Evaluator Identity Card */}
+                  <div style={{
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    padding: "8px 12px",
+                    fontSize: "0.82rem",
+                    color: "#475569",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <UserCheck size={15} color="#2563eb" />
+                      <span>Evaluating Officer: <strong style={{ color: "#0f172a" }}>{activeStaffName}</strong></span>
+                    </div>
+                    <span style={{ fontSize: "0.74rem", color: "#64748b" }}>{activeStaffEmail}</span>
+                  </div>
+
                   {(() => {
                     const isReleasedApp = (app.status as string) === "released" || Boolean((app as any).isReleased) || isApplicationReleased(app);
                     const isApprovedApp = !isReleasedApp && ((app.status as string) === "approved" || isApplicationApproved(app));

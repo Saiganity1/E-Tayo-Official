@@ -88,9 +88,9 @@ export default function LoginPage() {
         if (sanitizedEmail.includes("admin")) {
           fallbackRole = "ROLE_ADMIN";
           fallbackName = "Municipal Administrator";
-        } else if (sanitizedEmail.includes("staff")) {
+        } else if (sanitizedEmail.includes("staff") || sanitizedEmail.includes("sicat") || sanitizedEmail.includes("evaluator")) {
           fallbackRole = "ROLE_STAFF";
-          fallbackName = "Staff Evaluator";
+          fallbackName = "Dave Sicat";
         } else if (sanitizedEmail === "mdpsicat.student@ua.edu.ph" || sanitizedEmail.includes("paul") || sanitizedEmail.includes("payumo")) {
           fallbackRole = "ROLE_APPLICANT";
           fallbackName = "Paul Payumo";

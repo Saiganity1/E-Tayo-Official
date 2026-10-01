@@ -96,13 +96,36 @@ const isDummyApp = (app: PermitApplication) => {
   );
 };
 
+export const isDummyLog = (log: any): boolean => {
+  if (!log) return true;
+  const id = String(log.id || "");
+  const u = String(log.user || log.userEmail || "").toLowerCase();
+  const act = String(log.action || "").toUpperCase();
+  const msg = String(log.message || "").toLowerCase();
+  const det = String(log.details || "").toLowerCase();
+
+  // Fake system baseline logs
+  if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return true;
+
+  // Fake synthetic evaluation logs created with default staff fallback
+  if (id.startsWith("LOG-EVAL-APP-") || id.startsWith("LOG-EVAL-REV-")) return true;
+
+  // Fake dummy emails
+  if (u.includes("citizen@example.com") || u.includes("business@example.com")) return true;
+
+  // Fake matrix sync or dummy startup logs
+  if (act === "ZONING_MATRIX_SYNCED" || (act === "SYSTEM_STARTUP" && det.includes("spatial gis mapping engine"))) return true;
+
+  return false;
+};
+
 export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs: SystemLog[] = []): SystemLog[] => {
   const logMap = new Map<string, SystemLog>();
 
-  // 1. Add existing logs first
+  // 1. Add valid existing logs (filter out fake/dummy logs)
   (existingLogs || []).forEach(log => {
-    if (log && log.id) {
-      logMap.set(log.id, log);
+    if (log && log.id && !isDummyLog(log)) {
+      logMap.set(log.id, normalizeLog(log));
     }
   });
 
@@ -123,60 +146,31 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
         category: "application",
         status: "info",
         action: "APPLICATION_SUBMITTED",
-        user: app.applicantEmail || applicantLabel,
+        user: app.applicantName || app.applicantEmail || applicantLabel,
         message: `New application submitted: ${projLabel} (${app.id})`,
         details: `Applicant ${applicantLabel} filed ${app.permitType?.replace(/_/g, " ") || "permit"} for ${projLabel}. Location: ${app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga"}.`,
         userEmail: app.applicantEmail || "applicant@etayo.gov.ph",
       }));
     }
 
-    // Evaluation logs based on application status
-    if (app.status === "approved" || app.status === "released") {
-      const evalLogId = `LOG-EVAL-APP-${app.id}`;
+    // Evaluation logs ONLY if an actual evaluator is recorded on the application
+    const evaluator = app.evaluatedBy || app.assignedStaff;
+    const isEvaluated = app.status === "approved" || app.status === "released" || app.status === "rejected" || app.status === "incomplete_requirements";
+    if (evaluator && isEvaluated) {
+      const isApproved = app.status === "approved" || app.status === "released";
+      const evalLogId = `LOG-EVAL-REAL-${app.id}`;
       if (!logMap.has(evalLogId)) {
-        const evalTime = new Date(new Date(subTime).getTime() + 3600000).toISOString();
+        const evalTime = app.evaluatedAt || (app as any).dateApproved || (app as any).dateIssued || subTime;
         logMap.set(evalLogId, normalizeLog({
           id: evalLogId,
-          timestamp: evalTime,
+          timestamp: new Date(evalTime).toISOString(),
           category: "application",
-          status: "success",
-          action: "EVALUATION_APPROVED",
-          user: app.assignedStaff || "staff@etayo.gov.ph",
-          message: `Application ${app.id} (${projLabel}) officially APPROVED`,
-          details: app.remarks || `Locational and zoning clearance approved by Sto. Tomas Municipal Planning and Development Office.`,
-          userEmail: app.assignedStaff || "staff@etayo.gov.ph",
-        }));
-      }
-    } else if (app.status === "incomplete_requirements" || app.status === "rejected") {
-      const evalLogId = `LOG-EVAL-REV-${app.id}`;
-      if (!logMap.has(evalLogId)) {
-        const evalTime = new Date(new Date(subTime).getTime() + 1800000).toISOString();
-        logMap.set(evalLogId, normalizeLog({
-          id: evalLogId,
-          timestamp: evalTime,
-          category: "application",
-          status: app.status === "rejected" ? "error" : "warning",
-          action: app.status === "rejected" ? "EVALUATION_REJECTED" : "EVALUATION_REVISION_REQUESTED",
-          user: app.assignedStaff || "staff@etayo.gov.ph",
-          message: `Application ${app.id} (${projLabel}) - ${app.status === "rejected" ? "REJECTED" : "REVISION REQUIRED"}`,
-          details: app.remarks || `Applicant requested to update documentation or specifications.`,
-          userEmail: app.assignedStaff || "staff@etayo.gov.ph",
-        }));
-      }
-    } else if (app.status === "under_review") {
-      const evalLogId = `LOG-EVAL-REV-${app.id}`;
-      if (!logMap.has(evalLogId)) {
-        const evalTime = new Date(new Date(subTime).getTime() + 900000).toISOString();
-        logMap.set(evalLogId, normalizeLog({
-          id: evalLogId,
-          timestamp: evalTime,
-          category: "application",
-          status: "info",
-          action: "EVALUATION_UNDER_REVIEW",
-          user: app.assignedStaff || "staff@etayo.gov.ph",
-          message: `Application ${app.id} (${projLabel}) queued for technical evaluation`,
-          details: `Staff evaluator assigned to verify zoning compliance and municipal ordinance criteria.`,
-          userEmail: app.assignedStaff || "staff@etayo.gov.ph",
+          status: isApproved ? "success" : (app.status === "rejected" ? "error" : "warning"),
+          action: isApproved ? "EVALUATION_APPROVED" : (app.status === "rejected" ? "EVALUATION_REJECTED" : "EVALUATION_REVISION_REQUESTED"),
+          user: evaluator,
+          message: `${evaluator} evaluated application ${app.id} (${projLabel}) - Status: ${isApproved ? "APPROVED" : (app.status === "rejected" ? "REJECTED" : "REVISION REQUIRED")}`,
+          details: app.remarks || `Evaluation conducted by ${evaluator} for ${app.id}.`,
+          userEmail: app.evaluatorEmail || (evaluator.includes("@") ? evaluator : `${evaluator.toLowerCase().replace(/\s+/g, ".")}@etayo.gov.ph`),
         }));
       }
     }
@@ -184,6 +178,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
     // Include history log entries if present
     if (Array.isArray(app.historyLog)) {
       app.historyLog.forEach((h, hIdx) => {
+        if (!h || !h.action) return;
         const hLogId = `LOG-HIST-${app.id}-${hIdx}`;
         if (!logMap.has(hLogId)) {
           let stat: "success" | "warning" | "info" | "error" = "info";
@@ -197,75 +192,23 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
             category: "application",
             status: stat,
             action: h.action || "APPLICATION_UPDATE",
-            user: h.actor || applicantLabel,
-            message: `${h.action || "Status Update"} on ${app.id} (${projLabel})`,
+            user: h.actor || evaluator || applicantLabel,
+            message: `${h.actor || "Staff"} - ${h.action || "Status Update"} on ${app.id} (${projLabel})`,
             details: h.details || `${h.action} recorded for application ${app.id}.`,
-            userEmail: h.actor || "staff@etayo.gov.ph",
+            userEmail: (h.actor && h.actor.includes("@")) ? h.actor : (app.evaluatorEmail || "staff@etayo.gov.ph"),
           }));
         }
       });
     }
   });
 
-  // 3. Realistic System & Security baseline logs if total logs are low
-  const baseLogs: SystemLog[] = [
-    normalizeLog({
-      id: "LOG-SYS-BASE-01",
-      timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-      category: "security",
-      status: "success",
-      action: "USER_LOGIN",
-      user: "admin@etayo.gov.ph",
-      message: "Administrator authenticated into Admin Portal",
-      details: "Role: ROLE_ADMIN · Multi-Factor Session Verified · IP: 127.0.0.1",
-      userEmail: "admin@etayo.gov.ph"
-    }),
-    normalizeLog({
-      id: "LOG-SYS-BASE-02",
-      timestamp: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
-      category: "security",
-      status: "success",
-      action: "USER_LOGIN",
-      user: "staff@etayo.gov.ph",
-      message: "Staff Evaluator authenticated into Evaluation Workspace",
-      details: "Role: ROLE_STAFF · Zoning & Permitting Unit · IP: 127.0.0.1",
-      userEmail: "staff@etayo.gov.ph"
-    }),
-    normalizeLog({
-      id: "LOG-SYS-BASE-03",
-      timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-      category: "setting",
-      status: "success",
-      action: "ZONING_MATRIX_SYNCED",
-      user: "Super Admin",
-      message: "Official Sto. Tomas 31-Project Type Permitting Matrix validated",
-      details: "All 6 project categories (Residential, Commercial, Industrial, Institutional, Ancillary, Utilities) synchronized with municipal zoning code.",
-      userEmail: "admin@etayo.gov.ph"
-    }),
-    normalizeLog({
-      id: "LOG-SYS-BASE-04",
-      timestamp: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
-      category: "system",
-      status: "info",
-      action: "SYSTEM_STARTUP",
-      user: "system@etayo.gov.ph",
-      message: "eTAYO Municipal Online Permitting System operational",
-      details: "Spatial GIS mapping engine, PDF generation services, and database listeners initialized.",
-      userEmail: "system@etayo.gov.ph"
-    })
-  ];
-
-  baseLogs.forEach(b => {
-    if (!logMap.has(b.id)) {
-      logMap.set(b.id, b);
-    }
-  });
-
-  return Array.from(logMap.values()).sort((a, b) => {
-    const timeA = new Date(a.timestamp).getTime();
-    const timeB = new Date(b.timestamp).getTime();
-    return timeB - timeA;
-  });
+  return Array.from(logMap.values())
+    .filter(l => !isDummyLog(l))
+    .sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+      return timeB - timeA;
+    });
 };
 
 export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -979,6 +922,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const currentApps = storedApps ? JSON.parse(storedApps) : [];
       const accurateInitial = buildAccurateSystemLogs(currentApps, restoredLogs);
       setSystemLogs(accurateInitial);
+      try {
+        localStorage.setItem("etayo_cached_logs", JSON.stringify(accurateInitial));
+      } catch (e) {}
     } catch (e) {}
 
     // 3. Immediately restore locally cached fee structures

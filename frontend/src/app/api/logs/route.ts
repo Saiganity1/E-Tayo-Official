@@ -11,28 +11,7 @@ const globalForLogs = globalThis as unknown as {
 };
 
 if (!globalForLogs._etayoLogsStore) {
-  globalForLogs._etayoLogsStore = [
-    {
-      id: "LOG-SYS-01",
-      timestamp: new Date().toISOString(),
-      category: "application",
-      status: "info",
-      action: "APPLICATION_SUBMITTED",
-      user: "Paul Payumo",
-      message: "Application submitted: Single-Detached House - Locational Clearance (LC-2026-6494)",
-      details: "Applicant Paul Payumo filed locational clearance for Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga."
-    },
-    {
-      id: "LOG-SYS-02",
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      category: "security",
-      status: "success",
-      action: "USER_LOGIN",
-      user: "admin@etayo.gov.ph",
-      message: "Administrator authenticated into eTAYO Portal",
-      details: "Session established · Sto. Tomas Online Permitting System"
-    }
-  ];
+  globalForLogs._etayoLogsStore = [];
 }
 
 export async function GET(req: Request) {
@@ -52,13 +31,30 @@ export async function GET(req: Request) {
         if (text.trim().startsWith("[")) {
           const data = JSON.parse(text);
           if (Array.isArray(data) && data.length > 0) {
-            return NextResponse.json(data);
+            const clean = data.filter((l: any) => {
+              if (!l) return false;
+              const id = String(l.id || "");
+              const u = String(l.user || l.userEmail || "").toLowerCase();
+              if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return false;
+              if (u.includes("citizen@example.com") || u.includes("business@example.com")) return false;
+              return true;
+            });
+            return NextResponse.json(clean);
           }
         }
       }
     } catch (e) {}
 
-    return NextResponse.json(globalForLogs._etayoLogsStore, {
+    const cleanLocal = (globalForLogs._etayoLogsStore || []).filter((l: any) => {
+      if (!l) return false;
+      const id = String(l.id || "");
+      const u = String(l.user || l.userEmail || "").toLowerCase();
+      if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return false;
+      if (u.includes("citizen@example.com") || u.includes("business@example.com")) return false;
+      return true;
+    });
+
+    return NextResponse.json(cleanLocal, {
       status: 200,
       headers: {
         "Cache-Control": "no-cache, no-store, must-revalidate",

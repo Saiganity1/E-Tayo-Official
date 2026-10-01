@@ -63,9 +63,9 @@ export async function POST(req: Request) {
       if (sanitizedEmail.includes("admin")) {
         role = "ROLE_ADMIN";
         name = "Municipal Administrator";
-      } else if (sanitizedEmail.includes("staff")) {
+      } else if (sanitizedEmail.includes("staff") || sanitizedEmail.includes("sicat") || sanitizedEmail.includes("evaluator")) {
         role = "ROLE_STAFF";
-        name = "Staff Evaluator";
+        name = "Dave Sicat";
       } else if (sanitizedEmail === "mdpsicat.student@ua.edu.ph" || sanitizedEmail.includes("paul") || sanitizedEmail.includes("payumo")) {
         role = "ROLE_APPLICANT";
         name = "Paul Payumo";

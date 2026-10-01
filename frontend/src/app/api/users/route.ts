@@ -20,13 +20,20 @@ const DEFAULT_USERS = [
   },
   {
     id: 3,
-    name: "Municipal Staff Evaluator",
+    name: "Dave Sicat",
     email: "staff@etayo.gov.ph",
     role: "ROLE_STAFF",
     createdAt: "2026-08-01T09:00:00Z"
   },
   {
     id: 4,
+    name: "Dave Sicat",
+    email: "dave.sicat@etayo.gov.ph",
+    role: "ROLE_STAFF",
+    createdAt: "2026-08-01T09:00:00Z"
+  },
+  {
+    id: 5,
     name: "Municipal Administrator",
     email: "admin@etayo.gov.ph",
     role: "ROLE_ADMIN",
