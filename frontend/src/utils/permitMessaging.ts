@@ -207,30 +207,56 @@ export const ensureApplicationConversationMessages = (
         updated = true;
       }
     } else {
+      const approvalNoticeTitle = isLC
+        ? "📐 OFFICIAL NOTICE: LOCATIONAL CLEARANCE ORDER OF PAYMENT (ZONING CLUP)"
+        : "🏛️ OFFICIAL NOTICE: BUILDING PERMIT ORDER OF PAYMENT (PD 1096 NBCP)";
+      const issuingOffice = isLC
+        ? "Municipal Planning and Development Office (MPDO) / Zoning Administration"
+        : "Office of the Building Official (OBO) - Technical Permitting Division";
+      const permitCategory = isLC
+        ? "Stage 1: Locational Clearance / Land Use & Zoning Compliance"
+        : "Stage 2: Building Permit & Unified Technical Ancillaries (Architectural, Structural, Electrical, Sanitary, Mechanical)";
+      const legalBasis = isLC
+        ? "Comprehensive Land Use Plan (CLUP) & Zoning Ordinance (Res. No. 4810, Series of 2017)"
+        : "Presidential Decree No. 1096 (National Building Code of the Philippines)";
+
+      const feeBreakdownText = isLC
+        ? `• Locational Clearance & Zoning Assessment Fee: PHP ${assessedAmt}`
+        : (assessedNum === 6200
+            ? `• Building Construction Permit Fee: PHP 3,250.00\n• Electrical Installation Inspection Fee: PHP 1,150.00\n• Plumbing & Sanitary Inspection Fee: PHP 850.00\n• Mechanical / Ventilation Fee: PHP 450.00\n• Zoning & Municipal Filing Fee: PHP 500.00\n• Total Assessed Regulatory Fees: PHP ${assessedAmt}`
+            : `• Total Assessed Technical Regulatory Fees: PHP ${assessedAmt}`);
+
       const approvalMsg: SystemPermitMessage = {
         id: `auto-op-${appId}`,
         senderEmail: "staff@etayo.gov.ph",
-        actualSender: "Engr. Gilbert Cruz, Municipal Building Official",
+        actualSender: isLC ? "Zoning Administrator, MPDO" : "Engr. Gilbert Cruz, Municipal Building Official",
         recipientEmail: userEmail || app.applicantEmail || "applicant@etayo.gov.ph",
         applicationId: appId,
         timestamp: app.dateApproved ? new Date(app.dateApproved).toISOString() : (app.dateSubmitted ? new Date(app.dateSubmitted).toISOString() : new Date(Date.now() - 3600000).toISOString()),
         content: `[Ref: ${appId} - ${projName}]
-🏛️ OFFICIAL NOTICE: APPLICATION APPROVED & ORDER OF PAYMENT ISSUED
+${approvalNoticeTitle}
 
 Dear ${applicantName},
 
-Your application for ${projName} (${appId}) has been formally reviewed and APPROVED by the Municipal Building Official.
+Your application for ${projName} (${appId}) has been formally reviewed and APPROVED.
 
-💰 Assessed Regulatory Fee: PHP ${assessedAmt}
-📄 Order of Payment Reference: ${opNo}
+📋 Application Assessment:
+• Permit Classification: ${permitCategory}
+• Issuing Office: ${issuingOffice}
+• Legal Basis: ${legalBasis}
+• Reference Application ID: ${appId}
 
-Payment Office:
+💰 Regulatory Assessment & Fee Schedule:
+${feeBreakdownText}
+📄 Official Order of Payment Reference: ${opNo}
+
+🏛️ Payment Office:
 Municipal Treasury Office (Ground Floor, Sto. Tomas Municipal Hall, Pampanga)
 
-Action Required:
-Please settle the assessed regulatory fee of PHP ${assessedAmt} and reply directly in this conversation with a photo or screenshot of your Official Receipt (OR) or payment confirmation.
+📸 Action Required:
+Please settle the assessed regulatory fee of PHP ${assessedAmt} (Order of Payment Ref: ${opNo}) and reply directly in this conversation with a clear photo or screenshot of your Official Receipt (OR) or payment confirmation.
 
-Once we inspect your receipt picture in this conversation, we will click "Confirmed Payment" to officially release your permits.`
+Once we inspect your receipt picture in this conversation, we will click "Confirmed Payment" to officially release your ${isLC ? "Locational Clearance" : "Building Permit & Technical Ancillaries"}.`
       };
       result.unshift(approvalMsg);
       updated = true;

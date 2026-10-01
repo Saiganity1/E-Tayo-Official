@@ -15,6 +15,15 @@ import { format } from "date-fns";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { dispatchPermitMessage, ensureApplicationConversationMessages, getAuthoritativePermitFee } from "../../../../utils/permitMessaging";
 import { 
+  groupApplicationsIntoProjectDossiers, 
+  areAppsInSameProject, 
+  isLocationalClearance, 
+  isBuildingPermit, 
+  isApplicationApproved,
+  isApplicationReleased,
+  ProjectDossier 
+} from "@/utils/projectGrouping";
+import { 
   MessageBubbleContent, 
   AttachmentPreviewModal, 
   ParsedAttachment 
@@ -65,14 +74,16 @@ const MODAL_TOPIC_SUGGESTIONS = [
 ];
 
 interface ConversationThread {
-  id: string; // Application ID (e.g. "LC-2026-4157") or "general"
-  title: string;
-  subtitle?: string;
+  id: string; // Canonical application ID (e.g. "APP-2026-1061" or primary ID)
+  title: string; // Project Name (e.g. "Paul Second Floor house")
+  subtitle?: string; // Linked IDs (e.g. "LC-2026-4157 • APP-2026-1061")
   permitType?: string;
   status?: string;
   lastMessage?: string;
   lastTimestamp?: string;
-  isGeneral?: boolean;
+  applicationIds: string[];
+  applications: any[];
+  primaryApp?: any;
 }
 
 export default function ApplicantMessagesPage() {
@@ -90,8 +101,8 @@ export default function ApplicantMessagesPage() {
   const [previewAttachment, setPreviewAttachment] = useState<ParsedAttachment | null>(null);
   const [isSending, setIsSending] = useState(false);
 
-  // Categorized Conversation State
-  const [activeThreadId, setActiveThreadId] = useState<string>(initialRef || "general");
+  // Categorized Conversation State (defaults to empty/initialRef, never generic OBO admin desk)
+  const [activeThreadId, setActiveThreadId] = useState<string>(initialRef || "");
   const [searchQuery, setSearchQuery] = useState("");
   const [userCreatedThreadIds, setUserCreatedThreadIds] = useState<string[]>(initialRef ? [initialRef] : []);
   const [showStartModal, setShowStartModal] = useState(false);
@@ -132,7 +143,7 @@ export default function ApplicantMessagesPage() {
     const refMatch = content.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)(?:\s*[-–—]\s*([^\]]+))?\]/i);
     if (refMatch) {
       const matchedId = refMatch[1].trim();
-      if (matchedId.toLowerCase() === "general") return "general";
+      if (matchedId.toLowerCase() === "general") return knownAppIds[0] || "";
       return matchedId;
     }
     // Check if content contains any known application ID
@@ -141,7 +152,7 @@ export default function ApplicantMessagesPage() {
         return appId;
       }
     }
-    return "general";
+    return knownAppIds[0] || "";
   };
 
   // Load user & connect WebSocket
@@ -251,11 +262,149 @@ export default function ApplicantMessagesPage() {
     };
   }, []);
 
+  // Derive full categorized conversation threads (1 conversation per group project dossier - NO OBO Admin desk)
+  const conversationThreads = useMemo(() => {
+    const threadMap: Record<string, ConversationThread> = {};
+
+    // 1. Filter applications for current user if email exists
+    const userApps = (applications || []).filter(app => {
+      if (app.applicantEmail && currentUserEmail) {
+        return app.applicantEmail === currentUserEmail;
+      }
+      return true;
+    });
+
+    const targetApps = userApps.length > 0 ? userApps : (applications || []);
+
+    // 2. Group into Project Dossiers (e.g. groups Locational Clearance & Building Permit of same project into 1 thread)
+    const dossiers = groupApplicationsIntoProjectDossiers(targetApps);
+
+    dossiers.forEach(dossier => {
+      const apps = dossier.applications || [];
+      if (apps.length === 0) return;
+
+      // Prefer Building Permit as primary, or the first app
+      const bpApp = apps.find(a => isBuildingPermit(a));
+      const lcApp = apps.find(a => isLocationalClearance(a));
+      const primaryApp = bpApp || apps[0];
+      const primaryId = primaryApp.id;
+
+      const appIds = apps.map(a => a.id);
+      const isApproved = apps.some(a => a.status === "approved" || isApplicationApproved(a) || Boolean((a as any).orderOfPaymentNo));
+      const isReleased = apps.every(a => a.status === "released" || isApplicationReleased(a));
+
+      let overallStatus = primaryApp.status || "pending";
+      if (isReleased) {
+        overallStatus = "released";
+      } else if (isApproved) {
+        overallStatus = "approved";
+      }
+
+      const defaultLastMsg = isReleased
+        ? "🎉 Official Permits Released"
+        : isApproved
+          ? "💰 Order of Payment issued"
+          : "Application filed and queued";
+
+      const subtitleIds = appIds.join(" • ");
+      const permitTypeLabel = apps.length > 1
+        ? "Unified Group Project (LC + BP)"
+        : (isLocationalClearance(primaryApp) ? "Locational Clearance" : "Building Permit (PD 1096)");
+
+      threadMap[primaryId] = {
+        id: primaryId,
+        title: dossier.projectName || primaryApp.projectName || primaryId,
+        subtitle: subtitleIds,
+        permitType: permitTypeLabel,
+        status: overallStatus,
+        lastMessage: defaultLastMsg,
+        applicationIds: appIds,
+        applications: apps,
+        primaryApp
+      };
+    });
+
+    // 3. Include any user-created standalone thread IDs not already in dossiers (exclude 'general')
+    userCreatedThreadIds.forEach(id => {
+      if (id === "general") return;
+      const alreadyIncluded = Object.values(threadMap).some(t => t.applicationIds?.includes(id) || t.id === id);
+      if (!alreadyIncluded) {
+        const found = (applications || []).find(a => a.id === id);
+        threadMap[id] = {
+          id,
+          title: found?.projectName || id,
+          subtitle: id,
+          permitType: found?.permitType === "locational_clearance" ? "Locational Clearance" : "Building Permit",
+          status: found?.status || "In Review",
+          applicationIds: [id],
+          applications: found ? [found] : [],
+          primaryApp: found
+        };
+      }
+    });
+
+    // 4. Populate latest message & timestamp from messages
+    messages.forEach(msg => {
+      const msgThreadId = getMessageThreadId(msg);
+      if (msgThreadId === "general") return;
+
+      const matchedThread = Object.values(threadMap).find(t => 
+        t.applicationIds?.includes(msgThreadId) || 
+        t.id === msgThreadId ||
+        (msg.applicationId && t.applicationIds?.includes(msg.applicationId)) ||
+        (msg.content && t.applicationIds?.some(aid => msg.content.includes(aid)))
+      );
+
+      if (matchedThread) {
+        const cleanContent = msg.content?.replace(/\[Ref:\s*[^\]]+\]\s*/i, "").replace(/\[Attachment:\s*[^\]]+\]/gi, "[Attachment]").trim();
+        if (!matchedThread.lastTimestamp || new Date(msg.timestamp).getTime() > new Date(matchedThread.lastTimestamp).getTime()) {
+          matchedThread.lastMessage = cleanContent || "New message";
+          matchedThread.lastTimestamp = msg.timestamp;
+        }
+      }
+    });
+
+    let list = Object.values(threadMap);
+
+    // Sort: active thread first, then by latest timestamp
+    list.sort((a, b) => {
+      const isAActive = a.id === activeThreadId || a.applicationIds?.includes(activeThreadId);
+      const isBActive = b.id === activeThreadId || b.applicationIds?.includes(activeThreadId);
+      if (isAActive) return -1;
+      if (isBActive) return 1;
+      if (a.lastTimestamp && b.lastTimestamp) {
+        return new Date(b.lastTimestamp).getTime() - new Date(a.lastTimestamp).getTime();
+      }
+      if (a.lastTimestamp) return -1;
+      if (b.lastTimestamp) return 1;
+      return 0;
+    });
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(t => 
+        t.title.toLowerCase().includes(q) || 
+        t.id.toLowerCase().includes(q) || 
+        (t.subtitle && t.subtitle.toLowerCase().includes(q)) ||
+        t.applicationIds?.some(aid => aid.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }, [applications, messages, userCreatedThreadIds, activeThreadId, searchQuery, currentUserEmail]);
+
+  const myConversationThreads = conversationThreads;
+
   // Handle URL ref parameter (e.g. ?ref=LC-2026-4157 from track page)
   useEffect(() => {
     if (initialRef) {
-      setActiveThreadId(initialRef);
-      // Ensure thread is added to userCreatedThreadIds
+      const matched = conversationThreads.find(t => t.id === initialRef || t.applicationIds?.includes(initialRef));
+      if (matched) {
+        setActiveThreadId(matched.id);
+      } else {
+        setActiveThreadId(initialRef);
+      }
       setUserCreatedThreadIds(prev => {
         if (!prev.includes(initialRef)) {
           const updated = [...prev, initialRef];
@@ -268,8 +417,12 @@ export default function ApplicantMessagesPage() {
         }
         return prev;
       });
+    } else if (!activeThreadId || activeThreadId === "general") {
+      if (conversationThreads.length > 0) {
+        setActiveThreadId(conversationThreads[0].id);
+      }
     }
-  }, [initialRef, currentUserEmail]);
+  }, [initialRef, currentUserEmail, conversationThreads, activeThreadId]);
 
   // Synchronize official notices and payment messages for any approved applications
   useEffect(() => {
@@ -317,152 +470,58 @@ export default function ApplicantMessagesPage() {
     }
   }, [messages.length]);
 
-  // Derive full categorized conversation threads
-  const conversationThreads = useMemo(() => {
-    const threadMap: Record<string, ConversationThread> = {};
-
-    // 1. General OBO Admin thread (always available)
-    threadMap["general"] = {
-      id: "general",
-      title: "OBO Admin Desk",
-      subtitle: "Office of the Building Official",
-      isGeneral: true,
-      lastMessage: "Welcome to the OBO Permitting Helpdesk",
-      lastTimestamp: undefined
-    };
-
-    // 2. Discover all application threads from applications context or userCreatedThreadIds
-    (applications || []).forEach(app => {
-      const isApproved = app.status === "approved" || app.status === "released" || Boolean((app as any).orderOfPaymentNo);
-      const assessedFee = getAuthoritativePermitFee(app, app.id);
-      const defaultLastMsg = app.status === "released"
-        ? "🎉 Official Permits Released"
-        : isApproved
-          ? `💰 Order of Payment: PHP ${assessedFee.toLocaleString()} issued`
-          : "Application filed and queued";
-
-      threadMap[app.id] = {
-        id: app.id,
-        title: app.projectName || "Locational Clearance",
-        subtitle: app.id,
-        permitType: app.permitType === "locational_clearance" ? "Locational Clearance" : "Building Permit (PD 1096)",
-        status: app.status,
-        lastMessage: defaultLastMsg,
-        isGeneral: false
-      };
-    });
-
-    userCreatedThreadIds.forEach(id => {
-      if (!threadMap[id]) {
-        const found = (applications || []).find(a => a.id === id);
-        threadMap[id] = {
-          id,
-          title: found?.projectName || id,
-          subtitle: id,
-          permitType: found?.permitType || "Permit Application",
-          status: found?.status || "In Review",
-          isGeneral: false
-        };
-      }
-    });
-
-    // 3. Populate latest message & timestamp from messages
-    messages.forEach(msg => {
-      const threadId = getMessageThreadId(msg);
-      if (!threadMap[threadId]) {
-        threadMap[threadId] = {
-          id: threadId,
-          title: threadId === "general" ? "General Permitting Desk" : threadId,
-          subtitle: threadId,
-          isGeneral: threadId === "general"
-        };
-      }
-
-      // Update latest message for this thread
-      const cleanContent = msg.content?.replace(/\[Ref:\s*[^\]]+\]\s*/i, "").replace(/\[Attachment:\s*[^\]]+\]/gi, "[Attachment]").trim();
-      threadMap[threadId].lastMessage = cleanContent || "New message";
-      threadMap[threadId].lastTimestamp = msg.timestamp;
-    });
-
-    // Convert to list
-    let list = Object.values(threadMap);
-
-    // If an application has messages or was explicitly created or is active, prioritize it
-    // Sort so threads with latest timestamps appear at the top, followed by general
-    list.sort((a, b) => {
-      if (a.id === activeThreadId) return -1;
-      if (b.id === activeThreadId) return 1;
-      if (a.lastTimestamp && b.lastTimestamp) {
-        return new Date(b.lastTimestamp).getTime() - new Date(a.lastTimestamp).getTime();
-      }
-      if (a.lastTimestamp) return -1;
-      if (b.lastTimestamp) return 1;
-      if (a.id === "general") return 1;
-      return -1;
-    });
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(t => 
-        t.title.toLowerCase().includes(q) || 
-        t.id.toLowerCase().includes(q) || 
-        (t.subtitle && t.subtitle.toLowerCase().includes(q))
-      );
-    }
-
-    return list;
-  }, [applications, messages, userCreatedThreadIds, activeThreadId, searchQuery, knownAppIds, currentUserEmail]);
-
-  // Filter threads: only show this user's own applications (not other applicants)
-  const myConversationThreads = useMemo(() => {
-    return conversationThreads.filter(thread => {
-      if (thread.isGeneral) return true; // always show general/OBO Admin desk
-      // Only show application threads that belong to the current user
-      const app = (applications || []).find(a => a.id === thread.id);
-      if (app) {
-        // Match by applicantEmail if available, otherwise trust PermitContext scope
-        if (app.applicantEmail && currentUserEmail) {
-          return app.applicantEmail === currentUserEmail;
-        }
-        return true; // PermitContext already filters by user
-      }
-      // Threads from messages: only if the current user is sender or recipient
-      const threadMessages = messages.filter(m => {
-        const tid = getMessageThreadId(m);
-        return tid === thread.id && (m.senderEmail === currentUserEmail || m.recipientEmail === currentUserEmail);
-      });
-      return threadMessages.length > 0 || userCreatedThreadIds.includes(thread.id);
-    });
-  }, [conversationThreads, applications, messages, currentUserEmail, userCreatedThreadIds]);
-
-  // Current active thread object
+  // Current active thread object (guaranteed to never be 'general')
   const activeThread = useMemo(() => {
-    return conversationThreads.find(t => t.id === activeThreadId) || {
-      id: activeThreadId,
-      title: activeThreadId === "general" ? "General Permitting Desk" : activeThreadId,
-      isGeneral: activeThreadId === "general"
+    return conversationThreads.find(t => t.id === activeThreadId || t.applicationIds?.includes(activeThreadId)) || conversationThreads[0] || {
+      id: activeThreadId || "active",
+      title: "Permit Project",
+      subtitle: "",
+      applicationIds: activeThreadId ? [activeThreadId] : [],
+      applications: []
     };
   }, [conversationThreads, activeThreadId]);
 
-  // Associated application object (if active thread is for a permit)
+  // Associated active application object (prefer one with active order of payment awaiting payment)
   const activeApp = useMemo(() => {
-    if (activeThreadId === "general") return null;
-    return (applications || []).find(a => a.id === activeThreadId) || null;
-  }, [applications, activeThreadId]);
+    const apps = activeThread?.applications || [];
+    if (apps.length === 0) {
+      return (applications || []).find(a => a.id === activeThreadId) || null;
+    }
+    const awaitingPay = apps.find(a => (a.status === "approved" || isApplicationApproved(a)) && !a.isReleased && a.status !== "released");
+    if (awaitingPay) return awaitingPay;
 
-  // Filter messages for active thread
+    const bp = apps.find(a => isBuildingPermit(a));
+    if (bp) return bp;
+
+    return apps[0];
+  }, [activeThread, applications, activeThreadId]);
+
+  // Filter messages for active thread (unified timeline for all linked applications in the project)
   const activeThreadMessages = useMemo(() => {
-    const threadMsgs = messages.filter(msg => getMessageThreadId(msg) === activeThreadId);
-    if (threadMsgs.length === 0 && activeApp && (activeApp.status === "approved" || activeApp.status === "released" || Boolean((activeApp as any).orderOfPaymentNo))) {
+    const targetIds = activeThread?.applicationIds && activeThread.applicationIds.length > 0
+      ? activeThread.applicationIds
+      : (activeThreadId ? [activeThreadId] : []);
+
+    if (targetIds.length === 0) return [];
+
+    const threadMsgs = messages.filter(msg => {
+      const msgTid = getMessageThreadId(msg);
+      if (targetIds.includes(msgTid)) return true;
+      if (msg.applicationId && targetIds.includes(msg.applicationId)) return true;
+      if (msg.content && targetIds.some(tid => msg.content.includes(tid))) return true;
+      return false;
+    });
+
+    if (threadMsgs.length === 0 && activeThread?.applications && activeThread.applications.length > 0) {
       const email = currentUserEmail || "applicant@etayo.gov.ph";
-      const synthesized = ensureApplicationConversationMessages([activeApp], email, []);
+      const synthesized = ensureApplicationConversationMessages(activeThread.applications, email, []);
       if (synthesized.length > 0) {
-        return synthesized;
+        return synthesized.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       }
     }
-    return threadMsgs;
-  }, [messages, activeThreadId, activeApp, currentUserEmail]);
+
+    return threadMsgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  }, [messages, activeThreadId, activeThread, currentUserEmail]);
 
   // Send message handler
   const handleSendMessage = (contentToSend?: string) => {
@@ -470,16 +529,10 @@ export default function ApplicantMessagesPage() {
     if (!rawContent && !attachedFile) return;
 
     let finalContent = rawContent;
+    const targetRefId = activeApp?.id || activeThread?.id || activeThreadId;
+    const projName = activeThread?.title || activeApp?.projectName || "Permit Project";
+    finalContent = `[Ref: ${targetRefId} - ${projName}] ${finalContent}`;
 
-    // Automatically tag message with active application thread reference
-    if (activeThreadId !== "general") {
-      const projName = activeApp?.projectName || activeThread.title || "Application";
-      finalContent = `[Ref: ${activeThreadId} - ${projName}] ${finalContent}`;
-    } else {
-      finalContent = `[Ref: General - Helpdesk] ${finalContent}`;
-    }
-
-    // Add Attachment tag if selected
     if (attachedFile) {
       finalContent = `${finalContent}\n[Attachment: ${attachedFile.name}|${attachedFile.url}]`;
     }
@@ -488,8 +541,12 @@ export default function ApplicantMessagesPage() {
       senderEmail: currentUserEmail,
       recipientEmail: MANG_TOMAS.email,
       content: finalContent,
-      applicationId: activeThreadId
+      applicationId: targetRefId
     };
+
+    const targetAppForPayment = activeThread?.applications.find(a => (a.status === "approved" || isApplicationApproved(a)) && !a.paymentVerified) 
+      || activeApp 
+      || activeThread?.primaryApp;
 
     if (stompClient.current && connected) {
       setIsSending(true);
@@ -499,147 +556,85 @@ export default function ApplicantMessagesPage() {
           body: JSON.stringify(payload),
         });
 
-        // Optimistically add to local messages
         const localMsg = {
           id: `local-${Date.now()}`,
           senderEmail: currentUserEmail,
           recipientEmail: MANG_TOMAS.email,
           content: finalContent,
-          applicationId: activeThreadId,
+          applicationId: targetRefId,
           timestamp: new Date().toISOString()
         };
         setMessages(prev => [...prev, localMsg]);
 
-        // Auto-register payment proof if applicant sent an image in an approved permit thread
-        if (attachedFile && activeApp && (activeApp.status === "approved" || activeApp.status === "released")) {
+        if (attachedFile && targetAppForPayment && (targetAppForPayment.status === "approved" || targetAppForPayment.status === "released")) {
           try {
             const fileUrl = attachedFile.url || (typeof window !== "undefined" ? localStorage.getItem(`att_${attachedFile.name}`) : "");
             if (fileUrl) {
-              localStorage.setItem("etayo_receipt_" + activeApp.id, fileUrl);
+              localStorage.setItem("etayo_receipt_" + targetAppForPayment.id, fileUrl);
             }
             updateApplication({
-              ...activeApp,
+              ...targetAppForPayment,
               userConfirmedPayment: true,
-              paymentProofUrl: fileUrl || (activeApp as any).paymentProofUrl,
+              paymentProofUrl: fileUrl || undefined,
+              paymentProofFileName: attachedFile.name,
               datePaymentSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
             } as any);
           } catch (e) {}
         }
 
-        // Also trigger Mang Tomas AI response if talking to Mang Tomas / General Desk
-        fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: finalContent,
-            history: messages.slice(-6).map(m => ({
-              role: m.senderEmail === MANG_TOMAS.email ? "bot" : "user",
-              text: m.content
-            })),
-            userApplications: applications || []
-          })
-        })
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.reply) {
-            const botMsg = {
-              id: `mang-tomas-${Date.now()}`,
-              senderEmail: MANG_TOMAS.email,
-              recipientEmail: currentUserEmail,
-              content: data.reply,
-              applicationId: activeThreadId,
-              timestamp: new Date().toISOString()
-            };
-            setMessages(prev => [...prev, botMsg]);
-          }
-        })
-        .catch(err => console.warn("Failed to get Mang Tomas response:", err));
-
         setInputMessage("");
         setAttachedFile(null);
       } catch (err) {
-        console.error("Failed to send message", err);
+        console.error("Failed to send message via WebSocket", err);
       } finally {
         setIsSending(false);
       }
     } else {
-      // Offline fallback
-      const localMsg = {
-        id: `local-${Date.now()}`,
-        senderEmail: currentUserEmail,
-        recipientEmail: MANG_TOMAS.email,
-        content: finalContent,
-        applicationId: activeThreadId,
-        timestamp: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, localMsg]);
+      // Fallback
+      dispatchPermitMessage(payload).then(newMsg => {
+        setMessages(prev => [...prev, newMsg]);
 
-      // Auto-register payment proof in offline fallback mode
-      if (attachedFile && activeApp && (activeApp.status === "approved" || activeApp.status === "released")) {
-        try {
-          const fileUrl = attachedFile.url || (typeof window !== "undefined" ? localStorage.getItem(`att_${attachedFile.name}`) : "");
-          if (fileUrl) {
-            localStorage.setItem("etayo_receipt_" + activeApp.id, fileUrl);
-          }
-          updateApplication({
-            ...activeApp,
-            userConfirmedPayment: true,
-            paymentProofUrl: fileUrl || (activeApp as any).paymentProofUrl,
-            datePaymentSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-          } as any);
-        } catch (e) {}
-      }
-
-      // Call /api/chat for local offline/knowledge base response
-      fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: finalContent,
-          history: messages.slice(-6).map(m => ({
-            role: m.senderEmail === MANG_TOMAS.email ? "bot" : "user",
-            text: m.content
-          })),
-          userApplications: applications || []
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.reply) {
-          const botMsg = {
-            id: `mang-tomas-${Date.now()}`,
-            senderEmail: MANG_TOMAS.email,
-            recipientEmail: currentUserEmail,
-            content: data.reply,
-            applicationId: activeThreadId,
-            timestamp: new Date().toISOString()
-          };
-          setMessages(prev => [...prev, botMsg]);
+        if (attachedFile && targetAppForPayment && (targetAppForPayment.status === "approved" || targetAppForPayment.status === "released")) {
+          try {
+            const fileUrl = attachedFile.url || (typeof window !== "undefined" ? localStorage.getItem(`att_${attachedFile.name}`) : "");
+            if (fileUrl) {
+              localStorage.setItem("etayo_receipt_" + targetAppForPayment.id, fileUrl);
+            }
+            updateApplication({
+              ...targetAppForPayment,
+              userConfirmedPayment: true,
+              paymentProofUrl: fileUrl || undefined,
+              paymentProofFileName: attachedFile.name,
+              datePaymentSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+            } as any);
+          } catch (e) {}
         }
-      })
-      .catch(() => {});
 
-      setInputMessage("");
-      setAttachedFile(null);
+        setInputMessage("");
+        setAttachedFile(null);
+      });
     }
   };
 
   // Start new conversation modal handler
   const handleStartConversationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const targetId = modalSelectedAppId || (applications && applications.length > 0 ? applications[0].id : "general");
+    const defaultId = conversationThreads[0]?.id || (applications && applications.length > 0 ? applications[0].id : "");
+    const targetId = modalSelectedAppId || defaultId;
     
     // Switch to this thread
-    setActiveThreadId(targetId);
+    if (targetId) {
+      setActiveThreadId(targetId);
 
-    // Save to userCreatedThreadIds
-    if (!userCreatedThreadIds.includes(targetId)) {
-      const updated = [...userCreatedThreadIds, targetId];
-      setUserCreatedThreadIds(updated);
-      if (currentUserEmail) {
-        try {
-          localStorage.setItem(`etayo_threads_${currentUserEmail}`, JSON.stringify(updated));
-        } catch (err) {}
+      // Save to userCreatedThreadIds
+      if (!userCreatedThreadIds.includes(targetId)) {
+        const updated = [...userCreatedThreadIds, targetId];
+        setUserCreatedThreadIds(updated);
+        if (currentUserEmail) {
+          try {
+            localStorage.setItem(`etayo_threads_${currentUserEmail}`, JSON.stringify(updated));
+          } catch (err) {}
+        }
       }
     }
 
@@ -710,19 +705,24 @@ export default function ApplicantMessagesPage() {
     if (!receiptModalFile) return;
     setIsSubmittingReceipt(true);
     try {
-      const isLC = activeApp?.permitType === "locational_clearance" || String(activeApp?.id || "").toUpperCase().startsWith("LC-");
-      const cleanSeq = activeApp?.id ? activeApp.id.replace(/^[A-Za-z]+-/i, "") : "2026";
-      const authoritativeFee = getAuthoritativePermitFee(activeApp, activeThreadId);
+      const targetApp = activeThread?.applications.find(a => (a.status === "approved" || isApplicationApproved(a)) && !a.paymentVerified) 
+        || activeApp 
+        || activeThread?.primaryApp;
+      const targetId = targetApp?.id || activeThreadId;
+      const isLC = isLocationalClearance(targetApp);
+      const permitTitle = isLC ? "Locational Clearance (MPDO)" : "Building Permit (OBO PD 1096)";
+      const cleanSeq = targetId ? targetId.replace(/^[A-Za-z]+-/i, "") : "2026";
+      const authoritativeFee = getAuthoritativePermitFee(targetApp, targetId);
       const assessedAmt = authoritativeFee.toLocaleString();
-      const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${activeThreadId}`) || localStorage.getItem(`etayo_op_${String(activeThreadId).toLowerCase()}`)) : null;
-      const opNo = (activeApp as any)?.orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
+      const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${targetId}`) || localStorage.getItem(`etayo_op_${String(targetId).toLowerCase()}`)) : null;
+      const opNo = (targetApp as any)?.orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
       const orRef = receiptRefInput.trim() || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
 
-      const receiptMsgContent = `[Ref: ${activeThreadId} - Payment Receipt] Official payment settled for ${activeThreadId} (Order of Payment Ref: ${opNo}, Amount: PHP ${assessedAmt}).\nOfficial Receipt / Reference: ${orRef}.\nAttached is the photo of my payment receipt for municipal verification.\n[Attachment: ${receiptModalFile.name}|${receiptModalFile.dataUrl}]`;
+      const receiptMsgContent = `[Ref: ${targetId} - Payment Receipt] Official payment settled for ${permitTitle} (${targetId}) - Order of Payment Ref: ${opNo}, Amount: PHP ${assessedAmt}.\nOfficial Receipt / Reference: ${orRef}.\nAttached is the photo of my payment receipt for municipal verification.\n[Attachment: ${receiptModalFile.name}|${receiptModalFile.dataUrl}]`;
 
       // 1. Dispatch message
       await dispatchPermitMessage({
-        applicationId: activeThreadId,
+        applicationId: targetId,
         recipientEmail: MANG_TOMAS.email,
         senderEmail: currentUserEmail,
         content: receiptMsgContent
@@ -730,14 +730,14 @@ export default function ApplicantMessagesPage() {
 
       // 2. Cache receipt in localStorage for fast lookup across pages
       try {
-        localStorage.setItem(`etayo_receipt_${activeThreadId}`, receiptModalFile.dataUrl);
+        localStorage.setItem(`etayo_receipt_${targetId}`, receiptModalFile.dataUrl);
         localStorage.setItem(`att_${receiptModalFile.name}`, receiptModalFile.dataUrl);
       } catch (e) {}
 
       // 3. Update application in context
-      if (updateApplication && activeApp) {
+      if (updateApplication && targetApp) {
         await updateApplication({
-          ...activeApp,
+          ...targetApp,
           userConfirmedPayment: true,
           paymentProofUrl: receiptModalFile.dataUrl,
           paymentProofFileName: receiptModalFile.name,
@@ -909,7 +909,7 @@ export default function ApplicantMessagesPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setModalSelectedAppId(applications && applications.length > 0 ? applications[0].id : "general");
+                  setModalSelectedAppId(conversationThreads[0]?.id || "");
                   setModalInitialMessage("");
                   setShowStartModal(true);
                 }}
@@ -970,7 +970,7 @@ export default function ApplicantMessagesPage() {
           {/* Conversation List */}
           <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
             {myConversationThreads.map(thread => {
-              const isActive = thread.id === activeThreadId;
+              const isActive = thread.id === activeThreadId || Boolean(thread.applicationIds?.includes(activeThreadId));
               const formattedTime = thread.lastTimestamp 
                 ? format(new Date(thread.lastTimestamp), "h:mm a") 
                 : "";
@@ -990,7 +990,7 @@ export default function ApplicantMessagesPage() {
                     transition: "all 0.15s ease",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "4px"
+                    gap: "5px"
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) e.currentTarget.style.background = "#f1f5f9";
@@ -1005,7 +1005,7 @@ export default function ApplicantMessagesPage() {
                         width: "8px",
                         height: "8px",
                         borderRadius: "50%",
-                        background: isActive ? "#2563eb" : (thread.isGeneral ? "#a855f7" : "#10b981"),
+                        background: isActive ? "#2563eb" : (thread.status === "approved" || thread.status === "released" ? "#16a34a" : "#3b82f6"),
                         flexShrink: 0
                       }} />
                       <span style={{
@@ -1027,25 +1027,52 @@ export default function ApplicantMessagesPage() {
                     )}
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px" }}>
-                    <span style={{
-                      fontSize: "0.72rem",
-                      fontWeight: "700",
-                      color: thread.isGeneral ? "#7e22ce" : "#2563eb",
-                      background: thread.isGeneral ? "#faf5ff" : "#eff6ff",
-                      padding: "1px 6px",
-                      borderRadius: "6px",
-                      fontFamily: "monospace"
-                    }}>
-                      {thread.isGeneral ? "General" : thread.id}
-                    </span>
+                  {/* Badges for permits in this unified project dossier */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
+                      {thread.applications && thread.applications.length > 0 ? (
+                        thread.applications.map(app => {
+                          const isLC = isLocationalClearance(app);
+                          return (
+                            <span 
+                              key={app.id} 
+                              style={{
+                                fontSize: "0.68rem",
+                                fontWeight: "700",
+                                color: isLC ? "#6d28d9" : "#1e40af",
+                                background: isLC ? "#f5f3ff" : "#eff6ff",
+                                border: `1px solid ${isLC ? "#ddd6fe" : "#bfdbfe"}`,
+                                padding: "1px 5px",
+                                borderRadius: "5px",
+                                fontFamily: "monospace"
+                              }}
+                              title={`${isLC ? "Locational Clearance (MPDO)" : "Building Permit (OBO)"} (${app.id})`}
+                            >
+                              {isLC ? "LC" : "BP"}: {app.id}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span style={{
+                          fontSize: "0.72rem",
+                          fontWeight: "700",
+                          color: "#2563eb",
+                          background: "#eff6ff",
+                          padding: "1px 6px",
+                          borderRadius: "6px",
+                          fontFamily: "monospace"
+                        }}>
+                          {thread.id}
+                        </span>
+                      )}
+                    </div>
 
                     {thread.status && (
                       <span style={{
                         fontSize: "0.66rem",
                         fontWeight: "700",
-                        color: thread.status === "approved" ? "#15803d" : "#b45309",
-                        background: thread.status === "approved" ? "#dcfce7" : "#fef3c7",
+                        color: thread.status === "approved" || thread.status === "released" ? "#15803d" : "#b45309",
+                        background: thread.status === "approved" || thread.status === "released" ? "#dcfce7" : "#fef3c7",
                         padding: "1px 6px",
                         borderRadius: "999px",
                         textTransform: "capitalize"
@@ -1137,28 +1164,84 @@ export default function ApplicantMessagesPage() {
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                   <h3 style={{ margin: 0, fontSize: "0.98rem", fontWeight: "800", color: "#0f172a" }}>
-                    {activeThreadId !== "general" ? `OBO Permitting Desk • ${activeThreadId}` : "OBO Admin Desk (Mang Tomas)"}
+                    OBO Permitting Desk • {activeThread.title || activeThread.id}
                   </h3>
                   <span style={{
-                    background: activeThreadId !== "general" ? "#eff6ff" : "#e0e7ff",
-                    color: activeThreadId !== "general" ? "#1e40af" : "#4338ca",
+                    background: "#eff6ff",
+                    color: "#1e40af",
                     fontSize: "0.66rem",
                     fontWeight: "800",
                     padding: "2px 7px",
                     borderRadius: "6px"
                   }}>
-                    {activeThreadId !== "general" ? "Official OBO Record" : "General Helpdesk"}
+                    {activeThread.applications && activeThread.applications.length > 1 ? "Unified Project (LC + BP)" : "Official OBO Record"}
                   </span>
                 </div>
                 <div style={{ fontSize: "0.74rem", color: "#64748b", marginTop: "1px" }}>
-                  {activeThreadId !== "general" ? "Engr. Gilbert Cruz • Municipal Building Official" : "Mang Tomas • FAQs & Procedures"} • <span style={{ color: "#16a34a", fontWeight: "700" }}>● Online</span>
+                  Engr. Gilbert Cruz (OBO) & Arch. Ramos (MPDO Zoning) • <span style={{ color: "#16a34a", fontWeight: "700" }}>● Online</span>
                 </div>
               </div>
             </div>
 
-            {/* Active Thread Context Badge & Hotline */}
+            {/* Active Applications Context & Hotline */}
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              {activeThreadId !== "general" && activeApp ? (
+              {activeThread.applications && activeThread.applications.length > 0 ? (
+                activeThread.applications.map(app => {
+                  const isLC = isLocationalClearance(app);
+                  const isAppApproved = app.status === "approved" || isApplicationApproved(app);
+                  const isAppReleased = app.status === "released" || isApplicationReleased(app);
+                  return (
+                    <div 
+                      key={app.id}
+                      style={{
+                        background: isLC ? "#faf5ff" : "#f8fafc",
+                        border: `1px solid ${isLC ? "#e9d5ff" : "#e2e8f0"}`,
+                        borderRadius: "8px",
+                        padding: "3px 8px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px"
+                      }}
+                    >
+                      <span style={{ 
+                        fontSize: "0.68rem", 
+                        fontWeight: "800", 
+                        color: isLC ? "#7e22ce" : "#1e40af", 
+                        fontFamily: "monospace" 
+                      }}>
+                        {isLC ? "LC" : "BP"}: {app.id}
+                      </span>
+                      <span style={{
+                        fontSize: "0.64rem",
+                        fontWeight: "800",
+                        background: isAppReleased ? "#dcfce7" : (isAppApproved ? "#dcfce7" : "#fef3c7"),
+                        color: isAppReleased ? "#15803d" : (isAppApproved ? "#166534" : "#b45309"),
+                        padding: "1px 6px",
+                        borderRadius: "999px",
+                        textTransform: "uppercase"
+                      }}>
+                        {isAppReleased ? "Released" : (isAppApproved ? "Approved" : app.status)}
+                      </span>
+                      <Link
+                        href={`/applicant/track/${encodeURIComponent(app.id)}`}
+                        style={{
+                          fontSize: "0.7rem",
+                          fontWeight: "700",
+                          color: "#2563eb",
+                          textDecoration: "none",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "2px"
+                        }}
+                        title={`Track ${app.id}`}
+                      >
+                        <span>Track</span>
+                        <ExternalLink size={10} />
+                      </Link>
+                    </div>
+                  );
+                })
+              ) : activeApp ? (
                 <div style={{
                   background: "#f8fafc",
                   border: "1px solid #e2e8f0",
@@ -1171,17 +1254,6 @@ export default function ApplicantMessagesPage() {
                   <span style={{ fontSize: "0.76rem", color: "#334155", fontWeight: "700" }}>
                     {activeApp.projectName || activeThread.title}
                   </span>
-                  <span style={{
-                    fontSize: "0.66rem",
-                    fontWeight: "800",
-                    background: activeApp.status === "released" ? "#dcfce7" : (activeApp.status === "approved" ? "#dcfce7" : "#fef3c7"),
-                    color: activeApp.status === "released" ? "#15803d" : (activeApp.status === "approved" ? "#166534" : "#b45309"),
-                    padding: "2px 8px",
-                    borderRadius: "999px",
-                    textTransform: "uppercase"
-                  }}>
-                    {activeApp.status}
-                  </span>
                   <Link
                     href={`/applicant/track/${encodeURIComponent(activeApp.id)}`}
                     style={{
@@ -1193,7 +1265,6 @@ export default function ApplicantMessagesPage() {
                       alignItems: "center",
                       gap: "3px"
                     }}
-                    title="Track application progress"
                   >
                     <span>Track</span>
                     <ExternalLink size={10} />
@@ -1218,124 +1289,139 @@ export default function ApplicantMessagesPage() {
             </div>
           </div>
 
-          {/* SLIM NOTICE BANNER (Takes only 34px instead of 180px!) */}
-          {activeApp && activeApp.status === "approved" && (
-            <div style={{
-              padding: "7px 1.25rem",
-              background: (activeApp as any).userConfirmedPayment ? "#f0fdf4" : "#fffbeb",
-              borderBottom: `1px solid ${(activeApp as any).userConfirmedPayment ? "#bbf7d0" : "#fde68a"}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "8px",
-              fontSize: "0.8rem"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <CreditCard size={15} color={(activeApp as any).userConfirmedPayment ? "#16a34a" : "#d97706"} />
-                {(() => {
-                  const feeNum = getAuthoritativePermitFee(activeApp, activeThreadId);
-                  const cleanSeq = activeApp?.id ? activeApp.id.replace(/^[A-Za-z]+-/i, "") : "2026";
-                  const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${activeThreadId}`) || localStorage.getItem(`etayo_op_${String(activeThreadId).toLowerCase()}`)) : null;
-                  const opNo = (activeApp as any).orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
-                  return (
-                    <span style={{ fontWeight: "700", color: (activeApp as any).userConfirmedPayment ? "#166534" : "#92400e" }}>
-                      Order of Payment: PHP {feeNum.toLocaleString()} ({opNo})
-                    </span>
-                  );
-                })()}
-                <span style={{ color: "#94a3b8" }}>•</span>
-                <span style={{ color: (activeApp as any).userConfirmedPayment ? "#15803d" : "#78350f" }}>
-                  {(activeApp as any).userConfirmedPayment
-                    ? "Receipt submitted. Awaiting municipal admin verification to release permit."
-                    : "Settle at Municipal Treasury and send a photo of your receipt in this chat."}
-                </span>
-              </div>
-            </div>
-          )}
+          {/* SLIM NOTICE BANNERS (One per approved application in project with detailed breakdown) */}
+          {(() => {
+            const approvedApps = (activeThread.applications || []).filter(a => a.status === "approved" || isApplicationApproved(a));
+            if (approvedApps.length === 0 && activeApp && (activeApp.status === "approved" || isApplicationApproved(activeApp))) {
+              approvedApps.push(activeApp);
+            }
+            if (approvedApps.length === 0) return null;
 
-          {activeApp && activeApp.status === "released" && (
-            <div style={{
-              padding: "7px 1.25rem",
-              background: "#f0fdf4",
-              borderBottom: "1px solid #bbf7d0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "8px",
-              fontSize: "0.8rem"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <CheckCircle2 size={16} color="#16a34a" />
-                <span style={{ fontWeight: "700", color: "#166534" }}>
-                  Official Permits Released (OR #{(activeApp as any).officialReceiptNo || "Verified"})
-                </span>
-                <span style={{ color: "#94a3b8" }}>•</span>
-                <span style={{ color: "#15803d" }}>All approved documents and clearances are ready for download.</span>
-              </div>
-              <Link
-                href={`/applicant/track/${encodeURIComponent(activeApp.id)}`}
-                style={{
-                  background: "#16a34a",
-                  color: "white",
-                  padding: "4px 10px",
-                  borderRadius: "6px",
-                  fontSize: "0.74rem",
-                  fontWeight: "700",
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px"
-                }}
-              >
-                <span>View Downloads</span>
-                <ExternalLink size={11} />
-              </Link>
-            </div>
-          )}
+            return approvedApps.map(app => {
+              const isLC = isLocationalClearance(app);
+              const feeNum = getAuthoritativePermitFee(app, app.id);
+              const cleanSeq = app?.id ? app.id.replace(/^[A-Za-z]+-/i, "") : "2026";
+              const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${app.id}`) || localStorage.getItem(`etayo_op_${String(app.id).toLowerCase()}`)) : null;
+              const opNo = (app as any).orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
+              const isConfirmed = Boolean((app as any).userConfirmedPayment);
+              const permitLabel = isLC ? "Locational Clearance (MPDO)" : "Building Permit (OBO PD 1096)";
 
-          {/* QUICK INQUIRY CHIPS (Only shown on General Desk) */}
-          {activeThreadId === "general" && (
-            <div style={{
-              padding: "7px 1.25rem",
-              background: "#f8fafc",
-              borderBottom: "1px solid #edf2f7",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              overflowX: "auto"
-            }}>
-              <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#64748b", display: "inline-flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap" }}>
-                <Sparkles size={12} color="#6366f1" /> Quick Inquiries:
-              </span>
-              {QUICK_INQUIRIES.map((q, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setInputMessage(q.text)}
+              return (
+                <div 
+                  key={app.id}
                   style={{
-                    background: "#ffffff",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "999px",
-                    padding: "3px 11px",
-                    fontSize: "0.74rem",
-                    color: "#334155",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    display: "inline-flex",
+                    padding: "7px 1.25rem",
+                    background: isConfirmed ? "#f0fdf4" : (isLC ? "#faf5ff" : "#fffbeb"),
+                    borderBottom: `1px solid ${isConfirmed ? "#bbf7d0" : (isLC ? "#e9d5ff" : "#fde68a")}`,
+                    display: "flex",
                     alignItems: "center",
-                    gap: "4px",
-                    transition: "all 0.15s ease"
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    fontSize: "0.8rem",
+                    flexWrap: "wrap"
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.color = "#4338ca"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#334155"; }}
                 >
-                  <span>{q.icon}</span>
-                  <span>{q.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <CreditCard size={15} color={isConfirmed ? "#16a34a" : (isLC ? "#7c3aed" : "#d97706")} />
+                    <span style={{ 
+                      fontWeight: "800", 
+                      color: isConfirmed ? "#166534" : (isLC ? "#6b21a8" : "#92400e") 
+                    }}>
+                      {permitLabel} Order of Payment: PHP {feeNum.toLocaleString()} ({opNo})
+                    </span>
+                    <span style={{ color: "#94a3b8" }}>•</span>
+                    <span style={{ color: isConfirmed ? "#15803d" : (isLC ? "#7e22ce" : "#78350f") }}>
+                      {isConfirmed
+                        ? `Receipt submitted for ${app.id}. Awaiting municipal admin verification.`
+                        : `Settle fee for ${app.id} at Municipal Treasury and upload receipt photo here.`}
+                    </span>
+                  </div>
+
+                  {!isConfirmed && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        receiptFileInputRef.current?.click();
+                      }}
+                      style={{
+                        background: isLC ? "#7c3aed" : "#d97706",
+                        color: "white",
+                        border: "none",
+                        padding: "3px 9px",
+                        borderRadius: "6px",
+                        fontSize: "0.72rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}
+                    >
+                      <ImageIcon size={12} />
+                      <span>Upload Receipt</span>
+                    </button>
+                  )}
+                </div>
+              );
+            });
+          })()}
+
+          {/* PERMIT RELEASED BANNERS */}
+          {(() => {
+            const releasedApps = (activeThread.applications || []).filter(a => a.status === "released" || isApplicationReleased(a));
+            if (releasedApps.length === 0 && activeApp && (activeApp.status === "released" || isApplicationReleased(activeApp))) {
+              releasedApps.push(activeApp);
+            }
+            if (releasedApps.length === 0) return null;
+
+            return releasedApps.map(app => {
+              const isLC = isLocationalClearance(app);
+              const label = isLC ? "Official Locational Clearance Released" : "Official Building Permit Released (PD 1096)";
+              return (
+                <div 
+                  key={`rel-${app.id}`}
+                  style={{
+                    padding: "7px 1.25rem",
+                    background: "#f0fdf4",
+                    borderBottom: "1px solid #bbf7d0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    fontSize: "0.8rem",
+                    flexWrap: "wrap"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <CheckCircle2 size={16} color="#16a34a" />
+                    <span style={{ fontWeight: "700", color: "#166534" }}>
+                      {label} • {app.id} (OR #{(app as any).officialReceiptNo || "Verified"})
+                    </span>
+                    <span style={{ color: "#94a3b8" }}>•</span>
+                    <span style={{ color: "#15803d" }}>Clearances ready for download.</span>
+                  </div>
+                  <Link
+                    href={`/applicant/track/${encodeURIComponent(app.id)}`}
+                    style={{
+                      background: "#16a34a",
+                      color: "white",
+                      padding: "4px 10px",
+                      borderRadius: "6px",
+                      fontSize: "0.74rem",
+                      fontWeight: "700",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}
+                  >
+                    <span>View Downloads</span>
+                    <ExternalLink size={11} />
+                  </Link>
+                </div>
+              );
+            });
+          })()}
 
           {/* MESSAGES FEED AREA FOR ACTIVE THREAD */}
           <div 
@@ -1351,8 +1437,8 @@ export default function ApplicantMessagesPage() {
               gap: "0.85rem"
             }}
           >
-            {/* THREAD CONTEXT DIVIDER (Clean, modern 22px line instead of 120px card) */}
-            {activeThreadId !== "general" && activeApp ? (
+            {/* THREAD CONTEXT DIVIDER */}
+            {activeApp || activeThread ? (
               <div style={{
                 display: "flex",
                 alignItems: "center",
@@ -1374,16 +1460,16 @@ export default function ApplicantMessagesPage() {
                   gap: "5px",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
                 }}>
-                  <ShieldCheck size={12} color="#16a34a" /> Official Municipal Archive • Ref: {activeApp.id}
+                  <ShieldCheck size={12} color="#16a34a" /> Official Municipal Permitting Record • {activeThread.subtitle || activeThread.id}
                 </span>
                 <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
               </div>
             ) : null}
 
-            {activeThreadId === "general" && activeThreadMessages.length === 0 && (
+            {activeThreadMessages.length === 0 && (
               <div style={{
                 margin: "auto",
-                maxWidth: "480px",
+                maxWidth: "460px",
                 textAlign: "center",
                 padding: "2rem 1.5rem",
                 background: "#ffffff",
@@ -1392,10 +1478,10 @@ export default function ApplicantMessagesPage() {
                 boxShadow: "0 4px 16px rgba(0,0,0,0.02)"
               }}>
                 <div style={{
-                  width: "54px",
-                  height: "54px",
+                  width: "50px",
+                  height: "50px",
                   borderRadius: "14px",
-                  background: MANG_TOMAS.avatarBg,
+                  background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                   color: "white",
                   display: "flex",
                   alignItems: "center",
@@ -1403,34 +1489,14 @@ export default function ApplicantMessagesPage() {
                   margin: "0 auto 0.85rem auto",
                   boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)"
                 }}>
-                  <Landmark size={28} />
+                  <Building2 size={26} />
                 </div>
-                <h3 style={{ fontSize: "1.15rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
-                  General Permitting Helpdesk
+                <h3 style={{ fontSize: "1.1rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
+                  {activeThread.title || "Project Permitting Channel"}
                 </h3>
-                <p style={{ margin: "0 0 1rem 0", color: "#64748b", fontSize: "0.86rem", lineHeight: "1.5" }}>
-                  Consult Mang Tomas regarding general zoning classifications, required engineering documents, or start a dedicated conversation for an application.
+                <p style={{ margin: "0 0 0.5rem 0", color: "#64748b", fontSize: "0.84rem", lineHeight: "1.5" }}>
+                  Official communication channel for {activeThread.subtitle || activeThread.id}. Send your inquiries, follow-ups, or payment receipts directly to the Municipal Permitting Officers.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setShowStartModal(true)}
-                  style={{
-                    background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "10px",
-                    padding: "9px 18px",
-                    fontSize: "0.85rem",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    boxShadow: "0 4px 12px rgba(0, 56, 168, 0.35)"
-                  }}
-                >
-                  <Plus size={16} /> Start Conversation for Application
-                </button>
               </div>
             )}
 
@@ -1603,11 +1669,7 @@ export default function ApplicantMessagesPage() {
               {/* Main Input Text */}
               <input
                 type="text"
-                placeholder={
-                  activeThreadId !== "general"
-                    ? `Ask Mang Tomas regarding [${activeThreadId}]...`
-                    : "Ask Mang Tomas about general requirements or procedures..."
-                }
+                placeholder={`Ask OBO Permitting Desk regarding [${activeThread.title || activeThreadId}]...`}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 style={{
@@ -1649,7 +1711,7 @@ export default function ApplicantMessagesPage() {
               </button>
             </form>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "#94a3b8", marginTop: "6px", padding: "0 2px" }}>
-              <span>Categorized Thread: <strong>{activeThread.title}</strong></span>
+              <span>Categorized Project Thread: <strong>{activeThread.title}</strong></span>
               <span>Press Enter to send inquiry</span>
             </div>
           </div>
@@ -1703,10 +1765,10 @@ export default function ApplicantMessagesPage() {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: "800", color: "#0f172a" }}>
-                    Start New Conversation
+                    Start Project Conversation
                   </h3>
                   <p style={{ margin: "2px 0 0 0", fontSize: "0.82rem", color: "#64748b" }}>
-                    Select an application to start a categorized inquiry thread.
+                    Select a project dossier to start or switch to its unified permitting thread.
                   </p>
                 </div>
               </div>
@@ -1730,17 +1792,29 @@ export default function ApplicantMessagesPage() {
               {/* Application Selection */}
               <div style={{ marginBottom: "1.25rem" }}>
                 <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "#334155", marginBottom: "0.5rem" }}>
-                  Select Application to Inquire About:
+                  Select Project Dossier to Inquire About:
                 </label>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "220px", overflowY: "auto", paddingRight: "4px" }}>
-                  {applications && applications.length > 0 ? (
-                    applications.map(app => {
-                      const isSelected = modalSelectedAppId === app.id;
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "250px", overflowY: "auto", paddingRight: "4px" }}>
+                  {(() => {
+                    const dossiers = groupApplicationsIntoProjectDossiers(applications || []);
+                    if (dossiers.length === 0) {
+                      return (
+                        <div style={{ padding: "1rem", textAlign: "center", color: "#64748b", fontSize: "0.85rem" }}>
+                          No applications found to start a conversation.
+                        </div>
+                      );
+                    }
+                    return dossiers.map(dossier => {
+                      const apps = dossier.applications || [];
+                      const primaryApp = apps.find(a => isBuildingPermit(a)) || apps[0];
+                      const primaryId = primaryApp?.id || "";
+                      const isSelected = modalSelectedAppId === primaryId || apps.some(a => a.id === modalSelectedAppId);
+
                       return (
                         <div
-                          key={app.id}
-                          onClick={() => setModalSelectedAppId(app.id)}
+                          key={dossier.id || primaryId}
+                          onClick={() => setModalSelectedAppId(primaryId)}
                           style={{
                             border: isSelected ? "2px solid #2563eb" : "1.5px solid #e2e8f0",
                             background: isSelected ? "#eff6ff" : "#ffffff",
@@ -1770,10 +1844,10 @@ export default function ApplicantMessagesPage() {
                             </div>
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontWeight: "700", fontSize: "0.88rem", color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                {app.projectName || app.id}
+                                {dossier.projectName || primaryId}
                               </div>
                               <div style={{ fontSize: "0.72rem", color: "#64748b", fontFamily: "monospace" }}>
-                                {app.id} • {app.permitType === "locational_clearance" ? "Locational Clearance" : "Building Permit"}
+                                {apps.map(a => `${isLocationalClearance(a) ? "LC" : "BP"}: ${a.id}`).join(" • ")}
                               </div>
                             </div>
                           </div>
@@ -1783,55 +1857,17 @@ export default function ApplicantMessagesPage() {
                             fontWeight: "700",
                             padding: "2px 8px",
                             borderRadius: "999px",
-                            background: app.status === "approved" ? "#dcfce7" : "#fef3c7",
-                            color: app.status === "approved" ? "#15803d" : "#b45309",
+                            background: apps.some(a => a.status === "approved" || a.status === "released") ? "#dcfce7" : "#fef3c7",
+                            color: apps.some(a => a.status === "approved" || a.status === "released") ? "#15803d" : "#b45309",
                             textTransform: "capitalize",
                             flexShrink: 0
                           }}>
-                            {app.status}
+                            {apps.length > 1 ? `${apps.length} Permits (LC+BP)` : (primaryApp?.status || "Active")}
                           </span>
                         </div>
                       );
-                    })
-                  ) : null}
-
-                  {/* General Helpdesk option */}
-                  <div
-                    onClick={() => setModalSelectedAppId("general")}
-                    style={{
-                      border: modalSelectedAppId === "general" ? "2px solid #7c3aed" : "1.5px solid #e2e8f0",
-                      background: modalSelectedAppId === "general" ? "#f5f3ff" : "#ffffff",
-                      borderRadius: "12px",
-                      padding: "10px 14px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      transition: "all 0.15s ease"
-                    }}
-                  >
-                    <div style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      background: modalSelectedAppId === "general" ? "#7c3aed" : "#f1f5f9",
-                      color: modalSelectedAppId === "general" ? "white" : "#475569",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0
-                    }}>
-                      <HelpCircle size={16} />
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: "700", fontSize: "0.88rem", color: "#0f172a" }}>
-                        General Permitting Helpdesk
-                      </div>
-                      <div style={{ fontSize: "0.72rem", color: "#64748b" }}>
-                        General zoning, NBCP requirements, or general OBO inquiry
-                      </div>
-                    </div>
-                  </div>
+                    });
+                  })()}
                 </div>
               </div>
 
@@ -1979,14 +2015,21 @@ export default function ApplicantMessagesPage() {
 
             {/* Assessed Regulatory Fee & OP Badge */}
             {(() => {
-              const feeNum = getAuthoritativePermitFee(activeApp, activeThreadId);
-              const cleanSeq = activeApp?.id ? activeApp.id.replace(/^[A-Za-z]+-/i, "") : "2026";
-              const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${activeThreadId}`) || localStorage.getItem(`etayo_op_${String(activeThreadId).toLowerCase()}`)) : null;
-              const opNo = (activeApp as any)?.orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
+              const targetApp = activeThread?.applications.find(a => (a.status === "approved" || isApplicationApproved(a)) && !a.paymentVerified) 
+                || activeApp 
+                || activeThread?.primaryApp;
+              const targetId = targetApp?.id || activeThreadId;
+              const isLC = isLocationalClearance(targetApp);
+              const feeNum = getAuthoritativePermitFee(targetApp, targetId);
+              const cleanSeq = targetId ? targetId.replace(/^[A-Za-z]+-/i, "") : "2026";
+              const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${targetId}`) || localStorage.getItem(`etayo_op_${String(targetId).toLowerCase()}`)) : null;
+              const opNo = (targetApp as any)?.orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
+              const permitLabel = isLC ? "Locational Clearance (MPDO)" : "Building Permit (OBO PD 1096)";
+
               return (
                 <div style={{
-                  background: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
+                  background: isLC ? "#f5f3ff" : "#f0fdf4",
+                  border: `1.5px solid ${isLC ? "#ddd6fe" : "#bbf7d0"}`,
                   borderRadius: "12px",
                   padding: "10px 14px",
                   marginBottom: "1rem",
@@ -1995,18 +2038,18 @@ export default function ApplicantMessagesPage() {
                   alignItems: "center"
                 }}>
                   <div>
-                    <span style={{ fontSize: "0.75rem", color: "#166534", fontWeight: "700", display: "block" }}>
-                      Assessed Regulatory Fee
+                    <span style={{ fontSize: "0.72rem", color: isLC ? "#6d28d9" : "#166534", fontWeight: "800", textTransform: "uppercase", display: "block" }}>
+                      {permitLabel} • {targetId}
                     </span>
-                    <strong style={{ fontSize: "1.15rem", color: "#14532d", fontWeight: "900" }}>
+                    <strong style={{ fontSize: "1.15rem", color: isLC ? "#4c1d95" : "#14532d", fontWeight: "900" }}>
                       PHP {feeNum.toLocaleString()}
                     </strong>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <span style={{ fontSize: "0.75rem", color: "#166534", fontWeight: "700", display: "block" }}>
+                    <span style={{ fontSize: "0.72rem", color: isLC ? "#6d28d9" : "#166534", fontWeight: "700", display: "block" }}>
                       Order of Payment Reference
                     </span>
-                    <span style={{ fontFamily: "monospace", fontSize: "0.85rem", fontWeight: "700", color: "#15803d" }}>
+                    <span style={{ fontFamily: "monospace", fontSize: "0.85rem", fontWeight: "700", color: isLC ? "#7c3aed" : "#15803d" }}>
                       {opNo}
                     </span>
                   </div>

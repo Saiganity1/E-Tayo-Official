@@ -102,6 +102,7 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
   const isOrderOfPaymentNotice = !isMe && (
     cleanText.includes("OFFICIAL NOTICE: APPLICATION APPROVED") ||
     cleanText.includes("ORDER OF PAYMENT ISSUED") ||
+    cleanText.includes("ORDER OF PAYMENT") ||
     (cleanText.includes("Order of Payment Reference") && cleanText.includes("Assessed Regulatory Fee"))
   );
 
@@ -160,7 +161,9 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
         }}>
           {/* Header */}
           <div style={{
-            background: "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)",
+            background: isLC 
+              ? "linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%)" 
+              : "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)",
             padding: "10px 16px",
             color: "white",
             display: "flex",
@@ -170,27 +173,27 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div style={{
-                width: "28px",
-                height: "28px",
+                width: "30px",
+                height: "30px",
                 borderRadius: "8px",
-                background: "rgba(255,255,255,0.15)",
+                background: "rgba(255,255,255,0.18)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center"
               }}>
-                <Landmark size={16} color="#93c5fd" />
+                <Landmark size={17} color={isLC ? "#c7d2fe" : "#93c5fd"} />
               </div>
               <div>
-                <div style={{ fontSize: "0.68rem", fontWeight: "700", letterSpacing: "0.5px", color: "#bfdbfe", textTransform: "uppercase" }}>
-                  LGU Santo Tomas, Pampanga • OBO
+                <div style={{ fontSize: "0.68rem", fontWeight: "700", letterSpacing: "0.5px", color: isLC ? "#c7d2fe" : "#bfdbfe", textTransform: "uppercase" }}>
+                  {isLC ? "LGU Santo Tomas, Pampanga • MPDO / Zoning" : "LGU Santo Tomas, Pampanga • OBO"}
                 </div>
-                <div style={{ fontSize: "0.86rem", fontWeight: "800" }}>
-                  Official Order of Payment Notice
+                <div style={{ fontSize: "0.88rem", fontWeight: "800" }}>
+                  {isLC ? "Official Locational Clearance Order of Payment" : "Official Building Permit Order of Payment (PD 1096)"}
                 </div>
               </div>
             </div>
             {ref && (
-              <span style={{ fontSize: "0.72rem", background: "rgba(255,255,255,0.18)", padding: "2px 8px", borderRadius: "6px", fontFamily: "monospace", fontWeight: "800" }}>
+              <span style={{ fontSize: "0.72rem", background: "rgba(255,255,255,0.2)", padding: "3px 9px", borderRadius: "6px", fontFamily: "monospace", fontWeight: "800" }}>
                 {ref}
               </span>
             )}
@@ -200,7 +203,26 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
           <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
             <div style={{ fontSize: "0.88rem", color: "#334155", lineHeight: "1.5" }}>
               Dear <strong>{addressedTo}</strong>,<br />
-              Your application for <strong>{project}</strong> {ref ? `(${ref})` : ""} has been formally reviewed and <strong>APPROVED</strong> by the Municipal Building Official.
+              Your application for <strong>{project}</strong> {ref ? `(${ref})` : ""} has been formally reviewed and <strong>APPROVED</strong> by the {isLC ? "Municipal Planning and Development Office (MPDO)" : "Municipal Building Official (OBO)"}.
+            </div>
+
+            {/* Permit Category & Scope Tag */}
+            <div style={{
+              background: isLC ? "#f5f3ff" : "#eff6ff",
+              border: `1px solid ${isLC ? "#ddd6fe" : "#bfdbfe"}`,
+              borderRadius: "8px",
+              padding: "6px 10px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              fontSize: "0.76rem"
+            }}>
+              <span style={{ fontWeight: "700", color: isLC ? "#6d28d9" : "#1e40af" }}>
+                {isLC ? "📐 Stage 1: Locational Clearance / Zoning" : "🏗️ Stage 2: Building Permit & Technical Permitting (PD 1096)"}
+              </span>
+              <span style={{ color: isLC ? "#7c3aed" : "#2563eb", fontWeight: "600", fontSize: "0.72rem" }}>
+                {isLC ? "MPDO Zoning Administration" : "OBO Technical Division"}
+              </span>
             </div>
 
             {/* Fee Box */}
@@ -232,6 +254,29 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
                 </div>
               </div>
             </div>
+
+            {/* Regulatory Breakdown for Building Permits */}
+            {!isLC && (
+              <div style={{
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "8px",
+                padding: "8px 10px",
+                fontSize: "0.75rem",
+                color: "#475569"
+              }}>
+                <strong style={{ color: "#1e293b", display: "block", marginBottom: "4px" }}>
+                  Regulatory Assessment Schedule (Sto. Tomas Revenue Schedule):
+                </strong>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px", fontSize: "0.72rem" }}>
+                  <span>• Building Construction: <strong>PHP 3,250</strong></span>
+                  <span>• Electrical Installation: <strong>PHP 1,150</strong></span>
+                  <span>• Plumbing & Sanitary: <strong>PHP 850</strong></span>
+                  <span>• Mechanical / Ventilation: <strong>PHP 450</strong></span>
+                  <span>• Zoning & Filing Fee: <strong>PHP 500</strong></span>
+                </div>
+              </div>
+            )}
 
             {/* Instructions */}
             <div style={{

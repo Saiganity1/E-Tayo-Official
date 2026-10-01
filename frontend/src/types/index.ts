@@ -12,15 +12,16 @@ export type ApplicationStatus =
 export interface Requirement {
   name: string;
   required: boolean;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'submitted';
   fileName?: string;
   fileSize?: string;
+  fileUrl?: string;
   remarks?: string;
 }
 
 export interface TrackingStep {
   title: string;
-  status: 'completed' | 'current' | 'upcoming';
+  status: 'completed' | 'current' | 'upcoming' | 'in-progress';
   date?: string;
   notes?: string;
   actor?: string;
@@ -62,12 +63,25 @@ export interface PermitApplication {
   historyLog: HistoryLog[];
   remarks?: string;
   locationalClearanceRef?: string;
+  clearanceRef?: string;
+  connectedClearanceId?: string;
   fileUrl?: string;
   fileName?: string;
   sketchImageUrl?: string;
   projectType?: string;
   dateApproved?: string;
   isArchived?: boolean;
+  barangay?: string;
+  assessedFees?: number;
+  orderOfPaymentNo?: string;
+  userConfirmedPayment?: boolean;
+  paymentProofUrl?: string;
+  paymentProofFileName?: string;
+  paymentReference?: string;
+  datePaymentSubmitted?: string;
+  officialReceiptNo?: string;
+  datePaid?: string;
+  [key: string]: any;
 }
 
 export interface SystemLog {
