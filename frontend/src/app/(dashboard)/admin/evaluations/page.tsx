@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { formatPhilippineRelativeDateTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { 
   FileCheck, 
@@ -215,34 +216,7 @@ export default function StaffEvaluationsPage() {
   };
 
   const formatLogTime = (dateStr?: string) => {
-    if (!dateStr) return "Just now";
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      
-      const now = new Date();
-      const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
-      
-      let relative = "";
-      if (diffSec < 60) relative = "Just now";
-      else if (diffSec < 3600) relative = `${Math.max(1, Math.floor(diffSec / 60))}m ago`;
-      else if (diffSec < 86400) relative = `${Math.floor(diffSec / 3600)}h ago`;
-      else if (diffSec < 604800) relative = `${Math.floor(diffSec / 86400)}d ago`;
-
-      const formatted = d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-      }) + " · " + d.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true
-      });
-
-      return relative ? `${formatted} (${relative})` : formatted;
-    } catch (e) {
-      return dateStr;
-    }
+    return formatPhilippineRelativeDateTime(dateStr);
   };
 
   return (

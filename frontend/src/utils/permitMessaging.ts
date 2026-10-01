@@ -176,26 +176,51 @@ export const ensureApplicationConversationMessages = (
     const now = Date.now();
     let approvalTime = app.dateApproved 
       ? new Date(app.dateApproved).getTime() 
-      : (app.dateSubmitted ? new Date(app.dateSubmitted).getTime() : now - 14400000);
+      : (app.dateSubmitted ? new Date(app.dateSubmitted).getTime() : now - 7200000);
     const approvalDateObj = new Date(approvalTime);
     if (approvalDateObj.getHours() === 0 && approvalDateObj.getMinutes() === 0) {
-      // If parsed as midnight (00:00:00), shift to 9:00 AM on that day
-      approvalDateObj.setHours(9, 0, 0, 0);
-      approvalTime = approvalDateObj.getTime();
+      // If parsed as midnight (00:00:00)
+      const isToday = new Date().toDateString() === approvalDateObj.toDateString();
+      if (isToday) {
+        approvalTime = Math.max(now - 7200000, approvalDateObj.getTime());
+        if (approvalTime >= now) {
+          approvalTime = now - 1800000;
+        }
+      } else {
+        approvalDateObj.setHours(9, 0, 0, 0);
+        approvalTime = approvalDateObj.getTime();
+      }
+    } else if (approvalTime > now) {
+      approvalTime = now - 3600000;
     }
 
     let receiptTime = (app as any).datePaymentSubmitted 
       ? new Date((app as any).datePaymentSubmitted).getTime() 
-      : (approvalTime + 3600000); // 1 hour after approval by default
+      : (approvalTime + 1800000); // 30 mins after approval
     if (receiptTime <= approvalTime) {
-      receiptTime = approvalTime + 1800000; // Guarantee receipt is after approval
+      receiptTime = approvalTime + 900000;
+    }
+    if (receiptTime > now) {
+      receiptTime = Math.max(approvalTime + 60000, now - 1200000);
+      if (approvalTime >= receiptTime) {
+        approvalTime = receiptTime - 600000;
+      }
     }
 
     let releaseTime = (app as any).dateReleased 
       ? new Date((app as any).dateReleased).getTime() 
-      : (receiptTime + 3600000); // 1 hour after payment by default
+      : (receiptTime + 1800000);
     if (releaseTime <= receiptTime) {
-      releaseTime = receiptTime + 1800000; // Guarantee release is after receipt
+      releaseTime = receiptTime + 900000;
+    }
+    if (releaseTime > now) {
+      releaseTime = Math.max(receiptTime + 60000, now - 300000);
+      if (receiptTime >= releaseTime) {
+        receiptTime = releaseTime - 300000;
+        if (approvalTime >= receiptTime) {
+          approvalTime = receiptTime - 600000;
+        }
+      }
     }
 
     // 1. Ensure Official Approval & Order of Payment Message exists & has correct fee
@@ -312,7 +337,7 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
       const hasManualUserReceipt = result.some(m => {
         const tid = m.applicationId || (m.content && m.content.includes(appId));
         const isMatch = tid === appId || (m.content && m.content.includes(appId));
-        const isNotAuto = !m.id?.startsWith("auto-receipt-");
+        const isNotAuto = !String(m?.id || "").startsWith("auto-receipt-");
         const hasAttachmentOrPayment = m.content?.includes("[Attachment:") || 
                                        m.content?.includes("payment-receipt") || 
                                        m.content?.includes("Payment Receipt") || 

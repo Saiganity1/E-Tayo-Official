@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { formatPhilippineDate, formatPhilippineDateTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../../../../context/PermitContext";
 import { 
   ChevronLeft, 
@@ -132,12 +133,12 @@ export default function ApplicationTrackDetail() {
       paymentMethod: paymentMethodInput,
       paymentProofUrl: paymentReceiptFile?.dataUrl || (appData as any).paymentProofUrl,
       paymentProofFileName: paymentReceiptFile?.name || (appData as any).paymentProofFileName,
-      paymentDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+      paymentDate: formatPhilippineDate(new Date()),
       paymentNotes: paymentNotesInput,
       historyLog: [
         ...(appData.historyLog || []),
         {
-          date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+          date: formatPhilippineDateTime(new Date()),
           action: "Payment Confirmation Submitted",
           actor: appData.applicantName || "Applicant",
           details: `Payment submitted under reference ${refNo} via ${paymentMethodInput}. Assessed: ${assessedAmountStr}.${paymentReceiptFile ? " Receipt photo attached." : ""} Awaiting municipal cashier sign-off.`
@@ -157,7 +158,7 @@ export default function ApplicationTrackDetail() {
         paymentMethod: paymentMethodInput,
         paymentProofUrl: paymentReceiptFile?.dataUrl || (connectedApp as any).paymentProofUrl,
         paymentProofFileName: paymentReceiptFile?.name || (connectedApp as any).paymentProofFileName,
-        paymentDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+        paymentDate: formatPhilippineDate(new Date()),
         paymentNotes: paymentNotesInput
       };
       await updateApplication(updatedConnected as any);

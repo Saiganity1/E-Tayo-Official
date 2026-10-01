@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
+import { formatPhilippineDateTime, formatPhilippineDate, formatPhilippineTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { dispatchPermitMessage, ensureApplicationConversationMessages, getAuthoritativePermitFee } from "../../../../utils/permitMessaging";
 import { 
@@ -1559,7 +1560,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                               color: isMe ? "rgba(255, 255, 255, 0.8)" : "#94a3b8"
                             }}>
                               <Clock size={10} />
-                              <span>{format(getValidDate(msg.timestamp), "h:mm a · MMM d")}</span>
+                              <span>{formatPhilippineDateTime(msg.timestamp)}</span>
                             </div>
                           </div>
                         </div>

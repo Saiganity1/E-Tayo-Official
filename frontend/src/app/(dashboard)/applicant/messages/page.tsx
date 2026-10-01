@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
+import { formatPhilippineTime, formatPhilippineDate, formatPhilippineDateTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { dispatchPermitMessage, ensureApplicationConversationMessages, getAuthoritativePermitFee, SystemPermitMessage } from "../../../../utils/permitMessaging";
 import { 
@@ -535,11 +536,11 @@ export default function ApplicantMessagesPage() {
 
     // Deduplicate duplicate receipts: If the user sent their own receipt photo or message in this thread, drop synthetic auto-receipt-${appId}
     const hasManualReceipt = threadMsgs.some(m => 
-      !m.id?.startsWith("auto-receipt-") && 
+      !String(m?.id || "").startsWith("auto-receipt-") && 
       (m.content?.includes("[Attachment:") || m.content?.includes("payment-receipt") || m.content?.includes("Official payment settled"))
     );
     if (hasManualReceipt) {
-      threadMsgs = threadMsgs.filter(m => !m.id?.startsWith("auto-receipt-"));
+      threadMsgs = threadMsgs.filter(m => !String(m?.id || "").startsWith("auto-receipt-"));
     }
 
     // Deduplicate identical duplicate message IDs or exact contents
@@ -1036,7 +1037,7 @@ export default function ApplicantMessagesPage() {
             {myConversationThreads.map(thread => {
               const isActive = thread.id === activeThreadId || Boolean(thread.applicationIds?.includes(activeThreadId));
               const formattedTime = thread.lastTimestamp 
-                ? format(new Date(thread.lastTimestamp), "h:mm a") 
+                ? formatPhilippineTime(thread.lastTimestamp) 
                 : "";
 
               return (
@@ -1567,7 +1568,7 @@ export default function ApplicantMessagesPage() {
             {/* MESSAGES LIST */}
             {activeThreadMessages.map((msg, idx) => {
               const isMe = msg.senderEmail === currentUserEmail;
-              const timeStr = msg.timestamp ? format(new Date(msg.timestamp), "h:mm a") : format(new Date(), "h:mm a");
+              const timeStr = formatPhilippineTime(msg.timestamp);
 
               return (
                 <div

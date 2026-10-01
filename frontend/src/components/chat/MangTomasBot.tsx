@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { MessageSquare, X, Send, Bot, Sparkles, RefreshCw } from "lucide-react";
+import { formatPhilippineTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../context/PermitContext";
 
 interface ChatMessage {
@@ -216,7 +217,7 @@ export default function MangTomasBot({
                       </span>
                     )}
                     <span className="msg-time" style={{ marginLeft: "auto" }}>
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {formatPhilippineTime(msg.timestamp)}
                     </span>
                   </div>
                 </div>
