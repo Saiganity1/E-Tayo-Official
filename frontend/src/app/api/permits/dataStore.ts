@@ -282,12 +282,19 @@ export function savePermit(newApp: PermitApplication): PermitApplication {
     const existingStatus = String(existing.status || "").toLowerCase().trim();
     const newStatus = String(newApp.status || "").toLowerCase().trim();
     // Protect against status regression from stale payloads:
-    // If local in-memory store has an approved or released application, do NOT let a stale GET "pending" or "under_review" overwrite it!
+    // 1. If local in-memory store has an approved or released application, do NOT let a stale GET "pending" or "under_review" overwrite it!
+    // 2. If local in-memory store is under_review, do NOT let a stale "pending" revert it!
     if ((existingStatus === "approved" || existingStatus === "released") && (newStatus === "pending" || newStatus === "under_review")) {
       newApp.status = existing.status;
       if (existing.dateApproved && !newApp.dateApproved) newApp.dateApproved = existing.dateApproved;
       if (existing.remarks && !newApp.remarks) newApp.remarks = existing.remarks;
       if (existing.paymentStatus && !newApp.paymentStatus) newApp.paymentStatus = existing.paymentStatus;
+      if (existing.trackingSteps && (!newApp.trackingSteps || newApp.trackingSteps.length === 0)) {
+        newApp.trackingSteps = existing.trackingSteps;
+      }
+    } else if (existingStatus === "under_review" && (newStatus === "pending" || !newStatus)) {
+      newApp.status = "under_review";
+      if (existing.remarks && !newApp.remarks) newApp.remarks = existing.remarks;
       if (existing.trackingSteps && (!newApp.trackingSteps || newApp.trackingSteps.length === 0)) {
         newApp.trackingSteps = existing.trackingSteps;
       }
@@ -311,6 +318,8 @@ export function updatePermit(updatedApp: PermitApplication): PermitApplication {
   if ((existingStatus === "approved" || existingStatus === "released") && (newStatus === "pending" || newStatus === "under_review")) {
     updatedApp.status = (existing as any).status;
     if ((existing as any).dateApproved && !updatedApp.dateApproved) updatedApp.dateApproved = (existing as any).dateApproved;
+  } else if (existingStatus === "under_review" && (newStatus === "pending" || !newStatus)) {
+    updatedApp.status = "under_review";
   }
 
   const merged = { ...existing, ...updatedApp };

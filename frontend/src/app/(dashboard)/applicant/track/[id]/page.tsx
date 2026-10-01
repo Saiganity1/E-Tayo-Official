@@ -880,9 +880,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const upperTrackId = curTrackId.toUpperCase();
   const rawAppStatus = String(appData?.status || "").toLowerCase().trim();
   const isApproved = isApplicationApproved(appData);
-  const isPending = !isApproved && !isActuallyReleased && (rawAppStatus === "pending" || !rawAppStatus);
+  const isLocalUnderReview = typeof window !== "undefined" && Boolean(curTrackId) && (
+    localStorage.getItem(`etayo_status_${curTrackId}`) === "under_review" ||
+    localStorage.getItem(`etayo_status_${lowerTrackId}`) === "under_review" ||
+    localStorage.getItem(`etayo_status_${upperTrackId}`) === "under_review" ||
+    rawAppStatus === "under_review"
+  );
+  const isPending = !isApproved && !isActuallyReleased && !isLocalUnderReview && (rawAppStatus === "pending" || !rawAppStatus);
 
-  // Sync localStorage with verified release / approval
+  // Sync localStorage with verified release / approval / under_review
   if (isActuallyReleased && typeof window !== "undefined" && curTrackId) {
     try {
       [curTrackId, lowerTrackId, upperTrackId].forEach(k => {
@@ -898,6 +904,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         localStorage.setItem(`etayo_status_${k}`, "approved");
         localStorage.setItem(`etayo_approved_${k}`, "true");
         localStorage.removeItem(`etayo_released_${k}`);
+      });
+    } catch (e) {}
+  } else if (isLocalUnderReview && typeof window !== "undefined" && curTrackId) {
+    try {
+      [curTrackId, lowerTrackId, upperTrackId].forEach(k => {
+        localStorage.setItem(`etayo_status_${k}`, "under_review");
       });
     } catch (e) {}
   } else if (isPending && typeof window !== "undefined" && curTrackId) {
@@ -916,14 +928,17 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     } catch (e) {}
   }
 
+  const effectiveStatus = isActuallyReleased 
+    ? "released" 
+    : (isApproved 
+        ? "approved" 
+        : (isLocalUnderReview ? "under_review" : (rawAppStatus || "pending")));
+
   const getStatusDetails = (status: string) => {
     if (isActuallyReleased || status === "released") {
       return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle, label: "Permit Released", step: 4 };
     }
     const cleanSt = String(status || "").toLowerCase().trim();
-    if (cleanSt === "pending" || isPending) {
-      return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", step: 1 };
-    }
     if (cleanSt === "approved" || isApproved) {
       if (paymentInfo.confirmed) {
         return { color: "#10b981", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Payment Submitted (Under Review)", step: 3 };
@@ -936,9 +951,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         step: 3 
       };
     }
+    if (cleanSt === "under_review" || isLocalUnderReview) {
+      return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Evaluation", step: 2 };
+    }
+    if (cleanSt === "pending" || isPending) {
+      return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", step: 1 };
+    }
     switch(status) {
       case "pending": return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", step: 1 };
-      case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Review", step: 2 };
+      case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Evaluation", step: 2 };
       case "incomplete_requirements": return { color: "#ef4444", bg: "rgba(239, 68, 68, 0.15)", icon: AlertTriangle, label: "Action Required", step: 2 };
       case "rejected": return { color: "#dc2626", bg: "rgba(220, 38, 38, 0.15)", icon: XCircle, label: "Disapproved / Rejected", step: 0 };
       case "cancelled": return { color: "#dc2626", bg: "rgba(220, 38, 38, 0.15)", icon: XCircle, label: "Cancelled by Applicant", step: 0 };
@@ -946,7 +967,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     }
   };
 
-  const statusConfig = getStatusDetails(appData?.status || "pending");
+  const statusConfig = getStatusDetails(effectiveStatus);
   const StatusIcon = statusConfig.icon;
 
   const timelineSteps = [

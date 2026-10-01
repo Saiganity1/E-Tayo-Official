@@ -439,7 +439,12 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
     const upperAppId = appId.toUpperCase();
     const rawStatus = String(app.status || "").toLowerCase().trim();
 
-    const isAppApproved = isApplicationApproved(app);
+    const isLocalUnderReview = typeof window !== "undefined" && Boolean(appId) && (
+      localStorage.getItem(`etayo_status_${appId}`) === "under_review" ||
+      localStorage.getItem(`etayo_status_${lowerAppId}`) === "under_review" ||
+      localStorage.getItem(`etayo_status_${upperAppId}`) === "under_review" ||
+      rawStatus === "under_review"
+    );
 
     // Keep localStorage in sync if approval is detected from backend or tracking steps
     if (isAppApproved && typeof window !== "undefined" && appId) {
@@ -449,7 +454,13 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
           localStorage.setItem(`etayo_approved_${k}`, "true");
         });
       } catch (e) {}
-    } else if (!isAppApproved && (rawStatus === "pending" || !rawStatus) && typeof window !== "undefined" && appId) {
+    } else if (isLocalUnderReview && typeof window !== "undefined" && appId) {
+      try {
+        [appId, lowerAppId, upperAppId].forEach(k => {
+          localStorage.setItem(`etayo_status_${k}`, "under_review");
+        });
+      } catch (e) {}
+    } else if (!isAppApproved && !isLocalUnderReview && (rawStatus === "pending" || !rawStatus) && typeof window !== "undefined" && appId) {
       try {
         [appId, lowerAppId, upperAppId].forEach(k => {
           localStorage.removeItem(`etayo_approved_${k}`);
@@ -470,7 +481,7 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       matchedDossier.totalCount++;
       if (isAppApproved) {
         matchedDossier.approvedCount++;
-      } else if (rawStatus === "pending" || rawStatus === "under_review") {
+      } else if (rawStatus === "pending" || rawStatus === "under_review" || isLocalUnderReview) {
         matchedDossier.pendingCount++;
       } else if (rawStatus === "rejected") {
         matchedDossier.rejectedCount++;
@@ -486,7 +497,7 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       }
     } else {
       const baseTitle = extractBaseProjectName(app);
-      const isPending = !isAppApproved && (rawStatus === "pending" || rawStatus === "under_review");
+      const isPending = !isAppApproved && (rawStatus === "pending" || rawStatus === "under_review" || isLocalUnderReview);
       const isRejected = rawStatus === "rejected";
       const isAction = rawStatus === "incomplete_requirements" || rawStatus === "rejected";
 

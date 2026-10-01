@@ -442,9 +442,16 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         (app.projectAddress && app.projectAddress.toLowerCase().includes(query));
 
       const isAppApproved = isApplicationApproved(app);
+      const aId = String(app.id || "").trim();
+      const isRev = (app.status === "under_review") || (typeof window !== "undefined" && Boolean(aId) && (
+        localStorage.getItem(`etayo_status_${aId}`) === "under_review" ||
+        localStorage.getItem(`etayo_status_${aId.toLowerCase()}`) === "under_review" ||
+        localStorage.getItem(`etayo_status_${aId.toUpperCase()}`) === "under_review"
+      ));
+      const effectiveAppStatus = isAppApproved ? "approved" : (isRev ? "under_review" : (app.status || "pending"));
 
       const matchesStatus = statusFilter === "all" || 
-        (statusFilter === "approved" ? isAppApproved : (isAppApproved ? false : app.status === statusFilter));
+        (statusFilter === "approved" ? isAppApproved : (isAppApproved ? false : effectiveAppStatus === statusFilter));
 
       const matchesType = typeFilter === "all" ||
         (typeFilter === "locational_clearance" ? app.permitType === "locational_clearance" : app.permitType !== "locational_clearance");
@@ -457,11 +464,23 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     activeTotal: activeApps.length,
     pending: activeApps.filter(a => {
       const isAppApproved = isApplicationApproved(a);
-      return (a.status === "pending" || !a.status) && !isAppApproved;
+      const aId = String(a.id || "").trim();
+      const isRev = (a.status === "under_review") || (typeof window !== "undefined" && Boolean(aId) && (
+        localStorage.getItem(`etayo_status_${aId}`) === "under_review" ||
+        localStorage.getItem(`etayo_status_${aId.toLowerCase()}`) === "under_review" ||
+        localStorage.getItem(`etayo_status_${aId.toUpperCase()}`) === "under_review"
+      ));
+      return (a.status === "pending" || !a.status) && !isAppApproved && !isRev;
     }).length,
     review: activeApps.filter(a => {
       const isAppApproved = isApplicationApproved(a);
-      return a.status === "under_review" && !isAppApproved;
+      const aId = String(a.id || "").trim();
+      const isRev = (a.status === "under_review") || (typeof window !== "undefined" && Boolean(aId) && (
+        localStorage.getItem(`etayo_status_${aId}`) === "under_review" ||
+        localStorage.getItem(`etayo_status_${aId.toLowerCase()}`) === "under_review" ||
+        localStorage.getItem(`etayo_status_${aId.toUpperCase()}`) === "under_review"
+      ));
+      return isRev && !isAppApproved;
     }).length,
     approved: activeApps.filter(a => isApplicationApproved(a)).length,
     action: activeApps.filter(a => a.status === "incomplete_requirements" || a.status === "rejected").length,
@@ -624,7 +643,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       case "pending":
         return { color: "#d97706", bg: "#fef3c7", border: "#f59e0b", icon: Clock, label: "Pending Review", step: 1 };
       case "under_review":
-        return { color: "#0038A8", bg: "#eff6ff", border: "#0038A8", icon: Search, label: "Under Review", step: 2 };
+        return { color: "#0038A8", bg: "#eff6ff", border: "#0038A8", icon: Search, label: "Under Evaluation", step: 2 };
       case "incomplete_requirements":
         return { color: "#dc2626", bg: "#fee2e2", border: "#ef4444", icon: AlertTriangle, label: "Action Required", step: 2 };
       case "rejected":
@@ -690,7 +709,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   };
 
   // Helper to render an individual application card with visual timeline
-  const renderApplicationCard = (app: any) => {
+  const renderApplicationCard = (app: any, options?: { hideMessageDesk?: boolean }) => {
     const isLocationalClearance = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
 
     // Identify connected application (Locational Clearance <-> Technical Permits) of the same project
@@ -727,6 +746,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     }
     const connectedStage2App = isLocationalClearance ? connectedApp : null;
     const connectedLCApp = !isLocationalClearance ? connectedApp : null;
+    const shouldHideMessageDesk = Boolean(options?.hideMessageDesk) || Boolean(connectedStage2App);
     const isActuallyReleased = isActuallyReleasedApp(app);
     const paymentInfo = checkUserConfirmedPayment(app);
     const appIdStr = String(app.id || "").trim();
@@ -734,7 +754,13 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const upperAppId = appIdStr.toUpperCase();
     const rawAppStatus = (app.status || "").toLowerCase().trim();
     const isAppApproved = isApplicationApproved(app);
-    const isPending = !isAppApproved && !isActuallyReleased && (rawAppStatus === "pending" || !rawAppStatus);
+    const isLocalUnderReview = typeof window !== "undefined" && Boolean(appIdStr) && (
+      localStorage.getItem(`etayo_status_${appIdStr}`) === "under_review" ||
+      localStorage.getItem(`etayo_status_${lowerAppId}`) === "under_review" ||
+      localStorage.getItem(`etayo_status_${upperAppId}`) === "under_review" ||
+      rawAppStatus === "under_review"
+    );
+    const isPending = !isAppApproved && !isActuallyReleased && !isLocalUnderReview && (rawAppStatus === "pending" || !rawAppStatus);
 
     // Keep localStorage in sync with release / approval
     if (isActuallyReleased && typeof window !== "undefined" && appIdStr) {
@@ -752,6 +778,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           localStorage.setItem(`etayo_status_${k}`, "approved");
           localStorage.setItem(`etayo_approved_${k}`, "true");
           localStorage.removeItem(`etayo_released_${k}`);
+        });
+      } catch (e) {}
+    } else if (isLocalUnderReview && typeof window !== "undefined" && appIdStr) {
+      try {
+        [appIdStr, lowerAppId, upperAppId].forEach(k => {
+          localStorage.setItem(`etayo_status_${k}`, "under_review");
         });
       } catch (e) {}
     } else if (isPending && typeof window !== "undefined" && appIdStr) {
@@ -774,7 +806,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       ? "released" 
       : (isAppApproved 
           ? "approved" 
-          : (rawAppStatus === "under_review" ? "under_review" : (rawAppStatus || "pending")));
+          : (isLocalUnderReview ? "under_review" : (rawAppStatus || "pending")));
     const statusConfig = getStatusConfig(effectiveStatus, app);
     const StatusIcon = statusConfig.icon;
     // Show Stage 2 progression banner ONLY if LC is officially Released (not when it's only Step 3 / Approved)
@@ -943,9 +975,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               { 
                 num: 2, 
                 title: "2. Evaluation", 
-                desc: "Technical Review", 
-                active: isAppApproved || isActuallyReleased || statusConfig.step >= 2, 
-                current: !isAppApproved && !isActuallyReleased && (statusConfig.step === 2) 
+                desc: effectiveStatus === "under_review" ? "Under Evaluation" : "Technical Review", 
+                active: isAppApproved || isActuallyReleased || statusConfig.step >= 2 || effectiveStatus === "under_review", 
+                current: !isAppApproved && !isActuallyReleased && (statusConfig.step === 2 || effectiveStatus === "under_review") 
               },
               { 
                 num: 3, 
@@ -1511,28 +1543,30 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           </div>
 
           <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
-            {/* Message Desk Officer */}
-            <Link
-              href={`/applicant/messages?ref=${encodeURIComponent(app.id)}`}
-              style={{
-                background: "#ffffff",
-                border: "1.5px solid #cbd5e1",
-                color: "#334155",
-                padding: "7px 13px",
-                borderRadius: "10px",
-                fontSize: "0.84rem",
-                fontWeight: "700",
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                transition: "all 0.15s ease"
-              }}
-              title="Inquire or message municipal evaluation officer regarding this application"
-            >
-              <MessageSquare size={14} color="#64748b" />
-              <span>Message Desk</span>
-            </Link>
+            {/* Message Desk Officer - Only 1 button shown in grouped project dossiers */}
+            {!shouldHideMessageDesk && (
+              <Link
+                href={`/applicant/messages?ref=${encodeURIComponent(app.id)}`}
+                style={{
+                  background: "#ffffff",
+                  border: "1.5px solid #cbd5e1",
+                  color: "#334155",
+                  padding: "7px 13px",
+                  borderRadius: "10px",
+                  fontSize: "0.84rem",
+                  fontWeight: "700",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  transition: "all 0.15s ease"
+                }}
+                title="Inquire or message municipal evaluation officer regarding this application"
+              >
+                <MessageSquare size={14} color="#64748b" />
+                <span>Message Desk</span>
+              </Link>
+            )}
 
             {/* ARCHIVE / UNARCHIVE ACTION BUTTON */}
             {isArchived ? (
@@ -2140,15 +2174,21 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                             {dossier.projectName}
                           </h3>
                           {(() => {
-                            const isAnyPending = dossier.applications.some(a => {
+                            const isAnyUnderReview = dossier.applications.some(a => {
+                              if (isApplicationApproved(a)) return false;
+                              const aId = String(a.id || "").trim();
+                              const isLocalRev = typeof window !== "undefined" && Boolean(aId) && (
+                                localStorage.getItem(`etayo_status_${aId}`) === "under_review" ||
+                                localStorage.getItem(`etayo_status_${aId.toLowerCase()}`) === "under_review" ||
+                                localStorage.getItem(`etayo_status_${aId.toUpperCase()}`) === "under_review"
+                              );
+                              const raw = (a.status || "").toLowerCase().trim();
+                              return raw === "under_review" || isLocalRev;
+                            });
+                            const isAnyPending = !isAnyUnderReview && dossier.applications.some(a => {
                               if (isApplicationApproved(a)) return false;
                               const raw = (a.status || "").toLowerCase().trim();
                               return raw === "pending" || !raw;
-                            });
-                            const isAnyUnderReview = !isAnyPending && dossier.applications.some(a => {
-                              if (isApplicationApproved(a)) return false;
-                              const raw = (a.status || "").toLowerCase().trim();
-                              return raw === "under_review";
                             });
                             return (
                               <span style={{
@@ -2160,7 +2200,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                                 color: hasAction ? "#b91c1c" : isAnyUnderReview ? "#1d4ed8" : isAnyPending ? "#b45309" : "#16a34a",
                                 border: `1px solid ${hasAction ? "#fca5a5" : isAnyUnderReview ? "#bfdbfe" : isAnyPending ? "#fde68a" : "#bbf7d0"}`
                               }}>
-                                {hasAction ? "Action Required on Requirements" : isAnyUnderReview ? `${dossier.pendingCount || 1} Form Under Review` : isAnyPending ? `${dossier.pendingCount || 1} Form${(dossier.pendingCount || 1) > 1 ? "s" : ""} Awaiting Review` : "All Forms Approved ✓"}
+                                {hasAction ? "Action Required on Requirements" : isAnyUnderReview ? `${dossier.pendingCount || 1} Form Under Evaluation` : isAnyPending ? `${dossier.pendingCount || 1} Form${(dossier.pendingCount || 1) > 1 ? "s" : ""} Awaiting Review` : "All Forms Approved ✓"}
                               </span>
                             );
                           })()}
@@ -2183,10 +2223,20 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         {dossier.applications.map((app, idx) => {
                           const badge = getPermitTypeBadge(app.permitType, app.id);
-                          const isThisPending = (app.status || "").toLowerCase().trim() === "pending" || !app.status;
-                          const isThisApproved = isThisPending ? false : isApplicationApproved(app);
+                          const aId = String(app.id || "").trim();
+                          const isThisLocalUnderReview = typeof window !== "undefined" && Boolean(aId) && (
+                            localStorage.getItem(`etayo_status_${aId}`) === "under_review" ||
+                            localStorage.getItem(`etayo_status_${aId.toLowerCase()}`) === "under_review" ||
+                            localStorage.getItem(`etayo_status_${aId.toUpperCase()}`) === "under_review"
+                          );
+                          const isThisApproved = isApplicationApproved(app);
                           const isThisReleased = isActuallyReleasedApp(app) || (app.status || "").toLowerCase() === "released";
-                          const effSt = isThisReleased ? "released" : (isThisPending ? "pending" : (isThisApproved ? "approved" : (app.status || "pending")));
+                          const isThisPending = !isThisApproved && !isThisReleased && !isThisLocalUnderReview && ((app.status || "").toLowerCase().trim() === "pending" || !app.status);
+                          const effSt = isThisReleased 
+                            ? "released" 
+                            : (isThisApproved 
+                                ? "approved" 
+                                : (isThisLocalUnderReview || (app.status || "").toLowerCase().trim() === "under_review" ? "under_review" : "pending"));
                           const stConfig = getStatusConfig(effSt, app);
                           return (
                             <React.Fragment key={app.id}>
@@ -2230,7 +2280,18 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                   {/* EXPANDED DOSSIER CONTENT */}
                   {isExpanded && (
                     <div style={{ padding: "1.25rem 1.5rem", background: "#f8fafc", display: "flex", flexDirection: "column", gap: "1.25rem", borderTop: "1px solid #f1f5f9" }}>
-                      {dossier.applications.map(app => renderApplicationCard(app))}
+                      {(() => {
+                        // When applications are grouped, determine the single active application for Message Desk
+                        const activeMessagingAppId = (() => {
+                          const nonLC = dossier.applications.find(a => !String(a.id || "").toLowerCase().startsWith("lc-"));
+                          return nonLC ? nonLC.id : dossier.applications[dossier.applications.length - 1]?.id;
+                        })();
+                        return dossier.applications.map(app => 
+                          renderApplicationCard(app, {
+                            hideMessageDesk: dossier.applications.length > 1 && app.id !== activeMessagingAppId
+                          })
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

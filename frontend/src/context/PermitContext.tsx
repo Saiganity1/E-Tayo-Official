@@ -439,11 +439,19 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               (foundCached ? isApplicationApproved(foundCached) : false)
             );
 
+            const isUnderReviewLocally = typeof window !== "undefined" && Boolean(id) && (
+              localStorage.getItem(`etayo_status_${id}`) === "under_review" ||
+              localStorage.getItem(`etayo_status_${lowerId}`) === "under_review" ||
+              localStorage.getItem(`etayo_status_${upperId}`) === "under_review" ||
+              foundCached?.status === "under_review" ||
+              bAppStatus === "under_review"
+            );
+
             // STRICT AUTHORITATIVE RULE:
-            // If the application is truly pending AND has NOT been approved/released locally by staff:
+            // If the application is truly pending AND has NOT been approved/released locally by staff AND is not under review:
             // Clean up any stray flags and keep it pending.
-            // But if staff has already approved or released it, NEVER regress back to "pending"!
-            if (bAppStatus === "pending" && !isApprovedOrReleasedLocally) {
+            // But if staff has already approved or released it or placed under evaluation, NEVER regress back to "pending"!
+            if (bAppStatus === "pending" && !isApprovedOrReleasedLocally && !isUnderReviewLocally) {
               if (typeof window !== "undefined" && id) {
                 try {
                   [id, lowerId, upperId].forEach(k => {
@@ -539,13 +547,23 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const storedDateApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${id}`) || localStorage.getItem(`etayo_date_approved_${lowerId}`) || localStorage.getItem(`etayo_date_approved_${upperId}`)) : null;
             const storedRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${id}`) || localStorage.getItem(`etayo_remarks_${lowerId}`) || localStorage.getItem(`etayo_remarks_${upperId}`)) : null;
 
+            const isLocalUnderReview = typeof window !== "undefined" && (
+              localStorage.getItem(`etayo_status_${id}`) === "under_review" ||
+              localStorage.getItem(`etayo_status_${lowerId}`) === "under_review" ||
+              localStorage.getItem(`etayo_status_${upperId}`) === "under_review" ||
+              (foundCached as any)?.status === "under_review" ||
+              bApp.status === "under_review"
+            );
+
             const effectiveStatus = isPaidLocal 
               ? "released" 
               : (isApprovedLocal 
                   ? "approved" 
-                  : (bApp.status && bApp.status !== "pending" 
-                      ? bApp.status 
-                      : (foundCached?.status || bApp.status)));
+                  : (isLocalUnderReview 
+                      ? "under_review" 
+                      : (bApp.status && bApp.status !== "pending" 
+                          ? bApp.status 
+                          : (foundCached?.status || bApp.status))));
 
             if ((isApprovedLocal || isPaidLocal) && typeof window !== "undefined") {
               try {
@@ -558,6 +576,12 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                       localStorage.setItem(`etayo_paid_${k}`, "true");
                     }
                   }
+                });
+              } catch (e) {}
+            } else if (effectiveStatus === "under_review" && typeof window !== "undefined") {
+              try {
+                [id, lowerId, upperId].forEach(k => {
+                  if (k) localStorage.setItem(`etayo_status_${k}`, "under_review");
                 });
               } catch (e) {}
             }
@@ -646,8 +670,25 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         );
         const mIsApproved = isApplicationApproved(mApp) || Boolean(mIsLocallyApproved);
 
+        const mIsLocallyUnderReview = typeof window !== "undefined" && Boolean(mId) && (
+          localStorage.getItem(`etayo_status_${mId}`) === "under_review" ||
+          localStorage.getItem(`etayo_status_${mLower}`) === "under_review" ||
+          localStorage.getItem(`etayo_status_${mUpper}`) === "under_review" ||
+          mRawStatus === "under_review"
+        );
+
+        const mEffectiveRawStatus = (!mIsApproved && mIsLocallyUnderReview) ? "under_review" : mRawStatus;
+
+        if (mEffectiveRawStatus === "under_review" && typeof window !== "undefined" && mId) {
+          try {
+            [mId, mLower, mUpper].forEach(k => {
+              if (k) localStorage.setItem(`etayo_status_${k}`, "under_review");
+            });
+          } catch (e) {}
+        }
+
         // 1. Strict guard: If application is pending, rejected, cancelled, or incomplete AND has not been approved by admin:
-        if (!mIsApproved && (mRawStatus === "pending" || mRawStatus === "rejected" || mRawStatus === "cancelled" || mRawStatus === "incomplete_requirements")) {
+        if (!mIsApproved && (mEffectiveRawStatus === "pending" || mEffectiveRawStatus === "rejected" || mEffectiveRawStatus === "cancelled" || mEffectiveRawStatus === "incomplete_requirements")) {
           if (typeof window !== "undefined" && mId) {
             try {
               [mId, mLower, mUpper].forEach(k => {
@@ -660,7 +701,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                   localStorage.removeItem(`etayo_op_${k}`);
                   localStorage.removeItem(`etayo_fees_${k}`);
                   localStorage.removeItem(`etayo_date_approved_${k}`);
-                  if (mRawStatus === "pending") {
+                  if (mEffectiveRawStatus === "pending") {
                     localStorage.setItem(`etayo_status_${k}`, "pending");
                   }
                 }
@@ -669,7 +710,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }
 
           let cleanSteps = mApp.trackingSteps || [];
-          if (mRawStatus === "pending") {
+          if (mEffectiveRawStatus === "pending") {
             cleanSteps = cleanSteps.map((st: any, idx: number) => {
               if (idx === 0) return { ...st, status: "completed" };
               if (idx === 1) return { ...st, status: "in-progress" };
@@ -679,7 +720,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
           return {
             ...mApp,
-            status: mRawStatus,
+            status: mEffectiveRawStatus,
             isArchived: mIsArchived,
             trackingSteps: cleanSteps,
             isReleased: false,
@@ -703,7 +744,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const mDateApp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${mId}`) || localStorage.getItem(`etayo_date_approved_${mLower}`) || localStorage.getItem(`etayo_date_approved_${mUpper}`)) : null;
         const mRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${mId}`) || localStorage.getItem(`etayo_remarks_${mLower}`) || localStorage.getItem(`etayo_remarks_${mUpper}`)) : null;
 
-        const mEffectiveStatus = mIsPaid ? "released" : (mIsApproved ? "approved" : mApp.status);
+        const mEffectiveStatus = mIsPaid ? "released" : (mIsApproved ? "approved" : (mIsLocallyUnderReview ? "under_review" : mApp.status));
 
         if ((mIsApproved || mIsPaid) && typeof window !== "undefined") {
           try {
