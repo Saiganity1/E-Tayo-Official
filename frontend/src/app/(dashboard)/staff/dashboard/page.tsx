@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { usePermitContext } from "../../../../context/PermitContext";
 import { 
   Search, Filter, AlertCircle, FileCheck, MapPin, Eye, ChevronDown, 
   ChevronRight, FolderKanban, FolderOpen, Building2, User, Phone, 
   CheckCircle2, Clock, XCircle, ArrowRight, Layers, List, ShieldCheck, 
-  Sparkles, Check, Copy
+  Sparkles, Check, Copy, Calendar, CalendarDays, X, RotateCcw
 } from "lucide-react";
 import Link from "next/link";
 import { PermitApplication } from "../../../../types";
@@ -23,6 +23,57 @@ export default function StaffDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>("project");
   const [expandedDossiers, setExpandedDossiers] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Calendar / Date Filter State
+  const [showCalendarFilter, setShowCalendarFilter] = useState(false);
+  const [datePreset, setDatePreset] = useState("all"); // 'all' | 'today' | '7days' | 'this_month' | '30days' | 'custom'
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  // Close calendar popover on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
+        setShowCalendarFilter(false);
+      }
+    };
+    if (showCalendarFilter) {
+      document.addEventListener("mousedown", handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [showCalendarFilter]);
+
+  // Robust date parser for various string formats ("October 01, 2026", "2026-10-01", etc.)
+  const parseAppDate = (dateStr?: string): Date | null => {
+    if (!dateStr) return null;
+    const clean = String(dateStr).trim();
+    const parsed = new Date(clean);
+    if (!isNaN(parsed.getTime())) return parsed;
+    const parts = clean.split(",");
+    if (parts.length >= 2) {
+      const fallback = new Date(`${parts[0]}, ${parts[1].trim().split(" ")[0]}`);
+      if (!isNaN(fallback.getTime())) return fallback;
+    }
+    return null;
+  };
+
+  const isDateFilterActive = datePreset !== "all" || Boolean(startDate) || Boolean(endDate);
+
+  const getDateFilterButtonLabel = () => {
+    if (datePreset === "today") return "Date: Today";
+    if (datePreset === "7days") return "Date: Last 7 Days";
+    if (datePreset === "this_month") return "Date: This Month";
+    if (datePreset === "30days") return "Date: Last 30 Days";
+    if (startDate && endDate) {
+      return `${startDate} → ${endDate}`;
+    }
+    if (startDate) return `From: ${startDate}`;
+    if (endDate) return `To: ${endDate}`;
+    return "Calendar Filter";
+  };
 
   const handleStartEvaluation = (targetApp: any, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -90,9 +141,51 @@ export default function StaffDashboard() {
       const appType = (app.permitType || "locational_clearance").toLowerCase();
       const matchesType = filterType === "all" || appType.includes(filterType.toLowerCase());
 
-      return matchesSearch && matchesStatus && matchesType;
+      const matchesDate = (() => {
+        if (datePreset === "all" && !startDate && !endDate) return true;
+        const appDate = parseAppDate(app.dateSubmitted || (app as any).createdAt || (app as any).submissionDate);
+        if (!appDate) return true;
+
+        const now = new Date();
+
+        if (datePreset === "today") {
+          return appDate.getFullYear() === now.getFullYear() &&
+                 appDate.getMonth() === now.getMonth() &&
+                 appDate.getDate() === now.getDate();
+        }
+        if (datePreset === "7days") {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          sevenDaysAgo.setHours(0, 0, 0, 0);
+          return appDate >= sevenDaysAgo;
+        }
+        if (datePreset === "this_month") {
+          return appDate.getMonth() === now.getMonth() && appDate.getFullYear() === now.getFullYear();
+        }
+        if (datePreset === "30days") {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          thirtyDaysAgo.setHours(0, 0, 0, 0);
+          return appDate >= thirtyDaysAgo;
+        }
+        if (startDate || endDate) {
+          let valid = true;
+          if (startDate) {
+            const start = new Date(`${startDate}T00:00:00`);
+            if (!isNaN(start.getTime())) valid = valid && appDate >= start;
+          }
+          if (endDate) {
+            const end = new Date(`${endDate}T23:59:59`);
+            if (!isNaN(end.getTime())) valid = valid && appDate <= end;
+          }
+          return valid;
+        }
+        return true;
+      })();
+
+      return matchesSearch && matchesStatus && matchesType && matchesDate;
     });
-  }, [applications, searchTerm, filterStatus, filterType]);
+  }, [applications, searchTerm, filterStatus, filterType, datePreset, startDate, endDate]);
 
   // Group applications by Project Dossier (Stage 1 Locational Clearance + Stage 2 Building Permit of the same project)
   const projectDossiers = useMemo(() => {
@@ -388,10 +481,216 @@ export default function StaffDashboard() {
           {/* Filter Status Button */}
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            style={{ background: showFilters ? "#eff6ff" : "white", border: `1px solid ${showFilters ? "#93c5fd" : "#cbd5e1"}`, color: showFilters ? "#1d4ed8" : "#475569", padding: "0.65rem 1.25rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "8px", fontWeight: "700", fontSize: "0.88rem", cursor: "pointer", transition: "all 0.2s" }}
+            style={{ background: showFilters ? "#eff6ff" : "white", border: `1px solid ${showFilters ? "#93c5fd" : "#cbd5e1"}`, color: showFilters ? "#1d4ed8" : "#475569", padding: "0.65rem 1.15rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "8px", fontWeight: "700", fontSize: "0.88rem", cursor: "pointer", transition: "all 0.2s" }}
           >
             <Filter size={16} /> Status Filter <ChevronDown size={15} style={{ transform: showFilters ? "rotate(180deg)" : "rotate(0)", transition: "0.2s" }} />
           </button>
+
+          {/* Calendar / Date Filter Button & Popover */}
+          <div ref={calendarRef} style={{ position: "relative" }}>
+            <button 
+              type="button"
+              onClick={() => setShowCalendarFilter(!showCalendarFilter)}
+              style={{
+                background: isDateFilterActive ? "#eff6ff" : "white",
+                border: `1.5px solid ${isDateFilterActive ? "#2563eb" : "#cbd5e1"}`,
+                color: isDateFilterActive ? "#1d4ed8" : "#475569",
+                padding: "0.65rem 1.15rem",
+                borderRadius: "12px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                fontWeight: "700",
+                fontSize: "0.88rem",
+                cursor: "pointer",
+                boxShadow: isDateFilterActive ? "0 2px 8px rgba(37,99,235,0.18)" : "none",
+                transition: "all 0.2s"
+              }}
+              title="Filter applications by submission calendar date"
+            >
+              <Calendar size={16} color={isDateFilterActive ? "#2563eb" : "#64748b"} />
+              <span>{getDateFilterButtonLabel()}</span>
+              <ChevronDown size={15} style={{ transform: showCalendarFilter ? "rotate(180deg)" : "rotate(0)", transition: "0.2s" }} />
+            </button>
+
+            {/* Popover Dropdown Card */}
+            {showCalendarFilter && (
+              <div 
+                className="animate-fade-in-up"
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: 0,
+                  zIndex: 999,
+                  width: "330px",
+                  background: "#ffffff",
+                  borderRadius: "18px",
+                  border: "1.5px solid #cbd5e1",
+                  boxShadow: "0 18px 45px rgba(15, 23, 42, 0.16)",
+                  padding: "1.25rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem"
+                }}
+              >
+                {/* Popover Header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <CalendarDays size={18} />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: "0.92rem", fontWeight: "800", color: "#0f172a" }}>Submission Calendar</h4>
+                      <p style={{ margin: 0, fontSize: "0.74rem", color: "#64748b" }}>Filter applications by submission date</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCalendarFilter(false)}
+                    style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Quick Presets */}
+                <div>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>
+                    Quick Presets
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "6px" }}>
+                    {[
+                      { id: "all", label: "All Dates" },
+                      { id: "today", label: "Today" },
+                      { id: "7days", label: "Last 7 Days" },
+                      { id: "this_month", label: "This Month" },
+                      { id: "30days", label: "Last 30 Days" }
+                    ].map(preset => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          setDatePreset(preset.id);
+                          if (preset.id !== "custom") {
+                            setStartDate("");
+                            setEndDate("");
+                          }
+                        }}
+                        style={{
+                          padding: "7px 10px",
+                          borderRadius: "9px",
+                          fontSize: "0.8rem",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                          background: datePreset === preset.id && !startDate && !endDate ? "#2563eb" : "#f8fafc",
+                          color: datePreset === preset.id && !startDate && !endDate ? "#ffffff" : "#334155",
+                          border: `1px solid ${datePreset === preset.id && !startDate && !endDate ? "#2563eb" : "#e2e8f0"}`,
+                          textAlign: "center"
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Date Range */}
+                <div style={{ borderTop: "1px dashed #e2e8f0", paddingTop: "0.85rem" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>
+                    Custom Date Range
+                  </label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div>
+                      <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#64748b", display: "block", marginBottom: "3px" }}>Date From:</span>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => {
+                          setStartDate(e.target.value);
+                          setDatePreset("custom");
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "7px 10px",
+                          borderRadius: "9px",
+                          border: "1.5px solid #cbd5e1",
+                          fontSize: "0.84rem",
+                          color: "#0f172a",
+                          background: "#ffffff",
+                          outline: "none"
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#64748b", display: "block", marginBottom: "3px" }}>Date To:</span>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => {
+                          setEndDate(e.target.value);
+                          setDatePreset("custom");
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "7px 10px",
+                          borderRadius: "9px",
+                          border: "1.5px solid #cbd5e1",
+                          fontSize: "0.84rem",
+                          color: "#0f172a",
+                          background: "#ffffff",
+                          outline: "none"
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Popover Actions */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: "0.75rem", marginTop: "2px" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDatePreset("all");
+                      setStartDate("");
+                      setEndDate("");
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#64748b",
+                      fontSize: "0.8rem",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}
+                  >
+                    <RotateCcw size={13} /> Reset All
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCalendarFilter(false)}
+                    style={{
+                      background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "8px",
+                      padding: "6px 16px",
+                      fontSize: "0.82rem",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      boxShadow: "0 2px 6px rgba(37,99,235,0.2)"
+                    }}
+                  >
+                    Apply Filter
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Expand/Collapse Controls for Grouped Views */}
           {viewMode !== "flat" && (
@@ -411,6 +710,53 @@ export default function StaffDashboard() {
             </div>
           )}
         </div>
+
+        {/* Active Date Filter Chip Row */}
+        {isDateFilterActive && (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "0.85rem", paddingTop: "0.75rem", borderTop: "1px dashed #e2e8f0", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#64748b" }}>Active Date Filter:</span>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "#eff6ff",
+              color: "#1d4ed8",
+              border: "1px solid #bfdbfe",
+              borderRadius: "999px",
+              padding: "4px 12px",
+              fontSize: "0.8rem",
+              fontWeight: "700",
+              boxShadow: "0 1px 3px rgba(37,99,235,0.08)"
+            }}>
+              <Calendar size={13} color="#2563eb" />
+              <span>{getDateFilterButtonLabel()}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setDatePreset("all");
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#1d4ed8",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  padding: "1px",
+                  borderRadius: "50%",
+                  marginLeft: "2px"
+                }}
+                title="Clear date filter"
+              >
+                <X size={13} />
+              </button>
+            </span>
+            <span style={{ fontSize: "0.76rem", color: "#64748b", fontWeight: "600" }}>
+              ({filteredApps.length} submission{filteredApps.length !== 1 ? "s" : ""} matched)
+            </span>
+          </div>
+        )}
 
         {/* Filter Badges Row */}
         {showFilters && (
