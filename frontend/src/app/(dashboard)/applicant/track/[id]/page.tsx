@@ -709,9 +709,50 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
   // Find connected application (Locational Clearance <-> Stage 2 Technical Permits)
   const connectedApp = useMemo(() => {
-    if (!appData || !applications) return null;
-    return getConnectedProjectApp(appData, applications);
+    if (!appData) return null;
+    let conn = applications ? getConnectedProjectApp(appData, applications) : null;
+    if (!conn && typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("etayo_cached_applications");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) conn = getConnectedProjectApp(appData, parsed);
+        }
+      } catch (e) {}
+    }
+    if (!conn) {
+      const searchPool = (applications && applications.length > 0) ? applications : (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("etayo_cached_applications") || "[]") : []);
+      if (Array.isArray(searchPool)) {
+        const isLoc = (appData.permitType || "").toLowerCase().includes("locational") || String(appData.id || "").toUpperCase().startsWith("LC-");
+        if (isLoc) {
+          const curIdLower = String(appData.id || "").toLowerCase().trim();
+          conn = searchPool.find((other: any) => {
+            if (!other || other.id === appData.id) return false;
+            const ref = String(other.locationalClearanceRef || other.clearanceRef || other.connectedClearanceId || "").toLowerCase().trim();
+            return ref && ref === curIdLower;
+          }) || null;
+        } else {
+          const ref = String(appData.locationalClearanceRef || appData.clearanceRef || appData.connectedClearanceId || "").toLowerCase().trim();
+          if (ref && ref !== "exempt") {
+            conn = searchPool.find((other: any) => {
+              if (!other || other.id === appData.id) return false;
+              return String(other.id || "").toLowerCase().trim() === ref;
+            }) || null;
+          }
+        }
+      }
+    }
+    return conn;
   }, [appData, applications]);
+
+  const connectedStage2App = useMemo(() => {
+    const isLoc = Boolean(
+      (appData?.permitType || "").toLowerCase().includes("locational") ||
+      (appData?.id || "").toLowerCase().startsWith("lc-") ||
+      (appId || "").toLowerCase().startsWith("lc-")
+    );
+    return isLoc ? connectedApp : null;
+  }, [appData, appId, connectedApp]);
 
   const checkPaymentInfo = (app: any): { confirmed: boolean; reference: string; method: string; date?: string; receiptUrl?: string } => {
     if (!app) return { confirmed: false, reference: "", method: "" };
@@ -1709,7 +1750,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                     </div>
                     <div style={{ fontSize: "0.85rem", color: "#15803d", marginTop: "3px" }}>
                       {isLC ? (
-                        "Your locational zoning clearance is officially released. You can now proceed to Stage 2 Technical Permitting Forms with all fields prefilled."
+                        connectedStage2App ? (
+                          `Your locational zoning clearance is officially released and connected to Stage 2 Technical Permits (${connectedStage2App.id}).`
+                        ) : (
+                          "Your locational zoning clearance is officially released. You can now proceed to Stage 2 Technical Permitting Forms with all fields prefilled."
+                        )
                       ) : (
                         <>Payment verified under Official Receipt No: <strong>{(appData as any).officialReceiptNo || "OR-2026-OFFICIAL"}</strong></>
                       )}
@@ -1718,26 +1763,51 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                 </div>
 
                 {isLC && (
-                  <Link
-                    href={`/applicant/apply?clearanceRef=${encodeURIComponent(appData.id)}&step=3`}
-                    style={{
-                      background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                      color: "white",
-                      padding: "10px 20px",
-                      borderRadius: "10px",
-                      fontWeight: "800",
-                      fontSize: "0.88rem",
-                      textDecoration: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
-                    }}
-                  >
-                    <Sparkles size={16} />
-                    <span>Proceed to Step 3: Technical Permitting Forms</span>
-                    <ArrowRight size={15} />
-                  </Link>
+                  connectedStage2App ? (
+                    <Link
+                      href={`/applicant/track/${encodeURIComponent(connectedStage2App.id)}`}
+                      style={{
+                        background: connectedStage2App.status === "approved" || connectedStage2App.status === "released"
+                          ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
+                          : "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+                        color: "white",
+                        padding: "10px 20px",
+                        borderRadius: "10px",
+                        fontWeight: "800",
+                        fontSize: "0.88rem",
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)"
+                      }}
+                    >
+                      <Sparkles size={16} />
+                      <span>View Connected Stage 2 Permits ({connectedStage2App.id})</span>
+                      <ArrowRight size={15} />
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/applicant/apply?clearanceRef=${encodeURIComponent(appData.id)}&step=3`}
+                      style={{
+                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                        color: "white",
+                        padding: "10px 20px",
+                        borderRadius: "10px",
+                        fontWeight: "800",
+                        fontSize: "0.88rem",
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
+                      }}
+                    >
+                      <Sparkles size={16} />
+                      <span>Proceed to Step 3: Technical Permitting Forms</span>
+                      <ArrowRight size={15} />
+                    </Link>
+                  )
                 )}
               </div>
             </div>

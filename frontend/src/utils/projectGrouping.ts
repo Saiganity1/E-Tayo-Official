@@ -317,24 +317,17 @@ export const areAppsInSameProject = (appA: any, appB: any): boolean => {
   if (!appA || !appB) return false;
   if (appA.id === appB.id) return true;
 
-  // 1. Applicant check: if both have applicant names and they differ, they cannot be the same project
-  const nameA = (appA.applicantName || "").trim().toLowerCase();
-  const nameB = (appB.applicantName || "").trim().toLowerCase();
-  if (nameA && nameB && nameA !== nameB) {
-    return false;
-  }
-
   const isLCA = isLocationalClearance(appA);
   const isLCB = isLocationalClearance(appB);
 
-  // 2. Two distinct Locational Clearances NEVER belong to the same project dossier
-  // Each LC represents a distinct zoning clearance filing
+  // 1. Two distinct Locational Clearances NEVER belong to the same project dossier
   if (isLCA && isLCB && appA.id !== appB.id) {
     return false;
   }
 
-  // 3. Explicit Locational Clearance Reference matching
-  // When applying for Stage 2 (Technical Permits / Building Permit), locationalClearanceRef is passed
+  // 2. EXPLICIT CLEARANCE REFERENCE MATCHING (HIGHEST PRIORITY)
+  // When applying for Stage 2 (Technical Permits / Building Permit), locationalClearanceRef is passed.
+  // If appA references appB's LC ID (or vice versa), they are 100% definitively the same project!
   const refB = (appB.locationalClearanceRef || appB.clearanceRef || appB.connectedClearanceId || "").trim().toLowerCase();
   const refA = (appA.locationalClearanceRef || appA.clearanceRef || appA.connectedClearanceId || "").trim().toLowerCase();
   const isValidRef = (r: string) => Boolean(r && !["exempt", "lc-verified", "not_required", "lc-approved", "none"].includes(r));
@@ -342,12 +335,17 @@ export const areAppsInSameProject = (appA: any, appB: any): boolean => {
   const idALower = String(appA.id || "").trim().toLowerCase();
   const idBLower = String(appB.id || "").trim().toLowerCase();
 
-  // If appB explicitly points to appA's LC id
+  // If appB explicitly points to appA's LC id -> 100% DEFINITELY THE SAME PROJECT!
   if (isValidRef(refB) && refB === idALower) {
     return true;
   }
-  // If appA explicitly points to appB's LC id
+  // If appA explicitly points to appB's LC id -> 100% DEFINITELY THE SAME PROJECT!
   if (isValidRef(refA) && refA === idBLower) {
+    return true;
+  }
+
+  // If both are Stage 2 permits and both point to the same valid LC id
+  if (isValidRef(refA) && isValidRef(refB) && refA === refB) {
     return true;
   }
 
@@ -356,6 +354,14 @@ export const areAppsInSameProject = (appA: any, appB: any): boolean => {
     return false;
   }
   if (isLCB && isValidRef(refA) && refA !== idBLower) {
+    return false;
+  }
+
+  // 3. Applicant check: tolerate generic names like "Applicant" or "Juan Dela Cruz"
+  const nameA = (appA.applicantName || "").trim().toLowerCase();
+  const nameB = (appB.applicantName || "").trim().toLowerCase();
+  const isGenericName = (n: string) => !n || ["applicant", "juan dela cruz", "user"].includes(n);
+  if (!isGenericName(nameA) && !isGenericName(nameB) && nameA !== nameB) {
     return false;
   }
 

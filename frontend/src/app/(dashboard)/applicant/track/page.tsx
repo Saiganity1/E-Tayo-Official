@@ -204,6 +204,58 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       }
     } catch (e) {}
 
+    // Auto-heal any locally cached applications that have a linked LC so they adopt user & project info
+    try {
+      const cached = localStorage.getItem("etayo_cached_applications");
+      const userStr = localStorage.getItem("user");
+      if (cached) {
+        const userObj = userStr ? JSON.parse(userStr) : null;
+        const parsed = JSON.parse(cached);
+        let updated = false;
+        if (Array.isArray(parsed)) {
+          parsed.forEach((a: any) => {
+            if (!a) return;
+            const ref = a.locationalClearanceRef || a.clearanceRef || a.connectedClearanceId;
+            if (ref && ref !== "exempt" && ref !== "not_required") {
+              const matchedLC = parsed.find((p: any) => p && p.id && String(p.id).trim().toLowerCase() === String(ref).trim().toLowerCase());
+              if (matchedLC) {
+                if (!a.applicantEmail && (matchedLC.applicantEmail || userObj?.email)) {
+                  a.applicantEmail = matchedLC.applicantEmail || userObj?.email;
+                  a.userEmail = a.applicantEmail;
+                  updated = true;
+                }
+                if ((!a.applicantName || a.applicantName === "Applicant") && (matchedLC.applicantName || userObj?.name)) {
+                  a.applicantName = matchedLC.applicantName || userObj?.name;
+                  updated = true;
+                }
+                if (matchedLC.projectName && (!a.projectName || a.projectName.includes("Installation & Construction"))) {
+                  a.projectName = matchedLC.projectName;
+                  updated = true;
+                }
+                if (matchedLC.projectAddress && (!a.projectAddress || a.projectAddress.includes("Sto. Tomas, Pampanga"))) {
+                  a.projectAddress = matchedLC.projectAddress;
+                  updated = true;
+                }
+              } else if (userObj) {
+                if (!a.applicantEmail && userObj.email) {
+                  a.applicantEmail = userObj.email;
+                  a.userEmail = userObj.email;
+                  updated = true;
+                }
+                if ((!a.applicantName || a.applicantName === "Applicant") && userObj.name) {
+                  a.applicantName = userObj.name;
+                  updated = true;
+                }
+              }
+            }
+          });
+          if (updated) {
+            localStorage.setItem("etayo_cached_applications", JSON.stringify(parsed));
+          }
+        }
+      }
+    } catch (e) {}
+
     // Support tab deep-linking (e.g. /applicant/track?tab=archived)
     try {
       if (typeof window !== "undefined") {
@@ -343,13 +395,29 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const name = (currentUser.name || "").toLowerCase().trim();
 
     return (applications || []).filter(app => {
-      const appEmail = (app.applicantEmail || "").toLowerCase().trim();
-      const appName = (app.applicantName || "").toLowerCase().trim();
+      const appEmail = (app.applicantEmail || (app as any).userEmail || (typeof (app as any).user === "string" ? (app as any).user : "") || "").toLowerCase().trim();
+      const appName = (app.applicantName || (app as any).userName || "").toLowerCase().trim();
 
-      const matchEmail = Boolean(email && appEmail && (appEmail === email || appEmail.includes(email)));
-      const matchName = Boolean(name && appName && (appName === name || appName.includes(name)));
+      const matchEmail = Boolean(email && appEmail && (appEmail === email || appEmail.includes(email) || email.includes(appEmail)));
+      const matchName = Boolean(name && appName && (appName === name || appName.includes(name) || name.includes(appName)));
 
-      return matchEmail || matchName;
+      // CRITICAL FIX: If this application has locationalClearanceRef, check if that LC belongs to this user!
+      // This guarantees that any Stage 2 permit linked to user's LC is NEVER dropped!
+      const linkedRef = String(app.locationalClearanceRef || (app as any).clearanceRef || (app as any).connectedClearanceId || "").trim().toLowerCase();
+      let matchLinkedLC = false;
+      if (linkedRef && linkedRef !== "exempt" && linkedRef !== "not_required" && applications) {
+        matchLinkedLC = applications.some(other => {
+          if (!other || !other.id) return false;
+          const otherId = String(other.id).trim().toLowerCase();
+          if (otherId !== linkedRef) return false;
+          const otherEmail = (other.applicantEmail || (other as any).userEmail || "").toLowerCase().trim();
+          const otherName = (other.applicantName || "").toLowerCase().trim();
+          return (email && otherEmail && (otherEmail === email || otherEmail.includes(email))) ||
+                 (name && otherName && (otherName === name || otherName.includes(name)));
+        });
+      }
+
+      return matchEmail || matchName || matchLinkedLC;
     });
   }, [applications, isLoggedIn, currentUser]);
 
@@ -626,7 +694,37 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const isLocationalClearance = app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"));
 
     // Identify connected application (Locational Clearance <-> Technical Permits) of the same project
-    const connectedApp = getConnectedProjectApp(app, applications);
+    let connectedApp = getConnectedProjectApp(app, applications);
+    if (!connectedApp && typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("etayo_cached_applications");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) connectedApp = getConnectedProjectApp(app, parsed);
+        }
+      } catch (e) {}
+    }
+    if (!connectedApp) {
+      const searchPool = (applications && applications.length > 0) ? applications : (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("etayo_cached_applications") || "[]") : []);
+      if (Array.isArray(searchPool)) {
+        if (isLocationalClearance) {
+          const appIdLower = String(app.id || "").toLowerCase().trim();
+          connectedApp = searchPool.find((other: any) => {
+            if (!other || other.id === app.id) return false;
+            const ref = String(other.locationalClearanceRef || other.clearanceRef || other.connectedClearanceId || "").toLowerCase().trim();
+            return ref && ref === appIdLower;
+          }) || null;
+        } else {
+          const ref = String(app.locationalClearanceRef || app.clearanceRef || app.connectedClearanceId || "").toLowerCase().trim();
+          if (ref && ref !== "exempt") {
+            connectedApp = searchPool.find((other: any) => {
+              if (!other || other.id === app.id) return false;
+              return String(other.id || "").toLowerCase().trim() === ref;
+            }) || null;
+          }
+        }
+      }
+    }
     const connectedStage2App = isLocationalClearance ? connectedApp : null;
     const connectedLCApp = !isLocationalClearance ? connectedApp : null;
     const isActuallyReleased = isActuallyReleasedApp(app);

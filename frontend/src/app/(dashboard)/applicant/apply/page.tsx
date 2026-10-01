@@ -18,7 +18,7 @@ import dynamic from "next/dynamic";
 import LocationalClearanceGoogleForm from "../../../../components/forms/LocationalClearanceGoogleForm";
 import UnifiedProjectGoogleForm from "../../../../components/forms/UnifiedProjectGoogleForm";
 import TechnicalPermitFormsStep from "../../../../components/forms/TechnicalPermitFormsStep";
-import { generateUnifiedPermitPdf, generateBfpApplicationPdf } from "../../../../utils/unifiedPermitPdfGenerator";
+import { generateUnifiedPermitPdf } from "../../../../utils/unifiedPermitPdfGenerator";
 import { generateLocationalClearancePdf } from "../../../../utils/locationalClearancePdfGenerator";
 import { isApplicationReleased } from "../../../../utils/projectGrouping";
 import { 
@@ -531,6 +531,28 @@ export default function ApplyPage() {
   const [longitude, setLongitude] = useState("");
   const [detectedZone, setDetectedZone] = useState<{barangay?: string, zoneType?: string, description?: string} | null>(null);
 
+  // Auto-sync project information (name, address, applicant) from matched clearance
+  useEffect(() => {
+    if (matchedClearanceApp) {
+      if (matchedClearanceApp.projectName && !projectName) {
+        const cleanName = (matchedClearanceApp.projectName || "").replace(/\s*-\s*locational\s*clearance/i, "").trim();
+        setProjectName(cleanName || matchedClearanceApp.projectName);
+      }
+      if (matchedClearanceApp.applicantName && (applicantName === "Applicant" || !applicantName)) {
+        setApplicantName(matchedClearanceApp.applicantName);
+      }
+      if (matchedClearanceApp.applicantEmail && !applicantEmail) {
+        setApplicantEmail(matchedClearanceApp.applicantEmail);
+      }
+      if (matchedClearanceApp.projectAddress && !streetAddress) {
+        setStreetAddress(matchedClearanceApp.projectAddress);
+      }
+      if (matchedClearanceApp.barangay && barangay === "San Bartolome") {
+        setBarangay(matchedClearanceApp.barangay);
+      }
+    }
+  }, [matchedClearanceApp]);
+
 
   
   const [uploading, setUploading] = useState(false);
@@ -579,50 +601,6 @@ export default function ApplyPage() {
 
   const isAllMandatoryAttached = missingMandatoryPermits.length === 0;
 
-  const handleAutoGenerateBfp = async () => {
-    setActiveUploadingKey("fireBfpPermit");
-    setUploadError("");
-    setSubmissionErrorAlert(null);
-    try {
-      const bfpBase64 = await generateBfpApplicationPdf({
-        applicationNo: `BFP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        locationalClearanceRef: activeClearanceRef || (isClearanceRequired ? "LC-APPROVED" : "EXEMPT"),
-        projectType: selectedProjectType,
-        applicantName: applicantName || "Applicant",
-        applicantPhone: "0917-123-4567",
-        applicantEmail: applicantEmail || "applicant@etayo.gov.ph",
-        applicantAddress: projectAddress || "Sto. Tomas, Pampanga",
-        projectName: projectName || `${selectedProjectType.name} Construction`,
-        projectAddress: projectAddress || "Sto. Tomas, Pampanga",
-        barangay: barangay || "Sto. Tomas",
-        lotArea: lotArea || "200",
-        floorArea: floorArea || "120",
-        projectCost: projectCost || "1,500,000.00",
-        scopeOfWork: "New Construction",
-        occupancyClass: "Group A - Residential",
-        proposedStoreys: "2",
-        activePermitForms: mandatoryPermitsToSubmit,
-        submissionDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-      });
-      if (bfpBase64) {
-        setUploadedPermitDocs(prev => ({
-          ...prev,
-          fireBfpPermit: {
-            fileName: `FSEC_${selectedProjectType.name.replace(/\s+/g, '_')}_Sto_Tomas_BFP_Application.pdf`,
-            fileSize: "1.2 MB",
-            fileUrl: `data:application/pdf;base64,${bfpBase64}`,
-            uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }
-        }));
-      }
-    } catch (e: any) {
-      console.warn("Could not auto-generate BFP form:", e);
-      setUploadError(e?.message || "Could not generate BFP form");
-    } finally {
-      setActiveUploadingKey(null);
-    }
-  };
-
   const handlePermitDocUpload = async (key: keyof PermitFormMatrix, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -632,44 +610,26 @@ export default function ApplyPage() {
     setUploadError("");
     setSubmissionErrorAlert(null);
 
+    const formData = new FormData();
+    formData.append("files", file);
+    formData.append("permitType", PERMIT_FORM_METADATA[key]?.label || "Technical Permit");
+    formData.append("projectType", selectedProjectType?.name || "General Application");
+
     try {
-      const formData = new FormData();
-      formData.append("files", file);
-      formData.append("permitType", PERMIT_FORM_METADATA[key]?.label || "Technical Permit");
-      formData.append("projectType", selectedProjectType?.name || "General Application");
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      const res = await fetch(`${apiBase}/api/upload`, {
+        method: "POST",
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+        body: formData,
+      });
 
-      let fileUrl = "";
-      try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-        const apiBase = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
-        if (apiBase && (typeof window === "undefined" || !window.location.protocol.startsWith("https") || apiBase.startsWith("https"))) {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2000);
-          const res = await fetch(`${apiBase}/api/upload`, {
-            method: "POST",
-            headers: token ? { "Authorization": `Bearer ${token}` } : {},
-            body: formData,
-            signal: controller.signal
-          }).catch(() => null);
-          clearTimeout(timeoutId);
-
-          if (res && res.ok) {
-            const data = await res.json().catch(() => null);
-            fileUrl = data?.urls?.[0] || "";
-          }
-        }
-      } catch (err) {
-        console.warn("Backend upload offline, using client session object", err);
+      if (!res.ok) {
+        throw new Error("Failed to upload document file");
       }
 
-      if (!fileUrl && typeof window !== "undefined") {
-        fileUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve((reader.result as string) || "");
-          reader.onerror = () => resolve("");
-          reader.readAsDataURL(file);
-        });
-      }
+      const data = await res.json();
+      const fileUrl = data?.urls?.[0] || "";
 
       const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
       const sizeStr = file.size > 1024 * 1024 ? `${sizeInMb} MB` : `${Math.round(file.size / 1024)} KB`;
@@ -679,7 +639,7 @@ export default function ApplyPage() {
         [key]: {
           fileName: file.name,
           fileSize: sizeStr,
-          fileUrl: fileUrl || "submitted_permit_document.pdf",
+          fileUrl: fileUrl,
           uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       }));
@@ -766,48 +726,18 @@ export default function ApplyPage() {
       return;
     }
 
+    if (!isAllMandatoryAttached) {
+      setSubmissionErrorAlert(
+        `Cannot submit application: There are ${missingMandatoryPermits.length} mandatory documents not yet attached. Please review the checklist and attach all required files.`
+      );
+      if (typeof document !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmissionErrorAlert(null);
-
-    // Auto-generate BFP clearance PDF if applicant didn't manually attach one so they are never blocked
-    if (!uploadedPermitDocs['fireBfpPermit']) {
-      try {
-        const bfpBase64 = await generateBfpApplicationPdf({
-          applicationNo: `BFP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-          locationalClearanceRef: activeClearanceRef || (isClearanceRequired ? "LC-APPROVED" : "EXEMPT"),
-          projectType: selectedProjectType,
-          applicantName: applicantName || "Applicant",
-          applicantPhone: "0917-123-4567",
-          applicantEmail: applicantEmail || "applicant@etayo.gov.ph",
-          applicantAddress: projectAddress || "Sto. Tomas, Pampanga",
-          projectName: projectName || `${selectedProjectType.name} Construction`,
-          projectAddress: projectAddress || "Sto. Tomas, Pampanga",
-          barangay: barangay || "Sto. Tomas",
-          lotArea: lotArea || "200",
-          floorArea: floorArea || "120",
-          projectCost: projectCost || "1,500,000.00",
-          scopeOfWork: "New Construction",
-          occupancyClass: "Group A - Residential",
-          proposedStoreys: "2",
-          activePermitForms: mandatoryPermitsToSubmit,
-          submissionDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-        });
-        if (bfpBase64) {
-          uploadedPermitDocs['fireBfpPermit'] = {
-            fileName: `FSEC_${selectedProjectType.name.replace(/\s+/g, '_')}_Sto_Tomas_BFP_Clearance.pdf`,
-            fileSize: "1.2 MB",
-            fileUrl: `data:application/pdf;base64,${bfpBase64}`,
-            uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          };
-          setUploadedPermitDocs(prev => ({
-            ...prev,
-            fireBfpPermit: uploadedPermitDocs['fireBfpPermit']
-          }));
-        }
-      } catch (err) {
-        console.warn("Notice: BFP auto-generation fallback:", err);
-      }
-    }
 
     try {
       // Build the dynamic requirements list
@@ -950,21 +880,39 @@ export default function ApplyPage() {
         ? docList.join(",") 
         : (finalFileUrl || attachedUrls[0] || uploadedFileUrl || "");
 
+      const curUser = typeof window !== "undefined" ? (() => {
+        try {
+          const u = localStorage.getItem("user");
+          return u ? JSON.parse(u) : null;
+        } catch (e) { return null; }
+      })() : null;
+
+      const finalProjectName = (projectName || "").trim() || (matchedClearanceApp?.projectName || "").trim() || `${selectedProjectType.name} Installation & Construction`;
+      const finalApplicantName = (applicantName && applicantName !== "Applicant") 
+        ? applicantName 
+        : (curUser?.name || matchedClearanceApp?.applicantName || "Paul Payumo");
+      const finalApplicantEmail = applicantEmail || curUser?.email || matchedClearanceApp?.applicantEmail || "applicant@etayo.gov.ph";
+      const finalClearanceRef = activeClearanceRef || matchedClearanceApp?.id || undefined;
+
       const newApp: any = {
         id: newId,
-        projectName: projectName || `${selectedProjectType.name} Installation & Construction`,
+        projectName: finalProjectName,
         projectType: selectedProjectType.name,
         permitType: selectedPermitType,
         status: "pending",
         dateSubmitted: submissionDate,
-        applicantName: applicantName || "Applicant",
+        applicantName: finalApplicantName,
+        applicantEmail: finalApplicantEmail,
+        userEmail: finalApplicantEmail,
         fileUrl: combinedFileUrl,
         fileName: formattedFileName,
-        locationalClearanceRef: activeClearanceRef || undefined,
+        locationalClearanceRef: finalClearanceRef,
+        clearanceRef: finalClearanceRef,
+        connectedClearanceId: finalClearanceRef,
         location: {
           lat: parseFloat(latitude) || 15.0050,
           lng: parseFloat(longitude) || 120.7100,
-          address: projectAddress || 'Sto. Tomas, Pampanga',
+          address: projectAddress || matchedClearanceApp?.projectAddress || 'Sto. Tomas, Pampanga',
         },
         requirements: requirementsList,
         trackingSteps: [
@@ -972,7 +920,7 @@ export default function ApplyPage() {
           { title: 'Initial Document Verification', status: 'upcoming', notes: 'Reviewing all technical engineering attachments for completeness and licensed PRC sign-offs.' }
         ],
         historyLog: [
-          { date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute:"2-digit" }), action: 'Application Submitted', actor: applicantName, details: `Applied for ${selectedProjectType.name} with ${mandatoryPermitsToSubmit.length} mandatory engineering permits.` }
+          { date: new Date().toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute:"2-digit" }), action: 'Application Submitted', actor: finalApplicantName, details: `Applied for ${selectedProjectType.name} with ${mandatoryPermitsToSubmit.length} mandatory engineering permits.` }
         ]
       };
 
@@ -3621,31 +3569,6 @@ export default function ApplyPage() {
                               </div>
                             ) : (
                               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                                <button
-                                  type="button"
-                                  onClick={handleAutoGenerateBfp}
-                                  disabled={isUploading}
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "6px",
-                                    padding: "8px 14px",
-                                    borderRadius: "8px",
-                                    background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                                    color: "white",
-                                    fontSize: "0.8rem",
-                                    fontWeight: "700",
-                                    cursor: isUploading ? "wait" : "pointer",
-                                    boxShadow: "0 2px 6px rgba(5, 150, 105, 0.25)",
-                                    border: "none",
-                                    transition: "all 0.15s ease"
-                                  }}
-                                  title="Digitally compile and auto-generate official Bureau of Fire Protection application form"
-                                >
-                                  <Sparkles size={14} />
-                                  <span>Generate BFP Form (Digital)</span>
-                                </button>
-
                                 <label style={{
                                   display: "inline-flex",
                                   alignItems: "center",
@@ -4179,41 +4102,63 @@ export default function ApplyPage() {
               </button>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-                <button 
-                  className="btn-primary" 
-                  onClick={handleSubmitApplication}
-                  disabled={isSubmitting}
-                  style={{
-                    background: isSubmitting
-                      ? "linear-gradient(135deg, #64748b 0%, #475569 100%)"
-                      : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: "8px", 
-                    padding: "11px 24px", 
-                    borderRadius: "10px",
-                    cursor: isSubmitting ? "wait" : "pointer",
-                    boxShadow: isSubmitting ? "none" : "0 4px 14px rgba(16, 185, 129, 0.35)",
-                    border: "none",
-                    color: "white",
-                    fontWeight: "700",
-                    fontSize: "0.95rem",
-                    transition: "all 0.2s ease"
-                  }}
-                  title="Submit your complete application dossier to Sto. Tomas Building Official"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <RefreshCw size={18} className="animate-spin" />
-                      <span>Filing Application Package...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Submit Complete Application</span>
-                      <CheckCircle size={18} />
-                    </>
-                  )}
-                </button>
+                {!isAllMandatoryAttached ? (
+                  <button 
+                    disabled 
+                    className="btn-primary" 
+                    style={{ 
+                      opacity: 0.6, 
+                      cursor: 'not-allowed', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      padding: "11px 24px", 
+                      borderRadius: "10px",
+                      background: "#94a3b8",
+                      boxShadow: "none"
+                    }}
+                    title={`Please attach all mandatory documents before submitting (${missingMandatoryPermits.length} pending)`}
+                  >
+                    <Lock size={18} />
+                    <span>Submit Application ({missingMandatoryPermits.length} Required Docs Pending)</span>
+                  </button>
+                ) : (
+                  <button 
+                    className="btn-primary" 
+                    onClick={handleSubmitApplication}
+                    disabled={isSubmitting}
+                    style={{ 
+                      background: isSubmitting
+                        ? "linear-gradient(135deg, #64748b 0%, #475569 100%)"
+                        : "linear-gradient(135deg, #10b981 0%, #059669 100%)", 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      padding: "11px 24px", 
+                      borderRadius: "10px",
+                      cursor: isSubmitting ? 'wait' : 'pointer',
+                      boxShadow: isSubmitting ? "none" : "0 4px 14px rgba(16, 185, 129, 0.35)",
+                      border: "none",
+                      color: "white",
+                      fontWeight: "700",
+                      fontSize: "0.95rem",
+                      transition: "all 0.2s ease"
+                    }}
+                    title="Submit your complete application dossier to Sto. Tomas Building Official"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw size={18} className="animate-spin" />
+                        <span>Filing Application Package...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Submit Complete Application</span>
+                        <CheckCircle size={18} />
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             )}
           </div>
