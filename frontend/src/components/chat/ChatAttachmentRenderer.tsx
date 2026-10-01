@@ -112,12 +112,39 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
   );
 
   if (isOrderOfPaymentNotice) {
-    const fee = cleanText.match(/(?:Assessed Regulatory Fee|Total Assessed Regulatory Amount):\s*(PHP\s*[\d,]+)/i)?.[1] || "PHP 3,795";
-    const op = cleanText.match(/(?:Order of Payment Reference|Order of Payment No\.?):\s*([^\n\r]+)/i)?.[1] || "OP-2026";
     const refMatch = cleanText.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)(?:\s*[-–—]\s*([^\]]+))?\]/i);
     const ref = refMatch?.[1]?.trim() || "";
     const project = refMatch?.[2]?.trim() || "Permit Application";
     const addressedTo = cleanText.match(/Dear\s*([^,\n]+)/i)?.[1]?.trim() || "Applicant";
+
+    const isLC = ref.toUpperCase().startsWith("LC-");
+    const cleanSeq = ref ? ref.replace(/^[A-Za-z]+-/i, "") : "2026";
+    const fallbackOp = `OP-${cleanSeq || "2026"}`;
+    const fallbackFee = isLC ? "PHP 500" : "PHP 3,795";
+
+    let fee = cleanText.match(/(?:Assessed Regulatory Fee|Total Assessed Regulatory Amount):\s*(PHP\s*[\d,]+)/i)?.[1];
+    let op = cleanText.match(/(?:Order of Payment Reference|Order of Payment Ref|Order of Payment No\.?):\s*([^\n\r]+)/i)?.[1]?.trim();
+
+    // Check localStorage for evaluated municipal fees & OP for this permit
+    if (typeof window !== "undefined" && ref) {
+      const storedFees = localStorage.getItem(`etayo_fees_${ref}`) || 
+                         localStorage.getItem(`etayo_fees_${ref.toLowerCase()}`) || 
+                         localStorage.getItem(`etayo_fees_${ref.toUpperCase()}`);
+      if (storedFees && !isNaN(Number(storedFees)) && Number(storedFees) > 0) {
+        if (!fee || fee === "PHP 3,795" || Number(storedFees) !== 3795) {
+          fee = `PHP ${Number(storedFees).toLocaleString()}`;
+        }
+      }
+      const storedOp = localStorage.getItem(`etayo_op_${ref}`) || 
+                       localStorage.getItem(`etayo_op_${ref.toLowerCase()}`) || 
+                       localStorage.getItem(`etayo_op_${ref.toUpperCase()}`);
+      if (storedOp && storedOp !== "OP-2026") {
+        op = storedOp;
+      }
+    }
+
+    if (!fee || (isLC && fee === "PHP 3,795")) fee = fallbackFee;
+    if (!op || op === "OP-2026") op = fallbackOp;
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "620px" }}>
@@ -255,7 +282,19 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
   if (isPermitReleaseNotice) {
     const orNo = cleanText.match(/Official Receipt No:\s*([^\n\r]+)/i)?.[1] || "OR-2026-94812";
     const ref = cleanText.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)/i)?.[1]?.trim() || "";
-    const fee = cleanText.match(/Payment of\s*(PHP\s*[\d,]+)/i)?.[1] || "PHP 3,795";
+    const isLC = ref.toUpperCase().startsWith("LC-");
+    let fee = cleanText.match(/Payment of\s*(PHP\s*[\d,]+)/i)?.[1];
+    if (typeof window !== "undefined" && ref) {
+      const storedFees = localStorage.getItem(`etayo_fees_${ref}`) || 
+                         localStorage.getItem(`etayo_fees_${ref.toLowerCase()}`) || 
+                         localStorage.getItem(`etayo_fees_${ref.toUpperCase()}`);
+      if (storedFees && !isNaN(Number(storedFees)) && Number(storedFees) > 0) {
+        if (!fee || fee === "PHP 3,795" || Number(storedFees) !== 3795) {
+          fee = `PHP ${Number(storedFees).toLocaleString()}`;
+        }
+      }
+    }
+    if (!fee || (isLC && fee === "PHP 3,795")) fee = isLC ? "PHP 500" : "PHP 3,795";
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "620px" }}>

@@ -318,10 +318,12 @@ export default function ApplicantMessagesPage() {
     // 2. Discover all application threads from applications context or userCreatedThreadIds
     (applications || []).forEach(app => {
       const isApproved = app.status === "approved" || app.status === "released" || Boolean((app as any).orderOfPaymentNo);
+      const isLC = app.permitType === "locational_clearance" || String(app.id || "").toUpperCase().startsWith("LC-");
+      const defaultFee = isLC ? 500 : 3795;
       const defaultLastMsg = app.status === "released"
         ? "🎉 Official Permits Released"
         : isApproved
-          ? `💰 Order of Payment: PHP ${((app as any).assessedFees || 3795).toLocaleString()} issued`
+          ? `💰 Order of Payment: PHP ${((app as any).assessedFees || (app as any).estimatedFees || defaultFee).toLocaleString()} issued`
           : "Application filed and queued";
 
       threadMap[app.id] = {
@@ -693,8 +695,10 @@ export default function ApplicantMessagesPage() {
     if (!receiptModalFile) return;
     setIsSubmittingReceipt(true);
     try {
-      const assessedAmt = ((activeApp as any)?.assessedFees || 3795).toLocaleString();
-      const opNo = (activeApp as any)?.orderOfPaymentNo || "OP-2026";
+      const isLC = activeApp?.permitType === "locational_clearance" || String(activeApp?.id || "").toUpperCase().startsWith("LC-");
+      const cleanSeq = activeApp?.id ? activeApp.id.replace(/^[A-Za-z]+-/i, "") : "2026";
+      const assessedAmt = ((activeApp as any)?.assessedFees || (activeApp as any)?.estimatedFees || (isLC ? 500 : 3795)).toLocaleString();
+      const opNo = (activeApp as any)?.orderOfPaymentNo || `OP-${cleanSeq}`;
       const orRef = receiptRefInput.trim() || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
 
       const receiptMsgContent = `[Ref: ${activeThreadId} - Payment Receipt] Official payment settled for ${activeThreadId} (Order of Payment Ref: ${opNo}, Amount: PHP ${assessedAmt}).\nOfficial Receipt / Reference: ${orRef}.\nAttached is the photo of my payment receipt for municipal verification.\n[Attachment: ${receiptModalFile.name}|${receiptModalFile.dataUrl}]`;
@@ -1212,7 +1216,7 @@ export default function ApplicantMessagesPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <CreditCard size={15} color={(activeApp as any).userConfirmedPayment ? "#16a34a" : "#d97706"} />
                 <span style={{ fontWeight: "700", color: (activeApp as any).userConfirmedPayment ? "#166534" : "#92400e" }}>
-                  Order of Payment: PHP {((activeApp as any).assessedFees || 3795).toLocaleString()} ({(activeApp as any).orderOfPaymentNo || "OP-2026"})
+                  Order of Payment: PHP {((activeApp as any).assessedFees || (activeApp as any).estimatedFees || (activeApp?.permitType === "locational_clearance" || String(activeApp?.id || "").toUpperCase().startsWith("LC-") ? 500 : 3795)).toLocaleString()} ({(activeApp as any).orderOfPaymentNo || `OP-${activeApp?.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`})
                 </span>
                 <span style={{ color: "#94a3b8" }}>•</span>
                 <span style={{ color: (activeApp as any).userConfirmedPayment ? "#15803d" : "#78350f" }}>

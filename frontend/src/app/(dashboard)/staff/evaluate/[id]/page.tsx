@@ -1392,6 +1392,7 @@ export default function StaffEvaluatePage() {
       permitIssuedDate: (app as any).permitIssuedDate || issuedDateFormatted,
       orderOfPaymentNo: orderOfPaymentNo,
       assessedFees: totalFees,
+      estimatedFees: totalFees,
       buildingPermitNo: isBuildingPermit ? ((app as any).buildingPermitNo || `BP-${cleanSeq}`) : undefined,
       sanitaryPermitNo: (app as any).sanitaryPermitNo || `P-${cleanSeq}`,
       plumbingPermitNo: (app as any).plumbingPermitNo || `P-${cleanSeq}`,
@@ -1447,7 +1448,10 @@ export default function StaffEvaluatePage() {
     const targetPermitId = encodeURIComponent(String(app.id || rawParamId || id).trim());
     const patchPayload = JSON.stringify({
       status: "approved",
-      remarks: decisionNotes || shortSummary
+      remarks: decisionNotes || shortSummary,
+      assessedFees: totalFees,
+      estimatedFees: totalFees,
+      orderOfPaymentNo: orderOfPaymentNo
     });
     const putPayload = JSON.stringify(updatedApp);
 

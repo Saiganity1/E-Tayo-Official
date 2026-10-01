@@ -463,6 +463,8 @@ public class PermitController {
             if (permit.getAssignedStaff() != null) existing.setAssignedStaff(permit.getAssignedStaff());
             if (permit.getPaymentStatus() != null) existing.setPaymentStatus(permit.getPaymentStatus());
             if (permit.getEstimatedFees() > 0) existing.setEstimatedFees(permit.getEstimatedFees());
+            if (permit.getAssessedFees() != null && permit.getAssessedFees() > 0) existing.setAssessedFees(permit.getAssessedFees());
+            if (permit.getOrderOfPaymentNo() != null && !permit.getOrderOfPaymentNo().isEmpty()) existing.setOrderOfPaymentNo(permit.getOrderOfPaymentNo());
             if (permit.getFileUrl() != null && !permit.getFileUrl().isEmpty()) existing.setFileUrl(permit.getFileUrl());
             if (permit.getFileName() != null && !permit.getFileName().isEmpty()) existing.setFileName(permit.getFileName());
             if (permit.getSketchImageUrl() != null && !permit.getSketchImageUrl().isEmpty()) existing.setSketchImageUrl(permit.getSketchImageUrl());
@@ -598,6 +600,19 @@ public class PermitController {
             if (payload.containsKey("remarks") && payload.get("remarks") != null) {
                 existing.setRemarks(String.valueOf(payload.get("remarks")));
             }
+            if (payload.containsKey("assessedFees") && payload.get("assessedFees") != null) {
+                try {
+                    existing.setAssessedFees(Double.valueOf(String.valueOf(payload.get("assessedFees"))));
+                } catch (Exception ignored) {}
+            }
+            if (payload.containsKey("estimatedFees") && payload.get("estimatedFees") != null) {
+                try {
+                    existing.setEstimatedFees(Double.parseDouble(String.valueOf(payload.get("estimatedFees"))));
+                } catch (Exception ignored) {}
+            }
+            if (payload.containsKey("orderOfPaymentNo") && payload.get("orderOfPaymentNo") != null) {
+                existing.setOrderOfPaymentNo(String.valueOf(payload.get("orderOfPaymentNo")));
+            }
             syncTrackingStepsForStatus(existing, existing.getStatus());
             if (oldStatus != null && !oldStatus.equalsIgnoreCase(existing.getStatus())) {
                 try {
@@ -623,6 +638,19 @@ public class PermitController {
             }
             if (payload.containsKey("remarks") && payload.get("remarks") != null) {
                 app.setRemarks(String.valueOf(payload.get("remarks")));
+            }
+            if (payload.containsKey("assessedFees") && payload.get("assessedFees") != null) {
+                try {
+                    app.setAssessedFees(Double.valueOf(String.valueOf(payload.get("assessedFees"))));
+                } catch (Exception ignored) {}
+            }
+            if (payload.containsKey("estimatedFees") && payload.get("estimatedFees") != null) {
+                try {
+                    app.setEstimatedFees(Double.parseDouble(String.valueOf(payload.get("estimatedFees"))));
+                } catch (Exception ignored) {}
+            }
+            if (payload.containsKey("orderOfPaymentNo") && payload.get("orderOfPaymentNo") != null) {
+                app.setOrderOfPaymentNo(String.valueOf(payload.get("orderOfPaymentNo")));
             }
             syncTrackingStepsForStatus(app, app.getStatus());
             return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(app));

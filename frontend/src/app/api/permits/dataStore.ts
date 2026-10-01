@@ -14,7 +14,9 @@ const SEED_APPLICATIONS: PermitApplication[] = [
     projectDescription: "Application for Locational Clearance for a Single-Detached Residential House.",
     status: "pending",
     dateSubmitted: "September 29, 2026",
-    estimatedFees: 3795,
+    estimatedFees: 500,
+    assessedFees: 500,
+    orderOfPaymentNo: "OP-2026-6494",
     paymentStatus: "unpaid",
     projectType: "Single-Detached House",
     location: {

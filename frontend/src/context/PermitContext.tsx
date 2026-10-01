@@ -573,18 +573,20 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 isReleased: isPaidLocal || effectiveStatus === "released" || Boolean((bApp as any).isReleased) || Boolean((foundCached as any).isReleased),
                 paymentStatus: isPaidLocal ? "paid" : (bApp.paymentStatus || (foundCached as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : undefined)),
                 userConfirmedPayment: isConfirmedLocal,
-                officialReceiptNo: (bApp as any).officialReceiptNo || (foundCached as any).officialReceiptNo,
-                orderOfPaymentNo: storedOp || (bApp as any).orderOfPaymentNo || (foundCached as any).orderOfPaymentNo,
-                assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (foundCached as any).assessedFees),
-                dateApproved: storedDateApproved || (bApp as any).dateApproved || (foundCached as any).dateApproved || (isApproved ? ((bApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
+                officialReceiptNo: (bApp as any).officialReceiptNo || (foundCached as any)?.officialReceiptNo,
+                orderOfPaymentNo: (storedOp && storedOp !== "OP-2026" ? storedOp : null) || (bApp as any).orderOfPaymentNo || (foundCached as any)?.orderOfPaymentNo || `OP-${String(bApp.id || "").replace(/^[A-Za-z]+-/i, "") || "2026"}`,
+                assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (foundCached as any)?.assessedFees || (bApp as any).estimatedFees || (bApp.permitType === "locational_clearance" || String(bApp.id).toUpperCase().startsWith("LC-") ? 500 : 3795)),
+                dateApproved: storedDateApproved || (bApp as any).dateApproved || (foundCached as any)?.dateApproved || (isApproved ? ((bApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
                 remarks: storedRemarks || bApp.remarks || foundCached.remarks,
                 trackingSteps: (bApp.trackingSteps && bApp.trackingSteps.length > 0) ? bApp.trackingSteps : foundCached.trackingSteps,
                 historyLog: (bApp.historyLog && bApp.historyLog.length > 0) ? bApp.historyLog : foundCached.historyLog,
-                paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl || (foundCached as any).paymentProofUrl
+                paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl || (foundCached as any)?.paymentProofUrl
               };
             }
 
             if (isConfirmedLocal || isPaidLocal || isApprovedLocal) {
+              const curIsLC = bApp.permitType === "locational_clearance" || String(bApp.id).toUpperCase().startsWith("LC-");
+              const curCleanSeq = String(bApp.id || "").replace(/^[A-Za-z]+-/i, "");
               return {
                 ...bApp,
                 status: effectiveStatus,
@@ -592,8 +594,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 isReleased: isPaidLocal || Boolean((bApp as any).isReleased),
                 paymentStatus: isPaidLocal ? "paid" : ((bApp as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : (isApprovedLocal ? "awaiting_payment" : undefined))),
                 userConfirmedPayment: isConfirmedLocal,
-                orderOfPaymentNo: storedOp || (bApp as any).orderOfPaymentNo,
-                assessedFees: storedFees ? Number(storedFees) : (bApp as any).assessedFees,
+                orderOfPaymentNo: (storedOp && storedOp !== "OP-2026" ? storedOp : null) || (bApp as any).orderOfPaymentNo || `OP-${curCleanSeq || "2026"}`,
+                assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (bApp as any).estimatedFees || (curIsLC ? 500 : 3795)),
                 dateApproved: storedDateApproved || (bApp as any).dateApproved || (isApprovedLocal ? new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : undefined),
                 remarks: storedRemarks || bApp.remarks,
                 paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl
@@ -769,13 +771,15 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }
         }
 
+        const mIsLC = mApp.permitType === "locational_clearance" || String(mApp.id || "").toUpperCase().startsWith("LC-");
+        const mCleanSeq = String(mApp.id || "").replace(/^[A-Za-z]+-/i, "");
         return {
           ...mApp,
           status: mEffectiveStatus,
           isArchived: mIsArchived,
           trackingSteps: mTracking,
-          orderOfPaymentNo: mOp || (mApp as any).orderOfPaymentNo,
-          assessedFees: mFees ? Number(mFees) : (mApp as any).assessedFees,
+          orderOfPaymentNo: (mOp && mOp !== "OP-2026" ? mOp : null) || (mApp as any).orderOfPaymentNo || `OP-${mCleanSeq || "2026"}`,
+          assessedFees: mFees ? Number(mFees) : ((mApp as any).assessedFees || (mApp as any).estimatedFees || (mIsLC ? 500 : 3795)),
           dateApproved: mDateApp || (mApp as any).dateApproved || (mIsApproved ? ((mApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
           remarks: mRemarks || mApp.remarks,
         };

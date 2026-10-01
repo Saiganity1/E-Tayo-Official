@@ -106,20 +106,93 @@ export const ensureApplicationConversationMessages = (
     const isApprovedOrPast = app.status === "approved" || app.status === "released" || Boolean(app.orderOfPaymentNo) || Boolean(app.assessedFees);
     if (!isApprovedOrPast) return;
 
-    const appId = app.id;
-    const assessedAmt = ((app as any).assessedFees || 3795).toLocaleString();
-    const opNo = (app as any).orderOfPaymentNo || "OP-2026";
-    const projName = app.projectName || (app.permitType === "locational_clearance" ? "Locational Clearance" : "Building Permit");
+    const appId = String(app.id || "").trim();
+    const isLC = app.permitType === "locational_clearance" || appId.toUpperCase().startsWith("LC-");
+
+    // 1. Resolve accurate assessed fee (localStorage -> app.assessedFees -> app.estimatedFees -> LC 500 / BP 3795)
+    let assessedNum: number = 0;
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(`etayo_fees_${appId}`) || 
+                     localStorage.getItem(`etayo_fees_${appId.toLowerCase()}`) || 
+                     localStorage.getItem(`etayo_fees_${appId.toUpperCase()}`);
+      if (stored && !isNaN(Number(stored)) && Number(stored) > 0) {
+        assessedNum = Number(stored);
+      }
+    }
+    if (!assessedNum && (app as any).assessedFees && !isNaN(Number((app as any).assessedFees)) && Number((app as any).assessedFees) > 0) {
+      assessedNum = Number((app as any).assessedFees);
+    }
+    if (!assessedNum && (app as any).estimatedFees && !isNaN(Number((app as any).estimatedFees)) && Number((app as any).estimatedFees) > 0) {
+      assessedNum = Number((app as any).estimatedFees);
+    }
+    if (!assessedNum) {
+      assessedNum = isLC ? 500 : 3795;
+    }
+    const assessedAmt = assessedNum.toLocaleString();
+
+    // 2. Resolve accurate Order of Payment Reference (never standalone "OP-2026")
+    const cleanSeq = appId.replace(/^[A-Za-z]+-/i, "");
+    let opNo = (app as any).orderOfPaymentNo;
+    if (!opNo || opNo === "OP-2026") {
+      if (typeof window !== "undefined") {
+        const storedOp = localStorage.getItem(`etayo_op_${appId}`) || 
+                         localStorage.getItem(`etayo_op_${appId.toLowerCase()}`) || 
+                         localStorage.getItem(`etayo_op_${appId.toUpperCase()}`);
+        if (storedOp && storedOp !== "OP-2026") {
+          opNo = storedOp;
+        }
+      }
+    }
+    if (!opNo || opNo === "OP-2026") {
+      opNo = `OP-${cleanSeq || "2026"}`;
+    }
+
+    const projName = app.projectName || (isLC ? "Locational Clearance" : "Building Permit");
     const applicantName = app.applicantName || "Applicant";
 
-    // 1. Ensure Official Approval & Order of Payment Message exists
-    const hasApprovalMsg = result.some(m => {
+    // 1. Ensure Official Approval & Order of Payment Message exists & has correct fee
+    const existingMsgIndex = result.findIndex(m => {
       const tid = m.applicationId || (m.content && m.content.includes(appId));
       return (tid === appId || (m.content && m.content.includes(appId))) && 
-        (m.content.includes("ORDER OF PAYMENT") || m.content.includes("APPLICATION APPROVED") || m.content.includes(opNo));
+        (m.content.includes("ORDER OF PAYMENT") || m.content.includes("APPLICATION APPROVED") || m.content.includes("Official Order of Payment"));
     });
 
-    if (!hasApprovalMsg) {
+    if (existingMsgIndex !== -1) {
+      // Message exists! Check if its fee or OP ref is outdated and synchronize it
+      const existing = result[existingMsgIndex];
+      let content = existing.content || "";
+      let contentChanged = false;
+
+      // Correct outdated fee
+      if (!content.includes(`PHP ${assessedAmt}`) || (content.includes("PHP 3,795") && assessedNum !== 3795)) {
+        content = content
+          .replace(/(?:Assessed Regulatory Fee|Total Assessed Regulatory Amount):\s*PHP\s*[\d,]+/gi, `Assessed Regulatory Fee: PHP ${assessedAmt}`)
+          .replace(/fee of\s*PHP\s*[\d,]+/gi, `fee of PHP ${assessedAmt}`)
+          .replace(/Amount:\s*PHP\s*[\d,]+/gi, `Amount: PHP ${assessedAmt}`);
+        contentChanged = true;
+      }
+
+      // Correct outdated OP number
+      if (content.includes("OP-2026\n") || content.includes("OP-2026\r") || content.includes("OP-2026 ") || content.endsWith("OP-2026")) {
+        content = content
+          .replace(/Order of Payment Reference:\s*OP-2026\b/gi, `Order of Payment Reference: ${opNo}`)
+          .replace(/Order of Payment Ref:\s*OP-2026\b/gi, `Order of Payment Ref: ${opNo}`)
+          .replace(/Order of Payment:\s*OP-2026\b/gi, `Order of Payment: ${opNo}`);
+        contentChanged = true;
+      } else if (!content.includes(opNo)) {
+        content = content
+          .replace(/(?:Order of Payment Reference|Order of Payment Ref|Order of Payment No\.?):\s*[^\n\r]+/gi, `Order of Payment Reference: ${opNo}`);
+        contentChanged = true;
+      }
+
+      if (contentChanged) {
+        result[existingMsgIndex] = {
+          ...existing,
+          content
+        };
+        updated = true;
+      }
+    } else {
       const approvalMsg: SystemPermitMessage = {
         id: `auto-op-${appId}`,
         senderEmail: "staff@etayo.gov.ph",
@@ -149,18 +222,18 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
       updated = true;
     }
 
-    // 2. If user confirmed payment or receipt photo exists, ensure user payment receipt message exists
+    // 2. If user confirmed payment or receipt photo exists, ensure user payment receipt message exists & has correct fee
     const cachedReceipt = (app as any).paymentProofUrl || (typeof window !== "undefined" ? localStorage.getItem("etayo_receipt_" + appId) : null);
     const hasConfirmedPayment = Boolean((app as any).userConfirmedPayment || cachedReceipt);
 
     if (hasConfirmedPayment) {
-      const hasReceiptMsg = result.some(m => {
+      const existingReceiptIdx = result.findIndex(m => {
         const tid = m.applicationId || (m.content && m.content.includes(appId));
         return (tid === appId || (m.content && m.content.includes(appId))) && 
           (m.content.includes("Payment Receipt") || m.content.includes("PAYMENT CONFIRMATION") || m.content.includes("payment receipt"));
       });
 
-      if (!hasReceiptMsg) {
+      if (existingReceiptIdx === -1) {
         const orRef = (app as any).paymentReference || "OR-2026-94812";
         const channel = (app as any).paymentMethod || "Municipal Treasury Cashier (On-site)";
         const receiptMsg: SystemPermitMessage = {
@@ -178,18 +251,26 @@ ${cachedReceipt ? `\n[Attachment: payment-receipt.jpg|${cachedReceipt}]` : ""}`
         };
         result.push(receiptMsg);
         updated = true;
+      } else {
+        const exReceipt = result[existingReceiptIdx];
+        let rContent = exReceipt.content || "";
+        if (!rContent.includes(`PHP ${assessedAmt}`) || (rContent.includes("PHP 3,795") && assessedNum !== 3795)) {
+          rContent = rContent.replace(/Amount:\s*PHP\s*[\d,]+/gi, `Amount: PHP ${assessedAmt}`);
+          result[existingReceiptIdx] = { ...exReceipt, content: rContent };
+          updated = true;
+        }
       }
     }
 
-    // 3. If application is released, ensure Release Notice message exists
+    // 3. If application is released, ensure Release Notice message exists & has correct fee
     if (app.status === "released") {
-      const hasReleaseMsg = result.some(m => {
+      const existingReleaseIdx = result.findIndex(m => {
         const tid = m.applicationId || (m.content && m.content.includes(appId));
         return (tid === appId || (m.content && m.content.includes(appId))) && 
           (m.content.includes("PERMITS RELEASED") || m.content.includes("Payment Verified"));
       });
 
-      if (!hasReleaseMsg) {
+      if (existingReleaseIdx === -1) {
         const orNo = (app as any).officialReceiptNo || "OR-2026-94812";
         const releaseMsg: SystemPermitMessage = {
           id: `auto-release-${appId}`,
@@ -207,6 +288,14 @@ All official permit papers, ancillary clearances, and approved plans for ${appId
         };
         result.push(releaseMsg);
         updated = true;
+      } else {
+        const exRel = result[existingReleaseIdx];
+        let relContent = exRel.content || "";
+        if (!relContent.includes(`PHP ${assessedAmt}`) || (relContent.includes("PHP 3,795") && assessedNum !== 3795)) {
+          relContent = relContent.replace(/Payment of\s*PHP\s*[\d,]+/gi, `Payment of PHP ${assessedAmt}`);
+          result[existingReleaseIdx] = { ...exRel, content: relContent };
+          updated = true;
+        }
       }
     }
   });

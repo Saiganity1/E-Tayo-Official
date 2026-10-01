@@ -75,7 +75,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       projectDescription: isLC ? "Locational clearance filing." : "Building permit construction.",
       status: "pending",
       dateSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
-      estimatedFees: 3795,
+      estimatedFees: isLC ? 500 : 3795,
+      assessedFees: isLC ? 500 : 3795,
+      orderOfPaymentNo: `OP-${cleanId.replace(/^[A-Za-z]+-/i, "") || "2026"}`,
       paymentStatus: "unpaid",
       requirements: [],
       trackingSteps: [

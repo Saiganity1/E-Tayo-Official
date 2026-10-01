@@ -93,7 +93,8 @@ export default function ApplicationTrackDetail() {
     if (!appData) return;
     setIsSubmittingPayment(true);
     const refNo = paymentRefInput.trim() || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
-    const assessedAmountStr = `PHP ${((appData as any).assessedFees || 3795).toLocaleString()}`;
+    const isPayingLC = appData.permitType === "locational_clearance" || String(appData.id || "").toUpperCase().startsWith("LC-");
+    const assessedAmountStr = `PHP ${((appData as any).assessedFees || (appData as any).estimatedFees || (isPayingLC ? 500 : 3795)).toLocaleString()}`;
     const curId = String(appData.id || "");
 
     const connectedApp = applications ? getConnectedProjectApp(appData, applications) : null;
@@ -1493,11 +1494,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                   ) : isLC ? (
                     <>
                       Your Locational Clearance (<strong>{appData.id}</strong>) has been officially approved by the Sto. Tomas Zoning Administrator / Municipal Planning and Development Office (MPDO). 
-                      Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {((appData as any).assessedFees || 3795).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || "OP-2026"}</strong>) at the Municipal Treasury or online. Your official clearance papers will be released once settled.
+                      Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {((appData as any).assessedFees || (appData as any).estimatedFees || 500).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) at the Municipal Treasury or online. Your official clearance papers will be released once settled.
                     </>
                   ) : (
                     <>
-                      Great news! Your application has formally passed municipal evaluation. Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {((appData as any).assessedFees || 3795).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || "OP-2026"}</strong>) at the Municipal Treasury or online to receive your final signed release papers.
+                      Great news! Your application has formally passed municipal evaluation. Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {((appData as any).assessedFees || (appData as any).estimatedFees || 3795).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) at the Municipal Treasury or online to receive your final signed release papers.
                     </>
                   )}
                 </div>
@@ -2057,12 +2058,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
                 <span style={{ fontSize: "0.82rem", color: "#64748b" }}>Order of Payment No:</span>
-                <span style={{ fontSize: "0.84rem", fontWeight: "700", color: "#6d28d9" }}>{appData.orderOfPaymentNo || "OP-2026"}</span>
+                <span style={{ fontSize: "0.84rem", fontWeight: "700", color: "#6d28d9" }}>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px dashed #cbd5e1" }}>
                 <span style={{ fontSize: "0.86rem", fontWeight: "700", color: "#334155" }}>Amount Assessed:</span>
                 <span style={{ fontSize: "1.25rem", fontWeight: "900", color: "#059669" }}>
-                  PHP {((appData as any).assessedFees || 3795).toLocaleString()}
+                  PHP {((appData as any).assessedFees || (appData as any).estimatedFees || (isLC ? 500 : 3795)).toLocaleString()}
                 </span>
               </div>
             </div>

@@ -38,6 +38,8 @@ public class PermitApplication {
     private List<TrackingStep> trackingSteps;
 
     private double estimatedFees;
+    private Double assessedFees;
+    private String orderOfPaymentNo;
     private String paymentStatus;
     private String assignedStaff;
 
@@ -90,6 +92,10 @@ public class PermitApplication {
     public void setTrackingSteps(List<TrackingStep> trackingSteps) { this.trackingSteps = trackingSteps; }
     public double getEstimatedFees() { return estimatedFees; }
     public void setEstimatedFees(double estimatedFees) { this.estimatedFees = estimatedFees; }
+    public Double getAssessedFees() { return assessedFees; }
+    public void setAssessedFees(Double assessedFees) { this.assessedFees = assessedFees; }
+    public String getOrderOfPaymentNo() { return orderOfPaymentNo; }
+    public void setOrderOfPaymentNo(String orderOfPaymentNo) { this.orderOfPaymentNo = orderOfPaymentNo; }
     public String getPaymentStatus() { return paymentStatus; }
     public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
     public String getAssignedStaff() { return assignedStaff; }

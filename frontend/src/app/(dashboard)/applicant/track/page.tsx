@@ -76,7 +76,8 @@ export default function ApplicationStatusPage() {
     if (!payingApp) return;
     setIsSubmittingPayment(true);
     const refNo = paymentRefInput.trim() || `OR-2026-${Math.floor(10000 + Math.random() * 90000)}`;
-    const assessedAmountStr = `PHP ${(payingApp.assessedFees || 3795).toLocaleString()}`;
+    const isPayingLC = payingApp.permitType === "locational_clearance" || String(payingApp.id || "").toUpperCase().startsWith("LC-");
+    const assessedAmountStr = `PHP ${(payingApp.assessedFees || payingApp.estimatedFees || (isPayingLC ? 500 : 3795)).toLocaleString()}`;
     const payingId = String(payingApp.id || "");
 
     const connectedApp = applications ? getConnectedApp(payingApp, applications) : null;
@@ -1027,7 +1028,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       </>
                     ) : (
                       <>
-                        Your application is approved! Settle the assessed regulatory amount of <strong style={{ color: "#b45309", fontSize: "0.95rem" }}>PHP {((app as any).assessedFees || 3795).toLocaleString()}</strong> (Ref: <strong>{app.orderOfPaymentNo || "OP-2026"}</strong>) to immediately unlock and release your official signed permits.
+                        Your application is approved! Settle the assessed regulatory amount of <strong style={{ color: "#b45309", fontSize: "0.95rem" }}>PHP {((app as any).assessedFees || (app as any).estimatedFees || ((app as any).permitType === "locational_clearance" || String(app.id || "").toUpperCase().startsWith("LC-") ? 500 : 3795)).toLocaleString()}</strong> (Ref: <strong>{app.orderOfPaymentNo || `OP-${app.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) to immediately unlock and release your official signed permits.
                       </>
                     )}
                   </div>
@@ -2356,12 +2357,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
                 <span style={{ fontSize: "0.82rem", color: "#64748b" }}>Order of Payment No:</span>
-                <span style={{ fontSize: "0.84rem", fontWeight: "700", color: "#6d28d9" }}>{payingApp.orderOfPaymentNo || "OP-2026-9307"}</span>
+                <span style={{ fontSize: "0.84rem", fontWeight: "700", color: "#6d28d9" }}>{payingApp.orderOfPaymentNo || `OP-${payingApp.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px dashed #cbd5e1" }}>
                 <span style={{ fontSize: "0.86rem", fontWeight: "700", color: "#334155" }}>Amount Assessed:</span>
                 <span style={{ fontSize: "1.25rem", fontWeight: "900", color: "#059669" }}>
-                  PHP {((payingApp as any).assessedFees || 3795).toLocaleString()}
+                  PHP {((payingApp as any).assessedFees || (payingApp as any).estimatedFees || (payingApp.permitType === "locational_clearance" || String(payingApp.id || "").toUpperCase().startsWith("LC-") ? 500 : 3795)).toLocaleString()}
                 </span>
               </div>
             </div>
