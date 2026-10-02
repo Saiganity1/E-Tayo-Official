@@ -440,7 +440,6 @@ export default function ApplicantMessagesPage() {
   // Seamlessly switch active conversation thread and update URL without page refresh
   const handleSelectThread = (threadId: string) => {
     setActiveThreadId(threadId);
-    setSelectedPermitTab("all");
     lastProcessedRef.current = threadId;
     if (typeof window !== "undefined") {
       try {
@@ -609,32 +608,7 @@ export default function ApplicantMessagesPage() {
     });
   }, [messages, activeThreadId, activeThread, currentUserEmail]);
 
-  // Filter messages based on selected thread tab ('all' or specific permit ID)
-  const displayedMessages = useMemo(() => {
-    if (selectedPermitTab === "all") return activeThreadMessages;
-    return activeThreadMessages.filter(m => {
-      const tid = getMessageThreadId(m);
-      return tid === selectedPermitTab || m.applicationId === selectedPermitTab || m.content?.includes(selectedPermitTab);
-    });
-  }, [activeThreadMessages, selectedPermitTab]);
-
-  // Permit Tabs configuration for the active project
-  const projectPermitTabs = useMemo(() => {
-    const apps = activeThread?.applications || [];
-    return apps.map(app => {
-      const statusBadge = getStatusBadge(app.status);
-      const count = activeThreadMessages.filter(m => {
-        const tid = getMessageThreadId(m);
-        return tid === app.id || m.applicationId === app.id || m.content?.includes(app.id);
-      }).length;
-      return {
-        id: app.id,
-        statusColor: statusBadge.color,
-        status: app.status,
-        count
-      };
-    });
-  }, [activeThread, activeThreadMessages]);
+  const displayedMessages = activeThreadMessages;
 
   // Filter conversation threads by quick filter pills and search query
   const filteredConversationThreads = useMemo(() => {
@@ -1079,7 +1053,7 @@ export default function ApplicantMessagesPage() {
       {/* ========================================================================= */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: showDossier ? "290px 1fr 340px" : "290px 1fr",
+        gridTemplateColumns: "300px 1fr",
         gap: "1.25rem",
         height: "calc(100vh - 215px)",
         minHeight: "680px",
@@ -1435,143 +1409,6 @@ export default function ApplicantMessagesPage() {
                 </div>
               </div>
             </div>
-
-            {/* Right Header Action: Toggle Dossier Inspector */}
-            <button
-              onClick={() => setShowDossier(prev => !prev)}
-              style={{
-                background: showDossier ? "#2563eb" : "#f8fafc",
-                border: showDossier ? "1.5px solid #1d4ed8" : "1.5px solid #e2e8f0",
-                color: showDossier ? "#ffffff" : "#334155",
-                padding: "8px 14px",
-                borderRadius: "11px",
-                fontSize: "0.84rem",
-                fontWeight: "700",
-                display: "flex",
-                alignItems: "center",
-                gap: "7px",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-                boxShadow: showDossier ? "0 2px 8px rgba(37, 99, 235, 0.25)" : "none"
-              }}
-              title="Toggle Project & Permit Dossier"
-            >
-              <Briefcase size={15} />
-              <span>{showDossier ? "Hide Dossier" : "Permit Dossier"}</span>
-              {activeThread.applications && activeThread.applications.length > 0 && (
-                <span style={{
-                  background: showDossier ? "rgba(255,255,255,0.25)" : "#e2e8f0",
-                  color: showDossier ? "#ffffff" : "#475569",
-                  padding: "1px 6px",
-                  borderRadius: "8px",
-                  fontSize: "0.72rem",
-                  fontWeight: "800"
-                }}>
-                  {activeThread.applications.length}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* APPLICATION THREAD SELECTOR (SUBNAV BAR UNDER HEADER) */}
-          <div style={{
-            background: "#f8fafc",
-            borderBottom: "1.5px solid #e2e8f0",
-            padding: "8px 1.4rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            overflowX: "auto",
-            scrollbarWidth: "none",
-            msOverflowStyle: "none"
-          }}>
-            <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#64748b", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px", marginRight: "2px", flexShrink: 0 }}>
-              <Filter size={13} /> Threads:
-            </span>
-
-            {/* All Messages Tab */}
-            <button
-              onClick={() => setSelectedPermitTab("all")}
-              style={{
-                padding: "6px 14px",
-                borderRadius: "10px",
-                fontSize: "0.82rem",
-                fontWeight: "700",
-                border: selectedPermitTab === "all" ? "1.5px solid #2563eb" : "1.5px solid #e2e8f0",
-                background: selectedPermitTab === "all" ? "#2563eb" : "#ffffff",
-                color: selectedPermitTab === "all" ? "#ffffff" : "#475569",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                whiteSpace: "nowrap",
-                flexShrink: 0,
-                transition: "all 0.15s",
-                boxShadow: selectedPermitTab === "all" ? "0 2px 6px rgba(37, 99, 235, 0.2)" : "none"
-              }}
-            >
-              <Layers size={14} />
-              <span>All Messages</span>
-              <span style={{
-                background: selectedPermitTab === "all" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
-                color: selectedPermitTab === "all" ? "#ffffff" : "#64748b",
-                padding: "1px 6px",
-                borderRadius: "6px",
-                fontSize: "0.72rem"
-              }}>
-                {activeThreadMessages.length}
-              </span>
-            </button>
-
-            {/* Individual Permit Threads */}
-            {projectPermitTabs.map(tab => {
-              const isActive = selectedPermitTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setSelectedPermitTab(tab.id)}
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: "10px",
-                    fontSize: "0.82rem",
-                    fontWeight: "700",
-                    border: isActive ? "1.5px solid #2563eb" : "1.5px solid #e2e8f0",
-                    background: isActive ? "#2563eb" : "#ffffff",
-                    color: isActive ? "#ffffff" : "#334155",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    whiteSpace: "nowrap",
-                    flexShrink: 0,
-                    transition: "all 0.15s",
-                    boxShadow: isActive ? "0 2px 6px rgba(37, 99, 235, 0.2)" : "none"
-                  }}
-                >
-                  <Building2 size={14} />
-                  <span>{tab.id}</span>
-                  <span style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    background: tab.statusColor,
-                    display: "inline-block"
-                  }} />
-                  {tab.count > 0 && (
-                    <span style={{
-                      background: isActive ? "rgba(255, 255, 255, 0.25)" : "#eff6ff",
-                      color: isActive ? "#ffffff" : "#2563eb",
-                      padding: "1px 6px",
-                      borderRadius: "6px",
-                      fontSize: "0.72rem",
-                      fontWeight: "800"
-                    }}>
-                      {tab.count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
           </div>
 
           {/* SLIM NOTICE BANNERS (Order of Payment & Clearances Released) */}
@@ -2016,11 +1853,7 @@ export default function ApplicantMessagesPage() {
                       handleSendMessage();
                     }
                   }}
-                  placeholder={
-                    selectedPermitTab !== "all"
-                      ? `Type message regarding ${selectedPermitTab}... (Enter to send, Shift+Enter for newline)`
-                      : `Type message regarding [${activeThread.title || activeThreadId}]... (Enter to send, Shift+Enter for newline)`
-                  }
+                  placeholder={`Type message regarding [${activeThread.title || activeThreadId}]... (Enter to send, Shift+Enter for newline)`}
                   style={{
                     width: "100%",
                     minHeight: "44px",
