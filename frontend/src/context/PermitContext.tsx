@@ -1546,6 +1546,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
+        const logCtrl = new AbortController();
+        const logTid = setTimeout(() => logCtrl.abort(), 2000);
         await fetch(`${API_BASE_URL}/logs`, {
           method: "POST",
           headers,
@@ -1554,8 +1556,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             userEmail: rawUser,
             details: rawDetails,
             ipAddress: "127.0.0.1",
-          })
-        });
+          }),
+          signal: logCtrl.signal
+        }).finally(() => clearTimeout(logTid));
       }
     } catch (e) {
       // quiet fallback

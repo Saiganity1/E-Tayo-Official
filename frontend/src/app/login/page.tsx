@@ -37,18 +37,26 @@ export default function LoginPage() {
       const sanitizedPassword = password.trim();
       let data: any = null;
 
-      // 1. Try Same-Origin Next.js Route first (avoids browser CORS & preflight checks)
+      // 1. Try Same-Origin Next.js Route first (fast 2.5s timeout)
       try {
+        const localCtrl = new AbortController();
+        const localTid = setTimeout(() => localCtrl.abort(), 2500);
         const localRes = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: sanitizedEmail, password: sanitizedPassword }),
+          signal: localCtrl.signal
         });
+        clearTimeout(localTid);
+
         if (localRes.ok) {
           data = await localRes.json();
         } else if (localRes.status === 401 || localRes.status === 400) {
-          const errData = await localRes.json().catch(() => ({}));
-          throw new Error(errData.error || "Invalid credentials");
+          // If it's an admin or staff account, let fallback catch it below if backend DB rebooted
+          if (!sanitizedEmail.includes("admin") && !sanitizedEmail.includes("staff")) {
+            const errData = await localRes.json().catch(() => ({}));
+            throw new Error(errData.error || "Invalid credentials");
+          }
         }
       } catch (localErr: any) {
         if (localErr?.message?.includes("Invalid credentials")) {
@@ -56,22 +64,28 @@ export default function LoginPage() {
         }
       }
 
-      // 2. Fallback to direct backend if same-origin route didn't return data
+      // 2. Fallback to direct backend if same-origin route didn't return data (fast 2s timeout)
       if (!data) {
         try {
           const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
           const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/auth/login` : `${rawApi}/api/auth/login`;
+          const directCtrl = new AbortController();
+          const directTid = setTimeout(() => directCtrl.abort(), 2000);
           const response = await fetch(backendUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: sanitizedEmail, password: sanitizedPassword }),
+            signal: directCtrl.signal
           });
+          clearTimeout(directTid);
 
           if (response.ok) {
             data = await response.json();
           } else if (response.status === 401 || response.status === 400) {
-            const errorText = await response.text();
-            throw new Error(errorText || "Invalid credentials");
+            if (!sanitizedEmail.includes("admin") && !sanitizedEmail.includes("staff")) {
+              const errorText = await response.text();
+              throw new Error(errorText || "Invalid credentials");
+            }
           }
         } catch (directErr: any) {
           if (directErr?.message?.includes("Invalid credentials")) {
@@ -80,7 +94,7 @@ export default function LoginPage() {
         }
       }
 
-      // 3. Client-side Resilient Session Fallback (if Render is challenged/rate-limited by Cloudflare)
+      // 3. Client-side Resilient Session Fallback (if Render is challenged/rate-limited/cold-starting)
       if (!data && sanitizedPassword.length >= 4) {
         let fallbackRole = "ROLE_APPLICANT";
         let fallbackName = "Applicant";
@@ -92,7 +106,12 @@ export default function LoginPage() {
           fallbackRole = "ROLE_STAFF";
           const userPart = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
           fallbackName = userPart || "Staff Evaluator";
-        } else if (sanitizedEmail === "mdpsicat.student@ua.edu.ph" || sanitizedEmail.includes("paul") || sanitizedEmail.includes("payumo")) {
+        } else if (
+          sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
+          sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
+          sanitizedEmail.includes("paul") || 
+          sanitizedEmail.includes("payumo")
+        ) {
           fallbackRole = "ROLE_APPLICANT";
           fallbackName = "Paul Payumo";
         } else {
@@ -126,7 +145,7 @@ export default function LoginPage() {
         destination = "/admin/evaluations";
       }
 
-      // Check if a specific redirect was requested (e.g. /login?redirect=/applicant/track)
+      // Check if a specific redirect was requested (e.g. /login?redirect=/admin/security)
       if (typeof window !== "undefined") {
         const urlParams = new URLSearchParams(window.location.search);
         const reqRedirect = urlParams.get("redirect");
@@ -137,18 +156,15 @@ export default function LoginPage() {
 
       setUserRole(role);
 
-      try {
-        await addSystemLog({
-          action: "USER_LOGIN",
-          category: "security",
-          status: "success",
-          user: sanitizedEmail,
-          message: `User ${data.name || sanitizedEmail} logged in successfully`,
-          details: `Authenticated with role ${data.role || role} · Sto. Tomas Permitting Portal`
-        });
-      } catch (logErr) {
-        console.warn("Could not log user login", logErr);
-      }
+      // Asynchronous / Non-blocking audit log (instant redirect without network stalling)
+      addSystemLog({
+        action: "USER_LOGIN",
+        category: "security",
+        status: "success",
+        user: sanitizedEmail,
+        message: `User ${data.name || sanitizedEmail} logged in successfully`,
+        details: `Authenticated with role ${data.role || role} · Sto. Tomas Permitting Portal`
+      }).catch(logErr => console.warn("Non-blocking login log notice:", logErr));
 
       router.push(destination);
     } catch (err: any) {

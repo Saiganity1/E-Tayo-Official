@@ -13,7 +13,7 @@ const DEFAULT_NOTIFICATIONS = [
     message: "Your application for Locational Clearance (LC-2026-6494) has been safely received by the Municipal Planning and Development Office.",
     timestamp: new Date().toISOString(),
     isRead: false,
-    recipientEmail: "mdpsicot.student@ua.edu.ph"
+    recipientEmail: "mdpsicat.student@ua.edu.ph"
   },
   {
     id: 2,
@@ -21,7 +21,7 @@ const DEFAULT_NOTIFICATIONS = [
     message: "Zoning evaluators are reviewing your submitted tax declaration and site development plans.",
     timestamp: new Date(Date.now() - 7200000).toISOString(),
     isRead: false,
-    recipientEmail: "mdpsicot.student@ua.edu.ph"
+    recipientEmail: "mdpsicat.student@ua.edu.ph"
   }
 ];
 

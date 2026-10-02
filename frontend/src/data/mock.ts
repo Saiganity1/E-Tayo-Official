@@ -98,6 +98,92 @@ function adjustDate(dateStr: string, daysToAdd: number): string {
 
 export const INITIAL_APPLICATIONS: PermitApplication[] = [
   {
+    id: "LC-2026-6133",
+    permitType: "locational_clearance",
+    projectName: "Paul Second Floor house - Locational Clearance",
+    applicantName: "Paul Payumo",
+    applicantEmail: "mdpsicat.student@ua.edu.ph",
+    applicantPhone: "0917-123-4567",
+    applicantAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+    projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+    projectDescription: "Locational Clearance for Paul Second Floor house in Brgy. San Bartolome.",
+    status: "released",
+    dateSubmitted: "October 01, 2026",
+    estimatedFees: 2500,
+    assessedFees: 2500,
+    orderOfPaymentNo: "OP-2026-6133",
+    paymentStatus: "paid",
+    officialReceiptNo: "OR-2026-69723",
+    projectType: "Single-Detached House",
+    location: {
+      lat: 15.0163,
+      lng: 120.7188,
+      address: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+      lotNo: "3",
+      blockNo: "2"
+    },
+    requirements: createMockRequirements("locational_clearance", 6),
+    trackingSteps: [
+      { title: "1. Filed", status: "completed", date: "October 01, 2026", notes: "Submitted Online", actor: "Paul Payumo" },
+      { title: "2. Evaluation", status: "completed", notes: "Technical Review by Zoning Officer" },
+      { title: "3. Zoning Clearance", status: "completed", notes: "Zoning Review & Approved" },
+      { title: "4. Released", status: "completed", notes: "Settlement verified under OR-2026-69723" }
+    ],
+    historyLog: [
+      {
+        date: "October 01, 2026, 08:30 PM",
+        action: "Permit Released",
+        actor: "Zoning Administrator",
+        details: "Locational clearance certificate issued and released."
+      }
+    ]
+  },
+  {
+    id: "APP-2026-1061",
+    permitType: "building_permit",
+    projectName: "Paul Second Floor house",
+    applicantName: "Paul Payumo",
+    applicantEmail: "mdpsicat.student@ua.edu.ph",
+    applicantPhone: "0917-123-4567",
+    applicantAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+    projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+    projectDescription: "Construction of second floor house extension and residential building improvements.",
+    status: "pending",
+    dateSubmitted: "October 01, 2026",
+    estimatedFees: 6200,
+    assessedFees: 6200,
+    orderOfPaymentNo: "OP-2026-1061",
+    paymentStatus: "unpaid",
+    projectType: "Single-Detached House",
+    locationalClearanceRef: "LC-2026-6133",
+    clearanceRef: "LC-2026-6133",
+    connectedClearanceId: "LC-2026-6133",
+    fileUrl: "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf",
+    fileName: "APP-2026-1061_Single-Detached_House_Permit_Package.pdf",
+    location: {
+      lat: 15.0163,
+      lng: 120.7188,
+      address: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+      lotNo: "3",
+      blockNo: "2"
+    },
+    requirements: createMockRequirements("building_permit", 8),
+    trackingSteps: [
+      { title: "Application Submitted", status: "completed", date: "October 01, 2026", notes: "Application dossier filed online with 8 verified engineering attachments." },
+      { title: "Initial Document Verification", status: "in-progress", notes: "Reviewing all technical engineering attachments for completeness and licensed PRC sign-offs." },
+      { title: "Technical Engineering Evaluation", status: "upcoming", notes: "Review by Municipal Building Official, Structural & Electrical Engineers." },
+      { title: "Order of Payment & Issuance", status: "upcoming", notes: "Assessment of municipal fees and permit issuance." }
+    ],
+    historyLog: [
+      {
+        date: "October 01, 2026, 11:00 PM",
+        action: "Application Submitted",
+        actor: "Paul Payumo",
+        details: "Applied for Single-Detached House with 8 mandatory engineering permits under Locational Clearance LC-2026-6133."
+      }
+    ]
+  },
+  {
     id: 'LC-2025-0001',
     permitType: 'locational_clearance',
     projectName: 'Dela Cruz Warehouse',

@@ -7,7 +7,7 @@ const SEED_APPLICATIONS: PermitApplication[] = [
     permitType: "locational_clearance",
     projectName: "Paul Second Floor house - Locational Clearance",
     applicantName: "Paul Payumo",
-    applicantEmail: "mdpsicot.student@ua.edu.ph",
+    applicantEmail: "mdpsicat.student@ua.edu.ph",
     applicantPhone: "0917-123-4567",
     applicantAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
     projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
@@ -55,7 +55,7 @@ const SEED_APPLICATIONS: PermitApplication[] = [
     permitType: "building_permit",
     projectName: "Paul Second Floor house",
     applicantName: "Paul Payumo",
-    applicantEmail: "mdpsicot.student@ua.edu.ph",
+    applicantEmail: "mdpsicat.student@ua.edu.ph",
     applicantPhone: "0917-123-4567",
     applicantAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
     projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
@@ -110,7 +110,7 @@ const SEED_APPLICATIONS: PermitApplication[] = [
     permitType: "locational_clearance",
     projectName: "Single-Detached House - Locational Clearance",
     applicantName: "Paul Payumo",
-    applicantEmail: "mdpsicot.student@ua.edu.ph",
+    applicantEmail: "mdpsicat.student@ua.edu.ph",
     applicantPhone: "0917-123-4567",
     applicantAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
     projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
@@ -239,15 +239,37 @@ export function getAllPermits(emailFilter?: string, nameFilter?: string): Permit
   const cleanEmail = (emailFilter || "").trim().toLowerCase();
   const cleanName = (nameFilter || "").trim().toLowerCase();
 
+  const normalizeEmail = (em: string) => (em || "").trim().toLowerCase().replace("mdpsicot", "mdpsicat");
+
   return all.filter(app => {
     const appEmail = (app.applicantEmail || "").trim().toLowerCase();
     const appName = (app.applicantName || "").trim().toLowerCase();
 
-    if (cleanEmail && (appEmail === cleanEmail || appEmail.includes(cleanEmail) || cleanEmail.includes(appEmail))) {
-      return true;
+    if (cleanEmail) {
+      if (appEmail === cleanEmail || appEmail.includes(cleanEmail) || cleanEmail.includes(appEmail)) {
+        return true;
+      }
+      if (normalizeEmail(appEmail) === normalizeEmail(cleanEmail)) {
+        return true;
+      }
     }
     if (cleanName && (appName === cleanName || appName.includes(cleanName) || cleanName.includes(appName))) {
       return true;
+    }
+    // Check if linked clearance belongs to user
+    const linkedRef = String(app.locationalClearanceRef || app.clearanceRef || app.connectedClearanceId || "").trim().toLowerCase();
+    if (linkedRef && linkedRef !== "exempt" && linkedRef !== "not_required") {
+      const parent = store.get(linkedRef);
+      if (parent) {
+        const pEmail = (parent.applicantEmail || "").trim().toLowerCase();
+        const pName = (parent.applicantName || "").trim().toLowerCase();
+        if (cleanEmail && (pEmail === cleanEmail || normalizeEmail(pEmail) === normalizeEmail(cleanEmail))) {
+          return true;
+        }
+        if (cleanName && (pName === cleanName || pName.includes(cleanName) || cleanName.includes(pName))) {
+          return true;
+        }
+      }
     }
     return false;
   });

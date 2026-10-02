@@ -10,7 +10,7 @@ const DEFAULT_MESSAGES = [
   {
     id: 1,
     senderEmail: "staff@etayo.gov.ph",
-    recipientEmail: "mdpsicot.student@ua.edu.ph",
+    recipientEmail: "mdpsicat.student@ua.edu.ph",
     applicationId: "LC-2026-6494",
     content: "Greetings Mr. Payumo! Your application LC-2026-6494 is queued for zoning evaluation. All required documents are in order.",
     timestamp: new Date().toISOString()

@@ -9,7 +9,7 @@ let _assignedUsersStore = [
   {
     id: 1,
     name: "Paul Payumo",
-    email: "mdpsicot.student@ua.edu.ph",
+    email: "mdpsicat.student@ua.edu.ph",
     role: "ROLE_APPLICANT",
     createdAt: "2026-09-15T08:00:00Z"
   },

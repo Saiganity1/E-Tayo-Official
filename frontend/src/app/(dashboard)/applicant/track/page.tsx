@@ -393,31 +393,61 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
     const email = (currentUser.email || "").toLowerCase().trim();
     const name = (currentUser.name || "").toLowerCase().trim();
+    const norm = (str: string) => (str || "").toLowerCase().trim().replace("mdpsicot", "mdpsicat");
 
-    return (applications || []).filter(app => {
+    const activeStoredRef = typeof window !== "undefined" 
+      ? (localStorage.getItem("etayo_active_clearance_ref") || "").trim().toLowerCase() 
+      : "";
+
+    let pool = applications || [];
+    if (pool.length === 0 && typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("etayo_cached_applications");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) pool = parsed;
+        }
+      } catch (e) {}
+    }
+
+    return pool.filter(app => {
+      if (!app) return false;
+      const appId = String(app.id || "").trim().toLowerCase();
       const appEmail = (app.applicantEmail || (app as any).userEmail || (typeof (app as any).user === "string" ? (app as any).user : "") || "").toLowerCase().trim();
       const appName = (app.applicantName || (app as any).userName || "").toLowerCase().trim();
 
-      const matchEmail = Boolean(email && appEmail && (appEmail === email || appEmail.includes(email) || email.includes(appEmail)));
+      const matchEmail = Boolean(email && appEmail && (
+        appEmail === email || 
+        appEmail.includes(email) || 
+        email.includes(appEmail) ||
+        norm(appEmail) === norm(email)
+      ));
       const matchName = Boolean(name && appName && (appName === name || appName.includes(name) || name.includes(appName)));
+
+      // If this application matches the active clearance reference from existing application flow
+      const matchActiveRef = Boolean(activeStoredRef && activeStoredRef !== "exempt" && (
+        appId === activeStoredRef ||
+        String(app.locationalClearanceRef || "").trim().toLowerCase() === activeStoredRef ||
+        String((app as any).clearanceRef || "").trim().toLowerCase() === activeStoredRef
+      ));
 
       // CRITICAL FIX: If this application has locationalClearanceRef, check if that LC belongs to this user!
       // This guarantees that any Stage 2 permit linked to user's LC is NEVER dropped!
       const linkedRef = String(app.locationalClearanceRef || (app as any).clearanceRef || (app as any).connectedClearanceId || "").trim().toLowerCase();
       let matchLinkedLC = false;
-      if (linkedRef && linkedRef !== "exempt" && linkedRef !== "not_required" && applications) {
-        matchLinkedLC = applications.some(other => {
+      if (linkedRef && linkedRef !== "exempt" && linkedRef !== "not_required" && pool) {
+        matchLinkedLC = pool.some(other => {
           if (!other || !other.id) return false;
           const otherId = String(other.id).trim().toLowerCase();
           if (otherId !== linkedRef) return false;
           const otherEmail = (other.applicantEmail || (other as any).userEmail || "").toLowerCase().trim();
           const otherName = (other.applicantName || "").toLowerCase().trim();
-          return (email && otherEmail && (otherEmail === email || otherEmail.includes(email))) ||
+          return (email && otherEmail && (otherEmail === email || otherEmail.includes(email) || norm(otherEmail) === norm(email))) ||
                  (name && otherName && (otherName === name || otherName.includes(name)));
         });
       }
 
-      return matchEmail || matchName || matchLinkedLC;
+      return matchEmail || matchName || matchActiveRef || matchLinkedLC;
     });
   }, [applications, isLoggedIn, currentUser]);
 

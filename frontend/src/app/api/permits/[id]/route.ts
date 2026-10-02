@@ -68,7 +68,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       projectType: "Single-Detached House",
       permitType: isLC ? "locational_clearance" : "building_permit",
       applicantName: "Paul Payumo",
-      applicantEmail: "mdpsicot.student@ua.edu.ph",
+      applicantEmail: "mdpsicat.student@ua.edu.ph",
       applicantPhone: "0917-123-4567",
       applicantAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
       projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
