@@ -195,7 +195,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
             user: h.actor || evaluator || applicantLabel,
             message: `${h.actor || "Staff"} - ${h.action || "Status Update"} on ${app.id} (${projLabel})`,
             details: h.details || `${h.action} recorded for application ${app.id}.`,
-            userEmail: (h.actor && h.actor.includes("@")) ? h.actor : (app.evaluatorEmail || "staff@etayo.gov.ph"),
+            userEmail: (h.actor && h.actor.includes("@")) ? h.actor : (app.evaluatorEmail || "admin@etayo.gov.ph"),
           }));
         }
       });
@@ -1291,7 +1291,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         action: "EVALUATION_APPROVED",
         category: "application",
         status: "success",
-        user: updatedApp.assignedStaff || "staff@etayo.gov.ph",
+        user: updatedApp.assignedStaff || updatedApp.evaluatorEmail || "admin@etayo.gov.ph",
         message: `Application ${updatedApp.id} (${updatedApp.projectName || updatedApp.projectType}) officially APPROVED`,
         details: updatedApp.remarks || "All requirements and clearances approved by Municipal Planning and Development Office."
       });
@@ -1300,7 +1300,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         action: "EVALUATION_REVISION_REQUESTED",
         category: "application",
         status: "warning",
-        user: updatedApp.assignedStaff || "staff@etayo.gov.ph",
+        user: updatedApp.assignedStaff || updatedApp.evaluatorEmail || "admin@etayo.gov.ph",
         message: `Application ${updatedApp.id} requirements revision requested`,
         details: updatedApp.remarks || "Applicant requested to upload missing engineering plans or documents."
       });
@@ -1309,7 +1309,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         action: "EVALUATION_REJECTED",
         category: "application",
         status: "error",
-        user: updatedApp.assignedStaff || "staff@etayo.gov.ph",
+        user: updatedApp.assignedStaff || updatedApp.evaluatorEmail || "admin@etayo.gov.ph",
         message: `Application ${updatedApp.id} (${updatedApp.projectName || updatedApp.projectType}) REJECTED`,
         details: updatedApp.remarks || "Application rejected by municipal evaluator."
       });

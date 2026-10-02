@@ -93,8 +93,14 @@ export default function AdminStaffPage() {
         // Strictly eliminate automatic seeded dummy staff
         const authenticStaff = data.filter(u => !isAutomaticDummyStaff(u));
         setUsers(authenticStaff);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("etayo_assigned_staff", JSON.stringify(authenticStaff));
+        }
       } else {
         setUsers([]);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("etayo_assigned_staff", JSON.stringify([]));
+        }
       }
     } catch (err: any) {
       setError(err.message);
@@ -160,6 +166,15 @@ export default function AdminStaffPage() {
         }).catch(() => null);
       }
 
+      const promoted = applicants.find(a => String(a.id) === String(selectedApplicantId));
+      if (promoted && typeof window !== "undefined") {
+        try {
+          const cur = JSON.parse(localStorage.getItem("etayo_assigned_staff") || "[]");
+          const next = [...cur.filter((u: any) => u.email?.toLowerCase() !== promoted.email?.toLowerCase()), { ...promoted, role: "ROLE_STAFF" }];
+          localStorage.setItem("etayo_assigned_staff", JSON.stringify(next));
+        } catch (e) {}
+      }
+
       setActionMessage("Matagumpay na nai-assign ang napiling applicant bilang Staff!");
       setIsAssignModalOpen(false);
       setSelectedApplicantId("");
@@ -201,6 +216,19 @@ export default function AdminStaffPage() {
         throw new Error(errJson?.error || "Failed to create staff member");
       }
 
+      if (typeof window !== "undefined") {
+        try {
+          const cur = JSON.parse(localStorage.getItem("etayo_assigned_staff") || "[]");
+          const next = [...cur.filter((u: any) => u.email?.toLowerCase() !== newStaffEmail.trim().toLowerCase()), {
+            id: Date.now(),
+            name: newStaffName.trim(),
+            email: newStaffEmail.trim().toLowerCase(),
+            role: "ROLE_STAFF"
+          }];
+          localStorage.setItem("etayo_assigned_staff", JSON.stringify(next));
+        } catch (e) {}
+      }
+
       setActionMessage(`Matagumpay na nalikha at nai-assign si ${newStaffName} bilang Staff!`);
       setIsAssignModalOpen(false);
       setNewStaffName("");
@@ -234,6 +262,14 @@ export default function AdminStaffPage() {
           method: "PUT",
           headers: token ? { "Authorization": `Bearer ${token}` } : {}
         }).catch(() => null);
+      }
+
+      if (typeof window !== "undefined") {
+        try {
+          const cur = JSON.parse(localStorage.getItem("etayo_assigned_staff") || "[]");
+          const next = cur.filter((u: any) => u.id !== staffId);
+          localStorage.setItem("etayo_assigned_staff", JSON.stringify(next));
+        } catch (e) {}
       }
 
       setActionMessage(`Matagumpay na inalis si ${staffName} sa listahan ng Staff.`);

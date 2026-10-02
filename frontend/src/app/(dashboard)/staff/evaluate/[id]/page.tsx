@@ -96,7 +96,7 @@ export default function StaffEvaluatePage() {
 
   const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
   let activeStaffName = "Staff Evaluator";
-  let activeStaffEmail = "staff@etayo.gov.ph";
+  let activeStaffEmail = "";
   if (userStr) {
     try {
       const u = JSON.parse(userStr);
@@ -1666,7 +1666,7 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const evalPayload = JSON.stringify({
-        staffEmail: staffEmail || "staff@etayo.gov.ph",
+        staffEmail: staffEmail || "evaluator@etayo.gov.ph",
         applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
         permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
         action: "Approved",
@@ -1707,8 +1707,8 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
     setShowPaymentModal(false);
 
     const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-    let staffName = "Engr. Gilbert Cruz";
-    let staffEmail = "staff@etayo.gov.ph";
+    let staffName = "Staff Evaluator";
+    let staffEmail = "";
     if (userStr) {
       try {
         const u = JSON.parse(userStr);
@@ -1983,7 +1983,7 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const evalPayload = JSON.stringify({
-        staffEmail: staffEmail || "staff@etayo.gov.ph",
+        staffEmail: staffEmail || "evaluator@etayo.gov.ph",
         applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
         permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
         action: isDisapprove ? "Application Rejected" : "Incomplete Requirements",

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAssignedUserByEmail } from "@/utils/staffStore";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,6 +14,16 @@ export async function POST(req: Request) {
 
     if (!sanitizedEmail || !sanitizedPassword) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+    }
+
+    // Explicitly reject automatic dummy staff accounts (staff must be explicitly assigned by admin)
+    if (sanitizedEmail === "staff@etayo.gov.ph" || sanitizedEmail === "dave.sicat@etayo.gov.ph") {
+      const isAssigned = getAssignedUserByEmail(sanitizedEmail);
+      if (!isAssigned || isAssigned.role !== "ROLE_STAFF") {
+        return NextResponse.json({ 
+          error: "This automatic staff account has been removed. All staff accounts must be explicitly assigned by the Admin." 
+        }, { status: 401 });
+      }
     }
 
     const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
@@ -39,15 +50,14 @@ export async function POST(req: Request) {
       // If backend returned 401/400:
       // If it's a recognized system account and Render backend DB restarted without seeds, proceed to resilient fallback
       if (res.status === 401 || res.status === 400) {
+        const assignedStaff = getAssignedUserByEmail(sanitizedEmail);
         const isRecognized = 
           sanitizedEmail.includes("admin") || 
-          sanitizedEmail.includes("staff") || 
+          Boolean(assignedStaff && assignedStaff.role === "ROLE_STAFF") ||
           sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
           sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
           sanitizedEmail.includes("paul") || 
-          sanitizedEmail.includes("payumo") ||
-          sanitizedEmail.includes("dave") ||
-          sanitizedEmail.includes("sicat");
+          sanitizedEmail.includes("payumo");
 
         if (!isRecognized) {
           let errText = "";
@@ -76,21 +86,32 @@ export async function POST(req: Request) {
       if (sanitizedEmail.includes("admin")) {
         role = "ROLE_ADMIN";
         name = "Municipal Administrator";
-      } else if (sanitizedEmail.includes("staff") || sanitizedEmail.includes("evaluator")) {
-        role = "ROLE_STAFF";
-        const userPart = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-        name = userPart || "Staff Evaluator";
-      } else if (
-        sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
-        sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
-        sanitizedEmail.includes("paul") || 
-        sanitizedEmail.includes("payumo")
-      ) {
-        role = "ROLE_APPLICANT";
-        name = "Paul Payumo";
       } else {
-        const userPart = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-        name = userPart || "Applicant";
+        // STRICT: Only grant ROLE_STAFF if user is explicitly assigned by Admin in users store!
+        // NO automatic staff creation!
+        const assignedStaff = getAssignedUserByEmail(sanitizedEmail);
+        if (assignedStaff && assignedStaff.role === "ROLE_STAFF") {
+          role = "ROLE_STAFF";
+          name = assignedStaff.name || "Staff Evaluator";
+        } else if (
+          sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
+          sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
+          sanitizedEmail.includes("paul") || 
+          sanitizedEmail.includes("payumo")
+        ) {
+          role = "ROLE_APPLICANT";
+          name = "Paul Payumo";
+        } else {
+          // If unassigned staff, reject!
+          if (sanitizedEmail.includes("staff") || sanitizedEmail.includes("evaluator")) {
+            return NextResponse.json({ 
+              error: "This staff account does not exist. All staff accounts must be explicitly assigned by the Municipal Administrator." 
+            }, { status: 401 });
+          }
+          const userPart = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+          name = userPart || "Applicant";
+          role = "ROLE_APPLICANT";
+        }
       }
 
       // Generate a mock JWT token so downstream auth headers work

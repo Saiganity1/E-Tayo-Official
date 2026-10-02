@@ -37,6 +37,23 @@ export default function LoginPage() {
       const sanitizedPassword = password.trim();
       let data: any = null;
 
+      // Check if user is trying to use removed dummy staff account
+      if (sanitizedEmail === "staff@etayo.gov.ph" || sanitizedEmail === "dave.sicat@etayo.gov.ph") {
+        const assignedStaffRaw = typeof window !== "undefined" ? localStorage.getItem("etayo_assigned_staff") : null;
+        let isLocallyAssigned = false;
+        if (assignedStaffRaw) {
+          try {
+            const list = JSON.parse(assignedStaffRaw);
+            if (Array.isArray(list) && list.some((u: any) => u.email?.toLowerCase() === sanitizedEmail && u.role === "ROLE_STAFF")) {
+              isLocallyAssigned = true;
+            }
+          } catch (e) {}
+        }
+        if (!isLocallyAssigned) {
+          throw new Error("This staff account does not exist. All staff accounts must be explicitly assigned by the Municipal Administrator.");
+        }
+      }
+
       // 1. Try Same-Origin Next.js Route first (fast 2.5s timeout)
       try {
         const localCtrl = new AbortController();
@@ -52,23 +69,37 @@ export default function LoginPage() {
         if (localRes.ok) {
           data = await localRes.json();
         } else if (localRes.status === 401 || localRes.status === 400) {
+          const errData = await localRes.json().catch(() => ({}));
+          if (errData.error && (errData.error.includes("staff") || errData.error.includes("Administrator"))) {
+            throw new Error(errData.error);
+          }
+
+          // Check if admin has explicitly assigned this email as staff in localStorage
+          const assignedStaffRaw = typeof window !== "undefined" ? localStorage.getItem("etayo_assigned_staff") : null;
+          let isLocallyAssigned = false;
+          if (assignedStaffRaw) {
+            try {
+              const list = JSON.parse(assignedStaffRaw);
+              if (Array.isArray(list) && list.some((u: any) => u.email?.toLowerCase() === sanitizedEmail && u.role === "ROLE_STAFF")) {
+                isLocallyAssigned = true;
+              }
+            } catch (e) {}
+          }
+
           const isRecognized = 
             sanitizedEmail.includes("admin") || 
-            sanitizedEmail.includes("staff") || 
+            isLocallyAssigned ||
             sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
             sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
             sanitizedEmail.includes("paul") || 
-            sanitizedEmail.includes("payumo") ||
-            sanitizedEmail.includes("dave") ||
-            sanitizedEmail.includes("sicat");
+            sanitizedEmail.includes("payumo");
 
           if (!isRecognized) {
-            const errData = await localRes.json().catch(() => ({}));
             throw new Error(errData.error || "Invalid credentials");
           }
         }
       } catch (localErr: any) {
-        if (localErr?.message?.includes("Invalid credentials")) {
+        if (localErr?.message?.includes("Invalid credentials") || localErr?.message?.includes("staff account")) {
           throw localErr;
         }
       }
@@ -91,15 +122,24 @@ export default function LoginPage() {
           if (response.ok) {
             data = await response.json();
           } else if (response.status === 401 || response.status === 400) {
+            const assignedStaffRaw = typeof window !== "undefined" ? localStorage.getItem("etayo_assigned_staff") : null;
+            let isLocallyAssigned = false;
+            if (assignedStaffRaw) {
+              try {
+                const list = JSON.parse(assignedStaffRaw);
+                if (Array.isArray(list) && list.some((u: any) => u.email?.toLowerCase() === sanitizedEmail && u.role === "ROLE_STAFF")) {
+                  isLocallyAssigned = true;
+                }
+              } catch (e) {}
+            }
+
             const isRecognized = 
               sanitizedEmail.includes("admin") || 
-              sanitizedEmail.includes("staff") || 
+              isLocallyAssigned ||
               sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
               sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
               sanitizedEmail.includes("paul") || 
-              sanitizedEmail.includes("payumo") ||
-              sanitizedEmail.includes("dave") ||
-              sanitizedEmail.includes("sicat");
+              sanitizedEmail.includes("payumo");
 
             if (!isRecognized) {
               const errorText = await response.text();
@@ -107,7 +147,7 @@ export default function LoginPage() {
             }
           }
         } catch (directErr: any) {
-          if (directErr?.message?.includes("Invalid credentials")) {
+          if (directErr?.message?.includes("Invalid credentials") || directErr?.message?.includes("staff account")) {
             throw directErr;
           }
         }
@@ -118,13 +158,24 @@ export default function LoginPage() {
         let fallbackRole = "ROLE_APPLICANT";
         let fallbackName = "Applicant";
 
+        // Check if admin has explicitly assigned this email as staff in localStorage
+        const assignedStaffRaw = typeof window !== "undefined" ? localStorage.getItem("etayo_assigned_staff") : null;
+        let assignedStaffItem: any = null;
+        if (assignedStaffRaw) {
+          try {
+            const list = JSON.parse(assignedStaffRaw);
+            if (Array.isArray(list)) {
+              assignedStaffItem = list.find((u: any) => u.email?.toLowerCase() === sanitizedEmail && u.role === "ROLE_STAFF");
+            }
+          } catch (e) {}
+        }
+
         if (sanitizedEmail.includes("admin")) {
           fallbackRole = "ROLE_ADMIN";
           fallbackName = "Municipal Administrator";
-        } else if (sanitizedEmail.includes("staff") || sanitizedEmail.includes("evaluator")) {
+        } else if (assignedStaffItem) {
           fallbackRole = "ROLE_STAFF";
-          const userPart = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-          fallbackName = userPart || "Staff Evaluator";
+          fallbackName = assignedStaffItem.name || "Staff Evaluator";
         } else if (
           sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
           sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
@@ -134,6 +185,10 @@ export default function LoginPage() {
           fallbackRole = "ROLE_APPLICANT";
           fallbackName = "Paul Payumo";
         } else {
+          // If email includes staff or evaluator but NOT assigned by Admin, strictly reject!
+          if (sanitizedEmail.includes("staff") || sanitizedEmail.includes("evaluator")) {
+            throw new Error("This staff account does not exist. All staff accounts must be explicitly assigned by the Municipal Administrator.");
+          }
           const userPart = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
           fallbackName = userPart || "Applicant";
         }
