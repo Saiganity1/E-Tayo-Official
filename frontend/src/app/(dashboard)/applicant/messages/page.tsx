@@ -6,7 +6,8 @@ import {
   Search, Paperclip, Sparkles, FileText, ChevronRight, Phone, Info, 
   AlertCircle, X, HelpCircle, Building2, Flame, MapPin, CheckCheck, 
   RefreshCw, BadgeCheck, Compass, ExternalLink, Plus, MessageSquarePlus,
-  Layers, Filter, ArrowLeft, CreditCard, Receipt, Image as ImageIcon
+  Layers, Filter, ArrowLeft, CreditCard, Receipt, Image as ImageIcon,
+  Briefcase, Inbox, Check, ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -44,26 +45,31 @@ const OBO_ADMIN = {
 // Keep MANG_TOMAS as alias so existing send/receive logic is unchanged
 const MANG_TOMAS = OBO_ADMIN;
 
-const QUICK_INQUIRIES = [
+const CANNED_INQUIRIES = [
   {
-    icon: "📋",
-    label: "Locational Clearance",
-    text: "Good day! May I clarify the required documents and processing timeline for Stage 1 Locational Clearance?"
+    id: "docs_received",
+    label: "📋 Documents Verified",
+    text: "Good day! May I clarify if our submitted permit requirements have been formally received and verified by technical staff?"
   },
   {
-    icon: "🏗️",
-    label: "Building Permit Follow-up",
-    text: "Hello, I would like to follow up on the evaluation status of my permit application. Are there pending items required?"
+    id: "inspection_sched",
+    label: "🔍 Inspection Notice",
+    text: "Notice inquiry: When is the next scheduled on-site municipal engineering and zoning inspection for our project?"
   },
   {
-    icon: "🔍",
-    label: "Site Inspection Schedule",
-    text: "Good day! When is the next available schedule for on-site municipal engineering inspection in Sto. Tomas?"
+    id: "deficiency",
+    label: "⚠️ Incomplete Items",
+    text: "Good day. We have reviewed the checklist remarks and are uploading the updated engineering plans and clearances."
   },
   {
-    icon: "📑",
-    label: "Unified Forms & Notarization",
-    text: "Hello! Which specific ancillary municipal forms require professional engineer dry seals and legal notarization?"
+    id: "approved",
+    label: "✅ Clearance Approved",
+    text: "Thank you for the evaluation update! May we confirm if our Order of Payment has been endorsed to the treasury?"
+  },
+  {
+    id: "payment",
+    label: "💳 Payment Ready",
+    text: "Official Payment Notice: We have settled the required regulatory fees at the Municipal Treasury. Attached is our receipt."
   }
 ];
 
@@ -91,7 +97,7 @@ export default function ApplicantMessagesPage() {
   const searchParams = useSearchParams();
   const initialRef = searchParams.get("ref");
   
-  const { applications, updateApplication } = usePermitContext();
+  const { applications, updateApplication, refreshApplications } = usePermitContext();
 
   const [messages, setMessages] = useState<any[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -110,6 +116,38 @@ export default function ApplicantMessagesPage() {
   const [modalSelectedAppId, setModalSelectedAppId] = useState<string>("");
   const [modalInitialMessage, setModalInitialMessage] = useState<string>("");
   const lastProcessedRef = useRef<string | null>(null);
+
+  // Collapsible Dossier Sidebar (Default false for 75%+ wide readable chat)
+  const [showDossier, setShowDossier] = useState(false);
+
+  // Thread Categorization within Active Conversation (All Messages vs Specific Permit in the Project)
+  const [selectedPermitTab, setSelectedPermitTab] = useState<string>("all");
+
+  // Quick Directory Filter Pills
+  const [contactFilter, setContactFilter] = useState<"all" | "approved" | "in_review">("all");
+
+  // Top Console Refreshing State
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Auto-expanding textarea composer ref
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Status badge config
+  const getStatusBadge = (status?: string | null) => {
+    switch (status) {
+      case "approved":
+      case "released":
+        return { label: status === "released" ? "Released" : "Approved", bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" };
+      case "under_review":
+        return { label: "Under Review", bg: "#eff6ff", color: "#2563eb", border: "#bfdbfe" };
+      case "incomplete_requirements":
+        return { label: "Needs Revision", bg: "#fffbeb", color: "#d97706", border: "#fde68a" };
+      case "rejected":
+        return { label: "Disapproved", bg: "#fef2f2", color: "#dc2626", border: "#fecaca" };
+      default:
+        return { label: "Pending", bg: "#f8fafc", color: "#64748b", border: "#e2e8f0" };
+    }
+  };
 
   // Payment Receipt Upload in Chat State
   const [receiptModalFile, setReceiptModalFile] = useState<{ name: string; dataUrl: string } | null>(null);
@@ -402,6 +440,7 @@ export default function ApplicantMessagesPage() {
   // Seamlessly switch active conversation thread and update URL without page refresh
   const handleSelectThread = (threadId: string) => {
     setActiveThreadId(threadId);
+    setSelectedPermitTab("all");
     lastProcessedRef.current = threadId;
     if (typeof window !== "undefined") {
       try {
@@ -570,6 +609,82 @@ export default function ApplicantMessagesPage() {
     });
   }, [messages, activeThreadId, activeThread, currentUserEmail]);
 
+  // Filter messages based on selected thread tab ('all' or specific permit ID)
+  const displayedMessages = useMemo(() => {
+    if (selectedPermitTab === "all") return activeThreadMessages;
+    return activeThreadMessages.filter(m => {
+      const tid = getMessageThreadId(m);
+      return tid === selectedPermitTab || m.applicationId === selectedPermitTab || m.content?.includes(selectedPermitTab);
+    });
+  }, [activeThreadMessages, selectedPermitTab]);
+
+  // Permit Tabs configuration for the active project
+  const projectPermitTabs = useMemo(() => {
+    const apps = activeThread?.applications || [];
+    return apps.map(app => {
+      const statusBadge = getStatusBadge(app.status);
+      const count = activeThreadMessages.filter(m => {
+        const tid = getMessageThreadId(m);
+        return tid === app.id || m.applicationId === app.id || m.content?.includes(app.id);
+      }).length;
+      return {
+        id: app.id,
+        statusColor: statusBadge.color,
+        status: app.status,
+        count
+      };
+    });
+  }, [activeThread, activeThreadMessages]);
+
+  // Filter conversation threads by quick filter pills and search query
+  const filteredConversationThreads = useMemo(() => {
+    return conversationThreads.filter(thread => {
+      if (contactFilter === "approved") {
+        const isApprovedOrReleased = thread.status === "approved" || thread.status === "released";
+        if (!isApprovedOrReleased) return false;
+      } else if (contactFilter === "in_review") {
+        const isPending = thread.status !== "approved" && thread.status !== "released";
+        if (!isPending) return false;
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesTitle = thread.title.toLowerCase().includes(q);
+        const matchesId = thread.id.toLowerCase().includes(q);
+        const matchesSubtitle = thread.subtitle?.toLowerCase().includes(q);
+        const matchesApps = thread.applicationIds?.some(id => id.toLowerCase().includes(q));
+        if (!matchesTitle && !matchesId && !matchesSubtitle && !matchesApps) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [conversationThreads, contactFilter, searchQuery]);
+
+  // KPI stats for top banner
+  const myAppsCount = conversationThreads.length;
+  const totalPermitsCount = useMemo(() => {
+    return (applications || []).filter(a => {
+      if (a.applicantEmail && currentUserEmail) {
+        return a.applicantEmail.toLowerCase().trim() === currentUserEmail.toLowerCase().trim();
+      }
+      return true;
+    }).length;
+  }, [applications, currentUserEmail]);
+
+  // Refresh handler for top console button
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      if (refreshApplications) {
+        await refreshApplications();
+      }
+    } catch (e) {} finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
   // Send message handler
   const handleSendMessage = (contentToSend?: string) => {
     const rawContent = (contentToSend !== undefined ? contentToSend : inputMessage).trim();
@@ -647,6 +762,9 @@ export default function ApplicantMessagesPage() {
 
         setInputMessage("");
         setAttachedFile(null);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+        }
       } catch (err) {
         console.error("Failed to send message via WebSocket", err);
       } finally {
@@ -680,6 +798,9 @@ export default function ApplicantMessagesPage() {
 
         setInputMessage("");
         setAttachedFile(null);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+        }
       });
     }
   };
@@ -823,544 +944,637 @@ export default function ApplicantMessagesPage() {
     }
   };
 
-  return (
-    <div className="dashboard-page animate-fade-in-up" style={{ minHeight: "calc(100vh - 80px)", display: "flex", flexDirection: "column" }}>
-      {/* PAGE HEADER */}
-      <header className="page-header" style={{ 
-        background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
-        backdropFilter: "blur(20px)",
-        border: "1px solid rgba(255, 255, 255, 0.9)",
-        boxShadow: "0 4px 18px rgba(0, 0, 0, 0.05)",
-        borderRadius: "16px",
-        padding: "0.75rem 1.5rem",
-        marginBottom: "0.75rem"
+    return (
+    <div className="applicant-messages-container animate-fade-in-up" style={{ maxWidth: "1680px", margin: "0 auto", paddingBottom: "1.5rem" }}>
+      
+      {/* ========================================================================= */}
+      {/* 1. TOP CONSOLE BANNER (EXACT ADMIN STYLE WITH KPI STATS & REFRESH)        */}
+      {/* ========================================================================= */}
+      <header style={{
+        background: "linear-gradient(135deg, #0b192c 0%, #1e3e62 100%)",
+        borderRadius: "20px",
+        padding: "1.2rem 1.75rem",
+        color: "#ffffff",
+        boxShadow: "0 10px 30px -5px rgba(11, 25, 44, 0.25)",
+        marginBottom: "1.25rem",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "1.5rem",
+        flexWrap: "wrap",
+        border: "1px solid rgba(255, 255, 255, 0.1)"
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            borderRadius: "14px",
+            background: "rgba(255, 255, 255, 0.12)",
+            color: "#60a5fa",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backdropFilter: "blur(10px)",
+            border: "1px solid rgba(255, 255, 255, 0.15)"
+          }}>
+            <MessageSquare size={24} />
+          </div>
+
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.2rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
               <span style={{
-                background: "linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)",
-                color: "white",
-                padding: "2px 8px",
-                borderRadius: "5px",
-                fontSize: "0.7rem",
+                background: "rgba(255, 255, 255, 0.15)",
+                color: "#93c5fd",
+                fontSize: "0.68rem",
                 fontWeight: "800",
-                letterSpacing: "0.5px",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "4px"
+                padding: "2px 8px",
+                borderRadius: "6px",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase"
               }}>
-                <Landmark size={11} />
-                LGU SANTO TOMAS
+                🏛️ STO. TOMAS OBO &amp; MPDO
               </span>
-              <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: "600" }}>
-                • Office of the Building Official (OBO)
-              </span>
-            </div>
-            <h1 className="page-title" style={{ fontSize: "1.45rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", margin: 0, letterSpacing: "-0.02em" }}>
-              Messages &amp; Helpdesk
-            </h1>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            {/* Live Status Pill */}
-            <div style={{
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              borderRadius: "10px",
-              padding: "5px 12px",
-              display: "flex",
-              alignItems: "center",
-              gap: "7px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.02)"
-            }}>
               <span style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: connected ? "#16a34a" : "#eab308",
-                boxShadow: connected ? "0 0 0 3px rgba(22, 163, 74, 0.2)" : "none",
-                display: "inline-block"
-              }} />
-              <span style={{ fontSize: "0.78rem", fontWeight: "700", color: connected ? "#15803d" : "#854d0e" }}>
-                {connected ? "Helpdesk Connected" : "Connecting..."}
-              </span>
-            </div>
-
-            {/* Quick Track Link */}
-            <Link
-              href="/applicant/track"
-              style={{
-                background: "#f1f5f9",
-                color: "#334155",
-                fontSize: "0.8rem",
+                background: connected ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
+                color: connected ? "#86efac" : "#fca5a5",
+                fontSize: "0.68rem",
                 fontWeight: "700",
-                padding: "6px 12px",
-                borderRadius: "9px",
-                border: "1px solid #cbd5e1",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                textDecoration: "none",
-                transition: "all 0.15s ease"
-              }}
-            >
-              <FileText size={14} color="#475569" />
-              <span>Track Applications</span>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* TWO-COLUMN CATEGORIZED CONVERSATION CONTAINER */}
-      <div 
-        className="glass-panel"
-        style={{
-          flex: 1,
-          display: "flex",
-          width: "100%",
-          margin: "0 auto",
-          background: "#ffffff",
-          borderRadius: "18px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 6px 25px rgba(0,0,0,0.05)",
-          overflow: "hidden",
-          height: "calc(100vh - 160px)",
-          minHeight: "560px"
-        }}
-      >
-        {/* LEFT SIDEBAR: CATEGORIZED CONVERSATIONS */}
-        <aside style={{
-          width: "330px",
-          minWidth: "300px",
-          maxWidth: "360px",
-          borderRight: "1px solid #e2e8f0",
-          background: "#f8fafc",
-          display: "flex",
-          flexDirection: "column",
-          flexShrink: 0
-        }}>
-          {/* Sidebar Header */}
-          <div style={{
-            padding: "1rem 1.25rem",
-            borderBottom: "1px solid #e2e8f0",
-            background: "#ffffff",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <div style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "8px",
-                  background: "#eff6ff",
-                  color: "#0038A8",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}>
-                  <MessageSquare size={17} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: "800", color: "#0f172a" }}>
-                    My Conversations
-                  </h3>
-                  <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
-                    {myConversationThreads.length} {myConversationThreads.length === 1 ? "thread" : "threads"}
-                  </span>
-                </div>
-              </div>
-
-              {/* START CONVERSATION BUTTON */}
-              <button
-                type="button"
-                onClick={() => {
-                  setModalSelectedAppId(conversationThreads[0]?.id || "");
-                  setModalInitialMessage("");
-                  setShowStartModal(true);
-                }}
-                style={{
-                  background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "9px",
-                  padding: "7px 12px",
-                  fontSize: "0.78rem",
-                  fontWeight: "700",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
-                  transition: "all 0.15s ease"
-                }}
-                title="Start a new conversation for an application"
-              >
-                <Plus size={15} />
-                <span>Start Chat</span>
-              </button>
-            </div>
-
-            {/* Search Input */}
-            <div style={{ position: "relative" }}>
-              <Search size={14} color="#94a3b8" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }} />
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "7px 10px 7px 30px",
-                  borderRadius: "8px",
-                  border: "1px solid #e2e8f0",
-                  background: "#f8fafc",
-                  fontSize: "0.82rem",
-                  outline: "none",
-                  transition: "all 0.15s ease"
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.background = "#ffffff"; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.background = "#f8fafc"; }}
-              />
-              {searchQuery && (
-                <X 
-                  size={13} 
-                  color="#94a3b8" 
-                  style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", cursor: "pointer" }} 
-                  onClick={() => setSearchQuery("")}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Conversation List */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
-            {myConversationThreads.map(thread => {
-              const isActive = thread.id === activeThread?.id || 
-                thread.id === activeThreadId || 
-                Boolean(thread.applicationIds?.includes(activeThreadId)) ||
-                Boolean(activeThread?.applicationIds?.some(aid => thread.applicationIds?.includes(aid)));
-              const formattedTime = thread.lastTimestamp 
-                ? formatPhilippineTime(thread.lastTimestamp) 
-                : "";
-
-              return (
-                <div
-                  key={thread.id}
-                  onClick={() => handleSelectThread(thread.id)}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: "12px",
-                    marginBottom: "6px",
-                    cursor: "pointer",
-                    background: isActive ? "#ffffff" : "transparent",
-                    border: isActive ? "1.5px solid #bfdbfe" : "1px solid transparent",
-                    boxShadow: isActive ? "0 4px 12px rgba(59, 130, 246, 0.08)" : "none",
-                    transition: "all 0.15s ease",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "5px"
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.background = "#f1f5f9";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
-                      <span style={{
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        background: isActive ? "#2563eb" : (thread.status === "approved" || thread.status === "released" ? "#16a34a" : "#3b82f6"),
-                        flexShrink: 0
-                      }} />
-                      <span style={{
-                        fontSize: "0.82rem",
-                        fontWeight: "800",
-                        color: isActive ? "#1e3a8a" : "#0f172a",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis"
-                      }}>
-                        {thread.title}
-                      </span>
-                    </div>
-
-                    {formattedTime && (
-                      <span style={{ fontSize: "0.68rem", color: "#94a3b8", flexShrink: 0 }}>
-                        {formattedTime}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Badges for permits in this unified project dossier */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px", flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
-                      {thread.applications && thread.applications.length > 0 ? (
-                        thread.applications.map(app => {
-                          const isLC = isLocationalClearance(app);
-                          return (
-                            <span 
-                              key={app.id} 
-                              style={{
-                                fontSize: "0.68rem",
-                                fontWeight: "700",
-                                color: isLC ? "#6d28d9" : "#1e40af",
-                                background: isLC ? "#f5f3ff" : "#eff6ff",
-                                border: `1px solid ${isLC ? "#ddd6fe" : "#bfdbfe"}`,
-                                padding: "1px 5px",
-                                borderRadius: "5px",
-                                fontFamily: "monospace"
-                              }}
-                              title={`${isLC ? "Locational Clearance (MPDO)" : "Building Permit (OBO)"} (${app.id})`}
-                            >
-                              {isLC ? "LC" : "BP"}: {app.id}
-                            </span>
-                          );
-                        })
-                      ) : (
-                        <span style={{
-                          fontSize: "0.72rem",
-                          fontWeight: "700",
-                          color: "#2563eb",
-                          background: "#eff6ff",
-                          padding: "1px 6px",
-                          borderRadius: "6px",
-                          fontFamily: "monospace"
-                        }}>
-                          {thread.id}
-                        </span>
-                      )}
-                    </div>
-
-                    {thread.status && (
-                      <span style={{
-                        fontSize: "0.66rem",
-                        fontWeight: "700",
-                        color: thread.status === "approved" || thread.status === "released" ? "#15803d" : "#b45309",
-                        background: thread.status === "approved" || thread.status === "released" ? "#dcfce7" : "#fef3c7",
-                        padding: "1px 6px",
-                        borderRadius: "999px",
-                        textTransform: "capitalize"
-                      }}>
-                        {thread.status}
-                      </span>
-                    )}
-                  </div>
-
-                  {thread.lastMessage && (
-                    <p style={{
-                      margin: "2px 0 0 0",
-                      fontSize: "0.76rem",
-                      color: "#64748b",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis"
-                    }}>
-                      {thread.lastMessage}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Sidebar Footer Help */}
-          <div style={{
-            padding: "10px 14px",
-            borderTop: "1px solid #e2e8f0",
-            background: "#ffffff",
-            fontSize: "0.72rem",
-            color: "#64748b",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between"
-          }}>
-            <span>Municipal OBO Portal</span>
-            <span style={{ fontWeight: "700", color: "#2563eb" }}>Sto. Tomas</span>
-          </div>
-        </aside>
-
-        {/* RIGHT CHAT AREA */}
-        <div style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          background: "#ffffff",
-          minWidth: 0
-        }}>
-          {/* Active Thread Header */}
-          <div style={{
-            padding: "0.75rem 1.25rem",
-            borderBottom: "1px solid #e2e8f0",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            background: "#ffffff",
-            flexWrap: "wrap",
-            gap: "0.6rem"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-              <div style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "10px",
-                background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
-                color: "white",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "relative",
-                boxShadow: "0 2px 8px rgba(0, 56, 168, 0.25)",
-                flexShrink: 0
-              }}>
-                <Building2 size={20} />
-                <span style={{
-                  position: "absolute",
-                  bottom: "-2px",
-                  right: "-2px",
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  background: "#16a34a",
-                  border: "2px solid #ffffff"
-                }} />
-              </div>
-
-              <div style={{ minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                  <h3 style={{ margin: 0, fontSize: "0.98rem", fontWeight: "800", color: "#0f172a" }}>
-                    OBO Permitting Desk • {activeThread.title || activeThread.id}
-                  </h3>
-                  <span style={{
-                    background: "#eff6ff",
-                    color: "#1e40af",
-                    fontSize: "0.66rem",
-                    fontWeight: "800",
-                    padding: "2px 7px",
-                    borderRadius: "6px"
-                  }}>
-                    {activeThread.applications && activeThread.applications.length > 1 ? "Unified Project (LC + BP)" : "Official OBO Record"}
-                  </span>
-                </div>
-                <div style={{ fontSize: "0.74rem", color: "#64748b", marginTop: "1px" }}>
-                  Engr. Gilbert Cruz (OBO) & Arch. Ramos (MPDO Zoning) • <span style={{ color: "#16a34a", fontWeight: "700" }}>● Online</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Active Applications Context & Hotline */}
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              {activeThread.applications && activeThread.applications.length > 0 ? (
-                activeThread.applications.map(app => {
-                  const isLC = isLocationalClearance(app);
-                  const isAppApproved = app.status === "approved" || isApplicationApproved(app);
-                  const isAppReleased = app.status === "released" || isApplicationReleased(app);
-                  return (
-                    <div 
-                      key={app.id}
-                      style={{
-                        background: isLC ? "#faf5ff" : "#f8fafc",
-                        border: `1px solid ${isLC ? "#e9d5ff" : "#e2e8f0"}`,
-                        borderRadius: "8px",
-                        padding: "3px 8px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px"
-                      }}
-                    >
-                      <span style={{ 
-                        fontSize: "0.68rem", 
-                        fontWeight: "800", 
-                        color: isLC ? "#7e22ce" : "#1e40af", 
-                        fontFamily: "monospace" 
-                      }}>
-                        {isLC ? "LC" : "BP"}: {app.id}
-                      </span>
-                      <span style={{
-                        fontSize: "0.64rem",
-                        fontWeight: "800",
-                        background: isAppReleased ? "#dcfce7" : (isAppApproved ? "#dcfce7" : "#fef3c7"),
-                        color: isAppReleased ? "#15803d" : (isAppApproved ? "#166534" : "#b45309"),
-                        padding: "1px 6px",
-                        borderRadius: "999px",
-                        textTransform: "uppercase"
-                      }}>
-                        {isAppReleased ? "Released" : (isAppApproved ? "Approved" : app.status)}
-                      </span>
-                      <Link
-                        href={`/applicant/track/${encodeURIComponent(app.id)}`}
-                        style={{
-                          fontSize: "0.7rem",
-                          fontWeight: "700",
-                          color: "#2563eb",
-                          textDecoration: "none",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "2px"
-                        }}
-                        title={`Track ${app.id}`}
-                      >
-                        <span>Track</span>
-                        <ExternalLink size={10} />
-                      </Link>
-                    </div>
-                  );
-                })
-              ) : activeApp ? (
-                <div style={{
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  padding: "4px 10px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px"
-                }}>
-                  <span style={{ fontSize: "0.76rem", color: "#334155", fontWeight: "700" }}>
-                    {activeApp.projectName || activeThread.title}
-                  </span>
-                  <Link
-                    href={`/applicant/track/${encodeURIComponent(activeApp.id)}`}
-                    style={{
-                      fontSize: "0.72rem",
-                      fontWeight: "700",
-                      color: "#2563eb",
-                      textDecoration: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "3px"
-                    }}
-                  >
-                    <span>Track</span>
-                    <ExternalLink size={10} />
-                  </Link>
-                </div>
-              ) : null}
-
-              <div style={{
-                fontSize: "0.74rem",
-                color: "#64748b",
-                background: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                padding: "5px 9px",
-                borderRadius: "8px",
+                padding: "2px 8px",
+                borderRadius: "6px",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "5px"
               }}>
-                <Phone size={12} color="#2563eb" />
-                <span style={{ fontWeight: "600" }}>(045) 961-4157</span>
-              </div>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: connected ? "#22c55e" : "#ef4444" }} />
+                {connected ? "Gateway Online (PHT)" : "STOMP Disconnected"}
+              </span>
+            </div>
+            <h1 style={{ fontSize: "1.45rem", fontWeight: "800", margin: 0, letterSpacing: "-0.01em" }}>
+              Permit Communications Console
+            </h1>
+          </div>
+        </div>
+
+        {/* Quick KPI Stats & Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <div style={{
+            background: "rgba(255, 255, 255, 0.08)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            padding: "8px 14px",
+            borderRadius: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px"
+          }}>
+            <User size={16} color="#93c5fd" />
+            <div>
+              <div style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: "600" }}>MY APPLICATIONS</div>
+              <div style={{ fontSize: "1.1rem", fontWeight: "800", color: "#ffffff", lineHeight: 1 }}>{myAppsCount}</div>
             </div>
           </div>
 
-          {/* SLIM NOTICE BANNERS (One per approved application in project with detailed breakdown) */}
+          <div style={{
+            background: "rgba(255, 255, 255, 0.08)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            padding: "8px 14px",
+            borderRadius: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px"
+          }}>
+            <FileText size={16} color="#86efac" />
+            <div>
+              <div style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: "600" }}>TOTAL PERMITS</div>
+              <div style={{ fontSize: "1.1rem", fontWeight: "800", color: "#ffffff", lineHeight: 1 }}>{totalPermitsCount}</div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            style={{
+              background: "white",
+              border: "none",
+              color: "#0f172a",
+              padding: "9px 16px",
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "7px",
+              fontWeight: "700",
+              fontSize: "0.85rem",
+              cursor: isRefreshing ? "not-allowed" : "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              transition: "all 0.15s"
+            }}
+          >
+            <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} color="#2563eb" />
+            Refresh
+          </button>
+        </div>
+      </header>
+
+      {/* ========================================================================= */}
+      {/* 2. MAIN WORKSPACE LAYOUT (290px DIRECTORY + 1FR CHAT [+ 340px DOSSIER])   */}
+      {/* ========================================================================= */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: showDossier ? "290px 1fr 340px" : "290px 1fr",
+        gap: "1.25rem",
+        height: "calc(100vh - 215px)",
+        minHeight: "680px",
+        transition: "grid-template-columns 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
+      }}>
+        
+        {/* ======================================================================= */}
+        {/* LEFT COLUMN: CONVERSATION DIRECTORY & SEARCH                           */}
+        {/* ======================================================================= */}
+        <div style={{
+          background: "#ffffff",
+          borderRadius: "18px",
+          border: "1.5px solid #e2e8f0",
+          boxShadow: "0 4px 16px -2px rgba(0, 0, 0, 0.04)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden"
+        }}>
+          {/* Directory Header & Search */}
+          <div style={{ padding: "1.1rem", borderBottom: "1px solid #f1f5f9" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                <MessageSquare size={17} color="#2563eb" />
+                <h2 style={{ fontSize: "1rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>Conversations</h2>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{
+                  background: "#eff6ff",
+                  color: "#2563eb",
+                  fontSize: "0.72rem",
+                  fontWeight: "700",
+                  padding: "2px 8px",
+                  borderRadius: "10px",
+                  border: "1px solid #bfdbfe"
+                }}>
+                  {filteredConversationThreads.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalSelectedAppId(conversationThreads[0]?.id || "");
+                    setModalInitialMessage("");
+                    setShowStartModal(true);
+                  }}
+                  style={{
+                    background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "3px 8px",
+                    fontSize: "0.72rem",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "3px",
+                    boxShadow: "0 2px 6px rgba(37, 99, 235, 0.2)"
+                  }}
+                  title="Start a new chat for an application"
+                >
+                  <Plus size={13} />
+                  <span>Start Chat</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Search Input */}
+            <div style={{ position: "relative", marginBottom: "8px" }}>
+              <Search size={14} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search conversation or permit..."
+                style={{
+                  width: "100%",
+                  padding: "7px 10px 7px 30px",
+                  borderRadius: "10px",
+                  border: "1.5px solid #e2e8f0",
+                  background: "#f8fafc",
+                  fontSize: "0.82rem",
+                  color: "#0f172a",
+                  outline: "none"
+                }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Filter Pills */}
+            <div style={{ display: "flex", gap: "6px" }}>
+              <button
+                onClick={() => setContactFilter("all")}
+                style={{
+                  padding: "3px 9px",
+                  borderRadius: "8px",
+                  fontSize: "0.72rem",
+                  fontWeight: "700",
+                  border: "none",
+                  cursor: "pointer",
+                  background: contactFilter === "all" ? "#2563eb" : "#f1f5f9",
+                  color: contactFilter === "all" ? "#ffffff" : "#64748b"
+                }}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setContactFilter("approved")}
+                style={{
+                  padding: "3px 9px",
+                  borderRadius: "8px",
+                  fontSize: "0.72rem",
+                  fontWeight: "700",
+                  border: "none",
+                  cursor: "pointer",
+                  background: contactFilter === "approved" ? "#2563eb" : "#f1f5f9",
+                  color: contactFilter === "approved" ? "#ffffff" : "#64748b"
+                }}
+              >
+                Approved
+              </button>
+              <button
+                onClick={() => setContactFilter("in_review")}
+                style={{
+                  padding: "3px 9px",
+                  borderRadius: "8px",
+                  fontSize: "0.72rem",
+                  fontWeight: "700",
+                  border: "none",
+                  cursor: "pointer",
+                  background: contactFilter === "in_review" ? "#2563eb" : "#f1f5f9",
+                  color: contactFilter === "in_review" ? "#ffffff" : "#64748b"
+                }}
+              >
+                In Review
+              </button>
+            </div>
+          </div>
+
+          {/* Directory Conversation List */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
+            {filteredConversationThreads.length === 0 ? (
+              <div style={{ padding: "30px 15px", textAlign: "center", color: "#94a3b8" }}>
+                <Inbox size={32} style={{ margin: "0 auto 8px auto", opacity: 0.4 }} />
+                <p style={{ fontSize: "0.85rem", fontWeight: "600", margin: "0 0 2px 0" }}>No conversations found</p>
+                <p style={{ fontSize: "0.75rem", margin: 0 }}>Try clearing your search query or start a new chat.</p>
+              </div>
+            ) : (
+              filteredConversationThreads.map((thread) => {
+                const isSelected = thread.id === activeThread?.id || 
+                  thread.id === activeThreadId || 
+                  Boolean(thread.applicationIds?.includes(activeThreadId)) ||
+                  Boolean(activeThread?.applicationIds?.some(aid => thread.applicationIds?.includes(aid)));
+                const latestBadge = getStatusBadge(thread.status);
+                const permitCount = thread.applications?.length || thread.applicationIds?.length || 1;
+
+                return (
+                  <div
+                    key={thread.id}
+                    onClick={() => handleSelectThread(thread.id)}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                      background: isSelected ? "#eff6ff" : "#ffffff",
+                      border: isSelected ? "1.5px solid #3b82f6" : "1px solid #f1f5f9",
+                      boxShadow: isSelected ? "0 2px 8px rgba(37, 99, 235, 0.12)" : "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      position: "relative"
+                    }}
+                  >
+                    {/* Active Stripe Indicator */}
+                    {isSelected && (
+                      <div style={{
+                        position: "absolute",
+                        left: "0",
+                        top: "8px",
+                        bottom: "8px",
+                        width: "3.5px",
+                        background: "#2563eb",
+                        borderRadius: "0 4px 4px 0"
+                      }} />
+                    )}
+
+                    {/* Avatar with Initial */}
+                    <div style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "10px",
+                      background: isSelected 
+                        ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" 
+                        : "linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)",
+                      color: isSelected ? "#ffffff" : "#334155",
+                      fontWeight: "800",
+                      fontSize: "0.95rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0
+                    }}>
+                      {thread.title.charAt(0).toUpperCase()}
+                    </div>
+
+                    {/* Thread Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px", marginBottom: "2px" }}>
+                        <p style={{
+                          margin: 0,
+                          fontSize: "0.88rem",
+                          fontWeight: "700",
+                          color: isSelected ? "#1e40af" : "#0f172a",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis"
+                        }}>
+                          {thread.title}
+                        </p>
+                        <span style={{
+                          fontSize: "0.68rem",
+                          fontWeight: "800",
+                          background: isSelected ? "#ffffff" : "#f1f5f9",
+                          color: isSelected ? "#2563eb" : "#475569",
+                          padding: "1px 6px",
+                          borderRadius: "6px",
+                          border: "1px solid #e2e8f0",
+                          flexShrink: 0
+                        }}>
+                          {permitCount} {permitCount === 1 ? "Permit" : "Permits"}
+                        </span>
+                      </div>
+
+                      <p style={{
+                        margin: 0,
+                        fontSize: "0.74rem",
+                        color: "#64748b",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis"
+                      }}>
+                        {thread.permitType || thread.subtitle || thread.id}
+                      </p>
+
+                      {/* Primary Application Tag Pill */}
+                      <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{
+                          fontSize: "0.68rem",
+                          fontWeight: "700",
+                          background: latestBadge.bg,
+                          color: latestBadge.color,
+                          border: `1px solid ${latestBadge.border}`,
+                          padding: "1px 5px",
+                          borderRadius: "5px"
+                        }}>
+                          {thread.id} · {latestBadge.label}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* ======================================================================= */}
+        {/* CENTER COLUMN: LIVE CHAT AREA & THREAD TABS                           */}
+        {/* ======================================================================= */}
+        <div style={{
+          background: "#ffffff",
+          borderRadius: "18px",
+          border: "1.5px solid #e2e8f0",
+          boxShadow: "0 4px 16px -2px rgba(0, 0, 0, 0.04)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          minWidth: 0
+        }}>
+          {/* Top Chat Header */}
+          <div style={{
+            padding: "0.9rem 1.4rem",
+            borderBottom: "1.5px solid #f1f5f9",
+            background: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem",
+            flexWrap: "wrap"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+              <div style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "12px",
+                background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: "800",
+                fontSize: "1.1rem",
+                boxShadow: "0 3px 8px rgba(37, 99, 235, 0.2)",
+                flexShrink: 0
+              }}>
+                <Building2 size={22} />
+              </div>
+
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <h2 style={{ fontSize: "1.15rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                    {activeThread.title}
+                  </h2>
+                  <span style={{
+                    background: "#ecfdf5",
+                    color: "#059669",
+                    fontSize: "0.72rem",
+                    fontWeight: "700",
+                    padding: "2px 8px",
+                    borderRadius: "10px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    border: "1px solid #a7f3d0"
+                  }}>
+                    <BadgeCheck size={12} /> Verified Municipal Helpdesk
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
+                  <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "500" }}>
+                    Engr. Gilbert Cruz (OBO) &amp; Arch. Ramos (MPDO Zoning)
+                  </span>
+                  <span style={{ fontSize: "0.82rem", color: "#cbd5e1" }}>•</span>
+                  <span style={{
+                    fontSize: "0.78rem",
+                    color: connected ? "#16a34a" : "#dc2626",
+                    fontWeight: "600",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px"
+                  }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: connected ? "#22c55e" : "#ef4444" }} />
+                    {connected ? "Active Session" : "Offline"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Header Action: Toggle Dossier Inspector */}
+            <button
+              onClick={() => setShowDossier(prev => !prev)}
+              style={{
+                background: showDossier ? "#2563eb" : "#f8fafc",
+                border: showDossier ? "1.5px solid #1d4ed8" : "1.5px solid #e2e8f0",
+                color: showDossier ? "#ffffff" : "#334155",
+                padding: "8px 14px",
+                borderRadius: "11px",
+                fontSize: "0.84rem",
+                fontWeight: "700",
+                display: "flex",
+                alignItems: "center",
+                gap: "7px",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                boxShadow: showDossier ? "0 2px 8px rgba(37, 99, 235, 0.25)" : "none"
+              }}
+              title="Toggle Project & Permit Dossier"
+            >
+              <Briefcase size={15} />
+              <span>{showDossier ? "Hide Dossier" : "Permit Dossier"}</span>
+              {activeThread.applications && activeThread.applications.length > 0 && (
+                <span style={{
+                  background: showDossier ? "rgba(255,255,255,0.25)" : "#e2e8f0",
+                  color: showDossier ? "#ffffff" : "#475569",
+                  padding: "1px 6px",
+                  borderRadius: "8px",
+                  fontSize: "0.72rem",
+                  fontWeight: "800"
+                }}>
+                  {activeThread.applications.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* APPLICATION THREAD SELECTOR (SUBNAV BAR UNDER HEADER) */}
+          <div style={{
+            background: "#f8fafc",
+            borderBottom: "1.5px solid #e2e8f0",
+            padding: "8px 1.4rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none"
+          }}>
+            <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#64748b", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px", marginRight: "2px", flexShrink: 0 }}>
+              <Filter size={13} /> Threads:
+            </span>
+
+            {/* All Messages Tab */}
+            <button
+              onClick={() => setSelectedPermitTab("all")}
+              style={{
+                padding: "6px 14px",
+                borderRadius: "10px",
+                fontSize: "0.82rem",
+                fontWeight: "700",
+                border: selectedPermitTab === "all" ? "1.5px solid #2563eb" : "1.5px solid #e2e8f0",
+                background: selectedPermitTab === "all" ? "#2563eb" : "#ffffff",
+                color: selectedPermitTab === "all" ? "#ffffff" : "#475569",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                transition: "all 0.15s",
+                boxShadow: selectedPermitTab === "all" ? "0 2px 6px rgba(37, 99, 235, 0.2)" : "none"
+              }}
+            >
+              <Layers size={14} />
+              <span>All Messages</span>
+              <span style={{
+                background: selectedPermitTab === "all" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                color: selectedPermitTab === "all" ? "#ffffff" : "#64748b",
+                padding: "1px 6px",
+                borderRadius: "6px",
+                fontSize: "0.72rem"
+              }}>
+                {activeThreadMessages.length}
+              </span>
+            </button>
+
+            {/* Individual Permit Threads */}
+            {projectPermitTabs.map(tab => {
+              const isActive = selectedPermitTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setSelectedPermitTab(tab.id)}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: "10px",
+                    fontSize: "0.82rem",
+                    fontWeight: "700",
+                    border: isActive ? "1.5px solid #2563eb" : "1.5px solid #e2e8f0",
+                    background: isActive ? "#2563eb" : "#ffffff",
+                    color: isActive ? "#ffffff" : "#334155",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                    transition: "all 0.15s",
+                    boxShadow: isActive ? "0 2px 6px rgba(37, 99, 235, 0.2)" : "none"
+                  }}
+                >
+                  <Building2 size={14} />
+                  <span>{tab.id}</span>
+                  <span style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    background: tab.statusColor,
+                    display: "inline-block"
+                  }} />
+                  {tab.count > 0 && (
+                    <span style={{
+                      background: isActive ? "rgba(255, 255, 255, 0.25)" : "#eff6ff",
+                      color: isActive ? "#ffffff" : "#2563eb",
+                      padding: "1px 6px",
+                      borderRadius: "6px",
+                      fontSize: "0.72rem",
+                      fontWeight: "800"
+                    }}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* SLIM NOTICE BANNERS (Order of Payment & Clearances Released) */}
           {(() => {
             const approvedApps = (activeThread.applications || []).filter(a => a.status === "approved" || isApplicationApproved(a));
             if (approvedApps.length === 0 && activeApp && (activeApp.status === "approved" || isApplicationApproved(activeApp))) {
@@ -1403,17 +1617,15 @@ export default function ApplicantMessagesPage() {
                     <span style={{ color: "#94a3b8" }}>•</span>
                     <span style={{ color: isConfirmed ? "#15803d" : (isLC ? "#7e22ce" : "#78350f") }}>
                       {isConfirmed
-                        ? `Receipt submitted for ${app.id}. Awaiting municipal admin verification.`
-                        : `Settle fee for ${app.id} at Municipal Treasury and upload receipt photo here.`}
+                        ? `Receipt submitted for ${app.id}. Awaiting municipal verification.`
+                        : `Settle fee for ${app.id} at Municipal Treasury and attach receipt photo here.`}
                     </span>
                   </div>
 
                   {!isConfirmed && (
                     <button
                       type="button"
-                      onClick={() => {
-                        receiptFileInputRef.current?.click();
-                      }}
+                      onClick={() => receiptFileInputRef.current?.click()}
                       style={{
                         background: isLC ? "#7c3aed" : "#d97706",
                         color: "white",
@@ -1494,7 +1706,7 @@ export default function ApplicantMessagesPage() {
             });
           })()}
 
-          {/* MESSAGES FEED AREA FOR ACTIVE THREAD */}
+          {/* MESSAGES FEED AREA */}
           <div 
             ref={messagesContainerRef}
             className="chat-messages"
@@ -1508,36 +1720,34 @@ export default function ApplicantMessagesPage() {
               gap: "0.85rem"
             }}
           >
-            {/* THREAD CONTEXT DIVIDER */}
-            {activeApp || activeThread ? (
-              <div style={{
-                display: "flex",
+            {/* THREAD CONTEXT DIVIDER (Matches Admin Dispatch Pill) */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "10px",
+              margin: "6px 0"
+            }}>
+              <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
+              <span style={{
+                fontSize: "0.72rem",
+                fontWeight: "700",
+                color: "#1e40af",
+                background: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                borderRadius: "999px",
+                padding: "3px 14px",
+                display: "inline-flex",
                 alignItems: "center",
-                justifyContent: "center",
-                gap: "10px",
-                margin: "4px 0 10px 0"
+                gap: "6px",
+                boxShadow: "0 1px 3px rgba(37,99,235,0.06)"
               }}>
-                <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
-                <span style={{
-                  fontSize: "0.72rem",
-                  fontWeight: "700",
-                  color: "#475569",
-                  background: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "999px",
-                  padding: "3px 12px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
-                }}>
-                  <ShieldCheck size={12} color="#16a34a" /> Official Municipal Permitting Record • {activeThread.subtitle || activeThread.id}
-                </span>
-                <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
-              </div>
-            ) : null}
+                <ShieldCheck size={13} color="#2563eb" /> Sto. Tomas Municipal Dispatch (Engr. Gilbert Cruz, Municipal Building Official)
+              </span>
+              <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
+            </div>
 
-            {activeThreadMessages.length === 0 && (
+            {displayedMessages.length === 0 && (
               <div style={{
                 margin: "auto",
                 maxWidth: "460px",
@@ -1563,7 +1773,7 @@ export default function ApplicantMessagesPage() {
                   <Building2 size={26} />
                 </div>
                 <h3 style={{ fontSize: "1.1rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
-                  {activeThread.title || "Project Permitting Channel"}
+                  {activeThread.title || "Permitting Communication Channel"}
                 </h3>
                 <p style={{ margin: "0 0 0.5rem 0", color: "#64748b", fontSize: "0.84rem", lineHeight: "1.5" }}>
                   Official communication channel for {activeThread.subtitle || activeThread.id}. Send your inquiries, follow-ups, or payment receipts directly to the Municipal Permitting Officers.
@@ -1572,7 +1782,7 @@ export default function ApplicantMessagesPage() {
             )}
 
             {/* MESSAGES LIST */}
-            {activeThreadMessages.map((msg, idx) => {
+            {displayedMessages.map((msg, idx) => {
               const isMe = msg.senderEmail === currentUserEmail;
               const timeStr = formatPhilippineTime(msg.timestamp);
 
@@ -1632,12 +1842,12 @@ export default function ApplicantMessagesPage() {
                           background: isNotice
                             ? "transparent"
                             : (isMe 
-                                ? "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)" 
+                                ? "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)" 
                                 : "#ffffff"),
                           color: isMe ? "#ffffff" : "#1e293b",
-                          border: isNotice ? "none" : (isMe ? "none" : "1px solid #e2e8f0"),
-                          boxShadow: isNotice ? "none" : (isMe ? "0 4px 14px rgba(0, 56, 168, 0.25)" : "0 2px 8px rgba(0,0,0,0.03)"),
-                          fontSize: "0.93rem",
+                          border: isNotice ? "none" : (isMe ? "none" : "1.5px solid #e2e8f0"),
+                          boxShadow: isNotice ? "none" : (isMe ? "0 4px 14px rgba(37, 99, 235, 0.2)" : "0 2px 8px rgba(0,0,0,0.03)"),
+                          fontSize: "0.96rem",
                           lineHeight: "1.55"
                         }}>
                           <MessageBubbleContent
@@ -1697,17 +1907,67 @@ export default function ApplicantMessagesPage() {
             </div>
           )}
 
-          {/* INPUT COMPOSER AREA */}
+          {/* QUICK INQUIRY SUGGESTIONS BAR (Matches Admin Quick Replies) */}
           <div style={{
-            padding: "1rem 1.5rem",
+            padding: "6px 1.25rem",
             background: "#ffffff",
-            borderTop: "1px solid #f1f5f9"
+            borderTop: "1px solid #f1f5f9",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            overflowX: "auto",
+            scrollbarWidth: "none"
+          }}>
+            <span style={{ fontSize: "0.73rem", fontWeight: "800", color: "#d97706", display: "inline-flex", alignItems: "center", gap: "4px", flexShrink: 0, textTransform: "uppercase" }}>
+              <Sparkles size={13} color="#f59e0b" /> Quick Reply:
+            </span>
+            {CANNED_INQUIRIES.map(cq => (
+              <button
+                key={cq.id}
+                type="button"
+                onClick={() => {
+                  setInputMessage(cq.text);
+                  if (textareaRef.current) textareaRef.current.focus();
+                }}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  padding: "3px 10px",
+                  fontSize: "0.74rem",
+                  fontWeight: "600",
+                  color: "#334155",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                  transition: "all 0.12s ease"
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = "#eff6ff";
+                  e.currentTarget.style.borderColor = "#93c5fd";
+                  e.currentTarget.style.color = "#1e40af";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#e2e8f0";
+                  e.currentTarget.style.color = "#334155";
+                }}
+              >
+                {cq.label}
+              </button>
+            ))}
+          </div>
+
+          {/* INPUT COMPOSER AREA (Matches Admin Multiline Textarea & Dispatch Button) */}
+          <div style={{
+            padding: "0.85rem 1.25rem",
+            background: "#ffffff",
+            borderTop: "1.5px solid #f1f5f9"
           }}>
             <form 
               onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} 
-              style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}
             >
-              {/* File Attachment Button */}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -1718,78 +1978,322 @@ export default function ApplicantMessagesPage() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                title="Attach Document or Plan (PDF/Image)"
+                title="Attach Document or Receipt"
                 style={{
                   background: "#f1f5f9",
-                  border: "1px solid #cbd5e1",
-                  color: "#64748b",
-                  width: "42px",
-                  height: "42px",
-                  borderRadius: "10px",
+                  border: "1.5px solid #cbd5e1",
+                  color: "#475569",
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "12px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  flexShrink: 0
+                  flexShrink: 0,
+                  marginBottom: "2px",
+                  transition: "all 0.15s"
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = "#e2e8f0"}
+                onMouseLeave={e => e.currentTarget.style.background = "#f1f5f9"}
               >
-                <Paperclip size={18} />
+                <Paperclip size={19} />
               </button>
 
-              {/* Main Input Text */}
-              <input
-                type="text"
-                placeholder={`Ask OBO Permitting Desk regarding [${activeThread.title || activeThreadId}]...`}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: "11px 16px",
-                  borderRadius: "10px",
-                  border: "1.5px solid #e2e8f0",
-                  fontSize: "0.92rem",
-                  outline: "none",
-                  transition: "all 0.15s ease",
-                  background: "#f8fafc"
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#0038A8"; e.currentTarget.style.background = "#ffffff"; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.background = "#f8fafc"; }}
-              />
+              <div style={{ flex: 1, position: "relative" }}>
+                <textarea
+                  ref={textareaRef}
+                  rows={1}
+                  value={inputMessage}
+                  onChange={e => {
+                    setInputMessage(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 130)}px`;
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder={
+                    selectedPermitTab !== "all"
+                      ? `Type message regarding ${selectedPermitTab}... (Enter to send, Shift+Enter for newline)`
+                      : `Type message regarding [${activeThread.title || activeThreadId}]... (Enter to send, Shift+Enter for newline)`
+                  }
+                  style={{
+                    width: "100%",
+                    minHeight: "44px",
+                    maxHeight: "130px",
+                    background: "#f8fafc",
+                    border: "1.5px solid #e2e8f0",
+                    borderRadius: "14px",
+                    padding: "10px 14px",
+                    fontSize: "0.96rem",
+                    color: "#0f172a",
+                    outline: "none",
+                    resize: "none",
+                    fontFamily: "inherit",
+                    lineHeight: 1.5,
+                    transition: "all 0.15s"
+                  }}
+                  onFocus={e => {
+                    e.currentTarget.style.background = "#ffffff";
+                    e.currentTarget.style.borderColor = "#3b82f6";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.15)";
+                  }}
+                  onBlur={e => {
+                    e.currentTarget.style.borderColor = "#e2e8f0";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                  disabled={!connected}
+                />
+              </div>
 
-              {/* Send Button */}
               <button
                 type="submit"
-                disabled={isSending || (!inputMessage.trim() && !attachedFile)}
+                disabled={!connected || (!inputMessage.trim() && !attachedFile)}
                 style={{
-                  background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
-                  color: "white",
+                  background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
+                  color: "#ffffff",
                   border: "none",
-                  borderRadius: "10px",
-                  width: "44px",
-                  height: "42px",
+                  borderRadius: "14px",
+                  padding: "10px 22px",
+                  height: "44px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  cursor: (inputMessage.trim() || attachedFile) ? "pointer" : "not-allowed",
-                  opacity: (inputMessage.trim() || attachedFile) ? 1 : 0.55,
-                  boxShadow: (inputMessage.trim() || attachedFile) ? "0 4px 12px rgba(0, 56, 168, 0.4)" : "none",
-                  transition: "all 0.15s ease",
-                  flexShrink: 0
+                  gap: "8px",
+                  fontWeight: "800",
+                  fontSize: "0.92rem",
+                  cursor: (!connected || (!inputMessage.trim() && !attachedFile)) ? "not-allowed" : "pointer",
+                  opacity: (!connected || (!inputMessage.trim() && !attachedFile)) ? 0.45 : 1,
+                  boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)",
+                  flexShrink: 0,
+                  marginBottom: "2px",
+                  transition: "all 0.15s"
                 }}
               >
-                <Send size={18} />
+                <span>Dispatch</span>
+                <Send size={16} />
               </button>
             </form>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "#94a3b8", marginTop: "6px", padding: "0 2px" }}>
-              <span>Categorized Project Thread: <strong>{activeThread.title}</strong></span>
-              <span>Press Enter to send inquiry</span>
-            </div>
           </div>
         </div>
+
+        {/* ======================================================================= */}
+        {/* RIGHT COLUMN: COLLAPSIBLE PERMIT DOSSIER PANEL                          */}
+        {/* ======================================================================= */}
+        {showDossier && (
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "18px",
+            border: "1.5px solid #e2e8f0",
+            boxShadow: "0 4px 16px -2px rgba(0, 0, 0, 0.04)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden"
+          }}>
+            {/* Dossier Header */}
+            <div style={{
+              padding: "1.1rem",
+              borderBottom: "1px solid #f1f5f9",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Briefcase size={17} color="#2563eb" />
+                <h3 style={{ fontSize: "1rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>Permit Dossier</h3>
+              </div>
+              <button
+                onClick={() => setShowDossier(false)}
+                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "flex" }}
+                title="Collapse Panel"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Dossier Scrollable Body */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "1.1rem", display: "flex", flexDirection: "column", gap: "1.1rem" }}>
+              
+              {/* Project Card */}
+              <div style={{
+                background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+                borderRadius: "14px",
+                padding: "1.1rem",
+                border: "1px solid #e2e8f0"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                  <div style={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "12px",
+                    background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                    color: "white",
+                    fontWeight: "800",
+                    fontSize: "1.1rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 3px 8px rgba(37, 99, 235, 0.2)"
+                  }}>
+                    {activeThread.title.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#0f172a" }}>
+                      {activeThread.title}
+                    </h4>
+                    <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Unified Municipal Project</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.8rem", color: "#334155" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                    <User size={13} color="#64748b" />
+                    <span style={{ wordBreak: "break-all" }}>{currentUserEmail || "Registered Citizen"}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                    <Building2 size={13} color="#64748b" />
+                    <span>{activeThread.permitType || "Permit Project"}</span>
+                  </div>
+                  {activeApp?.projectAddress && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                      <MapPin size={13} color="#64748b" />
+                      <span>{activeApp.projectAddress}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Linked Applications Section */}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <h4 style={{ margin: 0, fontSize: "0.82rem", fontWeight: "800", color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    Permits on Record ({(activeThread.applications || []).length})
+                  </h4>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {(activeThread.applications || [activeApp]).filter(Boolean).map((app, aIdx) => {
+                    const badge = getStatusBadge(app?.status);
+                    const feeNum = getAuthoritativePermitFee(app, app?.id);
+                    const isFiltered = selectedPermitTab === app?.id;
+
+                    return (
+                      <div
+                        key={aIdx}
+                        style={{
+                          background: isFiltered ? "#eff6ff" : "#ffffff",
+                          border: isFiltered ? "1.5px solid #3b82f6" : "1px solid #e2e8f0",
+                          borderRadius: "12px",
+                          padding: "10px",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.02)",
+                          transition: "all 0.15s"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "6px", marginBottom: "4px" }}>
+                          <div>
+                            <span style={{ fontSize: "0.85rem", fontWeight: "800", color: "#0f172a", display: "block" }}>
+                              {app?.id}
+                            </span>
+                            <span style={{ fontSize: "0.76rem", fontWeight: "600", color: "#475569" }}>
+                              {app?.projectName || activeThread.title}
+                            </span>
+                          </div>
+                          <span style={{
+                            fontSize: "0.68rem",
+                            fontWeight: "700",
+                            background: badge.bg,
+                            color: badge.color,
+                            border: `1px solid ${badge.border}`,
+                            padding: "2px 7px",
+                            borderRadius: "6px",
+                            flexShrink: 0
+                          }}>
+                            {badge.label}
+                          </span>
+                        </div>
+
+                        <div style={{ fontSize: "0.74rem", color: "#64748b", marginBottom: "8px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                            <Building2 size={12} />
+                            <span style={{ textTransform: "capitalize" }}>{app?.permitType?.replace(/_/g, " ") || "Permit"}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                            <CreditCard size={12} />
+                            <span>Assessed Fee: <strong>PHP {feeNum.toLocaleString()}</strong></span>
+                          </div>
+                        </div>
+
+                        {/* Action Links */}
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button
+                            onClick={() => setSelectedPermitTab(app?.id || "all")}
+                            style={{
+                              flex: 1,
+                              padding: "5px 8px",
+                              borderRadius: "7px",
+                              fontSize: "0.72rem",
+                              fontWeight: "700",
+                              background: isFiltered ? "#2563eb" : "#f1f5f9",
+                              color: isFiltered ? "#ffffff" : "#334155",
+                              border: "none",
+                              cursor: "pointer"
+                            }}
+                          >
+                            {isFiltered ? "Active Filter" : "Filter Chat"}
+                          </button>
+                          <Link
+                            href={`/applicant/track/${encodeURIComponent(app?.id || "")}`}
+                            style={{
+                              padding: "5px 8px",
+                              borderRadius: "7px",
+                              fontSize: "0.72rem",
+                              fontWeight: "700",
+                              background: "#ffffff",
+                              color: "#2563eb",
+                              border: "1px solid #bfdbfe",
+                              textDecoration: "none",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "3px"
+                            }}
+                          >
+                            <span>Track</span>
+                            <ExternalLink size={10} />
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Municipal Assistance Card */}
+              <div style={{
+                background: "#f8fafc",
+                borderRadius: "14px",
+                padding: "1rem",
+                border: "1px solid #e2e8f0"
+              }}>
+                <h5 style={{ margin: "0 0 6px 0", fontSize: "0.82rem", fontWeight: "800", color: "#0f172a" }}>
+                  Municipal Permitting Helpdesk
+                </h5>
+                <p style={{ margin: "0 0 8px 0", fontSize: "0.76rem", color: "#64748b", lineHeight: "1.4" }}>
+                  Municipal Building Official (OBO) &amp; MPDO Zoning Administration. Office hours: 8:00 AM – 5:00 PM PHT.
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", color: "#2563eb", fontWeight: "700" }}>
+                  <Phone size={13} />
+                  <span>(045) 961-4157</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* START NEW CONVERSATION MODAL */}
+{/* START NEW CONVERSATION MODAL */}
       {showStartModal && (
         <div 
           style={{
