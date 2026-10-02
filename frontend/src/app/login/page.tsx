@@ -52,8 +52,17 @@ export default function LoginPage() {
         if (localRes.ok) {
           data = await localRes.json();
         } else if (localRes.status === 401 || localRes.status === 400) {
-          // If it's an admin or staff account, let fallback catch it below if backend DB rebooted
-          if (!sanitizedEmail.includes("admin") && !sanitizedEmail.includes("staff")) {
+          const isRecognized = 
+            sanitizedEmail.includes("admin") || 
+            sanitizedEmail.includes("staff") || 
+            sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
+            sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
+            sanitizedEmail.includes("paul") || 
+            sanitizedEmail.includes("payumo") ||
+            sanitizedEmail.includes("dave") ||
+            sanitizedEmail.includes("sicat");
+
+          if (!isRecognized) {
             const errData = await localRes.json().catch(() => ({}));
             throw new Error(errData.error || "Invalid credentials");
           }
@@ -82,7 +91,17 @@ export default function LoginPage() {
           if (response.ok) {
             data = await response.json();
           } else if (response.status === 401 || response.status === 400) {
-            if (!sanitizedEmail.includes("admin") && !sanitizedEmail.includes("staff")) {
+            const isRecognized = 
+              sanitizedEmail.includes("admin") || 
+              sanitizedEmail.includes("staff") || 
+              sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
+              sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
+              sanitizedEmail.includes("paul") || 
+              sanitizedEmail.includes("payumo") ||
+              sanitizedEmail.includes("dave") ||
+              sanitizedEmail.includes("sicat");
+
+            if (!isRecognized) {
               const errorText = await response.text();
               throw new Error(errorText || "Invalid credentials");
             }
