@@ -109,6 +109,7 @@ export default function ApplicantMessagesPage() {
   const [showStartModal, setShowStartModal] = useState(false);
   const [modalSelectedAppId, setModalSelectedAppId] = useState<string>("");
   const [modalInitialMessage, setModalInitialMessage] = useState<string>("");
+  const lastProcessedRef = useRef<string | null>(null);
 
   // Payment Receipt Upload in Chat State
   const [receiptModalFile, setReceiptModalFile] = useState<{ name: string; dataUrl: string } | null>(null);
@@ -120,14 +121,6 @@ export default function ApplicantMessagesPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const receiptFileInputRef = useRef<HTMLInputElement>(null);
-
-  // Synchronize initialRef from deep links (e.g. /applicant/messages?ref=LC-2026-9307)
-  useEffect(() => {
-    if (initialRef) {
-      setActiveThreadId(initialRef);
-      setUserCreatedThreadIds(prev => prev.includes(initialRef) ? prev : [...prev, initialRef]);
-    }
-  }, [initialRef]);
 
   // Known application IDs for smart parsing
   const knownAppIds = useMemo(() => {
@@ -144,7 +137,7 @@ export default function ApplicantMessagesPage() {
     const refMatch = content.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)(?:\s*[-–—]\s*([^\]]+))?\]/i);
     if (refMatch) {
       const matchedId = refMatch[1].trim();
-      if (matchedId.toLowerCase() === "general") return knownAppIds[0] || "";
+      if (matchedId.toLowerCase() === "general") return "";
       return matchedId;
     }
     // Check if content contains any known application ID
@@ -153,7 +146,7 @@ export default function ApplicantMessagesPage() {
         return appId;
       }
     }
-    return knownAppIds[0] || "";
+    return "";
   };
 
   // Load user & connect WebSocket
@@ -380,18 +373,14 @@ export default function ApplicantMessagesPage() {
 
     let list = Object.values(threadMap);
 
-    // Sort: active thread first, then by latest timestamp
+    // Sort stably by latest timestamp descending
     list.sort((a, b) => {
-      const isAActive = a.id === activeThreadId || a.applicationIds?.includes(activeThreadId);
-      const isBActive = b.id === activeThreadId || b.applicationIds?.includes(activeThreadId);
-      if (isAActive) return -1;
-      if (isBActive) return 1;
-      if (a.lastTimestamp && b.lastTimestamp) {
-        return new Date(b.lastTimestamp).getTime() - new Date(a.lastTimestamp).getTime();
+      const timeA = a.lastTimestamp ? new Date(a.lastTimestamp).getTime() : 0;
+      const timeB = b.lastTimestamp ? new Date(b.lastTimestamp).getTime() : 0;
+      if (timeA !== timeB) {
+        return timeB - timeA;
       }
-      if (a.lastTimestamp) return -1;
-      if (b.lastTimestamp) return 1;
-      return 0;
+      return a.title.localeCompare(b.title);
     });
 
     // Filter by search query
@@ -406,13 +395,27 @@ export default function ApplicantMessagesPage() {
     }
 
     return list;
-  }, [applications, messages, userCreatedThreadIds, activeThreadId, searchQuery, currentUserEmail]);
+  }, [applications, messages, userCreatedThreadIds, searchQuery, currentUserEmail]);
 
   const myConversationThreads = conversationThreads;
 
-  // Handle URL ref parameter (e.g. ?ref=LC-2026-4157 from track page)
+  // Seamlessly switch active conversation thread and update URL without page refresh
+  const handleSelectThread = (threadId: string) => {
+    setActiveThreadId(threadId);
+    lastProcessedRef.current = threadId;
+    if (typeof window !== "undefined") {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("ref", threadId);
+        window.history.replaceState({}, "", url.toString());
+      } catch (e) {}
+    }
+  };
+
+  // Handle URL ref parameter (e.g. ?ref=LC-2026-4157 from track page) without overriding user selections
   useEffect(() => {
-    if (initialRef) {
+    if (initialRef && lastProcessedRef.current !== initialRef) {
+      lastProcessedRef.current = initialRef;
       const matched = conversationThreads.find(t => t.id === initialRef || t.applicationIds?.includes(initialRef));
       if (matched) {
         setActiveThreadId(matched.id);
@@ -431,12 +434,12 @@ export default function ApplicantMessagesPage() {
         }
         return prev;
       });
-    } else if (!activeThreadId || activeThreadId === "general") {
-      if (conversationThreads.length > 0) {
-        setActiveThreadId(conversationThreads[0].id);
-      }
+    } else if ((!activeThreadId || activeThreadId === "general") && conversationThreads.length > 0) {
+      const fallbackId = conversationThreads[0].id;
+      setActiveThreadId(fallbackId);
+      lastProcessedRef.current = fallbackId;
     }
-  }, [initialRef, currentUserEmail, conversationThreads, activeThreadId]);
+  }, [initialRef, currentUserEmail, conversationThreads]);
 
   // Synchronize official notices and payment messages for any approved applications
   useEffect(() => {
@@ -689,7 +692,7 @@ export default function ApplicantMessagesPage() {
     
     // Switch to this thread
     if (targetId) {
-      setActiveThreadId(targetId);
+      handleSelectThread(targetId);
 
       // Save to userCreatedThreadIds
       if (!userCreatedThreadIds.includes(targetId)) {
@@ -1035,7 +1038,10 @@ export default function ApplicantMessagesPage() {
           {/* Conversation List */}
           <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
             {myConversationThreads.map(thread => {
-              const isActive = thread.id === activeThreadId || Boolean(thread.applicationIds?.includes(activeThreadId));
+              const isActive = thread.id === activeThread?.id || 
+                thread.id === activeThreadId || 
+                Boolean(thread.applicationIds?.includes(activeThreadId)) ||
+                Boolean(activeThread?.applicationIds?.some(aid => thread.applicationIds?.includes(aid)));
               const formattedTime = thread.lastTimestamp 
                 ? formatPhilippineTime(thread.lastTimestamp) 
                 : "";
@@ -1043,7 +1049,7 @@ export default function ApplicantMessagesPage() {
               return (
                 <div
                   key={thread.id}
-                  onClick={() => setActiveThreadId(thread.id)}
+                  onClick={() => handleSelectThread(thread.id)}
                   style={{
                     padding: "10px 12px",
                     borderRadius: "12px",
