@@ -20,14 +20,24 @@ export const metadata: Metadata = {
     shortcut: "/logo-mark.png",
     apple: "/logo-mark.png",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "eTAYO Sto. Tomas",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0d9488",
+  themeColor: "#0038A8",
   width: "device-width",
   initialScale: 1,
   minimumScale: 1,
+  maximumScale: 5,
   viewportFit: "cover",
+  userScalable: true,
 };
 
 export default function RootLayout({

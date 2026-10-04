@@ -362,14 +362,16 @@ export default function LocationPickerMap({
           transform: "translateX(-50%)",
           zIndex: 1000,
           background: "rgba(255,255,255,0.95)",
-          padding: "6px 16px",
+          padding: "6px 14px",
           borderRadius: "99px",
-          fontSize: "0.85rem",
+          fontSize: "clamp(0.72rem, 2.5vw, 0.85rem)",
           fontWeight: "700",
           color: "#1d4ed8",
           boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
           pointerEvents: "none",
           border: "1px solid #bfdbfe",
+          maxWidth: "calc(100% - 24px)",
+          textAlign: "center",
           whiteSpace: "nowrap"
         }}>
           Click map or drag pin to pinpoint location

@@ -45,9 +45,17 @@ export default function NotificationBell() {
   const handleToggle = () => {
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const screenWidth = typeof window !== "undefined" ? window.innerWidth : 360;
+      const dropdownWidth = Math.min(320, screenWidth - 24);
+      
+      let left = rect.left;
+      if (left + dropdownWidth > screenWidth - 12) {
+        left = Math.max(12, screenWidth - dropdownWidth - 12);
+      }
+
       setDropdownPos({
         top: rect.bottom + 8,
-        left: rect.left,
+        left: Math.max(12, left),
       });
     }
     setIsOpen(prev => !prev);

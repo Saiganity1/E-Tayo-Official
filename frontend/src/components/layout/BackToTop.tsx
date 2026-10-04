@@ -196,12 +196,12 @@ export default function BackToTop({ hasChatBot = false }: BackToTopProps) {
 
         @media (max-width: 768px) {
           .dashboard-back-to-top {
-            bottom: 20px;
-            right: 20px;
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            right: calc(20px + env(safe-area-inset-right, 0px));
           }
           .dashboard-back-to-top.with-bot {
-            bottom: 86px;
-            right: 24px;
+            bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+            right: calc(24px + env(safe-area-inset-right, 0px));
           }
         }
       `}</style>

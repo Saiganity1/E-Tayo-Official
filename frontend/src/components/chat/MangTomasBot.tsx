@@ -589,16 +589,34 @@ export default function MangTomasBot({
 
         @media (max-width: 640px) {
           .mang-tomas-window {
+            position: fixed;
             width: 100vw;
             height: 100vh;
-            max-height: 100vh;
-            bottom: 0;
+            height: 100dvh;
+            max-height: 100dvh;
+            top: 0;
+            left: 0;
             right: 0;
+            bottom: 0;
             border-radius: 0;
+            border: none;
+          }
+          .chat-header {
+            padding-top: max(16px, calc(12px + env(safe-area-inset-top)));
+            padding-left: max(16px, calc(16px + env(safe-area-inset-left)));
+            padding-right: max(16px, calc(16px + env(safe-area-inset-right)));
+          }
+          .chat-input-area {
+            padding-bottom: max(12px, calc(8px + env(safe-area-inset-bottom)));
+            padding-left: max(16px, calc(16px + env(safe-area-inset-left)));
+            padding-right: max(16px, calc(16px + env(safe-area-inset-right)));
+          }
+          .chat-input {
+            font-size: 16px !important;
           }
           .mang-tomas-fab {
-            bottom: 80px;
-            right: 16px;
+            bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+            right: calc(16px + env(safe-area-inset-right, 0px));
           }
         }
       `}} />

@@ -156,6 +156,8 @@ export default function PermitMatrixGuideModal({
           width: "100%",
           maxWidth: "1180px",
           maxHeight: "92vh",
+          height: "auto",
+          maxBlockSize: "calc(100dvh - 24px)",
           display: "flex",
           flexDirection: "column",
           boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.4)",
@@ -307,7 +309,7 @@ export default function PermitMatrixGuideModal({
           </div>
 
           {/* SEARCH */}
-          <div style={{ position: "relative", minWidth: "260px" }}>
+          <div style={{ position: "relative", minWidth: "min(260px, 100%)", flex: 1 }}>
             <Search
               size={15}
               style={{

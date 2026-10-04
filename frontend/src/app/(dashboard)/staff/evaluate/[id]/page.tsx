@@ -2283,12 +2283,15 @@ ${isDisapprove
       )}
 
       {/* MAIN TWO-COLUMN WORKBENCH */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: isFocusMode ? "1fr" : "420px 1fr",
-        gap: "1.5rem",
-        alignItems: "start"
-      }}>
+      <div 
+        className="evaluate-workbench-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: isFocusMode ? "1fr" : "420px 1fr",
+          gap: "1.5rem",
+          alignItems: "start"
+        }}
+      >
         
         {/* LEFT COLUMN: EVALUATION WORKSPACE PANEL */}
         {!isFocusMode && (
@@ -3049,6 +3052,7 @@ ${isDisapprove
         {/* RIGHT COLUMN: IN-SYSTEM DOCUMENT VIEWER */}
         <div 
           ref={viewerContainerRef}
+          className="evaluate-viewer-panel"
           style={{ 
             background: "#ffffff", 
             borderRadius: "18px", 

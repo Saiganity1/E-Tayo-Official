@@ -43,6 +43,12 @@
   /* Transitions */
   --transition-fast: 200ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-normal: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Mobile Safe Area Insets (iOS Notches, Dynamic Island & Android Navigation) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 }
 
 /* Base Reset */
@@ -52,8 +58,20 @@
   padding: 0;
 }
 
-html, body {
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
   height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  position: relative;
   font-family: 'Inter', var(--font-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-main);
   background-image: 
@@ -66,6 +84,13 @@ html, body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* iOS Safari Automatic Zoom Bug Prevention (enforce minimum 16px on mobile viewports) */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 a {
@@ -109,9 +134,21 @@ button {
   width: 100%;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .dashboard-content {
-    padding: 1rem;
+    padding-top: max(4.5rem, calc(3.5rem + env(safe-area-inset-top, 0px)));
+    padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-content {
+    padding-top: max(4.25rem, calc(3.5rem + env(safe-area-inset-top, 0px)));
+    padding-left: max(0.85rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.85rem, env(safe-area-inset-right, 0px));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -336,6 +373,17 @@ button {
   .login-form-container {
     width: 100%;
     padding: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-card {
+    padding: 1.75rem 1.25rem !important;
+    border-radius: 18px !important;
+  }
+
+  .login-layout {
+    padding: max(1.5rem, env(safe-area-inset-top, 0px)) max(0.85rem, env(safe-area-inset-right, 0px)) max(1.5rem, env(safe-area-inset-bottom, 0px)) max(0.85rem, env(safe-area-inset-left, 0px)) !important;
   }
 }
 
@@ -622,11 +670,12 @@ button {
 /* --- SIDEBAR STYLES (Moved from styled-jsx) --- */
 .mobile-toggle {
   position: fixed;
-  top: 1rem;
-  left: 1rem;
+  top: max(0.85rem, env(safe-area-inset-top, 0px));
+  left: max(0.85rem, env(safe-area-inset-left, 0px));
   z-index: 60;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-medium);
   padding: 0.5rem;
   border-radius: var(--radius-md);
@@ -635,6 +684,10 @@ button {
   color: var(--text-primary);
   cursor: pointer;
   transition: all var(--transition-fast);
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobile-toggle:hover {
@@ -643,7 +696,26 @@ button {
 }
 
 @media (max-width: 1024px) {
-  .mobile-toggle { display: block; }
+  .mobile-toggle { display: flex; }
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 55;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
+}
+
+.sidebar-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .sidebar {
@@ -670,9 +742,17 @@ button {
 @media (max-width: 1024px) {
   .sidebar {
     position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 70;
     transform: translateX(-100%);
     background: #ffffff;
-    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.15);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.18);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    width: min(290px, 85vw);
+    -webkit-overflow-scrolling: touch;
   }
   .sidebar.open {
     transform: translateX(0);
@@ -1841,7 +1921,8 @@ button {
 
 .notification-dropdown {
   position: fixed;
-  width: 320px;
+  width: min(320px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
   background-color: white;
   border-radius: var(--radius-lg);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
@@ -2097,4 +2178,193 @@ button {
 
 .project-cards-container::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* ==========================================================================
+   COMPREHENSIVE MOBILE RESPONSIVENESS SYSTEM (Android & iOS)
+   ========================================================================== */
+
+/* 1. Mobile Form & Multi-Column Grid Adaptations */
+@media (max-width: 768px) {
+  /* Flatten crowded multi-column input rows into thumb-friendly stacked layouts */
+  .unified-form-wrapper [style*="gridTemplateColumns"],
+  .technical-step-wrapper [style*="gridTemplateColumns"],
+  .permit-form-container [style*="gridTemplateColumns"],
+  .step-pane [style*="gridTemplateColumns"],
+  .form-section [style*="gridTemplateColumns"],
+  .application-form-box [style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Prevent labels and inputs from overflowing */
+  .unified-form-wrapper input,
+  .unified-form-wrapper select,
+  .unified-form-wrapper textarea,
+  .step-pane input,
+  .step-pane select,
+  .step-pane textarea {
+    max-width: 100% !important;
+    min-height: 44px;
+  }
+
+  /* Wizard Stepper Horizontal Scroll on Mobile */
+  .step-list {
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 0.5rem;
+    gap: 1rem !important;
+  }
+
+  .step-item {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .wizard-sidebar {
+    width: 100% !important;
+    padding: 1rem !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-light) !important;
+  }
+
+  .wizard-content {
+    padding: 1.25rem 1rem !important;
+  }
+
+  /* Status Cards and Dossier Headers */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .applications-section {
+    padding: 1.25rem 1rem !important;
+    border-radius: 18px !important;
+  }
+}
+
+/* 2. Mobile Table Containers & Touch Scrolling */
+.table-responsive,
+div[style*="overflowX: auto"],
+div[style*="overflow-x: auto"] {
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: thin;
+}
+
+/* 3. Universal Modal Dialog Mobile Responsiveness */
+@media (max-width: 640px) {
+  /* Ensure modals fit inside mobile screen with safe-area spacing */
+  .modal-overlay,
+  div[style*="position: fixed"][style*="zIndex: 9999"],
+  div[style*="position: fixed"][style*="z-index: 9999"] {
+    padding: max(0.5rem, env(safe-area-inset-top, 0px)) max(0.5rem, env(safe-area-inset-right, 0px)) max(0.5rem, env(safe-area-inset-bottom, 0px)) max(0.5rem, env(safe-area-inset-left, 0px)) !important;
+  }
+
+  .modal-dialog,
+  div[style*="maxWidth: 800px"],
+  div[style*="maxWidth: 860px"],
+  div[style*="maxWidth: 880px"],
+  div[style*="maxWidth: 900px"],
+  div[style*="maxWidth: 960px"],
+  div[style*="maxWidth: 1000px"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 16px !important;
+    margin: 0 !important;
+  }
+
+  /* KPI Summary Stats on Small Mobile */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* 4. Touch-Friendly Interactive Elements (Apple & Material Design Guidelines) */
+@media (hover: none) and (pointer: coarse) {
+  /* Enforce minimum touch target heights for thumb accessibility */
+  button, 
+  a.btn-primary, 
+  a.btn-secondary,
+  .nav-item {
+    min-height: 44px;
+  }
+
+  /* Disable sticky hover states on touch screens */
+  .dock-tooltip,
+  .fab-tooltip,
+  .btt-tooltip {
+    display: none !important;
+  }
+}
+
+/* 5. Mobile Messenger / Chat Workspace Optimization */
+@media (max-width: 900px) {
+  .messages-workspace-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: calc(100vh - 120px) !important;
+    min-height: calc(100dvh - 120px) !important;
+    gap: 1rem !important;
+  }
+
+  .messages-workspace-grid.show-chat .messages-directory-col {
+    display: none !important;
+  }
+
+  .messages-workspace-grid.show-list .messages-chat-col {
+    display: none !important;
+  }
+
+  .messages-directory-col,
+  .messages-chat-col {
+    width: 100% !important;
+    height: calc(100vh - 160px) !important;
+    height: calc(100dvh - 160px) !important;
+  }
+
+  .mobile-back-to-list-btn {
+    display: inline-flex !important;
+  }
+}
+
+/* 6. Staff & Admin Evaluation Workbench Mobile Responsive Layout */
+@media (max-width: 1024px) {
+  .evaluate-workbench-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+
+  .evaluate-viewer-panel {
+    min-height: 480px !important;
+    max-height: 80vh !important;
+    max-height: 80dvh !important;
+  }
+}
+
+/* 7. Small Mobile (<640px) Universal Flex Shrink & Dialog Safeguards */
+@media (max-width: 640px) {
+  /* Prevent fixed minWidth flex parents from overflowing the screen on 320px-400px devices */
+  div[style*="minWidth: 2"],
+  div[style*="minWidth: 3"],
+  div[style*="min-width: 2"],
+  div[style*="min-width: 3"] {
+    min-width: 0 !important;
+  }
+
+  /* Universal breaking for long permit IDs and emails */
+  code, 
+  .permit-id-tag,
+  pre {
+    word-break: break-all !important;
+    white-space: pre-wrap !important;
+  }
+
+  /* Mobile dialog overlay margins */
+  .modal-overlay,
+  div[style*="position: fixed"][style*="zIndex: 99"] {
+    padding: max(0.5rem, env(safe-area-inset-top, 0px)) max(0.5rem, env(safe-area-inset-right, 0px)) max(0.5rem, env(safe-area-inset-bottom, 0px)) max(0.5rem, env(safe-area-inset-left, 0px)) !important;
+  }
 }

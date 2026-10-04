@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Menu, X, ClipboardList, LogIn, ArrowRight } from "lucide-react";
 import Footer from "../components/layout/Footer";
 import MangTomasBot from "../components/chat/MangTomasBot";
 
@@ -11,6 +12,7 @@ export default function Home() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginAlert, setShowLoginAlert] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Floating Action Widgets state
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -20,6 +22,18 @@ export default function Home() {
   useEffect(() => {
     setIsLoggedIn(!!localStorage.getItem("token"));
   }, []);
+
+  // Prevent background scroll when mobile navigation is open
+  useEffect(() => {
+    if (isMobileNavOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileNavOpen]);
 
   // Track scroll progress for the circular back to top button
   useEffect(() => {
@@ -61,12 +75,66 @@ export default function Home() {
           >
             <Image src="/logo.png" alt="eTAYO" width={140} height={44} style={{ height: "40px", width: "auto", objectFit: "contain", cursor: "pointer" }} priority />
           </Link>
+
+          {/* Desktop Navigation Links */}
           <nav className="nav-links">
             <Link href="/applicant/track" className="nav-link">Application Status</Link>
             <Link href="/login" className="btn-secondary">Log In</Link>
             <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary">Apply Now</Link>
           </nav>
+
+          {/* Mobile Hamburger Toggle Button */}
+          <button 
+            type="button"
+            className="landing-mobile-toggle"
+            onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
+            aria-label={isMobileNavOpen ? "Close menu" : "Open menu"}
+          >
+            {isMobileNavOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
+
+        {/* Mobile Slide-Down Menu Drawer */}
+        <div className={`landing-mobile-menu ${isMobileNavOpen ? "open" : ""}`}>
+          <div className="landing-mobile-menu-inner">
+            <Link 
+              href="/applicant/track" 
+              className="mobile-nav-item"
+              onClick={() => setIsMobileNavOpen(false)}
+            >
+              <ClipboardList size={18} />
+              <span>Application Status</span>
+            </Link>
+            <Link 
+              href="/login" 
+              className="mobile-nav-item"
+              onClick={() => setIsMobileNavOpen(false)}
+            >
+              <LogIn size={18} />
+              <span>Log In</span>
+            </Link>
+            <Link 
+              href="/applicant/apply" 
+              className="mobile-nav-item mobile-nav-btn-highlight"
+              onClick={(e) => {
+                setIsMobileNavOpen(false);
+                handleApplyClick(e);
+              }}
+            >
+              <span>Apply Now</span>
+              <ArrowRight size={18} />
+            </Link>
+          </div>
+        </div>
+
+        {/* Mobile Backdrop */}
+        {isMobileNavOpen && (
+          <div 
+            className="landing-nav-backdrop"
+            onClick={() => setIsMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+        )}
       </header>
 
       <section className="hero-section">
@@ -233,6 +301,108 @@ export default function Home() {
 
         .nav-link:hover {
           color: var(--color-primary);
+        }
+
+        .landing-mobile-toggle {
+          display: none;
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          color: #0f172a;
+          padding: 8px;
+          border-radius: 10px;
+          cursor: pointer;
+          align-items: center;
+          justify-content: center;
+          min-width: 44px;
+          min-height: 44px;
+          transition: background 0.2s;
+        }
+
+        .landing-mobile-toggle:hover {
+          background: #e2e8f0;
+        }
+
+        .landing-mobile-menu {
+          display: none;
+        }
+
+        .landing-nav-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(15, 23, 42, 0.55);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          z-index: 48;
+        }
+
+        @media (max-width: 768px) {
+          .nav-container {
+            padding: max(0.65rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.65rem max(1rem, env(safe-area-inset-left));
+          }
+
+          .nav-links {
+            display: none;
+          }
+
+          .landing-mobile-toggle {
+            display: flex;
+          }
+
+          .landing-mobile-menu {
+            display: block;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, visibility 0.25s;
+            z-index: 49;
+          }
+
+          .landing-mobile-menu.open {
+            max-height: 380px;
+            opacity: 1;
+            visibility: visible;
+          }
+
+          .landing-mobile-menu-inner {
+            padding: 1.25rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom)) 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+
+          .mobile-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: background 0.15s;
+            min-height: 48px;
+          }
+
+          .mobile-nav-item:hover, .mobile-nav-item:active {
+            background: #f1f5f9;
+          }
+
+          .mobile-nav-btn-highlight {
+            background: linear-gradient(135deg, #0038A8 0%, #021a4f 100%) !important;
+            color: #ffffff !important;
+            justify-content: space-between;
+            box-shadow: 0 4px 14px rgba(0, 56, 168, 0.35);
+          }
         }
 
         .hero-section {
@@ -513,6 +683,40 @@ export default function Home() {
 
         .back-to-top-fab:hover .chevron-up-icon {
           transform: translateY(-2px);
+        }
+
+        @media (max-width: 640px) {
+          .hero-title {
+            font-size: clamp(2.2rem, 8vw, 2.75rem) !important;
+            letter-spacing: -0.02em;
+          }
+          .hero-subtitle {
+            font-size: 0.98rem !important;
+            line-height: 1.55 !important;
+            margin-bottom: 1.75rem !important;
+          }
+          .hero-actions {
+            flex-direction: column;
+            width: 100%;
+            max-width: 340px;
+            gap: 0.75rem;
+          }
+          .hero-actions .btn-primary,
+          .hero-actions .btn-secondary {
+            width: 100%;
+            padding: 0.95rem 1.5rem;
+            font-size: 1rem;
+            text-align: center;
+            justify-content: center;
+            border-radius: 12px;
+          }
+          .floating-widgets-dock {
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            right: calc(16px + env(safe-area-inset-right, 0px));
+          }
+          .dock-tooltip {
+            display: none !important;
+          }
         }
       `}</style>
     </main>

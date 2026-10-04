@@ -255,7 +255,7 @@ export default function TemplatesDirectory({ role = "applicant" }: TemplatesDire
       {/* Grid of Templates */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))",
         gap: "1.25rem"
       }}>
         {filteredTemplates.map((tmpl) => {

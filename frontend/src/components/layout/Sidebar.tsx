@@ -43,6 +43,39 @@ export default function Sidebar() {
     }
   }, []);
 
+  // Close sidebar automatically on navigation/route change
+  React.useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll when mobile sidebar is open to avoid background jitter
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (isOpen) {
+        document.body.style.overflow = "hidden";
+        document.body.style.touchAction = "none";
+      } else {
+        document.body.style.overflow = "";
+        document.body.style.touchAction = "";
+      }
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        document.body.style.overflow = "";
+        document.body.style.touchAction = "";
+      }
+    };
+  }, [isOpen]);
+
+  // Handle escape key to close sidebar
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   React.useEffect(() => {
     try {
       if (typeof window !== "undefined") {
@@ -184,6 +217,13 @@ export default function Sidebar() {
       >
         <Menu size={24} />
       </button>
+
+      {/* Mobile Backdrop Overlay */}
+      <div 
+        className={`sidebar-backdrop ${isOpen ? "open" : ""}`}
+        onClick={() => setIsOpen(false)}
+        aria-hidden="true"
+      />
 
       <aside className={`sidebar ${isOpen ? "open" : ""}`}>
         <div className="sidebar-header">

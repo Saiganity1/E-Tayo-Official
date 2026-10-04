@@ -64,6 +64,7 @@ export default function AdminMessagesPage() {
   const [currentUserName, setCurrentUserName] = useState("Super Admin");
   const [connected, setConnected] = useState(false);
   const [applicantEmail, setApplicantEmail] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<"list" | "chat">(applicantEmail ? "chat" : "list");
   const [contacts, setContacts] = useState<string[]>([]);
   const [previewAttachment, setPreviewAttachment] = useState<ParsedAttachment | null>(null);
   const [adminAttachedFile, setAdminAttachedFile] = useState<{ name: string; url: string } | null>(null);
@@ -758,7 +759,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
       {/* ========================================================================= */}
       {/* 2. MAIN WORKSPACE LAYOUT (290px DIRECTORY + 1FR CHAT [+ 340px DOSSIER]) */}
       {/* ========================================================================= */}
-      <div style={{
+      <div className={`messages-workspace-grid ${mobileView === "chat" ? "show-chat" : "show-list"}`} style={{
         display: "grid",
         gridTemplateColumns: showDossier ? "290px 1fr 340px" : "290px 1fr",
         gap: "1.25rem",
@@ -770,7 +771,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
         {/* ======================================================================= */}
         {/* LEFT COLUMN: CITIZEN DIRECTORY & SEARCH */}
         {/* ======================================================================= */}
-        <div style={{
+        <div className="messages-directory-col" style={{
           background: "#ffffff",
           borderRadius: "18px",
           border: "1.5px solid #e2e8f0",
@@ -880,7 +881,10 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                 return (
                   <div
                     key={idx}
-                    onClick={() => setApplicantEmail(email)}
+                    onClick={() => {
+                      setApplicantEmail(email);
+                      setMobileView("chat");
+                    }}
                     style={{
                       padding: "10px 12px",
                       borderRadius: "12px",
@@ -995,7 +999,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
         {/* ======================================================================= */}
         {/* CENTER COLUMN: LIVE CHAT AREA & THREAD CATEGORIZATION */}
         {/* ======================================================================= */}
-        <div style={{
+        <div className="messages-chat-col" style={{
           background: "#ffffff",
           borderRadius: "18px",
           border: "1.5px solid #e2e8f0",
@@ -1065,6 +1069,30 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                 flexWrap: "wrap"
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setMobileView("list")}
+                    className="mobile-back-to-list-btn"
+                    aria-label="Back to citizens list"
+                    style={{
+                      display: "none",
+                      alignItems: "center",
+                      gap: "5px",
+                      background: "#eff6ff",
+                      border: "1px solid #bfdbfe",
+                      borderRadius: "10px",
+                      padding: "6px 12px",
+                      fontSize: "0.82rem",
+                      fontWeight: "700",
+                      color: "#1d4ed8",
+                      cursor: "pointer",
+                      marginRight: "4px",
+                      flexShrink: 0
+                    }}
+                  >
+                    <ArrowLeft size={16} />
+                    <span>Citizens</span>
+                  </button>
                   <div style={{
                     width: "44px",
                     height: "44px",

@@ -110,6 +110,7 @@ export default function ApplicantMessagesPage() {
 
   // Categorized Conversation State (defaults to empty/initialRef, never generic OBO admin desk)
   const [activeThreadId, setActiveThreadId] = useState<string>(initialRef || "");
+  const [mobileView, setMobileView] = useState<"list" | "chat">(initialRef ? "chat" : "list");
   const [searchQuery, setSearchQuery] = useState("");
   const [userCreatedThreadIds, setUserCreatedThreadIds] = useState<string[]>(initialRef ? [initialRef] : []);
   const [showStartModal, setShowStartModal] = useState(false);
@@ -440,6 +441,7 @@ export default function ApplicantMessagesPage() {
   // Seamlessly switch active conversation thread and update URL without page refresh
   const handleSelectThread = (threadId: string) => {
     setActiveThreadId(threadId);
+    setMobileView("chat");
     lastProcessedRef.current = threadId;
     if (typeof window !== "undefined") {
       try {
@@ -1051,7 +1053,7 @@ export default function ApplicantMessagesPage() {
       {/* ========================================================================= */}
       {/* 2. MAIN WORKSPACE LAYOUT (290px DIRECTORY + 1FR CHAT [+ 340px DOSSIER])   */}
       {/* ========================================================================= */}
-      <div style={{
+      <div className={`messages-workspace-grid ${mobileView === "chat" ? "show-chat" : "show-list"}`} style={{
         display: "grid",
         gridTemplateColumns: "300px 1fr",
         gap: "1.25rem",
@@ -1063,7 +1065,7 @@ export default function ApplicantMessagesPage() {
         {/* ======================================================================= */}
         {/* LEFT COLUMN: CONVERSATION DIRECTORY & SEARCH                           */}
         {/* ======================================================================= */}
-        <div style={{
+        <div className="messages-directory-col" style={{
           background: "#ffffff",
           borderRadius: "18px",
           border: "1.5px solid #e2e8f0",
@@ -1330,7 +1332,7 @@ export default function ApplicantMessagesPage() {
         {/* ======================================================================= */}
         {/* CENTER COLUMN: LIVE CHAT AREA & THREAD TABS                           */}
         {/* ======================================================================= */}
-        <div style={{
+        <div className="messages-chat-col" style={{
           background: "#ffffff",
           borderRadius: "18px",
           border: "1.5px solid #e2e8f0",
@@ -1351,7 +1353,31 @@ export default function ApplicantMessagesPage() {
             gap: "1rem",
             flexWrap: "wrap"
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+              <button
+                type="button"
+                onClick={() => setMobileView("list")}
+                className="mobile-back-to-list-btn"
+                aria-label="Back to conversations list"
+                style={{
+                  display: "none",
+                  alignItems: "center",
+                  gap: "5px",
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: "10px",
+                  padding: "6px 12px",
+                  fontSize: "0.82rem",
+                  fontWeight: "700",
+                  color: "#1d4ed8",
+                  cursor: "pointer",
+                  marginRight: "4px",
+                  flexShrink: 0
+                }}
+              >
+                <ArrowLeft size={16} />
+                <span>Chats</span>
+              </button>
               <div style={{
                 width: "44px",
                 height: "44px",
