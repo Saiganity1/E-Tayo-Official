@@ -5,6 +5,18 @@
 
 import { formatPhilippineDate, formatPhilippineTime } from "./philippineTime";
 
+export const safeISODate = (val: any, fallback = new Date().toISOString()): string => {
+  if (!val) return fallback;
+  try {
+    const d = new Date(val);
+    const ms = d.getTime();
+    if (!isNaN(ms)) {
+      return d.toISOString();
+    }
+  } catch (e) {}
+  return fallback;
+};
+
 export interface SystemPermitMessage {
   id: string;
   senderEmail: string;
@@ -59,6 +71,13 @@ export const dispatchPermitMessage = async ({
   // 2. Dispatch custom event for real-time reactive UI update in open windows
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("etayo_new_message", { detail: newMsg }));
+    try {
+      if (typeof BroadcastChannel !== "undefined") {
+        const bc = new BroadcastChannel("etayo_chat_channel");
+        bc.postMessage(newMsg);
+        bc.close();
+      }
+    } catch (e) {}
   }
 
   // 3. Attempt POST to backend /api/messages/send
@@ -198,11 +217,23 @@ export const ensureApplicationConversationMessages = (
 
     // Compute realistic chronological timestamps: Approval / Order of Payment -> Payment Receipt -> Permit Release
     const now = Date.now();
+    const parseTime = (val: any, fallback: number): number => {
+      if (!val) return fallback;
+      try {
+        const ms = new Date(val).getTime();
+        return isNaN(ms) ? fallback : ms;
+      } catch (e) {
+        return fallback;
+      }
+    };
+
     let approvalTime = app.dateApproved 
-      ? new Date(app.dateApproved).getTime() 
-      : (app.dateSubmitted ? new Date(app.dateSubmitted).getTime() : now - 7200000);
+      ? parseTime(app.dateApproved, parseTime(app.dateSubmitted, now - 7200000))
+      : parseTime(app.dateSubmitted, now - 7200000);
+    if (isNaN(approvalTime) || approvalTime <= 0) approvalTime = now - 7200000;
+
     const approvalDateObj = new Date(approvalTime);
-    if (approvalDateObj.getHours() === 0 && approvalDateObj.getMinutes() === 0) {
+    if (!isNaN(approvalDateObj.getTime()) && approvalDateObj.getHours() === 0 && approvalDateObj.getMinutes() === 0) {
       // If parsed as midnight (00:00:00)
       const isToday = new Date().toDateString() === approvalDateObj.toDateString();
       if (isToday) {
@@ -219,9 +250,9 @@ export const ensureApplicationConversationMessages = (
     }
 
     let receiptTime = (app as any).datePaymentSubmitted 
-      ? new Date((app as any).datePaymentSubmitted).getTime() 
+      ? parseTime((app as any).datePaymentSubmitted, approvalTime + 1800000)
       : (approvalTime + 1800000); // 30 mins after approval
-    if (receiptTime <= approvalTime) {
+    if (isNaN(receiptTime) || receiptTime <= approvalTime) {
       receiptTime = approvalTime + 900000;
     }
     if (receiptTime > now) {
@@ -232,21 +263,20 @@ export const ensureApplicationConversationMessages = (
     }
 
     let releaseTime = (app as any).dateReleased 
-      ? new Date((app as any).dateReleased).getTime() 
+      ? parseTime((app as any).dateReleased, receiptTime + 1800000)
       : (receiptTime + 1800000);
-    if (releaseTime <= receiptTime) {
+    if (isNaN(releaseTime) || releaseTime <= receiptTime) {
       releaseTime = receiptTime + 900000;
     }
     if (releaseTime > now) {
       releaseTime = Math.max(receiptTime + 60000, now - 300000);
       if (receiptTime >= releaseTime) {
-        receiptTime = releaseTime - 300000;
+        releaseTime = releaseTime - 300000;
         if (approvalTime >= receiptTime) {
           approvalTime = receiptTime - 600000;
         }
       }
     }
-
     // 1. Ensure Official Approval & Order of Payment Message exists & has correct fee
     const existingMsgIndex = result.findIndex(m => {
       const tid = m.applicationId || (m.content && m.content.includes(appId));
@@ -262,7 +292,7 @@ export const ensureApplicationConversationMessages = (
 
       // Ensure timestamp is before receipt
       if (new Date(existing.timestamp).getTime() >= receiptTime) {
-        result[existingMsgIndex] = { ...existing, timestamp: new Date(approvalTime).toISOString() };
+        result[existingMsgIndex] = { ...existing, timestamp: safeISODate(approvalTime) };
         updated = true;
       }
 
@@ -340,7 +370,7 @@ export const ensureApplicationConversationMessages = (
         actualSender: isLC ? "Zoning Administrator, MPDO" : "Engr. Gilbert Cruz, Municipal Building Official",
         recipientEmail: userEmail || app.applicantEmail || "applicant@etayo.gov.ph",
         applicationId: appId,
-        timestamp: new Date(approvalTime).toISOString(),
+        timestamp: safeISODate(approvalTime),
         content: `[Ref: ${appId} - ${projName}]
 ${approvalNoticeTitle}
 
@@ -413,7 +443,7 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
             actualSender: applicantName,
             recipientEmail: "staff@etayo.gov.ph",
             applicationId: appId,
-            timestamp: new Date(receiptTime).toISOString(),
+            timestamp: safeISODate(receiptTime),
             content: `[Ref: ${appId} - Payment Receipt] Official payment settled for ${appId} (Order of Payment: ${opNo}, Amount: PHP ${assessedAmt}).
 Official Receipt / Reference: ${orRef}
 Payment Channel: ${channel}
@@ -452,7 +482,7 @@ ${cachedReceipt ? `\n[Attachment: payment-receipt.jpg|${cachedReceipt}]` : ""}`
           actualSender: "Engr. Gilbert Cruz, Municipal Building Official",
           recipientEmail: userEmail || app.applicantEmail || "applicant@etayo.gov.ph",
           applicationId: appId,
-          timestamp: new Date(releaseTime).toISOString(),
+          timestamp: safeISODate(releaseTime),
           content: `[Ref: ${appId} - Permit Released]
 🎉 PAYMENT VERIFIED & OFFICIAL PERMITS RELEASED!
 

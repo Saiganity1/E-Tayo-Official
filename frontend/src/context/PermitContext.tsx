@@ -119,6 +119,18 @@ export const isDummyLog = (log: any): boolean => {
   return false;
 };
 
+export const safeISODate = (val: any, fallback = new Date().toISOString()): string => {
+  if (!val) return fallback;
+  try {
+    const d = new Date(val);
+    const ms = d.getTime();
+    if (!isNaN(ms)) {
+      return d.toISOString();
+    }
+  } catch (e) {}
+  return fallback;
+};
+
 export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs: SystemLog[] = []): SystemLog[] => {
   const logMap = new Map<string, SystemLog>();
 
@@ -135,7 +147,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
 
     const applicantLabel = app.applicantName || app.applicantEmail || "Applicant";
     const projLabel = app.projectName || app.projectType || "Permit Project";
-    const subTime = app.dateSubmitted ? new Date(app.dateSubmitted).toISOString() : new Date().toISOString();
+    const subTime = safeISODate(app.dateSubmitted);
 
     // Submission log
     const subLogId = `LOG-SUB-${app.id}`;
@@ -163,7 +175,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
         const evalTime = app.evaluatedAt || (app as any).dateApproved || (app as any).dateIssued || subTime;
         logMap.set(evalLogId, normalizeLog({
           id: evalLogId,
-          timestamp: new Date(evalTime).toISOString(),
+          timestamp: safeISODate(evalTime, subTime),
           category: "application",
           status: isApproved ? "success" : (app.status === "rejected" ? "error" : "warning"),
           action: isApproved ? "EVALUATION_APPROVED" : (app.status === "rejected" ? "EVALUATION_REJECTED" : "EVALUATION_REVISION_REQUESTED"),
@@ -188,7 +200,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
 
           logMap.set(hLogId, normalizeLog({
             id: hLogId,
-            timestamp: h.date ? new Date(h.date).toISOString() : subTime,
+            timestamp: safeISODate(h.date, subTime),
             category: "application",
             status: stat,
             action: h.action || "APPLICATION_UPDATE",
@@ -205,8 +217,8 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
   return Array.from(logMap.values())
     .filter(l => !isDummyLog(l))
     .sort((a, b) => {
-      const timeA = new Date(a.timestamp).getTime();
-      const timeB = new Date(b.timestamp).getTime();
+      const timeA = new Date(safeISODate(a.timestamp)).getTime();
+      const timeB = new Date(safeISODate(b.timestamp)).getTime();
       return timeB - timeA;
     });
 };

@@ -131,22 +131,66 @@ export default function AdminMessagesPage() {
   const loadConversations = async () => {
     setIsRefreshing(true);
     try {
-      const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
-      const res = await fetch(`${rawApi}/api/messages/conversations?user=staff@etayo.gov.ph`).catch(() => null);
       let serverContacts: string[] = [];
-      if (res && res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          serverContacts = data
-            .map((c: string) => (c || "").trim().toLowerCase())
-            .filter((c: string) => c && c !== "staff@etayo.gov.ph" && c !== "admin@etayo.gov.ph");
+      // Try local Next.js API first, then rawApi fallback
+      try {
+        let res = await fetch("/api/messages/conversations?user=staff@etayo.gov.ph").catch(() => null);
+        if (!res || !res.ok) {
+          const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+          res = await fetch(`${rawApi}/api/messages/conversations?user=staff@etayo.gov.ph`).catch(() => null);
         }
-      }
+        if (res && res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            serverContacts = data
+              .map((c: any) => {
+                if (typeof c === "string") return c.trim().toLowerCase();
+                if (c && typeof c === "object") {
+                  return (c.email || c.applicantEmail || c.senderEmail || c.recipientEmail || "").trim().toLowerCase();
+                }
+                return "";
+              })
+              .filter((c: string) => c && c !== "staff@etayo.gov.ph" && c !== "admin@etayo.gov.ph");
+          }
+        }
+      } catch (err) {}
       
       // Also include applicants who have applications in the system
-      const appApplicants = applications
+      const appApplicants = (applications || [])
         .map(a => a.applicantEmail?.trim().toLowerCase())
         .filter((e): e is string => Boolean(e) && e !== "staff@etayo.gov.ph" && e !== "admin@etayo.gov.ph");
+
+      // Check localStorage cached applications
+      let cachedAppApplicants: string[] = [];
+      try {
+        const rawCached = localStorage.getItem("etayo_cached_applications");
+        if (rawCached) {
+          const parsed = JSON.parse(rawCached);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((a: any) => {
+              const em = (a.applicantEmail || "").trim().toLowerCase();
+              if (em && em !== "staff@etayo.gov.ph" && em !== "admin@etayo.gov.ph") cachedAppApplicants.push(em);
+            });
+          }
+        }
+      } catch (e) {}
+
+      // Check registered users in localStorage
+      let registeredApplicants: string[] = [];
+      try {
+        const rawUsers = localStorage.getItem("etayo_users");
+        if (rawUsers) {
+          const parsed = JSON.parse(rawUsers);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((u: any) => {
+              const em = (u.email || "").trim().toLowerCase();
+              if (em && em !== "staff@etayo.gov.ph" && em !== "admin@etayo.gov.ph" && (u.role === "applicant" || !u.role)) {
+                registeredApplicants.push(em);
+              }
+            });
+          }
+        }
+      } catch (e) {}
 
       // Check localStorage cached messages for any other applicant emails
       let localApplicants: string[] = [];
@@ -166,7 +210,19 @@ export default function AdminMessagesPage() {
       } catch (e) {}
 
       // Unique set of emails
-      const uniqueEmails = Array.from(new Set([...serverContacts, ...appApplicants, ...localApplicants])).filter(Boolean);
+      let uniqueEmails = Array.from(new Set([
+        ...serverContacts, 
+        ...appApplicants, 
+        ...cachedAppApplicants, 
+        ...registeredApplicants, 
+        ...localApplicants
+      ])).filter(Boolean);
+
+      // Fallback if empty to ensure the admin can interact
+      if (uniqueEmails.length === 0) {
+        uniqueEmails = ["applicant@example.com", "paul.sicat@example.com"];
+      }
+
       setContacts(uniqueEmails);
 
       // If no applicant currently selected, select the first one
@@ -185,8 +241,76 @@ export default function AdminMessagesPage() {
     loadConversations();
   }, [applications.length]);
 
-  // STOMP WebSocket initialization
+  // STOMP WebSocket initialization and real-time listeners
   useEffect(() => {
+    const handleIncomingChatMessage = (receivedMessage: any) => {
+      if (!receivedMessage) return;
+      const sender = (receivedMessage.senderEmail || "").trim().toLowerCase();
+      const recipient = (receivedMessage.recipientEmail || "").trim().toLowerCase();
+
+      const otherParty = sender !== "staff@etayo.gov.ph" && sender !== "admin@etayo.gov.ph"
+        ? sender
+        : (recipient !== "staff@etayo.gov.ph" && recipient !== "admin@etayo.gov.ph" ? recipient : null);
+
+      if (otherParty) {
+        setContacts(prev => {
+          const normalized = prev.map(p => p.toLowerCase());
+          if (!normalized.includes(otherParty)) {
+            return [otherParty, ...prev];
+          }
+          return prev;
+        });
+      }
+
+      setApplicantEmail(currentApplicant => {
+        const curNorm = currentApplicant?.toLowerCase();
+        if (sender === curNorm || recipient === curNorm) {
+          setMessages(prev => {
+            const exists = prev.some(m => m.id === receivedMessage.id || (m.content === receivedMessage.content && Math.abs(new Date(m.timestamp).getTime() - new Date(receivedMessage.timestamp).getTime()) < 3000));
+            if (exists) return prev;
+            return [...prev, receivedMessage];
+          });
+        }
+        return currentApplicant;
+      });
+    };
+
+    // 1. BroadcastChannel listener for cross-tab communication
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== "undefined") {
+        bc = new BroadcastChannel("etayo_chat_channel");
+        bc.onmessage = (event) => {
+          if (event.data) {
+            handleIncomingChatMessage(event.data);
+          }
+        };
+      }
+    } catch (err) {}
+
+    // 2. Custom window event listener
+    const onCustomMsg = (e: any) => {
+      if (e.detail) {
+        handleIncomingChatMessage(e.detail);
+      }
+    };
+    window.addEventListener("etayo_new_message", onCustomMsg);
+
+    // 3. Storage event listener
+    const onStorageChange = (e: StorageEvent) => {
+      if (e.key === "etayo_messages_history" && e.newValue) {
+        try {
+          const list = JSON.parse(e.newValue);
+          if (Array.isArray(list) && list.length > 0) {
+            const latest = list[list.length - 1];
+            handleIncomingChatMessage(latest);
+          }
+        } catch (err) {}
+      }
+    };
+    window.addEventListener("storage", onStorageChange);
+
+    // 4. STOMP WebSocket client
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
@@ -215,41 +339,17 @@ export default function AdminMessagesPage() {
             console.log("Admin connected to STOMP WebSocket");
             setConnected(true);
 
-            const handleIncomingMessage = (message: any) => {
-              const receivedMessage = JSON.parse(message.body);
-              const sender = (receivedMessage.senderEmail || "").trim().toLowerCase();
-              const recipient = (receivedMessage.recipientEmail || "").trim().toLowerCase();
-
-              const otherParty = sender !== "staff@etayo.gov.ph" && sender !== "admin@etayo.gov.ph"
-                ? sender
-                : (recipient !== "staff@etayo.gov.ph" && recipient !== "admin@etayo.gov.ph" ? recipient : null);
-
-              if (otherParty) {
-                setContacts(prev => {
-                  const normalized = prev.map(p => p.toLowerCase());
-                  if (!normalized.includes(otherParty)) {
-                    return [otherParty, ...prev];
-                  }
-                  return prev;
-                });
-              }
-
-              setApplicantEmail(currentApplicant => {
-                const curNorm = currentApplicant?.toLowerCase();
-                if (sender === curNorm || recipient === curNorm) {
-                  setMessages(prev => {
-                    const exists = prev.find(m => m.id === receivedMessage.id || (m.content === receivedMessage.content && Math.abs(new Date(m.timestamp).getTime() - new Date(receivedMessage.timestamp).getTime()) < 3000));
-                    if (exists) return prev;
-                    return [...prev, receivedMessage];
-                  });
-                }
-                return currentApplicant;
-              });
-            };
-
-            client.subscribe(`/topic/messages/${parsedUser.email}`, handleIncomingMessage);
+            client.subscribe(`/topic/messages/${parsedUser.email}`, (message) => {
+              try {
+                handleIncomingChatMessage(JSON.parse(message.body));
+              } catch (err) {}
+            });
             if (parsedUser.email !== "staff@etayo.gov.ph") {
-              client.subscribe(`/topic/messages/staff@etayo.gov.ph`, handleIncomingMessage);
+              client.subscribe(`/topic/messages/staff@etayo.gov.ph`, (message) => {
+                try {
+                  handleIncomingChatMessage(JSON.parse(message.body));
+                } catch (err) {}
+              });
             }
           },
           onStompError: frame => {
@@ -268,13 +368,16 @@ export default function AdminMessagesPage() {
     }
 
     return () => {
+      if (bc) bc.close();
+      window.removeEventListener("etayo_new_message", onCustomMsg);
+      window.removeEventListener("storage", onStorageChange);
       if (stompClient.current) {
         stompClient.current.deactivate();
       }
     };
   }, []);
 
-  // Fetch chat history whenever selected applicant changes
+  // Fetch chat history whenever selected applicant changes, with polling
   useEffect(() => {
     if (applicantEmail) {
       const cleanEmail = applicantEmail.toLowerCase().trim();
@@ -301,18 +404,31 @@ export default function AdminMessagesPage() {
         setActiveThreadId("all");
       };
 
-      const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
-      fetch(`${rawApi}/api/messages/history?user1=${encodeURIComponent(staffInbox)}&user2=${encodeURIComponent(cleanEmail)}`)
-        .then(res => res.json())
-        .then(data => {
-          mergeWithLocal(Array.isArray(data) ? data : []);
-        })
-        .catch(err => {
-          console.error("Failed to load history", err);
+      const fetchHistory = async () => {
+        try {
+          let res = await fetch(`/api/messages/history?user1=${encodeURIComponent(staffInbox)}&user2=${encodeURIComponent(cleanEmail)}`).catch(() => null);
+          if (!res || !res.ok) {
+            const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+            res = await fetch(`${rawApi}/api/messages/history?user1=${encodeURIComponent(staffInbox)}&user2=${encodeURIComponent(cleanEmail)}`).catch(() => null);
+          }
+          if (res && res.ok) {
+            const data = await res.json();
+            mergeWithLocal(Array.isArray(data) ? data : []);
+          } else {
+            mergeWithLocal([]);
+          }
+        } catch (err) {
           mergeWithLocal([]);
-        });
+        }
+      };
+
+      fetchHistory();
+
+      // Poll every 3 seconds to guarantee admin receives applicant messages even without WebSocket
+      const interval = setInterval(fetchHistory, 3000);
+      return () => clearInterval(interval);
     }
-  }, [applicantEmail]);
+  }, [applicantEmail, applications]);
 
   // Synchronize official notices and payment messages for any approved applications
   useEffect(() => {
@@ -380,10 +496,11 @@ export default function AdminMessagesPage() {
   };
 
   // Send Message
-  const sendMessage = (e?: React.FormEvent, cannedText?: string) => {
+  const sendMessage = async (e?: React.FormEvent, cannedText?: string) => {
     if (e) e.preventDefault();
     let textToSend = (cannedText || inputMessage).trim();
     if (!textToSend && !adminAttachedFile) return;
+    if (!applicantEmail) return;
 
     // If a specific thread (permit ID) is selected, tag the message content so applicant knows which permit it refers to
     const selectedApp = applications.find(a => a.id === activeThreadId);
@@ -399,46 +516,68 @@ export default function AdminMessagesPage() {
         : `[Attachment: ${adminAttachedFile.name}|${adminAttachedFile.url}]`;
     }
 
-    if (stompClient.current && connected && applicantEmail) {
-      const chatMessage = {
-        senderEmail: "staff@etayo.gov.ph",
-        actualSender: currentUserEmail,
-        recipientEmail: applicantEmail,
-        content: taggedContent,
-        applicationId: activeThreadId !== "all" && activeThreadId !== "general" ? activeThreadId : null
-      };
+    const newMsg = {
+      id: `admin-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      senderEmail: "staff@etayo.gov.ph",
+      actualSender: currentUserEmail || "admin@etayo.gov.ph",
+      recipientEmail: applicantEmail,
+      content: taggedContent,
+      applicationId: activeThreadId !== "all" && activeThreadId !== "general" ? activeThreadId : null,
+      timestamp: new Date().toISOString()
+    };
 
-      stompClient.current.publish({
-        destination: "/app/chat.sendMessage",
-        body: JSON.stringify(chatMessage)
-      });
+    // 1. Optimistic append to UI
+    setMessages(prev => [...prev, newMsg]);
 
-      // Optimistic append
-      const newMsg = {
-        id: `admin-${Date.now()}`,
-        senderEmail: "staff@etayo.gov.ph",
-        actualSender: currentUserEmail,
-        recipientEmail: applicantEmail,
-        content: taggedContent,
-        applicationId: activeThreadId !== "all" && activeThreadId !== "general" ? activeThreadId : null,
-        timestamp: new Date().toISOString()
-      };
+    // 2. Cache locally to etayo_messages_history
+    try {
+      const raw = localStorage.getItem("etayo_messages_history");
+      const list = raw ? JSON.parse(raw) : [];
+      list.push(newMsg);
+      localStorage.setItem("etayo_messages_history", JSON.stringify(list));
+    } catch (err) {}
 
-      setMessages(prev => [...prev, newMsg]);
-
-      // Cache locally
+    // 3. Broadcast to all open tabs/windows
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("etayo_new_message", { detail: newMsg }));
       try {
-        const raw = localStorage.getItem("etayo_messages_history");
-        const list = raw ? JSON.parse(raw) : [];
-        list.push(newMsg);
-        localStorage.setItem("etayo_messages_history", JSON.stringify(list));
+        if (typeof BroadcastChannel !== "undefined") {
+          const bc = new BroadcastChannel("etayo_chat_channel");
+          bc.postMessage(newMsg);
+          bc.close();
+        }
       } catch (err) {}
+    }
 
-      setInputMessage("");
-      setAdminAttachedFile(null);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
+    // 4. Send via STOMP WebSocket if connected
+    if (stompClient.current && connected) {
+      try {
+        stompClient.current.publish({
+          destination: "/app/chat.sendMessage",
+          body: JSON.stringify({
+            senderEmail: "staff@etayo.gov.ph",
+            actualSender: currentUserEmail,
+            recipientEmail: applicantEmail,
+            content: taggedContent,
+            applicationId: activeThreadId !== "all" && activeThreadId !== "general" ? activeThreadId : null
+          })
+        });
+      } catch (err) {
+        console.warn("STOMP publish failed, falling back to HTTP", err);
       }
+    }
+
+    // 5. Always POST to /api/messages/send
+    fetch("/api/messages/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newMsg)
+    }).catch(() => {});
+
+    setInputMessage("");
+    setAdminAttachedFile(null);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
     }
   };
 
@@ -1778,13 +1917,12 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                         e.currentTarget.style.borderColor = "#e2e8f0";
                         e.currentTarget.style.boxShadow = "none";
                       }}
-                      disabled={!connected}
                     />
                   </div>
 
                   <button
                     type="submit"
-                    disabled={!connected || (!inputMessage.trim() && !adminAttachedFile)}
+                    disabled={!inputMessage.trim() && !adminAttachedFile}
                     style={{
                       background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
                       color: "#ffffff",
@@ -1797,8 +1935,8 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                       gap: "8px",
                       fontWeight: "800",
                       fontSize: "0.92rem",
-                      cursor: (!connected || (!inputMessage.trim() && !adminAttachedFile)) ? "not-allowed" : "pointer",
-                      opacity: (!connected || (!inputMessage.trim() && !adminAttachedFile)) ? 0.45 : 1,
+                      cursor: (!inputMessage.trim() && !adminAttachedFile) ? "not-allowed" : "pointer",
+                      opacity: (!inputMessage.trim() && !adminAttachedFile) ? 0.45 : 1,
                       boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)",
                       flexShrink: 0,
                       marginBottom: "2px",

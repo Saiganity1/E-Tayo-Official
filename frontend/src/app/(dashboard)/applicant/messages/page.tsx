@@ -238,6 +238,22 @@ export default function ApplicantMessagesPage() {
             mergeWithLocal([]);
           });
 
+        const fetchHistory = async () => {
+          try {
+            let res = await fetch(`/api/messages/history?user1=${encodeURIComponent(email)}&user2=${encodeURIComponent(MANG_TOMAS.email)}`).catch(() => null);
+            if (!res || !res.ok) {
+              const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+              res = await fetch(`${rawApi}/api/messages/history?user1=${encodeURIComponent(email)}&user2=${encodeURIComponent(MANG_TOMAS.email)}`).catch(() => null);
+            }
+            if (res && res.ok) {
+              const data = await res.json();
+              mergeWithLocal(Array.isArray(data) ? data : []);
+            }
+          } catch (e) {}
+        };
+
+        const pollTimer = setInterval(fetchHistory, 3000);
+
         const handleCustomMsg = (e: any) => {
           if (e.detail) {
             setMessages((prev: any[]) => {
@@ -247,6 +263,21 @@ export default function ApplicantMessagesPage() {
           }
         };
         window.addEventListener("etayo_new_message", handleCustomMsg);
+
+        let bc: BroadcastChannel | null = null;
+        try {
+          if (typeof BroadcastChannel !== "undefined") {
+            bc = new BroadcastChannel("etayo_chat_channel");
+            bc.onmessage = (event) => {
+              if (event.data) {
+                setMessages(prev => {
+                  if (prev.some(m => m.id === event.data.id)) return prev;
+                  return [...prev, event.data];
+                });
+              }
+            };
+          }
+        } catch (e) {}
 
         // Setup WebSocket with secure wss:// fallback to deployed backend
         let wsUrl = process.env.NEXT_PUBLIC_WS_URL;
@@ -704,6 +735,13 @@ export default function ApplicantMessagesPage() {
       }
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("etayo_new_message", { detail: localMsg }));
+        try {
+          if (typeof BroadcastChannel !== "undefined") {
+            const bc = new BroadcastChannel("etayo_chat_channel");
+            bc.postMessage(localMsg);
+            bc.close();
+          }
+        } catch (e) {}
       }
     } catch (e) {}
 
@@ -854,6 +892,13 @@ export default function ApplicantMessagesPage() {
   const handleReceiptPhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const isPng = file.type === "image/png" || file.name.toLowerCase().endsWith(".png");
+    const isJpeg = file.type === "image/jpeg" || file.type === "image/jpg" || /\.(jpe?g)$/i.test(file.name);
+    if (!isPng && !isJpeg) {
+      alert("Bawal ang file na ito! Tanging PNG o JPEG (.png, .jpeg, .jpg) lamang ang tinatanggap na format para sa resibo.");
+      e.target.value = "";
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
@@ -1872,6 +1917,13 @@ export default function ApplicantMessagesPage() {
                 onChange={handleFileSelect}
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
               />
+              <input
+                type="file"
+                ref={receiptFileInputRef}
+                style={{ display: "none" }}
+                onChange={handleReceiptPhotoSelected}
+                accept=".png,.jpeg,.jpg,image/png,image/jpeg"
+              />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -1939,13 +1991,13 @@ export default function ApplicantMessagesPage() {
                     e.currentTarget.style.borderColor = "#e2e8f0";
                     e.currentTarget.style.boxShadow = "none";
                   }}
-                  disabled={!connected}
+                  
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={!connected || (!inputMessage.trim() && !attachedFile)}
+                disabled={!inputMessage.trim() && !attachedFile}
                 style={{
                   background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
                   color: "#ffffff",
@@ -1958,8 +2010,8 @@ export default function ApplicantMessagesPage() {
                   gap: "8px",
                   fontWeight: "800",
                   fontSize: "0.92rem",
-                  cursor: (!connected || (!inputMessage.trim() && !attachedFile)) ? "not-allowed" : "pointer",
-                  opacity: (!connected || (!inputMessage.trim() && !attachedFile)) ? 0.45 : 1,
+                  cursor: (!inputMessage.trim() && !attachedFile) ? "not-allowed" : "pointer",
+                  opacity: (!inputMessage.trim() && !attachedFile) ? 0.45 : 1,
                   boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)",
                   flexShrink: 0,
                   marginBottom: "2px",

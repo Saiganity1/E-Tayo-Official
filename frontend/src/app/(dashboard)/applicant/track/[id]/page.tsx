@@ -87,6 +87,7 @@ export default function ApplicationTrackDetail() {
   const [paymentMethodInput, setPaymentMethodInput] = useState("Municipal Treasury Cashier (On-site)");
   const [paymentNotesInput, setPaymentNotesInput] = useState("");
   const [paymentReceiptFile, setPaymentReceiptFile] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "info" } | null>(null);
   const [actionLoadingDocId, setActionLoadingDocId] = useState<string | null>(null);
@@ -2600,14 +2601,22 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       <span>Take Photo or Upload Official Receipt / Screenshot</span>
                     </div>
                     <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
-                      JPG, PNG receipt picture from Municipal Treasury, GCash, or Landbank
+                      PNG o JPEG (JPG) lamang ang tinatanggap na format para sa resibo
                     </span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept=".png,.jpeg,.jpg,image/png,image/jpeg"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
+                        const isPng = file.type === "image/png" || file.name.toLowerCase().endsWith(".png");
+                        const isJpeg = file.type === "image/jpeg" || file.type === "image/jpg" || /\.(jpe?g)$/i.test(file.name);
+                        if (!isPng && !isJpeg) {
+                          setReceiptError("Bawal ang file na ito! Tanging PNG o JPEG (.png, .jpeg, .jpg) lamang ang tinatanggap na format para sa resibo.");
+                          e.target.value = "";
+                          return;
+                        }
+                        setReceiptError(null);
                         const reader = new FileReader();
                         reader.onload = () => {
                           setPaymentReceiptFile({ name: file.name, dataUrl: reader.result as string });
@@ -2618,6 +2627,24 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                       style={{ display: "none" }}
                     />
                   </label>
+                )}
+                {receiptError && (
+                  <div style={{
+                    marginTop: "8px",
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    background: "#fef2f2",
+                    border: "1.5px solid #f87171",
+                    color: "#991b1b",
+                    fontSize: "0.82rem",
+                    fontWeight: "700",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px"
+                  }}>
+                    <AlertCircle size={16} color="#dc2626" />
+                    <span>{receiptError}</span>
+                  </div>
                 )}
               </div>
 
