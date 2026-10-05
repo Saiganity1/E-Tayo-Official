@@ -143,16 +143,18 @@ export default function Home() {
           <div className="hero-bg-overlay"></div>
           <div className="hero-bg-glow"></div>
         </div>
-        <div className="container hero-container animate-fade-in-up">
-          <div className="hero-badge">
+        <div className="container hero-container">
+          <div className="hero-badge animate-entry-badge">
             <span className="badge-pulse"></span>
             OFFICE OF THE BUILDING OFFICIAL
           </div>
-          <h2 className="hero-title">eTAYO TOMASINO</h2>
-          <p className="hero-subtitle">
+          <h1 className="hero-title animate-entry-title">
+            <span className="philippine-flag-waving-text">eTAYO TOMASINO</span>
+          </h1>
+          <p className="hero-subtitle animate-entry-subtitle">
             A Geospatially Enabled Permit Management and Building Monitoring System for the Local Government Unit of Sto. Tomas, Pampanga.
           </p>
-          <div className="hero-actions">
+          <div className="hero-actions animate-entry-actions">
             <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary btn-large">Start New Application</Link>
             <Link href="/applicant/track" className="btn-secondary btn-large">Application Status</Link>
           </div>
@@ -516,14 +518,156 @@ export default function Home() {
           50% { opacity: 0.4; transform: scale(0.85); }
         }
 
+        /* Hero Entry Animations */
+        .animate-entry-badge {
+          animation: heroBadgeEntry 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+        }
+
+        .animate-entry-title {
+          animation: heroTitleEntry 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+        }
+
+        .animate-entry-subtitle {
+          animation: heroSubtitleEntry 1s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+        }
+
+        .animate-entry-actions {
+          animation: heroActionsEntry 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.65s both;
+        }
+
+        @keyframes heroBadgeEntry {
+          0% {
+            opacity: 0;
+            transform: translateY(-24px) scale(0.92);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes heroTitleEntry {
+          0% {
+            opacity: 0;
+            transform: translateY(35px) scale(0.94);
+            filter: blur(8px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0px);
+          }
+        }
+
+        @keyframes heroSubtitleEntry {
+          0% {
+            opacity: 0;
+            transform: translateY(24px);
+            filter: blur(4px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0px);
+          }
+        }
+
+        @keyframes heroActionsEntry {
+          0% {
+            opacity: 0;
+            transform: translateY(20px) scale(0.96);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
         .hero-title {
           font-size: clamp(3rem, 6.5vw, 4.8rem);
           font-weight: 900;
           line-height: 1.1;
-          color: #ffffff;
           margin-bottom: 1.4rem;
           letter-spacing: -0.03em;
-          text-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+        }
+
+        /* Philippine Flag Waving in the Wind Effect (Asul, Puti, Dilaw ng Araw, at Pula) */
+        .philippine-flag-waving-text {
+          display: inline-block;
+          position: relative;
+          background: linear-gradient(
+            115deg,
+            #ffffff 0%,
+            #38bdf8 10%,
+            #0038A8 20%,
+            #1e40af 28%,
+            #ffffff 38%,
+            #FCD116 45%,
+            #fef08a 50%,
+            #FCD116 55%,
+            #ffffff 62%,
+            #ef4444 70%,
+            #CE1126 80%,
+            #991b1b 88%,
+            #ffffff 94%,
+            #0038A8 100%
+          );
+          background-size: 320% 320%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          color: transparent;
+          filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.75))
+                  drop-shadow(0 0 25px rgba(252, 209, 22, 0.35))
+                  drop-shadow(0 0 35px rgba(0, 56, 168, 0.45));
+          animation: flagWindBreeze 7s ease-in-out infinite,
+                     flagWaveFlutter 5.5s ease-in-out infinite alternate;
+          will-change: background-position, transform;
+        }
+
+        @keyframes flagWindBreeze {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
+        @keyframes flagWaveFlutter {
+          0% {
+            transform: translateY(0px) rotate(0deg) skewX(0deg);
+            filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.75))
+                    drop-shadow(0 0 25px rgba(252, 209, 22, 0.35))
+                    drop-shadow(0 0 35px rgba(0, 56, 168, 0.45));
+          }
+          25% {
+            transform: translateY(-3.5px) rotate(0.4deg) skewX(-0.6deg);
+            filter: drop-shadow(0 6px 24px rgba(0, 56, 168, 0.6))
+                    drop-shadow(0 0 28px rgba(255, 255, 255, 0.45))
+                    drop-shadow(0 0 35px rgba(252, 209, 22, 0.4));
+          }
+          50% {
+            transform: translateY(-1px) rotate(-0.35deg) skewX(0.5deg);
+            filter: drop-shadow(0 5px 22px rgba(206, 17, 38, 0.6))
+                    drop-shadow(0 0 30px rgba(252, 209, 22, 0.5))
+                    drop-shadow(0 0 40px rgba(0, 56, 168, 0.5));
+          }
+          75% {
+            transform: translateY(-4px) rotate(0.3deg) skewX(-0.4deg);
+            filter: drop-shadow(0 7px 26px rgba(0, 56, 168, 0.65))
+                    drop-shadow(0 0 26px rgba(206, 17, 38, 0.45))
+                    drop-shadow(0 0 35px rgba(255, 255, 255, 0.4));
+          }
+          100% {
+            transform: translateY(0px) rotate(0deg) skewX(0deg);
+            filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.75))
+                    drop-shadow(0 0 25px rgba(252, 209, 22, 0.35))
+                    drop-shadow(0 0 35px rgba(0, 56, 168, 0.45));
+          }
         }
 
         .hero-subtitle {
