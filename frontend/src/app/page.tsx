@@ -305,20 +305,28 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Button 2: Application Status (Drilled into foundation) */}
+            {/* Button 2: Application Status (Drilled into foundation across the whole card) */}
             <div className="drill-button-stage">
               <div className="drill-rig" aria-hidden="true">
-                <svg className="drill-svg" viewBox="0 0 34 54" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  {/* Pneumatic drill body */}
-                  <rect x="9" y="2" width="16" height="22" rx="3" fill="#ea580c" stroke="#9a3412" strokeWidth="1.5"/>
-                  <rect x="11" y="6" width="12" height="4" fill="#1e293b"/>
-                  {/* Twin rubber grip handles */}
-                  <path d="M3 9H9M25 9H31" stroke="#1e293b" strokeWidth="3" strokeLinecap="round"/>
-                  {/* Steel chuck & bit */}
-                  <rect x="13" y="24" width="8" height="7" fill="#475569" stroke="#1e293b" strokeWidth="1"/>
-                  <path d="M15 31V48M19 31V48" stroke="#94a3b8" strokeWidth="2.5"/>
-                  <path d="M14 34L20 38M14 40L20 44" stroke="#cbd5e1" strokeWidth="1.5"/>
-                  <polygon points="17,52 13,47 21,47" fill="#334155"/>
+                <svg className="drill-svg" viewBox="0 0 44 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Twin ergonomic D-handles */}
+                  <path d="M4 12H12M32 12H40" stroke="#1e293b" strokeWidth="4" strokeLinecap="round"/>
+                  <path d="M4 8V16M40 8V16" stroke="#334155" strokeWidth="3" strokeLinecap="round"/>
+                  {/* Top crossbar */}
+                  <rect x="10" y="8" width="24" height="6" rx="2" fill="#334155"/>
+                  {/* Heavy-Duty Pneumatic Drill Body */}
+                  <rect x="12" y="12" width="20" height="24" rx="4" fill="#ea580c" stroke="#9a3412" strokeWidth="1.5"/>
+                  {/* Cooling vents */}
+                  <line x1="15" y1="18" x2="29" y2="18" stroke="#1e293b" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="15" y1="23" x2="29" y2="23" stroke="#1e293b" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="15" y1="28" x2="29" y2="28" stroke="#1e293b" strokeWidth="2" strokeLinecap="round"/>
+                  {/* Heavy Steel Chuck */}
+                  <rect x="16" y="36" width="12" height="9" rx="2" fill="#475569" stroke="#1e293b" strokeWidth="1.5"/>
+                  {/* Spiral Rotary Drill Bit */}
+                  <path d="M19 45V60M25 45V60" stroke="#94a3b8" strokeWidth="3"/>
+                  <path d="M18 47L26 51M18 53L26 57" stroke="#e2e8f0" strokeWidth="2.2" strokeLinecap="round"/>
+                  {/* Tungsten Carbide Tip */}
+                  <polygon points="22,63 17,58 27,58" fill="#1e293b"/>
                 </svg>
                 {/* Drilling sparks */}
                 <div className="drill-sparks">
@@ -326,6 +334,8 @@ export default function Home() {
                   <span className="spark sp2"></span>
                   <span className="spark sp3"></span>
                   <span className="spark sp4"></span>
+                  <span className="spark sp5"></span>
+                  <span className="spark sp6"></span>
                 </div>
               </div>
               <Link href="/applicant/track" className="btn-secondary btn-large drilled-btn">
@@ -1053,9 +1063,17 @@ export default function Home() {
           align-items: center;
         }
 
+        /* Stage 4: Drilling the Whole "Application Status" Card into Foundation */
+        .drill-button-stage {
+          position: relative;
+          display: inline-flex;
+          justify-content: center;
+          align-items: center;
+        }
+
         .drill-rig {
           position: absolute;
-          top: -46px;
+          top: -50px;
           left: 50%;
           transform: translateX(-50%);
           pointer-events: none;
@@ -1063,20 +1081,20 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          animation: drillRigSequence 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-          will-change: transform, opacity;
+          animation: drillAcrossCardSequence 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+          will-change: left, transform, opacity;
         }
 
         .drill-svg {
-          width: 32px;
-          height: 50px;
-          filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
-          animation: drillHammering 0.08s ease-in-out infinite alternate;
+          width: 44px;
+          height: 64px;
+          filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
+          animation: drillHammeringRapid 0.07s ease-in-out infinite alternate;
         }
 
-        @keyframes drillHammering {
-          0% { transform: translateY(0px); }
-          100% { transform: translateY(-3.5px); }
+        @keyframes drillHammeringRapid {
+          0% { transform: translateY(0px) rotate(-1deg); }
+          100% { transform: translateY(-4px) rotate(1deg); }
         }
 
         .drill-sparks {
@@ -1084,55 +1102,77 @@ export default function Home() {
           bottom: 2px;
           left: 50%;
           transform: translateX(-50%);
-          width: 20px;
-          height: 10px;
+          width: 26px;
+          height: 12px;
           pointer-events: none;
         }
 
         .drill-sparks .spark {
           position: absolute;
-          width: 3px;
-          height: 3px;
+          width: 3.5px;
+          height: 3.5px;
           border-radius: 50%;
           background: #fde047;
           box-shadow: 0 0 6px #f59e0b, 0 0 10px #ffffff;
-          animation: sparkFly 0.15s ease-out infinite;
+          animation: sparkBurst 0.16s ease-out infinite;
         }
 
         .drill-sparks .sp1 { left: 0px; animation-delay: 0.02s; }
-        .drill-sparks .sp2 { left: 6px; animation-delay: 0.07s; }
-        .drill-sparks .sp3 { left: 12px; animation-delay: 0.11s; }
-        .drill-sparks .sp4 { left: 18px; animation-delay: 0.04s; }
+        .drill-sparks .sp2 { left: 5px; animation-delay: 0.08s; }
+        .drill-sparks .sp3 { left: 10px; animation-delay: 0.13s; }
+        .drill-sparks .sp4 { left: 15px; animation-delay: 0.05s; }
+        .drill-sparks .sp5 { left: 20px; animation-delay: 0.10s; }
+        .drill-sparks .sp6 { left: 24px; animation-delay: 0.03s; }
 
-        @keyframes sparkFly {
-          0% { transform: translate(0, 0) scale(1); opacity: 1; }
-          100% { transform: translate(calc((var(--i, 0.5) - 0.5) * 20px), -12px) scale(0.3); opacity: 0; }
+        @keyframes sparkBurst {
+          0% { transform: translate(0, 0) scale(1.2); opacity: 1; }
+          100% { transform: translate(calc((var(--i, 0.5) - 0.5) * 26px), -16px) scale(0.2); opacity: 0; }
         }
 
         .drilled-btn {
-          animation: drilledButtonSequence 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: wholeCardDrilledVibration 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
           will-change: transform, opacity;
         }
 
-        @keyframes drillRigSequence {
-          0%, 62% {
-            transform: translateX(-50%) translateY(-70px);
+        @keyframes drillAcrossCardSequence {
+          0%, 58% {
+            left: 18%;
+            transform: translateX(-50%) translateY(-90px);
             opacity: 0;
           }
-          68% {
+          64% {
+            /* Drill left side of card */
+            left: 18%;
             transform: translateX(-50%) translateY(0px);
             opacity: 1;
           }
-          82% {
+          71% {
+            /* Drill center of card */
+            left: 50%;
             transform: translateX(-50%) translateY(0px);
+            opacity: 1;
+          }
+          79% {
+            /* Drill right side of card */
+            left: 82%;
+            transform: translateX(-50%) translateY(0px);
+            opacity: 1;
+          }
+          85% {
+            /* Final anchor lock in center */
+            left: 50%;
+            transform: translateX(-50%) translateY(2px);
             opacity: 1;
           }
           92% {
-            transform: translateX(-50%) translateY(-60px);
-            opacity: 0;
+            /* Lift up into the air */
+            left: 50%;
+            transform: translateX(-50%) translateY(-80px);
+            opacity: 0.7;
           }
           100% {
-            transform: translateX(-50%) translateY(-80px);
+            left: 50%;
+            transform: translateX(-50%) translateY(-110px);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
@@ -1140,22 +1180,22 @@ export default function Home() {
           }
         }
 
-        @keyframes drilledButtonSequence {
-          0%, 62% {
+        @keyframes wholeCardDrilledVibration {
+          0%, 60% {
             opacity: 0;
             transform: translateY(20px) scale(0.96);
           }
-          68% {
+          64% {
             opacity: 1;
             transform: translateY(0px);
           }
-          70%, 74%, 78%, 82% {
-            transform: translate(0.8px, -0.8px);
+          65%, 69%, 73%, 77%, 81%, 84% {
+            transform: translate(-1.2px, 1.2px) scale(0.99);
           }
-          72%, 76%, 80% {
-            transform: translate(-0.8px, 0.8px);
+          67%, 71%, 75%, 79%, 83% {
+            transform: translate(1.2px, -1.2px) scale(1.01);
           }
-          86% {
+          88% {
             transform: translate(0, 0);
             opacity: 1;
           }
