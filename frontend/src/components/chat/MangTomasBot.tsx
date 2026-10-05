@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { MessageSquare, X, Send, Bot, Sparkles, RefreshCw, Layers, ExternalLink } from "lucide-react";
 import { formatPhilippineTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../context/PermitContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface ChatMessage {
   id: string;
@@ -18,9 +19,9 @@ interface QuickPromptCategory {
   prompts: string[];
 }
 
-const CATEGORIZED_PROMPTS: QuickPromptCategory[] = [
+const CATEGORIZED_PROMPTS_FIL: QuickPromptCategory[] = [
   {
-    category: "🔥 Popular",
+    category: "🔥 Sikat",
     prompts: [
       "Ano requirements sa pagpapatayo ng bahay?",
       "Magkano ang permit fees para sa 100 sqm?",
@@ -30,7 +31,7 @@ const CATEGORIZED_PROMPTS: QuickPromptCategory[] = [
     ]
   },
   {
-    category: "📋 Requirements",
+    category: "📋 Mga Rekisito",
     prompts: [
       "Ano requirements sa pagpapatayo ng bahay?",
       "Bakit kailangan muna ang Locational Clearance?",
@@ -40,7 +41,7 @@ const CATEGORIZED_PROMPTS: QuickPromptCategory[] = [
     ]
   },
   {
-    category: "💰 Fee Estimator",
+    category: "💰 Kwentada ng Bayad",
     prompts: [
       "Magkano ang permit fees para sa 80 sqm?",
       "Magkano ang permit fees para sa 120 sqm?",
@@ -49,7 +50,7 @@ const CATEGORIZED_PROMPTS: QuickPromptCategory[] = [
     ]
   },
   {
-    category: "📐 Setbacks & Zoning",
+    category: "📐 Setbacks at Zoning",
     prompts: [
       "Ano ang required setbacks sa residential?",
       "Pwede ba firewall sa tabi ng boundary?",
@@ -59,13 +60,65 @@ const CATEGORIZED_PROMPTS: QuickPromptCategory[] = [
     ]
   },
   {
-    category: "🔍 Tracking & Legal",
+    category: "🔍 Katayuan at OBO",
     prompts: [
       "Kumusta ang status ng application ko?",
       "Ano ang parusa kapag walang building permit?",
       "Sino-sino ang kailangang pumirma sa plano?",
       "Gaano katagal bago maaprubahan ang permit?",
       "Saan ang opisina ng OBO at kailan bukas?"
+    ]
+  }
+];
+
+const CATEGORIZED_PROMPTS_EN: QuickPromptCategory[] = [
+  {
+    category: "🔥 Popular",
+    prompts: [
+      "What are the requirements for building a house?",
+      "How much are the permit fees for 100 sqm?",
+      "Why is Locational Clearance required first?",
+      "What are the required setbacks in residential?",
+      "What is the status of my application?"
+    ]
+  },
+  {
+    category: "📋 Requirements",
+    prompts: [
+      "What are the requirements for building a house?",
+      "Why is Locational Clearance required first?",
+      "What are the requirements for a Fencing Permit?",
+      "What are the requirements for a Demolition Permit?",
+      "What if I only have a Tax Declaration and no title?"
+    ]
+  },
+  {
+    category: "💰 Fee Estimator",
+    prompts: [
+      "How much are the permit fees for 80 sqm?",
+      "How much are the permit fees for 120 sqm?",
+      "How much for a 150 sqm 2-storey house?",
+      "How much for a 200 sqm commercial building?"
+    ]
+  },
+  {
+    category: "📐 Setbacks & Zoning",
+    prompts: [
+      "What are the required setbacks in residential?",
+      "Can I build a firewall on the boundary line?",
+      "What are the zoning rules in San Matias?",
+      "What is the required setback from rivers or creeks?",
+      "What is the minimum ceiling height and window size?"
+    ]
+  },
+  {
+    category: "🔍 Tracking & Legal",
+    prompts: [
+      "What is the status of my application?",
+      "What are the penalties for building without a permit?",
+      "Who are the licensed professionals required to sign plans?",
+      "How long does the permit approval take?",
+      "Where is the OBO office located and what are the hours?"
     ]
   }
 ];
@@ -82,6 +135,7 @@ export default function MangTomasBot({
   hideFab = false,
 }: MangTomasBotProps = {}) {
   const { applications } = usePermitContext();
+  const { language } = useLanguage();
   const [internalOpen, setInternalOpen] = useState(false);
 
   const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -90,18 +144,40 @@ export default function MangTomasBot({
     if (setExternalOpen) setExternalOpen(open);
   };
 
-  const [activeCategory, setActiveCategory] = useState<string>("🔥 Popular");
+  const categorizedPrompts = language === "fil" ? CATEGORIZED_PROMPTS_FIL : CATEGORIZED_PROMPTS_EN;
+  const [activeCategory, setActiveCategory] = useState<string>(language === "fil" ? "🔥 Sikat" : "🔥 Popular");
   const [inputText, setInputText] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+
+  const getGreetingText = (lang: string) => {
+    return lang === "fil"
+      ? "Mabuhay! Ako po si **Mang Tomas**, ang inyong AI Virtual Permitting Officer para sa Sto. Tomas, Pampanga. May katanungan ba kayo tungkol sa **Requirements**, **Kwentada ng Permit Fees**, **Zoning at Setbacks**, o ang **Status** ng inyong aplikasyon? Handa po akong tumulong 100%!"
+      : "Welcome! I am **Mang Tomas**, your AI Virtual Permitting Officer for Sto. Tomas, Pampanga. May I assist you with **Requirements**, **Permit Fee Calculations**, **Zoning & Setbacks**, or your **Application Status** today? I am here to help 100%!";
+  };
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "msg-0",
       role: "bot",
-      text: "Mabuhay! Ako po si **Mang Tomas**, ang inyong AI Virtual Permitting Officer para sa Sto. Tomas, Pampanga. May katanungan ba kayo tungkol sa **Requirements**, **Kwentada ng Permit Fees**, **Zoning at Setbacks**, o ang **Status** ng inyong aplikasyon? Handa po akong tumulong 100%!",
+      text: getGreetingText("fil"),
       timestamp: new Date(),
       source: "local_ml"
     }
   ]);
+
+  // Sync greeting when language changes if no conversation yet
+  useEffect(() => {
+    setActiveCategory(language === "fil" ? "🔥 Sikat" : "🔥 Popular");
+    setMessages(prev => {
+      if (prev.length === 1 && prev[0].id === "msg-0") {
+        return [{
+          ...prev[0],
+          text: getGreetingText(language)
+        }];
+      }
+      return prev;
+    });
+  }, [language]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -240,7 +316,7 @@ export default function MangTomasBot({
     }
   };
 
-  const currentCategoryPrompts = CATEGORIZED_PROMPTS.find(c => c.category === activeCategory)?.prompts || CATEGORIZED_PROMPTS[0].prompts;
+  const currentCategoryPrompts = categorizedPrompts.find(c => c.category === activeCategory)?.prompts || categorizedPrompts[0].prompts;
 
   return (
     <>
@@ -352,7 +428,7 @@ export default function MangTomasBot({
             <div className="quick-prompts-container">
               {/* Category Filter Tabs */}
               <div className="quick-categories-bar">
-                {CATEGORIZED_PROMPTS.map((c) => (
+                {categorizedPrompts.map((c) => (
                   <button
                     key={c.category}
                     type="button"
@@ -384,13 +460,13 @@ export default function MangTomasBot({
           <form className="chat-input-area" onSubmit={handleSend}>
             <input
               type="text"
-              placeholder="Magtanong kay Mang Tomas (Tagalog, English, Taglish)..."
+              placeholder={language === "fil" ? "Magtanong kay Mang Tomas (Tagalog, English, Taglish)..." : "Ask Mang Tomas (English, Tagalog, Taglish)..."}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               className="chat-input"
               disabled={isThinking}
             />
-            <button type="submit" className="chat-send-btn" disabled={!inputText.trim() || isThinking} title="Ipadala">
+            <button type="submit" className="chat-send-btn" disabled={!inputText.trim() || isThinking} title={language === "fil" ? "Ipadala" : "Send"}>
               <Send size={18} />
             </button>
           </form>
