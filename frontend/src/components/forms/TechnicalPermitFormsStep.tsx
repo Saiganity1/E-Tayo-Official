@@ -7152,7 +7152,7 @@ export default function TechnicalPermitFormsStep({
                         <Upload size={14} /> Replace File
                         <input
                           type="file"
-                          accept=".pdf,.png,.jpg,.jpeg"
+                          accept=".pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.png,.jpg,.jpeg"
                           onChange={(e) => handleFileUpload("fireBfpPermit", e)}
                           style={{ display: "none" }}
                         />
@@ -7223,14 +7223,14 @@ export default function TechnicalPermitFormsStep({
                       <span>Attach FSEC File</span>
                       <input
                         type="file"
-                        accept=".pdf,.png,.jpg,.jpeg"
+                        accept=".pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.png,.jpg,.jpeg"
                         onChange={(e) => handleFileUpload("fireBfpPermit", e)}
                         style={{ display: "none" }}
                       />
                     </label>
 
                     <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>
-                      Supported formats: PDF, PNG, JPG, JPEG (up to 25MB)
+                      Supported formats: PDF, DOC, DOCX, PNG, JPG, JPEG (up to 25MB)
                     </div>
                   </div>
                 )}

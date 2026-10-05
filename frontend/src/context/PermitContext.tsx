@@ -1065,11 +1065,21 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (typeof clean.fileUrl === "string" && clean.fileUrl.startsWith("data:") && clean.fileUrl.length > 500) {
       clean.fileUrl = "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf";
     }
+    // Always preserve BFP clearance upload
+    if ((app as any).bfpUploadedFile) {
+      clean.bfpUploadedFile = (app as any).bfpUploadedFile;
+      clean.bfpUploadedFileName = (app as any).bfpUploadedFileName;
+    }
     if (Array.isArray(clean.requirements)) {
       clean.requirements = clean.requirements.map((r: any) => {
         if (!r) return r;
         const cleanR = { ...r };
-        if (typeof cleanR.fileUrl === "string" && cleanR.fileUrl.startsWith("data:") && cleanR.fileUrl.length > 500) {
+        const isBfpOrFsec = (cleanR.name || "").toLowerCase().includes("bfp") ||
+                            (cleanR.name || "").toLowerCase().includes("fsec") ||
+                            (cleanR.fileName || "").toLowerCase().includes("bfp") ||
+                            (cleanR.fileName || "").toLowerCase().includes("fsec");
+        // Keep BFP / user-uploaded attachment intact so evaluator can inspect the real file
+        if (!isBfpOrFsec && typeof cleanR.fileUrl === "string" && cleanR.fileUrl.startsWith("data:") && cleanR.fileUrl.length > 500) {
           cleanR.fileUrl = "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf";
         }
         return cleanR;
@@ -1080,6 +1090,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addApplication = async (rawApp: PermitApplication) => {
     const newApp = sanitizeAppForStorage(rawApp);
+    if ((rawApp as any).bfpUploadedFile && !newApp.bfpUploadedFile) {
+      (newApp as any).bfpUploadedFile = (rawApp as any).bfpUploadedFile;
+      (newApp as any).bfpUploadedFileName = (rawApp as any).bfpUploadedFileName;
+    }
     // Ensure new application strictly defaults to pending status
     if (!newApp.status) {
       newApp.status = "pending";

@@ -81,7 +81,7 @@ interface ViewerDoc {
   id: string;
   title: string;
   tabLabel: string;
-  type: "pdf" | "image";
+  type: "pdf" | "image" | "doc";
   url: string;
   fileName: string;
   isOfficialForm?: boolean;
@@ -1110,26 +1110,39 @@ export default function StaffEvaluatePage() {
         const curEvaluatedId = String(app.id || "").trim();
         const lowerEvalId = curEvaluatedId.toLowerCase();
         const upperEvalId = curEvaluatedId.toUpperCase();
-        let bfpFileUrl = bfpReq?.fileUrl || (app as any).bfpUploadedFile;
-        let bfpFileName = bfpReq?.fileName || (app as any).bfpUploadedFileName || "BFP_Fire_Safety_Clearance.pdf";
+        let bfpFileUrl = (app as any).bfpUploadedFile || bfpReq?.fileUrl;
+        let bfpFileName = (app as any).bfpUploadedFileName || bfpReq?.fileName || "BFP_Fire_Safety_Clearance.pdf";
 
-        if ((!bfpFileUrl || bfpFileUrl.includes("/templates/")) && typeof window !== "undefined") {
-          bfpFileUrl = localStorage.getItem(`etayo_bfp_${curEvaluatedId}`) ||
-                       localStorage.getItem(`etayo_bfp_${lowerEvalId}`) ||
-                       localStorage.getItem(`etayo_bfp_${upperEvalId}`) ||
-                       localStorage.getItem("etayo_bfp_file_data") ||
-                       (bfpReq?.fileName ? (localStorage.getItem(`att_${bfpReq.fileName}`) || localStorage.getItem(`etayo_att_${bfpReq.fileName}`)) : null);
+        // Check if there is a local cached copy in localStorage if not already a valid data/network url
+        if (typeof window !== "undefined") {
+          const cachedUrl = localStorage.getItem(`etayo_bfp_${curEvaluatedId}`) ||
+                            localStorage.getItem(`etayo_bfp_${lowerEvalId}`) ||
+                            localStorage.getItem(`etayo_bfp_${upperEvalId}`) ||
+                            (bfpReq?.fileName ? (localStorage.getItem(`att_${bfpReq.fileName}`) || localStorage.getItem(`etayo_att_${bfpReq.fileName}`)) : null) ||
+                            localStorage.getItem("etayo_bfp_file_data");
+          if (cachedUrl && (!bfpFileUrl || bfpFileUrl.includes("/templates/UNIFIED"))) {
+            bfpFileUrl = cachedUrl;
+          }
           const cachedName = localStorage.getItem(`etayo_bfp_name_${curEvaluatedId}`) || localStorage.getItem("etayo_bfp_file_name");
-          if (cachedName) bfpFileName = cachedName;
+          if (cachedName && (!bfpFileName || bfpFileName === "BFP_Fire_Safety_Clearance.pdf")) {
+            bfpFileName = cachedName;
+          }
         }
 
-        if (bfpFileUrl) {
-          const isImg = bfpFileUrl.includes(".png") || bfpFileUrl.includes(".jpg") || bfpFileUrl.includes(".jpeg") || bfpFileUrl.startsWith("data:image/") || /\.(png|jpe?g|webp)$/i.test(bfpFileName);
+        const isUserFile = Boolean(bfpFileUrl && !bfpFileUrl.includes("/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT"));
+
+        if (isUserFile && bfpFileUrl) {
+          const cleanName = (bfpFileName || "").toLowerCase();
+          const cleanUrl = (bfpFileUrl || "").toLowerCase();
+          const isImg = cleanUrl.includes(".png") || cleanUrl.includes(".jpg") || cleanUrl.includes(".jpeg") || cleanUrl.startsWith("data:image/") || /\.(png|jpe?g|webp)$/i.test(cleanName);
+          const isDoc = /\.(docx?|doc)$/i.test(cleanName) || cleanUrl.includes("application/msword") || cleanUrl.includes("wordprocessingml") || cleanUrl.includes("officedocument");
+          const docType = isImg ? "image" : isDoc ? "doc" : "pdf";
+
           docs.push({
             id: "bfp-clearance-tab",
             title: `Fire Safety Evaluation Clearance (BFP / FSEC) — ${bfpFileName}`,
             tabLabel: "🔥 BFP Clearance (Uploaded)",
-            type: isImg ? "image" : "pdf",
+            type: docType,
             url: bfpFileUrl,
             fileName: bfpFileName,
             isOfficialForm: false,
@@ -3105,7 +3118,7 @@ ${isDisapprove
             {/* Left: Document Info & In-System Verified Badge */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div style={{ background: "#eff6ff", padding: "8px", borderRadius: "10px", color: "#2563eb", border: "1px solid #dbeafe" }}>
-                {activeDoc?.type === "image" ? <ImageIcon size={18} /> : <FileCheck size={18} />}
+                {activeDoc?.type === "image" ? <ImageIcon size={18} /> : activeDoc?.type === "doc" ? <FileText size={18} /> : <FileCheck size={18} />}
               </div>
               <div>
                 <strong style={{ fontSize: "0.92rem", color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -3220,6 +3233,59 @@ ${isDisapprove
                     background: "#ffffff"
                   }}
                 />
+              </div>
+            ) : activeDoc?.type === "doc" ? (
+              <div style={{ padding: "3.5rem 2rem", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", width: "100%", minHeight: "680px", textAlign: "center" }}>
+                <div style={{ width: "88px", height: "88px", borderRadius: "22px", background: "#dbeafe", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.25rem", boxShadow: "0 8px 24px rgba(37, 99, 235, 0.25)" }}>
+                  <FileText size={46} />
+                </div>
+                <h3 style={{ margin: "0 0 8px 0", fontSize: "1.25rem", fontWeight: "800", color: "#ffffff" }}>
+                  {activeDoc.fileName || "Uploaded Word Document"}
+                </h3>
+                <p style={{ margin: "0 0 1.75rem 0", fontSize: "0.88rem", color: "#94a3b8", maxWidth: "480px" }}>
+                  Applicant-uploaded Microsoft Word document (.doc / .docx). You can download and evaluate this document directly.
+                </p>
+                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
+                  <a
+                    href={activeDoc.url}
+                    download={activeDoc.fileName || "document.docx"}
+                    style={{
+                      background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                      color: "white",
+                      padding: "11px 22px",
+                      borderRadius: "10px",
+                      fontSize: "0.9rem",
+                      fontWeight: "700",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)"
+                    }}
+                  >
+                    <Download size={17} /> Download Document
+                  </a>
+                  <a
+                    href={activeDoc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.12)",
+                      border: "1px solid rgba(255, 255, 255, 0.25)",
+                      color: "#ffffff",
+                      padding: "11px 20px",
+                      borderRadius: "10px",
+                      fontSize: "0.9rem",
+                      fontWeight: "700",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}
+                  >
+                    <ExternalLink size={17} /> Open in New Tab
+                  </a>
+                </div>
               </div>
             ) : (
               <div style={{ width: "100%", height: "100%", minHeight: "760px", transform: zoomLevel !== 100 ? `scale(${zoomLevel / 100})` : undefined, transformOrigin: "top center", transition: "transform 0.2s ease" }}>

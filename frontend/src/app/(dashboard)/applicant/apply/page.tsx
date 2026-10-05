@@ -649,52 +649,69 @@ export default function ApplyPage() {
     setUploadError("");
     setSubmissionErrorAlert(null);
 
-    const formData = new FormData();
-    formData.append("files", file);
-    formData.append("permitType", PERMIT_FORM_METADATA[key]?.label || "Technical Permit");
-    formData.append("projectType", selectedProjectType?.name || "General Application");
+    const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
+    const sizeStr = file.size > 1024 * 1024 ? `${sizeInMb} MB` : `${Math.round(file.size / 1024)} KB`;
 
-    try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      let res = await fetch("/api/upload", {
-        method: "POST",
-        headers: token ? { "Authorization": `Bearer ${token}` } : {},
-        body: formData,
-      }).catch(() => null);
+    // 1. Immediately read file as authentic base64 Data URL to guarantee it renders exactly as uploaded
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = (reader.result as string) || "";
+      let finalFileUrl = base64Data;
 
-      if (!res || !res.ok) {
-        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
-        res = await fetch(`${rawApi}/api/upload`, {
+      // 2. Also send to /api/upload to sync with server
+      try {
+        const formData = new FormData();
+        formData.append("files", file);
+        formData.append("permitType", PERMIT_FORM_METADATA[key]?.label || "Technical Permit");
+        formData.append("projectType", selectedProjectType?.name || "General Application");
+
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const res = await fetch("/api/upload", {
           method: "POST",
           headers: token ? { "Authorization": `Bearer ${token}` } : {},
           body: formData,
         }).catch(() => null);
+
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data?.urls?.[0]) {
+            finalFileUrl = data.urls[0];
+          }
+        }
+      } catch (e) {
+        // Fallback to client-side base64Data
       }
-
-      if (!res || !res.ok) {
-        throw new Error("Failed to upload document file");
-      }
-
-      const data = await res.json();
-      const fileUrl = data?.urls?.[0] || "";
-
-      const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
-      const sizeStr = file.size > 1024 * 1024 ? `${sizeInMb} MB` : `${Math.round(file.size / 1024)} KB`;
 
       setUploadedPermitDocs(prev => ({
         ...prev,
         [key]: {
           fileName: file.name,
           fileSize: sizeStr,
-          fileUrl: fileUrl,
-          uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          fileUrl: finalFileUrl,
+          uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isDigitallyGenerated: false
         }
       }));
-    } catch (err: any) {
-      setUploadError(err.message || "An error occurred during upload");
-    } finally {
+
+      try {
+        localStorage.setItem(`att_${file.name}`, finalFileUrl);
+        localStorage.setItem(`etayo_att_${file.name}`, finalFileUrl);
+        if (key === "fireBfpPermit") {
+          localStorage.setItem("etayo_bfp_file_data", finalFileUrl);
+          localStorage.setItem("etayo_bfp_file_name", file.name);
+          localStorage.setItem("etayo_bfp_file_size", sizeStr);
+        }
+      } catch (e) {}
+
       setActiveUploadingKey(null);
-    }
+    };
+
+    reader.onerror = () => {
+      setUploadError("Could not read uploaded document");
+      setActiveUploadingKey(null);
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleRemovePermitDoc = (key: string) => {
@@ -3704,7 +3721,7 @@ export default function ApplyPage() {
                                   <span>{isUploading ? "Uploading..." : "Attach BFP File"}</span>
                                   <input
                                     type="file"
-                                    accept=".pdf,.png,.jpg,.jpeg"
+                                    accept=".pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.png,.jpg,.jpeg"
                                     disabled={isUploading}
                                     onChange={(e) => handlePermitDocUpload(key, e)}
                                     style={{ display: "none" }}
@@ -3970,7 +3987,7 @@ export default function ApplyPage() {
                                     <span>Attach (Optional)</span>
                                     <input
                                       type="file"
-                                      accept=".pdf,.png,.jpg,.jpeg"
+                                      accept=".pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.png,.jpg,.jpeg"
                                       disabled={isUploading}
                                       onChange={(e) => handlePermitDocUpload(key, e)}
                                       style={{ display: "none" }}
