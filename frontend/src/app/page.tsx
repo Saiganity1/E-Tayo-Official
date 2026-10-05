@@ -8,6 +8,12 @@ import { Menu, X, ClipboardList, LogIn, ArrowRight } from "lucide-react";
 import Footer from "../components/layout/Footer";
 import MangTomasBot from "../components/chat/MangTomasBot";
 
+const SUBTITLE_WORDS = [
+  "A", "Geospatially", "Enabled", "Permit", "Management", "and",
+  "Building", "Monitoring", "System", "for", "the",
+  "Local", "Government", "Unit", "of", "Sto.", "Tomas,", "Pampanga."
+];
+
 export default function Home() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -248,7 +254,17 @@ export default function Home() {
             </div>
 
             <p className="hero-subtitle truck-delivered-subtitle">
-              A Geospatially Enabled Permit Management and Building Monitoring System for the Local Government Unit of Sto. Tomas, Pampanga.
+              {SUBTITLE_WORDS.map((word, index) => (
+                <span key={index}>
+                  <span
+                    className="truck-word-drop"
+                    style={{ animationDelay: `${(1.68 + index * 0.075).toFixed(3)}s` }}
+                  >
+                    {word}
+                  </span>
+                  {" "}
+                </span>
+              ))}
             </p>
           </div>
 
@@ -788,40 +804,39 @@ export default function Home() {
           }
         }
 
-        /* Stage 2: Subtitle Delivered by Construction Flatbed Truck */
+        /* Stage 2: Subtitle Delivered by Construction Flatbed Truck (Words falling one by one) */
         .truck-delivery-stage {
           position: relative;
           width: 100%;
           max-width: 800px;
           display: flex;
-          justify-content: center;
+          flex-direction: column;
           align-items: center;
           margin-bottom: 2.75rem;
         }
 
         .delivery-truck-carrier {
           position: absolute;
-          bottom: -10px;
-          left: 0;
-          transform: translateX(-160%);
+          top: -48px;
+          left: -40px;
           pointer-events: none;
           z-index: 10;
-          animation: truckDeliverSequence 3.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: truckDeliverSequence 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
           will-change: transform, opacity;
         }
 
         .delivery-truck-svg {
-          width: 150px;
-          height: 62px;
-          filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
+          width: 130px;
+          height: 52px;
+          filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
         }
 
         .truck-dust-puff {
           position: absolute;
           bottom: 2px;
-          left: -15px;
-          width: 25px;
-          height: 12px;
+          left: -12px;
+          width: 20px;
+          height: 10px;
           border-radius: 50%;
           background: radial-gradient(ellipse at center, rgba(203, 213, 225, 0.45) 0%, transparent 70%);
           animation: dustPuffing 0.25s ease-out infinite;
@@ -834,56 +849,76 @@ export default function Home() {
 
         .truck-delivered-subtitle {
           margin-bottom: 0 !important;
-          animation: subtitleTruckUnload 3.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          text-align: center;
+          position: relative;
+          z-index: 2;
+        }
+
+        .truck-word-drop {
+          display: inline-block;
+          opacity: 0;
+          transform: translateY(-24px) scale(0.85);
+          animation: wordDropFromTruck 0.45s cubic-bezier(0.34, 1.45, 0.7, 1) both;
           will-change: transform, opacity;
         }
 
-        @keyframes truckDeliverSequence {
-          0%, 50% {
-            transform: translateX(-160%);
+        @keyframes wordDropFromTruck {
+          0% {
             opacity: 0;
+            transform: translateY(-24px) scale(0.85);
           }
-          58% {
-            transform: translateX(-40%);
+          60% {
             opacity: 1;
+            transform: translateY(3px) scale(1.04);
           }
-          74% {
-            transform: translateX(10%);
-            opacity: 1;
-          }
-          85% {
-            transform: translateX(60%);
-            opacity: 1;
-          }
-          95% {
-            transform: translateX(180%);
-            opacity: 0;
-          }
-          100% {
-            transform: translateX(200%);
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            display: none;
-          }
-        }
-
-        @keyframes subtitleTruckUnload {
-          0%, 55% {
-            opacity: 0;
-            transform: translateX(-50px) translateY(12px);
-          }
-          74% {
-            opacity: 0.9;
-            transform: translateX(0) translateY(0);
-          }
-          88% {
-            opacity: 1;
-            transform: none;
+          80% {
+            transform: translateY(-1.5px) scale(0.99);
           }
           100% {
             opacity: 1;
             transform: none !important;
+          }
+        }
+
+        @keyframes truckDeliverSequence {
+          0%, 42% {
+            transform: translateX(-160px);
+            opacity: 0;
+          }
+          46% {
+            transform: translateX(-40px);
+            opacity: 1;
+          }
+          52% {
+            transform: translateX(8%);
+            opacity: 1;
+          }
+          62% {
+            transform: translateX(32%);
+            opacity: 1;
+          }
+          72% {
+            transform: translateX(58%);
+            opacity: 1;
+          }
+          82% {
+            transform: translateX(84%);
+            opacity: 1;
+          }
+          88% {
+            transform: translateX(105%);
+            opacity: 1;
+          }
+          95% {
+            transform: translateX(160%);
+            opacity: 0.8;
+          }
+          100% {
+            transform: translateX(210%);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            display: none;
           }
         }
 
