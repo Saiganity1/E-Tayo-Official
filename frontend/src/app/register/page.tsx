@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Lock, Mail, User, ShieldCheck, ArrowLeft, ArrowRight } from "lucide-react";
+import { Lock, Mail, User, ShieldCheck, ArrowLeft, ArrowRight, Eye, EyeOff, RotateCw, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function RegisterPage() {
   const [step, setStep] = useState<"details" | "verification">("details");
@@ -12,27 +12,77 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [infoMsg, setInfoMsg] = useState("");
+  const [debugOtp, setDebugOtp] = useState<string | null>(null);
+
+  // 2-Minute (120s) Resend OTP Timer
+  const [timer, setTimer] = useState<number>(120);
+  const [canResend, setCanResend] = useState<boolean>(false);
+
   const router = useRouter();
+
+  // Manage 2-minute countdown timer when on verification step
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (step === "verification" && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else if (timer === 0) {
+      setCanResend(true);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [step, timer]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+    setInfoMsg("");
+
+    if (!name.trim()) {
+      setErrorMsg("Please enter your Full Name");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setErrorMsg("Passwords do not match");
       return;
     }
 
+    if (password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      const sanitizedEmail = email.trim().toLowerCase();
       let response = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: sanitizedEmail }),
       }).catch(() => null);
 
       if (!response || !response.ok) {
@@ -41,7 +91,7 @@ export default function RegisterPage() {
         response = await fetch(backendUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email: sanitizedEmail }),
         }).catch(() => null);
       }
 
@@ -56,7 +106,21 @@ export default function RegisterPage() {
         throw new Error(errorMessage);
       }
 
+      // Check if debug OTP is provided for quick validation
+      if (response) {
+        try {
+          const data = await response.clone().json();
+          if (data.debugOtp) {
+            setDebugOtp(data.debugOtp);
+            console.info(`[eTAYO OTP Generator] 6-digit Code for ${sanitizedEmail}:`, data.debugOtp);
+          }
+        } catch (e) {}
+      }
+
       setStep("verification");
+      setTimer(120); // Reset timer to 2 minutes (120 seconds)
+      setCanResend(false);
+      setInfoMsg(`A 6-digit verification code has been generated and sent to ${sanitizedEmail}.`);
     } catch (err: any) {
       setErrorMsg(err.message || "Network Error: Failed to fetch");
     } finally {
@@ -64,16 +128,90 @@ export default function RegisterPage() {
     }
   };
 
+  const handleResendOtp = async () => {
+    if (!canResend || isResending) return;
+    setErrorMsg("");
+    setInfoMsg("");
+    setIsResending(true);
+
+    try {
+      const sanitizedEmail = email.trim().toLowerCase();
+      let response = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: sanitizedEmail }),
+      }).catch(() => null);
+
+      if (!response || !response.ok) {
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/auth/send-otp` : `${rawApi}/api/auth/send-otp`;
+        response = await fetch(backendUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: sanitizedEmail }),
+        }).catch(() => null);
+      }
+
+      if (response && !response.ok) {
+        let errorMessage = "Failed to resend code";
+        try {
+          const errData = await response.json();
+          errorMessage = errData.error || errorMessage;
+        } catch (e) {
+          errorMessage = await response.text() || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (response) {
+        try {
+          const data = await response.clone().json();
+          if (data.debugOtp) {
+            setDebugOtp(data.debugOtp);
+            console.info(`[eTAYO OTP Generator] New 6-digit Code for ${sanitizedEmail}:`, data.debugOtp);
+          }
+        } catch (e) {}
+      }
+
+      // Reset countdown back to 2 minutes
+      setTimer(120);
+      setCanResend(false);
+      setOtp(""); // Clear previous input
+      setInfoMsg("A new 6-digit verification code has been sent to your email.");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to resend OTP");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+    setInfoMsg("");
+
+    if (!otp.trim() || otp.trim().length !== 6) {
+      setErrorMsg("Please enter the complete 6-digit verification code");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      const sanitizedName = name.trim();
+      const sanitizedEmail = email.trim().toLowerCase();
+      const sanitizedPassword = password.trim();
+      const sanitizedOtp = otp.trim();
+
       let response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, otp }),
+        body: JSON.stringify({ 
+          name: sanitizedName, 
+          email: sanitizedEmail, 
+          password: sanitizedPassword, 
+          otp: sanitizedOtp 
+        }),
       }).catch(() => null);
 
       if (!response || !response.ok) {
@@ -82,7 +220,12 @@ export default function RegisterPage() {
         response = await fetch(backendUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, otp }),
+          body: JSON.stringify({ 
+            name: sanitizedName, 
+            email: sanitizedEmail, 
+            password: sanitizedPassword, 
+            otp: sanitizedOtp 
+          }),
         }).catch(() => null);
       }
 
@@ -97,10 +240,29 @@ export default function RegisterPage() {
         throw new Error(errorMessage);
       }
 
-      alert("Registration successful! You can now log in.");
-      router.push("/login");
+      // Persistently register user in browser localStorage
+      if (typeof window !== "undefined") {
+        try {
+          const registeredUsersRaw = localStorage.getItem("etayo_registered_users");
+          const existingList = registeredUsersRaw ? JSON.parse(registeredUsersRaw) : [];
+          const updatedList = [
+            ...existingList.filter((u: any) => u.email?.toLowerCase() !== sanitizedEmail),
+            {
+              name: sanitizedName,
+              email: sanitizedEmail,
+              password: sanitizedPassword,
+              role: "ROLE_APPLICANT",
+              registeredAt: new Date().toISOString()
+            }
+          ];
+          localStorage.setItem("etayo_registered_users", JSON.stringify(updatedList));
+        } catch (e) {}
+      }
+
+      // Redirect to login with registered success indicator
+      router.push("/login?registered=true");
     } catch (err: any) {
-      setErrorMsg(err.message || "Network Error: Failed to fetch");
+      setErrorMsg(err.message || "Network Error: Failed to complete registration");
     } finally {
       setIsLoading(false);
     }
@@ -150,14 +312,28 @@ export default function RegisterPage() {
             ) : (
               <>
                 <h1>Verify Email</h1>
-                <p>We sent a 6-digit code to <b>{email}</b>. Please enter it below.</p>
+                <p>We sent a 6-digit verification code to <b>{email}</b>. Please enter it below.</p>
               </>
             )}
           </div>
 
+          {infoMsg && (
+            <div style={{ backgroundColor: "#eff6ff", color: "#1e40af", padding: "12px", borderRadius: "10px", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "8px", border: "1px solid #bfdbfe", fontSize: "14px", fontWeight: "500" }}>
+              <CheckCircle2 size={18} />
+              <span>{infoMsg}</span>
+            </div>
+          )}
+
           {errorMsg && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mb-4">
-              {errorMsg}
+            <div style={{ backgroundColor: "#fef2f2", color: "#991b1b", padding: "12px", borderRadius: "10px", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "8px", border: "1px solid #f87171", fontSize: "14px", fontWeight: "600" }}>
+              <AlertCircle size={18} />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {debugOtp && step === "verification" && (
+            <div style={{ backgroundColor: "#f8fafc", color: "#0038A8", padding: "10px 14px", borderRadius: "8px", marginBottom: "1rem", border: "1px dashed #93c5fd", fontSize: "13px", textAlign: "center", fontWeight: "600" }}>
+              Generated OTP: <span style={{ letterSpacing: "0.2em", fontSize: "15px", color: "#021a4f" }}>{debugOtp}</span>
             </div>
           )}
 
@@ -196,12 +372,22 @@ export default function RegisterPage() {
                 <div className="input-with-icon">
                   <Lock size={18} className="input-icon" />
                   <input 
-                    type="password" 
+                    type={showPassword ? "text" : "password"} 
                     required
                     placeholder="••••••••" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="has-toggle"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="password-toggle-btn"
+                    title={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 
@@ -210,12 +396,22 @@ export default function RegisterPage() {
                 <div className="input-with-icon">
                   <Lock size={18} className="input-icon" />
                   <input 
-                    type="password" 
+                    type={showConfirmPassword ? "text" : "password"} 
                     required
                     placeholder="••••••••" 
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="has-toggle"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="password-toggle-btn"
+                    title={showConfirmPassword ? "Hide password" : "Show password"}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 
@@ -240,22 +436,38 @@ export default function RegisterPage() {
                     placeholder="123456" 
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    style={{ letterSpacing: '0.5em', fontSize: '1.2rem', fontWeight: 'bold', textAlign: 'center' }}
+                    style={{ letterSpacing: '0.5em', fontSize: '1.25rem', fontWeight: 'bold', textAlign: 'center' }}
                   />
                 </div>
               </div>
 
               <button type="submit" className="login-btn" disabled={isLoading}>
-                {isLoading ? "Verifying..." : "Verify & Complete Registration"}
+                {isLoading ? "Verifying Code..." : "Verify & Complete Registration"}
+              </button>
+
+              {/* 2-Minute Timer Resend Button */}
+              <button
+                type="button"
+                className="resend-otp-btn"
+                disabled={!canResend || isResending}
+                onClick={handleResendOtp}
+              >
+                <RotateCw size={15} className={isResending ? "animate-spin" : ""} />
+                {canResend ? "Send another OTP" : `Send another OTP in ${formatTime(timer)}`}
               </button>
               
-              <div className="register-prompt">
+              <div className="register-prompt" style={{ marginTop: "1.25rem" }}>
                 <button 
                   type="button" 
-                  onClick={() => setStep("details")} 
-                  style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', fontWeight: 500, fontSize: '0.9rem' }}
+                  onClick={() => {
+                    setStep("details");
+                    setOtp("");
+                    setErrorMsg("");
+                    setInfoMsg("");
+                  }} 
+                  style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
                 >
-                  Change email address
+                  ← Change email address
                 </button>
               </div>
             </form>

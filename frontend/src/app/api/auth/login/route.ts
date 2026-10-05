@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAssignedUserByEmail } from "@/utils/staffStore";
+import { findRegisteredUser } from "@/utils/authStore";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -44,22 +45,19 @@ export async function POST(req: Request) {
 
       if (res.ok) {
         const data = await res.json();
+        // Ensure name is clean and not an email
+        if (data && (!data.name || data.name.includes("@"))) {
+          const registered = findRegisteredUser(sanitizedEmail);
+          if (registered) data.name = registered.name;
+        }
         return NextResponse.json(data);
       }
 
-      // If backend returned 401/400:
-      // If it's a recognized system account and Render backend DB restarted without seeds, proceed to resilient fallback
+      // If backend explicitly rejected with 401/400
       if (res.status === 401 || res.status === 400) {
-        const assignedStaff = getAssignedUserByEmail(sanitizedEmail);
-        const isRecognized = 
-          sanitizedEmail.includes("admin") || 
-          Boolean(assignedStaff && assignedStaff.role === "ROLE_STAFF") ||
-          sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
-          sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
-          sanitizedEmail.includes("paul") || 
-          sanitizedEmail.includes("payumo");
-
-        if (!isRecognized) {
+        // Check if the user is known in local registered store (e.g. backend DB restarted or local registration)
+        const localUser = findRegisteredUser(sanitizedEmail);
+        if (!localUser) {
           let errText = "";
           try {
             const errJson = await res.json();
@@ -67,75 +65,50 @@ export async function POST(req: Request) {
           } catch (e) {
             errText = await res.text();
           }
-          return NextResponse.json({ error: errText || "Invalid credentials" }, { status: res.status });
+          return NextResponse.json({ 
+            error: errText || "Account not found. Please register first to access eTAYO." 
+          }, { status: 401 });
         }
-        console.warn(`Render returned HTTP ${res.status} for recognized account. Activating resilient fallback session.`);
-      } else {
-        console.warn(`Render returned HTTP ${res.status}. Activating resilient fallback session.`);
       }
     } catch (netErr: any) {
       console.warn("Backend unreachable / rate-limited during login:", netErr?.message);
     }
 
-    // 2. Resilient Fallback Authentication
-    // Provides continuity when Render is rate-limited (429) or cold-starting
-    if (sanitizedPassword.length >= 4) {
-      let role = "ROLE_APPLICANT";
-      let name = "Applicant";
+    // 2. Strict Authentication against Registered Users
+    // Users NOT registered in the system are STRICTLY REJECTED!
+    const registeredUser = findRegisteredUser(sanitizedEmail);
 
-      if (sanitizedEmail.includes("admin")) {
-        role = "ROLE_ADMIN";
-        name = "Municipal Administrator";
-      } else {
-        // STRICT: Only grant ROLE_STAFF if user is explicitly assigned by Admin in users store!
-        // NO automatic staff creation!
-        const assignedStaff = getAssignedUserByEmail(sanitizedEmail);
-        if (assignedStaff && assignedStaff.role === "ROLE_STAFF") {
-          role = "ROLE_STAFF";
-          name = assignedStaff.name || "Staff Evaluator";
-        } else if (
-          sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
-          sanitizedEmail === "mdpsicot.student@ua.edu.ph" || 
-          sanitizedEmail.includes("paul") || 
-          sanitizedEmail.includes("payumo")
-        ) {
-          role = "ROLE_APPLICANT";
-          name = "Paul Payumo";
-        } else {
-          // If unassigned staff, reject!
-          if (sanitizedEmail.includes("staff") || sanitizedEmail.includes("evaluator")) {
-            return NextResponse.json({ 
-              error: "This staff account does not exist. All staff accounts must be explicitly assigned by the Municipal Administrator." 
-            }, { status: 401 });
-          }
-          const userPart = sanitizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-          name = userPart || "Applicant";
-          role = "ROLE_APPLICANT";
-        }
-      }
-
-      // Generate a mock JWT token so downstream auth headers work
-      const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-      const payload = Buffer.from(JSON.stringify({
-        sub: sanitizedEmail,
-        role: role,
-        name: name,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + (7 * 24 * 3600)
-      })).toString("base64url");
-      const fallbackToken = `${header}.${payload}.etayo_signature_resilient`;
-
-      return NextResponse.json({
-        accessToken: fallbackToken,
-        tokenType: "Bearer",
-        role: role,
-        name: name,
-        email: sanitizedEmail,
-        resilientMode: true
-      });
+    if (!registeredUser) {
+      return NextResponse.json({ 
+        error: "This account is not registered in the system. Please register first to access eTAYO." 
+      }, { status: 401 });
     }
 
-    return NextResponse.json({ error: "Invalid password length" }, { status: 401 });
+    // Verify Password if stored locally
+    if (registeredUser.password && registeredUser.password !== sanitizedPassword) {
+      return NextResponse.json({ 
+        error: "Invalid password. Please check your credentials." 
+      }, { status: 401 });
+    }
+
+    // Generate authenticated JWT session with Full Name
+    const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+    const payload = Buffer.from(JSON.stringify({
+      sub: sanitizedEmail,
+      role: registeredUser.role,
+      name: registeredUser.name,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 3600)
+    })).toString("base64url");
+    const fallbackToken = `${header}.${payload}.etayo_signature_resilient`;
+
+    return NextResponse.json({
+      accessToken: fallbackToken,
+      tokenType: "Bearer",
+      role: registeredUser.role,
+      name: registeredUser.name,
+      email: sanitizedEmail
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Internal server error" }, { status: 500 });
   }

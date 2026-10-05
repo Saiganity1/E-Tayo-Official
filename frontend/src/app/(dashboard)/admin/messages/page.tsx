@@ -1581,6 +1581,8 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                                 content={msg.content}
                                 isMe={isMe}
                                 onOpenAttachment={att => setPreviewAttachment(att)}
+                                timestamp={msg.timestamp}
+                                app={activePermitApp || (msgThreadId ? applications.find(a => a.id === msgThreadId) : null)}
                               />
 
                               <div style={{

@@ -157,17 +157,6 @@ export default function ApplyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedSubmittedId, setCopiedSubmittedId] = useState(false);
 
-  const goToStep = useCallback((stepNumber: number) => {
-    setCurrentStep(stepNumber);
-    if (typeof window !== "undefined") {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set("step", String(stepNumber));
-        window.history.replaceState({}, "", url.toString());
-      } catch (e) {}
-    }
-  }, []);
-
   const handleCheckClearanceStatus = async () => {
     setIsCheckingClearance(true);
     try {
@@ -380,9 +369,57 @@ export default function ApplyPage() {
     matchedClearanceApp && matchedClearanceApp.status?.toLowerCase() === "rejected"
   );
 
-  // Clearance is ONLY considered passed if not required by the project type, OR if officially APPROVED by the admin/MPDO
+  // Clearance is ONLY considered passed if not required by the project type, OR if officially APPROVED and RELEASED by the admin/MPDO
   const isClearancePassed = !isClearanceRequired || isClearanceApproved;
   const activeClearanceRef = matchedClearanceApp?.id || selectedClearanceRef || (isClearanceRequired ? null : "EXEMPT");
+
+  const goToStep = useCallback((stepNumber: number) => {
+    // Hard gate: Do not permit moving to Step 3, 4, or 5 if locational clearance is required and not yet officially released
+    if (stepNumber >= 3 && isClearanceRequired && !isClearancePassed) {
+      setCurrentStep(2);
+      if (typeof window !== "undefined") {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set("step", "2");
+          window.history.replaceState({}, "", url.toString());
+        } catch (e) {}
+      }
+      setLockedNotice(
+        isClearancePending
+          ? `Your Locational Clearance (${matchedClearanceApp?.id || "submitted"}) has not yet been officially released. You cannot proceed to Step 3 (Required Permit Forms) until the Locational Clearance is officially released by the Municipal Zoning Administrator / MPDO.`
+          : `Mandatory Locational Clearance must be approved and officially released for ${selectedProjectType?.name || "this project"} before you can proceed to Step 3: Required Permit Forms.`
+      );
+      return;
+    }
+
+    setCurrentStep(stepNumber);
+    if (typeof window !== "undefined") {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("step", String(stepNumber));
+        window.history.replaceState({}, "", url.toString());
+      } catch (e) {}
+    }
+  }, [isClearanceRequired, isClearancePassed, isClearancePending, matchedClearanceApp?.id, selectedProjectType?.name]);
+
+  // CRITICAL ENFORCEMENT: Never allow applicant to remain on Step 3 or beyond if Locational Clearance is required but not released
+  useEffect(() => {
+    if (mounted && currentStep >= 3 && isClearanceRequired && !isClearancePassed) {
+      setCurrentStep(2);
+      if (typeof window !== "undefined") {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set("step", "2");
+          window.history.replaceState({}, "", url.toString());
+        } catch (e) {}
+      }
+      setLockedNotice(
+        isClearancePending
+          ? `Your Locational Clearance (${matchedClearanceApp?.id || "submitted"}) has not yet been officially released. You cannot proceed to Step 3 (Required Permit Forms) until the Locational Clearance is officially released by the Municipal Zoning Administrator / MPDO.`
+          : `Mandatory Locational Clearance must be approved and officially released for ${selectedProjectType?.name || "this project"} before proceeding to Step 3: Required Permit Forms.`
+      );
+    }
+  }, [mounted, currentStep, isClearanceRequired, isClearancePassed, isClearancePending, matchedClearanceApp?.id, selectedProjectType?.name]);
 
   // Filter available clearances the user might already have submitted in the system
   const userClearances = useMemo(() => {
@@ -485,14 +522,19 @@ export default function ApplyPage() {
     return getRejectedAppForProjectType(selectedProjectType.name);
   }, [selectedProjectType, getRejectedAppForProjectType]);
 
-  // Persist active clearance reference to localStorage so Sidebar dynamically shows "Existing Application"
+  // Persist active clearance reference to localStorage ONLY when officially released
   useEffect(() => {
-    if (activeClearanceRef && activeClearanceRef !== "EXEMPT") {
+    if (isClearanceApproved && activeClearanceRef && activeClearanceRef !== "EXEMPT") {
       try {
         localStorage.setItem("etayo_active_clearance_ref", activeClearanceRef);
       } catch (e) {}
+    } else if (!isClearanceApproved && typeof window !== "undefined") {
+      const stored = localStorage.getItem("etayo_active_clearance_ref");
+      if (stored && stored === activeClearanceRef) {
+        localStorage.removeItem("etayo_active_clearance_ref");
+      }
     }
-  }, [activeClearanceRef]);
+  }, [isClearanceApproved, activeClearanceRef]);
 
   // Auto-sync project type to match approved locational clearance (when an explicit clearance reference is loaded)
   useEffect(() => {
@@ -1430,7 +1472,7 @@ export default function ApplyPage() {
             {STEPS.map((step) => {
               const Icon = step.icon;
               const isActive = currentStep === step.id;
-              const isPassed = currentStep > step.id;
+              const isPassed = step.id === 2 ? (isClearancePassed && currentStep > 2) : currentStep > step.id;
               const isExempt = step.id === 2 && !isClearanceRequired;
               const isClearanceVerified = step.id === 2 && isClearancePassed && isClearanceRequired;
               const isClearanceAwaitingAdmin = step.id === 2 && isClearancePending && isClearanceRequired;
@@ -1451,9 +1493,9 @@ export default function ApplyPage() {
                       goToStep(step.id);
                     } else {
                       if (isClearancePending) {
-                        setLockedNotice(`Your Locational Clearance (${matchedClearanceApp?.id}) is awaiting Admin approval. The municipal zoning administrator must approve your clearance before you can proceed to ${step.title}.`);
+                        setLockedNotice(`Your Locational Clearance (${matchedClearanceApp?.id || 'Ref'}) is awaiting official release. The municipal zoning administrator / MPDO must officially release your clearance before you can proceed to ${step.title}.`);
                       } else {
-                        setLockedNotice(`Mandatory Locational Clearance must be approved by the Admin for ${selectedProjectType.name} before proceeding to ${step.title}.`);
+                        setLockedNotice(`Mandatory Locational Clearance must be approved and officially released for ${selectedProjectType.name} before proceeding to ${step.title}.`);
                       }
                     }
                   }}
@@ -1488,9 +1530,9 @@ export default function ApplyPage() {
                         : isExempt 
                         ? "Exempt" 
                         : isClearanceVerified 
-                        ? "Approved" 
+                        ? "Approved & Released" 
                         : isClearanceAwaitingAdmin
-                        ? "Pending Approval"
+                        ? (matchedClearanceApp?.status?.toLowerCase() === "approved" ? "Awaiting Release" : "Pending Approval")
                         : step.subtitle}
                     </span>
                   </div>
@@ -2816,7 +2858,61 @@ export default function ApplyPage() {
           {/* STEP 3: REQUIRED PERMIT FORMS */}
           {currentStep === 3 && (
             <div className="step-pane animate-fade-in-up">
-              {activeExistingStage2App ? (
+              {isClearanceRequired && !isClearancePassed ? (
+                <div style={{
+                  background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+                  border: "2px solid #f59e0b",
+                  borderRadius: "20px",
+                  padding: "2.5rem 2rem",
+                  marginBottom: "1.5rem",
+                  textAlign: "center",
+                  boxShadow: "0 10px 25px -5px rgba(245, 158, 11, 0.15)"
+                }}>
+                  <div style={{
+                    width: "60px",
+                    height: "60px",
+                    borderRadius: "18px",
+                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                    color: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 1.25rem auto",
+                    boxShadow: "0 8px 18px rgba(217, 119, 6, 0.35)"
+                  }}>
+                    <Lock size={30} />
+                  </div>
+                  <h3 style={{ fontSize: "1.4rem", fontWeight: "900", color: "#78350f", margin: "0 0 0.5rem 0" }}>
+                    Step 3 Locked: Locational Clearance Required
+                  </h3>
+                  <p style={{ maxWidth: "600px", margin: "0 auto 1.5rem auto", fontSize: "0.95rem", color: "#92400e", lineHeight: "1.6" }}>
+                    {isClearancePending
+                      ? `Your Locational Clearance (${matchedClearanceApp?.id || "submitted"}) has not yet been officially released. Under Sto. Tomas municipal permitting regulations and the National Building Code (PD 1096), you cannot proceed to Step 3 until your Locational Clearance has been released by the Zoning Administrator / MPDO.`
+                      : `A valid, officially released Locational Clearance is required for ${selectedProjectType?.name || "this project"} before proceeding to technical engineering permit forms.`}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(2)}
+                    style={{
+                      background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "12px",
+                      padding: "12px 24px",
+                      fontSize: "0.92rem",
+                      fontWeight: "800",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      boxShadow: "0 4px 14px rgba(217, 119, 6, 0.35)"
+                    }}
+                  >
+                    <span>Return to Step 2: Locational Clearance</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              ) : activeExistingStage2App ? (
                 <div style={{
                   background: activeExistingStage2App.status === "approved" || activeExistingStage2App.status === "released"
                     ? "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)"
@@ -3960,6 +4056,29 @@ export default function ApplyPage() {
                 >
                   <span>Next: Required Permit Forms</span>
                   <ChevronRight size={18} />
+                </button>
+              ) : isClearancePending ? (
+                <button 
+                  className="btn-primary btn-wizard-next" 
+                  disabled
+                  style={{ 
+                    background: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)", 
+                    color: "#ffffff",
+                    border: "1.5px solid transparent",
+                    boxShadow: "none", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    padding: "10px 22px", 
+                    borderRadius: "10px",
+                    fontWeight: "700",
+                    cursor: "not-allowed",
+                    opacity: 0.8
+                  }}
+                  title="Locational Clearance must be officially released by the Zoning Administrator before proceeding to Step 3."
+                >
+                  <Lock size={18} />
+                  <span>Locked: Awaiting Clearance Release</span>
                 </button>
               ) : (
                 <button 

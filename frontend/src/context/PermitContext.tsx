@@ -550,7 +550,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 userConfirmedPayment: isConfirmedLocal,
                 officialReceiptNo: (bApp as any).officialReceiptNo || (foundCached as any)?.officialReceiptNo,
                 orderOfPaymentNo: (storedOp && storedOp !== "OP-2026" ? storedOp : null) || (bApp as any).orderOfPaymentNo || (foundCached as any)?.orderOfPaymentNo || `OP-${String(bApp.id || "").replace(/^[A-Za-z]+-/i, "") || "2026"}`,
-                assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (foundCached as any)?.assessedFees || (bApp as any).estimatedFees || (bApp.permitType === "locational_clearance" || String(bApp.id).toUpperCase().startsWith("LC-") ? 500 : 6200)),
+                assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (foundCached as any)?.assessedFees || (bApp as any).estimatedFees || (bApp.permitType === "locational_clearance" || String(bApp.id).toUpperCase().startsWith("LC-") ? 1500 : 6200)),
                 dateApproved: storedDateApproved || (bApp as any).dateApproved || (foundCached as any)?.dateApproved || (isApproved ? ((bApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
                 remarks: storedRemarks || bApp.remarks || foundCached.remarks,
                 trackingSteps: (bApp.trackingSteps && bApp.trackingSteps.length > 0) ? bApp.trackingSteps : foundCached.trackingSteps,
@@ -570,7 +570,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 paymentStatus: isPaidLocal ? "paid" : ((bApp as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : (isApprovedLocal ? "awaiting_payment" : undefined))),
                 userConfirmedPayment: isConfirmedLocal,
                 orderOfPaymentNo: (storedOp && storedOp !== "OP-2026" ? storedOp : null) || (bApp as any).orderOfPaymentNo || `OP-${curCleanSeq || "2026"}`,
-                assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (bApp as any).estimatedFees || (curIsLC ? 500 : 6200)),
+                assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (bApp as any).estimatedFees || (curIsLC ? 1500 : 6200)),
                 dateApproved: storedDateApproved || (bApp as any).dateApproved || (isApprovedLocal ? new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : undefined),
                 remarks: storedRemarks || bApp.remarks,
                 paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl
@@ -771,7 +771,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           isArchived: mIsArchived,
           trackingSteps: mTracking,
           orderOfPaymentNo: (mOp && mOp !== "OP-2026" ? mOp : null) || (mApp as any).orderOfPaymentNo || `OP-${mCleanSeq || "2026"}`,
-          assessedFees: mFees ? Number(mFees) : ((mApp as any).assessedFees || (mApp as any).estimatedFees || (mIsLC ? 500 : 6200)),
+          assessedFees: mFees ? Number(mFees) : ((mApp as any).assessedFees || (mApp as any).estimatedFees || (mIsLC ? 1500 : 6200)),
           dateApproved: mDateApp || (mApp as any).dateApproved || (mIsApproved ? ((mApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
           remarks: mRemarks || mApp.remarks,
         };

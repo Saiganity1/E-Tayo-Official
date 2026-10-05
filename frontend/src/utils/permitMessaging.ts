@@ -3,6 +3,8 @@
  * between municipal staff/evaluators and applicants.
  */
 
+import { formatPhilippineDate, formatPhilippineTime } from "./philippineTime";
+
 export interface SystemPermitMessage {
   id: string;
   senderEmail: string;
@@ -124,8 +126,30 @@ export const getAuthoritativePermitFee = (app?: any, rawAppId?: string): number 
     return Number((app as any).estimatedFees);
   }
 
-  // 4. Default standard municipal fee: LC = 500, Building Permit (standard Sto. Tomas schedule) = 6200
-  return isLC ? 500 : 6200;
+  // 4. Lookup from localStorage cached applications if app not passed or missing fees
+  if (typeof window !== "undefined" && id) {
+    try {
+      const rawApps = localStorage.getItem("etayo_cached_applications");
+      if (rawApps) {
+        const apps = JSON.parse(rawApps);
+        const found = apps.find((a: any) => 
+          String(a?.id || "").trim().toLowerCase() === lowerId ||
+          String(a?.applicationId || "").trim().toLowerCase() === lowerId
+        );
+        if (found) {
+          if (found.assessedFees && !isNaN(Number(found.assessedFees)) && Number(found.assessedFees) > 0) {
+            return Number(found.assessedFees);
+          }
+          if (found.estimatedFees && !isNaN(Number(found.estimatedFees)) && Number(found.estimatedFees) > 0) {
+            return Number(found.estimatedFees);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 5. Default standard municipal fee: LC = 1500 (Sto. Tomas Fee Schedule FEE-001), Building Permit = 6200
+  return isLC ? 1500 : 6200;
 };
 
 /**
@@ -243,12 +267,27 @@ export const ensureApplicationConversationMessages = (
       }
 
       // Correct outdated fee
-      if (!content.includes(`PHP ${assessedAmt}`) || content.includes("PHP 3,795")) {
+      if (!content.includes(`PHP ${assessedAmt}`) || content.includes("PHP 3,795") || (isLC && assessedAmt !== "500" && content.includes("PHP 500"))) {
         content = content
           .replace(/(?:Assessed Regulatory Fee|Total Assessed Regulatory Amount):\s*PHP\s*[\d,]+/gi, `Assessed Regulatory Fee: PHP ${assessedAmt}`)
+          .replace(/(?:Locational Clearance & Zoning Assessment Fee):\s*PHP\s*[\d,]+/gi, `Locational Clearance & Zoning Assessment Fee: PHP ${assessedAmt}`)
           .replace(/fee of\s*PHP\s*[\d,]+/gi, `fee of PHP ${assessedAmt}`)
           .replace(/Amount:\s*PHP\s*[\d,]+/gi, `Amount: PHP ${assessedAmt}`)
           .replace(/PHP\s*3,795/gi, `PHP ${assessedAmt}`);
+        if (isLC && assessedAmt !== "500") {
+          content = content.replace(/PHP\s*500/gi, `PHP ${assessedAmt}`);
+        }
+        contentChanged = true;
+      }
+
+      // Ensure Date & Time of Order of Payment are explicitly included in message text
+      const approvalDateStr = formatPhilippineDate(approvalTime);
+      const approvalTimeStr = formatPhilippineTime(approvalTime);
+      if (!content.includes("Date Approved / Issued:") && !content.includes("Order Date & Time:")) {
+        content = content.replace(
+          /(📄 Official Order of Payment Reference:[^\n\r]+)/i,
+          `$1\n📅 Order Date & Time: ${approvalDateStr} at ${approvalTimeStr}`
+        );
         contentChanged = true;
       }
 
@@ -292,6 +331,9 @@ export const ensureApplicationConversationMessages = (
             ? `• Building Construction Permit Fee: PHP 3,250.00\n• Electrical Installation Inspection Fee: PHP 1,150.00\n• Plumbing & Sanitary Inspection Fee: PHP 850.00\n• Mechanical / Ventilation Fee: PHP 450.00\n• Zoning & Municipal Filing Fee: PHP 500.00\n• Total Assessed Regulatory Fees: PHP ${assessedAmt}`
             : `• Total Assessed Technical Regulatory Fees: PHP ${assessedAmt}`);
 
+      const approvalDateStr = formatPhilippineDate(approvalTime);
+      const approvalTimeStr = formatPhilippineTime(approvalTime);
+
       const approvalMsg: SystemPermitMessage = {
         id: `auto-op-${appId}`,
         senderEmail: "staff@etayo.gov.ph",
@@ -311,10 +353,13 @@ Your application for ${projName} (${appId}) has been formally reviewed and APPRO
 • Issuing Office: ${issuingOffice}
 • Legal Basis: ${legalBasis}
 • Reference Application ID: ${appId}
+• Date Approved / Issued: ${approvalDateStr}
+• Time Issued: ${approvalTimeStr} (PST)
 
 💰 Regulatory Assessment & Fee Schedule:
 ${feeBreakdownText}
 📄 Official Order of Payment Reference: ${opNo}
+📅 Order Date & Time: ${approvalDateStr} at ${approvalTimeStr}
 
 🏛️ Payment Office:
 Municipal Treasury Office (Ground Floor, Sto. Tomas Municipal Hall, Pampanga)

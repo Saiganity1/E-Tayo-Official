@@ -1717,7 +1717,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                   ) : isLC ? (
                     <>
                       Your Locational Clearance (<strong>{appData.id}</strong>) has been officially approved by the Sto. Tomas Zoning Administrator / Municipal Planning and Development Office (MPDO). 
-                      Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {((appData as any).assessedFees || (appData as any).estimatedFees || 500).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) at the Municipal Treasury or online. Your official clearance papers will be released once settled.
+                      Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {getAuthoritativePermitFee(appData, appData.id).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) at the Municipal Treasury or online. Your official clearance papers will be released once settled.
                     </>
                   ) : (
                     <>

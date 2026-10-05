@@ -7,7 +7,7 @@ import {
   AlertCircle, X, HelpCircle, Building2, Flame, MapPin, CheckCheck, 
   RefreshCw, BadgeCheck, Compass, ExternalLink, Plus, MessageSquarePlus,
   Layers, Filter, ArrowLeft, CreditCard, Receipt, Image as ImageIcon,
-  Briefcase, Inbox, Check, ChevronDown
+  Briefcase, Inbox, Check, ChevronDown, Calendar
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -1453,6 +1453,9 @@ export default function ApplicantMessagesPage() {
               const opNo = (app as any).orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
               const isConfirmed = Boolean((app as any).userConfirmedPayment);
               const permitLabel = isLC ? "Locational Clearance (MPDO)" : "Building Permit (OBO PD 1096)";
+              const approvalDate = (app as any).dateApproved || (app as any).permitIssuedDate || app.dateSubmitted || new Date();
+              const bannerDate = formatPhilippineDate(approvalDate);
+              const bannerTime = formatPhilippineTime(approvalDate);
 
               return (
                 <div 
@@ -1476,6 +1479,19 @@ export default function ApplicantMessagesPage() {
                       color: isConfirmed ? "#166534" : (isLC ? "#6b21a8" : "#92400e") 
                     }}>
                       {permitLabel} Order of Payment: PHP {feeNum.toLocaleString()} ({opNo})
+                    </span>
+                    <span style={{
+                      background: isConfirmed ? "#dcfce7" : (isLC ? "#ede9fe" : "#fef3c7"),
+                      color: isConfirmed ? "#166534" : (isLC ? "#5b21b6" : "#92400e"),
+                      padding: "2px 7px",
+                      borderRadius: "5px",
+                      fontSize: "0.72rem",
+                      fontWeight: "700",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}>
+                      <Calendar size={11} /> {bannerDate} • <Clock size={11} /> {bannerTime}
                     </span>
                     <span style={{ color: "#94a3b8" }}>•</span>
                     <span style={{ color: isConfirmed ? "#15803d" : (isLC ? "#7e22ce" : "#78350f") }}>
@@ -1523,6 +1539,9 @@ export default function ApplicantMessagesPage() {
             return releasedApps.map(app => {
               const isLC = isLocationalClearance(app);
               const label = isLC ? "Official Locational Clearance Released" : "Official Building Permit Released (PD 1096)";
+              const relDate = (app as any).dateReleased || (app as any).dateApproved || new Date();
+              const relDateStr = formatPhilippineDate(relDate);
+              const relTimeStr = formatPhilippineTime(relDate);
               return (
                 <div 
                   key={`rel-${app.id}`}
@@ -1542,6 +1561,19 @@ export default function ApplicantMessagesPage() {
                     <CheckCircle2 size={16} color="#16a34a" />
                     <span style={{ fontWeight: "700", color: "#166534" }}>
                       {label} • {app.id} (OR #{(app as any).officialReceiptNo || "Verified"})
+                    </span>
+                    <span style={{
+                      background: "#dcfce7",
+                      color: "#166534",
+                      padding: "2px 7px",
+                      borderRadius: "5px",
+                      fontSize: "0.72rem",
+                      fontWeight: "700",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}>
+                      <Calendar size={11} /> {relDateStr} • <Clock size={11} /> {relTimeStr}
                     </span>
                     <span style={{ color: "#94a3b8" }}>•</span>
                     <span style={{ color: "#15803d" }}>Clearances ready for download.</span>
@@ -1717,6 +1749,8 @@ export default function ApplicantMessagesPage() {
                             content={msg.content}
                             isMe={isMe}
                             onOpenAttachment={(att) => setPreviewAttachment(att)}
+                            timestamp={msg.timestamp}
+                            app={activeApp}
                           />
                         </div>
 

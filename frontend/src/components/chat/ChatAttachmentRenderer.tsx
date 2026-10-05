@@ -3,10 +3,12 @@
 import React, { useState } from "react";
 import { 
   FileText, Image as ImageIcon, ExternalLink, Download, 
-  Eye, X, ZoomIn, ZoomOut, Check, Sparkles, Shield, AlertCircle, Landmark
+  Eye, X, ZoomIn, ZoomOut, Check, Sparkles, Shield, AlertCircle, Landmark,
+  Calendar, Clock
 } from "lucide-react";
 import Link from "next/link";
 import { getAuthoritativePermitFee } from "@/utils/permitMessaging";
+import { formatPhilippineDate, formatPhilippineTime, parsePhilippineDate } from "@/utils/philippineTime";
 
 export interface ParsedAttachment {
   fileName: string;
@@ -69,9 +71,11 @@ interface MessageBubbleContentProps {
   content: string;
   isMe: boolean;
   onOpenAttachment?: (att: ParsedAttachment) => void;
+  timestamp?: string | number | Date | null;
+  app?: any;
 }
 
-export function MessageBubbleContent({ content, isMe, onOpenAttachment }: MessageBubbleContentProps) {
+export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestamp, app }: MessageBubbleContentProps) {
   const { cleanText, attachments } = parseMessageAttachments(content);
 
   // Detect tracking IDs like LC-2026-1641 or BP-2026-0005
@@ -122,10 +126,26 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
     const isLC = ref.toUpperCase().startsWith("LC-");
     const cleanSeq = ref ? ref.replace(/^[A-Za-z]+-/i, "") : "2026";
     const fallbackOp = `OP-${cleanSeq || "2026"}`;
-    const authoritativeNum = getAuthoritativePermitFee(undefined, ref);
+
+    // Resolve target application from prop or localStorage cache
+    let targetApp = app;
+    if (!targetApp && typeof window !== "undefined" && ref) {
+      try {
+        const rawApps = localStorage.getItem("etayo_cached_applications");
+        if (rawApps) {
+          const apps = JSON.parse(rawApps);
+          targetApp = apps.find((a: any) => 
+            String(a?.id || "").trim().toLowerCase() === ref.toLowerCase() ||
+            String(a?.applicationId || "").trim().toLowerCase() === ref.toLowerCase()
+          );
+        }
+      } catch (e) {}
+    }
+
+    const authoritativeNum = getAuthoritativePermitFee(targetApp, ref);
     const authoritativeFeeStr = `PHP ${authoritativeNum.toLocaleString()}`;
 
-    let fee = cleanText.match(/(?:Assessed Regulatory Fee|Total Assessed Regulatory Amount):\s*(PHP\s*[\d,]+)/i)?.[1];
+    let fee = cleanText.match(/(?:Assessed Regulatory Fee|Total Assessed Regulatory Amount|Locational Clearance & Zoning Assessment Fee|Total Assessed Technical Regulatory Fees|Fee Schedule):\s*(?:•\s*)?(PHP\s*[\d,]+)/i)?.[1];
     let op = cleanText.match(/(?:Order of Payment Reference|Order of Payment Ref|Order of Payment No\.?):\s*([^\n\r]+)/i)?.[1]?.trim();
 
     // Check localStorage for evaluated municipal fees & OP for this permit
@@ -144,10 +164,17 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
       }
     }
 
-    if (!fee || fee === "PHP 3,795" || (authoritativeNum !== 3795 && fee !== authoritativeFeeStr)) {
+    // Always synchronize with authoritative fee so amount matches banner perfectly
+    if (!fee || fee === "PHP 3,795" || (isLC && fee === "PHP 500" && authoritativeNum === 1500) || (authoritativeNum && fee !== authoritativeFeeStr)) {
       fee = authoritativeFeeStr;
     }
     if (!op || op === "OP-2026") op = fallbackOp;
+
+    // Resolve accurate Date and Time for this Order of Payment
+    const rawDate = timestamp || targetApp?.dateApproved || targetApp?.dateSubmitted;
+    const parsedDateObj = parsePhilippineDate(rawDate);
+    const formattedDate = formatPhilippineDate(parsedDateObj);
+    const formattedTime = formatPhilippineTime(parsedDateObj);
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "620px" }}>
@@ -192,11 +219,16 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
                 </div>
               </div>
             </div>
-            {ref && (
-              <span style={{ fontSize: "0.72rem", background: "rgba(255,255,255,0.2)", padding: "3px 9px", borderRadius: "6px", fontFamily: "monospace", fontWeight: "800" }}>
-                {ref}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
+              {ref && (
+                <span style={{ fontSize: "0.72rem", background: "rgba(255,255,255,0.2)", padding: "3px 9px", borderRadius: "6px", fontFamily: "monospace", fontWeight: "800" }}>
+                  {ref}
+                </span>
+              )}
+              <span style={{ fontSize: "0.68rem", color: isLC ? "#c7d2fe" : "#bfdbfe", display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: "600" }}>
+                <Clock size={11} /> {formattedDate} • {formattedTime}
               </span>
-            )}
+            </div>
           </div>
 
           {/* Body */}
@@ -255,6 +287,30 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
               </div>
             </div>
 
+            {/* Official Assessment Date & Time Bar */}
+            <div style={{
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: "8px",
+              padding: "7px 12px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              fontSize: "0.76rem",
+              color: "#334155",
+              flexWrap: "wrap",
+              gap: "6px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Calendar size={13} color="#2563eb" />
+                <span>Date Assessed: <strong style={{ color: "#0f172a" }}>{formattedDate}</strong></span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Clock size={13} color="#2563eb" />
+                <span>Time: <strong style={{ color: "#0f172a" }}>{formattedTime} (PST)</strong></span>
+              </div>
+            </div>
+
             {/* Regulatory Breakdown for Building Permits */}
             {!isLC && (
               <div style={{
@@ -300,7 +356,7 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
                 <span style={{ fontSize: "0.9rem" }}>📸</span>
                 <div>
                   <span style={{ fontWeight: "700", color: "#1e293b" }}>Action Required: </span>
-                  <span style={{ color: "#475569" }}>Please settle the assessed regulatory fee of <strong>{fee}</strong> and reply directly in this conversation with a photo or screenshot of your Official Receipt (OR).</span>
+                  <span style={{ color: "#475569" }}>Please settle the assessed regulatory fee of <strong>{fee}</strong> (Order of Payment: <strong>{op}</strong>) and reply directly in this conversation with a photo or screenshot of your Official Receipt (OR).</span>
                 </div>
               </div>
             </div>
@@ -330,7 +386,22 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
     const orNo = cleanText.match(/Official Receipt No:\s*([^\n\r]+)/i)?.[1] || "OR-2026-94812";
     const ref = cleanText.match(/\[Ref:\s*([A-Za-z0-9_#/-]+)/i)?.[1]?.trim() || "";
     const isLC = ref.toUpperCase().startsWith("LC-");
-    const authoritativeNum = getAuthoritativePermitFee(undefined, ref);
+
+    let targetApp = app;
+    if (!targetApp && typeof window !== "undefined" && ref) {
+      try {
+        const rawApps = localStorage.getItem("etayo_cached_applications");
+        if (rawApps) {
+          const apps = JSON.parse(rawApps);
+          targetApp = apps.find((a: any) => 
+            String(a?.id || "").trim().toLowerCase() === ref.toLowerCase() ||
+            String(a?.applicationId || "").trim().toLowerCase() === ref.toLowerCase()
+          );
+        }
+      } catch (e) {}
+    }
+
+    const authoritativeNum = getAuthoritativePermitFee(targetApp, ref);
     const authoritativeFeeStr = `PHP ${authoritativeNum.toLocaleString()}`;
     let fee = cleanText.match(/Payment of\s*(PHP\s*[\d,]+)/i)?.[1];
     if (typeof window !== "undefined" && ref) {
@@ -344,6 +415,11 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
     if (!fee || fee === "PHP 3,795" || (authoritativeNum !== 3795 && fee !== authoritativeFeeStr)) {
       fee = authoritativeFeeStr;
     }
+
+    const rawReleaseDate = timestamp || targetApp?.dateReleased || targetApp?.dateApproved;
+    const parsedReleaseObj = parsePhilippineDate(rawReleaseDate);
+    const releaseDateStr = formatPhilippineDate(parsedReleaseObj);
+    const releaseTimeStr = formatPhilippineTime(parsedReleaseObj);
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "620px" }}>
@@ -385,11 +461,16 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
                 </div>
               </div>
             </div>
-            {ref && (
-              <span style={{ fontSize: "0.72rem", background: "rgba(255,255,255,0.2)", padding: "2px 8px", borderRadius: "6px", fontFamily: "monospace", fontWeight: "800" }}>
-                {ref}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
+              {ref && (
+                <span style={{ fontSize: "0.72rem", background: "rgba(255,255,255,0.2)", padding: "2px 8px", borderRadius: "6px", fontFamily: "monospace", fontWeight: "800" }}>
+                  {ref}
+                </span>
+              )}
+              <span style={{ fontSize: "0.68rem", color: "#dcfce7", display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: "600" }}>
+                <Clock size={11} /> {releaseDateStr} • {releaseTimeStr}
               </span>
-            )}
+            </div>
           </div>
 
           <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -401,10 +482,13 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment }: Messag
               padding: "8px 12px",
               borderRadius: "8px",
               border: "1px solid #bbf7d0",
-              fontSize: "0.82rem"
+              fontSize: "0.82rem",
+              flexWrap: "wrap",
+              gap: "6px"
             }}>
               <span>Official Receipt No: <strong style={{ color: "#166534" }}>{orNo}</strong></span>
               <span>Payment Verified: <strong style={{ color: "#065f46" }}>{fee}</strong></span>
+              <span style={{ color: "#166534", fontSize: "0.74rem", fontWeight: "600" }}>📅 {releaseDateStr} at {releaseTimeStr}</span>
             </div>
 
             <p style={{ margin: 0, fontSize: "0.85rem", color: "#334155", lineHeight: "1.5" }}>

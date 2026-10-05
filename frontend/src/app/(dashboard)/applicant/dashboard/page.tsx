@@ -67,7 +67,21 @@ export default function ApplicantDashboard() {
       const userStr = localStorage.getItem("user");
       if (userStr) {
         const userObj = JSON.parse(userStr);
-        if (userObj.name) setUserName(userObj.name);
+        let resolvedName = userObj.name || "";
+        if (!resolvedName || resolvedName.includes("@")) {
+          const registeredUsersRaw = localStorage.getItem("etayo_registered_users");
+          if (registeredUsersRaw) {
+            try {
+              const regList = JSON.parse(registeredUsersRaw);
+              const found = regList.find((u: any) => u.email?.toLowerCase() === userObj.email?.toLowerCase());
+              if (found && found.name) resolvedName = found.name;
+            } catch (e) {}
+          }
+        }
+        if (!resolvedName || resolvedName.includes("@")) {
+          resolvedName = "Applicant";
+        }
+        setUserName(resolvedName);
         if (userObj.email) setUserEmail(userObj.email);
       }
     } catch (e) {}

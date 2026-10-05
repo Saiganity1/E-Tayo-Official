@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
 import NotificationBell from "./NotificationBell";
+import { isApplicationReleased } from "@/utils/projectGrouping";
 
 export default function Sidebar() {
   const { userRole, setUserRole, applications } = usePermitContext();
@@ -36,7 +37,37 @@ export default function Sidebar() {
       const userStr = localStorage.getItem("user");
       if (userStr) {
         const userObj = JSON.parse(userStr);
-        if (userObj.name) setUserName(userObj.name);
+        let name = userObj.name || "";
+        
+        // If name looks like an email or is empty, resolve actual Full Name from local registered stores
+        if (!name || name.includes("@")) {
+          const registeredUsersRaw = localStorage.getItem("etayo_registered_users");
+          if (registeredUsersRaw) {
+            try {
+              const regList = JSON.parse(registeredUsersRaw);
+              const found = regList.find((u: any) => u.email?.toLowerCase() === userObj.email?.toLowerCase());
+              if (found && found.name) name = found.name;
+            } catch (e) {}
+          }
+          if (!name || name.includes("@")) {
+            const assignedStaffRaw = localStorage.getItem("etayo_assigned_staff");
+            if (assignedStaffRaw) {
+              try {
+                const staffList = JSON.parse(assignedStaffRaw);
+                const found = staffList.find((u: any) => u.email?.toLowerCase() === userObj.email?.toLowerCase());
+                if (found && found.name) name = found.name;
+              } catch (e) {}
+            }
+          }
+        }
+
+        if ((!name || name.includes("@")) && userObj.email?.toLowerCase().includes("admin")) {
+          name = "Municipal Administrator";
+        }
+
+        if (name && !name.includes("@")) {
+          setUserName(name);
+        }
       }
     } catch (e) {
       console.error("Failed to parse user from localStorage");
@@ -96,21 +127,27 @@ export default function Sidebar() {
         }
       }
 
-      const approved = list.find(
+      const released = list.find(
         (app: any) =>
           (app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
-          (app.status?.toLowerCase() === "approved" || app.status?.toLowerCase() === "released")
+          (app.status?.toLowerCase() === "released" || isApplicationReleased(app))
       );
 
-      if (approved) {
-        setApprovedClearanceRef(approved.id);
+      if (released) {
+        setApprovedClearanceRef(released.id);
         if (typeof window !== "undefined") {
-          localStorage.setItem("etayo_active_clearance_ref", approved.id);
+          localStorage.setItem("etayo_active_clearance_ref", released.id);
         }
       } else if (typeof window !== "undefined") {
         const storedRef = localStorage.getItem("etayo_active_clearance_ref");
-        if (storedRef && storedRef !== "EXEMPT") {
+        const foundStored = list.find((a: any) => a.id === storedRef);
+        if (foundStored && !(foundStored.status?.toLowerCase() === "released" || isApplicationReleased(foundStored))) {
+          localStorage.removeItem("etayo_active_clearance_ref");
+          setApprovedClearanceRef(null);
+        } else if (storedRef && storedRef !== "EXEMPT") {
           setApprovedClearanceRef(storedRef);
+        } else {
+          setApprovedClearanceRef(null);
         }
       }
     } catch (e) {
@@ -125,24 +162,34 @@ export default function Sidebar() {
           { href: "/", label: "Home", icon: Home },
         ];
       case "applicant": {
-        const approvedApp = (applications || []).find(
+        // Find if user has an officially released Locational Clearance
+        const releasedApp = (applications || []).find(
           (app: any) =>
             (app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
-            (app.status?.toLowerCase() === "approved" || app.status?.toLowerCase() === "released")
+            (app.status?.toLowerCase() === "released" || isApplicationReleased(app))
         );
-        const clearanceRef = approvedApp?.id || approvedClearanceRef;
+        // Find if user has any active Locational Clearance (including pending/under review)
+        const anyLCApp = (applications || []).find(
+          (app: any) =>
+            (app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
+            app.status !== "rejected" && app.status !== "cancelled"
+        );
+
+        const isReleased = Boolean(releasedApp);
+        const clearanceRef = releasedApp?.id || (isReleased ? approvedClearanceRef : null);
 
         // Check if user has ALREADY submitted a connected Stage 2 application
-        const submittedStage2 = clearanceRef
+        const connectedRef = clearanceRef || anyLCApp?.id;
+        const submittedStage2 = connectedRef
           ? (applications || []).find(
               (app: any) =>
-                app.id !== clearanceRef &&
+                app.id !== connectedRef &&
                 !(app.permitType === "locational_clearance" || (app.id && app.id.startsWith("LC-"))) &&
                 (
-                  (app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === clearanceRef.trim().toLowerCase()) ||
-                  (approvedApp?.projectName && app.projectName && (
-                    app.projectName.toLowerCase().includes(approvedApp.projectName.toLowerCase()) ||
-                    approvedApp.projectName.toLowerCase().includes(app.projectName.toLowerCase())
+                  (app.locationalClearanceRef && app.locationalClearanceRef.trim().toLowerCase() === connectedRef.trim().toLowerCase()) ||
+                  (anyLCApp?.projectName && app.projectName && (
+                    app.projectName.toLowerCase().includes(anyLCApp.projectName.toLowerCase()) ||
+                    anyLCApp.projectName.toLowerCase().includes(app.projectName.toLowerCase())
                   ))
                 )
             )
@@ -152,17 +199,26 @@ export default function Sidebar() {
           { href: "/applicant/dashboard", label: "Dashboard", icon: Home },
           { href: "/applicant/apply", label: "New Application", icon: PlusCircle },
           { href: "/applicant/track", label: "Application Status", icon: ClipboardList },
-          ...(clearanceRef ? [
-            submittedStage2 ? {
+          ...(submittedStage2 ? [
+            {
               href: `/applicant/track/${encodeURIComponent(submittedStage2.id)}`,
               label: "Existing Application",
               icon: FileCheck,
               badge: submittedStage2.status === "approved" || submittedStage2.status === "released" ? "Approved" : "Review"
-            } : {
+            }
+          ] : isReleased && clearanceRef ? [
+            {
               href: `/applicant/apply?clearanceRef=${encodeURIComponent(clearanceRef)}&step=3`,
               label: "Existing Application",
               icon: FileCheck,
               badge: "Stage 2"
+            }
+          ] : anyLCApp ? [
+            {
+              href: `/applicant/track/${encodeURIComponent(anyLCApp.id)}`,
+              label: "Locational Clearance",
+              icon: FileCheck,
+              badge: anyLCApp.status?.toLowerCase() === "approved" ? "Pending Release" : "Under Review"
             }
           ] : []),
           { href: "/applicant/map", label: "Map", icon: Map },
@@ -204,7 +260,8 @@ export default function Sidebar() {
     "public": "Guest"
   };
   
-  const displayName = userName || defaultNames[userRole] || "Guest";
+  const rawDisplayName = userName || defaultNames[userRole] || "Guest";
+  const displayName = rawDisplayName.includes("@") ? (defaultNames[userRole] || "User") : rawDisplayName;
   const avatarChar = displayName.charAt(0).toUpperCase();
 
   return (

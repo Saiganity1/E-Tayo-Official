@@ -338,7 +338,7 @@ export default function StaffEvaluatePage() {
   const cleanSeq = app?.id ? app.id.replace(/^[A-Za-z]+-/i, "") : "2026-0001";
   const orderOfPaymentNo = `OP-${cleanSeq}`;
   const [feeSchedule, setFeeSchedule] = useState({
-    locationalFee: 500,
+    locationalFee: 1500,
     buildingFee: 3250,
     electricalFee: 1150,
     plumbingFee: 850,
@@ -359,7 +359,7 @@ export default function StaffEvaluatePage() {
   }, [app?.id, isLC]);
 
   const totalFees = isLC
-    ? (typeof feeSchedule.locationalFee === "number" ? feeSchedule.locationalFee : 500)
+    ? (typeof feeSchedule.locationalFee === "number" ? feeSchedule.locationalFee : 1500)
     : (feeSchedule.buildingFee + feeSchedule.electricalFee + feeSchedule.plumbingFee + feeSchedule.mechanicalFee + feeSchedule.zoningFee);
 
   // Auto-sync assessed fee schedule to localStorage and notify other tabs immediately
