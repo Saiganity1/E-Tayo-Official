@@ -6,8 +6,14 @@ import { createLayerComponent } from "@react-leaflet/core";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { usePermitContext } from "../../context/PermitContext";
-import { stoTomasZoningGeoJSON } from "../../data/stoTomasGeoJSON";
 import { PROJECT_TYPES_MATRIX, ProjectCategory } from "../../data/projectTypeMatrix";
+import { 
+  stoTomasZoningGeoJSON, 
+  stoTomasMunicipalBoundaryGeoJSON, 
+  stoTomasMaskGeoJSON,
+  STO_TOMAS_MUNICIPAL_CENTER,
+  STO_TOMAS_BOUNDS 
+} from "../../data/stoTomasGeoJSON";
 import { PermitApplication } from "../../types";
 
 // Fix missing marker icons in Leaflet with Next.js
@@ -187,6 +193,48 @@ function MapResizer({ isFullscreen }: { isFullscreen: boolean }) {
   return null;
 }
 
+function FitStoTomasButton() {
+  const map = useMap();
+  const handleFit = () => {
+    map.fitBounds([
+      [14.9752, 120.6913],
+      [15.0311, 120.7332]
+    ], { padding: [35, 35], animate: true });
+  };
+
+  return (
+    <button
+      onClick={(e) => { e.preventDefault(); handleFit(); }}
+      style={{
+        position: 'absolute',
+        top: '80px',
+        left: '12px',
+        zIndex: 1000,
+        background: 'white',
+        border: '2px solid rgba(0,0,0,0.2)',
+        borderRadius: '4px',
+        width: '32px',
+        height: '32px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        boxShadow: '0 1px 5px rgba(0,0,0,0.3)',
+        color: '#1e3a8a'
+      }}
+      title="Fit to Sto. Tomas Municipal Boundary"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+        <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+        <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+        <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+  );
+}
+
 export default function SpatialMap() {
   const { applications } = usePermitContext();
   const [filterType, setFilterType] = useState('ALL');
@@ -227,10 +275,10 @@ export default function SpatialMap() {
     });
   }, []);
 
-  const STO_TOMAS_CENTER: [number, number] = [15.0050, 120.7100];
-  const STO_TOMAS_BOUNDS: L.LatLngBoundsLiteral = [
-    [14.80, 120.50],
-    [15.20, 120.90] 
+  const STO_TOMAS_CENTER: [number, number] = STO_TOMAS_MUNICIPAL_CENTER;
+  const STO_TOMAS_MAX_BOUNDS: L.LatLngBoundsLiteral = [
+    [14.92, 120.62],
+    [15.10, 120.80]
   ];
 
   // Filtering Logic
@@ -253,7 +301,7 @@ export default function SpatialMap() {
 
   const onEachFeature = (feature: any, layer: L.Layer) => {
     layer.on('click', () => {
-      if(feature.properties.barangay) {
+      if (feature.properties?.barangay) {
         // Toggle selection
         setSelectedBarangay((prev: any) => prev === feature.properties.barangay ? null : feature.properties.barangay);
       }
@@ -261,41 +309,45 @@ export default function SpatialMap() {
 
     if (feature.properties && feature.properties.isBoundary) {
       layer.bindTooltip(
-        `<strong>${feature.properties.name}</strong><br/>
-         <small>${feature.properties.description}</small>`,
+        `<div style="font-family: inherit; padding: 2px;">
+          <strong style="color: #1e40af; font-size: 13px;">${feature.properties.name}</strong><br/>
+          <small style="color: #475569;">${feature.properties.description}</small>
+        </div>`,
         { sticky: true }
       );
     } else if (feature.properties && feature.properties.barangay) {
       layer.bindTooltip(
-        `<strong>${feature.properties.barangay}</strong><br/>
-         <span style="color:${feature.properties.color}">${feature.properties.zoneType} Zone</span><br/>
-         <small>Click to view analytics</small>`,
+        `<div style="font-family: inherit; padding: 2px;">
+          <strong style="font-size: 13px; color: #0f172a;">Brgy. ${feature.properties.barangay}</strong><br/>
+          <span style="color:${feature.properties.color}; font-weight: 600;">${feature.properties.zoneType}</span><br/>
+          <small style="color: #64748b;">Area: ${feature.properties.areaKm2} km² • Click to view analytics</small>
+        </div>`,
         { sticky: true }
       );
     }
   };
 
   const styleFeature = (feature: any) => {
-    const isSelected = selectedBarangay === feature.properties.barangay;
+    const isSelected = selectedBarangay === feature.properties?.barangay;
     
-    if (feature.properties.isBoundary) {
+    if (feature.properties?.isBoundary) {
       return {
         fillColor: 'transparent',
-        weight: 4,
+        weight: 3.5,
         opacity: 1,
-        color: feature.properties.color,
-        dashArray: '5, 10',
+        color: '#1e40af',
+        dashArray: '6, 6',
         fillOpacity: 0
       };
     }
     
     return {
-      fillColor: feature.properties.color,
-      weight: isSelected ? 4 : 2,
+      fillColor: feature.properties?.color || '#3b82f6',
+      weight: isSelected ? 3 : 1.5,
       opacity: 1,
-      color: isSelected ? 'white' : 'white',
-      dashArray: isSelected ? '' : '3',
-      fillOpacity: isSelected ? 0.7 : 0.4
+      color: isSelected ? '#1e3a8a' : '#ffffff',
+      dashArray: isSelected ? '' : '2, 4',
+      fillOpacity: isSelected ? 0.65 : 0.38
     };
   };
 
@@ -310,17 +362,42 @@ export default function SpatialMap() {
       background: "var(--background-primary, white)",
       minHeight: "500px" // Fallback minimum height
     }}>
+      {/* FLOATING CADASTRAL BOUNDARY BADGE */}
+      <div style={{
+        position: 'absolute',
+        top: '16px',
+        left: '56px',
+        zIndex: 1000,
+        background: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(8px)',
+        border: '1px solid #bfdbfe',
+        borderRadius: '99px',
+        padding: '5px 12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        fontSize: '0.78rem',
+        fontWeight: '700',
+        color: '#1e3a8a',
+        pointerEvents: 'none'
+      }}>
+        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0284c7', display: 'inline-block', boxShadow: '0 0 6px #0284c7' }}></span>
+        <span>Sto. Tomas Cadastral Boundary (Official Survey)</span>
+      </div>
+
       {/* MAP CONTAINER */}
       <MapContainer 
         center={STO_TOMAS_CENTER} 
         zoom={13} 
         style={{ height: "100%", width: "100%" }}
-        maxBounds={STO_TOMAS_BOUNDS}
-        maxBoundsViscosity={1.0}
+        maxBounds={STO_TOMAS_MAX_BOUNDS}
+        maxBoundsViscosity={0.9}
         minZoom={12}
       >
         <MapResizer isFullscreen={isFullscreen} />
         <LocateControl />
+        <FitStoTomasButton />
         <UserLocationMarker />
         
         <LayersControl position="topright">
@@ -343,12 +420,55 @@ export default function SpatialMap() {
             />
           </LayersControl.BaseLayer>
 
-          <LayersControl.Overlay checked name="Zoning & Land Use (GeoJSON)">
+          {/* 1. Cadastral Focus Mask (Dims areas outside Sto. Tomas for border clarity) */}
+          <LayersControl.Overlay checked name="Focus Sto. Tomas (Boundary Mask)">
             <GeoJSON 
-              key={JSON.stringify(stoTomasZoningGeoJSON) + "-v5-" + selectedBarangay}
+              key="sto-tomas-mask"
+              data={stoTomasMaskGeoJSON} 
+              style={{
+                fillColor: '#0f172a',
+                fillOpacity: 0.16,
+                stroke: false
+              }}
+              interactive={false}
+            />
+          </LayersControl.Overlay>
+
+          {/* 2. Barangay Zoning & Land Use */}
+          <LayersControl.Overlay checked name="Barangay Zoning & Land Use">
+            <GeoJSON 
+              key={JSON.stringify(stoTomasZoningGeoJSON) + "-v6-" + selectedBarangay}
               data={stoTomasZoningGeoJSON} 
               style={styleFeature}
               onEachFeature={onEachFeature}
+            />
+          </LayersControl.Overlay>
+
+          {/* 3. Official Municipal Perimeter on Top */}
+          <LayersControl.Overlay checked name="Sto. Tomas Municipal Border">
+            <GeoJSON 
+              key="sto-tomas-official-border"
+              data={stoTomasMunicipalBoundaryGeoJSON} 
+              style={{
+                color: '#1e3a8a',
+                weight: 3.5,
+                opacity: 1,
+                fillColor: 'transparent',
+                fillOpacity: 0,
+                dashArray: '6, 6'
+              }}
+              onEachFeature={(feature: any, layer: L.Layer) => {
+                layer.bindTooltip(
+                  `<div style="padding: 4px; font-family: inherit;">
+                    <div style="font-weight: 700; color: #1e3a8a; font-size: 13px;">🏛️ Municipality of Sto. Tomas, Pampanga</div>
+                    <div style="font-size: 11px; color: #475569; margin-top: 2px;">Official Cadastral Boundary (PSA: 0305421000)</div>
+                    <div style="font-size: 10px; color: #64748b; margin-top: 4px; border-top: 1px solid #cbd5e1; padding-top: 3px;">
+                      Bounded by: San Fernando (N) • San Simon (E) • Minalin (S) • Bacolor (W)
+                    </div>
+                  </div>`,
+                  { sticky: true }
+                );
+              }}
             />
           </LayersControl.Overlay>
         </LayersControl>

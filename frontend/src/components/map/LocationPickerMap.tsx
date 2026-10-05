@@ -287,11 +287,11 @@ export default function LocationPickerMap({
           style={(feature: any) => {
             if (feature?.properties?.isBoundary) {
               return {
-                color: "#dc2626",
-                weight: 3,
-                fillOpacity: 0.04,
-                fillColor: "#ef4444",
-                dashArray: "6, 8"
+                color: "#1e40af",
+                weight: 3.5,
+                fillOpacity: 0.02,
+                fillColor: "#1e40af",
+                dashArray: "6, 6"
               };
             }
             return {
