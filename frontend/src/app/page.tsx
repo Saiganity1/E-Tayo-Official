@@ -270,24 +270,34 @@ export default function Home() {
 
           {/* Construction Stage 3 & 4: Action Buttons (Excavator-delivered & Drilled into place) */}
           <div className="hero-actions">
-            {/* Button 1: Start New Application (Carried and placed by Excavator) */}
+            {/* Button 1: Start New Application (Poured/Dumped by Big Excavator) */}
             <div className="excavator-button-stage">
               <div className="excavator-carrier" aria-hidden="true">
-                <svg className="excavator-svg" viewBox="0 0 100 85" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  {/* Hydraulic boom/arm */}
-                  <path d="M12 80L36 40L68 46" stroke="#eab308" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 80L36 40L68 46" stroke="#ca8a04" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  {/* Hydraulic cylinder */}
-                  <path d="M18 72L46 45" stroke="#64748b" strokeWidth="3.5" strokeLinecap="round"/>
-                  <path d="M46 45L58 46" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round"/>
-                  {/* Pivot joints */}
-                  <circle cx="36" cy="40" r="3" fill="#1e293b" stroke="#f8fafc" strokeWidth="1"/>
-                  <circle cx="68" cy="46" r="3" fill="#1e293b" stroke="#f8fafc" strokeWidth="1"/>
-                  {/* Excavator Bucket with teeth */}
-                  <path d="M68 46C72 42 80 42 86 46L94 62C92 68 82 74 72 70L66 54Z" fill="#ca8a04" stroke="#854d0e" strokeWidth="2"/>
-                  <polygon points="94,62 100,66 96,70" fill="#1e293b"/>
-                  <polygon points="88,66 93,71 87,73" fill="#1e293b"/>
-                  <polygon points="80,69 84,75 78,76" fill="#1e293b"/>
+                <svg className="big-excavator-svg" viewBox="0 0 220 170" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Heavy Main Boom Arm with Hazard Stripes */}
+                  <path d="M15 160L65 75L125 85" stroke="#eab308" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M15 160L65 75L125 85" stroke="#ca8a04" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M30 135L38 120M42 115L50 100M54 95L62 80" stroke="#1e293b" strokeWidth="3.5" strokeLinecap="round"/>
+                  {/* Heavy Hydraulic Cylinder & Ram */}
+                  <path d="M25 145L78 85" stroke="#475569" strokeWidth="6.5" strokeLinecap="round"/>
+                  <path d="M78 85L108 86" stroke="#e2e8f0" strokeWidth="4" strokeLinecap="round"/>
+                  {/* Heavy Pivot Pins */}
+                  <circle cx="65" cy="75" r="6.5" fill="#1e293b" stroke="#f8fafc" strokeWidth="2"/>
+                  <circle cx="125" cy="85" r="6.5" fill="#1e293b" stroke="#f8fafc" strokeWidth="2"/>
+                  
+                  {/* Large Excavator Scoop Bucket (Tipping / Pouring Mechanism) */}
+                  <g className="excavator-bucket-assembly">
+                    <path d="M125 85C135 75 155 75 170 82L195 115C190 128 165 140 145 132L125 105Z" fill="#d97706" stroke="#92400e" strokeWidth="2.5"/>
+                    <path d="M138 88L180 118" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round"/>
+                    {/* 5 Heavy Steel Digging Teeth */}
+                    <polygon points="195,115 208,122 201,128" fill="#1e293b"/>
+                    <polygon points="187,122 198,129 191,134" fill="#1e293b"/>
+                    <polygon points="176,127 186,135 179,139" fill="#1e293b"/>
+                    <polygon points="163,131 172,139 165,142" fill="#1e293b"/>
+                    <polygon points="150,132 158,141 151,143" fill="#1e293b"/>
+                    <path d="M115 72L135 85" stroke="#64748b" strokeWidth="4" strokeLinecap="round"/>
+                    <circle cx="125" cy="85" r="4" fill="#f8fafc"/>
+                  </g>
                 </svg>
               </div>
               <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary btn-large excavator-delivered-btn">
@@ -922,7 +932,7 @@ export default function Home() {
           }
         }
 
-        /* Stage 3: Excavator Delivering "Start New Application" Button */
+        /* Stage 3: Large Excavator Dumping / Pouring "Start New Application" Button */
         .excavator-button-stage {
           position: relative;
           display: inline-flex;
@@ -932,48 +942,54 @@ export default function Home() {
 
         .excavator-carrier {
           position: absolute;
-          bottom: 10px;
-          left: -40px;
+          top: -88px;
+          left: -48px;
           pointer-events: none;
           z-index: 10;
-          animation: excavatorArmSequence 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: bigExcavatorSequence 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
           will-change: transform, opacity;
         }
 
-        .excavator-svg {
-          width: 90px;
-          height: 75px;
-          filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.65));
+        .big-excavator-svg {
+          width: 175px;
+          height: 135px;
+          filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.65));
         }
 
-        .excavator-delivered-btn {
-          animation: excavatorButtonDrop 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-          will-change: transform, opacity;
+        .excavator-bucket-assembly {
+          transform-origin: 125px 85px;
+          animation: excavatorBucketDumpTilt 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+          will-change: transform;
         }
 
-        @keyframes excavatorArmSequence {
-          0%, 60% {
-            transform: translate(-60px, 90px) rotate(-16deg);
+        @keyframes bigExcavatorSequence {
+          0%, 58% {
+            transform: translate(-120px, -90px) rotate(-22deg);
             opacity: 0;
           }
-          68% {
-            transform: translate(-10px, -8px) rotate(4deg);
+          66% {
+            transform: translate(-25px, -15px) rotate(-8deg);
             opacity: 1;
           }
-          78% {
+          74% {
             transform: translate(0px, 0px) rotate(0deg);
             opacity: 1;
           }
-          85% {
-            transform: translate(15px, -15px) rotate(-8deg);
+          78% {
+            /* Heave down during dumping */
+            transform: translate(6px, 10px) rotate(5deg);
             opacity: 1;
           }
-          95% {
-            transform: translate(-30px, 120px) rotate(-15deg);
+          85% {
+            transform: translate(-10px, -18px) rotate(-4deg);
+            opacity: 1;
+          }
+          94% {
+            transform: translate(-120px, -140px) rotate(-28deg);
             opacity: 0;
           }
           100% {
-            transform: translate(-30px, 140px);
+            transform: translate(-150px, -160px);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
@@ -981,22 +997,47 @@ export default function Home() {
           }
         }
 
-        @keyframes excavatorButtonDrop {
-          0%, 60% {
-            opacity: 0;
-            transform: translate(-25px, 25px) rotate(-3deg);
+        @keyframes excavatorBucketDumpTilt {
+          0%, 72% {
+            transform: rotate(-10deg);
           }
-          68% {
-            opacity: 0.9;
-            transform: translate(-5px, -4px) rotate(1deg);
+          78%, 83% {
+            /* Pour / Dump forward! */
+            transform: rotate(48deg);
+          }
+          88% {
+            /* Curl back up */
+            transform: rotate(-5deg);
+          }
+          100% {
+            transform: rotate(0deg);
+          }
+        }
+
+        .excavator-delivered-btn {
+          animation: excavatorButtonPoured 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+          will-change: transform, opacity;
+        }
+
+        @keyframes excavatorButtonPoured {
+          0%, 73% {
+            opacity: 0;
+            transform: translateY(-42px) scale(0.85) rotate(-5deg);
           }
           78% {
+            /* Being poured out of the bucket */
             opacity: 1;
-            transform: translate(0, 2px);
+            transform: translateY(-16px) scale(0.96) rotate(2deg);
           }
-          86% {
+          84% {
+            /* Ground impact */
             opacity: 1;
-            transform: translate(0, 0);
+            transform: translateY(3px) scale(1.03) rotate(0deg);
+          }
+          90% {
+            /* Settle */
+            opacity: 1;
+            transform: translateY(0px) scale(1);
           }
           100% {
             opacity: 1;
