@@ -142,8 +142,36 @@ export default function LocationalClearanceGoogleForm({
       setFormError("Applicant Name is required.");
       return;
     }
+    if (!applicantAddress.trim()) {
+      setFormError("Applicant Address is required.");
+      return;
+    }
+    if (!applicantPhone.trim()) {
+      setFormError("Applicant Contact Phone Number is required.");
+      return;
+    }
     if (!projectType.trim()) {
       setFormError("Project Type is required.");
+      return;
+    }
+    if (!streetLocation.trim()) {
+      setFormError("Project Street / Purok Location is required.");
+      return;
+    }
+    if (!barangay.trim()) {
+      setFormError("Barangay is required.");
+      return;
+    }
+    if (!lotArea.trim() || Number(lotArea) <= 0) {
+      setFormError("Lot Area in square meters is required.");
+      return;
+    }
+    if (!bldgArea.trim() || Number(bldgArea) <= 0) {
+      setFormError("Building Area in square meters is required.");
+      return;
+    }
+    if (!projectCost.trim()) {
+      setFormError("Project Cost is required.");
       return;
     }
     if (!certifiedTruth) {
@@ -586,6 +614,7 @@ export default function LocationalClearanceGoogleForm({
                 />
                 <input
                   type="text"
+                  required
                   placeholder="Applicant Contact Number"
                   value={applicantPhone}
                   onChange={(e) => setApplicantPhone(e.target.value)}
@@ -712,6 +741,7 @@ export default function LocationalClearanceGoogleForm({
                 <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr", gap: "0.5rem" }}>
                   <input
                     type="text"
+                    required
                     placeholder="Purok / Street / Subd."
                     value={streetLocation}
                     onChange={(e) => setStreetLocation(e.target.value)}
@@ -753,9 +783,10 @@ export default function LocationalClearanceGoogleForm({
                 </label>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
                   <div>
-                    <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600" }}>Lot Area</span>
+                    <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600" }}>Lot Area *</span>
                     <input
                       type="number"
+                      required
                       placeholder="Lot Area"
                       value={lotArea}
                       onChange={(e) => setLotArea(e.target.value)}
@@ -763,9 +794,10 @@ export default function LocationalClearanceGoogleForm({
                     />
                   </div>
                   <div>
-                    <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600" }}>Building</span>
+                    <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "600" }}>Building *</span>
                     <input
                       type="number"
+                      required
                       placeholder="Bldg Area"
                       value={bldgArea}
                       onChange={(e) => setBldgArea(e.target.value)}

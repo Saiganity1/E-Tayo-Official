@@ -150,6 +150,64 @@ export default function UnifiedProjectGoogleForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!applicantLastName.trim()) {
+      setSubmitError("Applicant Last Name is required.");
+      return;
+    }
+    if (!applicantFirstName.trim()) {
+      setSubmitError("Applicant First Name is required.");
+      return;
+    }
+    if (!applicantTIN.trim()) {
+      setSubmitError("Applicant Tax Identification Number (TIN) is required.");
+      return;
+    }
+    if (!applicantPhone.trim()) {
+      setSubmitError("Applicant Telephone / Contact Number is required.");
+      return;
+    }
+    if (!applicantEmail.trim()) {
+      setSubmitError("Applicant Email Address is required.");
+      return;
+    }
+    if (!applicantNoStreet.trim()) {
+      setSubmitError("Applicant Street Address is required.");
+      return;
+    }
+    if (!applicantBarangay.trim()) {
+      setSubmitError("Applicant Barangay is required.");
+      return;
+    }
+    if (!projectName.trim()) {
+      setSubmitError("Project Name is required.");
+      return;
+    }
+    if (!streetAddress.trim()) {
+      setSubmitError("Project Location Street Address is required.");
+      return;
+    }
+    if (!lotArea.trim() || Number(lotArea) <= 0) {
+      setSubmitError("Project Lot Area in sq.m is required.");
+      return;
+    }
+    if (!floorArea.trim() || Number(floorArea) <= 0) {
+      setSubmitError("Total Floor Area in sq.m is required.");
+      return;
+    }
+    if (!projectCost.trim()) {
+      setSubmitError("Estimated Project Cost is required.");
+      return;
+    }
+    if (!civilEngineerName.trim() || !civilEngineerPRC.trim()) {
+      setSubmitError("Civil / Structural Engineer name and PRC license are required.");
+      return;
+    }
+    if (!electricalEngineerName.trim() || !electricalEngineerPRC.trim()) {
+      setSubmitError("Professional Electrical Engineer name and PRC license are required.");
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitError(null);
 

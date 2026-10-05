@@ -783,6 +783,36 @@ export default function ApplyPage() {
       return;
     }
 
+    if (!projectName.trim()) {
+      setSubmissionErrorAlert("Cannot submit application: Project Name is required.");
+      if (typeof document !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (!streetAddress.trim()) {
+      setSubmissionErrorAlert("Cannot submit application: Street Address is required.");
+      if (typeof document !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (!lotArea.trim() || Number(lotArea) <= 0) {
+      setSubmissionErrorAlert("Cannot submit application: Lot Area in square meters is required.");
+      if (typeof document !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (!floorArea.trim() || Number(floorArea) <= 0) {
+      setSubmissionErrorAlert("Cannot submit application: Floor Area in square meters is required.");
+      if (typeof document !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (!projectCost.trim() || Number(projectCost) <= 0) {
+      setSubmissionErrorAlert("Cannot submit application: Estimated Project Cost is required.");
+      if (typeof document !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     if (!isAllMandatoryAttached) {
       setSubmissionErrorAlert(
         `Cannot submit application: There are ${missingMandatoryPermits.length} mandatory documents not yet attached. Please review the checklist and attach all required files.`
@@ -937,7 +967,20 @@ export default function ApplyPage() {
 
       await addApplication(newApp);
       setSubmittedApp(newApp);
+
+      // Explicitly persist BFP clearance upload for administrative evaluation
       if (typeof window !== "undefined") {
+        const bfpDoc = uploadedPermitDocs['fireBfpPermit'];
+        if (bfpDoc?.fileUrl) {
+          const bfpUrl = bfpDoc.fileUrl;
+          const bfpName = bfpDoc.fileName || 'BFP_Fire_Safety_Clearance.pdf';
+          localStorage.setItem(`etayo_bfp_${newApp.id}`, bfpUrl);
+          localStorage.setItem(`etayo_bfp_name_${newApp.id}`, bfpName);
+          localStorage.setItem("etayo_bfp_file_data", bfpUrl);
+          localStorage.setItem("etayo_bfp_file_name", bfpName);
+          localStorage.setItem(`att_${bfpName}`, bfpUrl);
+          localStorage.setItem(`etayo_att_${bfpName}`, bfpUrl);
+        }
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err: any) {
@@ -3108,14 +3151,15 @@ export default function ApplyPage() {
                 {/* Left Column: Basic Details & Location Picker Map */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                   <div className="form-group">
-                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block" }}>Project Name</label>
+                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block" }}>Project Name *</label>
                     <input 
                       type="text" 
+                      required
                       placeholder="e.g. 2-Storey Residential House" 
                       className="form-input" 
                       value={projectName}
                       onChange={e => setProjectName(e.target.value)}
-                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1" }}
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1" }}
                     />
                   </div>
                   
@@ -3179,24 +3223,26 @@ export default function ApplyPage() {
                   </h4>
                   
                   <div className="form-group">
-                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Street Address / Sitio</label>
+                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Street Address / Sitio *</label>
                     <input 
                       type="text" 
+                      required
                       placeholder="e.g. Purok 3, Poblacion Road" 
                       className="form-input" 
                       value={streetAddress}
                       onChange={e => setStreetAddress(e.target.value)}
-                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Barangay (Santo Tomas)</label>
+                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Barangay (Santo Tomas) *</label>
                     <select
                       className="form-input"
+                      required
                       value={barangay}
                       onChange={e => setBarangay(e.target.value)}
-                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
                     >
                       {STO_TOMAS_BARANGAYS.map(b => (
                         <option key={b} value={b}>Brgy. {b}</option>
@@ -3206,38 +3252,41 @@ export default function ApplyPage() {
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                     <div className="form-group">
-                      <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Lot Area (sq.m)</label>
+                      <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Lot Area (sq.m) *</label>
                       <input 
                         type="number" 
+                        required
                         placeholder="e.g. 150" 
                         className="form-input" 
                         value={lotArea}
                         onChange={e => setLotArea(e.target.value)}
-                        style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
+                        style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
                       />
                     </div>
                     <div className="form-group">
-                      <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Floor Area (sq.m)</label>
+                      <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Floor Area (sq.m) *</label>
                       <input 
                         type="number" 
+                        required
                         placeholder="e.g. 120" 
                         className="form-input" 
                         value={floorArea}
                         onChange={e => setFloorArea(e.target.value)}
-                        style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
+                        style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
                       />
                     </div>
                   </div>
 
                   <div className="form-group">
-                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Estimated Project Cost (₱ PHP)</label>
+                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Estimated Project Cost (₱ PHP) *</label>
                     <input 
                       type="number" 
+                      required
                       placeholder="e.g. 1500000" 
                       className="form-input" 
                       value={projectCost}
                       onChange={e => setProjectCost(e.target.value)}
-                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff" }}
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
                     />
                   </div>
 

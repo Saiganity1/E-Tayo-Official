@@ -34,7 +34,8 @@ import {
   Camera,
   RotateCcw,
   MessageSquare,
-  ArrowRight
+  ArrowRight,
+  Lock
 } from "lucide-react";
 import { dispatchPermitMessage, getAuthoritativePermitFee } from "../../../../../utils/permitMessaging";
 import { getConnectedProjectApp, isApplicationApproved, isApplicationReleased } from "@/utils/projectGrouping";
@@ -224,25 +225,67 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         return null;
       };
 
+      let found: any = null;
       if (applications && applications.length > 0) {
-        const found = matchApp(applications);
-        if (found) return found;
+        found = matchApp(applications);
+      }
+      if (!found) {
+        try {
+          const cachedStr = localStorage.getItem("etayo_cached_applications");
+          if (cachedStr) {
+            const cachedList = JSON.parse(cachedStr);
+            found = matchApp(cachedList);
+          }
+        } catch (e) {}
+      }
+      if (!found) {
+        found = matchApp(INITIAL_APPLICATIONS || []);
       }
 
-      try {
-        const cachedStr = localStorage.getItem("etayo_cached_applications");
-        if (cachedStr) {
-          const cachedList = JSON.parse(cachedStr);
-          const found = matchApp(cachedList);
-          if (found) return found;
-        }
-      } catch (e) {}
+      if (!found) return null;
 
-      // Fallback: check initial mock dataset
-      const mockFound = matchApp(INITIAL_APPLICATIONS || []);
-      if (mockFound) return mockFound;
+      // Hydrate authoritative local approval, release, payment, and fees flags
+      const targetId = String(found.id || cleanAppId).trim();
+      const lowerId = targetId.toLowerCase();
+      const upperId = targetId.toUpperCase();
+      const isPaid = typeof window !== "undefined" && (
+        localStorage.getItem(`etayo_paid_${targetId}`) === "true" ||
+        localStorage.getItem(`etayo_paid_${lowerId}`) === "true" ||
+        localStorage.getItem(`etayo_paid_${upperId}`) === "true"
+      );
+      const isReleased = typeof window !== "undefined" && (
+        isPaid ||
+        localStorage.getItem(`etayo_released_${targetId}`) === "true" ||
+        localStorage.getItem(`etayo_released_${lowerId}`) === "true" ||
+        localStorage.getItem(`etayo_released_${upperId}`) === "true" ||
+        localStorage.getItem(`etayo_status_${targetId}`) === "released" ||
+        localStorage.getItem(`etayo_status_${lowerId}`) === "released" ||
+        localStorage.getItem(`etayo_status_${upperId}`) === "released"
+      );
+      const isApproved = typeof window !== "undefined" && (
+        isReleased ||
+        localStorage.getItem(`etayo_approved_${targetId}`) === "true" ||
+        localStorage.getItem(`etayo_approved_${lowerId}`) === "true" ||
+        localStorage.getItem(`etayo_approved_${upperId}`) === "true" ||
+        localStorage.getItem(`etayo_status_${targetId}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${lowerId}`) === "approved" ||
+        localStorage.getItem(`etayo_status_${upperId}`) === "approved"
+      );
 
-      return null;
+      const localOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${targetId}`) || localStorage.getItem(`etayo_op_${lowerId}`) || localStorage.getItem(`etayo_op_${upperId}`)) : null;
+      const localFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${targetId}`) || localStorage.getItem(`etayo_fees_${lowerId}`) || localStorage.getItem(`etayo_fees_${upperId}`)) : null;
+      const localDateApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${targetId}`) || localStorage.getItem(`etayo_date_approved_${lowerId}`) || localStorage.getItem(`etayo_date_approved_${upperId}`)) : null;
+      const localRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${targetId}`) || localStorage.getItem(`etayo_remarks_${lowerId}`) || localStorage.getItem(`etayo_remarks_${upperId}`)) : null;
+
+      return {
+        ...found,
+        status: isReleased ? "released" : (isApproved ? "approved" : found.status),
+        paymentStatus: (isPaid || found.paymentStatus === "paid") ? "paid" : (isApproved ? "awaiting_payment" : found.paymentStatus),
+        orderOfPaymentNo: localOp || found.orderOfPaymentNo,
+        assessedFees: localFees ? Number(localFees) : found.assessedFees,
+        dateApproved: localDateApproved || found.dateApproved || (isApproved ? new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : undefined),
+        remarks: localRemarks || found.remarks
+      };
     };
 
     const localFound = findLocal();
@@ -320,6 +363,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               return {
                 ...base,
                 ...serverApp,
+                // CRITICAL FIX: Preserve authentic local project name and applicant name if set (prevents fake Paul Payumo overwrite)
+                projectName: (base.projectName && base.projectName !== "Single-Detached House Installation & Construction") ? base.projectName : (serverApp.projectName || base.projectName),
+                applicantName: (base.applicantName && base.applicantName !== "Paul Payumo") ? base.applicantName : (serverApp.applicantName || base.applicantName),
+                projectType: (base.projectType && base.projectType !== "Single-Detached House") ? base.projectType : (serverApp.projectType || base.projectType),
+                projectAddress: base.projectAddress || serverApp.projectAddress,
                 status: effectiveStatus,
                 paymentStatus: (isPaidLocal || serverApp.paymentStatus === "paid" || base.paymentStatus === "paid") ? "paid" : (serverApp.paymentStatus || base.paymentStatus || (isApprovedLocal ? "awaiting_payment" : undefined)),
                 userConfirmedPayment: isConfirmedLocal || isPaidLocal || Boolean(localReceipt) || base.userConfirmedPayment || serverApp.userConfirmedPayment,
@@ -349,12 +397,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           const recheck = findLocal();
           if (recheck) return recheck;
 
-          // If still not found, synthesize a graceful placeholder so the user is never blocked
+          // If still not found, synthesize a graceful placeholder with the actual requested ID
           const isLC = appId.toUpperCase().startsWith("LC-");
           return {
             id: appId,
-            projectName: isLC ? "Single-Detached House - Locational Clearance" : "Single-Detached House Installation & Construction",
-            projectType: "Single-Detached House",
+            projectName: isLC ? "Locational Clearance Application" : "Building Permit Application",
+            projectType: isLC ? "Locational Clearance" : "Building Permit",
             permitType: isLC ? "locational_clearance" : "building_permit",
             status: "pending",
             dateSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
@@ -374,20 +422,33 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       }
     }, 1800);
 
-    // 4. Live fast polling every 5 seconds (only when tab is visible) to auto-detect admin approval without manual refresh
+    // 4. Live fast polling (every 2.5s) to auto-detect admin approval without waiting
     const pollTimer = setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      const local = findLocal();
+      if (local && isMounted) {
+        setAppData((prev: any) => {
+          if (!prev) return local;
+          if (local.status !== prev.status || local.paymentStatus !== prev.paymentStatus || local.assessedFees !== prev.assessedFees) {
+            return { ...prev, ...local };
+          }
+          return prev;
+        });
+      }
       fetchFreshStatus();
-    }, 5000);
+    }, 2500);
 
     // 5. Cross-tab & multi-window instant reactive update listener
     const handleSync = (e?: any) => {
       const updated = e?.detail;
-      if (updated && (updated.id === appId || (updated.id && appId && updated.id.toLowerCase() === appId.toLowerCase()))) {
-        setAppData((prev: any) => ({ ...prev, ...updated }));
-      } else {
-        const local = findLocal();
-        if (local) setAppData((prev: any) => ({ ...prev, ...local }));
+      const local = findLocal();
+      if (local && isMounted) {
+        setAppData((prev: any) => ({
+          ...(prev || {}),
+          ...local,
+          ...(updated && (updated.appId === appId || updated.id === appId) ? updated : {})
+        }));
+      } else if (updated && isMounted) {
+        setAppData((prev: any) => ({ ...(prev || {}), ...updated }));
       }
       fetchFreshStatus();
     };
@@ -398,10 +459,24 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       }
     };
 
+    let channel: BroadcastChannel | null = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      try {
+        channel = new BroadcastChannel("etayo_channel");
+        channel.onmessage = (msgEvent) => {
+          if (msgEvent.data?.type === "APPLICATION_APPROVED" || msgEvent.data?.type === "APPLICATION_RELEASED" || msgEvent.data?.type === "STATUS_UPDATE") {
+            handleSync({ detail: msgEvent.data });
+          }
+        };
+      } catch (e) {}
+    }
+
     if (typeof window !== "undefined") {
       window.addEventListener("storage", handleSync);
       window.addEventListener("focus", handleSync);
       window.addEventListener("etayo_applications_updated", handleSync);
+      window.addEventListener("etayo_fees_updated", handleSync);
+      window.addEventListener("etayo_status_updated", handleSync);
       document.addEventListener("visibilitychange", handleVisibility);
     }
 
@@ -409,10 +484,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       isMounted = false;
       clearTimeout(fallbackTimer);
       clearInterval(pollTimer);
+      if (channel) {
+        try { channel.close(); } catch (e) {}
+      }
       if (typeof window !== "undefined") {
         window.removeEventListener("storage", handleSync);
         window.removeEventListener("focus", handleSync);
         window.removeEventListener("etayo_applications_updated", handleSync);
+        window.removeEventListener("etayo_fees_updated", handleSync);
+        window.removeEventListener("etayo_status_updated", handleSync);
         document.removeEventListener("visibilitychange", handleVisibility);
       }
     };
@@ -2015,20 +2095,48 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
 
               <span style={{
-                background: "#eff6ff",
-                color: "#1d4ed8",
+                background: !isActuallyReleased ? "#fef3c7" : "#eff6ff",
+                color: !isActuallyReleased ? "#92400e" : "#1d4ed8",
                 fontWeight: "800",
                 fontSize: "0.78rem",
                 padding: "4px 10px",
                 borderRadius: "999px",
-                border: "1px solid #bfdbfe",
+                border: `1px solid ${!isActuallyReleased ? "#fde68a" : "#bfdbfe"}`,
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "5px"
               }}>
-                <Sparkles size={13} /> {resolvedDocuments.length} Official Forms Ready
+                {!isActuallyReleased ? (
+                  <>
+                    <Lock size={13} /> {resolvedDocuments.length} Forms Locked
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={13} /> {resolvedDocuments.length} Official Forms Ready
+                  </>
+                )}
               </span>
             </div>
+
+            {!isActuallyReleased && (
+              <div style={{
+                background: "#f8fafc",
+                border: "1.5px dashed #cbd5e1",
+                borderRadius: "12px",
+                padding: "0.75rem 1rem",
+                marginBottom: "1rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                fontSize: "0.8rem",
+                color: "#475569"
+              }}>
+                <Lock size={16} color="#64748b" style={{ flexShrink: 0 }} />
+                <span>
+                  <strong>Forms &amp; Attachments Locked:</strong> All submitted forms and technical attachments are locked under municipal review. Viewing and downloading will unlock automatically once the permit is <strong>Officially Released</strong>.
+                </span>
+              </div>
+            )}
 
             {resolvedDocuments.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
@@ -2067,89 +2175,113 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                         </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "flex-end", paddingTop: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
-                        <button
-                          type="button"
-                          disabled={actionLoadingDocId === `${doc.id}-view` || actionLoadingDocId === `${doc.id}-download`}
-                          onClick={async () => {
-                            try {
-                              setActionLoadingDocId(`${doc.id}-view`);
-                              const u = await getFilledDocUrl(doc);
-                              openDocumentSafely(u, doc.template);
-                            } catch (err) {
-                              console.error("View document error:", err);
-                              if (doc.template) window.open(doc.template, "_blank");
-                            } finally {
-                              setActionLoadingDocId(null);
-                            }
-                          }}
-                          className="btn-outline"
-                          style={{ 
-                            padding: "0.42rem 0.85rem", 
-                            fontSize: "0.8rem", 
-                            display: "inline-flex", 
-                            alignItems: "center", 
-                            gap: "5px", 
-                            cursor: actionLoadingDocId ? "wait" : "pointer",
-                            background: "#ffffff",
-                            border: "1px solid #cbd5e1",
+                        {!isActuallyReleased ? (
+                          <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            padding: "6px 12px",
+                            background: "#f8fafc",
                             borderRadius: "8px",
-                            fontWeight: "600",
-                            color: "#334155"
-                          }}
-                        >
-                          {actionLoadingDocId === `${doc.id}-view` ? (
-                            <>
-                              <RefreshCw size={13} className="animate-spin" color="#0038A8" /> Preparing...
-                            </>
-                          ) : (
-                            <>
-                              <Eye size={13} color="#0038A8" /> View Document
-                            </>
-                          )}
-                        </button>
+                            border: "1px dashed #cbd5e1",
+                            fontSize: "0.8rem",
+                            color: "#64748b"
+                          }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "700", color: "#475569" }}>
+                              <Lock size={13} color="#64748b" /> Locked until Released
+                            </span>
+                            <span style={{ fontSize: "0.74rem", color: "#94a3b8" }}>
+                              View &amp; Download unlock upon Release
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              disabled={actionLoadingDocId === `${doc.id}-view` || actionLoadingDocId === `${doc.id}-download`}
+                              onClick={async () => {
+                                try {
+                                  setActionLoadingDocId(`${doc.id}-view`);
+                                  const u = await getFilledDocUrl(doc);
+                                  openDocumentSafely(u, doc.template);
+                                } catch (err) {
+                                  console.error("View document error:", err);
+                                  if (doc.template) window.open(doc.template, "_blank");
+                                } finally {
+                                  setActionLoadingDocId(null);
+                                }
+                              }}
+                              className="btn-outline"
+                              style={{ 
+                                padding: "0.42rem 0.85rem", 
+                                fontSize: "0.8rem", 
+                                display: "inline-flex", 
+                                alignItems: "center", 
+                                gap: "5px", 
+                                cursor: actionLoadingDocId ? "wait" : "pointer",
+                                background: "#ffffff",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: "8px",
+                                fontWeight: "600",
+                                color: "#334155"
+                              }}
+                            >
+                              {actionLoadingDocId === `${doc.id}-view` ? (
+                                <>
+                                  <RefreshCw size={13} className="animate-spin" color="#0038A8" /> Preparing...
+                                </>
+                              ) : (
+                                <>
+                                  <Eye size={13} color="#0038A8" /> View Document
+                                </>
+                              )}
+                            </button>
 
-                        <button
-                          type="button"
-                          disabled={actionLoadingDocId === `${doc.id}-view` || actionLoadingDocId === `${doc.id}-download`}
-                          onClick={async () => {
-                            try {
-                              setActionLoadingDocId(`${doc.id}-download`);
-                              const u = await getFilledDocUrl(doc);
-                              await downloadDocumentSafely(u, doc.downloadName, doc.template);
-                            } catch (err) {
-                              console.error("Download document error:", err);
-                              if (doc.template) {
-                                await downloadDocumentSafely(doc.template, doc.downloadName);
-                              }
-                            } finally {
-                              setActionLoadingDocId(null);
-                            }
-                          }}
-                          className="btn-primary"
-                          style={{ 
-                            padding: "0.42rem 0.95rem", 
-                            fontSize: "0.8rem", 
-                            display: "inline-flex", 
-                            alignItems: "center", 
-                            gap: "5px", 
-                            cursor: actionLoadingDocId ? "wait" : "pointer",
-                            background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
-                            border: "none",
-                            borderRadius: "8px",
-                            fontWeight: "700",
-                            color: "#ffffff"
-                          }}
-                        >
-                          {actionLoadingDocId === `${doc.id}-download` ? (
-                            <>
-                              <RefreshCw size={13} className="animate-spin" /> Preparing...
-                            </>
-                          ) : (
-                            <>
-                              <Download size={13} /> Download
-                            </>
-                          )}
-                        </button>
+                            <button
+                              type="button"
+                              disabled={actionLoadingDocId === `${doc.id}-view` || actionLoadingDocId === `${doc.id}-download`}
+                              onClick={async () => {
+                                try {
+                                  setActionLoadingDocId(`${doc.id}-download`);
+                                  const u = await getFilledDocUrl(doc);
+                                  await downloadDocumentSafely(u, doc.downloadName, doc.template);
+                                } catch (err) {
+                                  console.error("Download document error:", err);
+                                  if (doc.template) {
+                                    await downloadDocumentSafely(doc.template, doc.downloadName);
+                                  }
+                                } finally {
+                                  setActionLoadingDocId(null);
+                                }
+                              }}
+                              className="btn-primary"
+                              style={{ 
+                                padding: "0.42rem 0.95rem", 
+                                fontSize: "0.8rem", 
+                                display: "inline-flex", 
+                                alignItems: "center", 
+                                gap: "5px", 
+                                cursor: actionLoadingDocId ? "wait" : "pointer",
+                                background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
+                                border: "none",
+                                borderRadius: "8px",
+                                fontWeight: "700",
+                                color: "#ffffff"
+                              }}
+                            >
+                              {actionLoadingDocId === `${doc.id}-download` ? (
+                                <>
+                                  <RefreshCw size={13} className="animate-spin" /> Preparing...
+                                </>
+                              ) : (
+                                <>
+                                  <Download size={13} /> Download
+                                </>
+                              )}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
