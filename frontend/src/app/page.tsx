@@ -1365,9 +1365,9 @@ export default function Home() {
           background-clip: text;
           color: transparent;
           transform: none !important;
-          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95))
-                  drop-shadow(0 0 6px rgba(0, 0, 0, 0.85))
-                  drop-shadow(0 0 1.5px rgba(0, 0, 0, 1));
+          -webkit-text-stroke: 0.8px rgba(0, 0, 0, 0.35);
+          filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7))
+                  drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
           animation: flagWindBreeze 7s ease-in-out infinite;
           will-change: background-position;
         }
