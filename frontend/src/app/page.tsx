@@ -7,9 +7,13 @@ import { useEffect, useState } from "react";
 import { Menu, X, ClipboardList, LogIn, ArrowRight } from "lucide-react";
 import Footer from "../components/layout/Footer";
 import MangTomasBot from "../components/chat/MangTomasBot";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Home() {
   const router = useRouter();
+  const { language, setLanguage } = useLanguage();
+  const isFil = language === "fil";
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginAlert, setShowLoginAlert] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -77,10 +81,52 @@ export default function Home() {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="nav-links">
-            <Link href="/applicant/track" className="nav-link">Application Status</Link>
-            <Link href="/login" className="btn-secondary">Log In</Link>
-            <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary">Apply Now</Link>
+          <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {/* Language Toggle on Homepage */}
+            <div className="landing-lang-toggle" style={{ display: "inline-flex", alignItems: "center", background: "#f1f5f9", borderRadius: "10px", padding: "3px", gap: "2px" }}>
+              <button
+                type="button"
+                onClick={() => setLanguage("en")}
+                style={{
+                  padding: "4px 8px",
+                  fontSize: "0.78rem",
+                  fontWeight: language === "en" ? "700" : "500",
+                  background: language === "en" ? "#0038A8" : "transparent",
+                  color: language === "en" ? "#ffffff" : "#64748b",
+                  border: "none",
+                  borderRadius: "7px",
+                  cursor: "pointer"
+                }}
+              >
+                🇺🇸 EN
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage("fil")}
+                style={{
+                  padding: "4px 8px",
+                  fontSize: "0.78rem",
+                  fontWeight: language === "fil" ? "700" : "500",
+                  background: language === "fil" ? "#0038A8" : "transparent",
+                  color: language === "fil" ? "#ffffff" : "#64748b",
+                  border: "none",
+                  borderRadius: "7px",
+                  cursor: "pointer"
+                }}
+              >
+                🇵🇭 FIL
+              </button>
+            </div>
+
+            <Link href="/applicant/track" className="nav-link">
+              {isFil ? "Katayuan ng Aplikasyon" : "Application Status"}
+            </Link>
+            <Link href="/login" className="btn-secondary">
+              {isFil ? "Mag-log In" : "Log In"}
+            </Link>
+            <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary">
+              {isFil ? "Mag-apply Ngayon" : "Apply Now"}
+            </Link>
           </nav>
 
           {/* Mobile Hamburger Toggle Button */}
@@ -97,13 +143,50 @@ export default function Home() {
         {/* Mobile Slide-Down Menu Drawer */}
         <div className={`landing-mobile-menu ${isMobileNavOpen ? "open" : ""}`}>
           <div className="landing-mobile-menu-inner">
+            <div style={{ display: "flex", justifyContent: "center", padding: "0.5rem 0", marginBottom: "0.5rem" }}>
+              <div style={{ display: "inline-flex", background: "#f1f5f9", borderRadius: "10px", padding: "4px", gap: "4px" }}>
+                <button
+                  type="button"
+                  onClick={() => setLanguage("en")}
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: "0.85rem",
+                    fontWeight: language === "en" ? "700" : "500",
+                    background: language === "en" ? "#0038A8" : "transparent",
+                    color: language === "en" ? "#ffffff" : "#64748b",
+                    border: "none",
+                    borderRadius: "7px",
+                    cursor: "pointer"
+                  }}
+                >
+                  🇺🇸 English
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLanguage("fil")}
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: "0.85rem",
+                    fontWeight: language === "fil" ? "700" : "500",
+                    background: language === "fil" ? "#0038A8" : "transparent",
+                    color: language === "fil" ? "#ffffff" : "#64748b",
+                    border: "none",
+                    borderRadius: "7px",
+                    cursor: "pointer"
+                  }}
+                >
+                  🇵🇭 Filipino
+                </button>
+              </div>
+            </div>
+
             <Link 
               href="/applicant/track" 
               className="mobile-nav-item"
               onClick={() => setIsMobileNavOpen(false)}
             >
               <ClipboardList size={18} />
-              <span>Application Status</span>
+              <span>{isFil ? "Katayuan ng Aplikasyon" : "Application Status"}</span>
             </Link>
             <Link 
               href="/login" 
@@ -111,7 +194,7 @@ export default function Home() {
               onClick={() => setIsMobileNavOpen(false)}
             >
               <LogIn size={18} />
-              <span>Log In</span>
+              <span>{isFil ? "Mag-log In" : "Log In"}</span>
             </Link>
             <Link 
               href="/applicant/apply" 
@@ -121,7 +204,7 @@ export default function Home() {
                 handleApplyClick(e);
               }}
             >
-              <span>Apply Now</span>
+              <span>{isFil ? "Mag-apply Ngayon" : "Apply Now"}</span>
               <ArrowRight size={18} />
             </Link>
           </div>
@@ -169,7 +252,7 @@ export default function Home() {
 
             <div className="hero-badge crane-delivered-badge">
               <span className="badge-pulse"></span>
-              OFFICE OF THE BUILDING OFFICIAL
+              {isFil ? "TANGGAPAN NG OPISYAL NG GUSALI" : "OFFICE OF THE BUILDING OFFICIAL"}
             </div>
           </div>
 
@@ -248,7 +331,9 @@ export default function Home() {
             </div>
 
             <p className="hero-subtitle truck-delivered-subtitle">
-              A Geospatially Enabled Permit Management and Building Monitoring System for the Local Government Unit of Sto. Tomas, Pampanga.
+              {isFil
+                ? "Isang Geospatially Enabled na Sistema ng Pamamahala ng Permit at Pagsubaybay sa Gusali para sa Pamahalaang Bayan ng Sto. Tomas, Pampanga."
+                : "A Geospatially Enabled Permit Management and Building Monitoring System for the Local Government Unit of Sto. Tomas, Pampanga."}
             </p>
           </div>
 
@@ -275,7 +360,7 @@ export default function Home() {
                 </svg>
               </div>
               <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary btn-large excavator-delivered-btn">
-                Start New Application
+                {isFil ? "Magsimula ng Bagong Aplikasyon" : "Start New Application"}
               </Link>
             </div>
 
@@ -303,7 +388,7 @@ export default function Home() {
                 </div>
               </div>
               <Link href="/applicant/track" className="btn-secondary btn-large drilled-btn">
-                Application Status
+                {isFil ? "Katayuan ng Aplikasyon" : "Application Status"}
               </Link>
             </div>
           </div>
@@ -319,12 +404,22 @@ export default function Home() {
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
             </div>
             
-            <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.5rem", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.02em" }}>Authentication Required</h3>
-            <p style={{ margin: "0 0 2rem 0", color: "#64748b", lineHeight: "1.6", fontSize: "1.05rem" }}>You need to be logged in to apply for a permit. Please log in to your account to continue.</p>
+            <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.5rem", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.02em" }}>
+              {isFil ? "Kailangan ang Pagpapatotoo" : "Authentication Required"}
+            </h3>
+            <p style={{ margin: "0 0 2rem 0", color: "#64748b", lineHeight: "1.6", fontSize: "1.05rem" }}>
+              {isFil 
+                ? "Kailangan mong mag-log in upang mag-apply para sa permit. Mangyaring mag-log in sa iyong account upang magpatuloy." 
+                : "You need to be logged in to apply for a permit. Please log in to your account to continue."}
+            </p>
             
             <div style={{ display: "flex", gap: "12px" }}>
-              <button onClick={() => setShowLoginAlert(false)} style={{ flex: 1, padding: "0.875rem", borderRadius: "14px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: "700", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.color = "#0f172a"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#64748b"; }}>Cancel</button>
-              <button onClick={() => router.push("/login")} style={{ flex: 1, padding: "0.875rem", borderRadius: "14px", border: "none", background: "linear-gradient(135deg, #0038A8, #021a4f)", color: "white", fontWeight: "700", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 4px 12px rgba(0,56,168,0.35)" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>Log In Now</button>
+              <button onClick={() => setShowLoginAlert(false)} style={{ flex: 1, padding: "0.875rem", borderRadius: "14px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: "700", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.color = "#0f172a"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#64748b"; }}>
+                {isFil ? "Kanselahin" : "Cancel"}
+              </button>
+              <button onClick={() => router.push("/login")} style={{ flex: 1, padding: "0.875rem", borderRadius: "14px", border: "none", background: "linear-gradient(135deg, #0038A8, #021a4f)", color: "white", fontWeight: "700", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 4px 12px rgba(0,56,168,0.35)" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+                {isFil ? "Mag-log In Ngayon" : "Log In Now"}
+              </button>
             </div>
 
           </div>

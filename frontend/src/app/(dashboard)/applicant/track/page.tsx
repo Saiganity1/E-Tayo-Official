@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PermitApplication } from "@/types";
 import { usePermitContext } from "../../../../context/PermitContext";
+import { useLanguage } from "../../../../context/LanguageContext";
 import { 
   Search, Plus, Clock, CheckCircle2, AlertTriangle, 
   FileText, CheckCircle, ChevronRight, Copy, Check, 
@@ -27,6 +28,7 @@ type ViewMode = "project" | "flat";
 
 export default function ApplicationStatusPage() {
   const router = useRouter();
+  const { language, t } = useLanguage();
   const { applications, updateApplication, archiveApplication, cancelApplication, refreshApplications } = usePermitContext();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -1771,7 +1773,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             <div>
               <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.activeTotal}</div>
               <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "all" ? "#0038A8" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                Active Permits
+                {t("Active Permits", "Active Permits")}
               </div>
             </div>
           </div>
@@ -1784,11 +1786,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               borderRadius: "16px", 
               padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "under_review" ? "2px solid #0038A8" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "active" && statusFilter === "under_review" ? "0 8px 24px rgba(0, 56, 168, 0.18)" : "0 2px 10px rgba(0,0,0,0.02)",
+              boxShadow: activeTab === "active" && statusFilter === "under_review" ? "0 8px 24px rgba(0, 56, 168, 0.18)" : "0 2px 10px rgba(0,0,0,0.02)", 
               cursor: "pointer",
               transition: "all 0.2s ease"
             }}
-            title="Click to filter by Under Evaluation"
+            title={t("Click to filter by Under Evaluation", "Click to filter by Under Evaluation")}
           >
             <div style={{ marginBottom: "0.55rem" }}>
               <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1798,7 +1800,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             <div>
               <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.review}</div>
               <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "under_review" ? "#0038A8" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                Under Evaluation
+                {t("Under Evaluation", "Under Evaluation")}
               </div>
             </div>
           </div>
@@ -1811,11 +1813,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               borderRadius: "16px", 
               padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "approved" ? "2px solid #059669" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "active" && statusFilter === "approved" ? "0 8px 24px rgba(5, 150, 105, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)",
+              boxShadow: activeTab === "active" && statusFilter === "approved" ? "0 8px 24px rgba(5, 150, 105, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)", 
               cursor: "pointer",
               transition: "all 0.2s ease"
             }}
-            title="Click to filter by Approved & Released"
+            title={t("Click to filter by Approved & Released", "Click to filter by Approved & Released")}
           >
             <div style={{ marginBottom: "0.55rem" }}>
               <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#d1fae5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1825,7 +1827,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             <div>
               <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.approved}</div>
               <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "approved" ? "#059669" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                Approved & Released
+                {t("Approved & Released", "Approved & Released")}
               </div>
             </div>
           </div>
@@ -1838,11 +1840,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               borderRadius: "16px", 
               padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "incomplete_requirements" ? "2px solid #dc2626" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "active" && statusFilter === "incomplete_requirements" ? "0 8px 24px rgba(220, 38, 38, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)",
+              boxShadow: activeTab === "active" && statusFilter === "incomplete_requirements" ? "0 8px 24px rgba(220, 38, 38, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)", 
               cursor: "pointer",
               transition: "all 0.2s ease"
             }}
-            title="Click to filter by Action Required"
+            title={t("Click to filter by Action Required", "Click to filter by Action Required")}
           >
             <div style={{ marginBottom: "0.55rem" }}>
               <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1852,7 +1854,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             <div>
               <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.action}</div>
               <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "incomplete_requirements" ? "#dc2626" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                Action Required
+                {t("Action Required", "Action Required")}
               </div>
             </div>
           </div>
@@ -1865,11 +1867,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               borderRadius: "16px", 
               padding: "1rem 1.1rem", 
               border: activeTab === "archived" ? "2px solid #7c3aed" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "archived" ? "0 8px 24px rgba(124, 58, 237, 0.15)" : "0 2px 10px rgba(0,0,0,0.02)",
+              boxShadow: activeTab === "archived" ? "0 8px 24px rgba(124, 58, 237, 0.15)" : "0 2px 10px rgba(0,0,0,0.02)", 
               cursor: "pointer",
               transition: "all 0.2s ease"
             }}
-            title="Click to view Archived applications"
+            title={t("Click to view Archived applications", "Click to view Archived applications")}
           >
             <div style={{ marginBottom: "0.55rem" }}>
               <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#f5f3ff", color: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1879,7 +1881,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             <div>
               <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.archivedTotal}</div>
               <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "archived" ? "#7c3aed" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                Archived Permits
+                {t("Archived Permits", "Archived Permits")}
               </div>
             </div>
           </div>
@@ -1907,7 +1909,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
           <input 
             type="text" 
-            placeholder="Search project name, reference ID, barangay..."
+            placeholder={t("Search project name, reference ID, barangay...", "Search project name, reference ID, barangay...")}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             style={{
@@ -1959,12 +1961,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                 cursor: "pointer"
               }}
             >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending Review</option>
-              <option value="under_review">Under Evaluation</option>
-              <option value="approved">Approved / Released</option>
-              <option value="incomplete_requirements">Action Required</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">{t("All Statuses", "All Statuses")}</option>
+              <option value="pending">{t("Pending Review", "Pending Review")}</option>
+              <option value="under_review">{t("Under Evaluation", "Under Evaluation")}</option>
+              <option value="approved">{t("Approved & Released", "Approved / Released")}</option>
+              <option value="incomplete_requirements">{t("Action Required", "Action Required")}</option>
+              <option value="cancelled">{t("Cancelled", "Cancelled")}</option>
             </select>
           </div>
 
@@ -1984,9 +1986,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                 cursor: "pointer"
               }}
             >
-              <option value="all">All Permit Types</option>
-              <option value="locational_clearance">Stage 1 · Locational Clearance</option>
-              <option value="building_permit">Stage 2 · Unified Technical Permits</option>
+              <option value="all">{t("All Permit Types", "All Permit Types")}</option>
+              <option value="locational_clearance">{t("Stage 1 · Locational Clearance", "Stage 1 · Locational Clearance")}</option>
+              <option value="building_permit">{t("Stage 2 · Unified Technical Permits", "Stage 2 · Unified Technical Permits")}</option>
             </select>
           </div>
 
@@ -2008,7 +2010,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                 cursor: "pointer"
               }}
             >
-              Reset Filters
+              {t("Reset Filters", "Reset Filters")}
             </button>
           )}
         </div>
@@ -2016,7 +2018,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         {/* DOSSIER COUNT & MANUAL SYNC BUTTON */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginTop: "0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f1f5f9" }}>
           <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: "600" }}>
-            {`${projectDossiers.length} Project Dossier${projectDossiers.length !== 1 ? "s" : ""}`}
+            {language === "fil" 
+              ? `${projectDossiers.length} Dossier ng Proyekto` 
+              : `${projectDossiers.length} Project Dossier${projectDossiers.length !== 1 ? "s" : ""}`}
           </span>
           <button
             type="button"
@@ -2036,10 +2040,10 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               cursor: "pointer",
               transition: "all 0.15s ease"
             }}
-            title="Click to fetch the latest approval and permit status directly from the municipal server"
+            title={t("Click to fetch the latest approval and permit status directly from the municipal server", "Click to fetch the latest approval and permit status directly from the municipal server")}
           >
             <RefreshCw size={13} style={{ animation: isRefreshing ? "spin 1s linear infinite" : "none" }} />
-            <span>{isRefreshing ? "Syncing..." : "Sync Live Status"}</span>
+            <span>{isRefreshing ? t("Syncing...", "Syncing...") : t("Sync Live Status", "Sync Live Status")}</span>
           </button>
         </div>
       </section>

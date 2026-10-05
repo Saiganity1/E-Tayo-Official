@@ -1,8 +1,12 @@
 import React from "react";
 import Image from "next/image";
 import { Globe, MapPin, Clock, Mail, Phone, ExternalLink, ChevronRight } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function Footer() {
+  const { language } = useLanguage();
+  const isFil = language === "fil";
+
   return (
     <footer className="etayo-white-footer">
       {/* Main Content Grid */}
@@ -31,75 +35,95 @@ export default function Footer() {
             </div>
 
             <div className="republic-header">
-              <span className="republic-sub">REPUBLIC OF THE PHILIPPINES</span>
-              <h2 className="municipality-title">Municipality of Sto. Tomas</h2>
-              <span className="district-tag">4th District of Pampanga</span>
+              <span className="republic-sub">
+                {isFil ? "REPUBLIKA NG PILIPINAS" : "REPUBLIC OF THE PHILIPPINES"}
+              </span>
+              <h2 className="municipality-title">
+                {isFil ? "Bayan ng Sto. Tomas" : "Municipality of Sto. Tomas"}
+              </h2>
+              <span className="district-tag">
+                {isFil ? "Ika-4 na Distrito ng Pampanga" : "4th District of Pampanga"}
+              </span>
             </div>
 
             <p className="footer-lead-text">
-              The official online regulatory and permitting platform of the Municipality of Sto. Tomas, Pampanga. Streamlining building permits, locational clearances, and occupancy approvals for residents and businesses.
+              {isFil
+                ? "Ang opisyal na online regulatory at permitting platform ng Bayan ng Sto. Tomas, Pampanga. Pinapabilis ang building permits, locational clearances, at occupancy approvals para sa mga mamamayan at negosyo."
+                : "The official online regulatory and permitting platform of the Municipality of Sto. Tomas, Pampanga. Streamlining building permits, locational clearances, and occupancy approvals for residents and businesses."}
             </p>
           </div>
 
           {/* Column 2: About Us (What is eTAYO) */}
           <div className="footer-col col-about">
-            <h3 className="footer-heading">ABOUT US</h3>
+            <h3 className="footer-heading">
+              {isFil ? "TUNGKOL SA AMIN" : "ABOUT US"}
+            </h3>
             <div className="heading-line" />
             <p className="about-text">
-              <strong>eTAYO</strong> is the official digital municipal governance and online permitting portal of the <strong>Municipality of Sto. Tomas, Pampanga</strong>.
+              <strong>eTAYO</strong>{" "}
+              {isFil
+                ? "ay ang opisyal na digital municipal governance at online permitting portal ng"
+                : "is the official digital municipal governance and online permitting portal of the"}{" "}
+              <strong>{isFil ? "Bayan ng Sto. Tomas, Pampanga" : "Municipality of Sto. Tomas, Pampanga"}</strong>.
             </p>
             <p className="about-text">
-              Built to modernize local public service, it empowers citizens, architects, engineers, and property developers with a transparent, efficient, and 100% online gateway to apply for municipal permits without in-person queueing.
+              {isFil
+                ? "Itinayo upang gawing makabago ang lokal na serbisyo publiko, binibigyang-lakas nito ang mga mamamayan, arkitekto, inhinyero, at property developers sa pamamagitan ng isang bukas, mabilis, at 100% online na paraan upang mag-apply ng mga permit nang hindi kailangang pumila nang personal."
+                : "Built to modernize local public service, it empowers citizens, architects, engineers, and property developers with a transparent, efficient, and 100% online gateway to apply for municipal permits without in-person queueing."}
             </p>
             <ul className="about-highlights">
               <li>
                 <ChevronRight size={14} className="list-icon" />
-                <span>Locational &amp; Zoning Clearances</span>
+                <span>{isFil ? "Mga Clearance sa Lokasyon at Zoning" : "Locational & Zoning Clearances"}</span>
               </li>
               <li>
                 <ChevronRight size={14} className="list-icon" />
-                <span>National Building Code Permits</span>
+                <span>{isFil ? "Mga Permit sa ilalim ng National Building Code" : "National Building Code Permits"}</span>
               </li>
               <li>
                 <ChevronRight size={14} className="list-icon" />
-                <span>Digital Evaluation &amp; Approvals</span>
+                <span>{isFil ? "Digital na Pagsusuri at Pag-apruba" : "Digital Evaluation & Approvals"}</span>
               </li>
               <li>
                 <ChevronRight size={14} className="list-icon" />
-                <span>Real-time QR Verification &amp; Tracking</span>
+                <span>{isFil ? "Real-time na Pag-verify gamit ang QR at Pagsubaybay" : "Real-time QR Verification & Tracking"}</span>
               </li>
             </ul>
           </div>
 
           {/* Column 3: Regulatory Offices & Departments */}
           <div className="footer-col col-offices">
-            <h3 className="footer-heading">OFFICES &amp; DEPARTMENTS</h3>
+            <h3 className="footer-heading">
+              {isFil ? "MGA TANGGAPAN AT KAGAWARAN" : "OFFICES & DEPARTMENTS"}
+            </h3>
             <div className="heading-line" />
             <ul className="footer-links-list">
               <li>
-                <span>Office of the Building Official (OBO)</span>
+                <span>{isFil ? "Tanggapan ng Opisyal ng Gusali (OBO)" : "Office of the Building Official (OBO)"}</span>
               </li>
               <li>
-                <span>Municipal Planning &amp; Development Office (MPDO)</span>
+                <span>{isFil ? "Tanggapan ng Pagpaplano at Pagpapaunlad ng Bayan (MPDO)" : "Municipal Planning & Development Office (MPDO)"}</span>
               </li>
               <li>
-                <span>Municipal Engineering Office (MEO)</span>
+                <span>{isFil ? "Tanggapan ng Inhinyero ng Bayan (MEO)" : "Municipal Engineering Office (MEO)"}</span>
               </li>
               <li>
-                <span>Bureau of Fire Protection (BFP Sto. Tomas)</span>
+                <span>{isFil ? "Kawanihan ng Pagtatanggol sa Sunog (BFP Sto. Tomas)" : "Bureau of Fire Protection (BFP Sto. Tomas)"}</span>
               </li>
               <li>
-                <span>Municipal Assessor&apos;s Office</span>
+                <span>{isFil ? "Tanggapan ng Tagatasa ng Bayan (Assessor)" : "Municipal Assessor's Office"}</span>
               </li>
               <li>
-                <span>Office of the Municipal Mayor</span>
+                <span>{isFil ? "Tanggapan ng Punong Bayan" : "Office of the Municipal Mayor"}</span>
               </li>
             </ul>
           </div>
 
           {/* Column 4: Public Assistance & Official Website Link */}
           <div className="footer-col col-assistance">
-            <h3 className="footer-heading">PUBLIC ASSISTANCE</h3>
+            <h3 className="footer-heading">
+              {isFil ? "TULONG PARA SA PUBLIKO" : "PUBLIC ASSISTANCE"}
+            </h3>
             <div className="heading-line" />
 
             {/* Official Municipal Website Link */}
@@ -108,13 +132,13 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               className="official-portal-link"
-              title="Visit the Official Website of Municipality of Sto. Tomas, Pampanga"
+              title={isFil ? "Bisitahin ang Opisyal na Website ng Bayan ng Sto. Tomas, Pampanga" : "Visit the Official Website of Municipality of Sto. Tomas, Pampanga"}
             >
               <div className="portal-icon-wrap">
                 <Globe size={18} />
               </div>
               <div className="portal-text-wrap">
-                <span className="portal-label">Official LGU Website</span>
+                <span className="portal-label">{isFil ? "Opisyal na Website ng LGU" : "Official LGU Website"}</span>
                 <span className="portal-url">
                   stotomaspampangagov.ph
                   <ExternalLink size={12} className="ext-icon" />
@@ -125,11 +149,11 @@ export default function Footer() {
             <div className="contact-details">
               <div className="contact-item">
                 <MapPin size={17} className="info-icon" />
-                <span>Sto. Tomas Municipal Hall, San Vicente, Sto. Tomas, Pampanga 2020</span>
+                <span>{isFil ? "Munisipyo ng Sto. Tomas, San Vicente, Sto. Tomas, Pampanga 2020" : "Sto. Tomas Municipal Hall, San Vicente, Sto. Tomas, Pampanga 2020"}</span>
               </div>
               <div className="contact-item">
                 <Clock size={17} className="info-icon" />
-                <span>Monday – Friday: 8:00 AM – 5:00 PM</span>
+                <span>{isFil ? "Lunes – Biyernes: 8:00 AM – 5:00 PM" : "Monday – Friday: 8:00 AM – 5:00 PM"}</span>
               </div>
               <div className="contact-item">
                 <Mail size={17} className="info-icon" />
@@ -137,7 +161,7 @@ export default function Footer() {
               </div>
               <div className="contact-item">
                 <Phone size={17} className="info-icon" />
-                <span>(045) 434-1234 / LGU Public Helpdesk</span>
+                <span>{isFil ? "(045) 434-1234 / Helpdesk ng Publiko ng LGU" : "(045) 434-1234 / LGU Public Helpdesk"}</span>
               </div>
             </div>
           </div>
@@ -148,10 +172,14 @@ export default function Footer() {
       <div className="footer-bottom-strip">
         <div className="bottom-content">
           <div className="copy-left">
-            <span>© {new Date().getFullYear()} Republic of the Philippines • Municipality of Sto. Tomas, Pampanga.</span>
+            <span>
+              {isFil
+                ? `© ${new Date().getFullYear()} Republika ng Pilipinas • Bayan ng Sto. Tomas, Pampanga.`
+                : `© ${new Date().getFullYear()} Republic of the Philippines • Municipality of Sto. Tomas, Pampanga.`}
+            </span>
           </div>
           <div className="copy-right">
-            <span>Powered by <strong>Niceone Solutions</strong></span>
+            <span>{isFil ? "Pinapagana ng" : "Powered by"} <strong>Niceone Solutions</strong></span>
           </div>
         </div>
       </div>

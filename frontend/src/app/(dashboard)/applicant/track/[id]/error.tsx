@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { AlertTriangle, RefreshCw, ArrowLeft, Home, FileText } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "../../../../../context/LanguageContext";
 
 export default function ErrorBoundary({
   error,
@@ -11,6 +12,9 @@ export default function ErrorBoundary({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { language } = useLanguage();
+  const isFil = language === "fil";
+
   useEffect(() => {
     console.error("eTAYO Application Tracker Error:", error);
   }, [error]);
@@ -44,11 +48,13 @@ export default function ErrorBoundary({
         </div>
 
         <h2 style={{ fontSize: "1.6rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.5rem 0", letterSpacing: "-0.01em" }}>
-          Unable to Load Application Details
+          {isFil ? "Hindi Ma-load ang mga Detalye ng Aplikasyon" : "Unable to Load Application Details"}
         </h2>
 
         <p style={{ color: "#475569", fontSize: "0.95rem", lineHeight: "1.6", maxWidth: "520px", margin: "0 auto 1.75rem auto" }}>
-          We encountered an issue preparing the tracking view or official municipal documents for this permit record. You can try refreshing or returning to your applications list.
+          {isFil
+            ? "Nagkaroon ng problema sa paghahanda ng tracking view o opisyal na dokumento ng permit na ito. Maaari mong subukang i-refresh o bumalik sa listahan ng iyong mga aplikasyon."
+            : "We encountered an issue preparing the tracking view or official municipal documents for this permit record. You can try refreshing or returning to your applications list."}
         </p>
 
         {error?.message && (
@@ -89,7 +95,7 @@ export default function ErrorBoundary({
               transition: "all 0.2s ease"
             }}
           >
-            <RefreshCw size={16} /> Reload Page
+            <RefreshCw size={16} /> {isFil ? "I-reload ang Pahina" : "Reload Page"}
           </button>
 
           <Link
@@ -110,7 +116,7 @@ export default function ErrorBoundary({
               transition: "all 0.2s ease"
             }}
           >
-            <FileText size={16} color="#0038A8" /> All Applications
+            <FileText size={16} color="#0038A8" /> {isFil ? "Lahat ng Aplikasyon" : "All Applications"}
           </Link>
 
           <Link

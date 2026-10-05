@@ -316,7 +316,15 @@ export default function Sidebar() {
               >
                 {displayName}
               </span>
-              <span className="user-role" style={{ marginTop: "2px" }}>{userRole}</span>
+              <span className="user-role" style={{ marginTop: "2px" }}>
+                {userRole === "applicant" 
+                  ? (language === "fil" ? "APLIKANTE" : "APPLICANT") 
+                  : userRole === "staff" 
+                  ? (language === "fil" ? "KAWANI" : "STAFF") 
+                  : userRole === "admin" 
+                  ? "ADMIN" 
+                  : (language === "fil" ? "PUBLIKO" : "PUBLIC")}
+              </span>
             </div>
           </div>
           {userRole !== "public" && (
