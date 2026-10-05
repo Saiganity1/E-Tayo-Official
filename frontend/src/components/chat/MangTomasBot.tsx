@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { MessageSquare, X, Send, Bot, Sparkles, RefreshCw } from "lucide-react";
+import { MessageSquare, X, Send, Bot, Sparkles, RefreshCw, Layers, ExternalLink } from "lucide-react";
 import { formatPhilippineTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../context/PermitContext";
 
@@ -10,15 +10,64 @@ interface ChatMessage {
   role: "bot" | "user";
   text: string;
   timestamp: Date;
-  source?: "gemini" | "openai" | "local_knowledge" | "error_fallback";
+  source?: "gemini" | "openai" | "local_ml" | "local_ml_calculator" | "error_fallback";
 }
 
-const QUICK_PROMPTS = [
-  "Ano requirements sa pagpapatayo ng bahay?",
-  "Bakit kailangan muna ang Locational Clearance?",
-  "Kumusta ang status ng application ko?",
-  "Magkano ang permit fees para sa 2-storey?",
-  "Ano ang required setbacks sa residential?"
+interface QuickPromptCategory {
+  category: string;
+  prompts: string[];
+}
+
+const CATEGORIZED_PROMPTS: QuickPromptCategory[] = [
+  {
+    category: "🔥 Popular",
+    prompts: [
+      "Ano requirements sa pagpapatayo ng bahay?",
+      "Magkano ang permit fees para sa 100 sqm?",
+      "Bakit kailangan muna ang Locational Clearance?",
+      "Ano ang required setbacks sa residential?",
+      "Kumusta ang status ng application ko?"
+    ]
+  },
+  {
+    category: "📋 Requirements",
+    prompts: [
+      "Ano requirements sa pagpapatayo ng bahay?",
+      "Bakit kailangan muna ang Locational Clearance?",
+      "Ano ang requirements sa Fencing Permit?",
+      "Ano ang requirements sa Demolition Permit?",
+      "Paano kung walang titulo, Tax Declaration lang?"
+    ]
+  },
+  {
+    category: "💰 Fee Estimator",
+    prompts: [
+      "Magkano ang permit fees para sa 80 sqm?",
+      "Magkano ang permit fees para sa 120 sqm?",
+      "Magkano para sa 150 sqm 2-storey house?",
+      "Magkano para sa 200 sqm commercial building?"
+    ]
+  },
+  {
+    category: "📐 Setbacks & Zoning",
+    prompts: [
+      "Ano ang required setbacks sa residential?",
+      "Pwede ba firewall sa tabi ng boundary?",
+      "Ano ang zoning rules sa San Matias?",
+      "Gaano kalayo kapag malapit sa ilog o sapa?",
+      "Ano ang minimum ceiling height at bintana?"
+    ]
+  },
+  {
+    category: "🔍 Tracking & Legal",
+    prompts: [
+      "Kumusta ang status ng application ko?",
+      "Ano ang parusa kapag walang building permit?",
+      "Sino-sino ang kailangang pumirma sa plano?",
+      "Gaano katagal bago maaprubahan ang permit?",
+      "Saan ang opisina ng OBO at kailan bukas?"
+    ]
+  }
 ];
 
 interface MangTomasBotProps {
@@ -40,14 +89,17 @@ export default function MangTomasBot({
     setInternalOpen(open);
     if (setExternalOpen) setExternalOpen(open);
   };
+
+  const [activeCategory, setActiveCategory] = useState<string>("🔥 Popular");
   const [inputText, setInputText] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "msg-0",
       role: "bot",
-      text: "Mabuhay! I am **Mang Tomas**, your virtual assistant for Sto. Tomas, Pampanga. Ano po ang plano ninyong ipatayo ngayon? Maaari ninyo akong tanungin tungkol sa mga requirements, zoning, permit fees, o ang status ng inyong application!",
-      timestamp: new Date()
+      text: "Mabuhay! Ako po si **Mang Tomas**, ang inyong AI Virtual Permitting Officer para sa Sto. Tomas, Pampanga. May katanungan ba kayo tungkol sa **Requirements**, **Kwentada ng Permit Fees**, **Zoning at Setbacks**, o ang **Status** ng inyong aplikasyon? Handa po akong tumulong 100%!",
+      timestamp: new Date(),
+      source: "local_ml"
     }
   ]);
   
@@ -83,7 +135,7 @@ export default function MangTomasBot({
 
       if (res.ok) {
         const data = await res.json();
-        const botReply = data.reply || "Mabuhay! Paumanhin po, maaari po bang paki-ulit ang inyong tanong?";
+        const botReply = data.reply || "Mabuhay! Paumanhin po, maaari po bang paki-ulit ang inyong katanungan?";
         
         setMessages(prev => [
           ...prev,
@@ -100,13 +152,12 @@ export default function MangTomasBot({
       }
     } catch (err) {
       console.warn("Error calling /api/chat, falling back to local guidance:", err);
-      // Local fallback in case network error occurs
       setMessages(prev => [
         ...prev,
         {
           id: `msg-${Date.now() + 1}`,
           role: "bot",
-          text: "Mabuhay! Ako po si Mang Tomas. Para sa inyong mga katanungan sa permit, maaari kayong pumunta sa **Permit Types** page o i-check ang inyong **Application Status** sa sidebar menu!",
+          text: "Mabuhay! Ako po si Mang Tomas. Maaari ninyong tingnan ang inyong [Application Status](/applicant/track) o mag-apply para sa bagong permit sa aming [Permits Application Page](/applicant/apply).",
           timestamp: new Date(),
           source: "error_fallback"
         }
@@ -146,15 +197,50 @@ export default function MangTomasBot({
     await sendQueryToAi(prompt);
   };
 
+  const handleResetChat = () => {
+    setMessages([
+      {
+        id: `msg-${Date.now()}`,
+        role: "bot",
+        text: "Mabuhay muli! Naka-reset na po ang ating usapan. Ano po ang maitutulong ko sa inyong plano o permit sa Sto. Tomas ngayon?",
+        timestamp: new Date(),
+        source: "local_ml"
+      }
+    ]);
+  };
+
   const renderFormattedText = (text: string) => {
-    // Replace **bold**
-    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Replace `code`
-    formatted = formatted.replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 0.88em;">$1</code>');
-    // Replace newlines with <br/>
+    // 1. Replace markdown links [label](url)
+    let formatted = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="chat-markdown-link" target="_self">$1 <span style="font-size:0.75em">↗</span></a>');
+    // 2. Replace **bold**
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // 3. Replace `code`
+    formatted = formatted.replace(/`([^`]+)`/g, '<code class="chat-code-badge">$1</code>');
+    // 4. Replace bullet points • 
+    formatted = formatted.replace(/^• (.*?)$/gm, '<li class="chat-bullet-item">$1</li>');
+    // 5. Replace newlines with <br/>
     formatted = formatted.replace(/\n/g, '<br/>');
     return formatted;
   };
+
+  const getSourceBadge = (source?: string) => {
+    switch (source) {
+      case "local_ml_calculator":
+        return "🧮 ML Fee Estimator";
+      case "gemini":
+        return "✨ Gemini AI";
+      case "openai":
+        return "🧠 OpenAI";
+      case "local_ml":
+        return "🤖 Sto. Tomas ML Engine";
+      case "error_fallback":
+        return "ℹ️ OBO Helpdesk";
+      default:
+        return null;
+    }
+  };
+
+  const currentCategoryPrompts = CATEGORIZED_PROMPTS.find(c => c.category === activeCategory)?.prompts || CATEGORIZED_PROMPTS[0].prompts;
 
   return (
     <>
@@ -169,7 +255,7 @@ export default function MangTomasBot({
             <MessageSquare size={28} color="white" />
             <span style={{ position: "absolute", top: -2, right: -2, width: "10px", height: "10px", background: "#4ade80", borderRadius: "50%", border: "2px solid #1d4ed8" }}></span>
           </div>
-          <span className="fab-tooltip">Ask Mang Tomas AI!</span>
+          <span className="fab-tooltip">Ask Mang Tomas (AI Officer)!</span>
         </button>
       )}
 
@@ -185,18 +271,34 @@ export default function MangTomasBot({
               <div className="bot-info">
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <h3>Mang Tomas</h3>
-                  <span style={{ fontSize: "0.68rem", background: "rgba(255,255,255,0.2)", padding: "1px 6px", borderRadius: "999px", fontWeight: "800", letterSpacing: "0.04em" }}>
+                  <span className="header-ai-badge">
                     AI OFFICER
                   </span>
                 </div>
                 <span className="bot-status">
-                  <span className="status-dot"></span> Online • Sto. Tomas OBO
+                  <span className="status-dot"></span> Online • Sto. Tomas OBO (ML-Powered)
                 </span>
               </div>
             </div>
-            <button className="close-btn" onClick={() => setIsOpen(false)} aria-label="Close chat">
-              <X size={20} />
-            </button>
+            
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <button 
+                className="header-action-btn" 
+                onClick={handleResetChat} 
+                title="Bagong Usapan / Reset Chat"
+                aria-label="Reset Chat"
+              >
+                <RefreshCw size={16} />
+              </button>
+              <button 
+                className="header-action-btn" 
+                onClick={() => setIsOpen(false)} 
+                title="Isara ang Chat"
+                aria-label="Close chat"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Messages Area */}
@@ -209,14 +311,18 @@ export default function MangTomasBot({
                   </div>
                 )}
                 <div className={`message-bubble ${msg.role === "user" ? "user-bubble" : "bot-bubble"}`}>
-                  <p dangerouslySetInnerHTML={{ __html: renderFormattedText(msg.text) }} />
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
-                    {msg.source && msg.source !== "local_knowledge" && (
-                      <span style={{ fontSize: "0.6rem", opacity: 0.6, fontStyle: "italic" }}>
-                        Powered by AI
+                  <div 
+                    className="bubble-content-text" 
+                    dangerouslySetInnerHTML={{ __html: renderFormattedText(msg.text) }} 
+                  />
+                  
+                  <div className="bubble-footer">
+                    {msg.source && getSourceBadge(msg.source) && (
+                      <span className="ml-source-badge">
+                        {getSourceBadge(msg.source)}
                       </span>
                     )}
-                    <span className="msg-time" style={{ marginLeft: "auto" }}>
+                    <span className="msg-time">
                       {formatPhilippineTime(msg.timestamp)}
                     </span>
                   </div>
@@ -230,8 +336,8 @@ export default function MangTomasBot({
                 <div className="bubble-avatar bot-bubble-avatar">
                   <Bot size={16} />
                 </div>
-                <div className="message-bubble bot-bubble" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "12px 18px" }}>
-                  <span style={{ fontSize: "0.85rem", color: "#64748b" }}>Mang Tomas is thinking</span>
+                <div className="message-bubble bot-bubble" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 18px" }}>
+                  <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: "600" }}>Kino-compute at sinusuri ni Mang Tomas</span>
                   <span className="typing-dot dot1"></span>
                   <span className="typing-dot dot2"></span>
                   <span className="typing-dot dot3"></span>
@@ -242,13 +348,25 @@ export default function MangTomasBot({
           </div>
 
           {/* Quick Prompts Suggestions */}
-          {messages.length <= 3 && !isThinking && (
+          {!isThinking && (
             <div className="quick-prompts-container">
-              <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Sparkles size={11} color="#0038A8" /> Suggested Inquiries:
-              </span>
+              {/* Category Filter Tabs */}
+              <div className="quick-categories-bar">
+                {CATEGORIZED_PROMPTS.map((c) => (
+                  <button
+                    key={c.category}
+                    type="button"
+                    onClick={() => setActiveCategory(c.category)}
+                    className={`category-pill ${activeCategory === c.category ? 'active' : ''}`}
+                  >
+                    {c.category}
+                  </button>
+                ))}
+              </div>
+
+              {/* Prompts Scroll */}
               <div className="quick-prompts-scroll">
-                {QUICK_PROMPTS.map((prompt, idx) => (
+                {currentCategoryPrompts.map((prompt, idx) => (
                   <button
                     key={idx}
                     type="button"
@@ -266,13 +384,13 @@ export default function MangTomasBot({
           <form className="chat-input-area" onSubmit={handleSend}>
             <input
               type="text"
-              placeholder="Ask Mang Tomas (English, Tagalog, Taglish)..."
+              placeholder="Magtanong kay Mang Tomas (Tagalog, English, Taglish)..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               className="chat-input"
               disabled={isThinking}
             />
-            <button type="submit" className="chat-send-btn" disabled={!inputText.trim() || isThinking}>
+            <button type="submit" className="chat-send-btn" disabled={!inputText.trim() || isThinking} title="Ipadala">
               <Send size={18} />
             </button>
           </form>
@@ -336,12 +454,12 @@ export default function MangTomasBot({
           position: fixed;
           bottom: 24px;
           right: 24px;
-          width: 380px;
-          height: 540px;
+          width: 410px;
+          height: 580px;
           max-height: calc(100vh - 48px);
           background: white;
           border-radius: 20px;
-          box-shadow: 0 12px 45px rgba(15, 23, 42, 0.25);
+          box-shadow: 0 14px 45px rgba(15, 23, 42, 0.28);
           display: flex;
           flex-direction: column;
           z-index: 10000;
@@ -351,11 +469,12 @@ export default function MangTomasBot({
 
         .chat-header {
           background: linear-gradient(135deg, #021a4f 0%, #0038A8 100%);
-          padding: 16px 20px;
+          padding: 14px 18px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           color: white;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.12);
         }
         
         .bot-avatar-container {
@@ -382,14 +501,25 @@ export default function MangTomasBot({
           font-weight: 800;
           letter-spacing: -0.01em;
         }
+
+        .header-ai-badge {
+          font-size: 0.65rem;
+          background: rgba(255,255,255,0.22);
+          padding: 2px 7px;
+          border-radius: 999px;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          border: 1px solid rgba(255,255,255,0.3);
+        }
         
         .bot-status {
           font-size: 0.72rem;
           display: flex;
           align-items: center;
           gap: 6px;
-          opacity: 0.9;
+          opacity: 0.92;
           margin-top: 2px;
+          font-weight: 500;
         }
         
         .status-dot {
@@ -400,21 +530,21 @@ export default function MangTomasBot({
           box-shadow: 0 0 6px #4ade80;
         }
 
-        .close-btn {
-          background: transparent;
-          border: none;
+        .header-action-btn {
+          background: rgba(255,255,255,0.12);
+          border: 1px solid rgba(255,255,255,0.2);
           color: white;
           cursor: pointer;
-          opacity: 0.8;
-          transition: opacity 0.2s, transform 0.2s;
+          border-radius: 8px;
+          padding: 6px;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 4px;
+          transition: background 0.15s, transform 0.15s;
         }
-        .close-btn:hover {
-          opacity: 1;
-          transform: scale(1.1);
+        .header-action-btn:hover {
+          background: rgba(255,255,255,0.25);
+          transform: scale(1.05);
         }
 
         .chat-messages {
@@ -431,7 +561,7 @@ export default function MangTomasBot({
           display: flex;
           align-items: flex-end;
           gap: 8px;
-          max-width: 88%;
+          max-width: 90%;
         }
         .user-wrapper {
           align-self: flex-end;
@@ -459,17 +589,50 @@ export default function MangTomasBot({
           padding: 12px 16px;
           border-radius: 18px;
           position: relative;
-          font-size: 0.92rem;
-          line-height: 1.45;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+          font-size: 0.90rem;
+          line-height: 1.5;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.04);
         }
         
-        .message-bubble p {
+        .bubble-content-text {
           margin: 0;
+          word-break: break-word;
         }
-        .message-bubble strong {
+        .bubble-content-text strong {
           color: inherit;
+          font-weight: 750;
+        }
+
+        .chat-code-badge {
+          background: rgba(0, 56, 168, 0.08);
+          color: #0038A8;
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 0.88em;
           font-weight: 700;
+        }
+
+        .chat-bullet-item {
+          margin-left: 14px;
+          list-style-type: disc;
+        }
+
+        .chat-markdown-link {
+          display: inline-block;
+          margin-top: 6px;
+          background: #eff6ff;
+          color: #0038A8;
+          padding: 5px 12px;
+          border-radius: 8px;
+          text-decoration: none;
+          font-weight: 700;
+          border: 1px solid #bfdbfe;
+          transition: background 0.15s, border-color 0.15s;
+        }
+        .chat-markdown-link:hover {
+          background: #dbeafe;
+          border-color: #93c5fd;
         }
 
         .bot-bubble {
@@ -484,25 +647,73 @@ export default function MangTomasBot({
           border-bottom-right-radius: 4px;
         }
 
+        .bubble-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 6px;
+          gap: 8px;
+        }
+
+        .ml-source-badge {
+          font-size: 0.62rem;
+          background: rgba(0, 56, 168, 0.06);
+          color: #0038A8;
+          font-weight: 700;
+          padding: 1px 6px;
+          border-radius: 4px;
+          border: 1px solid rgba(0, 56, 168, 0.15);
+        }
+
         .msg-time {
           display: block;
           font-size: 0.65rem;
-          opacity: 0.6;
+          opacity: 0.65;
+          margin-left: auto;
         }
 
         .quick-prompts-container {
-          padding: 8px 16px;
+          padding: 10px 14px;
           background: #f1f5f9;
           border-top: 1px solid #e2e8f0;
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 8px;
         }
+
+        .quick-categories-bar {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .quick-categories-bar::-webkit-scrollbar {
+          display: none;
+        }
+
+        .category-pill {
+          background: white;
+          border: 1px solid #cbd5e1;
+          color: #475569;
+          padding: 3px 9px;
+          border-radius: 999px;
+          font-size: 0.70rem;
+          font-weight: 700;
+          white-space: nowrap;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .category-pill.active {
+          background: #0038A8;
+          color: white;
+          border-color: #0038A8;
+        }
+
         .quick-prompts-scroll {
           display: flex;
           gap: 6px;
           overflow-x: auto;
-          padding-bottom: 4px;
+          padding-bottom: 2px;
           scrollbar-width: thin;
         }
         .quick-prompt-btn {
@@ -511,8 +722,8 @@ export default function MangTomasBot({
           color: #0038A8;
           padding: 4px 10px;
           border-radius: 999px;
-          font-size: 0.75rem;
-          font-weight: 700;
+          font-size: 0.74rem;
+          font-weight: 650;
           white-space: nowrap;
           cursor: pointer;
           transition: all 0.15s ease;
@@ -538,7 +749,7 @@ export default function MangTomasBot({
           background: #f1f5f9;
           border: 1.5px solid transparent;
           border-radius: 99px;
-          font-size: 0.9rem;
+          font-size: 0.88rem;
           outline: none;
           transition: border-color 0.2s, background 0.2s;
         }
