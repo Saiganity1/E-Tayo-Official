@@ -3616,7 +3616,7 @@ export const stoTomasZoningGeoJSON: any = {
         "province": "Pampanga",
         "region": "Region III (Central Luzon)",
         "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
-        "psgc": "0305421001",
+        "psgc": "0305421002",
         "name": "Suburban Residential & Traditional Craft Zone",
         "code": "R-1 / AG",
         "zoneType": "Suburban Residential & Cottage Industry (R-1 / AG)",
@@ -3996,7 +3996,7 @@ export const stoTomasZoningGeoJSON: any = {
         "province": "Pampanga",
         "region": "Region III (Central Luzon)",
         "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
-        "psgc": "0305421002",
+        "psgc": "0305421004",
         "name": "Municipal Civic Core & Institutional Commercial Zone",
         "code": "C-1 / INST",
         "zoneType": "Municipal Civic Core & Commercial (C-1 / INST)",
@@ -4588,7 +4588,7 @@ export const stoTomasZoningGeoJSON: any = {
         "province": "Pampanga",
         "region": "Region III (Central Luzon)",
         "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
-        "psgc": "0305421003",
+        "psgc": "0305421005",
         "name": "Commercial & Enterprise Trade Corridor",
         "code": "C-2 / Mixed",
         "zoneType": "Commercial & Enterprise Trade (C-2 / Mixed-Use)",
@@ -5052,7 +5052,7 @@ export const stoTomasZoningGeoJSON: any = {
         "province": "Pampanga",
         "region": "Region III (Central Luzon)",
         "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
-        "psgc": "0305421004",
+        "psgc": "0305421006",
         "name": "Industrial, Logistics & Highway Commercial Corridor",
         "code": "I-1 / C-2",
         "zoneType": "Light Industrial & Highway Commercial (I-1 / C-2)",
@@ -5987,7 +5987,7 @@ export const stoTomasZoningGeoJSON: any = {
         "province": "Pampanga",
         "region": "Region III (Central Luzon)",
         "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
-        "psgc": "0305421005",
+        "psgc": "0305421007",
         "name": "High-Density Urban & Heritage Pottery Core",
         "code": "R-2 / C-1",
         "zoneType": "High-Density Residential & Commercial (R-2 / C-1)",
@@ -6639,7 +6639,7 @@ export const stoTomasZoningGeoJSON: any = {
         "province": "Pampanga",
         "region": "Region III (Central Luzon)",
         "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
-        "psgc": "0305421006",
+        "psgc": "0305421008",
         "name": "Agricultural & Low-Density Suburban Expansion Zone",
         "code": "AG / R-1",
         "zoneType": "Agricultural & Low-Density Residential (AG / R-1)",
@@ -6987,7 +6987,7 @@ export const stoTomasZoningGeoJSON: any = {
         "province": "Pampanga",
         "region": "Region III (Central Luzon)",
         "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
-        "psgc": "0305421007",
+        "psgc": "0305421009",
         "name": "Agro-Aquaculture & Ecological Water Buffer Zone",
         "code": "AG / ECO",
         "zoneType": "Agro-Aquaculture & Environmental Buffer (AG / ECO)",
@@ -7418,5 +7418,41 @@ export const stoTomasZoningGeoJSON: any = {
         ]
       }
     }
+  ]
+};
+
+export const stoTomasGeoJSON = stoTomasZoningGeoJSON;
+
+export const STO_TOMAS_GEODATA_PROVENANCE = {
+  officialGeoJsonFile: "/data/sto_tomas_pampanga_cadastral.geojson",
+  localGeoJsonPath: "frontend/src/data/sto_tomas_pampanga_cadastral.geojson",
+  publicGeoJsonPath: "frontend/public/data/sto_tomas_pampanga_cadastral.geojson",
+  crs: "EPSG:4326 (WGS 84)",
+  psgcMunicipality: "0305421000",
+  psgcBarangays: {
+    "Moras Dela Paz": "0305421002",
+    "Poblacion": "0305421004",
+    "San Bartolome": "0305421005",
+    "San Matias": "0305421006",
+    "San Vicente": "0305421007",
+    "Santo Rosario (Pau)": "0305421008",
+    "Sapa (Santo Niño)": "0305421009"
+  },
+  osmRelations: {
+    municipalBoundary: 13255070,
+    barangays: {
+      "Moras Dela Paz": 21027520,
+      "Poblacion": 21027521,
+      "San Bartolome": 21027522,
+      "San Matias": 21027523,
+      "San Vicente": 21027524,
+      "Santo Rosario (Pau)": 21027525,
+      "Sapa (Santo Niño)": 21027526
+    }
+  },
+  legalAuthorities: [
+    "Republic Act No. 7160 (Local Government Code of 1991)",
+    "Presidential Decree No. 1096 (National Building Code of the Philippines)",
+    "Comprehensive Land Use Plan (CLUP) & Zoning Ordinance of Sto. Tomas, Pampanga"
   ]
 };
