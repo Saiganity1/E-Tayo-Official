@@ -142,13 +142,15 @@ interface LocationPickerMapProps {
   selectedBarangay?: string;
   initialLat?: number;
   initialLng?: number;
+  height?: string;
 }
 
 export default function LocationPickerMap({
   onLocationChange,
   selectedBarangay,
   initialLat,
-  initialLng
+  initialLng,
+  height = "380px"
 }: LocationPickerMapProps) {
   // Determine initial coordinates based on props
   const getInitialPosition = (): [number, number] => {
@@ -245,12 +247,13 @@ export default function LocationPickerMap({
       ref={mapRef}
       style={{
         position: "relative",
-        borderRadius: isFullscreen ? "0" : "12px",
+        borderRadius: isFullscreen ? "0" : "14px",
         overflow: "hidden",
-        border: isFullscreen ? "none" : "1px solid #cbd5e1",
-        height: isFullscreen ? "100vh" : "280px",
+        border: isFullscreen ? "none" : "1.5px solid #cbd5e1",
+        height: isFullscreen ? "100vh" : height,
         background: "#f8fafc",
-        width: "100%"
+        width: "100%",
+        boxShadow: isFullscreen ? "none" : "0 4px 16px rgba(0, 0, 0, 0.08)"
       }}
     >
       <MapContainer

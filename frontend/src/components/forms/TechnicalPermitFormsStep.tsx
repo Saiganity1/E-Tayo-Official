@@ -1759,7 +1759,6 @@ export default function TechnicalPermitFormsStep({
         if (saved) {
           const draft = JSON.parse(saved);
           if (draft.projectName && !projectName) setProjectName(draft.projectName);
-          if (draft.streetAddress && !streetAddress) setStreetAddress(draft.streetAddress);
           if (draft.barangay && !barangay) setBarangay(draft.barangay);
           if (draft.projectCost && !projectCost) setProjectCost(draft.projectCost);
           if (draft.lotNo) setLotNo(draft.lotNo);
@@ -4026,7 +4025,6 @@ export default function TechnicalPermitFormsStep({
                       onChange={(e) => {
                         const val = e.target.value.toUpperCase();
                         setApplicantNoStreet(val);
-                        setStreetAddress(val);
                       }}
                       placeholder="123 RIZAL ST."
                       style={{

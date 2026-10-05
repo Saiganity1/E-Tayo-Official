@@ -586,9 +586,6 @@ export default function ApplyPage() {
       if (matchedClearanceApp.applicantEmail && !applicantEmail) {
         setApplicantEmail(matchedClearanceApp.applicantEmail);
       }
-      if (matchedClearanceApp.projectAddress && !streetAddress) {
-        setStreetAddress(matchedClearanceApp.projectAddress);
-      }
       if (matchedClearanceApp.barangay && barangay === "San Bartolome") {
         setBarangay(matchedClearanceApp.barangay);
       }
@@ -3147,150 +3144,148 @@ export default function ApplyPage() {
                 </p>
               </div>
               
-              <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "2rem", marginTop: "1rem" }}>
-                {/* Left Column: Basic Details & Location Picker Map */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                  <div className="form-group">
-                    <label style={{ fontWeight: "700", color: "#ffffff", marginBottom: "0.5rem", display: "block", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>Project Name *</label>
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="e.g. 2-Storey Residential House" 
-                      className="form-input" 
-                      value={projectName}
-                      onChange={e => setProjectName(e.target.value)}
-                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1" }}
-                    />
-                  </div>
-                  
-                  <div>
-                    <LocationPickerMap 
-                      selectedBarangay={barangay}
-                      initialLat={latitude ? parseFloat(latitude) : undefined}
-                      initialLng={longitude ? parseFloat(longitude) : undefined}
-                      onLocationChange={async (lat, lng, zone) => {
-                        setLatitude(lat.toFixed(6));
-                        setLongitude(lng.toFixed(6));
-                        
-                        if (zone) {
-                          setDetectedZone(zone);
-                          if (zone.barangay) {
-                            setBarangay(zone.barangay);
-                          }
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", marginTop: "1rem" }}>
+                {/* 1. Basic Details: Project Name */}
+                <div className="form-group">
+                  <label style={{ fontWeight: "700", color: "#ffffff", marginBottom: "0.5rem", display: "block", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>Project Name *</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="e.g. 2-Storey Residential House" 
+                    className="form-input" 
+                    value={projectName}
+                    onChange={e => setProjectName(e.target.value)}
+                    style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
+                  />
+                </div>
+                
+                {/* 2. Enlarged Full-Width Interactive Map */}
+                <div>
+                  <LocationPickerMap 
+                    selectedBarangay={barangay}
+                    initialLat={latitude ? parseFloat(latitude) : undefined}
+                    initialLng={longitude ? parseFloat(longitude) : undefined}
+                    height="380px"
+                    onLocationChange={async (lat, lng, zone) => {
+                      setLatitude(lat.toFixed(6));
+                      setLongitude(lng.toFixed(6));
+                      
+                      if (zone) {
+                        setDetectedZone(zone);
+                        if (zone.barangay) {
+                          setBarangay(zone.barangay);
                         }
-                        
-                        try {
-                          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                          const data = await res.json();
-                          if (data && data.address) {
-                            const road = data.address.road || data.address.pedestrian || "";
-                            const neighborhood = data.address.neighbourhood || data.address.suburb || "";
-                            if (road || neighborhood) {
-                              setStreetAddress(prev => prev.trim() === "" ? [road, neighborhood].filter(Boolean).join(", ") : prev);
-                            }
-                          }
-                        } catch (err) {
-                          console.error("Reverse geocoding error:", err);
-                        }
-                      }}
-                    />
-                  </div>
-
-                  {detectedZone && (
-                    <div className="animate-fade-in-up" style={{ padding: "1rem", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", display: "flex", gap: "1rem", alignItems: "center" }}>
-                      <ShieldCheck size={28} color="#16a34a" style={{ flexShrink: 0 }} />
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "0.75rem", background: "#dcfce7", color: "#166534", padding: "2px 6px", borderRadius: "4px", fontWeight: "700" }}>
-                            {(detectedZone as any)?.code || "ZONE"}
-                          </span>
-                          <span style={{ fontWeight: "700", color: "#166534", fontSize: "0.95rem" }}>
-                            {(detectedZone as any)?.name || detectedZone.zoneType || (detectedZone.barangay ? `Brgy. ${detectedZone.barangay}` : "Zoning Compliant")}
-                          </span>
-                        </div>
-                        <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "#15803d" }}>
-                          {detectedZone.description}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                      }
+                    }}
+                  />
                 </div>
 
-                {/* Right Column: Site & Project Parameters */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", background: "#f8fafc", padding: "1.5rem", borderRadius: "14px", border: "1px solid #e2e8f0" }}>
-                  <h4 style={{ margin: "0 0 0.25rem 0", fontSize: "1.05rem", fontWeight: "800", color: "#0f172a" }}>
-                    Site & Dimension Details
-                  </h4>
+                {/* 3. Detected Zoning Compliance Badge */}
+                {detectedZone && (
+                  <div className="animate-fade-in-up" style={{ padding: "1rem", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", display: "flex", gap: "1rem", alignItems: "center" }}>
+                    <ShieldCheck size={28} color="#16a34a" style={{ flexShrink: 0 }} />
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "0.75rem", background: "#dcfce7", color: "#166534", padding: "2px 6px", borderRadius: "4px", fontWeight: "700" }}>
+                          {(detectedZone as any)?.code || "ZONE"}
+                        </span>
+                        <span style={{ fontWeight: "700", color: "#166534", fontSize: "0.95rem" }}>
+                          {(detectedZone as any)?.name || detectedZone.zoneType || (detectedZone.barangay ? `Brgy. ${detectedZone.barangay}` : "Zoning Compliant")}
+                        </span>
+                      </div>
+                      <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "#15803d" }}>
+                        {detectedZone.description}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Site & Dimension Details Card (Placed underneath the map) */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", background: "#f8fafc", padding: "1.5rem", borderRadius: "14px", border: "1px solid #e2e8f0", boxShadow: "0 4px 14px rgba(0, 0, 0, 0.04)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid #e2e8f0", paddingBottom: "0.75rem" }}>
+                    <Building2 size={20} color="#2563eb" />
+                    <h4 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#0f172a" }}>
+                      Site & Dimension Details
+                    </h4>
+                  </div>
                   
-                  <div className="form-group">
-                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Street Address / Sitio *</label>
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="e.g. Purok 3, Poblacion Road" 
-                      className="form-input" 
-                      value={streetAddress}
-                      onChange={e => setStreetAddress(e.target.value)}
-                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
-                    />
-                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem" }}>
+                    {/* Left Sub-column: Street Address and Barangay */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      <div className="form-group">
+                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Street Address / Sitio *</label>
+                        <input 
+                          type="text" 
+                          required
+                          placeholder="e.g. Purok 3, Poblacion Road" 
+                          className="form-input" 
+                          value={streetAddress}
+                          onChange={e => setStreetAddress(e.target.value)}
+                          style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
+                        />
+                      </div>
 
-                  <div className="form-group">
-                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Barangay (Santo Tomas) *</label>
-                    <select
-                      className="form-input"
-                      required
-                      value={barangay}
-                      onChange={e => setBarangay(e.target.value)}
-                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
-                    >
-                      {STO_TOMAS_BARANGAYS.map(b => (
-                        <option key={b} value={b}>Brgy. {b}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                    <div className="form-group">
-                      <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Lot Area (sq.m) *</label>
-                      <input 
-                        type="number" 
-                        required
-                        placeholder="e.g. 150" 
-                        className="form-input" 
-                        value={lotArea}
-                        onChange={e => setLotArea(e.target.value)}
-                        style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
-                      />
+                      <div className="form-group">
+                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Barangay (Santo Tomas) *</label>
+                        <select
+                          className="form-input"
+                          required
+                          value={barangay}
+                          onChange={e => setBarangay(e.target.value)}
+                          style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
+                        >
+                          {STO_TOMAS_BARANGAYS.map(b => (
+                            <option key={b} value={b}>Brgy. {b}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Floor Area (sq.m) *</label>
-                      <input 
-                        type="number" 
-                        required
-                        placeholder="e.g. 120" 
-                        className="form-input" 
-                        value={floorArea}
-                        onChange={e => setFloorArea(e.target.value)}
-                        style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
-                      />
+
+                    {/* Right Sub-column: Areas and Estimated Cost */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                        <div className="form-group">
+                          <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Lot Area (sq.m) *</label>
+                          <input 
+                            type="number" 
+                            required
+                            placeholder="e.g. 150" 
+                            className="form-input" 
+                            value={lotArea}
+                            onChange={e => setLotArea(e.target.value)}
+                            style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Floor Area (sq.m) *</label>
+                          <input 
+                            type="number" 
+                            required
+                            placeholder="e.g. 120" 
+                            className="form-input" 
+                            value={floorArea}
+                            onChange={e => setFloorArea(e.target.value)}
+                            style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Estimated Project Cost (₱ PHP) *</label>
+                        <input 
+                          type="number" 
+                          required
+                          placeholder="e.g. 1500000" 
+                          className="form-input" 
+                          value={projectCost}
+                          onChange={e => setProjectCost(e.target.value)}
+                          style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Estimated Project Cost (₱ PHP) *</label>
-                    <input 
-                      type="number" 
-                      required
-                      placeholder="e.g. 1500000" 
-                      className="form-input" 
-                      value={projectCost}
-                      onChange={e => setProjectCost(e.target.value)}
-                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
-                    />
-                  </div>
-
-                  <div style={{ marginTop: "0.5rem", padding: "0.85rem", background: "#eef2ff", borderRadius: "10px", border: "1px solid #c7d2fe", display: "flex", gap: "8px", alignItems: "center" }}>
+                  <div style={{ marginTop: "0.25rem", padding: "0.85rem", background: "#eef2ff", borderRadius: "10px", border: "1px solid #c7d2fe", display: "flex", gap: "8px", alignItems: "center" }}>
                     <Sparkles size={16} color="#4f46e5" />
                     <span style={{ fontSize: "0.8rem", color: "#3730a3" }}>
                       Data synced automatically with your technical permit documents and municipal records.
