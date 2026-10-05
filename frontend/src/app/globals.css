@@ -1655,16 +1655,46 @@ button {
   color: #ffffff;
 }
 
-.wizard-content .step-pane h2 {
+.wizard-content .step-pane > div:first-child h2,
+.wizard-content .step-pane > div:first-child > div > h2,
+.wizard-content .step-pane > h2 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
   color: #ffffff !important;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
 }
 
-.wizard-content .step-pane p {
-  color: rgba(255, 255, 255, 0.95) !important;
-  margin-bottom: 2rem;
+.wizard-content .step-pane > div:first-child p,
+.wizard-content .step-pane > div:first-child > div > p,
+.wizard-content .step-pane > p {
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 1.5rem;
+}
+
+/* Ensure all cards, forms, and review components inside wizard content maintain dark, crisp text */
+.wizard-content .review-summary,
+.wizard-content #mandatory-requirements-section,
+.wizard-content .step-pane div[style*="background: #ffffff"],
+.wizard-content .step-pane div[style*="background:#ffffff"],
+.wizard-content .step-pane div[style*="background: #f0fdf4"],
+.wizard-content .step-pane div[style*="background:#f0fdf4"],
+.wizard-content .step-pane div[style*="background: #fffbeb"],
+.wizard-content .step-pane div[style*="background:#fffbeb"],
+.wizard-content .step-pane div[style*="background: #f8fafc"],
+.wizard-content .step-pane div[style*="background:#f8fafc"] {
+  color: #0f172a;
+}
+
+.wizard-content .step-pane div[style*="background: #ffffff"] p,
+.wizard-content .step-pane div[style*="background:#ffffff"] p,
+.wizard-content .step-pane div[style*="background: #f0fdf4"] p,
+.wizard-content .step-pane div[style*="background:#f0fdf4"] p,
+.wizard-content .step-pane div[style*="background: #fffbeb"] p,
+.wizard-content .step-pane div[style*="background:#fffbeb"] p,
+.wizard-content .step-pane div[style*="background: #f8fafc"] p,
+.wizard-content .step-pane div[style*="background:#f8fafc"] p {
+  color: #334155;
+  margin-bottom: 0;
 }
 
 .permit-options {

@@ -1665,7 +1665,7 @@ export default function ApplyPage() {
                   }}>
                     STEP 1 OF 5
                   </span>
-                  <span style={{ fontSize: "0.82rem", color: "rgba(255, 255, 255, 0.85)", fontWeight: "600" }}>
+                  <span style={{ fontSize: "0.88rem", color: "#ffffff", fontWeight: "700", textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)" }}>
                     Municipal Project Matrix
                   </span>
                 </div>
@@ -2270,7 +2270,7 @@ export default function ApplyPage() {
                   }}>
                     STEP 2 OF 5
                   </span>
-                  <span style={{ fontSize: "0.82rem", color: "rgba(255, 255, 255, 0.85)", fontWeight: "600" }}>
+                  <span style={{ fontSize: "0.88rem", color: "#ffffff", fontWeight: "700", textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)" }}>
                     Prerequisite Verification
                   </span>
                 </div>
@@ -3135,14 +3135,14 @@ export default function ApplyPage() {
                   }}>
                     STEP 4 OF 5
                   </span>
-                  <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
+                  <span style={{ fontSize: "0.88rem", color: "#ffffff", fontWeight: "700", textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)" }}>
                     Site & Cadastral Mapping
                   </span>
                 </div>
-                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
+                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#ffffff", margin: "0 0 0.35rem 0", textShadow: "0 2px 10px rgba(0, 0, 0, 0.18)" }}>
                   Mapping
                 </h2>
-                <p style={{ margin: 0, color: "#475569", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.95)", fontSize: "0.92rem", lineHeight: "1.5" }}>
                   Pinpoint your project location in Sto. Tomas, Pampanga to determine cadastral boundaries, coordinates, and zoning compliance.
                 </p>
               </div>
@@ -3151,7 +3151,7 @@ export default function ApplyPage() {
                 {/* Left Column: Basic Details & Location Picker Map */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                   <div className="form-group">
-                    <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.5rem", display: "block" }}>Project Name *</label>
+                    <label style={{ fontWeight: "700", color: "#ffffff", marginBottom: "0.5rem", display: "block", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>Project Name *</label>
                     <input 
                       type="text" 
                       required
@@ -3317,14 +3317,14 @@ export default function ApplyPage() {
                   }}>
                     STEP 5 OF 5
                   </span>
-                  <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
+                  <span style={{ fontSize: "0.88rem", color: "#ffffff", fontWeight: "700", textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)" }}>
                     Final Verification & Filing
                   </span>
                 </div>
-                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
+                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#ffffff", margin: "0 0 0.35rem 0", textShadow: "0 2px 10px rgba(0, 0, 0, 0.18)" }}>
                   Review
                 </h2>
-                <p style={{ margin: 0, color: "#475569", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.95)", fontSize: "0.92rem", lineHeight: "1.5" }}>
                   Review your application details, selected municipal project type, required permit forms, and site mapping before filing endorsement.
                 </p>
               </div>
@@ -3476,9 +3476,9 @@ export default function ApplyPage() {
                   </div>
                 </div>
 
-                <p style={{ margin: "0 0 1.25rem 0", color: "#475569", fontSize: "0.9rem", lineHeight: "1.5" }}>
+                <div style={{ margin: "0 0 1.25rem 0", color: "#334155", fontSize: "0.92rem", lineHeight: "1.5", fontWeight: "500" }}>
                   Under the Santo Tomas Municipal Permitting Matrix and the National Building Code of the Philippines (PD 1096), technical engineering permits answered online in Step 3 are automatically compiled into your official digital permit dossier.
-                </p>
+                </div>
 
                 {/* Submission Error Banner */}
                 {submissionErrorAlert && (
@@ -3622,12 +3622,12 @@ export default function ApplyPage() {
                                   {doc ? "ATTACHED" : "UPLOAD REQUIRED"}
                                 </span>
                               </div>
-                              <p style={{ margin: "0 0 4px 0", fontSize: "0.82rem", color: "#475569" }}>
+                              <div style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "#1e293b", fontWeight: "600", lineHeight: "1.4" }}>
                                 {meta.desc}
-                              </p>
-                              <p style={{ margin: 0, fontSize: "0.76rem", color: doc ? "#16a34a" : "#b45309", fontStyle: "italic", fontWeight: "600" }}>
+                              </div>
+                              <div style={{ margin: 0, fontSize: "0.80rem", color: doc ? "#15803d" : "#b45309", fontStyle: "italic", fontWeight: "700" }}>
                                 {doc ? "✓ Official BFP Clearance document attached" : signeeNotice}
-                              </p>
+                              </div>
                             </div>
                           </div>
 
@@ -3777,12 +3777,12 @@ export default function ApplyPage() {
                                 FILLED ONLINE (STEP 3)
                               </span>
                             </div>
-                            <p style={{ margin: "0 0 4px 0", fontSize: "0.82rem", color: "#475569" }}>
+                            <div style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "#1e293b", fontWeight: "600", lineHeight: "1.4" }}>
                               {meta.desc}
-                            </p>
-                            <p style={{ margin: 0, fontSize: "0.76rem", color: "#16a34a", fontWeight: "600" }}>
-                              ✓ Form answered & compiled digitally. No manual file attachment required.
-                            </p>
+                            </div>
+                            <div style={{ margin: 0, fontSize: "0.80rem", color: "#15803d", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
+                              <span>✓ Form answered & compiled digitally. No manual file attachment required.</span>
+                            </div>
                           </div>
                         </div>
 
@@ -3847,7 +3847,7 @@ export default function ApplyPage() {
                 {conditionalPermitsToSubmit.length > 0 && (
                   <div style={{ marginTop: "1.25rem", borderTop: "1px solid #e2e8f0", paddingTop: "1rem" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: "600" }}>
+                      <span style={{ fontSize: "0.85rem", color: "#1e293b", fontWeight: "700" }}>
                         Specialized / Scope-Dependent Permits ({conditionalPermitsToSubmit.length} Conditional for {selectedProjectType.name})
                       </span>
                       <button
@@ -3907,9 +3907,9 @@ export default function ApplyPage() {
                                       CONDITIONAL
                                     </span>
                                   </div>
-                                  <p style={{ margin: "2px 0 0 0", fontSize: "0.78rem", color: "#64748b" }}>
+                                  <div style={{ margin: "2px 0 0 0", fontSize: "0.82rem", color: "#1e293b", fontWeight: "600" }}>
                                     {meta.desc}
-                                  </p>
+                                  </div>
                                 </div>
                               </div>
 

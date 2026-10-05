@@ -3217,7 +3217,7 @@ export default function TechnicalPermitFormsStep({
           <span style={{
             fontSize: "0.72rem",
             fontWeight: "800",
-            color: "#4338ca",
+            color: "#3730a3",
             background: "#e0e7ff",
             padding: "2px 8px",
             borderRadius: "6px",
@@ -3225,16 +3225,16 @@ export default function TechnicalPermitFormsStep({
           }}>
             STEP 3 OF 5
           </span>
-          <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: "600" }}>
+          <span style={{ fontSize: "0.88rem", color: "#ffffff", fontWeight: "700", textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)" }}>
             Comprehensive Municipal Technical Permitting Stage
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div>
-            <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
+            <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#ffffff", margin: "0 0 0.35rem 0", textShadow: "0 2px 10px rgba(0, 0, 0, 0.18)" }}>
               Official Permitting Forms for {projectType.name}
             </h2>
-            <p style={{ margin: 0, color: "#475569", fontSize: "0.92rem", lineHeight: "1.5" }}>
+            <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.95)", fontSize: "0.92rem", lineHeight: "1.5" }}>
               Complete the required National Building Code of the Philippines (PD 1096) and Sto. Tomas municipal engineering forms. All fields are scanned and synchronized to official LGU standards.
             </p>
           </div>
