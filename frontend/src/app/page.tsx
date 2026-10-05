@@ -81,7 +81,7 @@ export default function Home() {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <nav className="nav-links">
             {/* Language Toggle on Homepage */}
             <div className="landing-lang-toggle" style={{ display: "inline-flex", alignItems: "center", background: "#f1f5f9", borderRadius: "10px", padding: "3px", gap: "2px" }}>
               <button
@@ -135,6 +135,7 @@ export default function Home() {
             className="landing-mobile-toggle"
             onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
             aria-label={isMobileNavOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileNavOpen}
           >
             {isMobileNavOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -499,6 +500,9 @@ export default function Home() {
           min-height: 100vh;
           background-color: var(--bg-main);
           position: relative;
+          overflow-x: hidden;
+          width: 100%;
+          max-width: 100vw;
         }
 
         .header-nav {
@@ -507,6 +511,7 @@ export default function Home() {
           left: 0;
           right: 0;
           width: 100%;
+          max-width: 100vw;
           z-index: 50;
           padding: 0;
           border-radius: 0;
@@ -515,6 +520,7 @@ export default function Home() {
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+          box-sizing: border-box;
         }
         
         .nav-container {
@@ -535,7 +541,7 @@ export default function Home() {
         .nav-links {
           display: flex;
           align-items: center;
-          gap: 1.5rem;
+          gap: 10px;
           font-weight: 600;
         }
 
@@ -581,17 +587,17 @@ export default function Home() {
           z-index: 48;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 860px) {
           .nav-container {
-            padding: max(0.65rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.65rem max(1rem, env(safe-area-inset-left));
+            padding: max(0.65rem, env(safe-area-inset-top, 0px)) max(1.25rem, env(safe-area-inset-right, 0px)) 0.65rem max(1.25rem, env(safe-area-inset-left, 0px));
           }
 
           .nav-links {
-            display: none;
+            display: none !important;
           }
 
           .landing-mobile-toggle {
-            display: flex;
+            display: flex !important;
           }
 
           .landing-mobile-menu {
@@ -607,18 +613,21 @@ export default function Home() {
             max-height: 0;
             opacity: 0;
             visibility: hidden;
-            transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, visibility 0.25s;
+            transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, visibility 0.25s;
             z-index: 49;
           }
 
           .landing-mobile-menu.open {
-            max-height: 380px;
+            max-height: calc(100vh - 60px);
+            max-height: calc(100dvh - 60px);
             opacity: 1;
             visibility: visible;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
           }
 
           .landing-mobile-menu-inner {
-            padding: 1.25rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom)) 1.25rem;
+            padding: 1.25rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom, 0px)) 1.25rem;
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
@@ -648,6 +657,21 @@ export default function Home() {
             color: #ffffff !important;
             justify-content: space-between;
             box-shadow: 0 4px 14px rgba(0, 56, 168, 0.35);
+          }
+        }
+
+        @media (max-width: 480px) {
+          .nav-container {
+            padding: max(0.6rem, env(safe-area-inset-top, 0px)) max(0.85rem, env(safe-area-inset-right, 0px)) 0.6rem max(0.85rem, env(safe-area-inset-left, 0px));
+          }
+          .logo-group img {
+            height: 34px !important;
+            width: auto !important;
+          }
+          .hero-badge {
+            font-size: 0.76rem !important;
+            padding: 0.45rem 1rem !important;
+            letter-spacing: 0.04em !important;
           }
         }
 
@@ -1639,15 +1663,20 @@ export default function Home() {
         }
 
         @media (max-width: 640px) {
+          .hero-section {
+            padding-top: calc(5.25rem + env(safe-area-inset-top, 0px)) !important;
+            padding-bottom: calc(2.75rem + env(safe-area-inset-bottom, 0px)) !important;
+          }
           .hero-title,
           .hero-title-blueprint {
-            font-size: clamp(2.2rem, 8vw, 2.75rem) !important;
+            font-size: clamp(2rem, 7.5vw, 2.75rem) !important;
             letter-spacing: -0.02em;
           }
           .hero-subtitle {
             font-size: 0.98rem !important;
             line-height: 1.55 !important;
             margin-bottom: 1.75rem !important;
+            padding: 0 0.5rem;
           }
           .hero-actions {
             flex-direction: column;

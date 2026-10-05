@@ -849,12 +849,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     return (
       <div 
         key={app.id}
+        className="track-application-card"
         style={{
-          background: "#ffffff",
-          borderRadius: "20px",
-          border: "1.5px solid #e2e8f0",
           borderLeft: `6px solid ${statusConfig.border}`,
-          padding: "1.75rem",
           boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
           transition: "all 0.2s ease"
         }}
@@ -989,32 +986,26 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         </div>
 
         {/* 4-STAGE VISUAL TIMELINE STEPPER */}
-        <div style={{
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
-          borderRadius: "16px",
-          padding: "1rem 1.4rem",
-          marginBottom: "1.25rem"
-        }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
+        <div className="track-timeline-stepper">
+          <div className="track-timeline-grid">
             {[
               { 
                 num: 1, 
-                title: "1. Filed", 
+                label: "Filed", 
                 desc: "Submitted Online", 
                 active: true, 
                 current: !isAppApproved && !isActuallyReleased && (statusConfig.step === 1) 
               },
               { 
                 num: 2, 
-                title: "2. Evaluation", 
+                label: "Evaluation", 
                 desc: effectiveStatus === "under_review" ? "Under Evaluation" : "Technical Review", 
                 active: isAppApproved || isActuallyReleased || statusConfig.step >= 2 || effectiveStatus === "under_review", 
                 current: !isAppApproved && !isActuallyReleased && (statusConfig.step === 2 || effectiveStatus === "under_review") 
               },
               { 
                 num: 3, 
-                title: isLocationalClearance ? "3. Zoning Clearance" : "3. Endorsement", 
+                label: isLocationalClearance ? "Zoning Clearance" : "Endorsement", 
                 desc: (isAppApproved || isActuallyReleased || app.status === "approved" || rawAppStatus.includes("approv") || app.status === "released") 
                   ? (isLocationalClearance ? "Zoning Review Approved ✓" : "Approved & Endorsed ✓") 
                   : (isLocationalClearance ? "Zoning Review" : "Chief OBO Approval"), 
@@ -1023,7 +1014,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               },
               { 
                 num: 4, 
-                title: "4. Released", 
+                label: "Released", 
                 desc: isActuallyReleased 
                   ? "Permit Released ✓" 
                   : (paymentInfo.confirmed ? "Cashier Verifying" : "Order of Payment"), 
@@ -1031,23 +1022,26 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                 current: Boolean(isActuallyReleased) 
               }
             ].map((step) => (
-              <div key={step.num} style={{ textAlign: "center", position: "relative" }}>
+              <div key={step.num} className="track-timeline-step">
                 <div style={{
                   height: "7px",
+                  width: "100%",
                   borderRadius: "999px",
                   background: step.active ? "#10b981" : "#cbd5e1",
                   marginBottom: "8px",
                   boxShadow: step.current ? `0 0 10px #10b98190` : "none",
                   transition: "all 0.3s ease"
                 }} />
-                <div style={{
-                  fontSize: "0.8rem",
+                <div className="track-step-title" style={{
                   fontWeight: step.active ? "800" : "600",
                   color: step.active ? "#0f172a" : "#94a3b8"
                 }}>
-                  {step.title}
+                  <span className="track-step-num">{step.num}.</span>{" "}
+                  <span className="track-step-label">{step.label}</span>
                 </div>
-                <div style={{ fontSize: "0.7rem", color: step.active ? (step.num === 4 ? "#16a34a" : "#059669") : "#64748b", marginTop: "1px" }}>
+                <div className="track-step-desc" style={{ 
+                  color: step.active ? (step.num === 4 ? "#16a34a" : "#059669") : "#64748b"
+                }}>
                   {step.desc}
                 </div>
               </div>
@@ -1745,23 +1739,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "4rem" }}>
       {/* INTERACTIVE KPI STATS DASHBOARD (ONLY FOR LOGGED IN USERS) */}
       {isLoggedIn && (
-        <section style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-          gap: "0.75rem",
-          marginBottom: "1.25rem"
-        }}>
+        <section className="track-kpi-grid">
           {/* Card 1: Active Total */}
           <div 
             onClick={() => { setActiveTab("active"); setStatusFilter("all"); }}
+            className="track-kpi-card"
             style={{ 
               background: activeTab === "active" && statusFilter === "all" ? "linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)" : "#ffffff", 
-              borderRadius: "16px", 
-              padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "all" ? "2px solid #0038A8" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "active" && statusFilter === "all" ? "0 8px 24px rgba(0, 56, 168, 0.18)" : "0 2px 10px rgba(0,0,0,0.02)",
-              cursor: "pointer",
-              transition: "all 0.2s ease"
+              boxShadow: activeTab === "active" && statusFilter === "all" ? "0 8px 24px rgba(0, 56, 168, 0.18)" : "0 2px 10px rgba(0,0,0,0.02)"
             }}
             title="Click to show all active applications"
           >
@@ -1771,8 +1757,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.activeTotal}</div>
-              <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "all" ? "#0038A8" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div className="track-kpi-num">{stats.activeTotal}</div>
+              <div 
+                className="track-kpi-label"
+                style={{ color: activeTab === "active" && statusFilter === "all" ? "#0038A8" : "#64748b" }}
+              >
                 {t("Active Permits", "Active Permits")}
               </div>
             </div>
@@ -1781,14 +1770,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           {/* Card 2: Under Review */}
           <div 
             onClick={() => { setActiveTab("active"); setStatusFilter("under_review"); }}
+            className="track-kpi-card"
             style={{ 
               background: activeTab === "active" && statusFilter === "under_review" ? "linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)" : "#ffffff", 
-              borderRadius: "16px", 
-              padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "under_review" ? "2px solid #0038A8" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "active" && statusFilter === "under_review" ? "0 8px 24px rgba(0, 56, 168, 0.18)" : "0 2px 10px rgba(0,0,0,0.02)", 
-              cursor: "pointer",
-              transition: "all 0.2s ease"
+              boxShadow: activeTab === "active" && statusFilter === "under_review" ? "0 8px 24px rgba(0, 56, 168, 0.18)" : "0 2px 10px rgba(0,0,0,0.02)"
             }}
             title={t("Click to filter by Under Evaluation", "Click to filter by Under Evaluation")}
           >
@@ -1798,8 +1784,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.review}</div>
-              <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "under_review" ? "#0038A8" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div className="track-kpi-num">{stats.review}</div>
+              <div 
+                className="track-kpi-label"
+                style={{ color: activeTab === "active" && statusFilter === "under_review" ? "#0038A8" : "#64748b" }}
+              >
                 {t("Under Evaluation", "Under Evaluation")}
               </div>
             </div>
@@ -1808,14 +1797,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           {/* Card 3: Approved / Released */}
           <div 
             onClick={() => { setActiveTab("active"); setStatusFilter("approved"); }}
+            className="track-kpi-card"
             style={{ 
               background: activeTab === "active" && statusFilter === "approved" ? "linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)" : "#ffffff", 
-              borderRadius: "16px", 
-              padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "approved" ? "2px solid #059669" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "active" && statusFilter === "approved" ? "0 8px 24px rgba(5, 150, 105, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)", 
-              cursor: "pointer",
-              transition: "all 0.2s ease"
+              boxShadow: activeTab === "active" && statusFilter === "approved" ? "0 8px 24px rgba(5, 150, 105, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)"
             }}
             title={t("Click to filter by Approved & Released", "Click to filter by Approved & Released")}
           >
@@ -1825,8 +1811,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.approved}</div>
-              <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "approved" ? "#059669" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div className="track-kpi-num">{stats.approved}</div>
+              <div 
+                className="track-kpi-label"
+                style={{ color: activeTab === "active" && statusFilter === "approved" ? "#059669" : "#64748b" }}
+              >
                 {t("Approved & Released", "Approved & Released")}
               </div>
             </div>
@@ -1835,14 +1824,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           {/* Card 4: Action Required */}
           <div 
             onClick={() => { setActiveTab("active"); setStatusFilter("incomplete_requirements"); }}
+            className="track-kpi-card"
             style={{ 
               background: activeTab === "active" && statusFilter === "incomplete_requirements" ? "linear-gradient(135deg, #fef2f2 0%, #ffffff 100%)" : "#ffffff", 
-              borderRadius: "16px", 
-              padding: "1rem 1.1rem", 
               border: activeTab === "active" && statusFilter === "incomplete_requirements" ? "2px solid #dc2626" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "active" && statusFilter === "incomplete_requirements" ? "0 8px 24px rgba(220, 38, 38, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)", 
-              cursor: "pointer",
-              transition: "all 0.2s ease"
+              boxShadow: activeTab === "active" && statusFilter === "incomplete_requirements" ? "0 8px 24px rgba(220, 38, 38, 0.12)" : "0 2px 10px rgba(0,0,0,0.02)"
             }}
             title={t("Click to filter by Action Required", "Click to filter by Action Required")}
           >
@@ -1852,8 +1838,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.action}</div>
-              <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "active" && statusFilter === "incomplete_requirements" ? "#dc2626" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div className="track-kpi-num">{stats.action}</div>
+              <div 
+                className="track-kpi-label"
+                style={{ color: activeTab === "active" && statusFilter === "incomplete_requirements" ? "#dc2626" : "#64748b" }}
+              >
                 {t("Action Required", "Action Required")}
               </div>
             </div>
@@ -1862,14 +1851,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           {/* Card 5: ARCHIVE TAB CARD */}
           <div 
             onClick={() => { setActiveTab("archived"); setStatusFilter("all"); }}
+            className="track-kpi-card"
             style={{ 
               background: activeTab === "archived" ? "linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%)" : "#ffffff", 
-              borderRadius: "16px", 
-              padding: "1rem 1.1rem", 
               border: activeTab === "archived" ? "2px solid #7c3aed" : "1.5px solid #e2e8f0", 
-              boxShadow: activeTab === "archived" ? "0 8px 24px rgba(124, 58, 237, 0.15)" : "0 2px 10px rgba(0,0,0,0.02)", 
-              cursor: "pointer",
-              transition: "all 0.2s ease"
+              boxShadow: activeTab === "archived" ? "0 8px 24px rgba(124, 58, 237, 0.15)" : "0 2px 10px rgba(0,0,0,0.02)"
             }}
             title={t("Click to view Archived applications", "Click to view Archived applications")}
           >
@@ -1879,8 +1865,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "2.35rem", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>{stats.archivedTotal}</div>
-              <div style={{ fontSize: "0.8rem", fontWeight: "700", color: activeTab === "archived" ? "#7c3aed" : "#64748b", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div className="track-kpi-num">{stats.archivedTotal}</div>
+              <div 
+                className="track-kpi-label"
+                style={{ color: activeTab === "archived" ? "#7c3aed" : "#64748b" }}
+              >
                 {t("Archived Permits", "Archived Permits")}
               </div>
             </div>
@@ -1891,21 +1880,9 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
 
       {/* FILTER & SEARCH TOOLBAR */}
-      <section style={{
-        background: "#ffffff",
-        borderRadius: "18px",
-        border: "1.5px solid #e2e8f0",
-        padding: "1rem 1.4rem",
-        marginBottom: "1.75rem",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: "1rem",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.02)"
-      }}>
+      <section className="track-filter-toolbar">
         {/* Search Filter */}
-        <div style={{ position: "relative", flex: 1, minWidth: "240px" }}>
+        <div className="track-filter-search">
           <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
           <input 
             type="text" 
@@ -1943,7 +1920,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         </div>
 
         {/* Dropdowns */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+        <div className="track-filter-actions">
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <Filter size={14} color="#64748b" />
             <select

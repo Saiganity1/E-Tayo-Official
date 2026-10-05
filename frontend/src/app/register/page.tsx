@@ -120,7 +120,7 @@ export default function RegisterPage() {
       setStep("verification");
       setTimer(120); // Reset timer to 2 minutes (120 seconds)
       setCanResend(false);
-      setInfoMsg(`A 6-digit verification code has been generated and sent to ${sanitizedEmail}.`);
+      setInfoMsg(`A 6-digit verification code has been sent to ${sanitizedEmail}.`);
     } catch (err: any) {
       setErrorMsg(err.message || "Network Error: Failed to fetch");
     } finally {
@@ -331,20 +331,18 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {debugOtp && step === "verification" && (
-            <div style={{ backgroundColor: "#f8fafc", color: "#0038A8", padding: "10px 14px", borderRadius: "8px", marginBottom: "1rem", border: "1px dashed #93c5fd", fontSize: "13px", textAlign: "center", fontWeight: "600" }}>
-              Generated OTP: <span style={{ letterSpacing: "0.2em", fontSize: "15px", color: "#021a4f" }}>{debugOtp}</span>
-            </div>
-          )}
-
           {step === "details" ? (
-            <form onSubmit={handleSendOtp} className="login-form">
+            <form key="form-details" onSubmit={handleSendOtp} className="login-form">
               <div className="form-group">
                 <label>Full Name</label>
                 <div className="input-with-icon">
                   <User size={18} className="input-icon" />
                   <input 
+                    key="input-name"
+                    id="name"
+                    name="name"
                     type="text" 
+                    autoComplete="name"
                     required
                     placeholder="Juan Dela Cruz" 
                     value={name}
@@ -358,7 +356,11 @@ export default function RegisterPage() {
                 <div className="input-with-icon">
                   <Mail size={18} className="input-icon" />
                   <input 
+                    key="input-email"
+                    id="email"
+                    name="email"
                     type="email" 
+                    autoComplete="email"
                     required
                     placeholder="name@example.com" 
                     value={email}
@@ -372,7 +374,11 @@ export default function RegisterPage() {
                 <div className="input-with-icon">
                   <Lock size={18} className="input-icon" />
                   <input 
+                    key="input-password"
+                    id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"} 
+                    autoComplete="new-password"
                     required
                     placeholder="••••••••" 
                     value={password}
@@ -396,7 +402,11 @@ export default function RegisterPage() {
                 <div className="input-with-icon">
                   <Lock size={18} className="input-icon" />
                   <input 
+                    key="input-confirmPassword"
+                    id="confirmPassword"
+                    name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"} 
+                    autoComplete="new-password"
                     required
                     placeholder="••••••••" 
                     value={confirmPassword}
@@ -424,16 +434,25 @@ export default function RegisterPage() {
               </div>
             </form>
           ) : (
-            <form onSubmit={handleRegister} className="login-form">
+            <form key="form-verification" onSubmit={handleRegister} className="login-form" autoComplete="off">
               <div className="form-group">
                 <label>6-Digit Verification Code</label>
                 <div className="input-with-icon">
                   <ShieldCheck size={18} className="input-icon" />
                   <input 
+                    key="input-otp"
+                    id="otp"
+                    name="one-time-code"
                     type="text" 
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="one-time-code"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
                     required
                     maxLength={6}
-                    placeholder="123456" 
+                    placeholder="------" 
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                     style={{ letterSpacing: '0.5em', fontSize: '1.25rem', fontWeight: 'bold', textAlign: 'center' }}
