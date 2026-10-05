@@ -1118,35 +1118,44 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.warn("Could not cache application to localStorage:", e);
     }
 
-    // 3. Immediately create accurate audit log for this submission
+    // 3. Immediately create accurate audit log for this submission (non-blocking)
     const applicantLabel = newApp.applicantName || newApp.applicantEmail || "Applicant";
     const projLabel = newApp.projectName || newApp.projectType || "Permit Application";
-    await addSystemLog({
+    addSystemLog({
       action: "APPLICATION_SUBMITTED",
       category: "application",
       status: "info",
       user: newApp.applicantEmail || applicantLabel,
       message: `New application submitted: ${projLabel} (${newApp.id})`,
       details: `Applicant ${applicantLabel} submitted ${newApp.projectType || newApp.permitType}. Location: ${newApp.projectAddress || newApp.location?.address || "Sto. Tomas, Pampanga"}.`
-    });
+    }).catch(() => {});
 
+    // 4. Background network sync with fast timeout
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 2500);
       let res = await fetch("/api/permits", {
         method: "POST",
         headers,
-        body: JSON.stringify(newApp)
+        body: JSON.stringify(newApp),
+        signal: ctrl.signal
       }).catch(() => null);
+      clearTimeout(tid);
 
       if (!res || !res.ok) {
+        const remoteCtrl = new AbortController();
+        const remoteTid = setTimeout(() => remoteCtrl.abort(), 2500);
         await fetch(`${API_BASE_URL}/permits`, {
           method: "POST",
           headers,
-          body: JSON.stringify(newApp)
+          body: JSON.stringify(newApp),
+          signal: remoteCtrl.signal
         }).catch(() => null);
+        clearTimeout(remoteTid);
       }
     } catch (e) {
       console.error("Failed to save permit", e);
@@ -1340,33 +1349,51 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         remarks: updatedApp.remarks || ""
       });
       try {
+        const pCtrl = new AbortController();
+        const pTid = setTimeout(() => pCtrl.abort(), 2500);
         let patchRes = await fetch(`/api/permits/${targetId}/status`, {
           method: "PATCH",
           headers,
-          body: patchBody
+          body: patchBody,
+          signal: pCtrl.signal
         }).catch(() => null);
+        clearTimeout(pTid);
+
         if (!patchRes || !patchRes.ok) {
+          const rpCtrl = new AbortController();
+          const rpTid = setTimeout(() => rpCtrl.abort(), 2500);
           patchRes = await fetch(`${API_BASE_URL}/permits/${targetId}/status`, {
             method: "PATCH",
             headers,
-            body: patchBody
+            body: patchBody,
+            signal: rpCtrl.signal
           }).catch(() => null);
+          clearTimeout(rpTid);
         }
       } catch (e) {}
 
       // 5. Full PUT update for tracking steps, logs, requirements (proxy first)
       try {
+        const uCtrl = new AbortController();
+        const uTid = setTimeout(() => uCtrl.abort(), 2500);
         let res = await fetch(`/api/permits/${targetId}`, {
           method: "PUT",
           headers,
-          body: JSON.stringify(updatedApp)
+          body: JSON.stringify(updatedApp),
+          signal: uCtrl.signal
         }).catch(() => null);
+        clearTimeout(uTid);
+
         if (!res || !res.ok) {
+          const ruCtrl = new AbortController();
+          const ruTid = setTimeout(() => ruCtrl.abort(), 2500);
           res = await fetch(`${API_BASE_URL}/permits/${targetId}`, {
             method: "PUT",
             headers,
-            body: JSON.stringify(updatedApp)
+            body: JSON.stringify(updatedApp),
+            signal: ruCtrl.signal
           }).catch(() => null);
+          clearTimeout(ruTid);
         }
         if (res && res.ok) {
           const saved: PermitApplication = await res.json();

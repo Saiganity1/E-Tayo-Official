@@ -77,10 +77,10 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // 1. Immediately persist in server data store
+    // 1. Immediately persist in server data store (instant response)
     const savedLocally = savePermit(body);
 
-    // 2. Optimistically try to sync with remote backend
+    // 2. Non-blocking background sync with remote backend
     const targetUrl = `${BACKEND_API}/permits`;
     const authHeader = req.headers.get("authorization");
     const headers: Record<string, string> = {
@@ -89,28 +89,29 @@ export async function POST(req: Request) {
     };
     if (authHeader) headers["Authorization"] = authHeader;
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-      const res = await fetch(targetUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
+    (async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(targetUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
 
-      if (res && res.ok) {
-        const text = await res.text();
-        if (text.trim().startsWith("{")) {
-          const data = JSON.parse(text);
-          savePermit(data);
-          return NextResponse.json(data);
+        if (res && res.ok) {
+          const text = await res.text();
+          if (text.trim().startsWith("{")) {
+            const data = JSON.parse(text);
+            savePermit(data);
+          }
         }
+      } catch (e) {
+        // Background sync failed; local copy already stored safely
       }
-    } catch (e) {
-      // Background sync failed; local copy already stored safely
-    }
+    })();
 
     return NextResponse.json(savedLocally, { status: 200 });
   } catch (error: any) {

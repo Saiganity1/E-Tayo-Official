@@ -962,22 +962,30 @@ export default function ApplyPage() {
         ]
       };
 
-      await addApplication(newApp);
-      setSubmittedApp(newApp);
-
-      // Explicitly persist BFP clearance upload for administrative evaluation
+      // Persist BFP clearance upload for administrative evaluation
       if (typeof window !== "undefined") {
         const bfpDoc = uploadedPermitDocs['fireBfpPermit'];
         if (bfpDoc?.fileUrl) {
           const bfpUrl = bfpDoc.fileUrl;
           const bfpName = bfpDoc.fileName || 'BFP_Fire_Safety_Clearance.pdf';
-          localStorage.setItem(`etayo_bfp_${newApp.id}`, bfpUrl);
-          localStorage.setItem(`etayo_bfp_name_${newApp.id}`, bfpName);
-          localStorage.setItem("etayo_bfp_file_data", bfpUrl);
-          localStorage.setItem("etayo_bfp_file_name", bfpName);
-          localStorage.setItem(`att_${bfpName}`, bfpUrl);
-          localStorage.setItem(`etayo_att_${bfpName}`, bfpUrl);
+          try {
+            localStorage.setItem(`etayo_bfp_${newApp.id}`, bfpUrl);
+            localStorage.setItem(`etayo_bfp_name_${newApp.id}`, bfpName);
+            localStorage.setItem("etayo_bfp_file_data", bfpUrl);
+            localStorage.setItem("etayo_bfp_file_name", bfpName);
+            localStorage.setItem(`att_${bfpName}`, bfpUrl);
+            localStorage.setItem(`etayo_att_${bfpName}`, bfpUrl);
+          } catch (e) {}
         }
+      }
+
+      // Optimistically dispatch application immediately (saves to state, localStorage, and syncs)
+      addApplication(newApp);
+
+      // Quick 300ms transition for a snappy, satisfying user experience
+      await new Promise(r => setTimeout(r, 300));
+      setSubmittedApp(newApp);
+      if (typeof window !== "undefined") {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err: any) {
