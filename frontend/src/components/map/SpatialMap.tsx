@@ -192,8 +192,7 @@ export default function SpatialMap() {
   const [filterType, setFilterType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBarangay, setSelectedBarangay] = useState<any>(null);
-  const [showLegend, setShowLegend] = useState(true);
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -466,88 +465,13 @@ export default function SpatialMap() {
         </>
       </MapContainer>
 
-      {/* FLOATING MAP LEGEND */}
-      {showLegend ? (
-      <div 
-        style={{ 
-          position: 'absolute', 
-          bottom: '24px', 
-          left: '24px', 
-          zIndex: 1000, 
-          background: 'rgba(255, 255, 255, 0.95)', 
-          padding: '16px 20px', 
-          borderRadius: 'var(--radius-md)', 
-          boxShadow: '0 8px 30px rgba(0,0,0,0.12)', 
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(0,0,0,0.05)',
-          maxWidth: '300px',
-          maxHeight: 'calc(100% - 48px)',
-          overflowY: 'auto'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '2px solid var(--border-color)', paddingBottom: '8px' }}>
-          <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Map Legend</h4>
-          <button onClick={() => setShowLegend(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--text-secondary)' }}>&minus;</button>
-        </div>
-        
-        <div>
-          <strong style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '10px', letterSpacing: '0.05em' }}>Project Types</strong>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {Object.entries(PROJECT_CATEGORY_THEMES).map(([catKey, theme]) => (
-              <div key={catKey} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem' }}>
-                <span style={{ 
-                  background: theme.color, 
-                  width: '28px', 
-                  height: '28px', 
-                  borderRadius: '50%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  color: 'white',
-                  flexShrink: 0,
-                  boxShadow: `0 2px 6px ${theme.color}40`
-                }}>
-                  <div style={{ width: '15px', height: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} dangerouslySetInnerHTML={{ __html: theme.svg }} />
-                </span>
-                <span style={{ fontWeight: 600, color: '#334155' }}>{theme.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      ) : (
-        <button 
-          onClick={() => setShowLegend(true)}
-          style={{ 
-            position: 'absolute', 
-            bottom: '24px', 
-            left: '24px', 
-            zIndex: 10000, 
-            background: 'var(--color-primary)', 
-            color: 'white',
-            padding: '10px 16px', 
-            borderRadius: 'var(--radius-md)', 
-            border: 'none', 
-            boxShadow: '0 4px 12px rgba(0,0,0,0.2)', 
-            cursor: 'pointer', 
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-          Show Map Legend
-        </button>
-      )}
-      
       {/* INTERACTIVE SIDEBAR & ANALYTICS */}
       {showFilters ? (
       <div
         style={{
           position: 'absolute',
-          top: '24px',
-          left: '70px', // placed to the right of Leaflet zoom controls
+          bottom: '24px',
+          left: '24px', // placed to the right of Leaflet zoom controls
           zIndex: 10000,
           background: 'rgba(255, 255, 255, 0.95)',
           padding: '20px',
@@ -645,8 +569,8 @@ export default function SpatialMap() {
           onClick={() => setShowFilters(true)}
           style={{ 
             position: 'absolute', 
-            top: '24px', 
-            left: '70px', 
+            bottom: '24px', 
+            left: '24px', 
             zIndex: 10000, 
             background: 'var(--color-primary)', 
             color: 'white',
