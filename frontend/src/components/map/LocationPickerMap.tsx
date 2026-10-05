@@ -7,6 +7,8 @@ import L from "leaflet";
 import { Maximize, Minimize, AlertCircle, CheckCircle2 } from "lucide-react";
 import {
   stoTomasZoningGeoJSON,
+  stoTomasMunicipalBoundaryGeoJSON,
+  stoTomasMunicipalBoundaryPolygon,
   BARANGAY_CENTERS,
   STO_TOMAS_MUNICIPAL_CENTER,
   STO_TOMAS_BOUNDS
@@ -169,10 +171,7 @@ export default function LocationPickerMap({
   const mapRef = useRef<HTMLDivElement>(null);
   const isInternalUpdateRef = useRef(false);
 
-  const boundaryFeature = stoTomasZoningGeoJSON.features.find((f: any) => f.properties?.isBoundary);
-  const boundaryCoords = boundaryFeature?.geometry?.type === 'Polygon'
-    ? boundaryFeature.geometry.coordinates[0]
-    : boundaryFeature?.geometry?.coordinates[0]?.[0];
+  const boundaryCoords = stoTomasMunicipalBoundaryPolygon?.geometry?.coordinates?.[0];
 
   const handleLocationChange = (lat: number, lng: number, isFromUserAction = true) => {
     // Check municipal boundary with a 0.0015 deg (~150m) edge tolerance
@@ -284,31 +283,15 @@ export default function LocationPickerMap({
         <GeoJSON
           key="sto-tomas-cadastral-zones"
           data={stoTomasZoningGeoJSON}
-          style={(feature: any) => {
-            if (feature?.properties?.isBoundary) {
-              return {
-                color: "#1e40af",
-                weight: 3.5,
-                fillOpacity: 0.02,
-                fillColor: "#1e40af",
-                dashArray: "6, 6"
-              };
-            }
-            return {
-              color: feature?.properties?.color || "#3b82f6",
-              weight: 1.5,
-              fillOpacity: 0.12,
-              fillColor: feature?.properties?.color || "#3b82f6",
-              dashArray: "3, 4"
-            };
-          }}
+          style={(feature: any) => ({
+            color: feature?.properties?.color || "#3b82f6",
+            weight: 1.5,
+            fillOpacity: 0.18,
+            fillColor: feature?.properties?.color || "#3b82f6",
+            dashArray: "3, 4"
+          })}
           onEachFeature={(feature: any, layer: L.Layer) => {
-            if (feature?.properties?.isBoundary) {
-              layer.bindTooltip(
-                `<strong>Sto. Tomas Jurisdictional Boundary</strong>`,
-                { sticky: true }
-              );
-            } else if (feature?.properties?.barangay) {
+            if (feature?.properties?.barangay) {
               layer.bindTooltip(
                 `<strong>Brgy. ${feature.properties.barangay}</strong><br/><span style="color:${feature.properties.color || '#2563eb'};font-weight:600;">${feature.properties.zoneType || ''}</span>`,
                 { sticky: true }
@@ -318,6 +301,18 @@ export default function LocationPickerMap({
               });
             }
           }}
+        />
+
+        <GeoJSON
+          key="sto-tomas-boundary-line"
+          data={stoTomasMunicipalBoundaryGeoJSON}
+          style={() => ({
+            color: "#1e40af",
+            weight: 3,
+            opacity: 1,
+            fill: false,
+            dashArray: "6, 6"
+          })}
         />
 
         <Marker

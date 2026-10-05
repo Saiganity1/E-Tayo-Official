@@ -240,6 +240,7 @@ export default function SpatialMap() {
   const [filterType, setFilterType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBarangay, setSelectedBarangay] = useState<any>(null);
+  const [hoveredZone, setHoveredZone] = useState<any>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapWrapperRef = useRef<HTMLDivElement>(null);
@@ -299,56 +300,79 @@ export default function SpatialMap() {
     });
   }, [applications, filterType, searchQuery, selectedBarangay]);
 
-  const onEachFeature = (feature: any, layer: L.Layer) => {
-    layer.on('click', () => {
-      if (feature.properties?.barangay) {
-        // Toggle selection
-        setSelectedBarangay((prev: any) => prev === feature.properties.barangay ? null : feature.properties.barangay);
-      }
-    });
-
-    if (feature.properties && feature.properties.isBoundary) {
-      layer.bindTooltip(
-        `<div style="font-family: inherit; padding: 2px;">
-          <strong style="color: #1e40af; font-size: 13px;">${feature.properties.name}</strong><br/>
-          <small style="color: #475569;">${feature.properties.description}</small>
-        </div>`,
-        { sticky: true }
-      );
-    } else if (feature.properties && feature.properties.barangay) {
-      layer.bindTooltip(
-        `<div style="font-family: inherit; padding: 2px;">
-          <strong style="font-size: 13px; color: #0f172a;">Brgy. ${feature.properties.barangay}</strong><br/>
-          <span style="color:${feature.properties.color}; font-weight: 600;">${feature.properties.zoneType}</span><br/>
-          <small style="color: #64748b;">Area: ${feature.properties.areaKm2} km² • Click to view analytics</small>
-        </div>`,
-        { sticky: true }
-      );
-    }
-  };
-
   const styleFeature = (feature: any) => {
     const isSelected = selectedBarangay === feature.properties?.barangay;
-    
-    if (feature.properties?.isBoundary) {
-      return {
-        fillColor: 'transparent',
-        weight: 3.5,
-        opacity: 1,
-        color: '#1e40af',
-        dashArray: '6, 6',
-        fillOpacity: 0
-      };
-    }
+    const isHovered = hoveredZone?.barangay === feature.properties?.barangay;
     
     return {
       fillColor: feature.properties?.color || '#3b82f6',
-      weight: isSelected ? 3 : 1.5,
+      weight: isSelected ? 3.5 : isHovered ? 2.5 : 1.5,
       opacity: 1,
-      color: isSelected ? '#1e3a8a' : '#ffffff',
-      dashArray: isSelected ? '' : '2, 4',
-      fillOpacity: isSelected ? 0.65 : 0.38
+      color: isSelected ? '#1e3a8a' : isHovered ? '#0f172a' : '#ffffff',
+      dashArray: isSelected || isHovered ? '' : '2, 4',
+      fillOpacity: isSelected ? 0.75 : isHovered ? 0.68 : 0.42
     };
+  };
+
+  const onEachFeature = (feature: any, layer: L.Layer) => {
+    const p = feature.properties;
+    if (!p) return;
+
+    // Rich informative tooltip that follows mouse
+    const tooltipHtml = `
+      <div style="min-width: 210px; font-family: system-ui, -apple-system, sans-serif; padding: 2px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="width: 12px; height: 12px; border-radius: 3px; background-color: ${p.color}; display: inline-block; box-shadow: 0 0 6px ${p.color};"></span>
+            <strong style="font-size: 14px; color: #0f172a;">Brgy. ${p.barangay}</strong>
+          </div>
+          <span style="background: ${p.color}22; color: ${p.color}; font-weight: 700; font-size: 11px; padding: 2px 7px; border-radius: 99px;">
+            ${p.code || 'ZONE'}
+          </span>
+        </div>
+        <div style="background: #f8fafc; border-left: 3px solid ${p.color}; padding: 6px 8px; border-radius: 4px; margin-bottom: 6px;">
+          <div style="font-weight: 700; font-size: 12px; color: #1e293b;">${p.name}</div>
+          <div style="font-size: 11px; font-weight: 600; color: ${p.color}; margin-top: 1px;">Zone: ${p.zoneType}</div>
+        </div>
+        <div style="font-size: 11px; color: #475569; line-height: 1.4; margin-bottom: 6px;">
+          ${p.description || ''}
+        </div>
+        <div style="font-size: 10px; color: #64748b; border-top: 1px dashed #e2e8f0; padding-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+          <span>Land Area: <strong>${p.areaKm2} km²</strong></span>
+          <span style="color: #2563eb; font-weight: 600;">Click to select</span>
+        </div>
+      </div>
+    `;
+
+    layer.bindTooltip(tooltipHtml, {
+      sticky: true,
+      direction: 'top',
+      opacity: 0.98,
+      className: 'zone-hover-tooltip'
+    });
+
+    layer.on({
+      mouseover: (e) => {
+        const target = e.target;
+        target.setStyle({
+          weight: 3,
+          color: '#0f172a',
+          fillOpacity: 0.70
+        });
+        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+          target.bringToFront();
+        }
+        setHoveredZone(p);
+      },
+      mouseout: (e) => {
+        const target = e.target;
+        target.setStyle(styleFeature(feature));
+        setHoveredZone(null);
+      },
+      click: () => {
+        setSelectedBarangay((prev: any) => prev === p.barangay ? null : p.barangay);
+      }
+    });
   };
 
   return (
@@ -384,6 +408,82 @@ export default function SpatialMap() {
       }}>
         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0284c7', display: 'inline-block', boxShadow: '0 0 6px #0284c7' }}></span>
         <span>Sto. Tomas Cadastral Boundary (Official Survey)</span>
+      </div>
+
+      {/* FLOATING ZONE INSPECTOR CARD ON HOVER */}
+      <div style={{
+        position: 'absolute',
+        bottom: '24px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 1000,
+        pointerEvents: 'none',
+        maxWidth: 'calc(100% - 48px)',
+        transition: 'all 0.2s ease'
+      }}>
+        {hoveredZone ? (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.97)',
+            backdropFilter: 'blur(12px)',
+            border: `2px solid ${hoveredZone.color}`,
+            borderRadius: '16px',
+            padding: '10px 18px',
+            boxShadow: '0 12px 28px -4px rgba(0, 0, 0, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div style={{
+              width: '14px',
+              height: '14px',
+              borderRadius: '4px',
+              backgroundColor: hoveredZone.color,
+              flexShrink: 0,
+              boxShadow: `0 0 8px ${hoveredZone.color}`
+            }} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontWeight: '800', fontSize: '0.95rem', color: '#0f172a' }}>
+                  Brgy. {hoveredZone.barangay}
+                </span>
+                <span style={{
+                  fontSize: '0.72rem',
+                  fontWeight: '700',
+                  color: hoveredZone.color,
+                  background: `${hoveredZone.color}20`,
+                  padding: '2px 8px',
+                  borderRadius: '99px'
+                }}>
+                  {hoveredZone.code}
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  ({hoveredZone.areaKm2} km²)
+                </span>
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#334155', fontWeight: '600' }}>
+                {hoveredZone.name} — <span style={{ color: hoveredZone.color }}>{hoveredZone.zoneType}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid #cbd5e1',
+            borderRadius: '99px',
+            padding: '6px 16px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            fontSize: '0.8rem',
+            color: '#475569',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7', display: 'inline-block' }}></span>
+            <span>Hover over any colored area to view its zoning & land classification</span>
+          </div>
+        )}
       </div>
 
       {/* MAP CONTAINER */}
@@ -430,37 +530,40 @@ export default function SpatialMap() {
                 fillOpacity: 0.16,
                 stroke: false
               }}
-              interactive={false}
+              onEachFeature={(_f, layer) => {
+                if ((layer as any)._path) {
+                  (layer as any)._path.style.pointerEvents = 'none';
+                }
+              }}
             />
           </LayersControl.Overlay>
 
-          {/* 2. Barangay Zoning & Land Use */}
+          {/* 2. Barangay Zoning & Land Use (Hover over colors to view zones) */}
           <LayersControl.Overlay checked name="Barangay Zoning & Land Use">
             <GeoJSON 
-              key={JSON.stringify(stoTomasZoningGeoJSON) + "-v6-" + selectedBarangay}
+              key={JSON.stringify(stoTomasZoningGeoJSON) + "-v7-" + selectedBarangay}
               data={stoTomasZoningGeoJSON} 
               style={styleFeature}
               onEachFeature={onEachFeature}
             />
           </LayersControl.Overlay>
 
-          {/* 3. Official Municipal Perimeter on Top */}
+          {/* 3. Official Municipal Perimeter Line (Stroke only, doesn't block hover events) */}
           <LayersControl.Overlay checked name="Sto. Tomas Municipal Border">
             <GeoJSON 
               key="sto-tomas-official-border"
               data={stoTomasMunicipalBoundaryGeoJSON} 
               style={{
-                color: '#1e3a8a',
-                weight: 3.5,
-                opacity: 1,
-                fillColor: 'transparent',
-                fillOpacity: 0,
+                color: '#1e40af',
+                weight: 4,
+                opacity: 0.95,
+                fill: false,
                 dashArray: '6, 6'
               }}
               onEachFeature={(feature: any, layer: L.Layer) => {
                 layer.bindTooltip(
                   `<div style="padding: 4px; font-family: inherit;">
-                    <div style="font-weight: 700; color: #1e3a8a; font-size: 13px;">🏛️ Municipality of Sto. Tomas, Pampanga</div>
+                    <div style="font-weight: 700; color: #1e40af; font-size: 13px;">🏛️ Municipality of Sto. Tomas, Pampanga</div>
                     <div style="font-size: 11px; color: #475569; margin-top: 2px;">Official Cadastral Boundary (PSA: 0305421000)</div>
                     <div style="font-size: 10px; color: #64748b; margin-top: 4px; border-top: 1px solid #cbd5e1; padding-top: 3px;">
                       Bounded by: San Fernando (N) • San Simon (E) • Minalin (S) • Bacolor (W)
@@ -722,6 +825,22 @@ export default function SpatialMap() {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         )}
       </button>
+
+      {/* TOOLTIP STYLES */}
+      <style>{`
+        .zone-hover-tooltip {
+          background: rgba(255, 255, 255, 0.98) !important;
+          border: 1px solid #cbd5e1 !important;
+          border-radius: 12px !important;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25) !important;
+          padding: 8px 12px !important;
+          backdrop-filter: blur(8px) !important;
+          pointer-events: none !important;
+        }
+        .zone-hover-tooltip::before {
+          border-top-color: rgba(255, 255, 255, 0.98) !important;
+        }
+      `}</style>
 
     </div>
   );
