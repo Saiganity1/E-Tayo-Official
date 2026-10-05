@@ -8,12 +8,6 @@ import { Menu, X, ClipboardList, LogIn, ArrowRight } from "lucide-react";
 import Footer from "../components/layout/Footer";
 import MangTomasBot from "../components/chat/MangTomasBot";
 
-const SUBTITLE_WORDS = [
-  "A", "Geospatially", "Enabled", "Permit", "Management", "and",
-  "Building", "Monitoring", "System", "for", "the",
-  "Local", "Government", "Unit", "of", "Sto.", "Tomas,", "Pampanga."
-];
-
 export default function Home() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -254,50 +248,30 @@ export default function Home() {
             </div>
 
             <p className="hero-subtitle truck-delivered-subtitle">
-              {SUBTITLE_WORDS.map((word, index) => (
-                <span key={index}>
-                  <span
-                    className="truck-word-drop"
-                    style={{ animationDelay: `${(1.68 + index * 0.075).toFixed(3)}s` }}
-                  >
-                    {word}
-                  </span>
-                  {" "}
-                </span>
-              ))}
+              A Geospatially Enabled Permit Management and Building Monitoring System for the Local Government Unit of Sto. Tomas, Pampanga.
             </p>
           </div>
 
           {/* Construction Stage 3 & 4: Action Buttons (Excavator-delivered & Drilled into place) */}
           <div className="hero-actions">
-            {/* Button 1: Start New Application (Poured/Dumped by Big Excavator) */}
+            {/* Button 1: Start New Application (Carried and placed by Excavator) */}
             <div className="excavator-button-stage">
               <div className="excavator-carrier" aria-hidden="true">
-                <svg className="big-excavator-svg" viewBox="0 0 220 170" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  {/* Heavy Main Boom Arm with Hazard Stripes */}
-                  <path d="M15 160L65 75L125 85" stroke="#eab308" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M15 160L65 75L125 85" stroke="#ca8a04" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M30 135L38 120M42 115L50 100M54 95L62 80" stroke="#1e293b" strokeWidth="3.5" strokeLinecap="round"/>
-                  {/* Heavy Hydraulic Cylinder & Ram */}
-                  <path d="M25 145L78 85" stroke="#475569" strokeWidth="6.5" strokeLinecap="round"/>
-                  <path d="M78 85L108 86" stroke="#e2e8f0" strokeWidth="4" strokeLinecap="round"/>
-                  {/* Heavy Pivot Pins */}
-                  <circle cx="65" cy="75" r="6.5" fill="#1e293b" stroke="#f8fafc" strokeWidth="2"/>
-                  <circle cx="125" cy="85" r="6.5" fill="#1e293b" stroke="#f8fafc" strokeWidth="2"/>
-                  
-                  {/* Large Excavator Scoop Bucket (Tipping / Pouring Mechanism) */}
-                  <g className="excavator-bucket-assembly">
-                    <path d="M125 85C135 75 155 75 170 82L195 115C190 128 165 140 145 132L125 105Z" fill="#d97706" stroke="#92400e" strokeWidth="2.5"/>
-                    <path d="M138 88L180 118" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round"/>
-                    {/* 5 Heavy Steel Digging Teeth */}
-                    <polygon points="195,115 208,122 201,128" fill="#1e293b"/>
-                    <polygon points="187,122 198,129 191,134" fill="#1e293b"/>
-                    <polygon points="176,127 186,135 179,139" fill="#1e293b"/>
-                    <polygon points="163,131 172,139 165,142" fill="#1e293b"/>
-                    <polygon points="150,132 158,141 151,143" fill="#1e293b"/>
-                    <path d="M115 72L135 85" stroke="#64748b" strokeWidth="4" strokeLinecap="round"/>
-                    <circle cx="125" cy="85" r="4" fill="#f8fafc"/>
-                  </g>
+                <svg className="excavator-svg" viewBox="0 0 100 85" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Hydraulic boom/arm */}
+                  <path d="M12 80L36 40L68 46" stroke="#eab308" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 80L36 40L68 46" stroke="#ca8a04" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  {/* Hydraulic cylinder */}
+                  <path d="M18 72L46 45" stroke="#64748b" strokeWidth="3.5" strokeLinecap="round"/>
+                  <path d="M46 45L58 46" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round"/>
+                  {/* Pivot joints */}
+                  <circle cx="36" cy="40" r="3" fill="#1e293b" stroke="#f8fafc" strokeWidth="1"/>
+                  <circle cx="68" cy="46" r="3" fill="#1e293b" stroke="#f8fafc" strokeWidth="1"/>
+                  {/* Excavator Bucket with teeth */}
+                  <path d="M68 46C72 42 80 42 86 46L94 62C92 68 82 74 72 70L66 54Z" fill="#ca8a04" stroke="#854d0e" strokeWidth="2"/>
+                  <polygon points="94,62 100,66 96,70" fill="#1e293b"/>
+                  <polygon points="88,66 93,71 87,73" fill="#1e293b"/>
+                  <polygon points="80,69 84,75 78,76" fill="#1e293b"/>
                 </svg>
               </div>
               <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary btn-large excavator-delivered-btn">
@@ -305,28 +279,20 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Button 2: Application Status (Drilled into foundation across the whole card) */}
+            {/* Button 2: Application Status (Drilled into foundation) */}
             <div className="drill-button-stage">
               <div className="drill-rig" aria-hidden="true">
-                <svg className="drill-svg" viewBox="0 0 44 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  {/* Twin ergonomic D-handles */}
-                  <path d="M4 12H12M32 12H40" stroke="#1e293b" strokeWidth="4" strokeLinecap="round"/>
-                  <path d="M4 8V16M40 8V16" stroke="#334155" strokeWidth="3" strokeLinecap="round"/>
-                  {/* Top crossbar */}
-                  <rect x="10" y="8" width="24" height="6" rx="2" fill="#334155"/>
-                  {/* Heavy-Duty Pneumatic Drill Body */}
-                  <rect x="12" y="12" width="20" height="24" rx="4" fill="#ea580c" stroke="#9a3412" strokeWidth="1.5"/>
-                  {/* Cooling vents */}
-                  <line x1="15" y1="18" x2="29" y2="18" stroke="#1e293b" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="15" y1="23" x2="29" y2="23" stroke="#1e293b" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="15" y1="28" x2="29" y2="28" stroke="#1e293b" strokeWidth="2" strokeLinecap="round"/>
-                  {/* Heavy Steel Chuck */}
-                  <rect x="16" y="36" width="12" height="9" rx="2" fill="#475569" stroke="#1e293b" strokeWidth="1.5"/>
-                  {/* Spiral Rotary Drill Bit */}
-                  <path d="M19 45V60M25 45V60" stroke="#94a3b8" strokeWidth="3"/>
-                  <path d="M18 47L26 51M18 53L26 57" stroke="#e2e8f0" strokeWidth="2.2" strokeLinecap="round"/>
-                  {/* Tungsten Carbide Tip */}
-                  <polygon points="22,63 17,58 27,58" fill="#1e293b"/>
+                <svg className="drill-svg" viewBox="0 0 34 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Pneumatic drill body */}
+                  <rect x="9" y="2" width="16" height="22" rx="3" fill="#ea580c" stroke="#9a3412" strokeWidth="1.5"/>
+                  <rect x="11" y="6" width="12" height="4" fill="#1e293b"/>
+                  {/* Twin rubber grip handles */}
+                  <path d="M3 9H9M25 9H31" stroke="#1e293b" strokeWidth="3" strokeLinecap="round"/>
+                  {/* Steel chuck & bit */}
+                  <rect x="13" y="24" width="8" height="7" fill="#475569" stroke="#1e293b" strokeWidth="1"/>
+                  <path d="M15 31V48M19 31V48" stroke="#94a3b8" strokeWidth="2.5"/>
+                  <path d="M14 34L20 38M14 40L20 44" stroke="#cbd5e1" strokeWidth="1.5"/>
+                  <polygon points="17,52 13,47 21,47" fill="#334155"/>
                 </svg>
                 {/* Drilling sparks */}
                 <div className="drill-sparks">
@@ -334,8 +300,6 @@ export default function Home() {
                   <span className="spark sp2"></span>
                   <span className="spark sp3"></span>
                   <span className="spark sp4"></span>
-                  <span className="spark sp5"></span>
-                  <span className="spark sp6"></span>
                 </div>
               </div>
               <Link href="/applicant/track" className="btn-secondary btn-large drilled-btn">
@@ -824,39 +788,40 @@ export default function Home() {
           }
         }
 
-        /* Stage 2: Subtitle Delivered by Construction Flatbed Truck (Words falling one by one) */
+        /* Stage 2: Subtitle Delivered by Construction Flatbed Truck */
         .truck-delivery-stage {
           position: relative;
           width: 100%;
           max-width: 800px;
           display: flex;
-          flex-direction: column;
+          justify-content: center;
           align-items: center;
           margin-bottom: 2.75rem;
         }
 
         .delivery-truck-carrier {
           position: absolute;
-          top: -48px;
-          left: -40px;
+          bottom: -10px;
+          left: 0;
+          transform: translateX(-160%);
           pointer-events: none;
           z-index: 10;
-          animation: truckDeliverSequence 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+          animation: truckDeliverSequence 3.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
           will-change: transform, opacity;
         }
 
         .delivery-truck-svg {
-          width: 130px;
-          height: 52px;
-          filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+          width: 150px;
+          height: 62px;
+          filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
         }
 
         .truck-dust-puff {
           position: absolute;
           bottom: 2px;
-          left: -12px;
-          width: 20px;
-          height: 10px;
+          left: -15px;
+          width: 25px;
+          height: 12px;
           border-radius: 50%;
           background: radial-gradient(ellipse at center, rgba(203, 213, 225, 0.45) 0%, transparent 70%);
           animation: dustPuffing 0.25s ease-out infinite;
@@ -869,72 +834,33 @@ export default function Home() {
 
         .truck-delivered-subtitle {
           margin-bottom: 0 !important;
-          text-align: center;
-          position: relative;
-          z-index: 2;
-        }
-
-        .truck-word-drop {
-          display: inline-block;
-          opacity: 0;
-          transform: translateY(-24px) scale(0.85);
-          animation: wordDropFromTruck 0.45s cubic-bezier(0.34, 1.45, 0.7, 1) both;
+          animation: subtitleTruckUnload 3.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
           will-change: transform, opacity;
         }
 
-        @keyframes wordDropFromTruck {
-          0% {
-            opacity: 0;
-            transform: translateY(-24px) scale(0.85);
-          }
-          60% {
-            opacity: 1;
-            transform: translateY(3px) scale(1.04);
-          }
-          80% {
-            transform: translateY(-1.5px) scale(0.99);
-          }
-          100% {
-            opacity: 1;
-            transform: none !important;
-          }
-        }
-
         @keyframes truckDeliverSequence {
-          0%, 42% {
-            transform: translateX(-160px);
+          0%, 50% {
+            transform: translateX(-160%);
             opacity: 0;
           }
-          46% {
-            transform: translateX(-40px);
+          58% {
+            transform: translateX(-40%);
             opacity: 1;
           }
-          52% {
-            transform: translateX(8%);
+          74% {
+            transform: translateX(10%);
             opacity: 1;
           }
-          62% {
-            transform: translateX(32%);
-            opacity: 1;
-          }
-          72% {
-            transform: translateX(58%);
-            opacity: 1;
-          }
-          82% {
-            transform: translateX(84%);
-            opacity: 1;
-          }
-          88% {
-            transform: translateX(105%);
+          85% {
+            transform: translateX(60%);
             opacity: 1;
           }
           95% {
-            transform: translateX(160%);
-            opacity: 0.8;
+            transform: translateX(180%);
+            opacity: 0;
           }
           100% {
-            transform: translateX(210%);
+            transform: translateX(200%);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
@@ -942,7 +868,26 @@ export default function Home() {
           }
         }
 
-        /* Stage 3: Large Excavator Dumping / Pouring "Start New Application" Button */
+        @keyframes subtitleTruckUnload {
+          0%, 55% {
+            opacity: 0;
+            transform: translateX(-50px) translateY(12px);
+          }
+          74% {
+            opacity: 0.9;
+            transform: translateX(0) translateY(0);
+          }
+          88% {
+            opacity: 1;
+            transform: none;
+          }
+          100% {
+            opacity: 1;
+            transform: none !important;
+          }
+        }
+
+        /* Stage 3: Excavator Delivering "Start New Application" Button */
         .excavator-button-stage {
           position: relative;
           display: inline-flex;
@@ -952,54 +897,48 @@ export default function Home() {
 
         .excavator-carrier {
           position: absolute;
-          top: -88px;
-          left: -48px;
+          bottom: 10px;
+          left: -40px;
           pointer-events: none;
           z-index: 10;
-          animation: bigExcavatorSequence 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+          animation: excavatorArmSequence 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
           will-change: transform, opacity;
         }
 
-        .big-excavator-svg {
-          width: 175px;
-          height: 135px;
-          filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.65));
+        .excavator-svg {
+          width: 90px;
+          height: 75px;
+          filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.65));
         }
 
-        .excavator-bucket-assembly {
-          transform-origin: 125px 85px;
-          animation: excavatorBucketDumpTilt 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
-          will-change: transform;
+        .excavator-delivered-btn {
+          animation: excavatorButtonDrop 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          will-change: transform, opacity;
         }
 
-        @keyframes bigExcavatorSequence {
-          0%, 58% {
-            transform: translate(-120px, -90px) rotate(-22deg);
+        @keyframes excavatorArmSequence {
+          0%, 60% {
+            transform: translate(-60px, 90px) rotate(-16deg);
             opacity: 0;
           }
-          66% {
-            transform: translate(-25px, -15px) rotate(-8deg);
-            opacity: 1;
-          }
-          74% {
-            transform: translate(0px, 0px) rotate(0deg);
+          68% {
+            transform: translate(-10px, -8px) rotate(4deg);
             opacity: 1;
           }
           78% {
-            /* Heave down during dumping */
-            transform: translate(6px, 10px) rotate(5deg);
+            transform: translate(0px, 0px) rotate(0deg);
             opacity: 1;
           }
           85% {
-            transform: translate(-10px, -18px) rotate(-4deg);
+            transform: translate(15px, -15px) rotate(-8deg);
             opacity: 1;
           }
-          94% {
-            transform: translate(-120px, -140px) rotate(-28deg);
+          95% {
+            transform: translate(-30px, 120px) rotate(-15deg);
             opacity: 0;
           }
           100% {
-            transform: translate(-150px, -160px);
+            transform: translate(-30px, 140px);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
@@ -1007,47 +946,22 @@ export default function Home() {
           }
         }
 
-        @keyframes excavatorBucketDumpTilt {
-          0%, 72% {
-            transform: rotate(-10deg);
-          }
-          78%, 83% {
-            /* Pour / Dump forward! */
-            transform: rotate(48deg);
-          }
-          88% {
-            /* Curl back up */
-            transform: rotate(-5deg);
-          }
-          100% {
-            transform: rotate(0deg);
-          }
-        }
-
-        .excavator-delivered-btn {
-          animation: excavatorButtonPoured 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
-          will-change: transform, opacity;
-        }
-
-        @keyframes excavatorButtonPoured {
-          0%, 73% {
+        @keyframes excavatorButtonDrop {
+          0%, 60% {
             opacity: 0;
-            transform: translateY(-42px) scale(0.85) rotate(-5deg);
+            transform: translate(-25px, 25px) rotate(-3deg);
+          }
+          68% {
+            opacity: 0.9;
+            transform: translate(-5px, -4px) rotate(1deg);
           }
           78% {
-            /* Being poured out of the bucket */
             opacity: 1;
-            transform: translateY(-16px) scale(0.96) rotate(2deg);
+            transform: translate(0, 2px);
           }
-          84% {
-            /* Ground impact */
+          86% {
             opacity: 1;
-            transform: translateY(3px) scale(1.03) rotate(0deg);
-          }
-          90% {
-            /* Settle */
-            opacity: 1;
-            transform: translateY(0px) scale(1);
+            transform: translate(0, 0);
           }
           100% {
             opacity: 1;
@@ -1063,17 +977,9 @@ export default function Home() {
           align-items: center;
         }
 
-        /* Stage 4: Drilling the Whole "Application Status" Card into Foundation */
-        .drill-button-stage {
-          position: relative;
-          display: inline-flex;
-          justify-content: center;
-          align-items: center;
-        }
-
         .drill-rig {
           position: absolute;
-          top: -50px;
+          top: -46px;
           left: 50%;
           transform: translateX(-50%);
           pointer-events: none;
@@ -1081,20 +987,20 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          animation: drillAcrossCardSequence 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
-          will-change: left, transform, opacity;
+          animation: drillRigSequence 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          will-change: transform, opacity;
         }
 
         .drill-svg {
-          width: 44px;
-          height: 64px;
-          filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
-          animation: drillHammeringRapid 0.07s ease-in-out infinite alternate;
+          width: 32px;
+          height: 50px;
+          filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+          animation: drillHammering 0.08s ease-in-out infinite alternate;
         }
 
-        @keyframes drillHammeringRapid {
-          0% { transform: translateY(0px) rotate(-1deg); }
-          100% { transform: translateY(-4px) rotate(1deg); }
+        @keyframes drillHammering {
+          0% { transform: translateY(0px); }
+          100% { transform: translateY(-3.5px); }
         }
 
         .drill-sparks {
@@ -1102,77 +1008,55 @@ export default function Home() {
           bottom: 2px;
           left: 50%;
           transform: translateX(-50%);
-          width: 26px;
-          height: 12px;
+          width: 20px;
+          height: 10px;
           pointer-events: none;
         }
 
         .drill-sparks .spark {
           position: absolute;
-          width: 3.5px;
-          height: 3.5px;
+          width: 3px;
+          height: 3px;
           border-radius: 50%;
           background: #fde047;
           box-shadow: 0 0 6px #f59e0b, 0 0 10px #ffffff;
-          animation: sparkBurst 0.16s ease-out infinite;
+          animation: sparkFly 0.15s ease-out infinite;
         }
 
         .drill-sparks .sp1 { left: 0px; animation-delay: 0.02s; }
-        .drill-sparks .sp2 { left: 5px; animation-delay: 0.08s; }
-        .drill-sparks .sp3 { left: 10px; animation-delay: 0.13s; }
-        .drill-sparks .sp4 { left: 15px; animation-delay: 0.05s; }
-        .drill-sparks .sp5 { left: 20px; animation-delay: 0.10s; }
-        .drill-sparks .sp6 { left: 24px; animation-delay: 0.03s; }
+        .drill-sparks .sp2 { left: 6px; animation-delay: 0.07s; }
+        .drill-sparks .sp3 { left: 12px; animation-delay: 0.11s; }
+        .drill-sparks .sp4 { left: 18px; animation-delay: 0.04s; }
 
-        @keyframes sparkBurst {
-          0% { transform: translate(0, 0) scale(1.2); opacity: 1; }
-          100% { transform: translate(calc((var(--i, 0.5) - 0.5) * 26px), -16px) scale(0.2); opacity: 0; }
+        @keyframes sparkFly {
+          0% { transform: translate(0, 0) scale(1); opacity: 1; }
+          100% { transform: translate(calc((var(--i, 0.5) - 0.5) * 20px), -12px) scale(0.3); opacity: 0; }
         }
 
         .drilled-btn {
-          animation: wholeCardDrilledVibration 3.4s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+          animation: drilledButtonSequence 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
           will-change: transform, opacity;
         }
 
-        @keyframes drillAcrossCardSequence {
-          0%, 58% {
-            left: 18%;
-            transform: translateX(-50%) translateY(-90px);
+        @keyframes drillRigSequence {
+          0%, 62% {
+            transform: translateX(-50%) translateY(-70px);
             opacity: 0;
           }
-          64% {
-            /* Drill left side of card */
-            left: 18%;
+          68% {
             transform: translateX(-50%) translateY(0px);
             opacity: 1;
           }
-          71% {
-            /* Drill center of card */
-            left: 50%;
+          82% {
             transform: translateX(-50%) translateY(0px);
-            opacity: 1;
-          }
-          79% {
-            /* Drill right side of card */
-            left: 82%;
-            transform: translateX(-50%) translateY(0px);
-            opacity: 1;
-          }
-          85% {
-            /* Final anchor lock in center */
-            left: 50%;
-            transform: translateX(-50%) translateY(2px);
             opacity: 1;
           }
           92% {
-            /* Lift up into the air */
-            left: 50%;
-            transform: translateX(-50%) translateY(-80px);
-            opacity: 0.7;
+            transform: translateX(-50%) translateY(-60px);
+            opacity: 0;
           }
           100% {
-            left: 50%;
-            transform: translateX(-50%) translateY(-110px);
+            transform: translateX(-50%) translateY(-80px);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
@@ -1180,22 +1064,22 @@ export default function Home() {
           }
         }
 
-        @keyframes wholeCardDrilledVibration {
-          0%, 60% {
+        @keyframes drilledButtonSequence {
+          0%, 62% {
             opacity: 0;
             transform: translateY(20px) scale(0.96);
           }
-          64% {
+          68% {
             opacity: 1;
             transform: translateY(0px);
           }
-          65%, 69%, 73%, 77%, 81%, 84% {
-            transform: translate(-1.2px, 1.2px) scale(0.99);
+          70%, 74%, 78%, 82% {
+            transform: translate(0.8px, -0.8px);
           }
-          67%, 71%, 75%, 79%, 83% {
-            transform: translate(1.2px, -1.2px) scale(1.01);
+          72%, 76%, 80% {
+            transform: translate(-0.8px, 0.8px);
           }
-          88% {
+          86% {
             transform: translate(0, 0);
             opacity: 1;
           }
