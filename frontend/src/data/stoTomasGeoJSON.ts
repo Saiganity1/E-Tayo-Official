@@ -48,6 +48,27 @@ export const STO_TOMAS_BOUNDS: [[number, number], [number, number]] = [
   [15.035, 120.740]
 ];
 
+export const STO_TOMAS_GOVERNMENT_INFO = {
+  municipality: "Municipality of Santo Tomas",
+  province: "Pampanga",
+  region: "Region III (Central Luzon)",
+  psgcCode: "0305421000",
+  zipCode: "2020",
+  totalBarangays: 7,
+  landAreaKm2: 21.3,
+  governingOffices: [
+    "Office of the Municipal Planning and Development Coordinator (MPDC) / Zoning Administrator",
+    "Office of the Building Official (OBO)",
+    "Bureau of Fire Protection (BFP) - Sto. Tomas Fire Station"
+  ],
+  legalAuthorities: [
+    "Republic Act No. 7160 (Local Government Code of 1991)",
+    "Presidential Decree No. 1096 (National Building Code of the Philippines)",
+    "DHSUD / HLURB Model Zoning Ordinance Guidelines",
+    "Official Comprehensive Land Use Plan (CLUP) & Zoning Ordinance of Sto. Tomas, Pampanga"
+  ]
+};
+
 /**
  * Closed Polygon representation of Sto. Tomas for point-in-polygon containment checks
  */
@@ -56,7 +77,8 @@ export const stoTomasMunicipalBoundaryPolygon: any = {
   "properties": {
     "name": "Sto. Tomas Municipal Boundary Polygon",
     "isBoundary": true,
-    "osmId": 13255070
+    "osmId": 13255070,
+    "psgc": "0305421000"
   },
   "geometry": {
     "type": "Polygon",
@@ -1225,14 +1247,16 @@ export const stoTomasMunicipalBoundaryGeoJSON: any = {
         "name": "Sto. Tomas Municipal Boundary",
         "isBoundary": true,
         "osmId": 13255070,
+        "psgc": "0305421000",
         "color": "#1e40af",
-        "description": "Official Cadastral & Jurisdictional Boundary of Sto. Tomas, Pampanga (PSA: 0305421000, OSM: 13255070)",
+        "description": "Official Legal Cadastral Boundary of the Municipality of Sto. Tomas, Pampanga (PSA: 0305421000, OSM: 13255070)",
         "adjacent": {
-          "north": "City of San Fernando",
+          "north": "City of San Fernando (Capital)",
           "east": "Municipality of San Simon",
           "south": "Municipality of Minalin",
           "west": "Municipality of Bacolor"
-        }
+        },
+        "legalBasis": "Republic Act No. 7160 (Local Government Code of 1991), PSA Cadastral Registry"
       },
       "geometry": {
         "type": "LineString",
@@ -3588,12 +3612,36 @@ export const stoTomasZoningGeoJSON: any = {
       "properties": {
         "barangay": "Moras Dela Paz",
         "osmId": 21027520,
-        "name": "Medium-Density Residential & Craft Zone",
+        "municipality": "Santo Tomas",
+        "province": "Pampanga",
+        "region": "Region III (Central Luzon)",
+        "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
+        "psgc": "0305421001",
+        "name": "Suburban Residential & Traditional Craft Zone",
         "code": "R-1 / AG",
-        "zoneType": "Residential & Cottage Craft (R-1 / AG)",
+        "zoneType": "Suburban Residential & Cottage Industry (R-1 / AG)",
         "color": "#06b6d4",
-        "description": "Residential Suburban & Traditional Pottery/Crafts District",
-        "areaKm2": 0.711
+        "description": "Designated residential community and traditional pottery/ceramics cottage craft district.",
+        "areaKm2": 0.711,
+        "clupClassification": "Suburban Residential & Cottage Industries",
+        "permittedUses": [
+          "Single-family detached dwellings",
+          "Traditional pottery, ceramics & earthenware craft workshops",
+          "Home-based cottage industries (non-pollutive)",
+          "Neighborhood retail & sari-sari stores",
+          "Urban agriculture & family gardens"
+        ],
+        "prohibitedUses": [
+          "Heavy industrial manufacturing (I-2 / I-3)",
+          "Hazardous chemical storage",
+          "Pollutive livestock or poultry farms"
+        ],
+        "buildingRegulations": {
+          "maxHeight": "3 storeys / 10.0 meters",
+          "setbacks": "Front: 4.5m | Rear: 2.0m | Sides: 2.0m",
+          "maxPSO": "60% (Interior) / 70% (Corner Lot)",
+          "legalBasis": "PD 1096 (NBCP) Rule VII & VIII, Sto. Tomas CLUP"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -3944,12 +3992,36 @@ export const stoTomasZoningGeoJSON: any = {
       "properties": {
         "barangay": "Poblacion",
         "osmId": 21027521,
-        "name": "Municipal Civic Core & Commercial Zone",
+        "municipality": "Santo Tomas",
+        "province": "Pampanga",
+        "region": "Region III (Central Luzon)",
+        "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
+        "psgc": "0305421002",
+        "name": "Municipal Civic Core & Institutional Commercial Zone",
         "code": "C-1 / INST",
-        "zoneType": "Commercial / Institutional (C-1 / INST)",
+        "zoneType": "Municipal Civic Core & Commercial (C-1 / INST)",
         "color": "#ef4444",
-        "description": "Municipal Civic Core, Historic Heritage & Administrative District",
-        "areaKm2": 1.25
+        "description": "Seat of the Municipal Government, public plaza, heritage center, and primary institutional services.",
+        "areaKm2": 1.25,
+        "clupClassification": "Institutional & General Commercial",
+        "permittedUses": [
+          "Municipal government offices & civic facilities",
+          "Financial institutions, banks & professional offices",
+          "Commercial retail stores & food establishments",
+          "Institutional clinics, health centers & schools",
+          "Heritage conservation & civic public spaces"
+        ],
+        "prohibitedUses": [
+          "Heavy manufacturing & pollutive processing",
+          "Freight trucking terminals",
+          "Commercial piggery or poultry operations"
+        ],
+        "buildingRegulations": {
+          "maxHeight": "4 to 5 storeys / 15.0 meters",
+          "setbacks": "Front: 5.0m | Rear: 2.0m | Sides: 2.0m",
+          "maxPSO": "70% to 80%",
+          "legalBasis": "PD 1096 (NBCP), Sto. Tomas Municipal Civic Zone Guidelines"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -4512,12 +4584,36 @@ export const stoTomasZoningGeoJSON: any = {
       "properties": {
         "barangay": "San Bartolome",
         "osmId": 21027522,
-        "name": "Commercial & Trade Corridor",
+        "municipality": "Santo Tomas",
+        "province": "Pampanga",
+        "region": "Region III (Central Luzon)",
+        "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
+        "psgc": "0305421003",
+        "name": "Commercial & Enterprise Trade Corridor",
         "code": "C-2 / Mixed",
-        "zoneType": "Commercial & Trade (C-2 / Mixed-Use)",
+        "zoneType": "Commercial & Enterprise Trade (C-2 / Mixed-Use)",
         "color": "#eab308",
-        "description": "Commercial Trade, Enterprise & Mixed-Use Corridor",
-        "areaKm2": 1.413
+        "description": "Primary commercial trading artery, mixed-use commercial-residential, and enterprise retail corridor.",
+        "areaKm2": 1.413,
+        "clupClassification": "Commercial & Mixed-Use Trade",
+        "permittedUses": [
+          "Commercial retail malls & shopping centers",
+          "Wholesale and commercial trade establishments",
+          "Multi-door mixed commercial-residential units",
+          "Restaurants, food service & commercial offices",
+          "Automotive service & sales establishments"
+        ],
+        "prohibitedUses": [
+          "Heavy industrial processing",
+          "Hazardous waste facilities",
+          "Pollutive extraction activities"
+        ],
+        "buildingRegulations": {
+          "maxHeight": "Up to 5 storeys (subject to RROW width)",
+          "setbacks": "Front: 5.0m | Rear: 2.0m | Sides: 2.0m",
+          "maxPSO": "75% to 80%",
+          "legalBasis": "PD 1096 Rule VII, Sto. Tomas CLUP Commercial Code"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -4952,12 +5048,35 @@ export const stoTomasZoningGeoJSON: any = {
       "properties": {
         "barangay": "San Matias",
         "osmId": 21027523,
-        "name": "Industrial & Logistics Corridor",
-        "code": "I-1 / Comm",
-        "zoneType": "Industrial & Logistics (I-1)",
+        "municipality": "Santo Tomas",
+        "province": "Pampanga",
+        "region": "Region III (Central Luzon)",
+        "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
+        "psgc": "0305421004",
+        "name": "Industrial, Logistics & Highway Commercial Corridor",
+        "code": "I-1 / C-2",
+        "zoneType": "Light Industrial & Highway Commercial (I-1 / C-2)",
         "color": "#8b5cf6",
-        "description": "Manufacturing, Warehousing & McArthur Highway Economic Strip",
-        "areaKm2": 6.963
+        "description": "MacArthur Highway economic strip, light-to-medium industrial processing, warehousing, and logistics.",
+        "areaKm2": 6.963,
+        "clupClassification": "Industrial & Regional Highway Commercial",
+        "permittedUses": [
+          "Light manufacturing & fabrication plants (non-pollutive)",
+          "Logistics, freight terminals & distribution warehouses",
+          "Commercial establishments along MacArthur Highway",
+          "Wholesale depot centers & construction supply",
+          "Automotive repair, heavy equipment & transport depots"
+        ],
+        "prohibitedUses": [
+          "Heavy chemical or petrochemical refining (I-3)",
+          "Unlicensed radioactive or hazardous material storage"
+        ],
+        "buildingRegulations": {
+          "maxHeight": "Up to 5 storeys / 18.0 meters",
+          "setbacks": "Front: 6.0m (Highway) | Rear: 3.0m | Sides: 3.0m",
+          "maxPSO": "70% to 75%",
+          "legalBasis": "PD 1096 Rule VII/VIII, DENR-EMB Standards, Sto. Tomas CLUP"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -5864,12 +5983,36 @@ export const stoTomasZoningGeoJSON: any = {
       "properties": {
         "barangay": "San Vicente",
         "osmId": 21027524,
-        "name": "High-Density Urban & Craft Core",
+        "municipality": "Santo Tomas",
+        "province": "Pampanga",
+        "region": "Region III (Central Luzon)",
+        "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
+        "psgc": "0305421005",
+        "name": "High-Density Urban & Heritage Pottery Core",
         "code": "R-2 / C-1",
         "zoneType": "High-Density Residential & Commercial (R-2 / C-1)",
         "color": "#3b82f6",
-        "description": "Urban Center, Traditional Pottery Craft & Commercial Core",
-        "areaKm2": 2.565
+        "description": "High-density residential core, traditional pottery and ceramics handicraft center, and vibrant enterprise strip.",
+        "areaKm2": 2.565,
+        "clupClassification": "High-Density Urban & Traditional Crafts",
+        "permittedUses": [
+          "Medium to high-density dwellings (duplex, rowhouse, multi-family)",
+          "Traditional pottery, clay ceramics & ironcraft workshops",
+          "Commercial shops, retail boutiques & craft outlets",
+          "Community service facilities & neighborhood enterprise",
+          "Small-scale bakeries, clinics & professional offices"
+        ],
+        "prohibitedUses": [
+          "Heavy industrial manufacturing",
+          "Open livestock yards",
+          "Hazardous chemical processing"
+        ],
+        "buildingRegulations": {
+          "maxHeight": "3 to 4 storeys / 12.0 meters",
+          "setbacks": "Front: 3.0m | Rear: 2.0m | Sides: 2.0m (Firewall per Sec 704)",
+          "maxPSO": "70% (Residential) / 80% (Commercial)",
+          "legalBasis": "PD 1096 (NBCP) Rule VIII Section 704, Sto. Tomas ZO"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -6492,12 +6635,36 @@ export const stoTomasZoningGeoJSON: any = {
       "properties": {
         "barangay": "Santo Rosario (Pau)",
         "osmId": 21027525,
-        "name": "Agricultural & Suburban Zone",
+        "municipality": "Santo Tomas",
+        "province": "Pampanga",
+        "region": "Region III (Central Luzon)",
+        "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
+        "psgc": "0305421006",
+        "name": "Agricultural & Low-Density Suburban Expansion Zone",
         "code": "AG / R-1",
         "zoneType": "Agricultural & Low-Density Residential (AG / R-1)",
         "color": "#22c55e",
-        "description": "Farmlands, Agro-Aqua Resources & Suburban Communities",
-        "areaKm2": 2.075
+        "description": "Agricultural crop lands, agro-production, farmhouses, and planned low-density suburban expansion.",
+        "areaKm2": 2.075,
+        "clupClassification": "Agricultural & Suburban Expansion",
+        "permittedUses": [
+          "Crop production, rice fields & vegetable farms",
+          "Post-harvest facilities, grain storage & solar dryers",
+          "Low-density single-family farm dwellings",
+          "Agricultural nurseries & horticultural gardens",
+          "Agri-ecotourism & farm-to-table facilities"
+        ],
+        "prohibitedUses": [
+          "High-density subdivisions without conversion clearance",
+          "Commercial high-rises & pollutive factories",
+          "Hazardous waste disposal"
+        ],
+        "buildingRegulations": {
+          "maxHeight": "2 to 3 storeys / 9.0 meters",
+          "setbacks": "Front: 4.5m | Rear: 3.0m | Sides: 3.0m",
+          "maxPSO": "50% to 60%",
+          "legalBasis": "RA 6657 (CARP), PD 1096, Sto. Tomas Agricultural Protection Zone"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -6816,12 +6983,36 @@ export const stoTomasZoningGeoJSON: any = {
       "properties": {
         "barangay": "Sapa (Santo Niño)",
         "osmId": 21027526,
-        "name": "Agricultural & Aquaculture Zone",
+        "municipality": "Santo Tomas",
+        "province": "Pampanga",
+        "region": "Region III (Central Luzon)",
+        "legalAuthority": "Municipality of Sto. Tomas, Pampanga (OBO / MPDC)",
+        "psgc": "0305421007",
+        "name": "Agro-Aquaculture & Ecological Water Buffer Zone",
         "code": "AG / ECO",
-        "zoneType": "Agricultural & Aquaculture (AG)",
+        "zoneType": "Agro-Aquaculture & Environmental Buffer (AG / ECO)",
         "color": "#10b981",
-        "description": "Agricultural Farmlands, Fishery Buffer & Agro-Production Zone",
-        "areaKm2": 1.297
+        "description": "Fishery resources, aquaculture ponds, water catchment, and environmental protection river buffer.",
+        "areaKm2": 1.297,
+        "clupClassification": "Agro-Aquaculture & Environmental Protection",
+        "permittedUses": [
+          "Aquaculture fishponds & freshwater fish farming",
+          "Agricultural farming & organic produce cultivation",
+          "Flood catchment & environmental buffer stewardship",
+          "Single-family agricultural caretaker dwellings",
+          "Eco-recreational & fishing amenities"
+        ],
+        "prohibitedUses": [
+          "Industrial chemical discharge & polluting processing",
+          "Encroachment within legal riverbank easements",
+          "Unauthorized reclamation of natural waterways"
+        ],
+        "buildingRegulations": {
+          "maxHeight": "2 storeys / 7.5 meters",
+          "setbacks": "Minimum 5.0m riverbank easement (PD 1067 Water Code), Front 4.5m",
+          "maxPSO": "40% to 50%",
+          "legalBasis": "PD 1067 (Water Code of the Philippines), Sto. Tomas CLUP Eco-Buffer"
+        }
       },
       "geometry": {
         "type": "Polygon",

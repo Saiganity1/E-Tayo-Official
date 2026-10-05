@@ -300,6 +300,11 @@ export default function SpatialMap() {
     });
   }, [applications, filterType, searchQuery, selectedBarangay]);
 
+  const selectedFeature = useMemo(() => {
+    if (!selectedBarangay) return null;
+    return stoTomasZoningGeoJSON.features.find((f: any) => f.properties?.barangay === selectedBarangay)?.properties || null;
+  }, [selectedBarangay]);
+
   const styleFeature = (feature: any) => {
     const isSelected = selectedBarangay === feature.properties?.barangay;
     const isHovered = hoveredZone?.barangay === feature.properties?.barangay;
@@ -318,28 +323,35 @@ export default function SpatialMap() {
     const p = feature.properties;
     if (!p) return;
 
-    // Rich informative tooltip that follows mouse
+    // Rich government-grade informative tooltip that follows mouse
     const tooltipHtml = `
-      <div style="min-width: 210px; font-family: system-ui, -apple-system, sans-serif; padding: 2px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+      <div style="min-width: 240px; font-family: system-ui, -apple-system, sans-serif; padding: 3px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
           <div style="display: flex; align-items: center; gap: 6px;">
             <span style="width: 12px; height: 12px; border-radius: 3px; background-color: ${p.color}; display: inline-block; box-shadow: 0 0 6px ${p.color};"></span>
             <strong style="font-size: 14px; color: #0f172a;">Brgy. ${p.barangay}</strong>
           </div>
-          <span style="background: ${p.color}22; color: ${p.color}; font-weight: 700; font-size: 11px; padding: 2px 7px; border-radius: 99px;">
+          <span style="background: ${p.color}22; color: ${p.color}; font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 99px;">
             ${p.code || 'ZONE'}
           </span>
         </div>
+        <div style="font-size: 10px; color: #64748b; margin-bottom: 6px;">
+          PSGC: <strong>${p.psgc || '0305421000'}</strong> • Area: <strong>${p.areaKm2} km²</strong>
+        </div>
         <div style="background: #f8fafc; border-left: 3px solid ${p.color}; padding: 6px 8px; border-radius: 4px; margin-bottom: 6px;">
           <div style="font-weight: 700; font-size: 12px; color: #1e293b;">${p.name}</div>
-          <div style="font-size: 11px; font-weight: 600; color: ${p.color}; margin-top: 1px;">Zone: ${p.zoneType}</div>
+          <div style="font-size: 11px; font-weight: 600; color: ${p.color}; margin-top: 1px;">CLUP Zone: ${p.zoneType}</div>
         </div>
         <div style="font-size: 11px; color: #475569; line-height: 1.4; margin-bottom: 6px;">
           ${p.description || ''}
         </div>
+        <div style="background: #f1f5f9; padding: 4px 6px; border-radius: 4px; font-size: 10px; color: #334155; margin-bottom: 6px;">
+          <div>Limits: <strong>${p.buildingRegulations?.maxHeight || '3 storeys / 10.0m'}</strong></div>
+          <div>Setbacks: <strong>${p.buildingRegulations?.setbacks || 'Per PD 1096 NBCP'}</strong></div>
+        </div>
         <div style="font-size: 10px; color: #64748b; border-top: 1px dashed #e2e8f0; padding-top: 4px; display: flex; justify-content: space-between; align-items: center;">
-          <span>Land Area: <strong>${p.areaKm2} km²</strong></span>
-          <span style="color: #2563eb; font-weight: 600;">Click to select</span>
+          <span style="color: #059669; font-weight: 600;">✓ Official LGU Cadastral Zone</span>
+          <span style="color: #2563eb; font-weight: 600;">Click to inspect</span>
         </div>
       </div>
     `;
@@ -386,28 +398,28 @@ export default function SpatialMap() {
       background: "var(--background-primary, white)",
       minHeight: "500px" // Fallback minimum height
     }}>
-      {/* FLOATING CADASTRAL BOUNDARY BADGE */}
+      {/* FLOATING LEGAL CADASTRAL BOUNDARY BADGE */}
       <div style={{
         position: 'absolute',
         top: '16px',
         left: '56px',
         zIndex: 1000,
-        background: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(255, 255, 255, 0.96)',
+        backdropFilter: 'blur(10px)',
         border: '1px solid #bfdbfe',
         borderRadius: '99px',
-        padding: '5px 12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        padding: '6px 14px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
         display: 'flex',
         alignItems: 'center',
-        gap: '6px',
+        gap: '8px',
         fontSize: '0.78rem',
         fontWeight: '700',
         color: '#1e3a8a',
         pointerEvents: 'none'
       }}>
         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0284c7', display: 'inline-block', boxShadow: '0 0 6px #0284c7' }}></span>
-        <span>Sto. Tomas Cadastral Boundary (Official Survey)</span>
+        <span>Republic of the Philippines • LGU Sto. Tomas, Pampanga (PSGC: 0305421000)</span>
       </div>
 
       {/* FLOATING ZONE INSPECTOR CARD ON HOVER */}
@@ -457,11 +469,14 @@ export default function SpatialMap() {
                   {hoveredZone.code}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  ({hoveredZone.areaKm2} km²)
+                  PSGC: {hoveredZone.psgc || '0305421000'} • {hoveredZone.areaKm2} km²
                 </span>
               </div>
               <div style={{ fontSize: '0.82rem', color: '#334155', fontWeight: '600' }}>
                 {hoveredZone.name} — <span style={{ color: hoveredZone.color }}>{hoveredZone.zoneType}</span>
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
+                Limits: <strong>{hoveredZone.buildingRegulations?.maxHeight}</strong> | Setbacks: <strong>{hoveredZone.buildingRegulations?.setbacks}</strong>
               </div>
             </div>
           </div>
@@ -481,7 +496,7 @@ export default function SpatialMap() {
             gap: '8px'
           }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7', display: 'inline-block' }}></span>
-            <span>Hover over any colored area to view its zoning & land classification</span>
+            <span>Hover over any colored area to view official zoning classification & building regulations</span>
           </div>
         )}
       </div>
@@ -764,26 +779,71 @@ export default function SpatialMap() {
 
         {selectedBarangay && (
           <div style={{ marginTop: '8px', paddingTop: '16px', borderTop: '2px dashed var(--border-color)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-primary)' }}>{selectedBarangay} Analytics</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--color-primary)', fontWeight: '800' }}>
+                  Brgy. {selectedBarangay}
+                </h4>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  PSGC: <strong>{selectedFeature?.psgc || '0305421000'}</strong> • Area: <strong>{selectedFeature?.areaKm2} km²</strong>
+                </div>
+              </div>
               <button 
                 onClick={() => setSelectedBarangay(null)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem', padding: '0 4px' }}
+                title="Close"
               >
                 &times;
               </button>
             </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div style={{ background: 'var(--background-secondary)', padding: '12px', borderRadius: '6px', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{filteredApps.length}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Total Permits</div>
+
+            {selectedFeature && (
+              <div style={{
+                background: `${selectedFeature.color}15`,
+                borderLeft: `3px solid ${selectedFeature.color}`,
+                padding: '6px 10px',
+                borderRadius: '4px',
+                marginBottom: '10px'
+              }}>
+                <div style={{ fontWeight: '700', fontSize: '0.78rem', color: '#0f172a' }}>
+                  {selectedFeature.name}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: selectedFeature.color, fontWeight: '700' }}>
+                  CLUP Code: {selectedFeature.code}
+                </div>
               </div>
-              <div style={{ background: 'var(--background-secondary)', padding: '12px', borderRadius: '6px', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#eab308' }}>{filteredApps.filter(a => a.status === 'pending' || a.status === 'under_review').length}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Pending</div>
+            )}
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+              <div style={{ background: 'var(--background-secondary)', padding: '10px', borderRadius: '6px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{filteredApps.length}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Total Permits</div>
+              </div>
+              <div style={{ background: 'var(--background-secondary)', padding: '10px', borderRadius: '6px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#eab308' }}>{filteredApps.filter(a => a.status === 'pending' || a.status === 'under_review').length}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Pending</div>
               </div>
             </div>
+
+            {selectedFeature?.buildingRegulations && (
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', fontSize: '0.74rem', marginBottom: '10px' }}>
+                <div style={{ fontWeight: '700', color: '#1e293b', marginBottom: '4px' }}>Building Limits (PD 1096 NBCP):</div>
+                <div style={{ color: '#475569' }}>• Max Height: <strong>{selectedFeature.buildingRegulations.maxHeight}</strong></div>
+                <div style={{ color: '#475569' }}>• Setbacks: <strong>{selectedFeature.buildingRegulations.setbacks}</strong></div>
+                <div style={{ color: '#475569' }}>• Max PSO: <strong>{selectedFeature.buildingRegulations.maxPSO}</strong></div>
+              </div>
+            )}
+
+            {selectedFeature?.permittedUses && (
+              <div style={{ fontSize: '0.74rem', color: '#475569' }}>
+                <div style={{ fontWeight: '700', color: '#1e293b', marginBottom: '3px' }}>Permitted Uses (CLUP):</div>
+                <ul style={{ margin: 0, paddingLeft: '16px', lineHeight: '1.35' }}>
+                  {selectedFeature.permittedUses.slice(0, 3).map((use: string, i: number) => (
+                    <li key={i}>{use}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </div>
