@@ -788,8 +788,8 @@ export default function Home() {
           text-align: center;
           margin: 0;
           color: transparent;
-          -webkit-text-stroke: 1.8px #38bdf8;
-          text-shadow: 0 0 12px rgba(56, 189, 248, 0.95), 0 0 24px rgba(250, 204, 21, 0.7);
+          -webkit-text-stroke: 1.5px #38bdf8;
+          text-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
           pointer-events: none;
           z-index: 2;
           animation: drawBlueprintMarkings 2.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
@@ -800,28 +800,28 @@ export default function Home() {
           0% {
             clip-path: inset(0 100% 0 0);
             opacity: 0;
+            visibility: visible;
           }
           10% {
             clip-path: inset(0 98% 0 0);
             opacity: 1;
+            visibility: visible;
           }
-          72% {
+          70% {
             clip-path: inset(0 0% 0 0);
             opacity: 1;
-            filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.95));
+            visibility: visible;
           }
           78% {
             clip-path: inset(0 0% 0 0);
-            opacity: 1;
-            filter: drop-shadow(0 0 28px rgba(254, 240, 138, 1)) brightness(1.5);
+            opacity: 0.3;
+            visibility: visible;
           }
-          88% {
+          85%, 100% {
             clip-path: inset(0 0% 0 0);
             opacity: 0;
-          }
-          100% {
-            clip-path: inset(0 0% 0 0);
-            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
           }
         }
 
@@ -839,34 +839,23 @@ export default function Home() {
           position: relative;
           z-index: 3;
           animation: revealFinalFlagTitle 2.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-          will-change: opacity, transform, filter;
+          will-change: opacity;
+          transform: none !important;
         }
 
         @keyframes revealFinalFlagTitle {
           0%, 70% {
             opacity: 0;
-            transform: scale(0.97);
-            filter: blur(5px);
           }
-          78% {
-            opacity: 0.75;
-            transform: scale(1.02);
-            filter: brightness(1.6) blur(1px);
-          }
-          88% {
+          82% {
             opacity: 1;
-            transform: scale(1);
-            filter: brightness(1) blur(0px);
           }
           100% {
             opacity: 1;
-            transform: scale(1);
-            filter: brightness(1) blur(0px);
           }
         }
 
-        /* Philippine Flag Waving in the Wind Effect (Asul, Puti, Dilaw ng Araw, at Pula) */
-        /* Philippine Flag Waving in the Wind Effect (Lightened & High-Visibility) */
+        /* Philippine Flag Waving Effect: Only the colors move; text stays stationary; thin black outer glow */
         .philippine-flag-waving-text {
           display: inline-block;
           position: relative;
@@ -893,13 +882,12 @@ export default function Home() {
           -webkit-text-fill-color: transparent;
           background-clip: text;
           color: transparent;
-          -webkit-text-stroke: 0.8px rgba(255, 255, 255, 0.45);
-          filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.9))
-                  drop-shadow(0 0 22px rgba(255, 255, 255, 0.4))
-                  drop-shadow(0 0 32px rgba(125, 211, 252, 0.35));
-          animation: flagWindBreeze 7s ease-in-out infinite,
-                     flagWaveFlutter 5.5s ease-in-out infinite alternate;
-          will-change: background-position, transform;
+          transform: none !important;
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95))
+                  drop-shadow(0 0 6px rgba(0, 0, 0, 0.85))
+                  drop-shadow(0 0 1.5px rgba(0, 0, 0, 1));
+          animation: flagWindBreeze 7s ease-in-out infinite;
+          will-change: background-position;
         }
 
         @keyframes flagWindBreeze {
@@ -911,39 +899,6 @@ export default function Home() {
           }
           100% {
             background-position: 0% 50%;
-          }
-        }
-
-        @keyframes flagWaveFlutter {
-          0% {
-            transform: translateY(0px) rotate(0deg) skewX(0deg);
-            filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.9))
-                    drop-shadow(0 0 22px rgba(255, 255, 255, 0.4))
-                    drop-shadow(0 0 32px rgba(125, 211, 252, 0.35));
-          }
-          25% {
-            transform: translateY(-3.5px) rotate(0.4deg) skewX(-0.6deg);
-            filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.95))
-                    drop-shadow(0 0 26px rgba(125, 211, 252, 0.55))
-                    drop-shadow(0 0 35px rgba(255, 255, 255, 0.45));
-          }
-          50% {
-            transform: translateY(-1px) rotate(-0.35deg) skewX(0.5deg);
-            filter: drop-shadow(0 5px 16px rgba(0, 0, 0, 0.95))
-                    drop-shadow(0 0 28px rgba(254, 240, 138, 0.55))
-                    drop-shadow(0 0 38px rgba(253, 224, 71, 0.4));
-          }
-          75% {
-            transform: translateY(-4px) rotate(0.3deg) skewX(-0.4deg);
-            filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.95))
-                    drop-shadow(0 0 26px rgba(254, 163, 163, 0.55))
-                    drop-shadow(0 0 35px rgba(255, 255, 255, 0.45));
-          }
-          100% {
-            transform: translateY(0px) rotate(0deg) skewX(0deg);
-            filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.9))
-                    drop-shadow(0 0 22px rgba(255, 255, 255, 0.4))
-                    drop-shadow(0 0 32px rgba(125, 211, 252, 0.35));
           }
         }
 
@@ -1107,7 +1062,8 @@ export default function Home() {
         }
 
         @media (max-width: 640px) {
-          .hero-title {
+          .hero-title,
+          .hero-title-blueprint {
             font-size: clamp(2.2rem, 8vw, 2.75rem) !important;
             letter-spacing: -0.02em;
           }
