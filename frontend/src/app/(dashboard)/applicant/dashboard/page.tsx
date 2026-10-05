@@ -31,11 +31,13 @@ import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
 import { PermitApplication } from "../../../../types";
 import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationApproved } from "@/utils/projectGrouping";
+import { useLanguage } from "@/context/LanguageContext";
 
 type ViewMode = "project" | "flat";
 
 export default function ApplicantDashboard() {
   const { applications, archiveApplication } = usePermitContext();
+  const { language, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [userName, setUserName] = useState("Applicant");
@@ -302,7 +304,7 @@ export default function ApplicantDashboard() {
     ));
 
     if (isReleased) {
-      return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Permit Released", border: "#10b981" };
+      return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: t("statusReleased", "Permit Released"), border: "#10b981" };
     }
 
     const isLocallyApproved = typeof window !== "undefined" && (
@@ -322,28 +324,28 @@ export default function ApplicantDashboard() {
 
     const isPending = rawStatus === "pending" || appRawStatus === "pending" || !rawStatus;
     if (isPending) {
-      return { color: "#d97706", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", border: "#f59e0b" };
+      return { color: "#d97706", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: t("statusPending", "Pending Review"), border: "#f59e0b" };
     }
 
     const isAppApproved = isApplicationApproved(app);
 
     if (isAppApproved) {
-      return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved", border: "#10b981" };
+      return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: t("statusApproved", "Approved"), border: "#10b981" };
     }
 
     if (isLocalUnderReview || rawStatus === "under_review" || appRawStatus === "under_review") {
-      return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Review", border: "#0038A8" };
+      return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: t("statusUnderReview", "Under Review"), border: "#0038A8" };
     }
 
     switch(status) {
-      case "pending": return { color: "#d97706", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: "Pending Review", border: "#f59e0b" };
-      case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: "Under Review", border: "#0038A8" };
+      case "pending": return { color: "#d97706", bg: "rgba(245, 158, 11, 0.15)", icon: Clock, label: t("statusPending", "Pending Review"), border: "#f59e0b" };
+      case "under_review": return { color: "#0038A8", bg: "rgba(0, 56, 168, 0.12)", icon: Search, label: t("statusUnderReview", "Under Review"), border: "#0038A8" };
       case "approved": 
-      case "released": return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: "Approved", border: "#10b981" };
-      case "incomplete_requirements": return { color: "#dc2626", bg: "rgba(239, 68, 68, 0.15)", icon: AlertTriangle, label: "Action Required", border: "#ef4444" };
-      case "rejected": return { color: "#dc2626", bg: "rgba(239, 68, 68, 0.15)", icon: XCircle, label: "Disapproved / Rejected", border: "#dc2626" };
-      case "cancelled": return { color: "#dc2626", bg: "rgba(239, 68, 68, 0.15)", icon: XCircle, label: "Cancelled", border: "#dc2626" };
-      default: return { color: "#64748b", bg: "rgba(100, 116, 139, 0.15)", icon: FileText, label: "Processing", border: "#cbd5e1" };
+      case "released": return { color: "#059669", bg: "rgba(16, 185, 129, 0.15)", icon: CheckCircle2, label: t("statusApproved", "Approved"), border: "#10b981" };
+      case "incomplete_requirements": return { color: "#dc2626", bg: "rgba(239, 68, 68, 0.15)", icon: AlertTriangle, label: t("statusActionRequired", "Action Required"), border: "#ef4444" };
+      case "rejected": return { color: "#dc2626", bg: "rgba(239, 68, 68, 0.15)", icon: XCircle, label: t("statusRejected", "Disapproved / Rejected"), border: "#dc2626" };
+      case "cancelled": return { color: "#dc2626", bg: "rgba(239, 68, 68, 0.15)", icon: XCircle, label: t("statusCancelled", "Cancelled"), border: "#dc2626" };
+      default: return { color: "#64748b", bg: "rgba(100, 116, 139, 0.15)", icon: FileText, label: t("statusProcessing", "Processing"), border: "#cbd5e1" };
     }
   };
 
@@ -406,10 +408,10 @@ export default function ApplicantDashboard() {
       }}>
         <div>
           <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", color: "#0038A8", margin: 0 }}>
-            Applicant Dashboard
+            {t("applicantDashboardTitle", "Applicant Dashboard")}
           </h1>
           <p className="page-subtitle" style={{ fontSize: "1rem", marginTop: "0.35rem", color: "#475569" }}>
-            Welcome back, <strong style={{color: "#1e293b"}}>{userName}</strong>! Track and manage your permit dossiers and technical applications.
+            {t("welcomeBack", "Welcome back")}, <strong style={{color: "#1e293b"}}>{userName}</strong>! {t("dashboardSubtitle", "Track and manage your permit dossiers and technical applications.")}
           </p>
         </div>
 
@@ -427,7 +429,7 @@ export default function ApplicantDashboard() {
           fontWeight: "700",
           fontSize: "0.95rem"
         }}>
-          <Plus size={18} /> New Application
+          <Plus size={18} /> {t("newApplication", "New Application")}
         </Link>
       </header>
 
@@ -447,14 +449,14 @@ export default function ApplicantDashboard() {
           minHeight: "135px"
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", width: "100%", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Project Dossiers</span>
+            <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("projectDossiers", "Project Dossiers")}</span>
             <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Building2 size={19} />
             </div>
           </div>
           <div>
             <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1.1 }}>{stats.dossiersCount}</div>
-            <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px" }}>Active project sites</div>
+            <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px" }}>{t("activeProjectSites", "Active project sites")}</div>
           </div>
         </div>
 
@@ -472,14 +474,14 @@ export default function ApplicantDashboard() {
           minHeight: "135px"
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", width: "100%", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total Forms</span>
+            <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("totalForms", "Total Forms")}</span>
             <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#f8fafc", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <FileText size={19} />
             </div>
           </div>
           <div>
             <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0f172a", lineHeight: 1.1 }}>{stats.total}</div>
-            <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px" }}>Clearance & permit forms</div>
+            <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px" }}>{t("clearancePermitForms", "Clearance & permit forms")}</div>
           </div>
         </div>
 
@@ -497,14 +499,14 @@ export default function ApplicantDashboard() {
           minHeight: "135px"
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", width: "100%", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#d97706", textTransform: "uppercase", letterSpacing: "0.5px" }}>Under Review</span>
+            <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#d97706", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("underReview", "Under Review")}</span>
             <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#fffbeb", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Clock size={19} />
             </div>
           </div>
           <div>
             <div style={{ fontSize: "2rem", fontWeight: "900", color: "#d97706", lineHeight: 1.1 }}>{stats.pending}</div>
-            <div style={{ fontSize: "0.8rem", color: "#d97706", fontWeight: "600", marginTop: "4px" }}>Awaiting municipal evaluation</div>
+            <div style={{ fontSize: "0.8rem", color: "#d97706", fontWeight: "600", marginTop: "4px" }}>{t("awaitingMunicipalEvaluation", "Awaiting municipal evaluation")}</div>
           </div>
         </div>
 
@@ -522,14 +524,14 @@ export default function ApplicantDashboard() {
           minHeight: "135px"
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", width: "100%", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#059669", textTransform: "uppercase", letterSpacing: "0.5px" }}>Approved & Released</span>
+            <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#059669", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("approvedAndReleased", "Approved & Released")}</span>
             <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#f0fdf4", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <CheckCircle2 size={19} />
             </div>
           </div>
           <div>
             <div style={{ fontSize: "2rem", fontWeight: "900", color: "#059669", lineHeight: 1.1 }}>{stats.approved}</div>
-            <div style={{ fontSize: "0.8rem", color: "#059669", fontWeight: "600", marginTop: "4px" }}>Clearances & permits granted</div>
+            <div style={{ fontSize: "0.8rem", color: "#059669", fontWeight: "600", marginTop: "4px" }}>{t("clearancesPermitsGranted", "Clearances & permits granted")}</div>
           </div>
         </div>
       </section>
@@ -549,7 +551,7 @@ export default function ApplicantDashboard() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
             {/* Title & Archived Badge */}
             <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-              <h2 style={{ fontSize: "1.5rem", fontWeight: "800", color: "#1e293b", margin: 0 }}>Recent Applications</h2>
+              <h2 style={{ fontSize: "1.5rem", fontWeight: "800", color: "#1e293b", margin: 0 }}>{t("recentApplications", "Recent Applications")}</h2>
               {archivedCount > 0 && (
                 <Link
                   href="/applicant/track?tab=archived"
@@ -571,7 +573,7 @@ export default function ApplicantDashboard() {
                   title="View all archived applications in Application Status"
                 >
                   <Archive size={14} color="#7c3aed" />
-                  <span>{archivedCount} Archived</span>
+                  <span>{archivedCount} {t("archivedCountSuffix", "Archived")}</span>
                 </Link>
               )}
             </div>
@@ -584,7 +586,7 @@ export default function ApplicantDashboard() {
                 <Search size={18} color="#94a3b8" />
                 <input 
                   type="text" 
-                  placeholder="Search projects, IDs, or permit types..." 
+                  placeholder={t("searchPlaceholder", "Search projects, IDs, or permit types...")} 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   style={{ background: "transparent", border: "none", outline: "none", width: "100%", fontSize: "0.92rem", color: "#1e293b", fontWeight: "500" }}
@@ -600,12 +602,12 @@ export default function ApplicantDashboard() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "0.6rem 1rem", fontWeight: "600", fontSize: "0.88rem", color: "#334155", outline: "none", cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,0.02)" }}
               >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="under_review">Under Review</option>
-                <option value="approved">Approved</option>
-                <option value="incomplete_requirements">Action Required</option>
-                <option value="rejected">Disapproved / Rejected</option>
+                <option value="all">{t("allStatus", "All Status")}</option>
+                <option value="pending">{t("statusPending", "Pending Review")}</option>
+                <option value="under_review">{t("statusUnderReview", "Under Review")}</option>
+                <option value="approved">{t("statusApproved", "Approved")}</option>
+                <option value="incomplete_requirements">{t("statusActionRequired", "Action Required")}</option>
+                <option value="rejected">{t("statusRejected", "Disapproved / Rejected")}</option>
               </select>
             </div>
           </div>
@@ -690,7 +692,11 @@ export default function ApplicantDashboard() {
                               color: hasAction ? "#b91c1c" : hasPending ? "#b45309" : "#16a34a",
                               border: `1px solid ${hasAction ? "#fca5a5" : hasPending ? "#fde68a" : "#bbf7d0"}`
                             }}>
-                              {hasAction ? "Action Required on Requirements" : hasPending ? `${dossier.pendingCount} Form${dossier.pendingCount > 1 ? "s" : ""} Awaiting Review` : "All Forms Approved ✓"}
+                              {hasAction 
+                                ? (language === "fil" ? "Kailangang Aksyunan sa mga Rekisito" : "Action Required on Requirements") 
+                                : hasPending 
+                                  ? `${dossier.pendingCount} ${dossier.pendingCount > 1 ? t("formsAwaitingReview", "Forms Awaiting Review") : t("formAwaitingReview", "Form Awaiting Review")}` 
+                                  : (language === "fil" ? "Lahat ng Form ay Aprubado ✓" : "All Forms Approved ✓")}
                             </span>
                           </div>
 
@@ -700,7 +706,7 @@ export default function ApplicantDashboard() {
                             </span>
                             <span>•</span>
                             <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                              <FolderKanban size={13} color="#94a3b8" /> {dossier.applications.length} Connected Permit Form{dossier.applications.length > 1 ? "s" : ""}
+                              <FolderKanban size={13} color="#94a3b8" /> {dossier.applications.length} {t("connectedPermitForms", "Connected Permit Forms")}
                             </span>
                           </div>
                         </div>
@@ -847,7 +853,7 @@ export default function ApplicantDashboard() {
                                 {/* Footer Row: Submission Date & Actions */}
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "0.6rem", borderTop: "1px solid #f1f5f9", gap: "8px", flexWrap: "wrap" }}>
                                   <span style={{ color: "#94a3b8", fontWeight: "600", fontSize: "0.78rem" }}>
-                                    Submitted: {app.dateSubmitted || "Online Portal"}
+                                    {t("submittedPrefix", "Submitted")}: {app.dateSubmitted || "Online Portal"}
                                   </span>
 
                                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -869,7 +875,7 @@ export default function ApplicantDashboard() {
                                         color: "#64748b"
                                       }}
                                     >
-                                      <Archive size={12} /> Archive
+                                      <Archive size={12} /> {t("archiveAction", "Archive")}
                                     </button>
 
                                     <Link
@@ -888,7 +894,7 @@ export default function ApplicantDashboard() {
                                         boxShadow: "0 2px 6px rgba(0, 56, 168, 0.25)"
                                       }}
                                     >
-                                      <span>Track & Details</span>
+                                      <span>{t("trackAndDetails", "Track & Details")}</span>
                                       <ArrowRight size={13} />
                                     </Link>
                                   </div>

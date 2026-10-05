@@ -8,6 +8,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 import { PermitProvider } from "../context/PermitContext";
+import { LanguageProvider } from "../context/LanguageContext";
 
 import { Viewport } from "next";
 
@@ -51,9 +52,11 @@ export default function RootLayout({
       className={jakarta.variable}
     >
       <body>
-        <PermitProvider>
-          {children}
-        </PermitProvider>
+        <LanguageProvider>
+          <PermitProvider>
+            {children}
+          </PermitProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -7,14 +7,16 @@ import { usePathname } from "next/navigation";
 import { 
   Building2, Home, PlusCircle, Search, FileCheck, 
   MessageSquare, ShieldAlert, Map, X, Menu, Settings, LogOut, Users, ClipboardList, FileText,
-  Shield, CheckSquare
+  Shield, CheckSquare, Globe
 } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
+import { useLanguage } from "../../context/LanguageContext";
 import NotificationBell from "./NotificationBell";
 import { isApplicationReleased } from "@/utils/projectGrouping";
 
 export default function Sidebar() {
   const { userRole, setUserRole, applications } = usePermitContext();
+  const { language, setLanguage, t } = useLanguage();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -196,54 +198,58 @@ export default function Sidebar() {
           : null;
 
         return [
-          { href: "/applicant/dashboard", label: "Dashboard", icon: Home },
-          { href: "/applicant/apply", label: "New Application", icon: PlusCircle },
-          { href: "/applicant/track", label: "Application Status", icon: ClipboardList },
+          { href: "/applicant/dashboard", label: t("dashboard", "Dashboard"), icon: Home },
+          { href: "/applicant/apply", label: t("newApplication", "New Application"), icon: PlusCircle },
+          { href: "/applicant/track", label: t("applicationStatus", "Application Status"), icon: ClipboardList },
           ...(submittedStage2 ? [
             {
               href: `/applicant/track/${encodeURIComponent(submittedStage2.id)}`,
-              label: "Existing Application",
+              label: t("existingApplication", "Existing Application"),
               icon: FileCheck,
-              badge: submittedStage2.status === "approved" || submittedStage2.status === "released" ? "Approved" : "Review"
+              badge: submittedStage2.status === "approved" || submittedStage2.status === "released" 
+                ? (language === "fil" ? "Aprubado" : "Approved") 
+                : (language === "fil" ? "Pagsusuri" : "Review")
             }
           ] : isReleased && clearanceRef ? [
             {
               href: `/applicant/apply?clearanceRef=${encodeURIComponent(clearanceRef)}&step=3`,
-              label: "Existing Application",
+              label: t("existingApplication", "Existing Application"),
               icon: FileCheck,
               badge: "Stage 2"
             }
           ] : anyLCApp ? [
             {
               href: `/applicant/track/${encodeURIComponent(anyLCApp.id)}`,
-              label: "Locational Clearance",
+              label: t("locationalClearance", "Locational Clearance"),
               icon: FileCheck,
-              badge: anyLCApp.status?.toLowerCase() === "approved" ? "Pending Release" : "Under Review"
+              badge: anyLCApp.status?.toLowerCase() === "approved" 
+                ? (language === "fil" ? "Releasing" : "Pending Release") 
+                : (language === "fil" ? "Sinusuri" : "Under Review")
             }
           ] : []),
-          { href: "/applicant/map", label: "Map", icon: Map },
-          { href: "/applicant/messages", label: "Messages", icon: MessageSquare, badge: 3 },
+          { href: "/applicant/map", label: t("map", "Map"), icon: Map },
+          { href: "/applicant/messages", label: t("messages", "Messages"), icon: MessageSquare, badge: 3 },
         ];
       }
       case "staff":
         return [
-          { href: "/staff/dashboard", label: "Review Hub", icon: FileCheck },
-          { href: "/staff/templates", label: "Official Forms", icon: FileText },
-          { href: "/staff/track", label: "Query & Inspect", icon: Search },
-          { href: "/staff/map", label: "Map", icon: Map },
-          { href: "/staff/messages", label: "Messages", icon: MessageSquare, badge: 5 },
+          { href: "/staff/dashboard", label: t("reviewHub", "Review Hub"), icon: FileCheck },
+          { href: "/staff/templates", label: t("officialForms", "Official Forms"), icon: FileText },
+          { href: "/staff/track", label: t("queryInspect", "Query & Inspect"), icon: Search },
+          { href: "/staff/map", label: t("map", "Map"), icon: Map },
+          { href: "/staff/messages", label: t("messages", "Messages"), icon: MessageSquare, badge: 5 },
         ];
       case "admin":
         return [
-          { href: "/admin/evaluations", label: "Staff Evaluations", icon: FileCheck },
-          { href: "/admin/security", label: "Security & Auth", icon: Shield },
-          { href: "/admin/form-tester", label: "Form Testing Studio", icon: ClipboardList },
-          { href: "/staff/dashboard", label: "Review Workspaces", icon: CheckSquare },
-          { href: "/staff/templates", label: "Official Forms", icon: FileText },
-          { href: "/admin/users", label: "Applicants Management", icon: Users },
-          { href: "/admin/staff", label: "Staff Management", icon: ShieldAlert },
-          { href: "/admin/messages", label: "Messages", icon: MessageSquare, badge: 1 },
-          { href: "/admin/settings", label: "Settings", icon: Settings },
+          { href: "/admin/evaluations", label: t("staffEvaluations", "Staff Evaluations"), icon: FileCheck },
+          { href: "/admin/security", label: t("securityAuth", "Security & Auth"), icon: Shield },
+          { href: "/admin/form-tester", label: t("formTester", "Form Testing Studio"), icon: ClipboardList },
+          { href: "/staff/dashboard", label: t("reviewWorkspaces", "Review Workspaces"), icon: CheckSquare },
+          { href: "/staff/templates", label: t("officialForms", "Official Forms"), icon: FileText },
+          { href: "/admin/users", label: t("applicantManagement", "Applicants Management"), icon: Users },
+          { href: "/admin/staff", label: t("staffManagement", "Staff Management"), icon: ShieldAlert },
+          { href: "/admin/messages", label: t("messages", "Messages"), icon: MessageSquare, badge: 1 },
+          { href: "/admin/settings", label: t("settings", "Settings"), icon: Settings },
         ];
       default:
         return [];
@@ -321,9 +327,9 @@ export default function Sidebar() {
         </div>
 
         <nav className="sidebar-nav">
-          <div className="nav-label">Main Menu</div>
+          <div className="nav-label">{userRole === "admin" ? t("adminPanel", "Admin Panel") : t("mainMenu", "Main Menu")}</div>
           {navItems.map((item) => {
-            const isActive = item.label === "Existing Application"
+            const isActive = (item.href.includes("clearanceRef") || (item.href.includes("/applicant/track/") && item.href !== "/applicant/track"))
               ? (pathname === "/applicant/apply" && typeof window !== "undefined" && window.location.search.includes("clearanceRef"))
               : (item.href === "/applicant/apply"
                   ? (pathname === "/applicant/apply" && (typeof window === "undefined" || !window.location.search.includes("clearanceRef")))
@@ -347,31 +353,63 @@ export default function Sidebar() {
         </nav>
 
         <div className="sidebar-bottom">
-          {userRole !== "public" && (
-            <div className="sidebar-signout-container">
-              <div className="nav-divider"></div>
-              
-              <Link 
-                href="/"
-                className="nav-item text-danger hover-danger"
-                onClick={() => {
-                  localStorage.removeItem("token");
-                  localStorage.removeItem("user");
-                  setUserRole("public");
-                  setIsOpen(false);
-                }}
-              >
-                <div className="nav-item-content">
-                  <LogOut size={17} strokeWidth={2.2} />
-                  <span>Sign Out</span>
-                </div>
-              </Link>
+          <div className="sidebar-signout-container">
+            {/* Language Switcher Feature (Positioned directly above Sign Out button) */}
+            <div className="sidebar-language-box">
+              <div className="sidebar-language-header">
+                <Globe size={13} className="lang-icon" />
+                <span>{language === "fil" ? "Wika / Language" : "Language / Wika"}</span>
+              </div>
+              <div className="sidebar-language-toggle">
+                <button
+                  type="button"
+                  className={`lang-btn ${language === "en" ? "active" : ""}`}
+                  onClick={() => setLanguage("en")}
+                  title="Switch to English"
+                  aria-label="Switch to English"
+                >
+                  <span className="lang-flag-emoji">🇺🇸</span>
+                  <span>English</span>
+                </button>
+                <button
+                  type="button"
+                  className={`lang-btn ${language === "fil" ? "active" : ""}`}
+                  onClick={() => setLanguage("fil")}
+                  title="Lumipat sa Filipino"
+                  aria-label="Lumipat sa Filipino"
+                >
+                  <span className="lang-flag-emoji">🇵🇭</span>
+                  <span>Filipino</span>
+                </button>
+              </div>
             </div>
-          )}
+
+            {userRole !== "public" && (
+              <>
+                <div className="nav-divider" style={{ margin: "8px 0" }}></div>
+                
+                <Link 
+                  href="/"
+                  className="nav-item text-danger hover-danger"
+                  onClick={() => {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    setUserRole("public");
+                    setIsOpen(false);
+                  }}
+                >
+                  <div className="nav-item-content">
+                    <LogOut size={17} strokeWidth={2.2} />
+                    <span>{t("signOut", "Sign Out")}</span>
+                  </div>
+                </Link>
+              </>
+            )}
+          </div>
 
           <div className="sidebar-footer">
-            <p>Sto. Tomas, Pampanga</p>
-            <small>© 2026 eTAYO System</small>
+            <p>{t("stoTomasPampanga", "Sto. Tomas, Pampanga")}</p>
+            <small>{t("systemFooter", "© 2026 eTAYO System")}</small>
           </div>
         </div>
 
