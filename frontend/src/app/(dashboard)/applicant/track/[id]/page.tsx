@@ -82,6 +82,11 @@ export default function ApplicationTrackDetail() {
   const [cancelReason, setCancelReason] = useState("Change of project plans");
   const [isCancelling, setIsCancelling] = useState(false);
 
+  // Authoritative Track ID bindings (must be declared before any hooks or closures that reference them)
+  const curTrackId = String(appData?.id || appId || "").trim();
+  const lowerTrackId = curTrackId.toLowerCase();
+  const upperTrackId = curTrackId.toUpperCase();
+
   // Payment Confirmation Modal State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentRefInput, setPaymentRefInput] = useState("");
@@ -503,6 +508,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const resolvedDocuments = React.useMemo(() => {
     if (!appData) return [];
 
+    const currentTrackId = String(appData?.id || appId || "").trim();
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
     const resolveUrl = (u: string) => {
       if (!u || typeof u !== "string") return "";
@@ -734,7 +740,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             if (cached) resolvedReqUrl = cached;
           }
           if (!resolvedReqUrl && isBfpDoc) {
-            const bfpCached = localStorage.getItem(`etayo_bfp_${curTrackId}`) || 
+            const bfpCached = localStorage.getItem(`etayo_bfp_${currentTrackId}`) || 
                               localStorage.getItem("etayo_bfp_file_data");
             if (bfpCached) resolvedReqUrl = bfpCached;
           }
@@ -805,7 +811,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     }
 
     return docs;
-  }, [appData]);
+  }, [appData, appId]);
 
   // Find connected application (Locational Clearance <-> Stage 2 Technical Permits)
   const connectedApp = useMemo(() => {
@@ -958,9 +964,6 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     );
   }, [appData, appId]);
 
-  const curTrackId = String(appData?.id || appId || "").trim();
-  const lowerTrackId = curTrackId.toLowerCase();
-  const upperTrackId = curTrackId.toUpperCase();
   const rawAppStatus = String(appData?.status || "").toLowerCase().trim();
   const isApproved = isApplicationApproved(appData);
   const isLocalUnderReview = typeof window !== "undefined" && Boolean(curTrackId) && (
