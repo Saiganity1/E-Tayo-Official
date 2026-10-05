@@ -11,7 +11,7 @@ import {
   MapPin, Sparkles, Layers, ShieldCheck, ArrowRight, MessageSquare, Lock,
   XCircle, Trash2, Archive, ArchiveRestore, RotateCcw, Filter, Calendar,
   Building2, DollarSign, Eye, RefreshCw, FolderKanban, List, ChevronDown,
-  CreditCard, Receipt, Banknote, Download, X, Send, Camera
+  CreditCard, Receipt, Banknote, Download, X, Send, Camera, AlertCircle
 } from "lucide-react";
 import { dispatchPermitMessage, getAuthoritativePermitFee } from "../../../../utils/permitMessaging";
 import { 

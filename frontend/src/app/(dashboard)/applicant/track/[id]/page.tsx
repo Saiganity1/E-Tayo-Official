@@ -35,7 +35,8 @@ import {
   RotateCcw,
   MessageSquare,
   ArrowRight,
-  Lock
+  Lock,
+  AlertCircle
 } from "lucide-react";
 import { dispatchPermitMessage, getAuthoritativePermitFee } from "../../../../../utils/permitMessaging";
 import { getConnectedProjectApp, isApplicationApproved, isApplicationReleased } from "@/utils/projectGrouping";

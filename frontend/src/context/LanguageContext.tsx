@@ -323,14 +323,22 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined" || !document.body) return;
 
     const translateDOMNode = (node: Node) => {
-      // Skip scripts, styles, pre, code
+      // Skip scripts, styles, pre, code, and form input elements
       const parent = node.parentElement;
       if (parent) {
         const tag = parent.tagName;
-        if (tag === "SCRIPT" || tag === "STYLE" || tag === "NOSCRIPT" || tag === "CODE" || tag === "PRE") {
+        if (
+          tag === "SCRIPT" ||
+          tag === "STYLE" ||
+          tag === "NOSCRIPT" ||
+          tag === "CODE" ||
+          tag === "PRE" ||
+          tag === "TEXTAREA" ||
+          tag === "INPUT"
+        ) {
           return;
         }
-        if (parent.getAttribute("contenteditable") === "true") {
+        if (parent.getAttribute("contenteditable") === "true" || parent.closest("[contenteditable='true']")) {
           return;
         }
       }
@@ -340,17 +348,19 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         if (!text || !text.trim()) return;
 
         const nodeAny = node as any;
-        if (nodeAny.__etayoOrigText === undefined) {
+        // If React re-rendered with new text that isn't the translated text, update orig text
+        if (nodeAny.__etayoOrigText === undefined || (node.nodeValue !== nodeAny.__etayoOrigText && node.nodeValue !== nodeAny.__etayoTransText)) {
           nodeAny.__etayoOrigText = text;
         }
 
         if (language === "fil") {
           const translated = translateToFilipino(nodeAny.__etayoOrigText);
+          nodeAny.__etayoTransText = translated;
           if (node.nodeValue !== translated) {
             node.nodeValue = translated;
           }
         } else {
-          if (node.nodeValue !== nodeAny.__etayoOrigText) {
+          if (nodeAny.__etayoOrigText && node.nodeValue !== nodeAny.__etayoOrigText) {
             node.nodeValue = nodeAny.__etayoOrigText;
           }
         }

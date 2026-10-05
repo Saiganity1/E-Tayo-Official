@@ -25,7 +25,7 @@ export interface BarangayProfile {
   name: string;
   altNames: string[];
   zoningClass: string;
-  floodRisk: "Low" | "Moderate" | "High";
+  floodRisk: "Low" | "Moderate" | "High" | "Moderate to High";
   description: string;
   specialRules: string[];
 }
