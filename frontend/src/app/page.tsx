@@ -144,9 +144,33 @@ export default function Home() {
           <div className="hero-bg-glow"></div>
         </div>
         <div className="container hero-container">
-          <div className="hero-badge animate-entry-badge">
-            <span className="badge-pulse"></span>
-            OFFICE OF THE BUILDING OFFICIAL
+          {/* Construction Stage 1: Crane Lowering the Office of the Building Official Badge */}
+          <div className="crane-badge-stage">
+            {/* Crane Rigging with steel hoist cable, hazard pulley block, and steel hook */}
+            <div className="crane-rigging" aria-hidden="true">
+              <div className="crane-cable"></div>
+              <svg className="crane-hook-svg" viewBox="0 0 40 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Pulley block with safety yellow & hazard stripes */}
+                <rect x="8" y="2" width="24" height="18" rx="3" fill="#eab308" stroke="#ca8a04" strokeWidth="1.5"/>
+                <path d="M12 2L8 8M18 2L10 14M24 2L12 20M30 2L18 20M32 8L24 20M32 14L28 20" stroke="#1e293b" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="20" cy="11" r="4" fill="#334155" stroke="#f8fafc" strokeWidth="1.2"/>
+                <circle cx="20" cy="11" r="1.5" fill="#f8fafc"/>
+                {/* Steel swivel ring & heavy-duty hook */}
+                <path d="M20 20V26" stroke="#475569" strokeWidth="3" strokeLinecap="round"/>
+                <path d="M20 26C15 26 12 30 12 36C12 43 19 46 25 44C29 42.5 31 38 29 34C28 32 25 32 24.5 33.5C24 35 25.5 37 24 38C22 39 17 38.5 17 35C17 31 20 29 22 29" stroke="#334155" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <path d="M17 30L22 35" stroke="#eab308" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              {/* Rigging Slings */}
+              <svg className="crane-slings-svg" viewBox="0 0 120 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M60 0L8 25" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="3 2"/>
+                <path d="M60 0L112 25" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="3 2"/>
+              </svg>
+            </div>
+
+            <div className="hero-badge crane-delivered-badge">
+              <span className="badge-pulse"></span>
+              OFFICE OF THE BUILDING OFFICIAL
+            </div>
           </div>
 
           {/* GPS Pin Drawing & Location Marking Stage */}
@@ -192,12 +216,96 @@ export default function Home() {
             </h1>
           </div>
 
-          <p className="hero-subtitle animate-entry-subtitle">
-            A Geospatially Enabled Permit Management and Building Monitoring System for the Local Government Unit of Sto. Tomas, Pampanga.
-          </p>
-          <div className="hero-actions animate-entry-actions">
-            <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary btn-large">Start New Application</Link>
-            <Link href="/applicant/track" className="btn-secondary btn-large">Application Status</Link>
+          {/* Construction Stage 2: Subtitle Delivered by Construction Flatbed Truck */}
+          <div className="truck-delivery-stage">
+            <div className="delivery-truck-carrier" aria-hidden="true">
+              <svg className="delivery-truck-svg" viewBox="0 0 160 65" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Flatbed Trailer / Chassis */}
+                <rect x="6" y="36" width="108" height="9" rx="2" fill="#334155" stroke="#1e293b" strokeWidth="1.5"/>
+                {/* Hazard striping on bed */}
+                <rect x="10" y="38" width="98" height="5" fill="#f59e0b"/>
+                <path d="M15 43L20 38M25 43L30 38M35 43L40 38M45 43L50 38M55 43L60 38M65 43L70 38M75 43L80 38M85 43L90 38M95 43L100 38" stroke="#1e293b" strokeWidth="2.5" strokeLinecap="round"/>
+                {/* Cab Body */}
+                <path d="M114 20H134L148 36V48H114V20Z" fill="#f59e0b" stroke="#b45309" strokeWidth="1.5"/>
+                {/* Cab Window */}
+                <path d="M118 23H131L141 36H118V23Z" fill="#e0f2fe" stroke="#0284c7" strokeWidth="1"/>
+                {/* Amber Warning Beacon */}
+                <rect x="123" y="15" width="8" height="5" rx="1.5" fill="#f97316"/>
+                <circle cx="127" cy="17.5" r="4" fill="#fde047" opacity="0.8"/>
+                {/* Front Bumper & Headlight */}
+                <rect x="144" y="42" width="8" height="6" rx="1" fill="#475569"/>
+                <circle cx="148" cy="40" r="3.5" fill="#fef08a"/>
+                {/* Wheels */}
+                <circle cx="26" cy="48" r="9" fill="#1e293b" stroke="#475569" strokeWidth="2"/>
+                <circle cx="26" cy="48" r="3.5" fill="#94a3b8"/>
+                <circle cx="50" cy="48" r="9" fill="#1e293b" stroke="#475569" strokeWidth="2"/>
+                <circle cx="50" cy="48" r="3.5" fill="#94a3b8"/>
+                <circle cx="132" cy="48" r="9" fill="#1e293b" stroke="#475569" strokeWidth="2"/>
+                <circle cx="132" cy="48" r="3.5" fill="#94a3b8"/>
+              </svg>
+              {/* Delivery Dust Puff */}
+              <div className="truck-dust-puff"></div>
+            </div>
+
+            <p className="hero-subtitle truck-delivered-subtitle">
+              A Geospatially Enabled Permit Management and Building Monitoring System for the Local Government Unit of Sto. Tomas, Pampanga.
+            </p>
+          </div>
+
+          {/* Construction Stage 3 & 4: Action Buttons (Excavator-delivered & Drilled into place) */}
+          <div className="hero-actions">
+            {/* Button 1: Start New Application (Carried and placed by Excavator) */}
+            <div className="excavator-button-stage">
+              <div className="excavator-carrier" aria-hidden="true">
+                <svg className="excavator-svg" viewBox="0 0 100 85" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Hydraulic boom/arm */}
+                  <path d="M12 80L36 40L68 46" stroke="#eab308" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 80L36 40L68 46" stroke="#ca8a04" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  {/* Hydraulic cylinder */}
+                  <path d="M18 72L46 45" stroke="#64748b" strokeWidth="3.5" strokeLinecap="round"/>
+                  <path d="M46 45L58 46" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round"/>
+                  {/* Pivot joints */}
+                  <circle cx="36" cy="40" r="3" fill="#1e293b" stroke="#f8fafc" strokeWidth="1"/>
+                  <circle cx="68" cy="46" r="3" fill="#1e293b" stroke="#f8fafc" strokeWidth="1"/>
+                  {/* Excavator Bucket with teeth */}
+                  <path d="M68 46C72 42 80 42 86 46L94 62C92 68 82 74 72 70L66 54Z" fill="#ca8a04" stroke="#854d0e" strokeWidth="2"/>
+                  <polygon points="94,62 100,66 96,70" fill="#1e293b"/>
+                  <polygon points="88,66 93,71 87,73" fill="#1e293b"/>
+                  <polygon points="80,69 84,75 78,76" fill="#1e293b"/>
+                </svg>
+              </div>
+              <Link href="/applicant/apply" onClick={handleApplyClick} className="btn-primary btn-large excavator-delivered-btn">
+                Start New Application
+              </Link>
+            </div>
+
+            {/* Button 2: Application Status (Drilled into foundation) */}
+            <div className="drill-button-stage">
+              <div className="drill-rig" aria-hidden="true">
+                <svg className="drill-svg" viewBox="0 0 34 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Pneumatic drill body */}
+                  <rect x="9" y="2" width="16" height="22" rx="3" fill="#ea580c" stroke="#9a3412" strokeWidth="1.5"/>
+                  <rect x="11" y="6" width="12" height="4" fill="#1e293b"/>
+                  {/* Twin rubber grip handles */}
+                  <path d="M3 9H9M25 9H31" stroke="#1e293b" strokeWidth="3" strokeLinecap="round"/>
+                  {/* Steel chuck & bit */}
+                  <rect x="13" y="24" width="8" height="7" fill="#475569" stroke="#1e293b" strokeWidth="1"/>
+                  <path d="M15 31V48M19 31V48" stroke="#94a3b8" strokeWidth="2.5"/>
+                  <path d="M14 34L20 38M14 40L20 44" stroke="#cbd5e1" strokeWidth="1.5"/>
+                  <polygon points="17,52 13,47 21,47" fill="#334155"/>
+                </svg>
+                {/* Drilling sparks */}
+                <div className="drill-sparks">
+                  <span className="spark sp1"></span>
+                  <span className="spark sp2"></span>
+                  <span className="spark sp3"></span>
+                  <span className="spark sp4"></span>
+                </div>
+              </div>
+              <Link href="/applicant/track" className="btn-secondary btn-large drilled-btn">
+                Application Status
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -559,51 +667,425 @@ export default function Home() {
           50% { opacity: 0.4; transform: scale(0.85); }
         }
 
-        /* Hero Entry Animations */
-        .animate-entry-badge {
-          animation: heroBadgeEntry 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+        /* ========================================================
+           CONSTRUCTION SITE ENTRANCE ANIMATIONS (Intro only)
+           1. Crane lowers Office of the Building Official badge
+           2. Flatbed Truck delivers the geospatial subtitle
+           3. Excavator brings in and places "Start New Application"
+           4. Pneumatic Drill hammers "Application Status" into bedrock
+           After intro completes, all elements stay in original states!
+           ======================================================== */
+
+        /* Stage 1: Tower Crane Lowering Badge */
+        .crane-badge-stage {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-bottom: 1.6rem;
+          z-index: 5;
         }
 
-        .animate-entry-subtitle {
-          animation: heroSubtitleEntry 0.9s cubic-bezier(0.16, 1, 0.3, 1) 2.2s both;
+        .crane-rigging {
+          position: absolute;
+          bottom: calc(100% - 2px);
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          pointer-events: none;
+          z-index: 10;
+          animation: craneHoistSequence 2.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          will-change: transform, opacity;
         }
 
-        .animate-entry-actions {
-          animation: heroActionsEntry 0.85s cubic-bezier(0.16, 1, 0.3, 1) 2.45s both;
+        .crane-cable {
+          width: 3px;
+          height: 180px;
+          background: repeating-linear-gradient(
+            to bottom,
+            #94a3b8 0px,
+            #94a3b8 4px,
+            #334155 4px,
+            #334155 8px
+          );
+          box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
         }
 
-        @keyframes heroBadgeEntry {
+        .crane-hook-svg {
+          width: 36px;
+          height: 46px;
+          margin-top: -2px;
+          filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+        }
+
+        .crane-slings-svg {
+          width: 140px;
+          height: 22px;
+          margin-top: -3px;
+        }
+
+        .crane-delivered-badge {
+          animation: badgeCraneDescent 2.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          will-change: transform, opacity;
+          margin-bottom: 0 !important;
+        }
+
+        @keyframes craneHoistSequence {
           0% {
+            transform: translateX(-50%) translateY(-200px);
+            opacity: 1;
+          }
+          65% {
+            transform: translateX(-50%) translateY(0px);
+            opacity: 1;
+          }
+          75% {
+            transform: translateX(-50%) translateY(0px);
+            opacity: 1;
+          }
+          85% {
+            transform: translateX(-50%) translateY(-25px);
+            opacity: 1;
+          }
+          96% {
+            transform: translateX(-50%) translateY(-220px);
             opacity: 0;
-            transform: translateY(-24px) scale(0.92);
+          }
+          100% {
+            transform: translateX(-50%) translateY(-260px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            display: none;
+          }
+        }
+
+        @keyframes badgeCraneDescent {
+          0% {
+            transform: translateY(-200px) rotate(-1.5deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          65% {
+            transform: translateY(0px) rotate(1deg);
+            opacity: 1;
+          }
+          75% {
+            transform: translateY(2px) rotate(-0.5deg);
+            opacity: 1;
+          }
+          85% {
+            transform: translateY(0px) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: none !important;
+            opacity: 1;
+          }
+        }
+
+        /* Stage 2: Subtitle Delivered by Construction Flatbed Truck */
+        .truck-delivery-stage {
+          position: relative;
+          width: 100%;
+          max-width: 800px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 2.75rem;
+        }
+
+        .delivery-truck-carrier {
+          position: absolute;
+          bottom: -10px;
+          left: 0;
+          transform: translateX(-160%);
+          pointer-events: none;
+          z-index: 10;
+          animation: truckDeliverSequence 3.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          will-change: transform, opacity;
+        }
+
+        .delivery-truck-svg {
+          width: 150px;
+          height: 62px;
+          filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
+        }
+
+        .truck-dust-puff {
+          position: absolute;
+          bottom: 2px;
+          left: -15px;
+          width: 25px;
+          height: 12px;
+          border-radius: 50%;
+          background: radial-gradient(ellipse at center, rgba(203, 213, 225, 0.45) 0%, transparent 70%);
+          animation: dustPuffing 0.25s ease-out infinite;
+        }
+
+        @keyframes dustPuffing {
+          0% { transform: scale(0.6); opacity: 0.8; }
+          100% { transform: scale(1.6); opacity: 0; }
+        }
+
+        .truck-delivered-subtitle {
+          margin-bottom: 0 !important;
+          animation: subtitleTruckUnload 3.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          will-change: transform, opacity;
+        }
+
+        @keyframes truckDeliverSequence {
+          0%, 50% {
+            transform: translateX(-160%);
+            opacity: 0;
+          }
+          58% {
+            transform: translateX(-40%);
+            opacity: 1;
+          }
+          74% {
+            transform: translateX(10%);
+            opacity: 1;
+          }
+          85% {
+            transform: translateX(60%);
+            opacity: 1;
+          }
+          95% {
+            transform: translateX(180%);
+            opacity: 0;
+          }
+          100% {
+            transform: translateX(200%);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            display: none;
+          }
+        }
+
+        @keyframes subtitleTruckUnload {
+          0%, 55% {
+            opacity: 0;
+            transform: translateX(-50px) translateY(12px);
+          }
+          74% {
+            opacity: 0.9;
+            transform: translateX(0) translateY(0);
+          }
+          88% {
+            opacity: 1;
+            transform: none;
           }
           100% {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: none !important;
           }
         }
 
-        @keyframes heroSubtitleEntry {
-          0% {
+        /* Stage 3: Excavator Delivering "Start New Application" Button */
+        .excavator-button-stage {
+          position: relative;
+          display: inline-flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .excavator-carrier {
+          position: absolute;
+          bottom: 10px;
+          left: -40px;
+          pointer-events: none;
+          z-index: 10;
+          animation: excavatorArmSequence 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          will-change: transform, opacity;
+        }
+
+        .excavator-svg {
+          width: 90px;
+          height: 75px;
+          filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.65));
+        }
+
+        .excavator-delivered-btn {
+          animation: excavatorButtonDrop 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          will-change: transform, opacity;
+        }
+
+        @keyframes excavatorArmSequence {
+          0%, 60% {
+            transform: translate(-60px, 90px) rotate(-16deg);
             opacity: 0;
-            transform: translateY(24px);
-            filter: blur(4px);
+          }
+          68% {
+            transform: translate(-10px, -8px) rotate(4deg);
+            opacity: 1;
+          }
+          78% {
+            transform: translate(0px, 0px) rotate(0deg);
+            opacity: 1;
+          }
+          85% {
+            transform: translate(15px, -15px) rotate(-8deg);
+            opacity: 1;
+          }
+          95% {
+            transform: translate(-30px, 120px) rotate(-15deg);
+            opacity: 0;
+          }
+          100% {
+            transform: translate(-30px, 140px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            display: none;
+          }
+        }
+
+        @keyframes excavatorButtonDrop {
+          0%, 60% {
+            opacity: 0;
+            transform: translate(-25px, 25px) rotate(-3deg);
+          }
+          68% {
+            opacity: 0.9;
+            transform: translate(-5px, -4px) rotate(1deg);
+          }
+          78% {
+            opacity: 1;
+            transform: translate(0, 2px);
+          }
+          86% {
+            opacity: 1;
+            transform: translate(0, 0);
           }
           100% {
             opacity: 1;
-            transform: translateY(0);
-            filter: blur(0px);
+            transform: none !important;
           }
         }
 
-        @keyframes heroActionsEntry {
-          0% {
+        /* Stage 4: Drilling "Application Status" into foundation */
+        .drill-button-stage {
+          position: relative;
+          display: inline-flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .drill-rig {
+          position: absolute;
+          top: -46px;
+          left: 50%;
+          transform: translateX(-50%);
+          pointer-events: none;
+          z-index: 10;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          animation: drillRigSequence 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          will-change: transform, opacity;
+        }
+
+        .drill-svg {
+          width: 32px;
+          height: 50px;
+          filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+          animation: drillHammering 0.08s ease-in-out infinite alternate;
+        }
+
+        @keyframes drillHammering {
+          0% { transform: translateY(0px); }
+          100% { transform: translateY(-3.5px); }
+        }
+
+        .drill-sparks {
+          position: absolute;
+          bottom: 2px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 20px;
+          height: 10px;
+          pointer-events: none;
+        }
+
+        .drill-sparks .spark {
+          position: absolute;
+          width: 3px;
+          height: 3px;
+          border-radius: 50%;
+          background: #fde047;
+          box-shadow: 0 0 6px #f59e0b, 0 0 10px #ffffff;
+          animation: sparkFly 0.15s ease-out infinite;
+        }
+
+        .drill-sparks .sp1 { left: 0px; animation-delay: 0.02s; }
+        .drill-sparks .sp2 { left: 6px; animation-delay: 0.07s; }
+        .drill-sparks .sp3 { left: 12px; animation-delay: 0.11s; }
+        .drill-sparks .sp4 { left: 18px; animation-delay: 0.04s; }
+
+        @keyframes sparkFly {
+          0% { transform: translate(0, 0) scale(1); opacity: 1; }
+          100% { transform: translate(calc((var(--i, 0.5) - 0.5) * 20px), -12px) scale(0.3); opacity: 0; }
+        }
+
+        .drilled-btn {
+          animation: drilledButtonSequence 3.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          will-change: transform, opacity;
+        }
+
+        @keyframes drillRigSequence {
+          0%, 62% {
+            transform: translateX(-50%) translateY(-70px);
+            opacity: 0;
+          }
+          68% {
+            transform: translateX(-50%) translateY(0px);
+            opacity: 1;
+          }
+          82% {
+            transform: translateX(-50%) translateY(0px);
+            opacity: 1;
+          }
+          92% {
+            transform: translateX(-50%) translateY(-60px);
+            opacity: 0;
+          }
+          100% {
+            transform: translateX(-50%) translateY(-80px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            display: none;
+          }
+        }
+
+        @keyframes drilledButtonSequence {
+          0%, 62% {
             opacity: 0;
             transform: translateY(20px) scale(0.96);
           }
-          100% {
+          68% {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: translateY(0px);
+          }
+          70%, 74%, 78%, 82% {
+            transform: translate(0.8px, -0.8px);
+          }
+          72%, 76%, 80% {
+            transform: translate(-0.8px, 0.8px);
+          }
+          86% {
+            transform: translate(0, 0);
+            opacity: 1;
+          }
+          100% {
+            transform: none !important;
+            opacity: 1;
           }
         }
 
@@ -927,7 +1409,7 @@ export default function Home() {
         }
 
         .hero-actions .btn-primary:hover {
-          transform: translateY(-2px);
+          transform: translateY(-2px) !important;
           box-shadow: 0 14px 35px rgba(0, 56, 168, 0.7);
           background: linear-gradient(135deg, #0044cc 0%, #002575 100%);
         }
@@ -944,7 +1426,7 @@ export default function Home() {
         .hero-actions .btn-secondary:hover {
           background: #f8fafc;
           color: #002575;
-          transform: translateY(-2px);
+          transform: translateY(-2px) !important;
           box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
         }
 
@@ -1077,6 +1559,12 @@ export default function Home() {
             width: 100%;
             max-width: 340px;
             gap: 0.75rem;
+          }
+          .excavator-button-stage,
+          .drill-button-stage {
+            width: 100%;
+            display: flex;
+            justify-content: center;
           }
           .hero-actions .btn-primary,
           .hero-actions .btn-secondary {
