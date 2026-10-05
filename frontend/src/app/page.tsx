@@ -592,34 +592,37 @@ export default function Home() {
         }
 
         /* Philippine Flag Waving in the Wind Effect (Asul, Puti, Dilaw ng Araw, at Pula) */
+        /* Philippine Flag Waving in the Wind Effect (Lightened & High-Visibility) */
         .philippine-flag-waving-text {
           display: inline-block;
           position: relative;
           background: linear-gradient(
             115deg,
             #ffffff 0%,
-            #38bdf8 10%,
-            #0038A8 20%,
-            #1e40af 28%,
-            #ffffff 38%,
-            #FCD116 45%,
-            #fef08a 50%,
-            #FCD116 55%,
+            #e0f2fe 8%,
+            #7dd3fc 18%,
+            #38bdf8 26%,
+            #93c5fd 34%,
+            #ffffff 42%,
+            #fef08a 48%,
+            #fde047 52%,
+            #fef08a 56%,
             #ffffff 62%,
-            #ef4444 70%,
-            #CE1126 80%,
-            #991b1b 88%,
-            #ffffff 94%,
-            #0038A8 100%
+            #fca5a5 70%,
+            #ff7675 78%,
+            #f87171 86%,
+            #fed7aa 92%,
+            #ffffff 100%
           );
           background-size: 320% 320%;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
           color: transparent;
-          filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.75))
-                  drop-shadow(0 0 25px rgba(252, 209, 22, 0.35))
-                  drop-shadow(0 0 35px rgba(0, 56, 168, 0.45));
+          -webkit-text-stroke: 0.8px rgba(255, 255, 255, 0.45);
+          filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.9))
+                  drop-shadow(0 0 22px rgba(255, 255, 255, 0.4))
+                  drop-shadow(0 0 32px rgba(125, 211, 252, 0.35));
           animation: flagWindBreeze 7s ease-in-out infinite,
                      flagWaveFlutter 5.5s ease-in-out infinite alternate;
           will-change: background-position, transform;
@@ -640,33 +643,33 @@ export default function Home() {
         @keyframes flagWaveFlutter {
           0% {
             transform: translateY(0px) rotate(0deg) skewX(0deg);
-            filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.75))
-                    drop-shadow(0 0 25px rgba(252, 209, 22, 0.35))
-                    drop-shadow(0 0 35px rgba(0, 56, 168, 0.45));
+            filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.9))
+                    drop-shadow(0 0 22px rgba(255, 255, 255, 0.4))
+                    drop-shadow(0 0 32px rgba(125, 211, 252, 0.35));
           }
           25% {
             transform: translateY(-3.5px) rotate(0.4deg) skewX(-0.6deg);
-            filter: drop-shadow(0 6px 24px rgba(0, 56, 168, 0.6))
-                    drop-shadow(0 0 28px rgba(255, 255, 255, 0.45))
-                    drop-shadow(0 0 35px rgba(252, 209, 22, 0.4));
+            filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.95))
+                    drop-shadow(0 0 26px rgba(125, 211, 252, 0.55))
+                    drop-shadow(0 0 35px rgba(255, 255, 255, 0.45));
           }
           50% {
             transform: translateY(-1px) rotate(-0.35deg) skewX(0.5deg);
-            filter: drop-shadow(0 5px 22px rgba(206, 17, 38, 0.6))
-                    drop-shadow(0 0 30px rgba(252, 209, 22, 0.5))
-                    drop-shadow(0 0 40px rgba(0, 56, 168, 0.5));
+            filter: drop-shadow(0 5px 16px rgba(0, 0, 0, 0.95))
+                    drop-shadow(0 0 28px rgba(254, 240, 138, 0.55))
+                    drop-shadow(0 0 38px rgba(253, 224, 71, 0.4));
           }
           75% {
             transform: translateY(-4px) rotate(0.3deg) skewX(-0.4deg);
-            filter: drop-shadow(0 7px 26px rgba(0, 56, 168, 0.65))
-                    drop-shadow(0 0 26px rgba(206, 17, 38, 0.45))
-                    drop-shadow(0 0 35px rgba(255, 255, 255, 0.4));
+            filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.95))
+                    drop-shadow(0 0 26px rgba(254, 163, 163, 0.55))
+                    drop-shadow(0 0 35px rgba(255, 255, 255, 0.45));
           }
           100% {
             transform: translateY(0px) rotate(0deg) skewX(0deg);
-            filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.75))
-                    drop-shadow(0 0 25px rgba(252, 209, 22, 0.35))
-                    drop-shadow(0 0 35px rgba(0, 56, 168, 0.45));
+            filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.9))
+                    drop-shadow(0 0 22px rgba(255, 255, 255, 0.4))
+                    drop-shadow(0 0 32px rgba(125, 211, 252, 0.35));
           }
         }
 
