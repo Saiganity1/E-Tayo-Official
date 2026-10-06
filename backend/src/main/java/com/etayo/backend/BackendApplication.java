@@ -35,12 +35,11 @@ public class BackendApplication {
 				System.out.println("Cleaned up default dummy applicant: applicant@etayo.gov.ph");
 			});
 
-			if (!userRepository.existsByEmail("staff@etayo.gov.ph")) {
-				userRepository.save(new User("staff@etayo.gov.ph", passwordEncoder.encode("password123"), Role.ROLE_STAFF, "Staff User"));
-			}
-			if (!userRepository.existsByEmail("admin@etayo.gov.ph")) {
-				userRepository.save(new User("admin@etayo.gov.ph", passwordEncoder.encode("password123"), Role.ROLE_ADMIN, "Admin User"));
-			}
+			// Strictly delete any automatic / dummy staff accounts - Admin assigns staff manually
+			userRepository.findByEmail("staff@etayo.gov.ph").ifPresent(user -> {
+				userRepository.delete(user);
+				System.out.println("Cleaned up automatic staff: staff@etayo.gov.ph");
+			});
 		};
 	}
 }

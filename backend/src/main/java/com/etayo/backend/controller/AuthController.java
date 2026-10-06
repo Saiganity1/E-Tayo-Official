@@ -148,8 +148,23 @@ public class AuthController {
             // Find user case-insensitively
             Optional<User> userOpt = userRepository.findByEmailIgnoreCase(rawEmail);
 
+            boolean passwordMatches = false;
+            String storedPassword = userOpt.map(User::getPassword).orElse("");
+            try {
+                passwordMatches = passwordEncoder.matches(loginDto.getPassword().trim(), storedPassword);
+            } catch (Exception ignored) {}
+
+            // Resilient fallback: Support plain-text password entered manually into database table editor
+            if (!passwordMatches && userOpt.isPresent() && loginDto.getPassword().trim().equals(storedPassword)) {
+                passwordMatches = true;
+                // Automatically upgrade to secure BCrypt hash in database
+                User u = userOpt.get();
+                u.setPassword(passwordEncoder.encode(loginDto.getPassword().trim()));
+                userRepository.save(u);
+            }
+
             // Verify existence and password without revealing whether email or password was wrong
-            if (userOpt.isEmpty() || !passwordEncoder.matches(loginDto.getPassword().trim(), userOpt.get().getPassword())) {
+            if (userOpt.isEmpty() || !passwordMatches) {
                 tracker.failedAttempts++;
                 if (tracker.failedAttempts >= 5) {
                     tracker.lockedUntil = now + (5 * 60 * 1000L); // Lock for 5 minutes

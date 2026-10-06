@@ -68,20 +68,8 @@ public class DataSeeder implements CommandLineRunner {
             jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN project_description TYPE TEXT;");
         } catch (Exception ignored) {}
 
-        // Ensure SuperAdmin account exists if not already present
-        if (!userRepository.existsByEmail("admin")) {
-            User admin = new User(
-                    "admin",
-                    passwordEncoder.encode("Admin"),
-                    Role.ROLE_ADMIN,
-                    "Super Admin"
-            );
-            userRepository.save(admin);
-            System.out.println("Created initial SUPERADMIN user with email: admin");
-        }
-
-        // Ensure municipal admin account exists if not already present
-        if (!userRepository.existsByEmail("admin@etayo.gov.ph")) {
+        // Only seed an initial administrative user if the users table is completely empty
+        if (userRepository.count() == 0) {
             User municipalAdmin = new User(
                     "admin@etayo.gov.ph",
                     passwordEncoder.encode("Admin"),
@@ -89,7 +77,7 @@ public class DataSeeder implements CommandLineRunner {
                     "Admin User"
             );
             userRepository.save(municipalAdmin);
-            System.out.println("Created initial municipal admin: admin@etayo.gov.ph");
+            System.out.println("Initial empty database: created admin@etayo.gov.ph");
         }
 
         // Remove any automatic / dummy staff accounts - Admin assigns staff manually
