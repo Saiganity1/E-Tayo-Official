@@ -718,15 +718,12 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   const toggleDossier = (dossierId: string) => {
     setExpandedDossiers(prev => ({
       ...prev,
-      [dossierId]: prev[dossierId] === undefined ? false : !prev[dossierId]
+      [dossierId]: !prev[dossierId]
     }));
   };
 
   const isDossierExpanded = (dossierId: string) => {
-    if (expandedDossiers[dossierId] !== undefined) {
-      return expandedDossiers[dossierId];
-    }
-    return true;
+    return Boolean(expandedDossiers[dossierId]);
   };
 
   const expandAll = () => {

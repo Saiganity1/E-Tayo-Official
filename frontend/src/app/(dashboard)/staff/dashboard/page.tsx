@@ -242,16 +242,12 @@ export default function StaffDashboard() {
   const toggleDossier = (id: string) => {
     setExpandedDossiers(prev => ({
       ...prev,
-      [id]: prev[id] === undefined ? false : !prev[id]
+      [id]: !prev[id]
     }));
   };
 
-  const isDossierExpanded = (id: string, hasPending: boolean) => {
-    if (expandedDossiers[id] !== undefined) {
-      return expandedDossiers[id];
-    }
-    // Default: auto-expand if it has pending reviews, otherwise collapsed
-    return hasPending || filteredApps.length <= 5;
+  const isDossierExpanded = (id: string, _hasPending?: boolean) => {
+    return Boolean(expandedDossiers[id]);
   };
 
   const expandAll = () => {

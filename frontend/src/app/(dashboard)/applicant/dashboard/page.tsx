@@ -237,16 +237,13 @@ export default function ApplicantDashboard() {
   const toggleDossier = (dossierId: string) => {
     setExpandedDossiers(prev => ({
       ...prev,
-      [dossierId]: prev[dossierId] === undefined ? false : !prev[dossierId]
+      [dossierId]: !prev[dossierId]
     }));
   };
 
   const isDossierExpanded = (dossierId: string) => {
-    if (expandedDossiers[dossierId] !== undefined) {
-      return expandedDossiers[dossierId];
-    }
-    // Default: expanded so user can see all connected forms right away
-    return true;
+    // Default: closed (nakasara) so the dashboard looks clean and uncluttered; user chooses what to open
+    return Boolean(expandedDossiers[dossierId]);
   };
 
   const expandAll = () => {
@@ -610,6 +607,49 @@ export default function ApplicantDashboard() {
                 <option value="rejected">{t("statusRejected", "Disapproved / Rejected")}</option>
               </select>
             </div>
+
+            {projectDossiers.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={expandAll}
+                  style={{
+                    padding: "7px 12px",
+                    borderRadius: "10px",
+                    border: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    fontSize: "0.8rem",
+                    fontWeight: "700",
+                    color: "#475569",
+                    cursor: "pointer",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                    transition: "all 0.15s ease"
+                  }}
+                  title={language === "fil" ? "Buksan ang lahat ng mga proyekto" : "Expand all project dossiers"}
+                >
+                  {language === "fil" ? "Buksan Lahat" : "Expand All"}
+                </button>
+                <button
+                  type="button"
+                  onClick={collapseAll}
+                  style={{
+                    padding: "7px 12px",
+                    borderRadius: "10px",
+                    border: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    fontSize: "0.8rem",
+                    fontWeight: "700",
+                    color: "#475569",
+                    cursor: "pointer",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                    transition: "all 0.15s ease"
+                  }}
+                  title={language === "fil" ? "Isara ang lahat ng mga proyekto" : "Collapse all project dossiers"}
+                >
+                  {language === "fil" ? "Isara Lahat" : "Collapse All"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
