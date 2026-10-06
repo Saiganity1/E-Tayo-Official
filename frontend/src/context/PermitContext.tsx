@@ -90,10 +90,32 @@ const normalizeLog = (raw: any): SystemLog => {
 };
 
 const isDummyApp = (app: PermitApplication) => {
-  return (
-    (app.id === "LC-2025-0001" && (app.applicantName === "Juan Dela Cruz" || app.applicantEmail === "juan.delacruz@email.com")) ||
-    app.id === "APP-2026-6636"
-  );
+  if (!app) return true;
+  const id = String(app.id || "").toUpperCase().trim();
+  const name = String(app.applicantName || "").toLowerCase().trim();
+  const email = String(app.applicantEmail || "").toLowerCase().trim();
+
+  // Legacy sample/seed application IDs and dummy records
+  if (
+    id === "LC-2025-0001" ||
+    id === "BP-2025-0005" ||
+    id === "APP-2026-6636" ||
+    id === "APP-2026-8101" ||
+    id === "APP-2026-7384" ||
+    id === "APP-2026-1918" ||
+    id === "APP-2026-3962" ||
+    id === "LC-2026-6133" ||
+    id.startsWith("LC-2025-") ||
+    id.startsWith("BP-2025-")
+  ) {
+    return true;
+  }
+
+  if (name.includes("juan dela cruz") || email.includes("juan.delacruz@email.com")) {
+    return true;
+  }
+
+  return false;
 };
 
 export const isDummyLog = (log: any): boolean => {
@@ -222,6 +244,39 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
       return timeB - timeA;
     });
 };
+
+const STORAGE_VERSION = "etayo_clean_db_v5";
+
+if (typeof window !== "undefined") {
+  try {
+    const curVer = localStorage.getItem("etayo_storage_version");
+    if (curVer !== STORAGE_VERSION) {
+      localStorage.removeItem("etayo_cached_applications");
+      localStorage.removeItem("etayo_archived_application_ids");
+      const toRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (
+          k.startsWith("etayo_status_") ||
+          k.startsWith("etayo_approved_") ||
+          k.startsWith("etayo_released_") ||
+          k.startsWith("etayo_paid_") ||
+          k.startsWith("etayo_payment_") ||
+          k.startsWith("etayo_receipt_") ||
+          k.startsWith("etayo_op_") ||
+          k.startsWith("etayo_fees_") ||
+          k.startsWith("etayo_archived_") ||
+          k.startsWith("etayo_date_approved_") ||
+          k.startsWith("etayo_remarks_")
+        )) {
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach(k => localStorage.removeItem(k));
+      localStorage.setItem("etayo_storage_version", STORAGE_VERSION);
+    }
+  } catch (e) {}
+}
 
 export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userRole, setUserRole] = useState<UserRole>("public");
@@ -595,12 +650,15 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             };
           });
 
-          // Include any locally created applications not yet in backend into state without resubmitting
-          cleanCached.forEach((c) => {
-            if (!mergedApps.some((m) => matchPermitId(m.id, c.id))) {
-              mergedApps.push(c);
-            }
-          });
+          // If the remote backend was unreachable, fallback to locally cached apps.
+          // When the backend responded successfully, the database is authoritative.
+          if (!appsRes.ok) {
+            cleanCached.forEach((c) => {
+              if (!mergedApps.some((m) => matchPermitId(m.id, c.id))) {
+                mergedApps.push(c);
+              }
+            });
+          }
         }
       } catch (e) {
         console.warn("Error merging local cached applications", e);
@@ -788,14 +846,6 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           remarks: mRemarks || mApp.remarks,
         };
       });
-
-      // If applications list is still empty in a fresh browser session, seed with initial mock data
-      if (mergedApps.length === 0) {
-        const seedMock = (INITIAL_APPLICATIONS || []).filter(a => !isDummyApp(a));
-        if (seedMock.length > 0) {
-          mergedApps = seedMock;
-        }
-      }
 
       setApplications(mergedApps);
       try {

@@ -42,7 +42,7 @@ export async function GET(req: Request) {
         // Ensure response is actually JSON and not an HTML "Service Suspended" page
         if (text.trim().startsWith("[") || text.trim().startsWith("{")) {
           const data = JSON.parse(text);
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(data)) {
             const mergedList = data.map(item => savePermit(item));
             return NextResponse.json(mergedList, {
               headers: {
