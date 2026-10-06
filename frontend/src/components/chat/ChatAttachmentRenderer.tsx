@@ -23,6 +23,15 @@ export interface ParsedMessage {
   attachments: ParsedAttachment[];
 }
 
+export function stripEmojis(str: string): string {
+  if (!str) return "";
+  return str
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1FA00}-\u{1FAFF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{FE0F}]/gu, "")
+    .replace(/[📋🔍⚠️✅💳📐🏗️💰📄📅🏛️📸🎉📎]/gu, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
 export function parseMessageAttachments(rawContent: string): ParsedMessage {
   if (!rawContent) return { cleanText: "", attachments: [] };
 
@@ -61,8 +70,8 @@ export function parseMessageAttachments(rawContent: string): ParsedMessage {
     });
   }
 
-  // Remove the [Attachment: ...] tokens from displayed message text
-  const cleanText = rawContent.replace(attachmentRegex, "").trim();
+  // Remove the [Attachment: ...] tokens from displayed message text and strip all emojis
+  const cleanText = stripEmojis(rawContent.replace(attachmentRegex, "").trim());
 
   return { cleanText, attachments };
 }
@@ -188,9 +197,7 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
         }}>
           {/* Header */}
           <div style={{
-            background: isLC 
-              ? "linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%)" 
-              : "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)",
+            background: "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)",
             padding: "10px 16px",
             color: "white",
             display: "flex",
@@ -208,10 +215,10 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
                 alignItems: "center",
                 justifyContent: "center"
               }}>
-                <Landmark size={17} color={isLC ? "#c7d2fe" : "#93c5fd"} />
+                <Landmark size={17} color="#93c5fd" />
               </div>
               <div>
-                <div style={{ fontSize: "0.68rem", fontWeight: "700", letterSpacing: "0.5px", color: isLC ? "#c7d2fe" : "#bfdbfe", textTransform: "uppercase" }}>
+                <div style={{ fontSize: "0.68rem", fontWeight: "700", letterSpacing: "0.5px", color: "#bfdbfe", textTransform: "uppercase" }}>
                   {isLC ? "LGU Santo Tomas, Pampanga • MPDO / Zoning" : "LGU Santo Tomas, Pampanga • OBO"}
                 </div>
                 <div style={{ fontSize: "0.88rem", fontWeight: "800" }}>
@@ -225,7 +232,7 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
                   {ref}
                 </span>
               )}
-              <span style={{ fontSize: "0.68rem", color: isLC ? "#c7d2fe" : "#bfdbfe", display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: "600" }}>
+              <span style={{ fontSize: "0.68rem", color: "#bfdbfe", display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: "600" }}>
                 <Clock size={11} /> {formattedDate} • {formattedTime}
               </span>
             </div>
@@ -240,8 +247,8 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
 
             {/* Permit Category & Scope Tag */}
             <div style={{
-              background: isLC ? "#f5f3ff" : "#eff6ff",
-              border: `1px solid ${isLC ? "#ddd6fe" : "#bfdbfe"}`,
+              background: "#f0f7ff",
+              border: "1px solid #bfdbfe",
               borderRadius: "8px",
               padding: "6px 10px",
               display: "flex",
@@ -249,18 +256,18 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
               justifyContent: "space-between",
               fontSize: "0.76rem"
             }}>
-              <span style={{ fontWeight: "700", color: isLC ? "#6d28d9" : "#1e40af" }}>
-                {isLC ? "📐 Stage 1: Locational Clearance / Zoning" : "🏗️ Stage 2: Building Permit & Technical Permitting (PD 1096)"}
+              <span style={{ fontWeight: "700", color: "#0038A8" }}>
+                {isLC ? "Stage 1: Locational Clearance / Zoning" : "Stage 2: Building Permit & Technical Permitting (PD 1096)"}
               </span>
-              <span style={{ color: isLC ? "#7c3aed" : "#2563eb", fontWeight: "600", fontSize: "0.72rem" }}>
+              <span style={{ color: "#1e40af", fontWeight: "600", fontSize: "0.72rem" }}>
                 {isLC ? "MPDO Zoning Administration" : "OBO Technical Division"}
               </span>
             </div>
 
             {/* Fee Box */}
             <div style={{
-              background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
-              border: "1.5px solid #86efac",
+              background: "#f8fafc",
+              border: "1.5px solid #bfdbfe",
               borderRadius: "12px",
               padding: "10px 14px",
               display: "flex",
@@ -270,10 +277,10 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
               gap: "8px"
             }}>
               <div>
-                <div style={{ fontSize: "0.7rem", fontWeight: "800", color: "#166534", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                <div style={{ fontSize: "0.7rem", fontWeight: "800", color: "#0038A8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                   Assessed Regulatory Fee
                 </div>
-                <div style={{ fontSize: "1.4rem", fontWeight: "900", color: "#065f46" }}>
+                <div style={{ fontSize: "1.4rem", fontWeight: "900", color: "#021a4f" }}>
                   {fee}
                 </div>
               </div>
@@ -281,7 +288,7 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
                 <div style={{ fontSize: "0.7rem", fontWeight: "700", color: "#64748b" }}>
                   Order of Payment Ref
                 </div>
-                <div style={{ fontSize: "0.92rem", fontWeight: "800", color: "#1e3a8a", fontFamily: "monospace" }}>
+                <div style={{ fontSize: "0.92rem", fontWeight: "800", color: "#0038A8", fontFamily: "monospace" }}>
                   {op}
                 </div>
               </div>
@@ -302,11 +309,11 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
               gap: "6px"
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <Calendar size={13} color="#2563eb" />
+                <Calendar size={13} color="#0038A8" />
                 <span>Date Assessed: <strong style={{ color: "#0f172a" }}>{formattedDate}</strong></span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <Clock size={13} color="#2563eb" />
+                <Clock size={13} color="#0038A8" />
                 <span>Time: <strong style={{ color: "#0f172a" }}>{formattedTime} (PST)</strong></span>
               </div>
             </div>
@@ -346,14 +353,14 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
               fontSize: "0.82rem"
             }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                <span style={{ fontSize: "0.9rem" }}>🏛️</span>
+                <Landmark size={15} color="#0038A8" style={{ marginTop: "2px", flexShrink: 0 }} />
                 <div>
                   <span style={{ fontWeight: "700", color: "#1e293b" }}>Payment Office: </span>
                   <span style={{ color: "#475569" }}>Municipal Treasury Office (Ground Floor, Sto. Tomas Municipal Hall, Pampanga)</span>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                <span style={{ fontSize: "0.9rem" }}>📸</span>
+                <FileText size={15} color="#0038A8" style={{ marginTop: "2px", flexShrink: 0 }} />
                 <div>
                   <span style={{ fontWeight: "700", color: "#1e293b" }}>Action Required: </span>
                   <span style={{ color: "#475569" }}>Please settle the assessed regulatory fee of <strong>{fee}</strong> (Order of Payment: <strong>{op}</strong>) and reply directly in this conversation with a photo or screenshot of your Official Receipt (OR).</span>
@@ -426,13 +433,13 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
         <div style={{
           background: "#ffffff",
           borderRadius: "14px",
-          border: "1.5px solid #86efac",
-          boxShadow: "0 4px 16px rgba(16, 185, 129, 0.08)",
+          border: "1.5px solid #cbd5e1",
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)",
           overflow: "hidden",
           color: "#0f172a"
         }}>
           <div style={{
-            background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+            background: "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)",
             padding: "10px 16px",
             color: "white",
             display: "flex",
@@ -450,10 +457,10 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
                 alignItems: "center",
                 justifyContent: "center"
               }}>
-                <Check size={16} color="#86efac" />
+                <Check size={16} color="#bfdbfe" />
               </div>
               <div>
-                <div style={{ fontSize: "0.68rem", fontWeight: "700", letterSpacing: "0.5px", color: "#dcfce7", textTransform: "uppercase" }}>
+                <div style={{ fontSize: "0.68rem", fontWeight: "700", letterSpacing: "0.5px", color: "#bfdbfe", textTransform: "uppercase" }}>
                   Santo Tomas OBO Permitting
                 </div>
                 <div style={{ fontSize: "0.86rem", fontWeight: "800" }}>
@@ -467,7 +474,7 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
                   {ref}
                 </span>
               )}
-              <span style={{ fontSize: "0.68rem", color: "#dcfce7", display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: "600" }}>
+              <span style={{ fontSize: "0.68rem", color: "#bfdbfe", display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: "600" }}>
                 <Clock size={11} /> {releaseDateStr} • {releaseTimeStr}
               </span>
             </div>
@@ -478,28 +485,30 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              background: "#f0fdf4",
+              background: "#f0f7ff",
               padding: "8px 12px",
               borderRadius: "8px",
-              border: "1px solid #bbf7d0",
+              border: "1px solid #bfdbfe",
               fontSize: "0.82rem",
               flexWrap: "wrap",
               gap: "6px"
             }}>
-              <span>Official Receipt No: <strong style={{ color: "#166534" }}>{orNo}</strong></span>
-              <span>Payment Verified: <strong style={{ color: "#065f46" }}>{fee}</strong></span>
-              <span style={{ color: "#166534", fontSize: "0.74rem", fontWeight: "600" }}>📅 {releaseDateStr} at {releaseTimeStr}</span>
+              <span>Official Receipt No: <strong style={{ color: "#0038A8" }}>{orNo}</strong></span>
+              <span>Payment Verified: <strong style={{ color: "#021a4f" }}>{fee}</strong></span>
+              <span style={{ color: "#0038A8", fontSize: "0.74rem", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                <Clock size={11} color="#0038A8" /> {releaseDateStr} at {releaseTimeStr}
+              </span>
             </div>
 
             <p style={{ margin: 0, fontSize: "0.85rem", color: "#334155", lineHeight: "1.5" }}>
-              Payment has been verified and confirmed by the Building Official. All official permit papers, ancillary clearances, and approved plans for <strong>{ref || "your application"}</strong> have been officially <strong>RELEASED</strong>. Step 4 (Released) is marked complete (Green).
+              Payment has been verified and confirmed by the Building Official. All official permit papers, ancillary clearances, and approved plans for <strong>{ref || "your application"}</strong> have been officially <strong>RELEASED</strong>.
             </p>
 
             {ref && (
               <Link
                 href={`/applicant/track/${encodeURIComponent(ref)}`}
                 style={{
-                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                   color: "white",
                   padding: "8px 16px",
                   borderRadius: "8px",
@@ -511,7 +520,7 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
                   justifyContent: "center",
                   gap: "6px",
                   alignSelf: "flex-start",
-                  boxShadow: "0 2px 8px rgba(16, 185, 129, 0.25)"
+                  boxShadow: "0 2px 8px rgba(0, 56, 168, 0.25)"
                 }}
               >
                 <Download size={14} />

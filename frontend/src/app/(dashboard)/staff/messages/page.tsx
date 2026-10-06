@@ -24,27 +24,27 @@ import {
 const CANNED_RESPONSES = [
   {
     id: "docs_received",
-    label: "📋 Documents Verified",
+    label: "Documents Verified",
     text: "Good day. We have received your submitted permit requirements. They are currently queued for technical evaluation by the zoning and building officers."
   },
   {
     id: "inspection_sched",
-    label: "🔍 Inspection Notice",
+    label: "Inspection Notice",
     text: "Notice: An on-site municipal engineering and zoning inspection has been scheduled for your property. Please ensure property access is available."
   },
   {
     id: "deficiency",
-    label: "⚠️ Incomplete Items",
+    label: "Incomplete Items",
     text: "Please be advised that your application requires additional ancillary documentation. Please review the deficiency remarks and upload the requested certified files."
   },
   {
     id: "approved",
-    label: "✅ Clearance Approved",
+    label: "Clearance Approved",
     text: "Good news! Your Locational Clearance has been approved by the Zoning Administrator and endorsed for Order of Payment processing."
   },
   {
     id: "payment",
-    label: "💳 Payment Ready",
+    label: "Payment Ready",
     text: "Your permit fee assessment has been completed. The official Order of Payment is now available. You may proceed with settlement at the Municipal Treasury."
   }
 ];
@@ -718,20 +718,20 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
     });
   }, [contacts, searchContact, contactFilter, applications]);
 
-  // Status badge config
+  // Status badge config (Cohesive Black & Blue Palette)
   const getStatusBadge = (status?: string | null) => {
     switch (status) {
       case "approved":
       case "released":
-        return { label: "Approved", bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" };
+        return { label: status === "released" ? "Released" : "Approved", bg: "#eff6ff", color: "#0038A8", border: "#bfdbfe" };
       case "under_review":
-        return { label: "Under Review", bg: "#eff6ff", color: "#2563eb", border: "#bfdbfe" };
+        return { label: "Under Review", bg: "#f8fafc", color: "#0f172a", border: "#cbd5e1" };
       case "incomplete_requirements":
-        return { label: "Needs Revision", bg: "#fffbeb", color: "#d97706", border: "#fde68a" };
+        return { label: "Needs Revision", bg: "#f8fafc", color: "#334155", border: "#cbd5e1" };
       case "rejected":
-        return { label: "Disapproved", bg: "#fef2f2", color: "#dc2626", border: "#fecaca" };
+        return { label: "Disapproved", bg: "#f1f5f9", color: "#0f172a", border: "#94a3b8" };
       default:
-        return { label: "Pending", bg: "#f8fafc", color: "#64748b", border: "#e2e8f0" };
+        return { label: "Pending", bg: "#f8fafc", color: "#475569", border: "#e2e8f0" };
     }
   };
 
@@ -1773,8 +1773,8 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                 scrollbarWidth: "none",
                 msOverflowStyle: "none"
               }}>
-                <span style={{ fontSize: "0.74rem", fontWeight: "800", color: "#64748b", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-                  <Sparkles size={13} color="#f59e0b" /> Quick Reply:
+                <span style={{ fontSize: "0.74rem", fontWeight: "800", color: "#0038A8", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+                  <FileText size={13} color="#0038A8" /> Quick Replies:
                 </span>
                 {CANNED_RESPONSES.map(canned => (
                   <button
@@ -1788,9 +1788,9 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                       borderRadius: "9px",
                       fontSize: "0.78rem",
                       fontWeight: "700",
-                      background: "#f8fafc",
+                      background: "#ffffff",
                       border: "1px solid #e2e8f0",
-                      color: "#334155",
+                      color: "#0f172a",
                       cursor: "pointer",
                       whiteSpace: "nowrap",
                       display: "inline-flex",
@@ -1802,12 +1802,12 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                     onMouseEnter={e => {
                       e.currentTarget.style.background = "#eff6ff";
                       e.currentTarget.style.borderColor = "#bfdbfe";
-                      e.currentTarget.style.color = "#1d4ed8";
+                      e.currentTarget.style.color = "#0038A8";
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.background = "#f8fafc";
+                      e.currentTarget.style.background = "#ffffff";
                       e.currentTarget.style.borderColor = "#e2e8f0";
-                      e.currentTarget.style.color = "#334155";
+                      e.currentTarget.style.color = "#0f172a";
                     }}
                     title={canned.text}
                   >

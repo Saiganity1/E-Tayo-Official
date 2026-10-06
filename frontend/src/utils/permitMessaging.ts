@@ -343,8 +343,8 @@ export const ensureApplicationConversationMessages = (
       }
     } else {
       const approvalNoticeTitle = isLC
-        ? "📐 OFFICIAL NOTICE: LOCATIONAL CLEARANCE ORDER OF PAYMENT (ZONING CLUP)"
-        : "🏛️ OFFICIAL NOTICE: BUILDING PERMIT ORDER OF PAYMENT (PD 1096 NBCP)";
+        ? "OFFICIAL NOTICE: LOCATIONAL CLEARANCE ORDER OF PAYMENT (ZONING CLUP)"
+        : "OFFICIAL NOTICE: BUILDING PERMIT ORDER OF PAYMENT (PD 1096 NBCP)";
       const issuingOffice = isLC
         ? "Municipal Planning and Development Office (MPDO) / Zoning Administration"
         : "Office of the Building Official (OBO) - Technical Permitting Division";
@@ -378,7 +378,7 @@ Dear ${applicantName},
 
 Your application for ${projName} (${appId}) has been formally reviewed and APPROVED.
 
-📋 Application Assessment:
+Application Assessment:
 • Permit Classification: ${permitCategory}
 • Issuing Office: ${issuingOffice}
 • Legal Basis: ${legalBasis}
@@ -386,15 +386,15 @@ Your application for ${projName} (${appId}) has been formally reviewed and APPRO
 • Date Approved / Issued: ${approvalDateStr}
 • Time Issued: ${approvalTimeStr} (PST)
 
-💰 Regulatory Assessment & Fee Schedule:
+Regulatory Assessment & Fee Schedule:
 ${feeBreakdownText}
-📄 Official Order of Payment Reference: ${opNo}
-📅 Order Date & Time: ${approvalDateStr} at ${approvalTimeStr}
+Official Order of Payment Reference: ${opNo}
+Order Date & Time: ${approvalDateStr} at ${approvalTimeStr}
 
-🏛️ Payment Office:
+Payment Office:
 Municipal Treasury Office (Ground Floor, Sto. Tomas Municipal Hall, Pampanga)
 
-📸 Action Required:
+Action Required:
 Please settle the assessed regulatory fee of PHP ${assessedAmt} (Order of Payment Ref: ${opNo}) and reply directly in this conversation with a clear photo or screenshot of your Official Receipt (OR) or payment confirmation.
 
 Once we inspect your receipt picture in this conversation, we will click "Confirmed Payment" to officially release your ${isLC ? "Locational Clearance" : "Building Permit & Technical Ancillaries"}.`
@@ -484,11 +484,11 @@ ${cachedReceipt ? `\n[Attachment: payment-receipt.jpg|${cachedReceipt}]` : ""}`
           applicationId: appId,
           timestamp: safeISODate(releaseTime),
           content: `[Ref: ${appId} - Permit Released]
-🎉 PAYMENT VERIFIED & OFFICIAL PERMITS RELEASED!
+PAYMENT VERIFIED & OFFICIAL PERMITS RELEASED
 
 Official Receipt No: ${orNo}
 Payment of PHP ${assessedAmt} has been verified and confirmed by the Building Official.
-All official permit papers, ancillary clearances, and approved plans for ${appId} have been officially RELEASED and are now available for download on your tracking dashboard. Step 4 (Released) is marked complete (Green).`
+All official permit papers, ancillary clearances, and approved plans for ${appId} have been officially RELEASED and are now available for download on your tracking dashboard.`
         };
         result.push(releaseMsg);
         updated = true;

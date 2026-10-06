@@ -48,27 +48,27 @@ const MANG_TOMAS = OBO_ADMIN;
 const CANNED_INQUIRIES = [
   {
     id: "docs_received",
-    label: "📋 Documents Verified",
+    label: "Documents Verified",
     text: "Good day! May I clarify if our submitted permit requirements have been formally received and verified by technical staff?"
   },
   {
     id: "inspection_sched",
-    label: "🔍 Inspection Notice",
+    label: "Inspection Notice",
     text: "Notice inquiry: When is the next scheduled on-site municipal engineering and zoning inspection for our project?"
   },
   {
     id: "deficiency",
-    label: "⚠️ Incomplete Items",
+    label: "Incomplete Items",
     text: "Good day. We have reviewed the checklist remarks and are uploading the updated engineering plans and clearances."
   },
   {
     id: "approved",
-    label: "✅ Clearance Approved",
+    label: "Clearance Approved",
     text: "Thank you for the evaluation update! May we confirm if our Order of Payment has been endorsed to the treasury?"
   },
   {
     id: "payment",
-    label: "💳 Payment Ready",
+    label: "Payment Ready",
     text: "Official Payment Notice: We have settled the required regulatory fees at the Municipal Treasury. Attached is our receipt."
   }
 ];
@@ -133,20 +133,20 @@ export default function ApplicantMessagesPage() {
   // Auto-expanding textarea composer ref
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Status badge config
+  // Status badge config (Cohesive Black & Blue Palette)
   const getStatusBadge = (status?: string | null) => {
     switch (status) {
       case "approved":
       case "released":
-        return { label: status === "released" ? "Released" : "Approved", bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" };
+        return { label: status === "released" ? "Released" : "Approved", bg: "#eff6ff", color: "#0038A8", border: "#bfdbfe" };
       case "under_review":
-        return { label: "Under Review", bg: "#eff6ff", color: "#2563eb", border: "#bfdbfe" };
+        return { label: "Under Review", bg: "#f8fafc", color: "#0f172a", border: "#cbd5e1" };
       case "incomplete_requirements":
-        return { label: "Needs Revision", bg: "#fffbeb", color: "#d97706", border: "#fde68a" };
+        return { label: "Needs Revision", bg: "#f8fafc", color: "#334155", border: "#cbd5e1" };
       case "rejected":
-        return { label: "Disapproved", bg: "#fef2f2", color: "#dc2626", border: "#fecaca" };
+        return { label: "Disapproved", bg: "#f1f5f9", color: "#0f172a", border: "#94a3b8" };
       default:
-        return { label: "Pending", bg: "#f8fafc", color: "#64748b", border: "#e2e8f0" };
+        return { label: "Pending", bg: "#f8fafc", color: "#475569", border: "#e2e8f0" };
     }
   };
 
@@ -1469,8 +1469,8 @@ export default function ApplicantMessagesPage() {
                     {activeThread.title}
                   </h2>
                   <span style={{
-                    background: "#ecfdf5",
-                    color: "#059669",
+                    background: "#eff6ff",
+                    color: "#0038A8",
                     fontSize: "0.72rem",
                     fontWeight: "700",
                     padding: "2px 8px",
@@ -1478,9 +1478,9 @@ export default function ApplicantMessagesPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "4px",
-                    border: "1px solid #a7f3d0"
+                    border: "1px solid #bfdbfe"
                   }}>
-                    <BadgeCheck size={12} /> Verified Municipal Helpdesk
+                    <BadgeCheck size={12} color="#0038A8" /> Verified Municipal Helpdesk
                   </span>
                 </div>
 
@@ -1491,13 +1491,13 @@ export default function ApplicantMessagesPage() {
                   <span style={{ fontSize: "0.82rem", color: "#cbd5e1" }}>•</span>
                   <span style={{
                     fontSize: "0.78rem",
-                    color: connected ? "#16a34a" : "#dc2626",
-                    fontWeight: "600",
+                    color: connected ? "#0038A8" : "#64748b",
+                    fontWeight: "700",
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "4px"
                   }}>
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: connected ? "#22c55e" : "#ef4444" }} />
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: connected ? "#0038A8" : "#94a3b8" }} />
                     {connected ? "Active Session" : "Offline"}
                   </span>
                 </div>
@@ -1530,8 +1530,8 @@ export default function ApplicantMessagesPage() {
                   key={app.id}
                   style={{
                     padding: "7px 1.25rem",
-                    background: isConfirmed ? "#f0fdf4" : (isLC ? "#faf5ff" : "#fffbeb"),
-                    borderBottom: `1px solid ${isConfirmed ? "#bbf7d0" : (isLC ? "#e9d5ff" : "#fde68a")}`,
+                    background: "#f0f7ff",
+                    borderBottom: "1px solid #bfdbfe",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -1541,16 +1541,17 @@ export default function ApplicantMessagesPage() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    <CreditCard size={15} color={isConfirmed ? "#16a34a" : (isLC ? "#7c3aed" : "#d97706")} />
+                    <CreditCard size={15} color="#0038A8" />
                     <span style={{ 
                       fontWeight: "800", 
-                      color: isConfirmed ? "#166534" : (isLC ? "#6b21a8" : "#92400e") 
+                      color: "#0038A8" 
                     }}>
                       {permitLabel} Order of Payment: PHP {feeNum.toLocaleString()} ({opNo})
                     </span>
                     <span style={{
-                      background: isConfirmed ? "#dcfce7" : (isLC ? "#ede9fe" : "#fef3c7"),
-                      color: isConfirmed ? "#166534" : (isLC ? "#5b21b6" : "#92400e"),
+                      background: "#ffffff",
+                      color: "#0038A8",
+                      border: "1px solid #bfdbfe",
                       padding: "2px 7px",
                       borderRadius: "5px",
                       fontSize: "0.72rem",
@@ -1559,10 +1560,10 @@ export default function ApplicantMessagesPage() {
                       alignItems: "center",
                       gap: "4px"
                     }}>
-                      <Calendar size={11} /> {bannerDate} • <Clock size={11} /> {bannerTime}
+                      <Calendar size={11} color="#0038A8" /> {bannerDate} • <Clock size={11} color="#0038A8" /> {bannerTime}
                     </span>
                     <span style={{ color: "#94a3b8" }}>•</span>
-                    <span style={{ color: isConfirmed ? "#15803d" : (isLC ? "#7e22ce" : "#78350f") }}>
+                    <span style={{ color: "#334155" }}>
                       {isConfirmed
                         ? `Receipt submitted for ${app.id}. Awaiting municipal verification.`
                         : `Settle fee for ${app.id} at Municipal Treasury and attach receipt photo here.`}
@@ -1574,10 +1575,10 @@ export default function ApplicantMessagesPage() {
                       type="button"
                       onClick={() => receiptFileInputRef.current?.click()}
                       style={{
-                        background: isLC ? "#7c3aed" : "#d97706",
+                        background: "#0038A8",
                         color: "white",
                         border: "none",
-                        padding: "3px 9px",
+                        padding: "4px 11px",
                         borderRadius: "6px",
                         fontSize: "0.72rem",
                         fontWeight: "700",
@@ -1615,8 +1616,8 @@ export default function ApplicantMessagesPage() {
                   key={`rel-${app.id}`}
                   style={{
                     padding: "7px 1.25rem",
-                    background: "#f0fdf4",
-                    borderBottom: "1px solid #bbf7d0",
+                    background: "#f0f7ff",
+                    borderBottom: "1px solid #bfdbfe",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -1626,13 +1627,14 @@ export default function ApplicantMessagesPage() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <CheckCircle2 size={16} color="#16a34a" />
-                    <span style={{ fontWeight: "700", color: "#166534" }}>
+                    <CheckCircle2 size={16} color="#0038A8" />
+                    <span style={{ fontWeight: "700", color: "#0038A8" }}>
                       {label} • {app.id} (OR #{(app as any).officialReceiptNo || "Verified"})
                     </span>
                     <span style={{
-                      background: "#dcfce7",
-                      color: "#166534",
+                      background: "#ffffff",
+                      color: "#0038A8",
+                      border: "1px solid #bfdbfe",
                       padding: "2px 7px",
                       borderRadius: "5px",
                       fontSize: "0.72rem",
@@ -1641,15 +1643,15 @@ export default function ApplicantMessagesPage() {
                       alignItems: "center",
                       gap: "4px"
                     }}>
-                      <Calendar size={11} /> {relDateStr} • <Clock size={11} /> {relTimeStr}
+                      <Calendar size={11} color="#0038A8" /> {relDateStr} • <Clock size={11} color="#0038A8" /> {relTimeStr}
                     </span>
                     <span style={{ color: "#94a3b8" }}>•</span>
-                    <span style={{ color: "#15803d" }}>Clearances ready for download.</span>
+                    <span style={{ color: "#334155" }}>Clearances ready for download.</span>
                   </div>
                   <Link
                     href={`/applicant/track/${encodeURIComponent(app.id)}`}
                     style={{
-                      background: "#16a34a",
+                      background: "#0038A8",
                       color: "white",
                       padding: "4px 10px",
                       borderRadius: "6px",
@@ -1855,8 +1857,8 @@ export default function ApplicantMessagesPage() {
             }}>
               <span style={{
                 background: "#ffffff",
-                border: "1px solid #bbf7d0",
-                color: "#166534",
+                border: "1px solid #bfdbfe",
+                color: "#0038A8",
                 borderRadius: "999px",
                 fontSize: "0.72rem",
                 fontWeight: "700",
@@ -1883,8 +1885,8 @@ export default function ApplicantMessagesPage() {
             overflowX: "auto",
             scrollbarWidth: "none"
           }}>
-            <span style={{ fontSize: "0.73rem", fontWeight: "800", color: "#d97706", display: "inline-flex", alignItems: "center", gap: "4px", flexShrink: 0, textTransform: "uppercase" }}>
-              <Sparkles size={13} color="#f59e0b" /> Quick Reply:
+            <span style={{ fontSize: "0.73rem", fontWeight: "800", color: "#0038A8", display: "inline-flex", alignItems: "center", gap: "4px", flexShrink: 0, textTransform: "uppercase" }}>
+              <FileText size={13} color="#0038A8" /> Quick Replies:
             </span>
             {CANNED_INQUIRIES.map(cq => (
               <button
@@ -1901,7 +1903,7 @@ export default function ApplicantMessagesPage() {
                   padding: "3px 10px",
                   fontSize: "0.74rem",
                   fontWeight: "600",
-                  color: "#334155",
+                  color: "#0f172a",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                   flexShrink: 0,
@@ -1909,13 +1911,13 @@ export default function ApplicantMessagesPage() {
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.background = "#eff6ff";
-                  e.currentTarget.style.borderColor = "#93c5fd";
-                  e.currentTarget.style.color = "#1e40af";
+                  e.currentTarget.style.borderColor = "#bfdbfe";
+                  e.currentTarget.style.color = "#0038A8";
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.background = "#ffffff";
                   e.currentTarget.style.borderColor = "#e2e8f0";
-                  e.currentTarget.style.color = "#334155";
+                  e.currentTarget.style.color = "#0f172a";
                 }}
               >
                 {cq.label}
@@ -2535,7 +2537,7 @@ export default function ApplicantMessagesPage() {
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#eff6ff", color: "#0038A8", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Receipt size={22} />
                 </div>
                 <div>
@@ -2571,8 +2573,8 @@ export default function ApplicantMessagesPage() {
 
               return (
                 <div style={{
-                  background: isLC ? "#f5f3ff" : "#f0fdf4",
-                  border: `1.5px solid ${isLC ? "#ddd6fe" : "#bbf7d0"}`,
+                  background: "#f0f7ff",
+                  border: "1.5px solid #bfdbfe",
                   borderRadius: "12px",
                   padding: "10px 14px",
                   marginBottom: "1rem",
@@ -2581,18 +2583,18 @@ export default function ApplicantMessagesPage() {
                   alignItems: "center"
                 }}>
                   <div>
-                    <span style={{ fontSize: "0.72rem", color: isLC ? "#6d28d9" : "#166534", fontWeight: "800", textTransform: "uppercase", display: "block" }}>
+                    <span style={{ fontSize: "0.72rem", color: "#0038A8", fontWeight: "800", textTransform: "uppercase", display: "block" }}>
                       {permitLabel} • {targetId}
                     </span>
-                    <strong style={{ fontSize: "1.15rem", color: isLC ? "#4c1d95" : "#14532d", fontWeight: "900" }}>
+                    <strong style={{ fontSize: "1.15rem", color: "#021a4f", fontWeight: "900" }}>
                       PHP {feeNum.toLocaleString()}
                     </strong>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <span style={{ fontSize: "0.72rem", color: isLC ? "#6d28d9" : "#166534", fontWeight: "700", display: "block" }}>
+                    <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: "700", display: "block" }}>
                       Order of Payment Reference
                     </span>
-                    <span style={{ fontFamily: "monospace", fontSize: "0.85rem", fontWeight: "700", color: isLC ? "#7c3aed" : "#15803d" }}>
+                    <span style={{ fontFamily: "monospace", fontSize: "0.85rem", fontWeight: "700", color: "#0038A8" }}>
                       {opNo}
                     </span>
                   </div>
@@ -2664,7 +2666,7 @@ export default function ApplicantMessagesPage() {
                 onClick={handleSendReceiptMessage}
                 disabled={isSubmittingReceipt}
                 style={{
-                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  background: "linear-gradient(135deg, #0038A8 0%, #021a4f 100%)",
                   color: "white",
                   border: "none",
                   borderRadius: "10px",
@@ -2675,7 +2677,7 @@ export default function ApplicantMessagesPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "6px",
-                  boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)"
+                  boxShadow: "0 4px 12px rgba(0, 56, 168, 0.35)"
                 }}
               >
                 <Send size={16} />

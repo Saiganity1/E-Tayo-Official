@@ -1581,8 +1581,8 @@ export default function StaffEvaluatePage() {
         // 3. Automatically dispatch official approval notice & Order of Payment with fee amount to applicant
         const assessedFormatted = `PHP ${totalFees.toLocaleString()}`;
         const approvalNoticeTitle = isBuildingPermit
-          ? "🏛️ OFFICIAL NOTICE: BUILDING PERMIT ORDER OF PAYMENT (PD 1096 NBCP)"
-          : "📐 OFFICIAL NOTICE: LOCATIONAL CLEARANCE ORDER OF PAYMENT (ZONING CLUP)";
+          ? "OFFICIAL NOTICE: BUILDING PERMIT ORDER OF PAYMENT (PD 1096 NBCP)"
+          : "OFFICIAL NOTICE: LOCATIONAL CLEARANCE ORDER OF PAYMENT (ZONING CLUP)";
         const issuingOffice = isBuildingPermit
           ? "Office of the Building Official (OBO) - Technical Permitting Division"
           : "Municipal Planning and Development Office (MPDO) / Zoning Administration";
@@ -1607,20 +1607,20 @@ Dear ${applicantLabel},
 
 Your application (${app.id}) has been formally APPROVED.
 
-📋 Application Assessment:
+Application Assessment:
 • Permit Classification: ${permitCategory}
 • Issuing Office: ${issuingOffice}
 • Legal Basis: ${legalBasis}
 • Reference Application ID: ${app.id}
 
-💰 Regulatory Assessment & Fee Schedule:
+Regulatory Assessment & Fee Schedule:
 ${feeBreakdownText}
-📄 Official Order of Payment Reference: ${orderOfPaymentNo}
+Official Order of Payment Reference: ${orderOfPaymentNo}
 
-🏛️ Payment Office:
+Payment Office:
 Municipal Treasury Office (Ground Floor, Sto. Tomas Municipal Hall, Pampanga)
 
-📸 Action Required:
+Action Required:
 Please settle the assessed regulatory fee of ${assessedFormatted} (Order of Payment Ref: ${orderOfPaymentNo}) and reply directly in this conversation with a clear photo or screenshot of your Official Receipt (OR) or payment confirmation.
 
 Once we inspect your receipt picture in this conversation, we will click "Confirmed Payment" to officially release your ${isBuildingPermit ? "Building Permit & Technical Ancillaries" : "Locational Clearance"}.`,
