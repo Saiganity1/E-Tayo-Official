@@ -234,8 +234,6 @@ export default function Sidebar() {
       case "staff":
         return [
           { href: "/staff/dashboard", label: t("reviewHub", "Review Hub"), icon: FileCheck },
-          { href: "/staff/templates", label: t("officialForms", "Official Forms"), icon: FileText },
-          { href: "/staff/track", label: t("queryInspect", "Query & Inspect"), icon: Search },
           { href: "/staff/map", label: t("map", "Map"), icon: Map },
           { href: "/staff/messages", label: t("messages", "Messages"), icon: MessageSquare, badge: 5 },
         ];
