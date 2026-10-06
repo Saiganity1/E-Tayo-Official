@@ -264,7 +264,7 @@ export default function StaffDashboard() {
     setExpandedDossiers(next);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status?: string) => {
     switch (status) {
       case "approved":
       case "released":
@@ -279,7 +279,7 @@ export default function StaffDashboard() {
     }
   };
 
-  const getPermitTypeBadge = (type: string) => {
+  const getPermitTypeBadge = (type?: string) => {
     const t = (type || "").toLowerCase();
     if (t.includes("locational") || t.includes("zoning")) {
       return { label: "Locational Clearance", code: "LC", bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" };
@@ -290,7 +290,7 @@ export default function StaffDashboard() {
     if (t.includes("occupancy")) {
       return { label: "Certificate of Occupancy", code: "CO", bg: "#faf5ff", color: "#7e22ce", border: "#e9d5ff" };
     }
-    return { label: type.replace(/_/g, " "), code: "PERMIT", bg: "#f8fafc", color: "#475569", border: "#e2e8f0" };
+    return { label: (type || "Permit").replace(/_/g, " "), code: "PERMIT", bg: "#f8fafc", color: "#475569", border: "#e2e8f0" };
   };
 
   // KPI calculations
@@ -907,12 +907,12 @@ export default function StaffDashboard() {
                                 border: `1px solid ${stStyle.border}`,
                                 fontSize: "0.78rem"
                               }}
-                              title={`${badge.label}: ${app.status.toUpperCase()} (${app.id})`}
+                              title={`${badge.label}: ${(app.status || "PENDING").toUpperCase()} (${app.id})`}
                             >
                               <span style={{ fontWeight: "800", color: badge.color }}>{badge.code}</span>
                               <span style={{ color: "#64748b" }}>•</span>
                               <span style={{ fontWeight: "700", color: stStyle.color, textTransform: "capitalize" }}>
-                                {app.status === "approved" ? "Approved" : app.status === "pending" ? "Pending" : app.status}
+                                {app.status === "approved" ? "Approved" : app.status === "pending" ? "Pending" : (app.status || "Pending")}
                               </span>
                             </div>
                           );
@@ -1072,7 +1072,7 @@ export default function StaffDashboard() {
                                   alignItems: "center",
                                   gap: "5px"
                                 }}>
-                                  <StatusIcon size={13} /> {app.status === "under_review" ? "Under Review" : (statusStyle.label || app.status.replace(/_/g, " "))}
+                                  <StatusIcon size={13} /> {app.status === "under_review" ? "Under Review" : (statusStyle.label || (app.status || "Pending").replace(/_/g, " "))}
                                 </span>
 
                                 <Link
@@ -1177,7 +1177,7 @@ export default function StaffDashboard() {
                           letterSpacing: "0.05em",
                           display: "inline-block"
                         }}>
-                          {app.status === "under_review" ? "Under Review" : app.status.replace(/_/g, " ")}
+                          {app.status === "under_review" ? "Under Review" : (statusStyle.label || (app.status || "Pending").replace(/_/g, " "))}
                         </span>
                       </td>
                       <td style={{ padding: "1.2rem 1.5rem" }}>
