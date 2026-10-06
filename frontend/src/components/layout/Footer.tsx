@@ -14,7 +14,7 @@ export default function Footer() {
         <div className="footer-grid">
           {/* Column 1: Official Municipal Identity & Republic of the Philippines */}
           <div className="footer-col col-identity">
-            {/* Logos: Bagong Pilipinas on left, Sto. Tomas seal beside it (NO background box) */}
+            {/* Logos: Bagong Pilipinas, Sto. Tomas seal, and eTAYO logo beside it */}
             <div className="footer-logos-row">
               <Image
                 src="/bagong-pilipinas.png"
@@ -32,6 +32,14 @@ export default function Footer() {
                 className="gov-clean-logo"
                 priority
               />
+              <Image
+                src="/logo.png"
+                alt="eTAYO Logo"
+                width={130}
+                height={40}
+                className="etayo-clean-logo"
+                priority
+              />
             </div>
 
             <div className="republic-header">
@@ -41,6 +49,9 @@ export default function Footer() {
               <h2 className="municipality-title">
                 {isFil ? "Bayan ng Sto. Tomas" : "Municipality of Sto. Tomas"}
               </h2>
+              <span className="obo-tag">
+                {isFil ? "Tanggapan ng Opisyal ng Gusali (OBO)" : "Office of the Building Official (OBO)"}
+              </span>
               <span className="district-tag">
                 {isFil ? "Ika-4 na Distrito ng Pampanga" : "4th District of Pampanga"}
               </span>
@@ -48,8 +59,8 @@ export default function Footer() {
 
             <p className="footer-lead-text">
               {isFil
-                ? "Ang opisyal na online regulatory at permitting platform ng Bayan ng Sto. Tomas, Pampanga. Pinapabilis ang building permits, locational clearances, at occupancy approvals para sa mga mamamayan at negosyo."
-                : "The official online regulatory and permitting platform of the Municipality of Sto. Tomas, Pampanga. Streamlining building permits, locational clearances, and occupancy approvals for residents and businesses."}
+                ? "Ang opisyal na online regulatory at permitting platform ng Tanggapan ng Opisyal ng Gusali (OBO), Bayan ng Sto. Tomas, Pampanga. Pinapabilis ang building permits, locational clearances, at occupancy approvals para sa mga mamamayan at negosyo."
+                : "The official online regulatory and permitting platform of the Office of the Building Official (OBO), Municipality of Sto. Tomas, Pampanga. Streamlining building permits, locational clearances, and occupancy approvals for residents and businesses."}
             </p>
           </div>
 
@@ -219,19 +230,28 @@ export default function Footer() {
         .footer-logos-row {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 1.15rem;
           margin-bottom: 1.25rem;
+          flex-wrap: wrap;
         }
 
         .gov-clean-logo {
-          width: 60px;
-          height: 60px;
+          width: 58px;
+          height: 58px;
           object-fit: contain;
           display: block;
           background: transparent !important;
           border: none !important;
           box-shadow: none !important;
           padding: 0 !important;
+        }
+
+        .etayo-clean-logo {
+          height: 38px;
+          width: auto;
+          object-fit: contain;
+          display: block;
+          background: transparent !important;
         }
 
         /* Republic Header */
@@ -256,6 +276,14 @@ export default function Footer() {
           letter-spacing: -0.02em;
           margin: 3px 0 2px 0;
           line-height: 1.2;
+        }
+
+        .obo-tag {
+          font-size: 0.92rem;
+          font-weight: 800;
+          color: #0038A8;
+          letter-spacing: -0.01em;
+          margin: 2px 0 2px 0;
         }
 
         .district-tag {
