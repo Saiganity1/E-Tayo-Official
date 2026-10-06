@@ -245,7 +245,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
     });
 };
 
-const STORAGE_VERSION = "etayo_clean_db_v5";
+const STORAGE_VERSION = "etayo_clean_db_v6";
 
 if (typeof window !== "undefined") {
   try {
@@ -253,6 +253,9 @@ if (typeof window !== "undefined") {
     if (curVer !== STORAGE_VERSION) {
       localStorage.removeItem("etayo_cached_applications");
       localStorage.removeItem("etayo_archived_application_ids");
+      localStorage.removeItem("etayo_messages_history");
+      localStorage.removeItem("etayo_notifications");
+      localStorage.removeItem("etayo_unread_messages_count");
       const toRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -267,7 +270,8 @@ if (typeof window !== "undefined") {
           k.startsWith("etayo_fees_") ||
           k.startsWith("etayo_archived_") ||
           k.startsWith("etayo_date_approved_") ||
-          k.startsWith("etayo_remarks_")
+          k.startsWith("etayo_remarks_") ||
+          k.startsWith("etayo_threads_")
         )) {
           toRemove.push(k);
         }

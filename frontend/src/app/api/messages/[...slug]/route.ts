@@ -17,16 +17,7 @@ interface StoredMessage {
 }
 
 // In-memory persistent message store on Next.js server instance
-const messageStore: StoredMessage[] = [
-  {
-    id: "seed-msg-1",
-    senderEmail: "staff@etayo.gov.ph",
-    recipientEmail: "mdpsicat.student@ua.edu.ph",
-    applicationId: "LC-2026-6494",
-    content: "Greetings Mr. Payumo! Your application LC-2026-6494 is queued for zoning evaluation. All required documents are in order.",
-    timestamp: new Date().toISOString()
-  }
-];
+const messageStore: StoredMessage[] = [];
 
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string[] }> }) {
   try {
@@ -50,7 +41,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         const text = await res.text();
         if (text.trim().startsWith("[") || text.trim().startsWith("{")) {
           const parsed = JSON.parse(text);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             return NextResponse.json(parsed);
           }
         }

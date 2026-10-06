@@ -228,14 +228,14 @@ export default function Sidebar() {
             }
           ] : []),
           { href: "/applicant/map", label: t("map", "Map"), icon: Map },
-          { href: "/applicant/messages", label: t("messages", "Messages"), icon: MessageSquare, badge: 3 },
+          { href: "/applicant/messages", label: t("messages", "Messages"), icon: MessageSquare },
         ];
       }
       case "staff":
         return [
           { href: "/staff/dashboard", label: t("reviewHub", "Review Hub"), icon: FileCheck },
           { href: "/staff/map", label: t("map", "Map"), icon: Map },
-          { href: "/staff/messages", label: t("messages", "Messages"), icon: MessageSquare, badge: 5 },
+          { href: "/staff/messages", label: t("messages", "Messages"), icon: MessageSquare },
         ];
       case "admin":
         return [
@@ -246,7 +246,7 @@ export default function Sidebar() {
           { href: "/staff/templates", label: t("officialForms", "Official Forms"), icon: FileText },
           { href: "/admin/users", label: t("applicantManagement", "Applicants Management"), icon: Users },
           { href: "/admin/staff", label: t("staffManagement", "Staff Management"), icon: ShieldAlert },
-          { href: "/admin/messages", label: t("messages", "Messages"), icon: MessageSquare, badge: 1 },
+          { href: "/admin/messages", label: t("messages", "Messages"), icon: MessageSquare },
           { href: "/admin/settings", label: t("settings", "Settings"), icon: Settings },
         ];
       default:

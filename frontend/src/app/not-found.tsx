@@ -76,7 +76,7 @@ export default function NotFound() {
           lineHeight: "1.6",
           margin: "0 0 2rem 0"
         }}>
-          The page or dossier link you entered could not be found. You can search directly by your Reference ID (e.g. <strong>LC-2026-6494</strong>) or return to the main dashboard.
+          The page or dossier link you entered could not be found. You can search directly by your Reference ID (e.g. <strong>LC-2026-0001</strong>) or return to the main dashboard.
         </p>
 
         {/* Quick Permit Search Input */}
@@ -92,7 +92,7 @@ export default function NotFound() {
             <Search size={18} color="#64748b" style={{ marginRight: "10px", flexShrink: 0 }} />
             <input
               type="text"
-              placeholder="Enter Reference (e.g. LC-2026-6494)..."
+              placeholder="Enter Reference (e.g. LC-2026-0001)..."
               value={trackQuery}
               onChange={(e) => setTrackQuery(e.target.value)}
               style={{

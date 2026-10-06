@@ -219,11 +219,6 @@ export default function StaffMessagesPage() {
         ...localApplicants
       ])).filter(Boolean);
 
-      // Fallback if empty to ensure staff can interact
-      if (uniqueEmails.length === 0) {
-        uniqueEmails = ["applicant@example.com", "paul.sicat@example.com"];
-      }
-
       setContacts(uniqueEmails);
 
       // If no applicant currently selected, select the first one
@@ -389,8 +384,17 @@ export default function StaffMessagesPage() {
           const raw = localStorage.getItem("etayo_messages_history");
           if (raw) localMsgs = JSON.parse(raw);
         } catch (e) {}
-        const merged = [...apiData];
-        localMsgs.forEach((lm: any) => {
+        const isDummyMsg = (m: any) => {
+          if (!m) return true;
+          const id = String(m.id || "");
+          const content = String(m.content || "");
+          const appId = String(m.applicationId || "");
+          return id === "seed-msg-1" || appId === "LC-2026-6494" || content.includes("Greetings Mr. Payumo") || content.includes("LC-2026-6494");
+        };
+        const cleanApi = (apiData || []).filter(m => !isDummyMsg(m));
+        const cleanLocal = (localMsgs || []).filter(m => !isDummyMsg(m));
+        const merged = [...cleanApi];
+        cleanLocal.forEach((lm: any) => {
           const r = (lm.recipientEmail || "").toLowerCase().trim();
           const s = (lm.senderEmail || "").toLowerCase().trim();
           if (
