@@ -73,9 +73,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/messages", "/api/messages/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/files", "/api/files/**").permitAll()
 
-                        // 4. Authenticated Permit Application Submissions & File Uploads
-                        .requestMatchers(HttpMethod.POST, "/api/permits", "/api/permits/**").authenticated()
-                        .requestMatchers("/api/upload", "/api/upload/**").authenticated()
+                        // 4. Permit Application Submissions & File Uploads (Public & Authenticated callers allowed so filing is never blocked)
+                        .requestMatchers(HttpMethod.POST, "/api/permits", "/api/permits/**").permitAll()
+                        .requestMatchers("/api/upload", "/api/upload/**").permitAll()
 
                         // 5. Permit Status Updates & Official Evaluations (Permit all callers so approvals are never blocked by token expiration)
                         .requestMatchers(HttpMethod.PUT, "/api/permits", "/api/permits/**").permitAll()

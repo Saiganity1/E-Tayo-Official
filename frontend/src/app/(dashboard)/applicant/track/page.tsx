@@ -388,19 +388,16 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     return false;
   }, [archivedIds]);
 
-  // Strictly filter applications for the active logged-in applicant (NO leak for guests or incognito)
+  // Strictly filter applications for the active logged-in applicant or recently submitted apps on this device
   const myApplications = useMemo(() => {
-    if (!isLoggedIn || !currentUser) {
-      return [];
-    }
-
-    const email = (currentUser.email || "").toLowerCase().trim();
-    const name = (currentUser.name || "").toLowerCase().trim();
-    const norm = (str: string) => (str || "").toLowerCase().trim().replace("mdpsicot", "mdpsicat");
-
-    const activeStoredRef = typeof window !== "undefined" 
-      ? (localStorage.getItem("etayo_active_clearance_ref") || "").trim().toLowerCase() 
-      : "";
+    let localSubmittedIds: string[] = [];
+    try {
+      const s = typeof window !== "undefined" ? localStorage.getItem("etayo_submitted_app_ids") : null;
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) localSubmittedIds = parsed;
+      }
+    } catch (e) {}
 
     let pool = applications || [];
     if (pool.length === 0 && typeof window !== "undefined") {
@@ -413,11 +410,32 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       } catch (e) {}
     }
 
+    if (!isLoggedIn || !currentUser) {
+      if (localSubmittedIds.length > 0) {
+        return pool.filter(app => {
+          if (!app) return false;
+          const appId = String(app.id || "").trim().toLowerCase();
+          return localSubmittedIds.some(sid => sid && sid.trim().toLowerCase() === appId);
+        });
+      }
+      return [];
+    }
+
+    const email = (currentUser.email || "").toLowerCase().trim();
+    const name = (currentUser.name || "").toLowerCase().trim();
+    const norm = (str: string) => (str || "").toLowerCase().trim().replace("mdpsicot", "mdpsicat");
+
+    const activeStoredRef = typeof window !== "undefined" 
+      ? (localStorage.getItem("etayo_active_clearance_ref") || "").trim().toLowerCase() 
+      : "";
+
     return pool.filter(app => {
       if (!app) return false;
       const appId = String(app.id || "").trim().toLowerCase();
       const appEmail = (app.applicantEmail || (app as any).userEmail || (typeof (app as any).user === "string" ? (app as any).user : "") || "").toLowerCase().trim();
       const appName = (app.applicantName || (app as any).userName || "").toLowerCase().trim();
+
+      const matchSubmitted = localSubmittedIds.some(sid => sid && sid.trim().toLowerCase() === appId);
 
       const matchEmail = Boolean(email && appEmail && (
         appEmail === email || 
@@ -450,7 +468,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         });
       }
 
-      return matchEmail || matchName || matchActiveRef || matchLinkedLC;
+      return matchEmail || matchName || matchActiveRef || matchLinkedLC || matchSubmitted;
     });
   }, [applications, isLoggedIn, currentUser]);
 

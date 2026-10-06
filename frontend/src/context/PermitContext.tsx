@@ -111,7 +111,11 @@ const isDummyApp = (app: PermitApplication) => {
     return true;
   }
 
-  if (name.includes("juan dela cruz") || email.includes("juan.delacruz@email.com")) {
+  // Only filter legacy seed applications that used the dummy name/email
+  if (
+    (id.startsWith("LC-2025-") || id.startsWith("BP-2025-") || id === "APP-2026-6636") &&
+    (name.includes("juan dela cruz") || email.includes("juan.delacruz@email.com"))
+  ) {
     return true;
   }
 
@@ -318,9 +322,17 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       
-      // If user is unauthenticated, do not flood the backend
+      // If user is unauthenticated, do not flood the backend, but preserve locally submitted applications
       if (!token) {
-        setApplications([]);
+        const cachedStr = typeof window !== "undefined" ? localStorage.getItem("etayo_cached_applications") : null;
+        if (cachedStr) {
+          try {
+            const parsed = JSON.parse(cachedStr);
+            if (Array.isArray(parsed)) {
+              setApplications(parsed.filter(a => !isDummyApp(a)));
+            }
+          } catch (e) {}
+        }
         return;
       }
 
@@ -654,15 +666,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             };
           });
 
-          // If the remote backend was unreachable, fallback to locally cached apps.
-          // When the backend responded successfully, the database is authoritative.
-          if (!appsRes.ok) {
-            cleanCached.forEach((c) => {
-              if (!mergedApps.some((m) => matchPermitId(m.id, c.id))) {
-                mergedApps.push(c);
-              }
-            });
-          }
+          // Always retain valid locally cached applications (e.g. newly submitted applications
+          // that are pending backend database synchronization or local offline submissions)
+          cleanCached.forEach((c) => {
+            if (!mergedApps.some((m) => matchPermitId(m.id, c.id))) {
+              mergedApps.push(c);
+            }
+          });
         }
       } catch (e) {
         console.warn("Error merging local cached applications", e);
@@ -1205,7 +1215,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 2500);
+      const tid = setTimeout(() => ctrl.abort(), 15000);
       let res = await fetch("/api/permits", {
         method: "POST",
         headers,
@@ -1216,7 +1226,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (!res || !res.ok) {
         const remoteCtrl = new AbortController();
-        const remoteTid = setTimeout(() => remoteCtrl.abort(), 2500);
+        const remoteTid = setTimeout(() => remoteCtrl.abort(), 15000);
         await fetch(`${API_BASE_URL}/permits`, {
           method: "POST",
           headers,

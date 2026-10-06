@@ -289,6 +289,18 @@ export default function LocationalClearanceGoogleForm({
         ]
       };
 
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem("etayo_submitted_app_ids");
+          const list: string[] = stored ? JSON.parse(stored) : [];
+          if (!list.includes(newApp.id)) {
+            list.push(newApp.id);
+            localStorage.setItem("etayo_submitted_app_ids", JSON.stringify(list));
+          }
+          localStorage.setItem("etayo_last_submitted_id", newApp.id);
+        } catch (e) {}
+      }
+
       addApplication(newApp);
       setSubmittedAppId(newId);
       setIsSubmitted(true);

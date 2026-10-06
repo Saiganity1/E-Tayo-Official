@@ -54,20 +54,18 @@ public class FileUploadController {
             Principal principal) {
         Map<String, Object> response = new HashMap<>();
 
-        if (principal == null || principal.getName() == null || principal.getName().trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Authentication required to upload permit documents"));
-        }
-
         if (files == null || files.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "No files provided for upload"));
         }
 
         try {
-            String applicantName = principal.getName();
-            User user = userRepository.findByEmail(principal.getName()).orElse(null);
-            if (user != null && user.getName() != null) {
-                applicantName = user.getName();
+            String applicantName = "Applicant";
+            if (principal != null && principal.getName() != null && !principal.getName().trim().isEmpty()) {
+                applicantName = principal.getName();
+                User user = userRepository.findByEmail(principal.getName()).orElse(null);
+                if (user != null && user.getName() != null) {
+                    applicantName = user.getName();
+                }
             }
 
             // Security Validation on every file in the batch

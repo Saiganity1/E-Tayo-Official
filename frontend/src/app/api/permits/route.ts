@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     // Attempt to query remote backend with short timeout
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(targetUrl, {
         method: "GET",
         headers,
@@ -43,13 +43,7 @@ export async function GET(req: Request) {
         if (text.trim().startsWith("[") || text.trim().startsWith("{")) {
           const data = JSON.parse(text);
           if (Array.isArray(data)) {
-            const mergedList = data.map(item => savePermit(item));
-            return NextResponse.json(mergedList, {
-              headers: {
-                "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
-                "Pragma": "no-cache"
-              }
-            });
+            data.forEach(item => savePermit(item));
           }
         }
       }
@@ -57,7 +51,7 @@ export async function GET(req: Request) {
       // Backend unavailable or suspended; proceed to resilient data store
     }
 
-    // Resilient fallback: return permits from reliable server data store
+    // Resilient server data store: return permits from reliable server data store (inclusive of newly submitted apps)
     const localData = getAllPermits(emailFilter, nameFilter);
     return NextResponse.json(localData, {
       status: 200,
@@ -92,7 +86,7 @@ export async function POST(req: Request) {
     (async () => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         const res = await fetch(targetUrl, {
           method: "POST",
           headers,
