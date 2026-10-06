@@ -189,8 +189,19 @@ export default function Footer() {
                 : `© ${new Date().getFullYear()} Republic of the Philippines • Municipality of Sto. Tomas, Pampanga.`}
             </span>
           </div>
-          <div className="copy-right">
-            <span>{isFil ? "Pinapagana ng" : "Powered by"} <strong>Niceone Solutions</strong></span>
+          <div className="copy-right developer-credits">
+            <div className="dev-badge">
+              <img
+                src="/niceone-logo-blue.png"
+                alt="Niceone Solutions Logo"
+                className="niceone-logo"
+              />
+              <span className="dev-text">
+                DEVELOPED BY: <strong>NICEONE SOLUTIONS</strong>
+              </span>
+            </div>
+            <span className="dev-divider" aria-hidden="true">•</span>
+            <span className="dev-team">BONDOC • DAVID • SICAT</span>
           </div>
         </div>
       </div>
@@ -471,8 +482,56 @@ export default function Footer() {
           gap: 1rem;
         }
 
-        .copy-right strong {
+        .developer-credits {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.65rem;
+          flex-wrap: wrap;
+          font-size: 0.8rem;
+          color: #475569;
+        }
+
+        .dev-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .niceone-logo {
+          height: 18px;
+          width: auto;
+          object-fit: contain;
+          display: inline-block;
+          vertical-align: middle;
+          filter: drop-shadow(0 1px 2px rgba(0, 56, 168, 0.2));
+        }
+
+        .dev-text {
+          font-size: 0.78rem;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          color: #475569;
+          text-transform: uppercase;
+        }
+
+        .dev-text strong {
+          color: #0038A8;
+          font-weight: 900;
+        }
+
+        .dev-divider {
+          color: #94a3b8;
+          font-weight: 700;
+          font-size: 0.75rem;
+          user-select: none;
+        }
+
+        .dev-team {
+          font-size: 0.78rem;
+          font-weight: 800;
+          letter-spacing: 0.06em;
           color: #0f172a;
+          text-transform: uppercase;
         }
 
         /* Responsive Breakpoints */
@@ -502,6 +561,10 @@ export default function Footer() {
           .bottom-content {
             flex-direction: column;
             align-items: flex-start;
+            gap: 0.75rem;
+          }
+          .developer-credits {
+            gap: 0.45rem 0.65rem;
           }
           .gov-clean-logo {
             width: 52px;
