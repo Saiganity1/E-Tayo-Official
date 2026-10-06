@@ -307,6 +307,8 @@ export default function StaffMessagesPage() {
     window.addEventListener("storage", onStorageChange);
 
     // 4. STOMP WebSocket client
+    let isMounted = true;
+    let connectTimer: NodeJS.Timeout | null = null;
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
@@ -331,6 +333,9 @@ export default function StaffMessagesPage() {
         const client = new Client({
           brokerURL: wsUrl,
           reconnectDelay: 5000,
+          heartbeatIncoming: 10000,
+          heartbeatOutgoing: 10000,
+          connectionTimeout: 10000,
           onConnect: () => {
             console.log("Staff connected to STOMP WebSocket");
             setConnected(true);
@@ -349,26 +354,37 @@ export default function StaffMessagesPage() {
             }
           },
           onStompError: frame => {
-            console.error("Broker reported error: " + frame.headers["message"]);
+            console.warn("STOMP notice:", frame?.headers?.["message"]);
           },
           onWebSocketClose: () => {
+            setConnected(false);
+          },
+          onWebSocketError: () => {
             setConnected(false);
           }
         });
 
-        client.activate();
-        stompClient.current = client;
+        connectTimer = setTimeout(() => {
+          if (isMounted) {
+            client.activate();
+            stompClient.current = client;
+          }
+        }, 150);
       } catch (err) {
         console.error("Error setting up WebSocket client:", err);
       }
     }
 
     return () => {
+      isMounted = false;
+      if (connectTimer) clearTimeout(connectTimer);
       if (bc) bc.close();
       window.removeEventListener("etayo_new_message", onCustomMsg);
       window.removeEventListener("storage", onStorageChange);
       if (stompClient.current) {
-        stompClient.current.deactivate();
+        const c = stompClient.current;
+        stompClient.current = null;
+        c.deactivate().catch(() => {});
       }
     };
   }, []);

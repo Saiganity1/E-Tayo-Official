@@ -190,6 +190,8 @@ export default function ApplicantMessagesPage() {
 
   // Load user & connect WebSocket
   useEffect(() => {
+    let isMounted = true;
+    let connectTimer: NodeJS.Timeout | null = null;
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
@@ -305,6 +307,9 @@ export default function ApplicantMessagesPage() {
         const client = new Client({
           brokerURL: wsUrl,
           reconnectDelay: 5000,
+          heartbeatIncoming: 10000,
+          heartbeatOutgoing: 10000,
+          connectionTimeout: 10000,
           onConnect: () => {
             setConnected(true);
             client.subscribe(`/topic/messages/${email}`, (message) => {
@@ -327,23 +332,34 @@ export default function ApplicantMessagesPage() {
             });
           },
           onStompError: (frame) => {
-            console.error("STOMP Broker error: " + frame.headers["message"]);
+            console.warn("STOMP Broker notice:", frame?.headers?.["message"]);
           },
           onWebSocketClose: () => {
+            setConnected(false);
+          },
+          onWebSocketError: () => {
             setConnected(false);
           }
         });
 
-        client.activate();
-        stompClient.current = client;
+        connectTimer = setTimeout(() => {
+          if (isMounted) {
+            client.activate();
+            stompClient.current = client;
+          }
+        }, 150);
       } catch (err) {
         console.error("Error parsing user from localStorage", err);
       }
     }
 
     return () => {
+      isMounted = false;
+      if (connectTimer) clearTimeout(connectTimer);
       if (stompClient.current) {
-        stompClient.current.deactivate();
+        const c = stompClient.current;
+        stompClient.current = null;
+        c.deactivate().catch(() => {});
       }
     };
   }, []);
