@@ -6,6 +6,7 @@ import { createLayerComponent } from "@react-leaflet/core";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { usePermitContext } from "../../context/PermitContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { PROJECT_TYPES_MATRIX, ProjectCategory } from "../../data/projectTypeMatrix";
 import { 
   stoTomasZoningGeoJSON, 
@@ -239,6 +240,8 @@ function FitStoTomasButton() {
 
 export default function SpatialMap() {
   const { applications } = usePermitContext();
+  const { language } = useLanguage();
+  const isEn = language === "en";
   const [filterType, setFilterType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBarangay, setSelectedBarangay] = useState<any>(null);
@@ -407,10 +410,10 @@ export default function SpatialMap() {
             gap: '6px',
             transition: 'all 0.15s ease'
           }}
-          title="Inspect Official Geospatial Data & Download Cadastral GeoJSON"
+          title={isEn ? "Inspect Official Geospatial Data & Download Cadastral GeoJSON" : "Suriin ang Opisyal na Geospatial Data"}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          GeoJSON & Legal Cadastre
+          {isEn ? "GeoJSON & Legal Cadastre" : "GeoJSON at Legal na Kadastre"}
         </button>
       </div>
 
@@ -470,7 +473,7 @@ export default function SpatialMap() {
                     padding: '1px 7px',
                     borderRadius: '99px'
                   }}>
-                    ⭐ OTOP: {hoveredZone.otop}
+                    OTOP: {hoveredZone.otop}
                   </span>
                 )}
                 <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
@@ -481,11 +484,11 @@ export default function SpatialMap() {
                 {hoveredZone.name} — <span style={{ color: hoveredZone.color }}>{hoveredZone.zoneType}</span>
               </div>
               <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <span>Limits: <strong>{hoveredZone.buildingRegulations?.maxHeight}</strong></span>
-                <span>Setbacks: <strong>{hoveredZone.buildingRegulations?.setbacks}</strong></span>
+                <span>{isEn ? "Limits: " : "Limitasyon: "}<strong>{hoveredZone.buildingRegulations?.maxHeight}</strong></span>
+                <span>{isEn ? "Setbacks: " : "Setbacks: "}<strong>{hoveredZone.buildingRegulations?.setbacks}</strong></span>
                 {hoveredZone.floodSusceptibility && (
                   <span style={{ color: hoveredZone.floodSusceptibility.includes('High') ? '#b91c1c' : '#b45309', fontWeight: '600' }}>
-                    🌊 Baha: {hoveredZone.floodSusceptibility}
+                    {isEn ? "Flood: " : "Baha: "}{hoveredZone.floodSusceptibility}
                   </span>
                 )}
               </div>
@@ -507,7 +510,7 @@ export default function SpatialMap() {
             gap: '8px'
           }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7', display: 'inline-block' }}></span>
-            <span>Hover over any colored area to view official zoning classification & building regulations</span>
+            <span>{isEn ? "Hover over any colored area to view official zoning classification & building regulations" : "I-hover ang cursor sa anumang kulay upang makita ang opisyal na klasipikasyon ng zoning at regulasyon sa gusali"}</span>
           </div>
         )}
       </div>
@@ -589,7 +592,7 @@ export default function SpatialMap() {
               onEachFeature={(feature: any, layer: L.Layer) => {
                 layer.bindTooltip(
                   `<div style="padding: 4px; font-family: inherit;">
-                    <div style="font-weight: 700; color: #1e40af; font-size: 13px;">🏛️ Municipality of Sto. Tomas, Pampanga</div>
+                    <div style="font-weight: 700; color: #1e40af; font-size: 13px;">Municipality of Sto. Tomas, Pampanga</div>
                     <div style="font-size: 11px; color: #475569; margin-top: 2px;">Official Cadastral Boundary (PSA: 0305421000)</div>
                     <div style="font-size: 10px; color: #64748b; margin-top: 4px; border-top: 1px solid #cbd5e1; padding-top: 3px;">
                       Bounded by: San Fernando (N) • San Simon (E) • Minalin (S) • Bacolor (W)
@@ -675,7 +678,9 @@ export default function SpatialMap() {
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
                       <div>
-                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Status</div>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>
+                          {isEn ? "Status" : "Katayuan"}
+                        </div>
                         <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 
                           app.status.toLowerCase() === 'approved' || app.status.toLowerCase() === 'released' ? '#10b981' : 
                           app.status.toLowerCase() === 'rejected' ? '#ef4444' : 
@@ -685,7 +690,9 @@ export default function SpatialMap() {
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Submitted</div>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>
+                          {isEn ? "Submitted" : "Isinumite"}
+                        </div>
                         <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>
                           {new Date(app.dateSubmitted || (app as any).submissionDate || Date.now()).toLocaleDateString()}
                         </div>
@@ -704,7 +711,7 @@ export default function SpatialMap() {
                       fontWeight: '600',
                       border: '1px solid #e2e8f0'
                     }}>
-                      View Application Details
+                      {isEn ? "View Application Details" : "Tingnan ang Detalye"}
                     </a>
                   </div>
                 </Popup>
@@ -736,12 +743,14 @@ export default function SpatialMap() {
       >
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-primary)' }}>Spatial Filters</h3>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-primary)' }}>
+              {isEn ? "Spatial Filters" : "Mga Spatial Filter"}
+            </h3>
             <button onClick={() => setShowFilters(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--text-secondary)' }}>&minus;</button>
           </div>
           <input
             type="text"
-            placeholder="Search Project Name or ID..."
+            placeholder={isEn ? "Search Project Name or ID..." : "Maghanap ng Proyekto o ID..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -781,7 +790,7 @@ export default function SpatialMap() {
                   {theme && (
                     <span style={{ display: 'inline-flex', width: '14px', height: '14px' }} dangerouslySetInnerHTML={{ __html: theme.svg }} />
                   )}
-                  {type === 'ALL' ? 'All Project Types' : type}
+                  {type === 'ALL' ? (isEn ? 'All Project Types' : 'Lahat ng Uri ng Proyekto') : type}
                 </button>
               );
             })}
@@ -810,7 +819,7 @@ export default function SpatialMap() {
           }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          Show Filters
+          {isEn ? "Show Filters" : "Ipakita ang mga Filter"}
         </button>
       )}
 
@@ -879,7 +888,7 @@ export default function SpatialMap() {
                 flexShrink: 0,
                 transition: 'all 0.15s ease'
               }}
-              title="Close Inspection Panel"
+              title={isEn ? "Close Inspection Panel" : "Isara ang Panel"}
             >
               &times;
             </button>
@@ -887,28 +896,24 @@ export default function SpatialMap() {
 
           {/* Subtitle / Cadastral Data */}
           <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '-4px' }}>
-            PSGC: <strong style={{ color: '#1e3a8a' }}>{selectedFeature.psgc || '0305421000'}</strong> • Area: <strong>{selectedFeature.areaKm2} km²</strong> {selectedFeature.areaHectares ? `(${selectedFeature.areaHectares} ha • ${selectedFeature.landAreaPercent})` : ''}
+            PSGC: <strong style={{ color: '#1e3a8a' }}>{selectedFeature.psgc || '0305421000'}</strong> • {isEn ? "Area: " : "Sukat: "}<strong>{selectedFeature.areaKm2} km²</strong> {selectedFeature.areaHectares ? `(${selectedFeature.areaHectares} ha • ${selectedFeature.landAreaPercent})` : ''}
           </div>
 
-          {/* OTOP Badge */}
+          {/* OTOP Badge (No Emojis) */}
           {selectedFeature.otop && (
             <div style={{
               background: '#fef3c7',
               border: '1px solid #fde68a',
               color: '#92400e',
-              padding: '6px 12px',
+              padding: '8px 12px',
               borderRadius: '10px',
               fontSize: '0.8rem',
-              fontWeight: '700',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
+              fontWeight: '700'
             }}>
-              <span style={{ fontSize: '1.1rem' }}>⭐</span>
-              <div>
-                <span style={{ fontSize: '0.66rem', textTransform: 'uppercase', color: '#b45309', display: 'block', letterSpacing: '0.5px' }}>One Town One Product (OTOP)</span>
-                <span>{selectedFeature.otop}</span>
-              </div>
+              <span style={{ fontSize: '0.66rem', textTransform: 'uppercase', color: '#b45309', display: 'block', letterSpacing: '0.5px' }}>
+                {isEn ? "One Town One Product (OTOP)" : "Isang Bayan, Isang Produkto (OTOP)"}
+              </span>
+              <span style={{ fontSize: '0.88rem', color: '#78350f', fontWeight: '800' }}>{selectedFeature.otop}</span>
             </div>
           )}
 
@@ -923,7 +928,7 @@ export default function SpatialMap() {
               {selectedFeature.name}
             </div>
             <div style={{ fontSize: '0.76rem', color: '#2563eb', fontWeight: '700', marginTop: '3px' }}>
-              CLUP Zone: {selectedFeature.zoneType}
+              {isEn ? "CLUP Zone: " : "Sona ng CLUP: "}{selectedFeature.zoneType}
             </div>
           </div>
 
@@ -938,100 +943,66 @@ export default function SpatialMap() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
               <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#1e3a8a' }}>{filteredApps.length}</div>
-              <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Total Permits</div>
+              <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>
+                {isEn ? "Total Permits" : "Kabuuang Permit"}
+              </div>
             </div>
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
               <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#d97706' }}>
                 {filteredApps.filter(a => a.status === 'pending' || a.status === 'under_review').length}
               </div>
-              <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Pending Review</div>
+              <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>
+                {isEn ? "Pending Review" : "Kasalukuyang Sinusuri"}
+              </div>
             </div>
           </div>
 
-          {/* Growth Node & Demographics */}
+          {/* Growth Node & Demographics (No Emojis) */}
           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 12px', fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {selectedFeature.growthNode && (
               <div style={{ color: '#334155' }}>
-                🎯 <strong>CLUP Role:</strong> {selectedFeature.growthNode}
+                <strong>{isEn ? "CLUP Role:" : "Gampanin sa CLUP:"}</strong> {selectedFeature.growthNode}
               </div>
             )}
             {selectedFeature.population2025Proj && (
               <div style={{ color: '#334155' }}>
-                👥 <strong>Populasyon:</strong> {selectedFeature.population2010?.toLocaleString()} (2010) → <strong style={{ color: '#1e3a8a' }}>{selectedFeature.population2025Proj?.toLocaleString()} (2025 Proj)</strong>
+                <strong>{isEn ? "Population:" : "Populasyon:"}</strong> {selectedFeature.population2010?.toLocaleString()} (2010) → <strong style={{ color: '#1e3a8a' }}>{selectedFeature.population2025Proj?.toLocaleString()} ({isEn ? "2025 Proj" : "2025 Tantya"})</strong>
               </div>
             )}
           </div>
 
-          {/* Hazard Susceptibility (CLUP Table 5) */}
+          {/* Hazard Susceptibility (CLUP Table 5) (No Emojis) */}
           {selectedFeature.floodSusceptibility && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '10px 12px' }}>
               <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#991b1b', textTransform: 'uppercase', marginBottom: '3px' }}>
-                ⚠️ Hazard Vulnerability (CLUP Table 5)
+                {isEn ? "Hazard Vulnerability (CLUP Table 5)" : "Panganib at Peligro (CLUP Talaan 5)"}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#b91c1c', fontWeight: '600' }}>
-                🌊 Baha: <strong>{selectedFeature.floodSusceptibility}</strong>
+                {isEn ? "Flood: " : "Baha: "}<strong>{selectedFeature.floodSusceptibility}</strong>
               </div>
               <div style={{ fontSize: '0.74rem', color: '#7f1d1d', marginTop: '2px' }}>
-                🌋 Lindol: {selectedFeature.groundShaking} • Liquefaction: {selectedFeature.liquefactionSusceptibility || 'High (H)'}
+                {isEn ? "Earthquake: " : "Lindol: "}{selectedFeature.groundShaking} • Liquefaction: {selectedFeature.liquefactionSusceptibility || 'High (H)'}
               </div>
             </div>
           )}
 
-          {/* Building Limits (PD 1096 NBCP) */}
+          {/* Building Limits (PD 1096 NBCP & CLUP) */}
           {selectedFeature.buildingRegulations && (
             <div style={{ background: '#f0f7ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '10px 12px', fontSize: '0.78rem' }}>
               <div style={{ fontWeight: '800', color: '#1e40af', marginBottom: '6px' }}>
-                Building Limits (PD 1096 NBCP & CLUP):
+                {isEn ? "Building Limits (PD 1096 NBCP & CLUP):" : "Mga Limitasyon sa Gusali (PD 1096 NBCP & CLUP):"}
               </div>
-              <div style={{ color: '#334155', lineHeight: '1.5' }}>• Max Height: <strong>{selectedFeature.buildingRegulations.maxHeight}</strong></div>
-              <div style={{ color: '#334155', lineHeight: '1.5' }}>• Setbacks: <strong>{selectedFeature.buildingRegulations.setbacks}</strong></div>
-              <div style={{ color: '#334155', lineHeight: '1.5' }}>• Max PSO: <strong>{selectedFeature.buildingRegulations.maxPSO}</strong></div>
+              <div style={{ color: '#334155', lineHeight: '1.5' }}>• {isEn ? "Max Height: " : "Pinakamataas na Taas: "}<strong>{selectedFeature.buildingRegulations.maxHeight}</strong></div>
+              <div style={{ color: '#334155', lineHeight: '1.5' }}>• {isEn ? "Setbacks: " : "Setbacks: "}<strong>{selectedFeature.buildingRegulations.setbacks}</strong></div>
+              <div style={{ color: '#334155', lineHeight: '1.5' }}>• {isEn ? "Max PSO: " : "Pinakamataas na PSO: "}<strong>{selectedFeature.buildingRegulations.maxPSO}</strong></div>
               {selectedFeature.buildingRegulations.parkingMandate && (
-                <div style={{ color: '#1e40af', fontWeight: '600', marginTop: '2px' }}>• Parking: {selectedFeature.buildingRegulations.parkingMandate}</div>
+                <div style={{ color: '#1e40af', fontWeight: '600', marginTop: '2px' }}>• {isEn ? "Parking: " : "Paradahan: "}{selectedFeature.buildingRegulations.parkingMandate}</div>
               )}
               {selectedFeature.buildingRegulations.soilTestMandate && (
-                <div style={{ color: '#1e40af', fontWeight: '600', marginTop: '2px' }}>• Soil Test: {selectedFeature.buildingRegulations.soilTestMandate}</div>
+                <div style={{ color: '#1e40af', fontWeight: '600', marginTop: '2px' }}>• {isEn ? "Soil Test: " : "Pagsusuri ng Lupa: "}{selectedFeature.buildingRegulations.soilTestMandate}</div>
               )}
             </div>
           )}
-
-          {/* Permitted Uses (CLUP) */}
-          {selectedFeature.permittedUses && (
-            <div style={{ fontSize: '0.78rem', color: '#334155' }}>
-              <div style={{ fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>Permitted Uses (CLUP):</div>
-              <ul style={{ margin: 0, paddingLeft: '18px', lineHeight: '1.45' }}>
-                {selectedFeature.permittedUses.map((use: string, i: number) => (
-                  <li key={i} style={{ marginBottom: '3px' }}>{use}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Special Rules */}
-          {selectedFeature.specialRules && selectedFeature.specialRules.length > 0 && (
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 12px', fontSize: '0.75rem', color: '#475569' }}>
-              <div style={{ fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>Special Zoning Guidelines:</div>
-              <ul style={{ margin: 0, paddingLeft: '16px', lineHeight: '1.4' }}>
-                {selectedFeature.specialRules.map((rule: string, i: number) => (
-                  <li key={i} style={{ marginBottom: '2px' }}>{rule}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Card Footer */}
-          <div style={{
-            borderTop: '1px solid #e2e8f0',
-            paddingTop: '8px',
-            marginTop: '4px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: '0.72rem'
-          }}>
-            <span style={{ color: '#16a34a', fontWeight: '700' }}>✓ Official LGU Cadastral Zone</span>
-            <span style={{ color: '#2563eb', fontWeight: '600' }}>CLUP 2016-2025 Enacted</span>
-          </div>
         </div>
       )}
 
@@ -1039,7 +1010,7 @@ export default function SpatialMap() {
       <button 
         onClick={toggleFullscreen}
         style={{ position: 'absolute', bottom: '80px', right: '24px', zIndex: 10000, background: 'white', padding: '10px', borderRadius: 'var(--radius-md)', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Map"}
+        title={isFullscreen ? (isEn ? "Exit Fullscreen" : "Umalis sa Fullscreen") : (isEn ? "Fullscreen Map" : "Palakihin ang Mapa")}
       >
         {isFullscreen ? (
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
