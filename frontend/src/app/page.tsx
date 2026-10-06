@@ -257,48 +257,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* GPS Pin Drawing & Location Marking Stage */}
-          <div className="gps-drawing-stage">
-            {/* The Moving GPS Pin with laser tracer, radar wave, and coordinates tag */}
-            <div className="gps-pin-carrier" aria-hidden="true">
-              <div className="gps-pin-body">
-                {/* SVG GPS Pin Marker */}
-                <svg className="gps-pin-icon" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 0C5.37 0 0 5.37 0 12C0 21 11.1 31.2 11.55 31.6C11.8 31.85 12.2 31.85 12.45 31.6C12.9 31.2 24 21 24 12C24 5.37 18.63 0 12 0Z" fill="url(#pinGrad)" filter="url(#pinGlow)"/>
-                  <circle cx="12" cy="11.5" r="5" fill="#ffffff"/>
-                  <circle cx="12" cy="11.5" r="3" fill="#0038A8"/>
-                  <defs>
-                    <linearGradient id="pinGrad" x1="0" y1="0" x2="24" y2="32" gradientUnits="userSpaceOnUse">
-                      <stop stopColor="#ff4d4d"/>
-                      <stop offset="0.6" stopColor="#dc2626"/>
-                      <stop offset="1" stopColor="#991b1b"/>
-                    </linearGradient>
-                    <filter id="pinGlow" x="-2" y="-2" width="28" height="36" filterUnits="userSpaceOnUse">
-                      <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#ef4444" floodOpacity="0.8"/>
-                    </filter>
-                  </defs>
-                </svg>
-                {/* Needle beam & laser tip spark */}
-                <div className="gps-laser-spark"></div>
-                {/* Expanding GPS Location Radar Ring */}
-                <div className="gps-radar-wave"></div>
-                {/* Geodetic Coordinate Tooltip Badge */}
-                <div className="gps-coord-tag">
-                  <span>GPS: 15.0032° N, 120.7123° E</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Layer 1: Geospatial Laser / Cadastral Wireframe Markings (Being drawn in real-time) */}
-            <div className="hero-title-blueprint" aria-hidden="true">
-              eTAYO TOMASINO
-            </div>
-
-            {/* Layer 2: Final Official Philippine Flag Waving Title */}
-            <h1 className="hero-title hero-title-revealed">
-              <span className="philippine-flag-waving-text">eTAYO TOMASINO</span>
-            </h1>
-          </div>
+          {/* Hero Title */}
+          <h1 className="hero-title">
+            <span className="philippine-flag-waving-text">eTAYO TOMASINO</span>
+          </h1>
 
           {/* Hero Subtitle */}
           <p className="hero-subtitle">
@@ -828,225 +790,7 @@ export default function Home() {
             opacity: 1;
           }
         }
-        /* GPS Pin Drawing & Location Marking Stage */
-        .gps-drawing-stage {
-          position: relative;
-          width: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          margin-bottom: 1.4rem;
-        }
-
-        /* Carrier that moves the GPS Pin horizontally across the text */
-        .gps-pin-carrier {
-          position: absolute;
-          top: 50%;
-          left: 0%;
-          transform: translate(-50%, -60%);
-          pointer-events: none;
-          z-index: 10;
-          animation: moveGpsPin 2.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-          will-change: left, transform, opacity;
-        }
-
-        .gps-pin-body {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .gps-pin-icon {
-          width: 36px;
-          height: 48px;
-          filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 12px rgba(239, 68, 68, 0.7));
-          transform-origin: 50% 100%;
-          animation: pinDrawingBob 0.32s ease-in-out infinite alternate;
-        }
-
-        @keyframes pinDrawingBob {
-          0% {
-            transform: translateY(0px) rotate(-1.5deg);
-          }
-          100% {
-            transform: translateY(-4px) rotate(1.5deg);
-          }
-        }
-
-        /* Laser spark emitter at the pin tip */
-        .gps-laser-spark {
-          position: absolute;
-          bottom: 0px;
-          left: 50%;
-          transform: translate(-50%, 50%);
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          background: #ffffff;
-          box-shadow: 0 0 10px #38bdf8, 0 0 20px #facc15, 0 0 30px #ffffff;
-          animation: laserSparkle 0.15s ease-in-out infinite alternate;
-        }
-
-        @keyframes laserSparkle {
-          0% {
-            transform: translate(-50%, 50%) scale(0.8);
-            opacity: 0.85;
-          }
-          100% {
-            transform: translate(-50%, 50%) scale(1.3);
-            opacity: 1;
-          }
-        }
-
-        /* Pulsing GPS radar wave around the needle */
-        .gps-radar-wave {
-          position: absolute;
-          bottom: -4px;
-          left: 50%;
-          transform: translate(-50%, 50%);
-          width: 32px;
-          height: 16px;
-          border-radius: 50%;
-          border: 1.5px solid #38bdf8;
-          background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.35) 0%, transparent 70%);
-          animation: radarWaveExpand 0.7s ease-out infinite;
-        }
-
-        @keyframes radarWaveExpand {
-          0% {
-            width: 10px;
-            height: 5px;
-            opacity: 1;
-            border-color: #facc15;
-          }
-          100% {
-            width: 50px;
-            height: 25px;
-            opacity: 0;
-            border-color: #38bdf8;
-          }
-        }
-
-        /* GPS Coordinates Tooltip Badge floating above the pin */
-        .gps-coord-tag {
-          position: absolute;
-          bottom: calc(100% + 6px);
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(15, 23, 42, 0.92);
-          border: 1px solid #38bdf8;
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(56, 189, 248, 0.4);
-          backdrop-filter: blur(6px);
-          color: #7dd3fc;
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-          font-size: 0.7rem;
-          font-weight: 700;
-          padding: 2px 8px;
-          border-radius: 6px;
-          white-space: nowrap;
-          letter-spacing: 0.04em;
-        }
-
-        /* Animation moving the GPS pin from left to right */
-        @keyframes moveGpsPin {
-          0% {
-            left: 2%;
-            opacity: 0;
-            transform: translate(-50%, -120%) scale(0.5);
-          }
-          10% {
-            left: 2%;
-            opacity: 1;
-            transform: translate(-50%, -60%) scale(1);
-          }
-          22% {
-            left: 18%;
-            transform: translate(-50%, -60%);
-          }
-          42% {
-            left: 48%;
-            transform: translate(-50%, -60%);
-          }
-          62% {
-            left: 78%;
-            transform: translate(-50%, -60%);
-          }
-          72% {
-            left: 98%;
-            opacity: 1;
-            transform: translate(-50%, -60%) scale(1.15);
-          }
-          78% {
-            left: 98%;
-            opacity: 1;
-            transform: translate(-50%, -60%) scale(1.3);
-            filter: drop-shadow(0 0 25px #fde047);
-          }
-          88% {
-            left: 98%;
-            opacity: 0;
-            transform: translate(-50%, -100%) scale(0.7);
-          }
-          100% {
-            left: 98%;
-            opacity: 0;
-            transform: translate(-50%, -120%) scale(0.4);
-          }
-        }
-
-        /* Layer 1: Glowing Wireframe / Blueprint Markings drawn by the GPS pin */
-        .hero-title-blueprint {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          font-size: clamp(3rem, 6.5vw, 4.8rem);
-          font-weight: 900;
-          line-height: 1.1;
-          letter-spacing: -0.03em;
-          text-align: center;
-          margin: 0;
-          color: transparent;
-          -webkit-text-stroke: 1.5px #38bdf8;
-          text-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
-          pointer-events: none;
-          z-index: 2;
-          animation: drawBlueprintMarkings 2.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-          will-change: clip-path, opacity;
-        }
-
-        @keyframes drawBlueprintMarkings {
-          0% {
-            clip-path: inset(0 100% 0 0);
-            opacity: 0;
-            visibility: visible;
-          }
-          10% {
-            clip-path: inset(0 98% 0 0);
-            opacity: 1;
-            visibility: visible;
-          }
-          70% {
-            clip-path: inset(0 0% 0 0);
-            opacity: 1;
-            visibility: visible;
-          }
-          78% {
-            clip-path: inset(0 0% 0 0);
-            opacity: 0.3;
-            visibility: visible;
-          }
-          85%, 100% {
-            clip-path: inset(0 0% 0 0);
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-          }
-        }
-
-        /* Layer 2: Final Official Philippine Flag Title */
+        /* Official Philippine Flag Title */
         .hero-title {
           font-size: clamp(3rem, 6.5vw, 4.8rem);
           font-weight: 900;
@@ -1054,27 +798,10 @@ export default function Home() {
           letter-spacing: -0.03em;
           margin: 0;
           text-align: center;
+          margin-bottom: 1.4rem;
+          animation: heroSimpleEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
         }
 
-        .hero-title-revealed {
-          position: relative;
-          z-index: 3;
-          animation: revealFinalFlagTitle 2.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-          will-change: opacity;
-          transform: none !important;
-        }
-
-        @keyframes revealFinalFlagTitle {
-          0%, 70% {
-            opacity: 0;
-          }
-          82% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 1;
-          }
-        }
 
         /* Philippine Flag Waving Effect: Only the colors move; text stays stationary; thin black outer glow */
         .philippine-flag-waving-text {
@@ -1104,9 +831,7 @@ export default function Home() {
           background-clip: text;
           color: transparent;
           transform: none !important;
-          -webkit-text-stroke: 0.8px rgba(0, 0, 0, 0.35);
-          filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7))
-                  drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+          filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.55));
           animation: flagWindBreeze 7s ease-in-out infinite;
           will-change: background-position;
         }
@@ -1130,7 +855,7 @@ export default function Home() {
           margin-bottom: 2.75rem;
           line-height: 1.65;
           text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
-          animation: heroSimpleEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.6s both;
+          animation: heroSimpleEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.0s both;
         }
 
         .hero-actions {
@@ -1138,7 +863,7 @@ export default function Home() {
           gap: 1.25rem;
           justify-content: center;
           flex-wrap: wrap;
-          animation: heroSimpleEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.9s both;
+          animation: heroSimpleEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.25s both;
         }
 
         @keyframes heroSimpleEntrance {
@@ -1300,8 +1025,7 @@ export default function Home() {
             padding-top: calc(5.25rem + env(safe-area-inset-top, 0px)) !important;
             padding-bottom: calc(2.75rem + env(safe-area-inset-bottom, 0px)) !important;
           }
-          .hero-title,
-          .hero-title-blueprint {
+          .hero-title {
             font-size: clamp(2rem, 7.5vw, 2.75rem) !important;
             letter-spacing: -0.02em;
           }
