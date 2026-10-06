@@ -191,14 +191,12 @@ export default function Footer() {
           </div>
           <div className="copy-right developer-credits">
             <div className="dev-badge">
+              <span className="dev-label">DEVELOPED BY:</span>
               <img
                 src="/niceone-logo-blue.png"
-                alt="Niceone Solutions Logo"
+                alt="Niceone Solutions"
                 className="niceone-logo"
               />
-              <span className="dev-text">
-                DEVELOPED BY: <strong>NICEONE SOLUTIONS</strong>
-              </span>
             </div>
             <span className="dev-divider" aria-hidden="true">•</span>
             <span className="dev-team">BONDOC • DAVID • SICAT</span>
@@ -498,25 +496,20 @@ export default function Footer() {
         }
 
         .niceone-logo {
-          height: 18px;
+          height: 20px;
           width: auto;
           object-fit: contain;
           display: inline-block;
           vertical-align: middle;
-          filter: drop-shadow(0 1px 2px rgba(0, 56, 168, 0.2));
+          filter: drop-shadow(0 1px 2px rgba(0, 56, 168, 0.25));
         }
 
-        .dev-text {
+        .dev-label {
           font-size: 0.78rem;
           font-weight: 700;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.05em;
           color: #475569;
           text-transform: uppercase;
-        }
-
-        .dev-text strong {
-          color: #0038A8;
-          font-weight: 900;
         }
 
         .dev-divider {
