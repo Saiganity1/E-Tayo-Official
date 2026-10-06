@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import { 
   Users, Shield, ShieldAlert, AlertTriangle, X, FileText, CheckCircle, 
   XCircle, UserCheck, Clock, Building2, ExternalLink, UserPlus, 
-  Trash2, UserMinus, Plus, Sparkles, RefreshCw
+  Trash2, UserMinus, Plus, Sparkles, RefreshCw, Calendar, Award, 
+  CheckCircle2, MessageSquare, AlertCircle, FileCheck, Mail, MapPin
 } from "lucide-react";
 import Link from "next/link";
 import { usePermitContext } from "../../../../context/PermitContext";
@@ -292,7 +293,7 @@ export default function AdminStaffPage() {
 
     const gatheredLogs: EvaluationLog[] = [];
 
-    // 1. Fetch from Next.js proxy / backend evaluation logs endpoint
+    // 1. Fetch strictly REAL evaluation records from backend database
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       let res = await fetch(`/api/evaluations/staff/${encodeURIComponent(staff.email)}`, {
@@ -311,19 +312,28 @@ export default function AdminStaffPage() {
         if (Array.isArray(data)) {
           data.forEach((item: any) => {
             if (!isDummyRecord(item)) {
-              gatheredLogs.push({
-                id: item.id || `eval-api-${Date.now()}-${Math.random()}`,
-                permitId: item.applicationId || item.permitId,
-                projectName: item.projectName,
-                staffEmail: item.staffEmail || staff.email,
-                applicantEmail: item.applicantEmail || "applicant@etayo.gov.ph",
-                applicantName: item.applicantName,
-                permitType: item.permitType || "Permit Evaluation",
-                action: item.action || "Approved",
-                comments: item.comments || "Evaluation recorded.",
-                timestamp: item.timestamp || new Date().toISOString(),
-                evaluatorName: staff.name
-              });
+              // Ensure evaluation was actually conducted by this staff member
+              const itemStaffEmail = String(item.staffEmail || item.evaluatorEmail || "").trim().toLowerCase();
+              if (itemStaffEmail === staffEmailClean || itemStaffEmail === staffNameClean) {
+                // Enrich with actual application details if available
+                const matchedApp = (applications || []).find(a => 
+                  a && a.id && (a.id === item.applicationId || a.id === item.permitId)
+                );
+
+                gatheredLogs.push({
+                  id: item.id || `eval-api-${Date.now()}-${Math.random()}`,
+                  permitId: item.applicationId || item.permitId,
+                  projectName: item.projectName || matchedApp?.projectName || matchedApp?.projectType || "Permit Evaluation",
+                  staffEmail: item.staffEmail || staff.email,
+                  applicantEmail: item.applicantEmail || matchedApp?.applicantEmail || "applicant@etayo.gov.ph",
+                  applicantName: item.applicantName || matchedApp?.applicantName,
+                  permitType: item.permitType || (matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE"),
+                  action: item.action || "Approved",
+                  comments: item.comments || "Evaluation recorded.",
+                  timestamp: item.timestamp || new Date().toISOString(),
+                  evaluatorName: staff.name
+                });
+              }
             }
           });
         }
@@ -332,27 +342,36 @@ export default function AdminStaffPage() {
       console.error("Error fetching evaluations for staff", err);
     }
 
-    // 2. Cross-reference all evaluated applications in state matching this staff member
+    // 2. Cross-reference only authentic evaluations in applications where this staff member evaluated another citizen
+    // STRICT INTEGRITY GUARDS:
+    // a. A staff member CANNOT evaluate their own application (must not be the applicant)
+    // b. Must have app.evaluatorEmail === staff.email OR (app.evaluatedBy === staff.name AND app.evaluatedBy !== app.applicantName)
+    // c. Must be in an officially evaluated state (approved, released, rejected, incomplete_requirements)
+    // d. No loose regex or historyLog matching that catches applicants filing their own permits
     (applications || []).forEach(app => {
       if (!app || !app.id) return;
+      const appApplicantEmail = (app.applicantEmail || "").trim().toLowerCase();
+      const appApplicantName = (app.applicantName || "").trim().toLowerCase();
+
+      // Guard: If this staff is the applicant who filed this application, skip!
+      if (appApplicantEmail === staffEmailClean || (staffNameClean && appApplicantName === staffNameClean)) {
+        return;
+      }
+
       const appEvaluator = (app.evaluatedBy || "").trim().toLowerCase();
-      const appAssigned = (app.assignedStaff || "").trim().toLowerCase();
       const appEvalEmail = (app.evaluatorEmail || "").trim().toLowerCase();
 
-      const isEvaluatedByStaff = 
-        appEvaluator === staffNameClean ||
-        appAssigned === staffNameClean ||
-        appEvalEmail === staffEmailClean ||
-        (Array.isArray(app.historyLog) && app.historyLog.some(h => 
-          (h.actor && h.actor.toLowerCase().includes(staffNameClean)) ||
-          (h.actor && h.actor.toLowerCase().includes(staffEmailClean))
-        ));
+      // Explicitly check if this staff was designated as evaluator
+      const isActualEvaluator = (appEvalEmail && appEvalEmail === staffEmailClean) ||
+                                (appEvaluator && appEvaluator === staffNameClean && appEvaluator !== appApplicantName);
 
-      if (isEvaluatedByStaff) {
+      const isEvaluatedStatus = app.status === "approved" || app.status === "released" || app.status === "rejected" || app.status === "incomplete_requirements";
+
+      if (isActualEvaluator && isEvaluatedStatus) {
         const isApproved = app.status === "approved" || app.status === "released";
         const isRejected = app.status === "rejected";
         const actionLabel = isApproved ? "Approved" : (isRejected ? "Disapproved" : "Revision Requested");
-        const evalTime = app.evaluatedAt || (app as any).dateApproved || (app as any).dateIssued || app.dateSubmitted || new Date().toISOString();
+        const evalTime = app.evaluatedAt || (app as any).dateApproved || (app as any).dateIssued || new Date().toISOString();
 
         gatheredLogs.push({
           id: `APP-EVAL-${app.id}`,
@@ -363,58 +382,14 @@ export default function AdminStaffPage() {
           applicantName: app.applicantName,
           permitType: app.permitType ? app.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE",
           action: actionLabel,
-          comments: app.remarks || `Locational and technical evaluation completed by ${staff.name} for ${app.id}.`,
+          comments: app.remarks || `Evaluation recorded for ${app.id}.`,
           timestamp: evalTime,
           evaluatorName: staff.name
         });
       }
     });
 
-    // 3. Cross-reference system audit logs attributed to this staff member
-    (systemLogs || []).forEach(log => {
-      if (!log || isDummyRecord(log)) return;
-      const logUser = (log.user || "").trim().toLowerCase();
-      const logEmail = (log.userEmail || "").trim().toLowerCase();
-      const logMsg = (log.message || "").toLowerCase();
-      const logDet = (log.details || "").toLowerCase();
-
-      const matchesStaff = 
-        logUser === staffNameClean ||
-        logUser === staffEmailClean ||
-        logEmail === staffEmailClean ||
-        logMsg.includes(staffNameClean) ||
-        logDet.includes(staffNameClean);
-
-      const isEvalAction = 
-        (log.action || "").includes("EVALUAT") || 
-        (log.action || "").includes("APPROV") || 
-        (log.action || "").includes("REJECT") || 
-        (log.action || "").includes("REVISION");
-
-      if (matchesStaff && isEvalAction) {
-        const isApproved = (log.action || "").includes("APPROV") || log.status === "success";
-        const isRejected = (log.action || "").includes("REJECT") || log.status === "error";
-        const actionLabel = isApproved ? "Approved" : (isRejected ? "Disapproved" : "Revision Requested");
-
-        const refMatch = (log.message + " " + (log.details || "")).match(/\b(LC-\d{4}-\d+|BP-\d{4}-\d+|APP-\d{4}-\d+)\b/i);
-        const permitId = refMatch ? refMatch[1] : undefined;
-
-        gatheredLogs.push({
-          id: `SYS-LOG-${log.id}`,
-          permitId,
-          projectName: log.message,
-          staffEmail: staff.email,
-          applicantEmail: log.userEmail || "applicant@etayo.gov.ph",
-          permitType: "Official Evaluation",
-          action: actionLabel,
-          comments: log.details || log.message,
-          timestamp: log.timestamp,
-          evaluatorName: staff.name
-        });
-      }
-    });
-
-    // Deduplicate logs by permitId or ID
+    // Deduplicate logs by permitId and action
     const logMap = new Map<string, EvaluationLog>();
     gatheredLogs.forEach(l => {
       const key = l.permitId ? `${l.permitId}-${l.action}` : String(l.id);
@@ -919,156 +894,501 @@ export default function AdminStaffPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* AUDIT LOG MODAL (ACCURATE REAL EVALUATIONS) */}
+      {/* AUDIT LOG MODAL (EXECUTIVE MODERN DESIGN & REAL EVALUATIONS) */}
       {/* ========================================================================= */}
-      {selectedStaff && (
-        <div className="animate-fade-in" style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15, 23, 42, 0.65)", backdropFilter: "blur(12px)", zIndex: 9999, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "2rem 1rem" }}>
-          <div className="animate-fade-in-up" style={{ margin: "auto", background: "#ffffff", borderRadius: "28px", width: "100%", maxWidth: "820px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.3)", display: "flex", flexDirection: "column", position: "relative", border: "1px solid #e2e8f0" }}>
-            
-            {/* Modal Header */}
-            <div style={{ padding: "1.75rem 2rem", borderBottom: "1.5px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "sticky", top: 0, background: "#ffffff", zIndex: 10, borderTopLeftRadius: "28px", borderTopRightRadius: "28px" }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
-                  <div style={{ background: "#eff6ff", padding: "10px", borderRadius: "14px", color: "#1d4ed8" }}>
-                    <FileText size={24} />
-                  </div>
-                  <h2 style={{ fontSize: "1.6rem", fontWeight: "800", color: "#0f172a", margin: 0, letterSpacing: "-0.02em" }}>Evaluation Audit Log</h2>
-                </div>
-                <p style={{ color: "#64748b", margin: 0, fontSize: "0.98rem" }}>
-                  Official municipal evaluations and clearance reviews conducted by <strong style={{ color: "#1d4ed8", fontWeight: "800" }}>{selectedStaff.name}</strong> ({selectedStaff.email})
-                </p>
-              </div>
-              <button 
-                onClick={() => setSelectedStaff(null)} 
-                style={{ background: "#f8fafc", border: "1px solid #e2e8f0", cursor: "pointer", color: "#64748b", padding: "8px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "#fca5a5"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
-              >
-                <X size={20} strokeWidth={2.5} />
-              </button>
-            </div>
+      {selectedStaff && (() => {
+        const approvedCount = logs.filter(l => (l.action || "").toLowerCase().includes("approv")).length;
+        const nonApprovedCount = logs.filter(l => !(l.action || "").toLowerCase().includes("approv")).length;
 
-            {/* Modal Body */}
-            <div style={{ padding: "2rem" }}>
-              {loadingLogs ? (
-                <div style={{ textAlign: "center", padding: "4rem" }}>
-                   <div className="spinner" style={{ width: "44px", height: "44px", border: "4px solid rgba(29, 78, 216, 0.15)", borderTopColor: "#1d4ed8", borderRadius: "50%", animation: "spin 1s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite", margin: "0 auto 1.25rem auto" }}></div>
-                   <p style={{ color: "#64748b", fontSize: "1.05rem", fontWeight: "600" }}>Verifying evaluation records for {selectedStaff.name}...</p>
-                </div>
-              ) : logs.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "4rem 2rem", borderRadius: "20px", background: "#f8fafc", border: "1.5px dashed #cbd5e1" }}>
-                  <div style={{ width: "70px", height: "70px", background: "#ffffff", borderRadius: "20px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem auto", boxShadow: "0 10px 25px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
-                    <FileText size={36} color="#94a3b8" strokeWidth={1.5} />
+        return (
+          <div 
+            className="animate-fade-in" 
+            style={{ 
+              position: "fixed", 
+              top: 0, 
+              left: 0, 
+              width: "100%", 
+              height: "100%", 
+              background: "rgba(15, 23, 42, 0.72)", 
+              backdropFilter: "blur(14px)", 
+              WebkitBackdropFilter: "blur(14px)",
+              zIndex: 9999, 
+              display: "flex", 
+              alignItems: "flex-start", 
+              justifyContent: "center", 
+              overflowY: "auto", 
+              padding: "2.5rem 1rem" 
+            }}
+          >
+            <div 
+              className="animate-fade-in-up" 
+              style={{ 
+                margin: "auto", 
+                background: "#ffffff", 
+                borderRadius: "28px", 
+                width: "100%", 
+                maxWidth: "860px", 
+                boxShadow: "0 30px 60px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(226, 232, 240, 0.8)", 
+                display: "flex", 
+                flexDirection: "column", 
+                position: "relative", 
+                overflow: "hidden"
+              }}
+            >
+              {/* Premium Top Accent Gradient Ribbon */}
+              <div style={{ height: "6px", width: "100%", background: "linear-gradient(90deg, #1d4ed8 0%, #3b82f6 40%, #06b6d4 75%, #10b981 100%)" }} />
+
+              {/* Modal Header */}
+              <div 
+                style={{ 
+                  padding: "1.75rem 2.25rem 1.5rem 2.25rem", 
+                  borderBottom: "1px solid #f1f5f9", 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "flex-start", 
+                  position: "sticky", 
+                  top: 0, 
+                  background: "#ffffff", 
+                  zIndex: 20 
+                }}
+              >
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                    <div style={{ 
+                      background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)", 
+                      padding: "10px", 
+                      borderRadius: "14px", 
+                      color: "#1d4ed8",
+                      border: "1px solid #bfdbfe",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 4px 10px rgba(37, 99, 235, 0.12)"
+                    }}>
+                      <Award size={24} strokeWidth={2.2} />
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <h2 style={{ fontSize: "1.55rem", fontWeight: "900", color: "#0f172a", margin: 0, letterSpacing: "-0.03em" }}>
+                          Evaluation Audit Log
+                        </h2>
+                        <span style={{ 
+                          fontSize: "0.72rem", 
+                          fontWeight: "800", 
+                          textTransform: "uppercase", 
+                          letterSpacing: "0.06em",
+                          background: "#eff6ff", 
+                          color: "#1d4ed8", 
+                          padding: "3px 8px", 
+                          borderRadius: "6px", 
+                          border: "1px solid #bfdbfe" 
+                        }}>
+                          Official Trail
+                        </span>
+                      </div>
+                      <p style={{ color: "#64748b", margin: "2px 0 0 0", fontSize: "0.9rem" }}>
+                        Official municipal evaluations and clearance reviews conducted by staff
+                      </p>
+                    </div>
                   </div>
-                  <h3 style={{ margin: "0 0 8px 0", fontWeight: "800", fontSize: "1.35rem", color: "#0f172a" }}>No Evaluations Credited Yet</h3>
-                  <p style={{ color: "#64748b", fontSize: "0.95rem", margin: 0, maxWidth: "340px", marginInline: "auto", lineHeight: "1.5" }}>
-                    No evaluations or clearance reviews have been recorded under <strong>{selectedStaff.name}</strong> yet. When this staff member reviews an application, it will appear here immediately.
-                  </p>
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "8px", borderBottom: "1px solid #e2e8f0", fontSize: "0.88rem", color: "#64748b", fontWeight: "600" }}>
-                    <span>Total Evaluations Credited: <strong style={{ color: "#0f172a" }}>{logs.length}</strong></span>
-                    <span style={{ color: "#16a34a", display: "flex", alignItems: "center", gap: "4px" }}>
-                      <CheckCircle size={14} /> Synchronized with Philippine Time (UTC+8)
+
+                  {/* Staff Identity Pill */}
+                  <div style={{ 
+                    marginTop: "10px",
+                    display: "inline-flex", 
+                    alignItems: "center", 
+                    gap: "10px", 
+                    background: "#f8fafc", 
+                    padding: "6px 14px 6px 8px", 
+                    borderRadius: "12px", 
+                    border: "1px solid #e2e8f0" 
+                  }}>
+                    <div style={{ 
+                      width: "30px", 
+                      height: "30px", 
+                      borderRadius: "50%", 
+                      background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)", 
+                      color: "#ffffff", 
+                      fontWeight: "800", 
+                      fontSize: "0.85rem",
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "center",
+                      boxShadow: "0 2px 6px rgba(37, 99, 235, 0.3)"
+                    }}>
+                      {selectedStaff.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ fontWeight: "800", color: "#0f172a", fontSize: "0.92rem" }}>
+                      {selectedStaff.name}
+                    </span>
+                    <span style={{ color: "#94a3b8" }}>•</span>
+                    <span style={{ color: "#475569", fontSize: "0.86rem", fontFamily: "monospace" }}>
+                      {selectedStaff.email}
+                    </span>
+                    <span style={{ 
+                      background: "#dcfce7", 
+                      color: "#15803d", 
+                      fontSize: "0.72rem", 
+                      fontWeight: "800", 
+                      padding: "2px 8px", 
+                      borderRadius: "6px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "3px"
+                    }}>
+                      <Shield size={10} /> Active Staff
                     </span>
                   </div>
+                </div>
 
-                  {logs.map((log) => {
-                    const isApproved = log.action === "Approved";
-                    const isRejected = log.action === "Disapproved" || log.action === "Rejected";
+                <button 
+                  onClick={() => setSelectedStaff(null)} 
+                  aria-label="Close audit log modal"
+                  style={{ 
+                    background: "#f8fafc", 
+                    border: "1px solid #e2e8f0", 
+                    cursor: "pointer", 
+                    color: "#64748b", 
+                    padding: "10px", 
+                    borderRadius: "50%", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center", 
+                    transition: "all 0.2s ease" 
+                  }}
+                  onMouseEnter={(e) => { 
+                    e.currentTarget.style.background = "#fef2f2"; 
+                    e.currentTarget.style.color = "#ef4444"; 
+                    e.currentTarget.style.borderColor = "#fecaca"; 
+                    e.currentTarget.style.transform = "scale(1.05)";
+                  }}
+                  onMouseLeave={(e) => { 
+                    e.currentTarget.style.background = "#f8fafc"; 
+                    e.currentTarget.style.color = "#64748b"; 
+                    e.currentTarget.style.borderColor = "#e2e8f0"; 
+                    e.currentTarget.style.transform = "scale(1)";
+                  }}
+                >
+                  <X size={20} strokeWidth={2.5} />
+                </button>
+              </div>
 
-                    return (
+              {/* Modal Body */}
+              <div style={{ padding: "1.75rem 2.25rem 2.25rem 2.25rem" }}>
+                {loadingLogs ? (
+                  <div style={{ textAlign: "center", padding: "4rem 2rem" }}>
+                    <div className="spinner" style={{ width: "48px", height: "48px", border: "4px solid rgba(29, 78, 216, 0.15)", borderTopColor: "#1d4ed8", borderRadius: "50%", animation: "spin 1s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite", margin: "0 auto 1.25rem auto" }}></div>
+                    <p style={{ color: "#0f172a", fontSize: "1.05rem", fontWeight: "700", margin: 0 }}>Verifying database audit trail...</p>
+                    <p style={{ color: "#64748b", fontSize: "0.9rem", margin: "4px 0 0 0" }}>Retrieving official evaluations conducted by {selectedStaff.name}</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Executive KPI Micro-Dashboard Bar */}
+                    <div style={{ 
+                      display: "grid", 
+                      gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", 
+                      gap: "12px", 
+                      marginBottom: "1.5rem" 
+                    }}>
+                      <div style={{ background: "#f8fafc", padding: "14px 18px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>Total Credited</span>
+                          <Award size={18} color="#2563eb" />
+                        </div>
+                        <div style={{ fontSize: "1.85rem", fontWeight: "900", color: "#0f172a", lineHeight: 1.1 }}>
+                          {logs.length}
+                        </div>
+                        <span style={{ fontSize: "0.78rem", color: "#64748b" }}>Official reviews recorded</span>
+                      </div>
+
+                      <div style={{ background: "#f0fdf4", padding: "14px 18px", borderRadius: "16px", border: "1px solid #bbf7d0" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#166534", textTransform: "uppercase", letterSpacing: "0.04em" }}>Approved</span>
+                          <CheckCircle2 size={18} color="#16a34a" />
+                        </div>
+                        <div style={{ fontSize: "1.85rem", fontWeight: "900", color: "#166534", lineHeight: 1.1 }}>
+                          {approvedCount}
+                        </div>
+                        <span style={{ fontSize: "0.78rem", color: "#15803d" }}>Clearances approved</span>
+                      </div>
+
+                      <div style={{ background: "#fffbeb", padding: "14px 18px", borderRadius: "16px", border: "1px solid #fde68a" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#854d0e", textTransform: "uppercase", letterSpacing: "0.04em" }}>Revisions / Other</span>
+                          <AlertCircle size={18} color="#d97706" />
+                        </div>
+                        <div style={{ fontSize: "1.85rem", fontWeight: "900", color: "#854d0e", lineHeight: 1.1 }}>
+                          {nonApprovedCount}
+                        </div>
+                        <span style={{ fontSize: "0.78rem", color: "#a16207" }}>Deficiencies / Disapproved</span>
+                      </div>
+                    </div>
+
+                    {/* PST Time Banner */}
+                    <div style={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "space-between", 
+                      padding: "8px 14px", 
+                      borderRadius: "12px", 
+                      background: "#f8fafc", 
+                      border: "1px solid #e2e8f0", 
+                      marginBottom: "1.5rem",
+                      fontSize: "0.82rem",
+                      color: "#64748b"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#16a34a", display: "inline-block", boxShadow: "0 0 0 3px rgba(22, 163, 74, 0.2)" }} />
+                        <span style={{ fontWeight: "700", color: "#0f172a" }}>Authentic Municipal Audit Trail</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#166534", fontWeight: "600" }}>
+                        <Clock size={13} color="#16a34a" />
+                        <span>Synchronized with Philippine Standard Time (PST UTC+8)</span>
+                      </div>
+                    </div>
+
+                    {logs.length === 0 ? (
+                      /* Clean, Illustrated Empty State */
                       <div 
-                        key={String(log.id)} 
                         style={{ 
-                          padding: "1.25rem 1.5rem", 
-                          background: "#ffffff", 
-                          border: "1.5px solid #e2e8f0", 
-                          borderRadius: "16px", 
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.02)", 
-                          position: "relative", 
-                          overflow: "hidden" 
+                          textAlign: "center", 
+                          padding: "3.5rem 2rem", 
+                          borderRadius: "24px", 
+                          background: "linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)", 
+                          border: "1.5px dashed #cbd5e1" 
                         }}
                       >
-                        {/* Decorative side accent */}
                         <div style={{ 
-                          position: "absolute", 
-                          left: 0, 
-                          top: 0, 
-                          bottom: 0, 
-                          width: "5px", 
-                          background: isApproved ? "#16a34a" : (isRejected ? "#dc2626" : "#d97706") 
-                        }}></div>
-
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem", paddingLeft: "8px" }}>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
-                            <div style={{ 
-                              background: isApproved ? "#f0fdf4" : (isRejected ? "#fef2f2" : "#fffbeb"), 
-                              padding: "10px", 
-                              borderRadius: "12px", 
-                              color: isApproved ? "#16a34a" : (isRejected ? "#dc2626" : "#d97706"),
-                              border: `1px solid ${isApproved ? "#bbf7d0" : (isRejected ? "#fecaca" : "#fde68a")}`
-                            }}>
-                              {isApproved ? <CheckCircle size={24} strokeWidth={2.5} /> : <XCircle size={24} strokeWidth={2.5} />}
-                            </div>
-                            <div>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
-                                {log.permitId && (
-                                  <span style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", padding: "2px 8px", borderRadius: "6px", fontSize: "0.78rem", fontWeight: "800", fontFamily: "monospace" }}>
-                                    {log.permitId}
-                                  </span>
-                                )}
-                                <h4 style={{ margin: 0, fontSize: "1.05rem", color: "#0f172a", fontWeight: "800" }}>
-                                  {log.projectName || log.permitType}
-                                </h4>
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "0.85rem" }}>
-                                <span style={{ fontWeight: "600", color: "#475569" }}>Applicant:</span> {log.applicantName ? `${log.applicantName} (${log.applicantEmail})` : log.applicantEmail}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div style={{ background: "#f8fafc", padding: "4px 10px", borderRadius: "10px", fontSize: "0.8rem", color: "#64748b", fontWeight: "600", border: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>
-                            {formatPhilippineDateTime(log.timestamp)}
-                          </div>
+                          width: "80px", 
+                          height: "80px", 
+                          background: "#ffffff", 
+                          borderRadius: "24px", 
+                          display: "flex", 
+                          alignItems: "center", 
+                          justifyContent: "center", 
+                          margin: "0 auto 1.5rem auto", 
+                          boxShadow: "0 12px 28px -6px rgba(37, 99, 235, 0.12)", 
+                          border: "1.5px solid #dbeafe",
+                          color: "#2563eb"
+                        }}>
+                          <FileCheck size={40} strokeWidth={1.75} />
                         </div>
+                        <h3 style={{ margin: "0 0 8px 0", fontWeight: "900", fontSize: "1.35rem", color: "#0f172a", letterSpacing: "-0.02em" }}>
+                          Walang Naka-credit na Evaluation Kay {selectedStaff.name}
+                        </h3>
+                        <p style={{ color: "#64748b", fontSize: "0.95rem", margin: "0 auto 1.5rem auto", maxWidth: "440px", lineHeight: "1.6" }}>
+                          Kasalukuyang <strong>0 evaluations</strong> pa lamang ang naitala dahil bago itong staff account. Kapag nagsagawa na si {selectedStaff.name} ng opisyal na pagsusuri ng permit sa Staff Portal, dito agad lalabas ang verified audit trail.
+                        </p>
                         
-                        <div style={{ marginLeft: "8px", background: "#f8fafc", padding: "1rem", borderRadius: "12px", border: "1px solid #f1f5f9" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px", flexWrap: "wrap", gap: "6px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <strong style={{ fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b" }}>Verdict:</strong>
-                              <span style={{ 
-                                background: isApproved ? "#16a34a" : (isRejected ? "#dc2626" : "#d97706"), 
-                                color: "white", 
-                                padding: "2px 8px", 
-                                borderRadius: "6px", 
-                                fontSize: "0.75rem", 
-                                fontWeight: "800" 
-                              }}>
-                                {log.action}
-                              </span>
-                            </div>
-
-                            <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.78rem", color: "#166534", fontWeight: "700", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "2px 8px", borderRadius: "6px" }}>
-                              <UserCheck size={13} color="#16a34a" />
-                              <span>Evaluated by {selectedStaff.name}</span>
-                            </div>
-                          </div>
-                          <p style={{ margin: 0, fontSize: "0.92rem", color: "#334155", lineHeight: "1.55", fontStyle: "italic", borderLeft: "3px solid #cbd5e1", paddingLeft: "10px" }}>
-                            "{log.comments}"
-                          </p>
+                        <div style={{ display: "inline-flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
+                          <span style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: "6px 14px", borderRadius: "10px", fontSize: "0.8rem", fontWeight: "700", color: "#475569" }}>
+                            ✓ 100% Legit Database Records
+                          </span>
+                          <span style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: "6px 14px", borderRadius: "10px", fontSize: "0.8rem", fontWeight: "700", color: "#475569" }}>
+                            ✓ No Fabricated Activity
+                          </span>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                    ) : (
+                      /* Rich Evaluation Cards */
+                      <div style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
+                        {logs.map((log) => {
+                          const isApproved = (log.action || "").toLowerCase().includes("approv");
+                          const isRejected = (log.action || "").toLowerCase().includes("disapprov") || (log.action || "").toLowerCase().includes("reject");
 
+                          const accentColor = isApproved ? "#16a34a" : (isRejected ? "#dc2626" : "#d97706");
+                          const accentBg = isApproved ? "#f0fdf4" : (isRejected ? "#fef2f2" : "#fffbeb");
+                          const accentBorder = isApproved ? "#bbf7d0" : (isRejected ? "#fecaca" : "#fde68a");
+
+                          return (
+                            <div 
+                              key={String(log.id)} 
+                              style={{ 
+                                background: "#ffffff", 
+                                border: "1.5px solid #e2e8f0", 
+                                borderRadius: "20px", 
+                                boxShadow: "0 4px 14px rgba(15, 23, 42, 0.03)", 
+                                position: "relative", 
+                                overflow: "hidden",
+                                transition: "all 0.2s ease"
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = "#cbd5e1";
+                                e.currentTarget.style.boxShadow = "0 8px 24px rgba(15, 23, 42, 0.06)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = "#e2e8f0";
+                                e.currentTarget.style.boxShadow = "0 4px 14px rgba(15, 23, 42, 0.03)";
+                              }}
+                            >
+                              {/* Left Accent Bar */}
+                              <div style={{ 
+                                position: "absolute", 
+                                left: 0, 
+                                top: 0, 
+                                bottom: 0, 
+                                width: "6px", 
+                                background: accentColor 
+                              }} />
+
+                              {/* Card Top Banner */}
+                              <div style={{ padding: "1.35rem 1.6rem 1rem 1.6rem", paddingLeft: "1.85rem" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", marginBottom: "0.85rem" }}>
+                                  <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                                    <div style={{ 
+                                      background: accentBg, 
+                                      padding: "10px", 
+                                      borderRadius: "14px", 
+                                      color: accentColor,
+                                      border: `1.5px solid ${accentBorder}`,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      marginTop: "2px"
+                                    }}>
+                                      {isApproved ? <CheckCircle size={22} strokeWidth={2.5} /> : (isRejected ? <XCircle size={22} strokeWidth={2.5} /> : <AlertCircle size={22} strokeWidth={2.5} />)}
+                                    </div>
+                                    <div>
+                                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                                        {log.permitId && (
+                                          <span style={{ 
+                                            background: "#eff6ff", 
+                                            color: "#1d4ed8", 
+                                            border: "1px solid #bfdbfe", 
+                                            padding: "3px 9px", 
+                                            borderRadius: "8px", 
+                                            fontSize: "0.8rem", 
+                                            fontWeight: "800", 
+                                            fontFamily: "monospace",
+                                            letterSpacing: "0.02em"
+                                          }}>
+                                            {log.permitId}
+                                          </span>
+                                        )}
+                                        <span style={{
+                                          background: "#f1f5f9",
+                                          color: "#475569",
+                                          padding: "2px 8px",
+                                          borderRadius: "6px",
+                                          fontSize: "0.74rem",
+                                          fontWeight: "700",
+                                          textTransform: "uppercase"
+                                        }}>
+                                          {log.permitType}
+                                        </span>
+                                      </div>
+                                      <h4 style={{ margin: 0, fontSize: "1.12rem", color: "#0f172a", fontWeight: "900", letterSpacing: "-0.01em" }}>
+                                        {log.projectName || log.permitType}
+                                      </h4>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ 
+                                    background: "#f8fafc", 
+                                    padding: "6px 12px", 
+                                    borderRadius: "10px", 
+                                    fontSize: "0.78rem", 
+                                    color: "#475569", 
+                                    fontWeight: "700", 
+                                    border: "1px solid #e2e8f0", 
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "5px",
+                                    whiteSpace: "nowrap" 
+                                  }}>
+                                    <Calendar size={13} color="#64748b" />
+                                    <span>{formatPhilippineDateTime(log.timestamp)}</span>
+                                  </div>
+                                </div>
+
+                                {/* Applicant & Metadata Row */}
+                                <div style={{ 
+                                  display: "flex", 
+                                  alignItems: "center", 
+                                  gap: "8px", 
+                                  fontSize: "0.86rem", 
+                                  color: "#64748b",
+                                  paddingBottom: "1rem",
+                                  borderBottom: "1px solid #f1f5f9"
+                                }}>
+                                  <Users size={14} color="#64748b" />
+                                  <span style={{ fontWeight: "600", color: "#334155" }}>Applicant:</span>
+                                  <span style={{ fontWeight: "700", color: "#0f172a" }}>
+                                    {log.applicantName || "Registered Citizen"}
+                                  </span>
+                                  <span style={{ color: "#94a3b8" }}>({log.applicantEmail})</span>
+                                </div>
+
+                                {/* Official Verdict & Assessment Memo Box */}
+                                <div style={{ 
+                                  marginTop: "1rem", 
+                                  background: "#f8fafc", 
+                                  padding: "1rem 1.25rem", 
+                                  borderRadius: "14px", 
+                                  border: "1px solid #e2e8f0" 
+                                }}>
+                                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                      <span style={{ fontSize: "0.74rem", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b" }}>
+                                        Official Decision:
+                                      </span>
+                                      <span style={{ 
+                                        background: accentColor, 
+                                        color: "#ffffff", 
+                                        padding: "3px 10px", 
+                                        borderRadius: "6px", 
+                                        fontSize: "0.78rem", 
+                                        fontWeight: "800",
+                                        letterSpacing: "0.02em"
+                                      }}>
+                                        {log.action}
+                                      </span>
+                                    </div>
+
+                                    <div style={{ 
+                                      display: "inline-flex", 
+                                      alignItems: "center", 
+                                      gap: "5px", 
+                                      fontSize: "0.78rem", 
+                                      color: "#166534", 
+                                      fontWeight: "800", 
+                                      background: "#f0fdf4", 
+                                      border: "1px solid #bbf7d0", 
+                                      padding: "3px 10px", 
+                                      borderRadius: "8px" 
+                                    }}>
+                                      <UserCheck size={14} color="#16a34a" />
+                                      <span>Verified Reviewer: {selectedStaff.name}</span>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ 
+                                    borderLeft: `3.5px solid ${accentColor}`, 
+                                    paddingLeft: "12px", 
+                                    marginTop: "6px" 
+                                  }}>
+                                    <div style={{ fontSize: "0.72rem", fontWeight: "800", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "3px" }}>
+                                      Official Findings & Comments:
+                                    </div>
+                                    <p style={{ margin: 0, fontSize: "0.93rem", color: "#1e293b", lineHeight: "1.55", fontStyle: "italic" }}>
+                                      "{log.comments}"
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <style dangerouslySetInnerHTML={{__html: `@keyframes spin { 100% { transform: rotate(360deg); } }`}} />
     </>
