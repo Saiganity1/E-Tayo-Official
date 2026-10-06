@@ -969,68 +969,89 @@ export default function ApplicantMessagesPage() {
     <div className="applicant-messages-container animate-fade-in-up" style={{ maxWidth: "1680px", margin: "0 auto", paddingBottom: "1.5rem" }}>
       
       {/* ========================================================================= */}
-      {/* 1. TOP CONSOLE BANNER (EXACT ADMIN STYLE WITH KPI STATS & REFRESH)        */}
+      {/* 1. TOP CONSOLE BANNER (MATCHED TO E-TAYO DASHBOARD GLASSMORPHISM STYLE)   */}
       {/* ========================================================================= */}
-      <header style={{
-        background: "linear-gradient(135deg, #0b192c 0%, #1e3e62 100%)",
+      <header className="page-header" style={{
+        background: "linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.92))",
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(255, 255, 255, 0.9)",
+        boxShadow: "0 10px 35px rgba(0, 0, 0, 0.08)",
         borderRadius: "20px",
-        padding: "1.2rem 1.75rem",
-        color: "#ffffff",
-        boxShadow: "0 10px 30px -5px rgba(11, 25, 44, 0.25)",
+        padding: "1.25rem 1.75rem",
         marginBottom: "1.25rem",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: "1.5rem",
         flexWrap: "wrap",
-        border: "1px solid rgba(255, 255, 255, 0.1)"
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{
-            width: "48px",
-            height: "48px",
-            borderRadius: "14px",
-            background: "rgba(255, 255, 255, 0.12)",
-            color: "#60a5fa",
+            width: "50px",
+            height: "50px",
+            borderRadius: "16px",
+            background: "#eff6ff",
+            color: "#0038A8",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            backdropFilter: "blur(10px)",
-            border: "1px solid rgba(255, 255, 255, 0.15)"
+            border: "1.5px solid #bfdbfe",
+            boxShadow: "0 2px 8px rgba(0, 56, 168, 0.08)",
+            flexShrink: 0
           }}>
             <MessageSquare size={24} />
           </div>
 
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
               <span style={{
-                background: "rgba(255, 255, 255, 0.15)",
-                color: "#93c5fd",
-                fontSize: "0.68rem",
+                background: "#eff6ff",
+                color: "#1d4ed8",
+                fontSize: "0.72rem",
                 fontWeight: "800",
-                padding: "2px 8px",
-                borderRadius: "6px",
+                padding: "3px 10px",
+                borderRadius: "8px",
                 letterSpacing: "0.05em",
-                textTransform: "uppercase"
-              }}>
-                🏛️ STO. TOMAS OBO &amp; MPDO
-              </span>
-              <span style={{
-                background: connected ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
-                color: connected ? "#86efac" : "#fca5a5",
-                fontSize: "0.68rem",
-                fontWeight: "700",
-                padding: "2px 8px",
-                borderRadius: "6px",
+                textTransform: "uppercase",
+                border: "1px solid #bfdbfe",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "5px"
               }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: connected ? "#22c55e" : "#ef4444" }} />
+                Sto. Tomas OBO & MPDO
+              </span>
+              <span style={{
+                background: connected ? "#f0fdf4" : "#fef2f2",
+                color: connected ? "#16a34a" : "#dc2626",
+                fontSize: "0.72rem",
+                fontWeight: "700",
+                padding: "3px 10px",
+                borderRadius: "8px",
+                border: `1px solid ${connected ? "#bbf7d0" : "#fecaca"}`,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px"
+              }}>
+                <span style={{
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  background: connected ? "#16a34a" : "#dc2626",
+                  boxShadow: connected ? "0 0 6px #16a34a" : "none"
+                }} />
                 {connected ? "Gateway Online (PHT)" : "STOMP Disconnected"}
               </span>
             </div>
-            <h1 style={{ fontSize: "1.45rem", fontWeight: "800", margin: 0, letterSpacing: "-0.01em" }}>
+            <h1 style={{
+              fontSize: "1.75rem",
+              fontWeight: "800",
+              margin: 0,
+              letterSpacing: "-0.02em",
+              background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              color: "#0038A8"
+            }}>
               Permit Communications Console
             </h1>
           </div>
@@ -1039,34 +1060,36 @@ export default function ApplicantMessagesPage() {
         {/* Quick KPI Stats & Actions */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
           <div style={{
-            background: "rgba(255, 255, 255, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            padding: "8px 14px",
-            borderRadius: "12px",
+            background: "#ffffff",
+            border: "1px solid #e2e8f0",
+            padding: "8px 16px",
+            borderRadius: "14px",
             display: "flex",
             alignItems: "center",
-            gap: "10px"
+            gap: "10px",
+            boxShadow: "0 2px 6px rgba(0, 0, 0, 0.03)"
           }}>
-            <User size={16} color="#93c5fd" />
+            <User size={18} color="#0038A8" />
             <div>
-              <div style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: "600" }}>MY APPLICATIONS</div>
-              <div style={{ fontSize: "1.1rem", fontWeight: "800", color: "#ffffff", lineHeight: 1 }}>{myAppsCount}</div>
+              <div style={{ fontSize: "0.68rem", color: "#64748b", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.03em" }}>MY APPLICATIONS</div>
+              <div style={{ fontSize: "1.15rem", fontWeight: "800", color: "#0f172a", lineHeight: 1 }}>{myAppsCount}</div>
             </div>
           </div>
 
           <div style={{
-            background: "rgba(255, 255, 255, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            padding: "8px 14px",
-            borderRadius: "12px",
+            background: "#ffffff",
+            border: "1px solid #e2e8f0",
+            padding: "8px 16px",
+            borderRadius: "14px",
             display: "flex",
             alignItems: "center",
-            gap: "10px"
+            gap: "10px",
+            boxShadow: "0 2px 6px rgba(0, 0, 0, 0.03)"
           }}>
-            <FileText size={16} color="#86efac" />
+            <FileText size={18} color="#059669" />
             <div>
-              <div style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: "600" }}>TOTAL PERMITS</div>
-              <div style={{ fontSize: "1.1rem", fontWeight: "800", color: "#ffffff", lineHeight: 1 }}>{totalPermitsCount}</div>
+              <div style={{ fontSize: "0.68rem", color: "#64748b", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.03em" }}>TOTAL PERMITS</div>
+              <div style={{ fontSize: "1.15rem", fontWeight: "800", color: "#0f172a", lineHeight: 1 }}>{totalPermitsCount}</div>
             </div>
           </div>
 
@@ -1074,22 +1097,22 @@ export default function ApplicantMessagesPage() {
             onClick={handleRefresh}
             disabled={isRefreshing}
             style={{
-              background: "white",
-              border: "none",
-              color: "#0f172a",
-              padding: "9px 16px",
-              borderRadius: "12px",
+              background: "#ffffff",
+              border: "1px solid #cbd5e1",
+              color: "#1e293b",
+              padding: "10px 18px",
+              borderRadius: "14px",
               display: "flex",
               alignItems: "center",
               gap: "7px",
               fontWeight: "700",
-              fontSize: "0.85rem",
+              fontSize: "0.88rem",
               cursor: isRefreshing ? "not-allowed" : "pointer",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              transition: "all 0.15s"
+              boxShadow: "0 2px 6px rgba(0, 0, 0, 0.04)",
+              transition: "all 0.15s ease"
             }}
           >
-            <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} color="#2563eb" />
+            <RefreshCw size={15} className={isRefreshing ? "animate-spin" : ""} color="#0038A8" />
             Refresh
           </button>
         </div>
