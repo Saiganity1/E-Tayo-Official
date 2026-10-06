@@ -486,7 +486,7 @@ export default function SpatialMap() {
               boxShadow: `0 0 8px ${hoveredZone.color}`
             }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{ fontWeight: '800', fontSize: '0.95rem', color: '#0f172a' }}>
                   Brgy. {hoveredZone.barangay}
                 </span>
@@ -500,15 +500,34 @@ export default function SpatialMap() {
                 }}>
                   {hoveredZone.code}
                 </span>
-                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  PSGC: {hoveredZone.psgc || '0305421000'} • {hoveredZone.areaKm2} km²
+                {hoveredZone.otop && (
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: '700',
+                    color: '#92400e',
+                    background: '#fef3c7',
+                    border: '1px solid #fde68a',
+                    padding: '1px 7px',
+                    borderRadius: '99px'
+                  }}>
+                    ⭐ OTOP: {hoveredZone.otop}
+                  </span>
+                )}
+                <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                  {hoveredZone.areaKm2} km² {hoveredZone.areaHectares ? `(${hoveredZone.areaHectares} ha • ${hoveredZone.landAreaPercent})` : ''}
                 </span>
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#334155', fontWeight: '600' }}>
+              <div style={{ fontSize: '0.82rem', color: '#334155', fontWeight: '600', marginTop: '2px' }}>
                 {hoveredZone.name} — <span style={{ color: hoveredZone.color }}>{hoveredZone.zoneType}</span>
               </div>
-              <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
-                Limits: <strong>{hoveredZone.buildingRegulations?.maxHeight}</strong> | Setbacks: <strong>{hoveredZone.buildingRegulations?.setbacks}</strong>
+              <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <span>Limits: <strong>{hoveredZone.buildingRegulations?.maxHeight}</strong></span>
+                <span>Setbacks: <strong>{hoveredZone.buildingRegulations?.setbacks}</strong></span>
+                {hoveredZone.floodSusceptibility && (
+                  <span style={{ color: hoveredZone.floodSusceptibility.includes('High') ? '#b91c1c' : '#b45309', fontWeight: '600' }}>
+                    🌊 Baha: {hoveredZone.floodSusceptibility}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -817,7 +836,7 @@ export default function SpatialMap() {
                   Brgy. {selectedBarangay}
                 </h4>
                 <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  PSGC: <strong>{selectedFeature?.psgc || '0305421000'}</strong> • Area: <strong>{selectedFeature?.areaKm2} km²</strong>
+                  PSGC: <strong>{selectedFeature?.psgc || '0305421000'}</strong> • Area: <strong>{selectedFeature?.areaKm2} km² {selectedFeature?.areaHectares ? `(${selectedFeature.areaHectares} ha • ${selectedFeature.landAreaPercent})` : ''}</strong>
                 </div>
               </div>
               <button 
@@ -833,16 +852,51 @@ export default function SpatialMap() {
               <div style={{
                 background: `${selectedFeature.color}15`,
                 borderLeft: `3px solid ${selectedFeature.color}`,
-                padding: '6px 10px',
-                borderRadius: '4px',
+                padding: '8px 10px',
+                borderRadius: '6px',
                 marginBottom: '10px'
               }}>
-                <div style={{ fontWeight: '700', fontSize: '0.78rem', color: '#0f172a' }}>
+                <div style={{ fontWeight: '700', fontSize: '0.8rem', color: '#0f172a' }}>
                   {selectedFeature.name}
                 </div>
-                <div style={{ fontSize: '0.72rem', color: selectedFeature.color, fontWeight: '700' }}>
+                <div style={{ fontSize: '0.72rem', color: selectedFeature.color, fontWeight: '700', marginTop: '1px' }}>
                   CLUP Code: {selectedFeature.code}
                 </div>
+                {selectedFeature.otop && (
+                  <div style={{
+                    marginTop: '6px',
+                    fontSize: '0.72rem',
+                    fontWeight: '700',
+                    color: '#92400e',
+                    background: '#fef3c7',
+                    border: '1px solid #fde68a',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    display: 'inline-block'
+                  }}>
+                    ⭐ OTOP: {selectedFeature.otop}
+                  </div>
+                )}
+                {selectedFeature.growthNode && (
+                  <div style={{ fontSize: '0.7rem', color: '#475569', marginTop: '4px', fontWeight: '500' }}>
+                    🎯 <strong>Node:</strong> {selectedFeature.growthNode}
+                  </div>
+                )}
+                {selectedFeature.population2025Proj && (
+                  <div style={{ fontSize: '0.7rem', color: '#475569', marginTop: '2px' }}>
+                    👥 Pop: <strong>{selectedFeature.population2010?.toLocaleString()}</strong> (2010) → <strong>{selectedFeature.population2025Proj?.toLocaleString()}</strong> (2025 Proj)
+                  </div>
+                )}
+                {selectedFeature.floodSusceptibility && (
+                  <div style={{ fontSize: '0.7rem', marginTop: '3px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ color: selectedFeature.floodSusceptibility.includes('High') ? '#b91c1c' : '#b45309', fontWeight: '600' }}>
+                      🌊 Baha: {selectedFeature.floodSusceptibility}
+                    </span>
+                    <span style={{ color: '#64748b' }}>
+                      🌋 Lindol: {selectedFeature.groundShaking}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
             
@@ -1022,39 +1076,46 @@ export default function SpatialMap() {
             </div>
 
             {/* Overview Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '20px' }}>
               <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>PSA PSGC Code</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#1e3a8a' }}>0305421000</div>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>PSA PSGC / ZIP</div>
+                <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#1e3a8a' }}>0305421000 • 2020</div>
               </div>
               <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>ZIP Code / Province</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0f172a' }}>2020 • Pampanga</div>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Official Land Area</div>
+                <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#0f172a' }}>14.67 km² (1,467.5 ha)</div>
               </div>
               <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Cadastral Nodes</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0f172a' }}>286 Survey Nodes</div>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Population Growth</div>
+                <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#0f172a' }}>38,062 → 47,809 (2025)</div>
               </div>
               <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Datum / Projection</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0f172a' }}>WGS 84 (EPSG:4326)</div>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Seat of Government</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0f172a' }}>San Vicente (P.D. 1441)</div>
+              </div>
+              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>CLUP Planning Period</div>
+                <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#16a34a' }}>2016–2025 Enacted</div>
               </div>
             </div>
 
             {/* Barangay Breakdown Table */}
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
-                All 7 Official Barangays (Cadastral Survey Breakdown)
+              <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>7 Official Barangays (Cadastral & CLUP Profiles)</span>
+                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>Source: CLUP 2016-2025 Table 1, 4 & 5</span>
               </div>
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem', minWidth: '700px' }}>
                   <thead>
                     <tr style={{ background: '#f1f5f9', textAlign: 'left', color: '#475569', fontWeight: '700' }}>
                       <th style={{ padding: '8px 12px' }}>Barangay</th>
-                      <th style={{ padding: '8px 12px' }}>PSA PSGC (10-Digit)</th>
-                      <th style={{ padding: '8px 12px' }}>OSM Survey Rel.</th>
-                      <th style={{ padding: '8px 12px' }}>CLUP Zone</th>
-                      <th style={{ padding: '8px 12px', textAlign: 'right' }}>Land Area</th>
+                      <th style={{ padding: '8px 12px' }}>OTOP (Product)</th>
+                      <th style={{ padding: '8px 12px' }}>CLUP Zone Code</th>
+                      <th style={{ padding: '8px 12px' }}>Land Area</th>
+                      <th style={{ padding: '8px 12px' }}>% Share</th>
+                      <th style={{ padding: '8px 12px' }}>Pop. (2010→2025)</th>
+                      <th style={{ padding: '8px 12px' }}>Flood Risk</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1066,10 +1127,26 @@ export default function SpatialMap() {
                             <span style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: p.color, display: 'inline-block' }}></span>
                             {p.barangay}
                           </td>
-                          <td style={{ padding: '8px 12px', fontFamily: 'monospace', color: '#0284c7', fontWeight: '700' }}>{p.psgc}</td>
-                          <td style={{ padding: '8px 12px', fontFamily: 'monospace', color: '#475569' }}>{p.osmId}</td>
-                          <td style={{ padding: '8px 12px', color: '#334155' }}>{p.code} ({p.name})</td>
-                          <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '600', color: '#475569' }}>{p.areaKm2} km²</td>
+                          <td style={{ padding: '8px 12px', color: '#92400e', fontWeight: '600' }}>
+                            {p.otop || 'N/A'}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: '#334155' }}>
+                            <span style={{ background: `${p.color}15`, color: p.color, padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>
+                              {p.code}
+                            </span>
+                          </td>
+                          <td style={{ padding: '8px 12px', fontWeight: '600', color: '#475569' }}>
+                            {p.areaKm2} km² ({p.areaHectares || (p.areaKm2 * 100).toFixed(1)} ha)
+                          </td>
+                          <td style={{ padding: '8px 12px', color: '#475569' }}>
+                            {p.landAreaPercent || '-'}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: '#475569' }}>
+                            {p.population2010?.toLocaleString()} → {p.population2025Proj?.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: p.floodSusceptibility?.includes('High') ? '#b91c1c' : '#b45309', fontWeight: '600' }}>
+                            {p.floodSusceptibility || 'Moderate'}
+                          </td>
                         </tr>
                       );
                     })}
@@ -1078,16 +1155,50 @@ export default function SpatialMap() {
               </div>
             </div>
 
+            {/* Official Municipal Land Use Allocation (Table 14) */}
+            {STO_TOMAS_GOVERNMENT_INFO.clupProposedLandUseTable14 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>CLUP 2016-2025 Proposed Land Use Allocation (Table 14)</span>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>Total: 1,467.50 Hectares (100.0%)</span>
+                </div>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflowX: 'auto', maxHeight: '200px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.74rem' }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                      <tr style={{ background: '#f1f5f9', textAlign: 'left', color: '#475569', fontWeight: '700' }}>
+                        <th style={{ padding: '6px 10px' }}>Land Use Category</th>
+                        <th style={{ padding: '6px 10px', textAlign: 'right' }}>Existing 2015 (ha)</th>
+                        <th style={{ padding: '6px 10px', textAlign: 'right' }}>Proposed 2016-2025 (ha)</th>
+                        <th style={{ padding: '6px 10px', textAlign: 'right' }}>Proposed Share (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {STO_TOMAS_GOVERNMENT_INFO.clupProposedLandUseTable14.map((row: any, i: number) => (
+                        <tr key={i} style={{ borderTop: '1px solid #f1f5f9', background: i % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                          <td style={{ padding: '6px 10px', fontWeight: '600', color: '#1e293b' }}>{row.category}</td>
+                          <td style={{ padding: '6px 10px', textAlign: 'right', color: '#64748b' }}>{row.existingHa.toFixed(2)} ha</td>
+                          <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: '700', color: '#1e3a8a' }}>{row.proposedHa.toFixed(2)} ha</td>
+                          <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: '600', color: '#16a34a' }}>{row.proposedPct.toFixed(2)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* Legal Authorities & File Provenance */}
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px', marginBottom: '20px' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: '800', color: '#1e293b', marginBottom: '6px' }}>
-                Legal Framework & Data Provenance
+              <div style={{ fontSize: '0.8rem', fontWeight: '800', color: '#1e3a8a', marginBottom: '6px' }}>
+                Legal Framework & Data Provenance (CLUP 2016-2025 Enacted)
               </div>
               <ul style={{ margin: '0 0 10px 0', paddingLeft: '18px', fontSize: '0.76rem', color: '#475569', lineHeight: '1.4' }}>
-                <li><strong>Republic Act No. 7160</strong> (Local Government Code of 1991)</li>
+                <li><strong>Republic Act No. 7160</strong> (Local Government Code of 1991, Sec. 20 (c) CLUP Mandate)</li>
                 <li><strong>Presidential Decree No. 1096</strong> (National Building Code of the Philippines - NBCP)</li>
-                <li><strong>CLUP & Zoning Ordinance</strong> of the Municipality of Santo Tomas, Pampanga</li>
-                <li><strong>Cadastral Survey Reference</strong>: OpenStreetMap Administrative Relation <code>13255070</code> (Municipal Perimeter) and Relations <code>21027520–21027526</code> (Barangay Boundaries)</li>
+                <li><strong>Presidential Decree No. 1441</strong> (Mandating Barrio San Vicente as the Official Seat of Municipal Government)</li>
+                <li><strong>Presidential Decree No. 1067</strong> (Water Code of the Philippines - Mandatory 3m Urban & 20m Agri River Easements)</li>
+                <li><strong>Comprehensive Land Use Plan (CLUP 2016-2025)</strong> & Zoning Ordinance of Sto. Tomas, Pampanga</li>
+                <li><strong>Cadastral Survey Reference</strong>: OpenStreetMap Administrative Relation <code>13255070</code> and Relations <code>21027520–21027526</code></li>
               </ul>
               
               <div style={{ fontSize: '0.76rem', color: '#475569' }}>

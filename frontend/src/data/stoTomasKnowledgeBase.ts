@@ -26,6 +26,13 @@ export interface BarangayProfile {
   altNames: string[];
   zoningClass: string;
   floodRisk: "Low" | "Moderate" | "High" | "Moderate to High";
+  otop: string;
+  areaKm2: number;
+  areaHectares: number;
+  landAreaPercent: string;
+  population2010: number;
+  population2025Proj: number;
+  growthNode: string;
   description: string;
   specialRules: string[];
 }
@@ -34,12 +41,19 @@ export const STO_TOMAS_MUNICIPAL_INFO = {
   municipality: "Municipality of Sto. Tomas",
   province: "Province of Pampanga",
   region: "Region III (Central Luzon)",
+  congressionalDistrict: "4th Congressional District of Pampanga",
   zipCode: "2020",
   classification: "4th Class Municipality",
-  hallLocation: "Municipal Hall, Poblacion, Sto. Tomas, Pampanga 2020",
+  hallLocation: "Barrio San Vicente, Sto. Tomas, Pampanga 2020 (Seat of Government per P.D. 1441)",
+  landAreaKm2: 14.67,
+  landAreaHectares: 1467.50,
+  population2010: 38062,
+  population2025Proj: 47809,
+  clupPlanningPeriod: "2016-2025",
   office: "Office of the Municipal Engineer / Building Official (OBO)",
   zoningOffice: "Office of the Zoning Administrator / MPDC",
-  fireStation: "Bureau of Fire Protection (BFP) - Sto. Tomas Fire Station",
+  fireStation: "Bureau of Fire Protection (BFP) - Sto. Tomas Fire Station (San Vicente)",
+  policeStation: "Philippine National Police (PNP) - Sto. Tomas Municipal Station (San Vicente)",
   portalName: "eTAYO: Unified Municipal Permitting & Building Monitoring System",
   workingHours: "Lunes hanggang Biyernes, 8:00 AM - 5:00 PM (No Noon Break)",
   contactNumber: "(045) 436-1234 / 0917-123-4567",
@@ -50,78 +64,142 @@ export const STO_TOMAS_MUNICIPAL_INFO = {
 export const BARANGAYS_DATABASE: Record<string, BarangayProfile> = {
   poblacion: {
     name: "Poblacion",
-    altNames: ["poblacion", "sentro", "bayan", "town proper"],
-    zoningClass: "High-Density Residential & Commercial (C-1 / R-3 / Institutional)",
-    floodRisk: "Low",
-    description: "The municipal center of Sto. Tomas hosting the Municipal Hall, Catholic Church, Rural Health Unit, and commercial establishments.",
+    altNames: ["poblacion", "sentro", "bayan", "town proper", "brgy poblacion"],
+    zoningClass: "Heritage Civic Core, Aquaculture & Institutional Zone (INST / C-1 / AQ)",
+    floodRisk: "Moderate to High",
+    otop: "Fishing & Aquaculture (Pangisdaan)",
+    areaKm2: 1.74,
+    areaHectares: 174.0,
+    landAreaPercent: "11.86%",
+    population2010: 3064,
+    population2025Proj: 3849,
+    growthNode: "Municipal Civic & Heritage Center",
+    description: "Historical cultural core hosting the St. Thomas the Apostles Parish Church (featuring a historic terra cotta altar), the Rural Health Unit (RHU), Senior Citizen Center, proposed civic park, and extensive freshwater aquaculture grounds.",
     specialRules: [
-      "Strict pedestrian sidewalk and RROW clearance enforced.",
-      "Commercial facades along main municipal road must comply with Sto. Tomas heritage aesthetic guidelines."
+      "Preservation of cultural heritage aesthetic is mandatory for structures facing the church plaza.",
+      "Mandatory 3.0m urban river easement along Masaluso River and Sto. Tomas River (PD 1067 Water Code).",
+      "Aquaculture fishponds must observe environmental buffer zones to protect river systems.",
+      "Plaza Bridge and Canlas St. Foot Bridge weight limits must be observed during construction deliveries."
     ]
   },
   san_matias: {
     name: "San Matias",
-    altNames: ["san matias", "matias", "sm"],
-    zoningClass: "Commercial, Industrial & Medium-Density Residential (C-2 / I-1 / R-2)",
-    floodRisk: "Low",
-    description: "The major economic gateway along MacArthur Highway (Manila North Road) characterized by heavy commercial, retail, warehousing, and ceramic/pottery manufacturing.",
+    altNames: ["san matias", "matias", "sm", "brgy san matias"],
+    zoningClass: "Regional Commercial, Industrial & High-Density Residential (C-2 / I-1 / R-3)",
+    floodRisk: "Moderate to High",
+    otop: "Automotive Making & Parts (Paggawa ng Sasakyan at Piyesa)",
+    areaKm2: 6.07,
+    areaHectares: 607.0,
+    landAreaPercent: "41.38% (Pinakamalaking Barangay)",
+    population2010: 13028,
+    population2025Proj: 16364,
+    growthNode: "Northern Commercial Growth Corridor & Eastern Industrial Node",
+    description: "The largest barangay in land area (41.4%) and population in Sto. Tomas. Major commercial powerhouse along MacArthur Highway (Puregold, Robinsons, Chuzon's, banks), automotive manufacturing, residential subdivisions (La Corona, Glory Heights), and planned eastern industrial corridor.",
     specialRules: [
-      "Mandatory minimum 5.0m front setback along MacArthur Highway.",
-      "Off-street customer parking mandatory for all commercial establishments (1 slot per 50 sq.m. gross floor area)."
+      "Mandatory minimum 6.0m front setback along MacArthur Highway right-of-way (RROW).",
+      "Off-street customer parking strictly mandatory (1 slot per 50 sq.m. gross floor area per CLUP Sec 3.7.3).",
+      "Soil-boring test mandatory for all structures 3 storeys and above (PD 1096 NBCP / CLUP Sec 3.5.4).",
+      "Industrial manufacturing must install environmental buffers and transition away from residential subdivisions to the planned highway corridor."
     ]
   },
   moras_de_la_paz: {
     name: "Moras De La Paz",
-    altNames: ["moras", "moras de la paz", "delapaz"],
-    zoningClass: "Medium-Density Residential & Cottage Industrial (R-2 / I-1)",
-    floodRisk: "Moderate",
-    description: "Renowned as the coffin-making capital and craft center of Central Luzon, with numerous woodworking and carpentry establishments alongside residential areas.",
+    altNames: ["moras", "moras de la paz", "delapaz", "brgy moras"],
+    zoningClass: "Urban Commercial & Socialized Housing Zone (C-1 / SH / R-2)",
+    floodRisk: "High",
+    otop: "Garments (Pananamit at Patahian)",
+    areaKm2: 0.55,
+    areaHectares: 55.0,
+    landAreaPercent: "3.75%",
+    population2010: 4556,
+    population2025Proj: 5723,
+    growthNode: "Northern Commercial Growth Node (McArthur Hwy Corridor)",
+    description: "Northern commercial growth corridor and urban resettlement center. Known for garment manufacturing, Sto. Tomas Private Hospital, and the Igmidio Ville socialized housing resettlement (3.0 ha, 500 households).",
     specialRules: [
-      "Woodworking workshops must secure BFP Fire Safety Evaluation Clearance (FSEC) with industrial dust suppression and approved firewalls.",
-      "Hazardous waste disposal plan required for lacquer and paint finishes."
+      "Socialized housing developments (Igmidio Ville / NHA) must adhere to BP 220 design standards.",
+      "Balut Street to Moras Street is designated as an alternate relief corridor for road widening.",
+      "High flood susceptibility requires elevated ground floor line (minimum 0.60m above road crown).",
+      "Garment and sewing workshops must maintain clear fire exits and secure BFP safety inspection."
     ]
   },
   san_vicente: {
     name: "San Vicente",
-    altNames: ["san vicente", "vicente"],
-    zoningClass: "Low to Medium-Density Residential & Agricultural (R-1 / R-2 / Agri)",
-    floodRisk: "Moderate",
-    description: "Peaceful residential community with agricultural tracts and pottery workshops.",
+    altNames: ["san vicente", "vicente", "brgy san vicente"],
+    zoningClass: "Municipal Government Center, Casket Capital & Safe Residential Densification (GOV / C-1 / R-2)",
+    floodRisk: "Moderate to High",
+    otop: "Casket Making (Kabisera ng Paggawa ng Kabaong)",
+    areaKm2: 2.48,
+    areaHectares: 248.0,
+    landAreaPercent: "16.91% (2nd Pinakamalaki)",
+    population2010: 9466,
+    population2025Proj: 11890,
+    growthNode: "Municipal Seat of Government & Bi-Nodal Commercial Growth Node",
+    description: "Official seat of municipal government (Municipal Hall, PNP Station, BFP Fire Station per P.D. 1441). Renowned as the Casket Capital of the Philippines. Identified as top priority for safe residential densification due to higher ground elevation, hosting Northville 12, the MRF at Mesalipit, and the San Vicente-Minalin Tail Dike.",
     specialRules: [
-      "Minimum 3.0m water easement buffer required for properties adjoining natural creeks or irrigation canals.",
-      "Residential single-family homes observe standard 4.5m front setback."
+      "Seat of municipal governance (P.D. 1441) — institutional clearances prioritized.",
+      "Woodworking and casket workshops must obtain BFP Fire Safety Evaluation Clearance (FSEC) with approved dust containment and ventilation (CLUP Sec 3.7.3).",
+      "Strict protection of the San Vicente-Minalin Tail Dike right-of-way from any structural encroachment.",
+      "Minimum 3.0m easement along natural waterways and irrigation channels."
     ]
   },
   santo_rosario: {
     name: "Santo Rosario",
-    altNames: ["sto rosario", "santo rosario", "pau"],
-    zoningClass: "Low-Density Residential & Agro-Industrial (R-1 / Agri)",
-    floodRisk: "Moderate",
-    description: "Traditional residential community with fertile agricultural plains and local commercial retail.",
+    altNames: ["sto rosario", "santo rosario", "pau", "brgy sto rosario"],
+    zoningClass: "Prime Agricultural Cropland & Rural Aquaculture Zone (AG / NPAAAD / AQ)",
+    floodRisk: "High",
+    otop: "Rice Farming (Pagsasaka ng Palay)",
+    areaKm2: 0.83,
+    areaHectares: 83.0,
+    landAreaPercent: "5.66%",
+    population2010: 2067,
+    population2025Proj: 2596,
+    growthNode: "Agricultural Food Security & Rural Preservation Zone",
+    description: "Core agricultural breadbasket of Sto. Tomas situated in the Pampanga River basin. Protected under the NPAAAD network for high-yielding irrigated rice crops, freshwater aquaculture, and rural homesteads.",
     specialRules: [
-      "Zoning conversion clearance from MPDC required if converting agricultural parcels to residential subdivisions or commercial strips."
+      "Prime agricultural lands strictly protected against urban land use conversion under CARP (RA 6657) and CLUP.",
+      "Mandatory 20.0m river easement along Matulid River and natural streams under PD 1067 Water Code.",
+      "Farm dwellings must elevate finished ground floor minimum 0.80m above natural grade for flood resilience.",
+      "Agricultural water impounding and rainwater harvesting encouraged."
     ]
   },
   san_bartolome: {
     name: "San Bartolome",
-    altNames: ["san bartolome", "bartolome"],
-    zoningClass: "Residential & Agricultural (R-1 / Agri)",
+    altNames: ["san bartolome", "bartolome", "brgy san bartolome"],
+    zoningClass: "Agri-Industrial Growth Hub & Prime Cropland Zone (AGI-1 / AG / AQ)",
     floodRisk: "Moderate to High",
-    description: "Serene community bordering watercourses and agricultural lands.",
+    otop: "Poultry & Egg Production (Itlog at Manukan)",
+    areaKm2: 1.43,
+    areaHectares: 143.0,
+    landAreaPercent: "9.75%",
+    population2010: 2564,
+    population2025Proj: 3221,
+    growthNode: "Southern Agri-Industrial Growth Node (42.44 ha expansion target)",
+    description: "Primary agri-industrial expansion center designated by the CLUP for poultry farms, egg production, and feed milling, supported by prime NPAAAD irrigated rice paddies and freshwater aquaculture.",
     specialRules: [
-      "Finished ground floor line must be elevated at least 0.50m to 1.0m above existing crown of road for flood resilience.",
-      "Septic tanks must be hermetically sealed 3-chamber digestive systems."
+      "Poultry and livestock facilities must comply with mandatory bio-security setbacks and vegetative buffer zones.",
+      "Agricultural lands covered under NPAAAD are protected against unauthorized conversion to urban uses.",
+      "Mandatory 20.0m river easement for agricultural riverbanks along Masaluso River (PD 1067 Water Code).",
+      "Hermetically sealed 3-chamber waste digestion systems required for agro-industrial operations."
     ]
   },
   sapa: {
     name: "Sapa",
-    altNames: ["sapa", "brgy sapa"],
-    zoningClass: "Agro-Fishery & Low-Density Residential (Agri / R-1)",
-    floodRisk: "High",
-    description: "Waterway-adjacent community characterized by fishponds, agricultural lands, and residential homesteads.",
+    altNames: ["sapa", "sto nino", "santo nino", "brgy sapa", "brgy sto nino"],
+    zoningClass: "Artisan Pottery Craft, Northern Highway Node & Residential (POTTERY / C-1 / R-2)",
+    floodRisk: "Moderate to High",
+    otop: "Pottery & Ceramics (Paggawa ng Palayok at Paso)",
+    areaKm2: 1.57,
+    areaHectares: 157.0,
+    landAreaPercent: "10.70%",
+    population2010: 3317,
+    population2025Proj: 4166,
+    growthNode: "Traditional Ceramics Craft Core & Northern Commercial Node",
+    description: "Famous center for traditional pottery, terracotta earthenware, and ceramics. Home to the historic Sto. Niño Chapel known for its terra cotta altar. Forms part of the northern commercial node along with Moras Dela Paz and San Matias.",
     specialRules: [
-      "Mandatory 3.0m easement from riverbanks under the Philippine Water Code (PD 1067).",
-      "Stilt or reinforced elevated foundation design recommended for waterfront structures."
+      "Traditional pottery kilns and artisanal ceramic workshops must maintain approved BFP chimney heights and fire clearances.",
+      "Industrial activities near residential zones are subject to a 10-year transition to the planned MacArthur Highway industrial zone (CLUP Sec 3.5.1.4).",
+      "Mandatory 3.0m easement from riverbanks and irrigation channels (PD 1067 Water Code).",
+      "Setbacks: Front 4.5m, Sides 2.0m, Rear 2.0m for residential and commercial structures."
     ]
   }
 };
