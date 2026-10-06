@@ -235,7 +235,13 @@ export default function StaffDashboard() {
     return Object.values(groups).sort((a, b) => {
       if (a.pendingCount > 0 && b.pendingCount === 0) return -1;
       if (b.pendingCount > 0 && a.pendingCount === 0) return 1;
-      return b.applications.length - a.applications.length;
+      if (b.applications.length !== a.applications.length) {
+        return b.applications.length - a.applications.length;
+      }
+      const timeA = new Date(a.latestDate || 0).getTime();
+      const timeB = new Date(b.latestDate || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return String(a.id || "").localeCompare(String(b.id || ""));
     });
   }, [filteredApps]);
 

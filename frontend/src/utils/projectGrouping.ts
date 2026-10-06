@@ -200,33 +200,6 @@ export const isApplicationApproved = (app: any): boolean => {
     }
   }
 
-  // If status is explicitly pending or draft without any admin approval record:
-  if (!rawStatus || rawStatus === "pending" || rawStatus === "submitted" || rawStatus === "draft") {
-    if (typeof window !== "undefined" && appId) {
-      try {
-        localStorage.removeItem(`etayo_approved_${appId}`);
-        localStorage.removeItem(`etayo_approved_${lowerAppId}`);
-        localStorage.removeItem(`etayo_approved_${upperAppId}`);
-        localStorage.removeItem(`etayo_released_${appId}`);
-        localStorage.removeItem(`etayo_released_${lowerAppId}`);
-        localStorage.removeItem(`etayo_released_${upperAppId}`);
-        localStorage.removeItem(`etayo_paid_${appId}`);
-        localStorage.removeItem(`etayo_paid_${lowerAppId}`);
-        localStorage.removeItem(`etayo_paid_${upperAppId}`);
-        localStorage.removeItem(`etayo_payment_confirmed_${appId}`);
-        localStorage.removeItem(`etayo_op_${appId}`);
-        localStorage.removeItem(`etayo_fees_${appId}`);
-        localStorage.removeItem(`etayo_date_approved_${appId}`);
-        if (localStorage.getItem(`etayo_status_${appId}`) === "approved") {
-          localStorage.setItem(`etayo_status_${appId}`, "pending");
-          localStorage.setItem(`etayo_status_${lowerAppId}`, "pending");
-          localStorage.setItem(`etayo_status_${upperAppId}`, "pending");
-        }
-      } catch (e) {}
-    }
-    return false;
-  }
-
   return false;
 };
 
@@ -448,35 +421,7 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       rawStatus === "under_review"
     );
 
-    // Keep localStorage in sync if approval is detected from backend or tracking steps
-    if (isAppApproved && typeof window !== "undefined" && appId) {
-      try {
-        [appId, lowerAppId, upperAppId].forEach(k => {
-          localStorage.setItem(`etayo_status_${k}`, (rawStatus === "released" || Boolean((app as any).isReleased)) ? "released" : "approved");
-          localStorage.setItem(`etayo_approved_${k}`, "true");
-        });
-      } catch (e) {}
-    } else if (isLocalUnderReview && typeof window !== "undefined" && appId) {
-      try {
-        [appId, lowerAppId, upperAppId].forEach(k => {
-          localStorage.setItem(`etayo_status_${k}`, "under_review");
-        });
-      } catch (e) {}
-    } else if (!isAppApproved && !isLocalUnderReview && (rawStatus === "pending" || !rawStatus) && typeof window !== "undefined" && appId) {
-      try {
-        [appId, lowerAppId, upperAppId].forEach(k => {
-          localStorage.removeItem(`etayo_approved_${k}`);
-          localStorage.removeItem(`etayo_released_${k}`);
-          localStorage.removeItem(`etayo_paid_${k}`);
-          localStorage.removeItem(`etayo_payment_confirmed_${k}`);
-          localStorage.removeItem(`etayo_receipt_${k}`);
-          localStorage.removeItem(`etayo_op_${k}`);
-          localStorage.removeItem(`etayo_fees_${k}`);
-          localStorage.removeItem(`etayo_date_approved_${k}`);
-          localStorage.setItem(`etayo_status_${k}`, "pending");
-        });
-      } catch (e) {}
-    }
+
 
     if (matchedDossier) {
       matchedDossier.applications.push(app);
@@ -541,10 +486,16 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
     d.applications.sort((a, b) => typeRank(a.permitType, a.id) - typeRank(b.permitType, b.id));
   });
 
-  // Sort dossiers: ones with pending submissions first, then by count / date
+  // Sort dossiers: ones with pending submissions first, then by count / date / deterministic id
   return dossiers.sort((a, b) => {
     if (a.pendingCount > 0 && b.pendingCount === 0) return -1;
     if (b.pendingCount > 0 && a.pendingCount === 0) return 1;
-    return b.applications.length - a.applications.length;
+    if (b.applications.length !== a.applications.length) {
+      return b.applications.length - a.applications.length;
+    }
+    const timeA = new Date(a.latestDate || 0).getTime();
+    const timeB = new Date(b.latestDate || 0).getTime();
+    if (timeB !== timeA) return timeB - timeA;
+    return String(a.id || "").localeCompare(String(b.id || ""));
   });
 };

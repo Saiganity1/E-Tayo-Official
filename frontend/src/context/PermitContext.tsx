@@ -660,8 +660,29 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               };
             }
 
+            if (effectiveStatus === "under_review" || isLocalUnderReview) {
+              const pendingSteps = (bApp.trackingSteps && bApp.trackingSteps.length > 0)
+                ? bApp.trackingSteps.map((st: any, idx: number) => {
+                    if (idx === 0) return { ...st, status: "completed" };
+                    if (idx === 1) return { ...st, status: "in-progress" };
+                    return st;
+                  })
+                : [
+                    { title: "Application Submitted", status: "completed", date: bApp.dateSubmitted || "Today" },
+                    { title: "Under Evaluation", status: "in-progress", notes: "Reviewing documents and technical attachments." }
+                  ];
+
+              return {
+                ...bApp,
+                status: "under_review",
+                isArchived,
+                trackingSteps: pendingSteps
+              };
+            }
+
             return {
               ...bApp,
+              status: effectiveStatus || bApp.status,
               isArchived
             };
           });
@@ -930,12 +951,48 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 localStorage.getItem(`etayo_approved_${aLower}`) === "true" ||
                 localStorage.getItem(`etayo_approved_${aUpper}`) === "true"
               );
+              const isLocUnderReview = typeof window !== "undefined" && Boolean(aId) && (
+                localSt === "under_review" ||
+                localStorage.getItem(`etayo_status_${aLower}`) === "under_review" ||
+                localStorage.getItem(`etayo_status_${aUpper}`) === "under_review" ||
+                aStatus === "under_review"
+              );
               const isArchived = Boolean(a.isArchived) || (typeof window !== "undefined" && Boolean(aId) && (
                 localStorage.getItem(`etayo_archived_${aId}`) === "true" ||
                 localStorage.getItem(`etayo_archived_${aLower}`) === "true" ||
                 localStorage.getItem(`etayo_archived_${aUpper}`) === "true"
               ));
-              if (!isLocApproved && (aStatus === "pending" || localSt === "pending")) {
+              if (isLocApproved) {
+                return {
+                  ...a,
+                  status: (localSt === "released" || aStatus === "released") ? "released" : "approved",
+                  isArchived,
+                  trackingSteps: (a.trackingSteps && a.trackingSteps.length > 0)
+                    ? a.trackingSteps.map((st: any, idx: number) => {
+                        if (idx <= 2) return { ...st, status: "completed" };
+                        return st;
+                      })
+                    : a.trackingSteps
+                };
+              }
+              if (isLocUnderReview) {
+                return {
+                  ...a,
+                  status: "under_review",
+                  isArchived,
+                  trackingSteps: (a.trackingSteps && a.trackingSteps.length > 0)
+                    ? a.trackingSteps.map((st: any, idx: number) => {
+                        if (idx === 0) return { ...st, status: "completed" };
+                        if (idx === 1) return { ...st, status: "in-progress" };
+                        return st;
+                      })
+                    : [
+                        { title: "Application Submitted", status: "completed", date: a.dateSubmitted || "Today" },
+                        { title: "Under Evaluation", status: "in-progress", notes: "Reviewing documents and technical attachments." }
+                      ]
+                };
+              }
+              if (aStatus === "pending" || localSt === "pending" || !aStatus) {
                 return {
                   ...a,
                   status: "pending",
@@ -950,19 +1007,6 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                         ...st,
                         status: idx === 0 ? "completed" : idx === 1 ? "in-progress" : "upcoming"
                       }))
-                    : a.trackingSteps
-                };
-              }
-              if (isLocApproved) {
-                return {
-                  ...a,
-                  status: localSt === "released" ? "released" : "approved",
-                  isArchived,
-                  trackingSteps: (a.trackingSteps && a.trackingSteps.length > 0)
-                    ? a.trackingSteps.map((st: any, idx: number) => {
-                        if (idx <= 2) return { ...st, status: "completed" };
-                        return st;
-                      })
                     : a.trackingSteps
                 };
               }

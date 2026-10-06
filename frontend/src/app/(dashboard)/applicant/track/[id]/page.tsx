@@ -974,45 +974,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   );
   const isPending = !isApproved && !isActuallyReleased && !isLocalUnderReview && (rawAppStatus === "pending" || !rawAppStatus);
 
-  // Sync localStorage with verified release / approval / under_review
-  if (isActuallyReleased && typeof window !== "undefined" && curTrackId) {
-    try {
-      [curTrackId, lowerTrackId, upperTrackId].forEach(k => {
-        localStorage.setItem(`etayo_status_${k}`, "released");
-        localStorage.setItem(`etayo_released_${k}`, "true");
-        localStorage.setItem(`etayo_paid_${k}`, "true");
-        localStorage.setItem(`etayo_approved_${k}`, "true");
-      });
-    } catch (e) {}
-  } else if (isApproved && typeof window !== "undefined" && curTrackId) {
-    try {
-      [curTrackId, lowerTrackId, upperTrackId].forEach(k => {
-        localStorage.setItem(`etayo_status_${k}`, "approved");
-        localStorage.setItem(`etayo_approved_${k}`, "true");
-        localStorage.removeItem(`etayo_released_${k}`);
-      });
-    } catch (e) {}
-  } else if (isLocalUnderReview && typeof window !== "undefined" && curTrackId) {
-    try {
-      [curTrackId, lowerTrackId, upperTrackId].forEach(k => {
-        localStorage.setItem(`etayo_status_${k}`, "under_review");
-      });
-    } catch (e) {}
-  } else if (isPending && typeof window !== "undefined" && curTrackId) {
-    try {
-      [curTrackId, lowerTrackId, upperTrackId].forEach(k => {
-        localStorage.removeItem(`etayo_approved_${k}`);
-        localStorage.removeItem(`etayo_released_${k}`);
-        localStorage.removeItem(`etayo_paid_${k}`);
-        localStorage.removeItem(`etayo_payment_confirmed_${k}`);
-        localStorage.removeItem(`etayo_receipt_${k}`);
-        localStorage.removeItem(`etayo_op_${k}`);
-        localStorage.removeItem(`etayo_fees_${k}`);
-        localStorage.removeItem(`etayo_date_approved_${k}`);
-        localStorage.setItem(`etayo_status_${k}`, "pending");
-      });
-    } catch (e) {}
-  }
+
 
   const effectiveStatus = isActuallyReleased 
     ? "released" 
