@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface EvaluationLogRepository extends JpaRepository<EvaluationLog, Long> {
     List<EvaluationLog> findByStaffEmailOrderByTimestampDesc(String staffEmail);
+    List<EvaluationLog> findByStaffEmailIgnoreCaseOrderByTimestampDesc(String staffEmail);
 }

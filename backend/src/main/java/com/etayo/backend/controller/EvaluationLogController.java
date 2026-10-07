@@ -30,13 +30,16 @@ public class EvaluationLogController {
 
     @GetMapping("/staff/{email}")
     public ResponseEntity<List<EvaluationLog>> getStaffEvaluations(@PathVariable String email) {
-        List<EvaluationLog> logs = evaluationLogRepository.findByStaffEmailOrderByTimestampDesc(email);
+        String cleanEmail = email != null ? email.trim() : "";
+        List<EvaluationLog> logs = evaluationLogRepository.findByStaffEmailIgnoreCaseOrderByTimestampDesc(cleanEmail);
         return ResponseEntity.ok(logs);
     }
 
     @PostMapping
     public ResponseEntity<EvaluationLog> createEvaluation(@RequestBody EvaluationLog evaluationLog) {
-        evaluationLog.setTimestamp(java.time.LocalDateTime.now());
+        if (evaluationLog.getTimestamp() == null) {
+            evaluationLog.setTimestamp(java.time.LocalDateTime.now());
+        }
         EvaluationLog saved = evaluationLogRepository.save(evaluationLog);
 
         // Record in Admin System Audit Logs

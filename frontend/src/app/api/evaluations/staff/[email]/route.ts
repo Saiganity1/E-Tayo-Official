@@ -56,16 +56,11 @@ export async function GET(
       }
     } catch (e) {}
 
-    // Find local evaluations matching this staff member
+    // Find local evaluations strictly matching this staff member's email
     const localLogs = (globalForEval._etayoEvaluationsStore || []).filter((item: any) => {
       if (isDummyEvaluation(item)) return false;
       const sEmail = String(item.staffEmail || item.evaluatorEmail || "").toLowerCase().trim();
-      const sUser = String(item.user || item.evaluatorName || "").toLowerCase().trim();
-      if (sEmail && rawEmail && (sEmail === rawEmail || sEmail.includes(rawEmail) || rawEmail.includes(sEmail))) return true;
-      if ((rawEmail.includes("sicat") || rawEmail.includes("dave")) && (sEmail.includes("sicat") || sEmail.includes("dave") || sUser.includes("sicat") || sUser.includes("dave"))) {
-        return true;
-      }
-      return false;
+      return sEmail === rawEmail;
     });
 
     // Merge and deduplicate

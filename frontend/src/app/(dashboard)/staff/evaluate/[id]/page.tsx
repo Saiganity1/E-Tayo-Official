@@ -1667,11 +1667,16 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
         // 5. Record official evaluation log in backend
         const evalPayload = JSON.stringify({
           staffEmail: staffEmail || "evaluator@etayo.gov.ph",
+          evaluatorEmail: staffEmail || "evaluator@etayo.gov.ph",
+          evaluatorName: staffName,
           applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+          applicantName: applicantLabel,
+          projectName: app.projectName || (isBuildingPermit ? "Building & Structural Works" : "Locational Zoning Clearance"),
           permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
           action: "Approved",
           comments: `${staffName} approved: ${decisionNotes || shortSummary}`,
           applicationId: app.id,
+          permitId: app.id,
           timestamp: new Date().toISOString()
         });
 
@@ -1782,8 +1787,8 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
           applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
           applicantName: applicantLabel,
           permitType: app.permitType ? app.permitType.replace(/_/g, " ").toUpperCase() : (isBuildingPermit ? "BUILDING PERMIT" : "LOCATIONAL CLEARANCE"),
-          action: "Released (Approved)",
-          comments: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`,
+          action: "Permit Released",
+          comments: paymentReleaseNotes || `Payment complete (${assessedAmountStr}) verified by ${staffName} (OR #${orNumber}). Permits released.`,
           timestamp: new Date().toISOString()
         };
         const updatedLogs = [newLogEntry, ...(Array.isArray(existingLogs) ? existingLogs.filter((x: any) => String(x?.permitId || x?.applicationId) !== String(app.id)) : [])];
@@ -1890,6 +1895,34 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
         console.warn("Could not dispatch release message", e);
       }
 
+      // Add official evaluation audit log in backend & Next.js store
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) authHeaders["Authorization"] = `Bearer ${token}`;
+
+        const releaseEvalPayload = JSON.stringify({
+          staffEmail: staffEmail || "evaluator@etayo.gov.ph",
+          evaluatorEmail: staffEmail || "evaluator@etayo.gov.ph",
+          evaluatorName: staffName,
+          applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+          applicantName: applicantLabel,
+          projectName: app.projectName || (isBuildingPermit ? "Building & Structural Works" : "Locational Zoning Clearance"),
+          permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
+          action: "Permit Released",
+          comments: `Payment complete (${assessedAmountStr}) verified by ${staffName} (OR #${orNumber}). Permits released.`,
+          applicationId: app.id,
+          permitId: app.id,
+          timestamp: new Date().toISOString()
+        });
+
+        await fetch("/api/evaluations", {
+          method: "POST",
+          headers: authHeaders,
+          body: releaseEvalPayload,
+        }).catch(() => null);
+      } catch (e) {}
+
       // Add system audit log
       try {
         await addSystemLog({
@@ -1897,6 +1930,7 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
           category: "application",
           status: "success",
           user: staffEmail,
+          userEmail: staffEmail,
           message: `Permit ${app.id} officially RELEASED to ${applicantLabel} (OR #${orNumber})`,
           details: `Payment complete (${assessedAmountStr}) verified by ${staffName}. Permits released.`,
         });
@@ -2019,11 +2053,16 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
 
       const evalPayload = JSON.stringify({
         staffEmail: staffEmail || "evaluator@etayo.gov.ph",
+        evaluatorEmail: staffEmail || "evaluator@etayo.gov.ph",
+        evaluatorName: staffName,
         applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+        applicantName: applicantLabel,
+        projectName: app.projectName || (isBuildingPermit ? "Building & Structural Works" : "Locational Zoning Clearance"),
         permitType: app.permitType || (isBuildingPermit ? "building_permit" : "locational_clearance"),
-        action: isDisapprove ? "Application Rejected" : "Incomplete Requirements",
+        action: isDisapprove ? "Disapproved" : "Revision Requested",
         comments: `${staffName}: ${combinedRemarks}`,
         applicationId: app.id,
+        permitId: app.id,
         timestamp: new Date().toISOString()
       });
 

@@ -39,11 +39,11 @@ const isAutomaticDummyStaff = (u: any): boolean => {
 
 const isDummyRecord = (item: any): boolean => {
   if (!item) return true;
-  const staff = String(item.staffEmail || item.evaluatorEmail || item.user || "").toLowerCase();
   const applicant = String(item.applicantEmail || item.user || "").toLowerCase();
   const id = String(item.id || item.permitId || "");
   if (applicant.includes("citizen@example.com") || applicant.includes("business@example.com")) return true;
   if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return true;
+  if (id.startsWith("eval-sys-")) return true;
   return false;
 };
 
@@ -290,65 +290,60 @@ export default function AdminStaffPage() {
 
     const targetEmail = (staff.email || "").trim().toLowerCase();
     const targetName = (staff.name || "").trim().toLowerCase();
-    const targetNameNoPunct = targetName.replace(/[^a-z0-9]/g, "");
+    const targetCleanName = targetName.replace(/[^a-z0-9]/g, "");
 
     const isDummyRecord = (item: any) => {
       if (!item) return true;
-      const applicant = String(item.applicantEmail || "").toLowerCase();
-      return applicant.includes("citizen@example.com") || applicant.includes("business@example.com");
+      const applicant = String(item.applicantEmail || item.user || "").toLowerCase();
+      const id = String(item.id || item.permitId || "");
+      if (applicant.includes("citizen@example.com") || applicant.includes("business@example.com")) return true;
+      if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return true;
+      if (id.startsWith("eval-sys-")) return true;
+      return false;
     };
 
-    // Check if current logged-in user is viewing their own profile
-    let isViewingSelf = false;
-    if (typeof window !== "undefined") {
-      try {
-        const curUserStr = localStorage.getItem("user");
-        if (curUserStr) {
-          const cu = JSON.parse(curUserStr);
-          const cuEmail = (cu.email || "").trim().toLowerCase();
-          const cuName = (cu.name || "").trim().toLowerCase();
-          if ((cuEmail && targetEmail && (cuEmail === targetEmail || targetEmail.includes(cuEmail) || cuEmail.includes(targetEmail))) ||
-              (cuName && targetName && cuName === targetName)) {
-            isViewingSelf = true;
-          }
-        }
-      } catch (e) {}
-    }
-
-    // Robust matcher to associate any evaluation or audit entry with this staff member
+    // Strict staff verification: must match exact email or exact full name
     const isStaffMatch = (logEmail?: string, logName?: string) => {
       const eClean = (logEmail || "").trim().toLowerCase();
       const nClean = (logName || "").trim().toLowerCase();
-      const nCleanNoPunct = nClean.replace(/[^a-z0-9]/g, "");
+      const nCleanCompact = nClean.replace(/[^a-z0-9]/g, "");
 
-      // 1. Direct or partial email match
+      // 1. Strict email match
       if (eClean && targetEmail) {
-        if (eClean === targetEmail || eClean.includes(targetEmail) || targetEmail.includes(eClean)) return true;
+        if (eClean === targetEmail) return true;
       }
 
-      // 2. Known Sicat / Dave alias matching
-      const hasTargetSicat = targetEmail.includes("sicat") || targetName.includes("sicat") || targetEmail.includes("0411");
-      const hasLogSicat = eClean.includes("sicat") || nClean.includes("sicat") || eClean.includes("dave") || nClean.includes("dave");
-      if (hasTargetSicat && hasLogSicat) return true;
-
-      // 3. Name matching (ignoring middle initials/punctuation)
+      // 2. Exact name match
       if (nClean && targetName) {
-        if (nClean === targetName || nCleanNoPunct === targetNameNoPunct) return true;
-        if (targetNameNoPunct.includes(nCleanNoPunct) || (nCleanNoPunct.length > 5 && nCleanNoPunct.includes(targetNameNoPunct))) return true;
-
-        const targetWords = targetName.split(/[\s\.\-]+/).filter(w => w.length > 2);
-        const logWords = nClean.split(/[\s\.\-]+/).filter(w => w.length > 2);
-        if (targetWords.length > 0 && logWords.length > 0 && targetWords.some(w => logWords.includes(w))) {
-          return true;
-        }
+        if (nClean === targetName) return true;
+        if (nCleanCompact.length >= 5 && nCleanCompact === targetCleanName) return true;
       }
 
       return false;
     };
 
+    const normalizeActionLabel = (act?: string, comments?: string): string => {
+      const a = (act || "").toLowerCase().trim();
+      const c = (comments || "").toLowerCase().trim();
+      if (a.includes("release") || c.includes("released")) return "Permit Released";
+      if (a.includes("approv") || c.includes("approved")) return "Approved";
+      if (a.includes("disapprov") || a.includes("reject") || c.includes("disapproved") || c.includes("rejected")) return "Disapproved";
+      if (a.includes("revis") || a.includes("incomplete") || a.includes("deficien") || c.includes("revision") || c.includes("deficiencies")) return "Revision Requested";
+      return "Evaluation Recorded";
+    };
+
     const gatheredLogs: EvaluationLog[] = [];
 
-    // 1. Fetch from backend API
+    // Helper to find matching application
+    const findMatchedApp = (appId?: string) => {
+      if (!appId) return undefined;
+      const cleanTarget = String(appId).trim().toUpperCase();
+      return (applications || []).find(a => 
+        a && a.id && String(a.id).trim().toUpperCase() === cleanTarget
+      );
+    };
+
+    // 1. Fetch from backend API / Next.js proxy
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       let res = await fetch(`/api/evaluations/staff/${encodeURIComponent(staff.email)}`, {
@@ -370,20 +365,20 @@ export default function AdminStaffPage() {
             const itemStaffEmail = String(item.staffEmail || item.evaluatorEmail || "").trim();
             const itemStaffName = String(item.evaluatorName || item.user || "").trim();
             if (isStaffMatch(itemStaffEmail, itemStaffName)) {
-              const matchedApp = (applications || []).find(a => 
-                a && a.id && (a.id === item.applicationId || a.id === item.permitId)
-              );
+              const appId = item.applicationId || item.permitId;
+              const matchedApp = findMatchedApp(appId);
+              const actionLabel = normalizeActionLabel(item.action, item.comments);
 
               gatheredLogs.push({
-                id: item.id || `eval-api-${Date.now()}-${Math.random()}`,
-                permitId: item.applicationId || item.permitId,
-                projectName: item.projectName || matchedApp?.projectName || matchedApp?.projectType || "Permit Evaluation",
+                id: item.id ? `eval-api-${item.id}` : `eval-api-${appId}-${actionLabel}`,
+                permitId: appId || matchedApp?.id,
+                projectName: item.projectName || matchedApp?.projectName || matchedApp?.projectType || (item.permitType ? `${item.permitType.replace(/_/g, " ").toUpperCase()} Project` : "Permit Application"),
                 staffEmail: staff.email,
-                applicantEmail: item.applicantEmail || matchedApp?.applicantEmail || "applicant@etayo.gov.ph",
+                applicantEmail: item.applicantEmail || matchedApp?.applicantEmail || "Applicant",
                 applicantName: item.applicantName || matchedApp?.applicantName,
-                permitType: item.permitType || (matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE"),
-                action: item.action || "Approved",
-                comments: item.comments || "Evaluation recorded.",
+                permitType: item.permitType ? item.permitType.replace(/_/g, " ").toUpperCase() : (matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE"),
+                action: actionLabel,
+                comments: item.comments || "Official evaluation recorded in municipal portal.",
                 timestamp: item.timestamp || new Date().toISOString(),
                 evaluatorName: staff.name
               });
@@ -395,7 +390,7 @@ export default function AdminStaffPage() {
       console.error("Error fetching evaluations for staff", err);
     }
 
-    // 2. Cross-reference localStorage evaluation records
+    // 2. Cross-reference localStorage evaluation records (strictly matching this staff)
     if (typeof window !== "undefined") {
       try {
         const localLogsRaw = localStorage.getItem("etayo_evaluation_logs");
@@ -404,17 +399,21 @@ export default function AdminStaffPage() {
           if (Array.isArray(localLogs)) {
             localLogs.forEach((l: any) => {
               if (isDummyRecord(l)) return;
-              if (isStaffMatch(l.staffEmail || l.evaluatorEmail, l.evaluatorName || l.user) || (isViewingSelf && !l.staffEmail)) {
+              if (isStaffMatch(l.staffEmail || l.evaluatorEmail, l.evaluatorName || l.user)) {
+                const appId = l.permitId || l.applicationId;
+                const matchedApp = findMatchedApp(appId);
+                const actionLabel = normalizeActionLabel(l.action, l.comments);
+
                 gatheredLogs.push({
-                  id: l.id || `eval-local-${Date.now()}-${Math.random()}`,
-                  permitId: l.permitId || l.applicationId,
-                  projectName: l.projectName || "Permit Evaluation",
+                  id: l.id ? `eval-local-${l.id}` : `eval-local-${appId}-${actionLabel}`,
+                  permitId: appId || matchedApp?.id,
+                  projectName: l.projectName || matchedApp?.projectName || matchedApp?.projectType || "Permit Application",
                   staffEmail: staff.email,
-                  applicantEmail: l.applicantEmail || "applicant@etayo.gov.ph",
-                  applicantName: l.applicantName,
-                  permitType: l.permitType || "CLEARANCE",
-                  action: l.action || "Approved",
-                  comments: l.comments || "Evaluation recorded.",
+                  applicantEmail: l.applicantEmail || matchedApp?.applicantEmail || "Applicant",
+                  applicantName: l.applicantName || matchedApp?.applicantName,
+                  permitType: l.permitType ? l.permitType.replace(/_/g, " ").toUpperCase() : (matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE"),
+                  action: actionLabel,
+                  comments: l.comments || "Official evaluation recorded.",
                   timestamp: l.timestamp || new Date().toISOString(),
                   evaluatorName: staff.name
                 });
@@ -424,7 +423,7 @@ export default function AdminStaffPage() {
         }
       } catch (e) {}
 
-      // Scan all individual etayo_evaluated_by_* keys
+      // Scan individual evaluated keys strictly matching this staff
       try {
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -436,25 +435,23 @@ export default function AdminStaffPage() {
             const remarksVal = localStorage.getItem(`etayo_remarks_${rawId}`) || "";
             const dateVal = localStorage.getItem(`etayo_date_approved_${rawId}`) || new Date().toISOString();
 
-            if (isStaffMatch(evalEmail, evalName) || (isViewingSelf && !evalName)) {
-              const matchedApp = (applications || []).find(a => 
-                a && a.id && a.id.toLowerCase().replace(/[^a-z0-9]/g, "") === rawId.toLowerCase().replace(/[^a-z0-9]/g, "")
-              );
-              const isApproved = statusVal === "approved" || statusVal === "released";
-              const isRejected = statusVal === "rejected";
-              const isUnderReview = statusVal === "under_review";
-              const actionLabel = isApproved ? "Approved" : (isRejected ? "Disapproved" : (isUnderReview ? "Under Evaluation" : "Revision Requested"));
+            if (isStaffMatch(evalEmail, evalName)) {
+              const matchedApp = findMatchedApp(rawId);
+              let actionLabel = "Approved";
+              if (statusVal === "released") actionLabel = "Permit Released";
+              else if (statusVal === "rejected") actionLabel = "Disapproved";
+              else if (statusVal === "incomplete_requirements") actionLabel = "Revision Requested";
 
               gatheredLogs.push({
-                id: `local-eval-key-${rawId}`,
+                id: `local-eval-key-${rawId}-${actionLabel}`,
                 permitId: matchedApp?.id || rawId.toUpperCase(),
                 projectName: matchedApp?.projectName || matchedApp?.projectType || (rawId.toUpperCase().startsWith("BP") ? "Building & Structural Works" : "Locational Zoning Clearance"),
                 staffEmail: staff.email,
-                applicantEmail: matchedApp?.applicantEmail || "applicant@etayo.gov.ph",
+                applicantEmail: matchedApp?.applicantEmail || "Applicant",
                 applicantName: matchedApp?.applicantName,
                 permitType: matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : (rawId.toUpperCase().startsWith("LC-") ? "LOCATIONAL CLEARANCE" : "BUILDING PERMIT"),
                 action: actionLabel,
-                comments: remarksVal || matchedApp?.remarks || "Official evaluation record recorded in staff terminal session.",
+                comments: remarksVal || matchedApp?.remarks || `Official evaluation conducted by ${staff.name}.`,
                 timestamp: dateVal,
                 evaluatorName: staff.name
               });
@@ -464,111 +461,79 @@ export default function AdminStaffPage() {
       } catch (e) {}
     }
 
-    // 3. Cross-reference systemLogs from PermitContext and localStorage
-    const allSystemLogs: any[] = [...(systemLogs || [])];
-    if (typeof window !== "undefined") {
-      try {
-        const rawSys = localStorage.getItem("etayo_system_logs");
-        if (rawSys) {
-          const parsedSys = JSON.parse(rawSys);
-          if (Array.isArray(parsedSys)) {
-            parsedSys.forEach(s => {
-              if (s && !allSystemLogs.some(existing => existing.id === s.id)) {
-                allSystemLogs.push(s);
-              }
-            });
-          }
-        }
-      } catch (e) {}
-    }
+    // 3. Cross-reference applications in PermitContext (strictly where this staff is the evaluator)
+    (applications || []).forEach(app => {
+      if (!app || !app.id || isDummyRecord(app)) return;
+      const appId = String(app.id).trim();
 
-    allSystemLogs.forEach(log => {
-      if (!log) return;
-      const act = (log.action || "").toUpperCase();
-      const det = (log.details || "").toLowerCase();
-      const msg = (log.message || "").toLowerCase();
-      const isEvalRelated = act.includes("EVALUAT") || act.includes("APPROV") || act.includes("REJECT") || act.includes("DISAPPROV") || act.includes("REVIS") || det.includes("evaluat") || msg.includes("evaluat") || log.category === "application";
-      
-      if (!isEvalRelated) return;
+      const localEvaluator = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${appId}`) || localStorage.getItem(`etayo_evaluated_by_${appId.toLowerCase()}`) || localStorage.getItem(`etayo_evaluated_by_${appId.toUpperCase()}`)) : null;
+      const localEvalEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${appId}`) || localStorage.getItem(`etayo_evaluator_email_${appId.toLowerCase()}`) || localStorage.getItem(`etayo_evaluator_email_${appId.toUpperCase()}`)) : null;
+      const localRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${appId}`) || localStorage.getItem(`etayo_remarks_${appId.toLowerCase()}`) || localStorage.getItem(`etayo_remarks_${appId.toUpperCase()}`)) : null;
 
-      if (isStaffMatch(log.userEmail, log.user) || (isViewingSelf && (det.includes("sicat") || msg.includes("sicat") || det.includes("dave") || msg.includes("dave")))) {
-        let permitId = "";
-        const idMatch = (log.message + " " + (log.details || "") + " " + log.id).match(/(?:LC|BP|APP)-\d{4}-\d{3,5}/i);
-        if (idMatch) permitId = idMatch[0].toUpperCase();
+      const appEvaluator = localEvaluator || app.evaluatedBy;
+      const appEvalEmail = localEvalEmail || app.evaluatorEmail;
 
-        const matchedApp = (applications || []).find(a => a && a.id && a.id.toUpperCase() === permitId);
-        const isAppr = act.includes("APPROV") || msg.includes("approved");
-        const isRej = act.includes("REJECT") || act.includes("DISAPPROV") || msg.includes("rejected");
-        const actionLabel = isAppr ? "Approved" : (isRej ? "Disapproved" : "Revision Requested");
+      // STRICT match: Must actually be this staff member
+      if (!isStaffMatch(appEvalEmail, appEvaluator)) return;
+
+      const effectiveStatus = (app.status || "").toLowerCase().trim();
+      const isEvaluatedStatus = effectiveStatus === "approved" || effectiveStatus === "released" || effectiveStatus === "rejected" || effectiveStatus === "incomplete_requirements";
+
+      if (isEvaluatedStatus) {
+        let actionLabel = "Approved";
+        if (effectiveStatus === "released") actionLabel = "Permit Released";
+        else if (effectiveStatus === "rejected") actionLabel = "Disapproved";
+        else if (effectiveStatus === "incomplete_requirements") actionLabel = "Revision Requested";
+
+        const evalTime = app.evaluatedAt || (app as any).dateApproved || (app as any).dateIssued || app.dateSubmitted || new Date().toISOString();
 
         gatheredLogs.push({
-          id: log.id || `eval-sys-${Math.random()}`,
-          permitId: permitId || matchedApp?.id,
-          projectName: matchedApp?.projectName || matchedApp?.projectType || "Permit Evaluation",
+          id: `APP-EVAL-${app.id}-${actionLabel}`,
+          permitId: app.id,
+          projectName: app.projectName || app.projectType || "Permit Application",
           staffEmail: staff.email,
-          applicantEmail: matchedApp?.applicantEmail || "applicant@etayo.gov.ph",
-          applicantName: matchedApp?.applicantName,
-          permitType: matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE",
+          applicantEmail: app.applicantEmail || "Applicant",
+          applicantName: app.applicantName,
+          permitType: app.permitType ? app.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE",
           action: actionLabel,
-          comments: log.details || log.message || "Evaluation recorded in official system audit log.",
-          timestamp: log.timestamp || new Date().toISOString(),
+          comments: localRemarks || app.remarks || `Evaluation officially recorded for ${app.id}.`,
+          timestamp: evalTime,
           evaluatorName: staff.name
         });
       }
     });
 
-    // 4. Cross-reference applications in PermitContext (and check localStorage evaluation keys)
-    (applications || []).forEach(app => {
-      if (!app || !app.id) return;
-      const appId = String(app.id).trim();
-      const lowerId = appId.toLowerCase();
-      const upperId = appId.toUpperCase();
+    // 4. Strict evaluation logs from systemLogs (ONLY genuine EVALUATION_* or PERMIT_RELEASED actions)
+    (systemLogs || []).forEach(log => {
+      if (!log || isDummyRecord(log)) return;
+      const act = (log.action || "").toUpperCase();
+      const isExplicitEval = act.startsWith("EVALUATION_") || act === "PERMIT_RELEASED";
+      if (!isExplicitEval) return;
 
-      const localEvaluator = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${appId}`) || localStorage.getItem(`etayo_evaluated_by_${lowerId}`) || localStorage.getItem(`etayo_evaluated_by_${upperId}`)) : null;
-      const localEvalEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${appId}`) || localStorage.getItem(`etayo_evaluator_email_${lowerId}`) || localStorage.getItem(`etayo_evaluator_email_${upperId}`)) : null;
-      const localStatus = typeof window !== "undefined" ? (localStorage.getItem(`etayo_status_${appId}`) || localStorage.getItem(`etayo_status_${lowerId}`) || localStorage.getItem(`etayo_status_${upperId}`)) : null;
-      const localApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_approved_${appId}`) === "true" || localStorage.getItem(`etayo_approved_${lowerId}`) === "true" || localStorage.getItem(`etayo_approved_${upperId}`) === "true") : false;
+      if (isStaffMatch(log.userEmail, log.user)) {
+        let permitId = "";
+        const idMatch = (log.message + " " + (log.details || "") + " " + log.id).match(/(?:LC|BP|APP)-\d{4}-\d{3,5}/i);
+        if (idMatch) permitId = idMatch[0].toUpperCase();
 
-      const appEvaluator = localEvaluator || app.evaluatedBy || app.assignedStaff;
-      const appEvalEmail = localEvalEmail || app.evaluatorEmail;
-
-      let isActualEvaluator = isStaffMatch(appEvalEmail, appEvaluator);
-
-      if (!isActualEvaluator && Array.isArray(app.historyLog)) {
-        const matchHist = app.historyLog.find(h => h && (isStaffMatch(undefined, h.actor) || isStaffMatch(undefined, h.details)));
-        if (matchHist) isActualEvaluator = true;
-      }
-
-      if (!isActualEvaluator && app.remarks && isStaffMatch(undefined, app.remarks)) {
-        isActualEvaluator = true;
-      }
-
-      // If viewing self and this terminal session approved the application
-      if (!isActualEvaluator && isViewingSelf && (localApproved || localStatus === "approved")) {
-        isActualEvaluator = true;
-      }
-
-      const effectiveStatus = (localStatus || app.status || "").toLowerCase().trim();
-      const isEvaluatedStatus = effectiveStatus === "approved" || effectiveStatus === "released" || effectiveStatus === "rejected" || effectiveStatus === "incomplete_requirements" || effectiveStatus === "under_review";
-
-      if (isActualEvaluator && isEvaluatedStatus) {
-        const isApproved = effectiveStatus === "approved" || effectiveStatus === "released";
-        const isRejected = effectiveStatus === "rejected";
-        const isUnderReview = effectiveStatus === "under_review";
-        const actionLabel = isApproved ? "Approved" : (isRejected ? "Disapproved" : (isUnderReview ? "Evaluation in Progress" : "Revision Requested"));
-        const evalTime = app.evaluatedAt || (app as any).dateApproved || (app as any).dateIssued || new Date().toISOString();
+        const matchedApp = findMatchedApp(permitId);
+        let actionLabel = "Approved";
+        if (act === "PERMIT_RELEASED") actionLabel = "Permit Released";
+        else if (act === "EVALUATION_REJECTED") actionLabel = "Disapproved";
+        else if (act === "EVALUATION_REVISION_REQUESTED") actionLabel = "Revision Requested";
+        else if (act === "EVALUATION_APPROVED") actionLabel = "Approved";
+        else actionLabel = normalizeActionLabel(act, log.details || log.message);
 
         gatheredLogs.push({
-          id: `APP-EVAL-${app.id}`,
-          permitId: app.id,
-          projectName: app.projectName || app.projectType || "Permit Project",
+          id: `eval-sys-${log.id}`,
+          permitId: permitId || matchedApp?.id,
+          projectName: matchedApp?.projectName || matchedApp?.projectType || (permitId ? "Permit Application" : "Official Evaluation"),
           staffEmail: staff.email,
-          applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
-          applicantName: app.applicantName,
-          permitType: app.permitType ? app.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE",
+          applicantEmail: matchedApp?.applicantEmail || "Applicant",
+          applicantName: matchedApp?.applicantName,
+          permitType: matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE",
           action: actionLabel,
-          comments: app.remarks || `Evaluation recorded for ${app.id}.`,
-          timestamp: evalTime,
+          comments: log.details || log.message || "Evaluation recorded in official audit log.",
+          timestamp: log.timestamp || new Date().toISOString(),
           evaluatorName: staff.name
         });
       }
@@ -577,7 +542,7 @@ export default function AdminStaffPage() {
     // Deduplicate logs by permitId and action
     const logMap = new Map<string, EvaluationLog>();
     gatheredLogs.forEach(l => {
-      const key = l.permitId ? `${l.permitId}-${l.action}` : String(l.id);
+      const key = l.permitId ? `${String(l.permitId).toUpperCase()}-${l.action}` : String(l.id);
       if (!logMap.has(key)) {
         logMap.set(key, l);
       }
@@ -1081,9 +1046,18 @@ export default function AdminStaffPage() {
       {/* ========================================================================= */}
       {/* AUDIT LOG MODAL (EXECUTIVE MODERN DESIGN & REAL EVALUATIONS) */}
       {/* ========================================================================= */}
-      {selectedStaff && (() => {
-        const approvedCount = logs.filter(l => (l.action || "").toLowerCase().includes("approv")).length;
-        const nonApprovedCount = logs.filter(l => !(l.action || "").toLowerCase().includes("approv")).length;
+        const approvedCount = logs.filter(l => {
+          const act = (l.action || "").toLowerCase();
+          return act.includes("approv") || act.includes("release");
+        }).length;
+        const revisionsCount = logs.filter(l => {
+          const act = (l.action || "").toLowerCase();
+          return act.includes("revis") || act.includes("incomplete") || act.includes("deficien");
+        }).length;
+        const disapprovedCount = logs.filter(l => {
+          const act = (l.action || "").toLowerCase();
+          return act.includes("disapprov") || act.includes("reject");
+        }).length;
 
         return (
           <div 
@@ -1271,41 +1245,52 @@ export default function AdminStaffPage() {
                     {/* Executive KPI Micro-Dashboard Bar */}
                     <div style={{ 
                       display: "grid", 
-                      gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", 
+                      gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", 
                       gap: "12px", 
                       marginBottom: "1.5rem" 
                     }}>
                       <div style={{ background: "#f8fafc", padding: "14px 18px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>Total Credited</span>
+                          <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>Total Evaluated</span>
                           <Award size={18} color="#2563eb" />
                         </div>
                         <div style={{ fontSize: "1.85rem", fontWeight: "900", color: "#0f172a", lineHeight: 1.1 }}>
                           {logs.length}
                         </div>
-                        <span style={{ fontSize: "0.78rem", color: "#64748b" }}>Official reviews recorded</span>
+                        <span style={{ fontSize: "0.76rem", color: "#64748b" }}>Official reviews recorded</span>
                       </div>
 
                       <div style={{ background: "#f0fdf4", padding: "14px 18px", borderRadius: "16px", border: "1px solid #bbf7d0" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#166534", textTransform: "uppercase", letterSpacing: "0.04em" }}>Approved</span>
+                          <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#166534", textTransform: "uppercase", letterSpacing: "0.04em" }}>Approved</span>
                           <CheckCircle2 size={18} color="#16a34a" />
                         </div>
                         <div style={{ fontSize: "1.85rem", fontWeight: "900", color: "#166534", lineHeight: 1.1 }}>
                           {approvedCount}
                         </div>
-                        <span style={{ fontSize: "0.78rem", color: "#15803d" }}>Clearances approved</span>
+                        <span style={{ fontSize: "0.76rem", color: "#15803d" }}>Clearances & Permits</span>
                       </div>
 
                       <div style={{ background: "#fffbeb", padding: "14px 18px", borderRadius: "16px", border: "1px solid #fde68a" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#854d0e", textTransform: "uppercase", letterSpacing: "0.04em" }}>Revisions / Other</span>
+                          <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#854d0e", textTransform: "uppercase", letterSpacing: "0.04em" }}>Revisions</span>
                           <AlertCircle size={18} color="#d97706" />
                         </div>
                         <div style={{ fontSize: "1.85rem", fontWeight: "900", color: "#854d0e", lineHeight: 1.1 }}>
-                          {nonApprovedCount}
+                          {revisionsCount}
                         </div>
-                        <span style={{ fontSize: "0.78rem", color: "#a16207" }}>Deficiencies / Disapproved</span>
+                        <span style={{ fontSize: "0.76rem", color: "#a16207" }}>Deficiencies / Required</span>
+                      </div>
+
+                      <div style={{ background: "#fef2f2", padding: "14px 18px", borderRadius: "16px", border: "1px solid #fecaca" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#991b1b", textTransform: "uppercase", letterSpacing: "0.04em" }}>Disapproved</span>
+                          <XCircle size={18} color="#dc2626" />
+                        </div>
+                        <div style={{ fontSize: "1.85rem", fontWeight: "900", color: "#991b1b", lineHeight: 1.1 }}>
+                          {disapprovedCount}
+                        </div>
+                        <span style={{ fontSize: "0.76rem", color: "#b91c1c" }}>Formal Rejections</span>
                       </div>
                     </div>
 
@@ -1378,7 +1363,7 @@ export default function AdminStaffPage() {
                       /* Rich Evaluation Cards */
                       <div style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
                         {logs.map((log) => {
-                          const isApproved = (log.action || "").toLowerCase().includes("approv");
+                          const isApproved = (log.action || "").toLowerCase().includes("approv") || (log.action || "").toLowerCase().includes("release");
                           const isRejected = (log.action || "").toLowerCase().includes("disapprov") || (log.action || "").toLowerCase().includes("reject");
 
                           const accentColor = isApproved ? "#16a34a" : (isRejected ? "#dc2626" : "#d97706");
