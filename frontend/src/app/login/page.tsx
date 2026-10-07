@@ -6,8 +6,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { Lock, Mail, ArrowLeft, ArrowRight, AlertCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function LoginPage() {
+  const { t, language } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -266,8 +268,8 @@ export default function LoginPage() {
 
       <div className="login-visual animate-fade-in">
         <div className="visual-content">
-          <h1>Secure Portal Access</h1>
-          <p>eTAYO ensures your data is protected with enterprise-grade security protocols.</p>
+          <h1>{t("Secure Portal Access", "Secure Portal Access")}</h1>
+          <p>{t("eTAYO ensures your data is protected with enterprise-grade security protocols.", "eTAYO ensures your data is protected with enterprise-grade security protocols.")}</p>
         </div>
       </div>
 
@@ -280,7 +282,7 @@ export default function LoginPage() {
             title="Bumalik sa Homepage"
           >
             <ArrowLeft size={16} />
-            <span>Back to Home</span>
+            <span>{t("Back to Home", "Back to Home")}</span>
           </Link>
 
           <div className="login-card">
@@ -291,14 +293,14 @@ export default function LoginPage() {
           </div>
           
           <div className="form-header">
-            <h1>Welcome Back</h1>
-            <p>Please enter your credentials to access your account.</p>
+            <h1>{t("Welcome Back", "Welcome Back")}</h1>
+            <p>{t("Please enter your credentials to access your account.", "Please enter your credentials to access your account.")}</p>
           </div>
 
           {timeoutMessage && (
             <div className="alert-timeout" style={{ backgroundColor: "#fef2f2", color: "#991b1b", padding: "12px", borderRadius: "8px", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "8px", border: "1px solid #f87171" }}>
               <AlertCircle size={18} />
-              <span style={{ fontSize: "14px", fontWeight: "500" }}>Your session has expired due to inactivity. Please log in again.</span>
+              <span style={{ fontSize: "14px", fontWeight: "500" }}>{t("Your session has expired due to inactivity. Please log in again.", "Your session has expired due to inactivity. Please log in again.")}</span>
             </div>
           )}
 
@@ -318,13 +320,13 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="login-form">
             <div className="form-group">
-              <label>Email Address</label>
+              <label>{t("Email Address", "Email Address")}</label>
               <div className="input-with-icon">
                 <Mail size={18} className="input-icon" />
                 <input 
                   type="text" 
                   required
-                  placeholder="name@example.com or Username" 
+                  placeholder={language === "fil" ? "name@example.com o Username" : "name@example.com or Username"} 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -333,8 +335,8 @@ export default function LoginPage() {
 
             <div className="form-group">
               <div className="flex-between">
-                <label>Password</label>
-                <a href="#" className="forgot-link">Forgot password?</a>
+                <label>{t("Password", "Password")}</label>
+                <a href="#" className="forgot-link">{t("Forgot password?", "Forgot password?")}</a>
               </div>
               <div className="input-with-icon">
                 <Lock size={18} className="input-icon" />
@@ -350,7 +352,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="password-toggle-btn"
-                  title={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? (language === "fil" ? "Itago ang password" : "Hide password") : (language === "fil" ? "Ipakita ang password" : "Show password")}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -359,14 +361,14 @@ export default function LoginPage() {
             </div>
 
             <button type="submit" className="btn-primary w-full login-btn" disabled={isLoading}>
-              {isLoading ? "Authenticating..." : (
-                <>Sign In <ArrowRight size={18} /></>
+              {isLoading ? t("Authenticating...", "Authenticating...") : (
+                <>{t("Sign In", "Sign In")} <ArrowRight size={18} /></>
               )}
             </button>
           </form>
 
           <p className="register-prompt">
-            Don't have an account? <Link href="/register">Register here</Link>
+            {t("Don't have an account?", "Don't have an account?")} <Link href="/register">{t("Register here", "Register here")}</Link>
           </p>
         </div>
         </div>

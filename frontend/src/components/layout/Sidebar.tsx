@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
   Building2, Home, PlusCircle, Search, FileCheck, 
-  MessageSquare, ShieldAlert, Map, X, Menu, Settings, LogOut, Users, FileText, ClipboardList,
+  MessageSquare, ShieldAlert, Map, X, Menu, LogOut, Users, FileText, ClipboardList,
   Shield, CheckSquare, Globe
 } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
@@ -245,7 +245,6 @@ export default function Sidebar() {
           { href: "/admin/users", label: t("applicantManagement", "Applicants Management"), icon: Users },
           { href: "/admin/staff", label: t("staffManagement", "Staff Management"), icon: ShieldAlert },
           { href: "/admin/messages", label: t("messages", "Messages"), icon: MessageSquare },
-          { href: "/admin/settings", label: t("settings", "Settings"), icon: Settings },
         ];
       default:
         return [];

@@ -16,24 +16,82 @@ export const SYSTEM_WIDE_DICTIONARY: Record<string, string> = {
   "Apply Now": "Mag-apply Ngayon",
   "Log In": "Mag-log In",
   "Log In Now": "Mag-log In Ngayon",
-  "Sign In": "Mag-sign In",
-  "Sign Out": "Mag-sign Out",
+  "Sign In": "Mag-log In",
+  "Sign Out": "Mag-log Out",
   "Register": "Magrehistro",
   "Create Account": "Gumawa ng Account",
   "Home": "Tahanan",
   "Permit Types": "Mga Uri ng Permit",
   "Three Easy Steps to Secure Your Permits": "Tatlong Madaling Hakbang upang Makuha ang Inyong mga Permit",
-  "Frequently Asked Questions": "Mga Madalas Itanong (FAQ)",
-  "Explore Sto. Tomas Zoning & Land Use": "Galugarin ang Zoning at Gamit ng Lupa sa Sto. Tomas",
+  "Frequently Asked Questions": "Mga Madalas Itanong",
+  "Explore Sto. Tomas Zoning & Land Use": "Galugarin ang Zoning at Paggamit ng Lupa sa Sto. Tomas",
   "Quick Links": "Mabilisang mga Link",
   "Contact Us": "Makipag-ugnayan sa Amin",
-  "Office Hours": "Oras ng Opisina",
+  "Office Hours": "Oras ng Tanggapan",
   "Monday to Friday, 8:00 AM - 5:00 PM": "Lunes hanggang Biyernes, 8:00 AM - 5:00 PM",
   "Sto. Tomas, Pampanga": "Sto. Tomas, Pampanga",
   "© 2026 eTAYO System": "© 2026 Sistema ng eTAYO",
   "All rights reserved.": "Lahat ng karapatan ay nakalaan.",
   "Authentication Required": "Kailangan ang Pagpapatotoo",
   "You need to be logged in to apply for a permit. Please log in to your account to continue.": "Kailangan mong mag-log in upang mag-apply para sa permit. Mangyaring mag-log in sa iyong account upang magpatuloy.",
+
+  // Authentication & Login
+  "Welcome Back": "Maligayang Pagbabalik",
+  "Please enter your credentials to access your account.": "Mangyaring ilagay ang iyong impormasyon sa pag-login upang makapasok sa iyong account.",
+  "Please enter your credentials to access your account": "Mangyaring ilagay ang iyong impormasyon sa pag-login upang makapasok sa iyong account",
+  "Please enter your credentials to access your Account.": "Mangyaring ilagay ang iyong impormasyon sa pag-login upang makapasok sa iyong account.",
+  "Please enter your credentials": "Mangyaring ilagay ang iyong impormasyon sa pag-login",
+  "Your session has expired due to inactivity. Please log in again.": "Nag-expire ang iyong sesyon dahil sa matagal na kawalan ng aktibidad. Mangyaring mag-log in muli.",
+  "Registration successful! You can now log in with your credentials.": "Matagumpay ang pagpaparehistro! Maaari ka nang mag-log in gamit ang iyong mga kredensyal.",
+  "Secure Portal Access": "Ligtas na Pag-access sa Portal",
+  "eTAYO ensures your data is protected with enterprise-grade security protocols.": "Tinitiyak ng eTAYO na protektado ang iyong datos gamit ang mga pamantayan ng mataas na antas ng seguridad.",
+  "Back to Home": "Bumalik sa Homepage",
+  "name@example.com or Username": "name@example.com o Username",
+  "Password": "Password",
+  "Confirm Password": "Kumpirmahin ang Password",
+  "Forgot password?": "Nakalimutan ang password?",
+  "Forgot Password?": "Nakalimutan ang Password?",
+  "Forgot password": "Nakalimutan ang password",
+  "Signing In...": "Pumapasok...",
+  "Authenticating...": "Sinusuri ang Pag-login...",
+  "Don't have an account?": "Wala ka pang account?",
+  "Register here": "Magrehistro rito",
+  "Please enter both email and password.": "Mangyaring ilagay ang parehong email at password.",
+  "Invalid email or password.": "Maling email o password.",
+  "Login failed. Please check your credentials.": "Hindi nagtagumpay ang pag-login. Pakisuri ang iyong impormasyon.",
+  "Hide password": "Itago ang password",
+  "Show password": "Ipakita ang password",
+  "This account is not registered in the system. Please register first to access eTAYO.": "Hindi pa rehistrado ang account na ito sa sistema. Mangyaring magrehistro muna upang ma-access ang eTAYO.",
+  "Unable to authenticate. Please check your credentials.": "Hindi mapatotohanan. Pakisuri ang iyong impormasyon.",
+  "Invalid credentials. Please verify your email and password.": "Maling impormasyon. Mangyaring suriin ang iyong email at password.",
+  "Your account has been promoted to Staff! Welcome to the evaluation portal.": "Na-promote ang iyong account bilang Kawani! Maligayang pagdating sa portal ng pagsusuri.",
+  "Your account has been demoted to Applicant.": "Naibalik ang iyong account bilang Aplikante.",
+  "Login successful! Redirecting...": "Matagumpay ang pag-login! Inililipat...",
+
+  // Registration & Verification
+  "Join eTAYO": "Sumali sa eTAYO",
+  "Create an account to apply for permits, track your progress, and securely communicate with city staff.": "Gumawa ng account upang mag-apply para sa mga permit, subaybayan ang iyong progreso, at ligtas na makipag-ugnayan sa mga kawani ng munisipyo.",
+  "Please enter your details to register.": "Mangyaring ilagay ang iyong mga detalye upang magrehistro.",
+  "Verify Email": "Kumpirmahin ang Email",
+  "We sent a 6-digit verification code to": "Nagpadala kami ng 6-digit na verification code sa",
+  "Please enter it below.": "Mangyaring ilagay ito sa ibaba.",
+  "Full Name": "Buong Pangalan",
+  "Sending Code...": "Ipinapadala ang Code...",
+  "Already have an account?": "Mayroon ka na bang account?",
+  "Log in here": "Mag-log in dito",
+  "6-Digit Verification Code": "6-Digit na Verification Code",
+  "Verifying Code...": "Sinusuri ang Verification Code...",
+  "Verify & Complete Registration": "Kumpirmahin at Kumpletuhin ang Pagpaparehistro",
+  "Send another OTP": "Magpadala muli ng OTP",
+  "Send another OTP in": "Magpadala muli ng OTP sa loob ng",
+  "Change email address": "Palitan ang email address",
+  "Please enter your Full Name": "Mangyaring ilagay ang iyong Buong Pangalan",
+  "Please enter the complete 6-digit verification code": "Mangyaring ilagay ang kumpletong 6-digit na verification code",
+  "Passwords do not match": "Hindi magkatugma ang mga password",
+  "Password must be at least 6 characters": "Dapat hindi bababa sa 6 na character ang password",
+  "Verification code must be 6 digits": "Dapat 6 na digit ang verification code",
+  "Registration completed successfully! Redirecting to login...": "Matagumpay na nakumpleto ang pagpaparehistro! Inililipat sa pag-login...",
+  "Failed to send verification code": "Nabigong ipadala ang verification code",
 
   // Dashboard Nav & Header
   "Dashboard": "Dashboard",
@@ -500,7 +558,6 @@ export const WORD_MAP = new Map<string, string>([
   ["account", "account"],
   ["settings", "mga setting"],
   ["dashboard", "dashboard"],
-  ["welcome", "maligayang pagbabalik"],
   ["signed", "nilagdaan"],
   ["date", "petsa"],
   ["dates", "mga petsa"],
@@ -537,7 +594,6 @@ export const WORD_MAP = new Map<string, string>([
   ["incorrect", "mali"],
   ["correct", "tama"],
   ["provided", "ibinigay"],
-  ["enter", "ipasok"],
   ["other", "iba pa"],
   ["others", "iba pa"],
   ["show", "ipakita"],
@@ -576,6 +632,12 @@ export const WORD_MAP = new Map<string, string>([
   ["privacy", "pagkapribado"],
 ]);
 
+// Set of all translated Filipino values to prevent double-translation
+const FILIPINO_SET = new Set<string>();
+for (const v of Object.values(SYSTEM_WIDE_DICTIONARY)) {
+  FILIPINO_SET.add(v.trim().toLowerCase());
+}
+
 // Sort dictionary phrases by descending length so multi-word phrases match before single words
 const SORTED_PHRASES = Object.keys(SYSTEM_WIDE_DICTIONARY).sort((a, b) => b.length - a.length);
 
@@ -600,11 +662,22 @@ export function translateToFilipino(text: string): string {
   const trimmed = text.trim();
   if (!trimmed) return text;
 
+  const lower = trimmed.toLowerCase();
+
+  // 0. If text is ALREADY a recognized Filipino phrase, leave it untouched!
+  // This prevents "Mag-log In" from ever becoming "Mag-Mag-log In"
+  if (FILIPINO_SET.has(lower)) {
+    return text;
+  }
+  // If text already starts with a Tagalog hyphenated verb prefix (e.g. "Mag-", "Naka-", "I-", "Pag-")
+  if (/^(mag|naka|pag|nag|ipag|i)-[a-z0-9]/i.test(trimmed)) {
+    return text;
+  }
+
   const leading = text.match(/^\s*/)?.[0] || "";
   const trailing = text.match(/\s*$/)?.[0] || "";
 
   // 1. Direct exact or case-insensitive phrase match
-  const lower = trimmed.toLowerCase();
   if (LOWERCASE_MAP.has(lower)) {
     const val = LOWERCASE_MAP.get(lower)!;
     if (trimmed.length > 2 && trimmed === trimmed.toUpperCase()) {
@@ -613,26 +686,32 @@ export function translateToFilipino(text: string): string {
     return leading + val + trailing;
   }
 
-  // 2. Sub-phrase replacements (longest phrase first)
+  // 2. Sub-phrase replacements (longest phrase first) with STRICT boundary checks
+  // Ensures hyphenated words or substrings like "Mag-log In" do NOT match "Log In"
   let result = text;
 
   for (const phrase of SORTED_PHRASES) {
     if (phrase.length < 3) continue;
     const trans = SYSTEM_WIDE_DICTIONARY[phrase];
-    if (result.includes(phrase)) {
-      result = result.split(phrase).join(trans);
-    } else if (result.toUpperCase().includes(phrase.toUpperCase())) {
-      try {
-        const regex = new RegExp(escapeRegex(phrase), "gi");
+    if (!trans || trans.toLowerCase() === phrase.toLowerCase()) continue;
+
+    try {
+      // Must not be preceded or succeeded by letters, digits, underscores, or hyphens
+      const regex = new RegExp(`(?<![A-Za-z0-9_\\-])${escapeRegex(phrase)}(?![A-Za-z0-9_\\-])`, "gi");
+      if (regex.test(result)) {
         result = result.replace(regex, (m) => {
           if (m.length > 2 && m === m.toUpperCase()) return trans.toUpperCase();
           return trans;
         });
-      } catch (e) {}
+      }
+    } catch (e) {
+      if (result.toLowerCase() === phrase.toLowerCase()) {
+        result = trans;
+      }
     }
   }
 
-  // 3. Word-level fallback for remaining English words
+  // 3. Word-level fallback for remaining isolated English terms
   result = result.replace(/\b[A-Za-z]+(?:'[A-Za-z]+)?\b/g, (w) => {
     const wLower = w.toLowerCase();
     if (WORD_MAP.has(wLower)) {

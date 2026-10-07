@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Lock, Mail, User, ShieldCheck, ArrowLeft, ArrowRight, Eye, EyeOff, RotateCw, CheckCircle2, AlertCircle } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function RegisterPage() {
+  const { t, language } = useLanguage();
   const [step, setStep] = useState<"details" | "verification">("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -279,8 +281,8 @@ export default function RegisterPage() {
 
       <div className="login-visual animate-fade-in">
         <div className="visual-content">
-          <h1>Join eTAYO</h1>
-          <p>Create an account to apply for permits, track your progress, and securely communicate with city staff.</p>
+          <h1>{t("Join eTAYO", "Join eTAYO")}</h1>
+          <p>{t("Create an account to apply for permits, track your progress, and securely communicate with city staff.", "Create an account to apply for permits, track your progress, and securely communicate with city staff.")}</p>
         </div>
       </div>
 
@@ -293,7 +295,7 @@ export default function RegisterPage() {
             title="Bumalik sa Homepage"
           >
             <ArrowLeft size={16} />
-            <span>Back to Home</span>
+            <span>{t("Back to Home", "Back to Home")}</span>
           </Link>
 
           <div className="login-card">
@@ -306,13 +308,13 @@ export default function RegisterPage() {
           <div className="form-header">
             {step === "details" ? (
               <>
-                <h1>Create Account</h1>
-                <p>Please enter your details to register.</p>
+                <h1>{t("Create Account", "Create Account")}</h1>
+                <p>{t("Please enter your details to register.", "Please enter your details to register.")}</p>
               </>
             ) : (
               <>
-                <h1>Verify Email</h1>
-                <p>We sent a 6-digit verification code to <b>{email}</b>. Please enter it below.</p>
+                <h1>{t("Verify Email", "Verify Email")}</h1>
+                <p>{language === "fil" ? `Nagpadala kami ng 6-digit na verification code sa ${email}. Mangyaring ilagay ito sa ibaba.` : `We sent a 6-digit verification code to ${email}. Please enter it below.`}</p>
               </>
             )}
           </div>
@@ -334,7 +336,7 @@ export default function RegisterPage() {
           {step === "details" ? (
             <form key="form-details" onSubmit={handleSendOtp} className="login-form">
               <div className="form-group">
-                <label>Full Name</label>
+                <label>{t("Full Name", "Full Name")}</label>
                 <div className="input-with-icon">
                   <User size={18} className="input-icon" />
                   <input 
@@ -352,7 +354,7 @@ export default function RegisterPage() {
               </div>
 
               <div className="form-group">
-                <label>Email Address</label>
+                <label>{t("Email Address", "Email Address")}</label>
                 <div className="input-with-icon">
                   <Mail size={18} className="input-icon" />
                   <input 
@@ -370,7 +372,7 @@ export default function RegisterPage() {
               </div>
 
               <div className="form-group">
-                <label>Password</label>
+                <label>{t("Password", "Password")}</label>
                 <div className="input-with-icon">
                   <Lock size={18} className="input-icon" />
                   <input 
@@ -389,7 +391,7 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="password-toggle-btn"
-                    title={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? (language === "fil" ? "Itago ang password" : "Hide password") : (language === "fil" ? "Ipakita ang password" : "Show password")}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -398,7 +400,7 @@ export default function RegisterPage() {
               </div>
 
               <div className="form-group">
-                <label>Confirm Password</label>
+                <label>{t("Confirm Password", "Confirm Password")}</label>
                 <div className="input-with-icon">
                   <Lock size={18} className="input-icon" />
                   <input 
@@ -417,7 +419,7 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="password-toggle-btn"
-                    title={showConfirmPassword ? "Hide password" : "Show password"}
+                    title={showConfirmPassword ? (language === "fil" ? "Itago ang password" : "Hide password") : (language === "fil" ? "Ipakita ang password" : "Show password")}
                     aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                   >
                     {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -426,17 +428,17 @@ export default function RegisterPage() {
               </div>
 
               <button type="submit" className="login-btn" disabled={isLoading}>
-                {isLoading ? "Sending Code..." : "Create Account"}
+                {isLoading ? t("Sending Code...", "Sending Code...") : t("Create Account", "Create Account")}
               </button>
               
               <div className="register-prompt">
-                Already have an account? <Link href="/login" className="register-link">Log in here</Link>
+                {t("Already have an account?", "Already have an account?")} <Link href="/login" className="register-link">{t("Log in here", "Log in here")}</Link>
               </div>
             </form>
           ) : (
             <form key="form-verification" onSubmit={handleRegister} className="login-form" autoComplete="off">
               <div className="form-group">
-                <label>6-Digit Verification Code</label>
+                <label>{t("6-Digit Verification Code", "6-Digit Verification Code")}</label>
                 <div className="input-with-icon">
                   <ShieldCheck size={18} className="input-icon" />
                   <input 
@@ -461,7 +463,7 @@ export default function RegisterPage() {
               </div>
 
               <button type="submit" className="login-btn" disabled={isLoading}>
-                {isLoading ? "Verifying Code..." : "Verify & Complete Registration"}
+                {isLoading ? t("Verifying Code...", "Verifying Code...") : t("Verify & Complete Registration", "Verify & Complete Registration")}
               </button>
 
               {/* 2-Minute Timer Resend Button */}
@@ -472,7 +474,7 @@ export default function RegisterPage() {
                 onClick={handleResendOtp}
               >
                 <RotateCw size={15} className={isResending ? "animate-spin" : ""} />
-                {canResend ? "Send another OTP" : `Send another OTP in ${formatTime(timer)}`}
+                {canResend ? t("Send another OTP", "Send another OTP") : `${t("Send another OTP in", "Send another OTP in")} ${formatTime(timer)}`}
               </button>
               
               <div className="register-prompt" style={{ marginTop: "1.25rem" }}>
@@ -486,7 +488,7 @@ export default function RegisterPage() {
                   }} 
                   style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
                 >
-                  ← Change email address
+                  ← {t("Change email address", "Change email address")}
                 </button>
               </div>
             </form>
