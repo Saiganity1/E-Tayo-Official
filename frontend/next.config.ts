@@ -24,7 +24,12 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/staff",
-        destination: "/staff/dashboard",
+        destination: "/admin/evaluations",
+        permanent: false,
+      },
+      {
+        source: "/staff/dashboard",
+        destination: "/admin/evaluations",
         permanent: false,
       },
       {
@@ -64,7 +69,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/evaluate",
-        destination: "/staff/dashboard",
+        destination: "/admin/evaluations",
         permanent: false,
       },
       {

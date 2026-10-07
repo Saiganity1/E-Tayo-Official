@@ -55,10 +55,10 @@ export default function DashboardLayout({
       }
 
       if (pathname.startsWith("/admin")) {
-        const hasAdminAccess = ["ROLE_ADMIN", "ROLE_SUPERADMIN"].includes(userRoleStr);
+        const hasAdminAccess = ["ROLE_ADMIN", "ROLE_SUPERADMIN"].includes(userRoleStr) || (userRoleStr === "ROLE_STAFF" && pathname.startsWith("/admin/evaluations"));
         if (!hasAdminAccess) {
           setIsAuthorized(false);
-          router.replace(userRoleStr === "ROLE_STAFF" ? "/staff/dashboard" : "/applicant/dashboard");
+          router.replace(userRoleStr === "ROLE_STAFF" ? "/admin/evaluations" : "/applicant/dashboard");
           return;
         }
       }

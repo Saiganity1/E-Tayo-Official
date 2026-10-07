@@ -233,7 +233,7 @@ export default function Sidebar() {
       }
       case "staff":
         return [
-          { href: "/staff/dashboard", label: t("reviewHub", "Review Hub"), icon: FileCheck },
+          { href: "/admin/evaluations", label: t("staffEvaluations", "Staff Evaluations"), icon: FileCheck },
           { href: "/staff/map", label: t("map", "Map"), icon: Map },
           { href: "/staff/messages", label: t("messages", "Messages"), icon: MessageSquare },
         ];
@@ -242,7 +242,6 @@ export default function Sidebar() {
           { href: "/admin/evaluations", label: t("staffEvaluations", "Staff Evaluations"), icon: FileCheck },
           { href: "/admin/security", label: t("securityAuth", "Security & Auth"), icon: Shield },
           { href: "/admin/form-tester", label: t("formTester", "Form Testing Studio"), icon: ClipboardList },
-          { href: "/staff/dashboard", label: t("reviewWorkspaces", "Review Workspaces"), icon: CheckSquare },
           { href: "/staff/templates", label: t("officialForms", "Official Forms"), icon: FileText },
           { href: "/admin/users", label: t("applicantManagement", "Applicants Management"), icon: Users },
           { href: "/admin/staff", label: t("staffManagement", "Staff Management"), icon: ShieldAlert },

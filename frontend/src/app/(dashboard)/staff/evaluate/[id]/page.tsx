@@ -1250,8 +1250,8 @@ export default function StaffEvaluatePage() {
         <p style={{ color: "#64748b", margin: "0.5rem 0 1.5rem 0" }}>
           Could not locate application with ID: <strong>{id}</strong>.
         </p>
-        <button onClick={() => router.push("/staff/dashboard")} className="btn-primary">
-          <ArrowLeft size={16} /> Return to Staff Dashboard
+        <button onClick={() => router.push("/admin/evaluations")} className="btn-primary">
+          <ArrowLeft size={16} /> Return to Staff Evaluations
         </button>
       </div>
     );
@@ -2040,7 +2040,7 @@ ${isDisapprove
       }}>
         <div>
           <button
-            onClick={() => router.push("/staff/dashboard")}
+            onClick={() => router.push("/admin/evaluations")}
             style={{
               display: "inline-flex",
               alignItems: "center",
