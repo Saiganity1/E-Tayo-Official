@@ -566,13 +566,26 @@ export default function AdminStaffPage() {
     <>
       <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1400px", margin: "0 auto", paddingBottom: "3rem" }}>
         
-        {/* Header with Title and Action Button */}
-        <header className="page-header" style={{ marginBottom: "1.75rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+        {/* Page Header with White Glass Background Card */}
+        <header className="page-header" style={{ 
+          background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.9)",
+          boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
+          borderRadius: "20px",
+          padding: "1.25rem 1.75rem",
+          marginBottom: "1.25rem", 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center", 
+          flexWrap: "wrap", 
+          gap: "1rem" 
+        }}>
           <div>
-            <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "0.75rem", margin: 0 }}>
-              <ShieldAlert size={32} color="#1d4ed8" /> Staff Management
+            <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", display: "flex", alignItems: "center", gap: "0.75rem", margin: 0 }}>
+              <ShieldAlert size={30} color="#0038A8" /> Staff Management
             </h1>
-            <p className="page-subtitle" style={{ fontSize: "1.05rem", marginTop: "0.5rem", color: "#475569", margin: "0.5rem 0 0 0" }}>
+            <p className="page-subtitle" style={{ fontSize: "0.95rem", color: "#475569", margin: "0.35rem 0 0 0" }}>
               Manwal na mag-assign ng mga opisyal na magiging evaluating staff para sa pagsusuri ng mga permit.
             </p>
           </div>
@@ -582,16 +595,18 @@ export default function AdminStaffPage() {
               onClick={() => fetchStaff()}
               style={{
                 background: "#ffffff",
-                border: "1.5px solid #cbd5e1",
+                border: "1px solid #cbd5e1",
                 color: "#334155",
-                padding: "10px 16px",
+                padding: "9px 16px",
                 borderRadius: "12px",
                 fontSize: "0.9rem",
-                fontWeight: "700",
+                fontWeight: "600",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
-                cursor: "pointer"
+                cursor: "pointer",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+                transition: "all 0.2s"
               }}
             >
               <RefreshCw size={16} />
@@ -641,7 +656,7 @@ export default function AdminStaffPage() {
           </div>
         )}
 
-        <div className="glass-panel" style={{ padding: "2rem", background: "#ffffff", borderRadius: "24px", border: "1.5px solid #e2e8f0", boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
+        <div style={{ padding: "2rem", background: "#ffffff", borderRadius: "24px", border: "1.5px solid #e2e8f0", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.06), 0 0 0 1px rgba(226, 232, 240, 0.8) inset" }}>
           {loading ? (
             <div style={{ padding: "3rem", textAlign: "center" }}>
               <div className="spinner" style={{ width: "40px", height: "40px", border: "4px solid rgba(29, 78, 216, 0.2)", borderTopColor: "#1d4ed8", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 1rem auto" }}></div>

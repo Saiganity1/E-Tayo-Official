@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Users, Shield, UserCheck, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Users, Shield, UserCheck, AlertTriangle, ShieldAlert, RefreshCw } from "lucide-react";
 
 interface UserData {
   id: number;
@@ -96,17 +96,63 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="dashboard-page animate-fade-in-up">
-      <header className="page-header" style={{ marginBottom: "2rem" }}>
-        <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", color: "#0f172a", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Users size={32} color="#1d4ed8" /> Applicants Management
-        </h1>
-        <p className="page-subtitle" style={{ fontSize: "1.1rem", marginTop: "0.5rem", color: "#475569" }}>
-          View all registered applicants and promote them to Staff if necessary.
-        </p>
+    <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1400px", margin: "0 auto", paddingBottom: "4rem" }}>
+      {/* Page Header with White Glass Background Card */}
+      <header className="page-header" style={{ 
+        background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(255, 255, 255, 0.9)",
+        boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
+        borderRadius: "20px",
+        padding: "1.25rem 1.75rem",
+        marginBottom: "1.25rem", 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center", 
+        flexWrap: "wrap", 
+        gap: "1rem" 
+      }}>
+        <div>
+          <h1 className="page-title" style={{ fontSize: "2rem", fontWeight: "800", background: "linear-gradient(90deg, #021a4f 0%, #0038A8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", display: "flex", alignItems: "center", gap: "0.75rem", margin: 0 }}>
+            <Users size={30} color="#0038A8" /> Applicants Management
+          </h1>
+          <p className="page-subtitle" style={{ fontSize: "0.95rem", color: "#475569", margin: "0.35rem 0 0 0" }}>
+            View all registered applicants and promote them to Staff if necessary.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button
+            onClick={() => { setLoading(true); fetchUsers(); }}
+            disabled={loading}
+            style={{
+              background: "white",
+              border: "1px solid #cbd5e1",
+              color: "#334155",
+              padding: "9px 16px",
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontWeight: "600",
+              fontSize: "0.9rem",
+              cursor: loading ? "not-allowed" : "pointer",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+              transition: "all 0.2s"
+            }}
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} color="#2563eb" /> Refresh
+          </button>
+        </div>
       </header>
 
-      <div className="glass-panel" style={{ padding: "2rem", background: "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
+      <section style={{ 
+        background: "#ffffff", 
+        padding: "2rem", 
+        borderRadius: "24px", 
+        border: "1.5px solid #e2e8f0", 
+        boxShadow: "0 10px 40px -10px rgba(0,0,0,0.06), 0 0 0 1px rgba(226, 232, 240, 0.8) inset" 
+      }}>
         {loading ? (
           <div style={{ padding: "3rem", textAlign: "center" }}>
             <div className="spinner" style={{ width: "40px", height: "40px", border: "4px solid rgba(29, 78, 216, 0.2)", borderTopColor: "#1d4ed8", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 1rem auto" }}></div>
@@ -131,7 +177,14 @@ export default function AdminUsersPage() {
               <tbody>
                 {users.map(user => (
                   <tr key={user.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                    <td style={{ padding: "1.25rem 1rem", fontWeight: "600", color: "#0f172a" }}>{user.name}</td>
+                    <td style={{ padding: "1.25rem 1rem", fontWeight: "700", color: "#0f172a" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#eff6ff", color: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "800" }}>
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span>{user.name}</span>
+                      </div>
+                    </td>
                     <td style={{ padding: "1.25rem 1rem", color: "#475569" }}>{user.email}</td>
                     <td style={{ padding: "1.25rem 1rem" }}>{getRoleBadge(user.role)}</td>
                     <td style={{ padding: "1.25rem 1rem", textAlign: "right" }}>
@@ -157,8 +210,9 @@ export default function AdminUsersPage() {
             </table>
           </div>
         )}
-      </div>
+      </section>
       <style dangerouslySetInnerHTML={{__html: `@keyframes spin { 100% { transform: rotate(360deg); } }`}} />
     </div>
   );
 }
+
