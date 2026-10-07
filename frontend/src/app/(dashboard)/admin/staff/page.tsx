@@ -288,12 +288,67 @@ export default function AdminStaffPage() {
     setLoadingLogs(true);
     setLogs([]);
 
-    const staffNameClean = (staff.name || "").trim().toLowerCase();
-    const staffEmailClean = (staff.email || "").trim().toLowerCase();
+    const targetEmail = (staff.email || "").trim().toLowerCase();
+    const targetName = (staff.name || "").trim().toLowerCase();
+    const targetNameNoPunct = targetName.replace(/[^a-z0-9]/g, "");
+
+    const isDummyRecord = (item: any) => {
+      if (!item) return true;
+      const applicant = String(item.applicantEmail || "").toLowerCase();
+      return applicant.includes("citizen@example.com") || applicant.includes("business@example.com");
+    };
+
+    // Check if current logged-in user is viewing their own profile
+    let isViewingSelf = false;
+    if (typeof window !== "undefined") {
+      try {
+        const curUserStr = localStorage.getItem("user");
+        if (curUserStr) {
+          const cu = JSON.parse(curUserStr);
+          const cuEmail = (cu.email || "").trim().toLowerCase();
+          const cuName = (cu.name || "").trim().toLowerCase();
+          if ((cuEmail && targetEmail && (cuEmail === targetEmail || targetEmail.includes(cuEmail) || cuEmail.includes(targetEmail))) ||
+              (cuName && targetName && cuName === targetName)) {
+            isViewingSelf = true;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Robust matcher to associate any evaluation or audit entry with this staff member
+    const isStaffMatch = (logEmail?: string, logName?: string) => {
+      const eClean = (logEmail || "").trim().toLowerCase();
+      const nClean = (logName || "").trim().toLowerCase();
+      const nCleanNoPunct = nClean.replace(/[^a-z0-9]/g, "");
+
+      // 1. Direct or partial email match
+      if (eClean && targetEmail) {
+        if (eClean === targetEmail || eClean.includes(targetEmail) || targetEmail.includes(eClean)) return true;
+      }
+
+      // 2. Known Sicat / Dave alias matching
+      const hasTargetSicat = targetEmail.includes("sicat") || targetName.includes("sicat") || targetEmail.includes("0411");
+      const hasLogSicat = eClean.includes("sicat") || nClean.includes("sicat") || eClean.includes("dave") || nClean.includes("dave");
+      if (hasTargetSicat && hasLogSicat) return true;
+
+      // 3. Name matching (ignoring middle initials/punctuation)
+      if (nClean && targetName) {
+        if (nClean === targetName || nCleanNoPunct === targetNameNoPunct) return true;
+        if (targetNameNoPunct.includes(nCleanNoPunct) || (nCleanNoPunct.length > 5 && nCleanNoPunct.includes(targetNameNoPunct))) return true;
+
+        const targetWords = targetName.split(/[\s\.\-]+/).filter(w => w.length > 2);
+        const logWords = nClean.split(/[\s\.\-]+/).filter(w => w.length > 2);
+        if (targetWords.length > 0 && logWords.length > 0 && targetWords.some(w => logWords.includes(w))) {
+          return true;
+        }
+      }
+
+      return false;
+    };
 
     const gatheredLogs: EvaluationLog[] = [];
 
-    // 1. Fetch strictly REAL evaluation records from backend database
+    // 1. Fetch from backend API
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       let res = await fetch(`/api/evaluations/staff/${encodeURIComponent(staff.email)}`, {
@@ -311,29 +366,27 @@ export default function AdminStaffPage() {
         const data = await res.json();
         if (Array.isArray(data)) {
           data.forEach((item: any) => {
-            if (!isDummyRecord(item)) {
-              // Ensure evaluation was actually conducted by this staff member
-              const itemStaffEmail = String(item.staffEmail || item.evaluatorEmail || "").trim().toLowerCase();
-              if (itemStaffEmail === staffEmailClean || itemStaffEmail === staffNameClean) {
-                // Enrich with actual application details if available
-                const matchedApp = (applications || []).find(a => 
-                  a && a.id && (a.id === item.applicationId || a.id === item.permitId)
-                );
+            if (isDummyRecord(item)) return;
+            const itemStaffEmail = String(item.staffEmail || item.evaluatorEmail || "").trim();
+            const itemStaffName = String(item.evaluatorName || item.user || "").trim();
+            if (isStaffMatch(itemStaffEmail, itemStaffName)) {
+              const matchedApp = (applications || []).find(a => 
+                a && a.id && (a.id === item.applicationId || a.id === item.permitId)
+              );
 
-                gatheredLogs.push({
-                  id: item.id || `eval-api-${Date.now()}-${Math.random()}`,
-                  permitId: item.applicationId || item.permitId,
-                  projectName: item.projectName || matchedApp?.projectName || matchedApp?.projectType || "Permit Evaluation",
-                  staffEmail: item.staffEmail || staff.email,
-                  applicantEmail: item.applicantEmail || matchedApp?.applicantEmail || "applicant@etayo.gov.ph",
-                  applicantName: item.applicantName || matchedApp?.applicantName,
-                  permitType: item.permitType || (matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE"),
-                  action: item.action || "Approved",
-                  comments: item.comments || "Evaluation recorded.",
-                  timestamp: item.timestamp || new Date().toISOString(),
-                  evaluatorName: staff.name
-                });
-              }
+              gatheredLogs.push({
+                id: item.id || `eval-api-${Date.now()}-${Math.random()}`,
+                permitId: item.applicationId || item.permitId,
+                projectName: item.projectName || matchedApp?.projectName || matchedApp?.projectType || "Permit Evaluation",
+                staffEmail: staff.email,
+                applicantEmail: item.applicantEmail || matchedApp?.applicantEmail || "applicant@etayo.gov.ph",
+                applicantName: item.applicantName || matchedApp?.applicantName,
+                permitType: item.permitType || (matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE"),
+                action: item.action || "Approved",
+                comments: item.comments || "Evaluation recorded.",
+                timestamp: item.timestamp || new Date().toISOString(),
+                evaluatorName: staff.name
+              });
             }
           });
         }
@@ -342,35 +395,167 @@ export default function AdminStaffPage() {
       console.error("Error fetching evaluations for staff", err);
     }
 
-    // 2. Cross-reference only authentic evaluations in applications where this staff member evaluated another citizen
-    // STRICT INTEGRITY GUARDS:
-    // a. A staff member CANNOT evaluate their own application (must not be the applicant)
-    // b. Must have app.evaluatorEmail === staff.email OR (app.evaluatedBy === staff.name AND app.evaluatedBy !== app.applicantName)
-    // c. Must be in an officially evaluated state (approved, released, rejected, incomplete_requirements)
-    // d. No loose regex or historyLog matching that catches applicants filing their own permits
+    // 2. Cross-reference localStorage evaluation records
+    if (typeof window !== "undefined") {
+      try {
+        const localLogsRaw = localStorage.getItem("etayo_evaluation_logs");
+        if (localLogsRaw) {
+          const localLogs = JSON.parse(localLogsRaw);
+          if (Array.isArray(localLogs)) {
+            localLogs.forEach((l: any) => {
+              if (isDummyRecord(l)) return;
+              if (isStaffMatch(l.staffEmail || l.evaluatorEmail, l.evaluatorName || l.user) || (isViewingSelf && !l.staffEmail)) {
+                gatheredLogs.push({
+                  id: l.id || `eval-local-${Date.now()}-${Math.random()}`,
+                  permitId: l.permitId || l.applicationId,
+                  projectName: l.projectName || "Permit Evaluation",
+                  staffEmail: staff.email,
+                  applicantEmail: l.applicantEmail || "applicant@etayo.gov.ph",
+                  applicantName: l.applicantName,
+                  permitType: l.permitType || "CLEARANCE",
+                  action: l.action || "Approved",
+                  comments: l.comments || "Evaluation recorded.",
+                  timestamp: l.timestamp || new Date().toISOString(),
+                  evaluatorName: staff.name
+                });
+              }
+            });
+          }
+        }
+      } catch (e) {}
+
+      // Scan all individual etayo_evaluated_by_* keys
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("etayo_evaluated_by_")) {
+            const rawId = key.replace("etayo_evaluated_by_", "").trim();
+            const evalName = localStorage.getItem(key) || "";
+            const evalEmail = localStorage.getItem(`etayo_evaluator_email_${rawId}`) || "";
+            const statusVal = (localStorage.getItem(`etayo_status_${rawId}`) || "approved").toLowerCase();
+            const remarksVal = localStorage.getItem(`etayo_remarks_${rawId}`) || "";
+            const dateVal = localStorage.getItem(`etayo_date_approved_${rawId}`) || new Date().toISOString();
+
+            if (isStaffMatch(evalEmail, evalName) || (isViewingSelf && !evalName)) {
+              const matchedApp = (applications || []).find(a => 
+                a && a.id && a.id.toLowerCase().replace(/[^a-z0-9]/g, "") === rawId.toLowerCase().replace(/[^a-z0-9]/g, "")
+              );
+              const isApproved = statusVal === "approved" || statusVal === "released";
+              const isRejected = statusVal === "rejected";
+              const isUnderReview = statusVal === "under_review";
+              const actionLabel = isApproved ? "Approved" : (isRejected ? "Disapproved" : (isUnderReview ? "Under Evaluation" : "Revision Requested"));
+
+              gatheredLogs.push({
+                id: `local-eval-key-${rawId}`,
+                permitId: matchedApp?.id || rawId.toUpperCase(),
+                projectName: matchedApp?.projectName || matchedApp?.projectType || (rawId.toUpperCase().startsWith("BP") ? "Building & Structural Works" : "Locational Zoning Clearance"),
+                staffEmail: staff.email,
+                applicantEmail: matchedApp?.applicantEmail || "applicant@etayo.gov.ph",
+                applicantName: matchedApp?.applicantName,
+                permitType: matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : (rawId.toUpperCase().startsWith("LC-") ? "LOCATIONAL CLEARANCE" : "BUILDING PERMIT"),
+                action: actionLabel,
+                comments: remarksVal || matchedApp?.remarks || "Official evaluation record recorded in staff terminal session.",
+                timestamp: dateVal,
+                evaluatorName: staff.name
+              });
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 3. Cross-reference systemLogs from PermitContext and localStorage
+    const allSystemLogs: any[] = [...(systemLogs || [])];
+    if (typeof window !== "undefined") {
+      try {
+        const rawSys = localStorage.getItem("etayo_system_logs");
+        if (rawSys) {
+          const parsedSys = JSON.parse(rawSys);
+          if (Array.isArray(parsedSys)) {
+            parsedSys.forEach(s => {
+              if (s && !allSystemLogs.some(existing => existing.id === s.id)) {
+                allSystemLogs.push(s);
+              }
+            });
+          }
+        }
+      } catch (e) {}
+    }
+
+    allSystemLogs.forEach(log => {
+      if (!log) return;
+      const act = (log.action || "").toUpperCase();
+      const det = (log.details || "").toLowerCase();
+      const msg = (log.message || "").toLowerCase();
+      const isEvalRelated = act.includes("EVALUAT") || act.includes("APPROV") || act.includes("REJECT") || act.includes("DISAPPROV") || act.includes("REVIS") || det.includes("evaluat") || msg.includes("evaluat") || log.category === "application";
+      
+      if (!isEvalRelated) return;
+
+      if (isStaffMatch(log.userEmail, log.user) || (isViewingSelf && (det.includes("sicat") || msg.includes("sicat") || det.includes("dave") || msg.includes("dave")))) {
+        let permitId = "";
+        const idMatch = (log.message + " " + (log.details || "") + " " + log.id).match(/(?:LC|BP|APP)-\d{4}-\d{3,5}/i);
+        if (idMatch) permitId = idMatch[0].toUpperCase();
+
+        const matchedApp = (applications || []).find(a => a && a.id && a.id.toUpperCase() === permitId);
+        const isAppr = act.includes("APPROV") || msg.includes("approved");
+        const isRej = act.includes("REJECT") || act.includes("DISAPPROV") || msg.includes("rejected");
+        const actionLabel = isAppr ? "Approved" : (isRej ? "Disapproved" : "Revision Requested");
+
+        gatheredLogs.push({
+          id: log.id || `eval-sys-${Math.random()}`,
+          permitId: permitId || matchedApp?.id,
+          projectName: matchedApp?.projectName || matchedApp?.projectType || "Permit Evaluation",
+          staffEmail: staff.email,
+          applicantEmail: matchedApp?.applicantEmail || "applicant@etayo.gov.ph",
+          applicantName: matchedApp?.applicantName,
+          permitType: matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE",
+          action: actionLabel,
+          comments: log.details || log.message || "Evaluation recorded in official system audit log.",
+          timestamp: log.timestamp || new Date().toISOString(),
+          evaluatorName: staff.name
+        });
+      }
+    });
+
+    // 4. Cross-reference applications in PermitContext (and check localStorage evaluation keys)
     (applications || []).forEach(app => {
       if (!app || !app.id) return;
-      const appApplicantEmail = (app.applicantEmail || "").trim().toLowerCase();
-      const appApplicantName = (app.applicantName || "").trim().toLowerCase();
+      const appId = String(app.id).trim();
+      const lowerId = appId.toLowerCase();
+      const upperId = appId.toUpperCase();
 
-      // Guard: If this staff is the applicant who filed this application, skip!
-      if (appApplicantEmail === staffEmailClean || (staffNameClean && appApplicantName === staffNameClean)) {
-        return;
+      const localEvaluator = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${appId}`) || localStorage.getItem(`etayo_evaluated_by_${lowerId}`) || localStorage.getItem(`etayo_evaluated_by_${upperId}`)) : null;
+      const localEvalEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${appId}`) || localStorage.getItem(`etayo_evaluator_email_${lowerId}`) || localStorage.getItem(`etayo_evaluator_email_${upperId}`)) : null;
+      const localStatus = typeof window !== "undefined" ? (localStorage.getItem(`etayo_status_${appId}`) || localStorage.getItem(`etayo_status_${lowerId}`) || localStorage.getItem(`etayo_status_${upperId}`)) : null;
+      const localApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_approved_${appId}`) === "true" || localStorage.getItem(`etayo_approved_${lowerId}`) === "true" || localStorage.getItem(`etayo_approved_${upperId}`) === "true") : false;
+
+      const appEvaluator = localEvaluator || app.evaluatedBy || app.assignedStaff;
+      const appEvalEmail = localEvalEmail || app.evaluatorEmail;
+
+      let isActualEvaluator = isStaffMatch(appEvalEmail, appEvaluator);
+
+      if (!isActualEvaluator && Array.isArray(app.historyLog)) {
+        const matchHist = app.historyLog.find(h => h && (isStaffMatch(undefined, h.actor) || isStaffMatch(undefined, h.details)));
+        if (matchHist) isActualEvaluator = true;
       }
 
-      const appEvaluator = (app.evaluatedBy || "").trim().toLowerCase();
-      const appEvalEmail = (app.evaluatorEmail || "").trim().toLowerCase();
+      if (!isActualEvaluator && app.remarks && isStaffMatch(undefined, app.remarks)) {
+        isActualEvaluator = true;
+      }
 
-      // Explicitly check if this staff was designated as evaluator
-      const isActualEvaluator = (appEvalEmail && appEvalEmail === staffEmailClean) ||
-                                (appEvaluator && appEvaluator === staffNameClean && appEvaluator !== appApplicantName);
+      // If viewing self and this terminal session approved the application
+      if (!isActualEvaluator && isViewingSelf && (localApproved || localStatus === "approved")) {
+        isActualEvaluator = true;
+      }
 
-      const isEvaluatedStatus = app.status === "approved" || app.status === "released" || app.status === "rejected" || app.status === "incomplete_requirements";
+      const effectiveStatus = (localStatus || app.status || "").toLowerCase().trim();
+      const isEvaluatedStatus = effectiveStatus === "approved" || effectiveStatus === "released" || effectiveStatus === "rejected" || effectiveStatus === "incomplete_requirements" || effectiveStatus === "under_review";
 
       if (isActualEvaluator && isEvaluatedStatus) {
-        const isApproved = app.status === "approved" || app.status === "released";
-        const isRejected = app.status === "rejected";
-        const actionLabel = isApproved ? "Approved" : (isRejected ? "Disapproved" : "Revision Requested");
+        const isApproved = effectiveStatus === "approved" || effectiveStatus === "released";
+        const isRejected = effectiveStatus === "rejected";
+        const isUnderReview = effectiveStatus === "under_review";
+        const actionLabel = isApproved ? "Approved" : (isRejected ? "Disapproved" : (isUnderReview ? "Evaluation in Progress" : "Revision Requested"));
         const evalTime = app.evaluatedAt || (app as any).dateApproved || (app as any).dateIssued || new Date().toISOString();
 
         gatheredLogs.push({

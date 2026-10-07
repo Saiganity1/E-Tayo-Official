@@ -83,8 +83,22 @@ export default function StaffEvaluationsPage() {
       const curId = String(targetApp.id).trim();
       const lowerId = curId.toLowerCase();
       const upperId = curId.toUpperCase();
+
+      const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+      let curStaffName = "";
+      let curStaffEmail = "";
+      if (userStr) {
+        try {
+          const u = JSON.parse(userStr);
+          if (u.name) curStaffName = u.name;
+          if (u.email) curStaffEmail = u.email;
+        } catch (e) {}
+      }
+
       [curId, lowerId, upperId].forEach(k => {
         localStorage.setItem(`etayo_status_${k}`, "under_review");
+        if (curStaffName) localStorage.setItem(`etayo_evaluated_by_${k}`, curStaffName);
+        if (curStaffEmail) localStorage.setItem(`etayo_evaluator_email_${k}`, curStaffEmail);
       });
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));

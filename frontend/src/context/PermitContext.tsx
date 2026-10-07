@@ -580,6 +580,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const storedFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${id}`) || localStorage.getItem(`etayo_fees_${lowerId}`) || localStorage.getItem(`etayo_fees_${upperId}`)) : null;
             const storedDateApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${id}`) || localStorage.getItem(`etayo_date_approved_${lowerId}`) || localStorage.getItem(`etayo_date_approved_${upperId}`)) : null;
             const storedRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${id}`) || localStorage.getItem(`etayo_remarks_${lowerId}`) || localStorage.getItem(`etayo_remarks_${upperId}`)) : null;
+            const storedEvaluatedBy = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${id}`) || localStorage.getItem(`etayo_evaluated_by_${lowerId}`) || localStorage.getItem(`etayo_evaluated_by_${upperId}`)) : null;
+            const storedEvaluatorEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${id}`) || localStorage.getItem(`etayo_evaluator_email_${lowerId}`) || localStorage.getItem(`etayo_evaluator_email_${upperId}`)) : null;
 
             const isLocalUnderReview = typeof window !== "undefined" && (
               localStorage.getItem(`etayo_status_${id}`) === "under_review" ||
@@ -636,6 +638,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (foundCached as any)?.assessedFees || (bApp as any).estimatedFees || (bApp.permitType === "locational_clearance" || String(bApp.id).toUpperCase().startsWith("LC-") ? 1500 : 6200)),
                 dateApproved: storedDateApproved || (bApp as any).dateApproved || (foundCached as any)?.dateApproved || (isApproved ? ((bApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
                 remarks: storedRemarks || bApp.remarks || foundCached.remarks,
+                evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy || (foundCached as any)?.evaluatedBy,
+                evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail || (foundCached as any)?.evaluatorEmail,
                 trackingSteps: (bApp.trackingSteps && bApp.trackingSteps.length > 0) ? bApp.trackingSteps : foundCached.trackingSteps,
                 historyLog: (bApp.historyLog && bApp.historyLog.length > 0) ? bApp.historyLog : foundCached.historyLog,
                 paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl || (foundCached as any)?.paymentProofUrl
@@ -656,6 +660,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (bApp as any).estimatedFees || (curIsLC ? 1500 : 6200)),
                 dateApproved: storedDateApproved || (bApp as any).dateApproved || (isApprovedLocal ? new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : undefined),
                 remarks: storedRemarks || bApp.remarks,
+                evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy,
+                evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail,
                 paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl
               };
             }
@@ -676,6 +682,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 ...bApp,
                 status: "under_review",
                 isArchived,
+                evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy,
+                evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail,
                 trackingSteps: pendingSteps
               };
             }
@@ -683,6 +691,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             return {
               ...bApp,
               status: effectiveStatus || bApp.status,
+              evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy,
+              evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail,
               isArchived
             };
           });
@@ -774,10 +784,15 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             });
           }
 
+          const mEvaluatedBy = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${mId}`) || localStorage.getItem(`etayo_evaluated_by_${mLower}`) || localStorage.getItem(`etayo_evaluated_by_${mUpper}`)) : null;
+          const mEvaluatorEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${mId}`) || localStorage.getItem(`etayo_evaluator_email_${mLower}`) || localStorage.getItem(`etayo_evaluator_email_${mUpper}`)) : null;
+
           return {
             ...mApp,
             status: mEffectiveRawStatus,
             isArchived: mIsArchived,
+            evaluatedBy: mEvaluatedBy || mApp.evaluatedBy || (mApp as any).assignedStaff,
+            evaluatorEmail: mEvaluatorEmail || mApp.evaluatorEmail,
             trackingSteps: cleanSteps,
             isReleased: false,
             paymentStatus: "unpaid" as const,
@@ -870,10 +885,14 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         const mIsLC = mApp.permitType === "locational_clearance" || String(mApp.id || "").toUpperCase().startsWith("LC-");
         const mCleanSeq = String(mApp.id || "").replace(/^[A-Za-z]+-/i, "");
+        const mEvaluatedBy = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${mId}`) || localStorage.getItem(`etayo_evaluated_by_${mLower}`) || localStorage.getItem(`etayo_evaluated_by_${mUpper}`)) : null;
+        const mEvaluatorEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${mId}`) || localStorage.getItem(`etayo_evaluator_email_${mLower}`) || localStorage.getItem(`etayo_evaluator_email_${mUpper}`)) : null;
         return {
           ...mApp,
           status: mEffectiveStatus,
           isArchived: mIsArchived,
+          evaluatedBy: mEvaluatedBy || mApp.evaluatedBy || (mApp as any).assignedStaff,
+          evaluatorEmail: mEvaluatorEmail || mApp.evaluatorEmail,
           trackingSteps: mTracking,
           orderOfPaymentNo: (mOp && mOp !== "OP-2026" ? mOp : null) || (mApp as any).orderOfPaymentNo || `OP-${mCleanSeq || "2026"}`,
           assessedFees: mFees ? Number(mFees) : ((mApp as any).assessedFees || (mApp as any).estimatedFees || (mIsLC ? 1500 : 6200)),

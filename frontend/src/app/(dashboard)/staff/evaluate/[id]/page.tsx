@@ -183,6 +183,8 @@ export default function StaffEvaluatePage() {
       const upperId = curId.toUpperCase();
       [curId, lowerId, upperId].forEach(k => {
         localStorage.setItem(`etayo_status_${k}`, "under_review");
+        if (activeStaffName) localStorage.setItem(`etayo_evaluated_by_${k}`, activeStaffName);
+        if (activeStaffEmail) localStorage.setItem(`etayo_evaluator_email_${k}`, activeStaffEmail);
       });
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));
@@ -1517,6 +1519,29 @@ export default function StaffEvaluatePage() {
         }
       }
 
+      try {
+        const rawExisting = localStorage.getItem("etayo_evaluation_logs");
+        const existingLogs = rawExisting ? JSON.parse(rawExisting) : [];
+        const newLogEntry = {
+          id: `eval-${Date.now()}-${app.id}`,
+          permitId: app.id,
+          applicationId: app.id,
+          projectName: app.projectName || (isBuildingPermit ? "Building & Structural Works" : "Locational Zoning Clearance"),
+          staffEmail: staffEmail,
+          evaluatorEmail: staffEmail,
+          evaluatorName: staffName,
+          user: staffName,
+          applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+          applicantName: applicantLabel,
+          permitType: app.permitType ? app.permitType.replace(/_/g, " ").toUpperCase() : (isBuildingPermit ? "BUILDING PERMIT" : "LOCATIONAL CLEARANCE"),
+          action: "Approved",
+          comments: decisionNotes || shortSummary || `${staffName} approved permit application`,
+          timestamp: new Date().toISOString()
+        };
+        const updatedLogs = [newLogEntry, ...(Array.isArray(existingLogs) ? existingLogs.filter((x: any) => String(x?.permitId || x?.applicationId) !== String(app.id)) : [])];
+        localStorage.setItem("etayo_evaluation_logs", JSON.stringify(updatedLogs));
+      } catch (e) {}
+
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));
         window.dispatchEvent(new Event("etayo_applications_updated"));
@@ -1711,6 +1736,8 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
       officialReceiptNo: orNumber,
       dateReleased: releaseDateFormatted,
       cashierOfficer: certifyingCashierInput.trim() || staffName,
+      evaluatedBy: app.evaluatedBy || staffName,
+      evaluatorEmail: app.evaluatorEmail || staffEmail,
       trackingSteps: updatedTracking,
       historyLog: updatedHistory,
       remarks: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`,
@@ -1725,6 +1752,8 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
         localStorage.setItem(`etayo_released_${k}`, "true");
         localStorage.setItem(`etayo_paid_${k}`, "true");
         localStorage.setItem(`etayo_or_${k}`, orNumber);
+        if (staffName) localStorage.setItem(`etayo_evaluated_by_${k}`, staffName);
+        if (staffEmail) localStorage.setItem(`etayo_evaluator_email_${k}`, staffEmail);
       });
 
       const stored = localStorage.getItem("etayo_cached_applications");
@@ -1737,6 +1766,29 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
           localStorage.setItem("etayo_cached_applications", JSON.stringify(updatedList));
         }
       }
+
+      try {
+        const rawExisting = localStorage.getItem("etayo_evaluation_logs");
+        const existingLogs = rawExisting ? JSON.parse(rawExisting) : [];
+        const newLogEntry = {
+          id: `eval-${Date.now()}-${app.id}`,
+          permitId: app.id,
+          applicationId: app.id,
+          projectName: app.projectName || (isBuildingPermit ? "Building & Structural Works" : "Locational Zoning Clearance"),
+          staffEmail: staffEmail || (app as any).evaluatorEmail || "staff@etayo.gov.ph",
+          evaluatorEmail: staffEmail || (app as any).evaluatorEmail || "staff@etayo.gov.ph",
+          evaluatorName: staffName,
+          user: staffName,
+          applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+          applicantName: applicantLabel,
+          permitType: app.permitType ? app.permitType.replace(/_/g, " ").toUpperCase() : (isBuildingPermit ? "BUILDING PERMIT" : "LOCATIONAL CLEARANCE"),
+          action: "Released (Approved)",
+          comments: paymentReleaseNotes || `Official permits released under OR #${orNumber}.`,
+          timestamp: new Date().toISOString()
+        };
+        const updatedLogs = [newLogEntry, ...(Array.isArray(existingLogs) ? existingLogs.filter((x: any) => String(x?.permitId || x?.applicationId) !== String(app.id)) : [])];
+        localStorage.setItem("etayo_evaluation_logs", JSON.stringify(updatedLogs));
+      } catch (e) {}
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));
@@ -1921,6 +1973,29 @@ Thank you for building safely and legally with the Municipality of Sto. Tomas, P
         localStorage.removeItem(`etayo_released_${k}`);
         localStorage.removeItem(`etayo_paid_${k}`);
       });
+    } catch (e) {}
+
+    try {
+      const rawExisting = localStorage.getItem("etayo_evaluation_logs");
+      const existingLogs = rawExisting ? JSON.parse(rawExisting) : [];
+      const newLogEntry = {
+        id: `eval-${Date.now()}-${app.id}`,
+        permitId: app.id,
+        applicationId: app.id,
+        projectName: app.projectName || (isBuildingPermit ? "Building & Structural Works" : "Locational Zoning Clearance"),
+        staffEmail: staffEmail,
+        evaluatorEmail: staffEmail,
+        evaluatorName: staffName,
+        user: staffName,
+        applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
+        applicantName: applicantLabel,
+        permitType: app.permitType ? app.permitType.replace(/_/g, " ").toUpperCase() : (isBuildingPermit ? "BUILDING PERMIT" : "LOCATIONAL CLEARANCE"),
+        action: isDisapprove ? "Disapproved" : "Revision Requested",
+        comments: `${staffName}: ${combinedRemarks}`,
+        timestamp: new Date().toISOString()
+      };
+      const updatedLogs = [newLogEntry, ...(Array.isArray(existingLogs) ? existingLogs.filter((x: any) => String(x?.permitId || x?.applicationId) !== String(app.id)) : [])];
+      localStorage.setItem("etayo_evaluation_logs", JSON.stringify(updatedLogs));
     } catch (e) {}
 
     try {
