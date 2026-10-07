@@ -1061,6 +1061,7 @@ export default function AdminStaffPage() {
       {/* ========================================================================= */}
       {/* AUDIT LOG MODAL (EXECUTIVE MODERN DESIGN & REAL EVALUATIONS) */}
       {/* ========================================================================= */}
+      {selectedStaff && (() => {
         const approvedCount = logs.filter(l => {
           const act = (l.action || "").toLowerCase();
           return act.includes("approv") || act.includes("release");
