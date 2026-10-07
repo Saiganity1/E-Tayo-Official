@@ -5,7 +5,7 @@ import Link from "next/link";
 import { 
   FileText, Download, Eye, Search, Layers, ShieldCheck, 
   CheckCircle2, Building2, Wrench, Zap, Trash2, Shield, 
-  Droplets, Radio, Flame, ExternalLink, X, Filter, Sparkles, 
+  Droplets, Radio, Flame, ExternalLink, X, Filter, Sparkles,
   ArrowRight, Check, BookOpen, AlertCircle
 } from "lucide-react";
 import { ALL_OFFICIAL_TEMPLATES, OfficialTemplateFile } from "../../data/projectTypeMatrix";
@@ -92,29 +92,9 @@ export default function TemplatesDirectory({ role = "applicant" }: TemplatesDire
               Official Permitting Forms Library
             </h2>
             <p style={{ margin: 0, fontSize: "0.88rem", color: "#64748b" }}>
-              Inspect and download official blank templates, or test interactive form field mappings.
+              Inspect and download official blank templates and permitting forms.
             </p>
           </div>
-          <Link
-            href="/admin/form-tester"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "linear-gradient(135deg, #0038A8, #021a4f)",
-              color: "white",
-              padding: "9px 18px",
-              borderRadius: "12px",
-              fontWeight: "700",
-              fontSize: "0.88rem",
-              textDecoration: "none",
-              boxShadow: "0 4px 14px rgba(0, 56, 168, 0.35)",
-              transition: "all 0.2s ease"
-            }}
-          >
-            <Sparkles size={16} />
-            <span>Open Form Testing Studio</span>
-          </Link>
         </div>
       ) : (
         /* Header Banner for non-admin */
