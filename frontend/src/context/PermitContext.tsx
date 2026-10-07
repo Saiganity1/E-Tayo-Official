@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { PermitApplication, SystemLog, FeeStructure, PermitType } from "../types";
-import { isApplicationApproved } from "../utils/projectGrouping";
+import { isApplicationApproved, compareAppsNewestFirst } from "../utils/projectGrouping";
 import { INITIAL_APPLICATIONS } from "../data/mock";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
@@ -399,6 +399,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         backendApps = await appsRes.json();
       }
       const cleanBackendApps = (backendApps || []).filter(a => !isDummyApp(a));
+      cleanBackendApps.forEach((app, idx) => {
+        if (!(app as any)._seq) {
+          (app as any)._seq = idx + 1;
+        }
+      });
       
       const matchPermitId = (a?: string, b?: string) => Boolean(a && b && a.trim().toLowerCase() === b.trim().toLowerCase());
 
@@ -901,6 +906,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         };
       });
 
+      mergedApps.sort(compareAppsNewestFirst);
       setApplications(mergedApps);
       try {
         localStorage.setItem("etayo_cached_applications", JSON.stringify(mergedApps.map(a => sanitizeAppForStorage(a))));
@@ -1217,6 +1223,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addApplication = async (rawApp: PermitApplication) => {
     const newApp = sanitizeAppForStorage(rawApp);
+    if (!(newApp as any).createdAt) {
+      (newApp as any).createdAt = new Date().toISOString();
+    }
+    (newApp as any)._seq = Date.now();
     if ((rawApp as any).bfpUploadedFile && !newApp.bfpUploadedFile) {
       (newApp as any).bfpUploadedFile = (rawApp as any).bfpUploadedFile;
       (newApp as any).bfpUploadedFileName = (rawApp as any).bfpUploadedFileName;
@@ -1226,8 +1236,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       newApp.status = "pending";
     }
 
-    // 1. Optimistic UI update
-    setApplications((prev) => [newApp, ...prev.filter(a => a.id !== newApp.id)]);
+    // 1. Optimistic UI update (newest first)
+    setApplications((prev) => [newApp, ...prev.filter(a => a.id !== newApp.id)].sort(compareAppsNewestFirst));
 
     // 2. Cache in localStorage immediately and reset any stale flags for this ID
     try {

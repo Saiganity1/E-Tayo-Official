@@ -212,8 +212,9 @@ export default function UnifiedProjectGoogleForm({
     setSubmitError(null);
 
     try {
-      const applicationNo = `UNIFIED-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const submissionDate = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+      const now = new Date();
+      const applicationNo = `UNIFIED-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const submissionDate = now.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 
       const mi = applicantMiddleName ? (applicantMiddleName.endsWith(".") ? applicantMiddleName : `${applicantMiddleName}.`) : "";
       const compiledFullName = [applicantFirstName, mi, applicantLastName].filter(Boolean).join(" ") || "JUAN S. DELA CRUZ";
@@ -317,6 +318,8 @@ export default function UnifiedProjectGoogleForm({
       const fullAddress = `${streetAddress}, Brgy. ${barangay}, Sto. Tomas, Pampanga`;
       const newApplication: any = {
         id: applicationNo,
+        createdAt: now.toISOString(),
+        _seq: Date.now(),
         projectName,
         projectType: projectType.name,
         permitType: "building_permit", // Main unified dossier

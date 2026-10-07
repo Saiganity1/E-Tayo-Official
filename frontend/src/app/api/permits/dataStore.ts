@@ -1,4 +1,5 @@
 import { PermitApplication } from "@/types";
+import { compareAppsNewestFirst } from "@/utils/projectGrouping";
 
 // No seed data — all permits must come from the real database only.
 // The fallback store starts empty; real data is fetched from the backend each time.
@@ -16,6 +17,7 @@ const store = globalForPermits._etayoPermitStore;
 
 export function getAllPermits(emailFilter?: string, nameFilter?: string): PermitApplication[] {
   const all = Array.from(store.values());
+  all.sort(compareAppsNewestFirst);
   if (!emailFilter && !nameFilter) {
     return all;
   }
@@ -81,6 +83,12 @@ export function getPermitById(id: string): PermitApplication | null {
 export function savePermit(newApp: PermitApplication): PermitApplication {
   if (!newApp.id) {
     newApp.id = `APP-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+  }
+  if (!(newApp as any).createdAt) {
+    (newApp as any).createdAt = new Date().toISOString();
+  }
+  if (!(newApp as any)._seq) {
+    (newApp as any)._seq = Date.now();
   }
   const cleanId = newApp.id.trim().toLowerCase();
   const existing = getPermitById(newApp.id);

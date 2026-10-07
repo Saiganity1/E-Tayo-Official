@@ -30,7 +30,7 @@ import {
 import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
 import { PermitApplication } from "../../../../types";
-import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationApproved } from "@/utils/projectGrouping";
+import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationApproved, compareAppsNewestFirst } from "@/utils/projectGrouping";
 import { useLanguage } from "@/context/LanguageContext";
 
 type ViewMode = "project" | "flat";
@@ -188,7 +188,7 @@ export default function ApplicantDashboard() {
 
   // Filter individual applications by search and status
   const filteredApps = useMemo(() => {
-    return activeApplicantApps.filter(app => {
+    const list = activeApplicantApps.filter(app => {
       const sTerm = searchTerm.toLowerCase().trim();
       const pName = (app.projectName || "").toLowerCase();
       const appId = (app.id || "").toLowerCase();
@@ -208,6 +208,7 @@ export default function ApplicantDashboard() {
 
       return matchesSearch && matchesStatus;
     });
+    return list.sort(compareAppsNewestFirst);
   }, [activeApplicantApps, searchTerm, statusFilter]);
 
   // Helper to extract the normalized base project title

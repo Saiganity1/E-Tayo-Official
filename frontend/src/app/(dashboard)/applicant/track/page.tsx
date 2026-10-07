@@ -21,7 +21,8 @@ import {
   extractBaseProjectName, 
   ProjectDossier,
   isApplicationApproved,
-  isApplicationReleased 
+  isApplicationReleased,
+  compareAppsNewestFirst 
 } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "flat";
@@ -508,7 +509,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         (typeFilter === "locational_clearance" ? app.permitType === "locational_clearance" : app.permitType !== "locational_clearance");
 
       return matchesSearch && matchesStatus && matchesType;
-    });
+    }).sort(compareAppsNewestFirst);
   }, [currentPool, searchTerm, statusFilter, typeFilter]);
 
   const stats = {

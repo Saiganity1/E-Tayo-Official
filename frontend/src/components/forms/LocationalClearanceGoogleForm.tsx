@@ -184,8 +184,9 @@ export default function LocationalClearanceGoogleForm({
 
     try {
       const fullProjectLocation = `${streetLocation}, Brgy. ${barangay}, Sto. Tomas, Pampanga`;
-      const submissionDate = new Date().toLocaleDateString("en-US", { month: "long", day: "2-digit", year: "numeric" });
-      const newId = `LC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const now = new Date();
+      const submissionDate = now.toLocaleDateString("en-US", { month: "long", day: "2-digit", year: "numeric" });
+      const newId = `LC-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
       // Generate the official Sto. Tomas Locational Clearance PDF
       let base64Pdf = "";
@@ -237,6 +238,8 @@ export default function LocationalClearanceGoogleForm({
 
       const newApp: any = {
         id: newId,
+        createdAt: now.toISOString(),
+        _seq: Date.now(),
         projectName: projectName.trim() || `${projectType} - Locational Clearance`,
         projectType: projectType.trim(),
         permitType: "locational_clearance",

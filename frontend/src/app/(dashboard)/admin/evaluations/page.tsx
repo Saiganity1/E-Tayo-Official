@@ -10,7 +10,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { PermitApplication } from "../../../../types";
-import { groupApplicationsIntoProjectDossiers, ProjectDossier } from "@/utils/projectGrouping";
+import { 
+  groupApplicationsIntoProjectDossiers, 
+  ProjectDossier, 
+  compareAppsNewestFirst, 
+  compareDossiersNewestFirst, 
+  getAppTimestamp, 
+  parseDateToTimestamp 
+} from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "applicant" | "flat";
 
@@ -140,9 +147,9 @@ export default function StaffEvaluationsPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Filter individual applications first
+  // Filter individual applications and sort newest first
   const filteredApps = useMemo(() => {
-    return applications.filter(app => {
+    const list = applications.filter(app => {
       const pName = (app.projectName || app.projectDescription || "Locational Clearance").toLowerCase();
       const appId = (app.id || "").toLowerCase();
       const aName = (app.applicantName || "").toLowerCase();
@@ -199,6 +206,8 @@ export default function StaffEvaluationsPage() {
 
       return matchesSearch && matchesStatus && matchesType && matchesDate;
     });
+
+    return list.sort(compareAppsNewestFirst);
   }, [applications, searchTerm, filterStatus, filterType, datePreset, startDate, endDate]);
 
   // Group applications by Project Dossier (Stage 1 Locational Clearance + Stage 2 Building Permit of the same project)
@@ -206,7 +215,7 @@ export default function StaffEvaluationsPage() {
     return groupApplicationsIntoProjectDossiers(filteredApps);
   }, [filteredApps]);
 
-  // Group applications by Applicant Name
+  // Group applications by Applicant Name (Sorted newest first)
   const applicantDossiers = useMemo(() => {
     const groups: Record<string, ProjectDossier> = {};
 
@@ -228,8 +237,14 @@ export default function StaffEvaluationsPage() {
           approvedCount: 0,
           rejectedCount: 0,
           actionRequiredCount: 0,
-          latestDate: app.dateSubmitted || new Date().toISOString()
+          latestDate: app.dateSubmitted || (app as any).createdAt || new Date().toISOString()
         };
+      } else {
+        const curTime = parseDateToTimestamp(groups[groupKey].latestDate);
+        const appTime = getAppTimestamp(app);
+        if (appTime > curTime) {
+          groups[groupKey].latestDate = app.dateSubmitted || (app as any).createdAt || groups[groupKey].latestDate;
+        }
       }
 
       groups[groupKey].applications.push(app);
@@ -246,17 +261,7 @@ export default function StaffEvaluationsPage() {
       }
     });
 
-    return Object.values(groups).sort((a, b) => {
-      if (a.pendingCount > 0 && b.pendingCount === 0) return -1;
-      if (b.pendingCount > 0 && a.pendingCount === 0) return 1;
-      if (b.applications.length !== a.applications.length) {
-        return b.applications.length - a.applications.length;
-      }
-      const timeA = new Date(a.latestDate || 0).getTime();
-      const timeB = new Date(b.latestDate || 0).getTime();
-      if (timeB !== timeA) return timeB - timeA;
-      return String(a.id || "").localeCompare(String(b.id || ""));
-    });
+    return Object.values(groups).sort(compareDossiersNewestFirst);
   }, [filteredApps]);
 
   const toggleDossier = (id: string) => {

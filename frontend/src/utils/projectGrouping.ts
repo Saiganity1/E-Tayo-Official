@@ -389,13 +389,145 @@ export const getConnectedProjectApp = (app: any, allApps: any[]): any | null => 
   }) || null;
 };
 
+export const parseDateToTimestamp = (dateVal: any): number => {
+  if (!dateVal) return 0;
+  if (typeof dateVal === "number" && !isNaN(dateVal) && dateVal > 0) return dateVal;
+  if (typeof dateVal === "string") {
+    const clean = dateVal.trim();
+    if (!clean) return 0;
+    const direct = new Date(clean).getTime();
+    if (!isNaN(direct) && direct > 0) return direct;
+    const parts = clean.split(",");
+    if (parts.length >= 2) {
+      const fallback = new Date(`${parts[0].trim()}, ${parts[1].trim().split(" ")[0]}`).getTime();
+      if (!isNaN(fallback) && fallback > 0) return fallback;
+    }
+  }
+  return 0;
+};
+
+export const getNumericId = (id?: string): number => {
+  if (!id) return 0;
+  const match = String(id).match(/\d{4,}/g);
+  if (match && match.length > 0) {
+    const lastNum = parseInt(match[match.length - 1], 10);
+    if (!isNaN(lastNum)) return lastNum;
+  }
+  return 0;
+};
+
+export const getAppTimestamp = (app: any): number => {
+  if (!app) return 0;
+
+  // 1. High precision ISO timestamps (createdAt, updatedAt, timestamp, etc.)
+  const isoFields = [
+    app.createdAt,
+    app.submittedAt,
+    app.submissionTime,
+    app.timestamp,
+    app.updatedAt
+  ];
+  for (const f of isoFields) {
+    const t = parseDateToTimestamp(f);
+    if (t > 0) return t;
+  }
+
+  // 2. Submission date string (dateSubmitted, submissionDate, dateApproved)
+  const dateFields = [
+    app.dateSubmitted,
+    app.submissionDate,
+    app.dateApproved
+  ];
+  for (const f of dateFields) {
+    const t = parseDateToTimestamp(f);
+    if (t > 0) return t;
+  }
+
+  // 3. Check history log dates
+  if (Array.isArray(app.historyLog) && app.historyLog.length > 0) {
+    for (const h of app.historyLog) {
+      const t = parseDateToTimestamp(h?.date);
+      if (t > 0) return t;
+    }
+  }
+
+  return 0;
+};
+
+export const compareAppsNewestFirst = (a: any, b: any): number => {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+
+  const timeA = getAppTimestamp(a);
+  const timeB = getAppTimestamp(b);
+  if (timeA !== timeB) {
+    return timeB - timeA;
+  }
+
+  // If timestamps are on the exact same day, check internal sequence (_seq)
+  const seqA = Number((a as any)._seq || 0);
+  const seqB = Number((b as any)._seq || 0);
+  if (seqA !== seqB) {
+    return seqB - seqA;
+  }
+
+  // Fallback: check numeric suffix in permit ID
+  const idNumA = getNumericId(a.id);
+  const idNumB = getNumericId(b.id);
+  if (idNumA !== idNumB) {
+    return idNumB - idNumA;
+  }
+
+  return String(b.id || "").localeCompare(String(a.id || ""));
+};
+
+export const getDossierLatestTimestamp = (d: ProjectDossier): number => {
+  if (!d || !d.applications || d.applications.length === 0) {
+    return parseDateToTimestamp(d?.latestDate);
+  }
+  return Math.max(...d.applications.map(getAppTimestamp));
+};
+
+export const compareDossiersNewestFirst = (a: ProjectDossier, b: ProjectDossier): number => {
+  // 1. Pending / Under Review dossiers take priority so staff can act on forms awaiting review
+  if (a.pendingCount > 0 && b.pendingCount === 0) return -1;
+  if (b.pendingCount > 0 && a.pendingCount === 0) return 1;
+
+  // 2. MOST RECENT ACTIVITY / SUBMISSION FIRST (Chronological Descending)
+  const timeA = getDossierLatestTimestamp(a);
+  const timeB = getDossierLatestTimestamp(b);
+  if (timeB !== timeA) {
+    return timeB - timeA;
+  }
+
+  // 3. Fallback: compare highest application sequence (_seq)
+  const maxSeqA = Math.max(...a.applications.map(x => Number((x as any)._seq || 0)), 0);
+  const maxSeqB = Math.max(...b.applications.map(x => Number((x as any)._seq || 0)), 0);
+  if (maxSeqB !== maxSeqA) {
+    return maxSeqB - maxSeqA;
+  }
+
+  // 4. Fallback: compare highest numeric ID
+  const maxIdA = Math.max(...a.applications.map(x => getNumericId(x.id)), 0);
+  const maxIdB = Math.max(...b.applications.map(x => getNumericId(x.id)), 0);
+  if (maxIdB !== maxIdA) {
+    return maxIdB - maxIdA;
+  }
+
+  return String(a.id || "").localeCompare(String(b.id || ""));
+};
+
 /**
  * Groups an array of applications into distinct, organized Project Dossiers.
+ * Sorted chronologically so that the most recent application/dossier is always on top.
  */
 export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]): ProjectDossier[] => {
   const dossiers: ProjectDossier[] = [];
+  // Sort input applications newest first
+  const sortedApps = [...apps].sort(compareAppsNewestFirst);
 
-  apps.forEach(app => {
+  sortedApps.forEach(app => {
     // Find an existing dossier where ALL applications belong to the same project
     let matchedDossier: ProjectDossier | null = null;
 
@@ -421,8 +553,6 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       rawStatus === "under_review"
     );
 
-
-
     if (matchedDossier) {
       matchedDossier.applications.push(app);
       matchedDossier.totalCount++;
@@ -435,6 +565,12 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       }
       if (rawStatus === "incomplete_requirements" || rawStatus === "rejected") {
         matchedDossier.actionRequiredCount = (matchedDossier.actionRequiredCount || 0) + 1;
+      }
+      // Update latestDate if this app has a newer timestamp
+      const curTime = parseDateToTimestamp(matchedDossier.latestDate);
+      const appTime = getAppTimestamp(app);
+      if (appTime > curTime) {
+        matchedDossier.latestDate = app.dateSubmitted || (app as any).createdAt || matchedDossier.latestDate;
       }
       // Keep projectName the cleanest / most descriptive base name
       const curBase = extractBaseProjectName({ projectName: matchedDossier.projectName });
@@ -462,7 +598,7 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
         approvedCount: isAppApproved ? 1 : 0,
         rejectedCount: isRejected ? 1 : 0,
         actionRequiredCount: isAction ? 1 : 0,
-        latestDate: app.dateSubmitted || new Date().toISOString()
+        latestDate: app.dateSubmitted || (app as any).createdAt || new Date().toISOString()
       });
     }
   });
@@ -483,19 +619,13 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
   };
 
   dossiers.forEach(d => {
-    d.applications.sort((a, b) => typeRank(a.permitType, a.id) - typeRank(b.permitType, b.id));
+    d.applications.sort((a, b) => {
+      const rankDiff = typeRank(a.permitType, a.id) - typeRank(b.permitType, b.id);
+      if (rankDiff !== 0) return rankDiff;
+      return compareAppsNewestFirst(a, b);
+    });
   });
 
-  // Sort dossiers: ones with pending submissions first, then by count / date / deterministic id
-  return dossiers.sort((a, b) => {
-    if (a.pendingCount > 0 && b.pendingCount === 0) return -1;
-    if (b.pendingCount > 0 && a.pendingCount === 0) return 1;
-    if (b.applications.length !== a.applications.length) {
-      return b.applications.length - a.applications.length;
-    }
-    const timeA = new Date(a.latestDate || 0).getTime();
-    const timeB = new Date(b.latestDate || 0).getTime();
-    if (timeB !== timeA) return timeB - timeA;
-    return String(a.id || "").localeCompare(String(b.id || ""));
-  });
+  // Sort dossiers newest first
+  return dossiers.sort(compareDossiersNewestFirst);
 };
