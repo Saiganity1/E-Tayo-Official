@@ -2128,26 +2128,59 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                                       ({msg.actualSender.split("@")[0]})
                                     </span>
                                   )}
+                                  {msgThreadId !== "general" && (
+                                    <Link
+                                      href={`/applicant/track/${encodeURIComponent(msgThreadId)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        background: "#e0e7ff",
+                                        color: "#3730a3",
+                                        padding: "2px 8px",
+                                        borderRadius: "6px",
+                                        cursor: "pointer",
+                                        fontSize: "0.72rem",
+                                        fontWeight: "800",
+                                        textDecoration: "none",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "4px",
+                                        transition: "all 0.15s ease"
+                                      }}
+                                      title={`Click to view Application Status for ${msgThreadId}`}
+                                    >
+                                      <span>Permit: {msgThreadId}</span>
+                                      <ExternalLink size={10} />
+                                    </Link>
+                                  )}
                                 </>
                               ) : (
                                 <>
                                   <span style={{ fontWeight: "800", color: "#0f172a" }}>{selectedApplicantData.name}</span>
                                   {msgThreadId !== "general" && (
-                                    <span
-                                      onClick={() => setActiveThreadId(msgThreadId)}
+                                    <Link
+                                      href={`/applicant/track/${encodeURIComponent(msgThreadId)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
                                       style={{
                                         background: "#e0e7ff",
                                         color: "#3730a3",
-                                        padding: "2px 7px",
+                                        padding: "2px 8px",
                                         borderRadius: "6px",
                                         cursor: "pointer",
                                         fontSize: "0.72rem",
-                                        fontWeight: "800"
+                                        fontWeight: "800",
+                                        textDecoration: "none",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "4px",
+                                        transition: "all 0.15s ease"
                                       }}
-                                      title="Click to view only this permit's thread"
+                                      title={`Click to view Application Status for ${msgThreadId}`}
                                     >
-                                      Permit: {msgThreadId}
-                                    </span>
+                                      <span>Permit: {msgThreadId}</span>
+                                      <ExternalLink size={10} />
+                                    </Link>
                                   )}
                                 </>
                               )}

@@ -546,16 +546,20 @@ export function MessageBubbleContent({ content, isMe, onOpenAttachment, timestam
     );
   }
 
+  // Strip redundant [Ref: ...] prefix from displayed text in the chat bubble
+  const strippedText = cleanText.replace(/^\s*\[Ref:\s*(?:\[[^\]]*\]|[^\]])*\]\s*/i, "").trim();
+  const displayText = strippedText || (attachments.length > 0 ? "" : (cleanText.startsWith("[Ref:") ? "" : cleanText));
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      {cleanText && (
+      {displayText && (
         <div style={{ margin: 0, wordBreak: "break-word", whiteSpace: "pre-wrap", lineHeight: "1.55" }}>
-          {renderTextWithTrackingLinks(cleanText)}
+          {renderTextWithTrackingLinks(displayText)}
         </div>
       )}
 
       {attachments.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: cleanText ? "8px" : "0" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: displayText ? "8px" : "0" }}>
           {attachments.map((att, idx) => {
             const hasImageUrl = att.isImage && Boolean(att.fileUrl);
             return (

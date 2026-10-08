@@ -1858,6 +1858,8 @@ export default function ApplicantMessagesPage() {
                       msg.content?.includes("PAYMENT VERIFIED & OFFICIAL PERMITS RELEASED") ||
                       msg.content?.includes("PERMITS RELEASED")
                     );
+                    const currentPermitId = getMessageThreadId(msg);
+                    const hasPermitId = currentPermitId && currentPermitId !== "general" && currentPermitId !== "all";
 
                     return (
                       <div style={{
@@ -1867,11 +1869,45 @@ export default function ApplicantMessagesPage() {
                         flexDirection: "column",
                         alignItems: isMe ? "flex-end" : "flex-start"
                       }}>
-                        {!isMe && (
-                          <span style={{ fontSize: "0.74rem", color: "#475569", fontWeight: "800", marginBottom: "3px", marginLeft: "4px" }}>
-                            {msg.actualSender || "OBO Admin • Municipal Building Official"}
-                          </span>
-                        )}
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          marginBottom: "3px",
+                          marginLeft: isMe ? "0" : "4px",
+                          marginRight: isMe ? "4px" : "0"
+                        }}>
+                          {!isMe && (
+                            <span style={{ fontSize: "0.74rem", color: "#475569", fontWeight: "800" }}>
+                              {msg.actualSender || "OBO Admin • Municipal Building Official"}
+                            </span>
+                          )}
+                          {hasPermitId && (
+                            <Link
+                              href={`/applicant/track/${encodeURIComponent(currentPermitId)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                background: "#e0e7ff",
+                                color: "#3730a3",
+                                padding: "2px 8px",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.72rem",
+                                fontWeight: "800",
+                                textDecoration: "none",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                transition: "all 0.15s ease"
+                              }}
+                              title={`Click to view Application Status for ${currentPermitId}`}
+                            >
+                              <span>Permit: {currentPermitId}</span>
+                              <ExternalLink size={10} />
+                            </Link>
+                          )}
+                        </div>
 
                         <div style={{
                           padding: isNotice ? "0" : "0.85rem 1.25rem",
