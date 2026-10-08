@@ -15,7 +15,7 @@ import { Client } from "@stomp/stompjs";
 import { format } from "date-fns";
 import { formatPhilippineTime, formatPhilippineDate, formatPhilippineDateTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../../../context/PermitContext";
-import { dispatchPermitMessage, ensureApplicationConversationMessages, getAuthoritativePermitFee, SystemPermitMessage } from "../../../../utils/permitMessaging";
+import { dispatchPermitMessage, ensureApplicationConversationMessages, getAuthoritativePermitFee, SystemPermitMessage, deduplicateChatMessages } from "../../../../utils/permitMessaging";
 import { 
   groupApplicationsIntoProjectDossiers, 
   areAppsInSameProject, 
@@ -250,26 +250,16 @@ export default function ApplicantMessagesPage() {
 
           const cleanApi = (apiData || []).filter(m => !isDummyMsg(m));
           const cleanLocal = scrubbedLocal;
-          const merged = [...cleanApi];
-          cleanLocal.forEach((lm: any) => {
-            if (
-              !merged.some((m: any) => String(m.id) === String(lm.id) || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
-            ) {
-              merged.push(lm);
-            }
-          });
-          const finalized = ensureApplicationConversationMessages(applications || [], email, merged);
+          const merged = deduplicateChatMessages([...cleanApi, ...cleanLocal]);
+          const finalized = deduplicateChatMessages(ensureApplicationConversationMessages(applications || [], email, merged));
+          
           setMessages(prev => {
             // Always preserve freshly dispatched local messages currently in state
             const unmergedPrev = prev.filter(p => 
               !finalized.some(f => String(f.id) === String(p.id) || (f.content === p.content && Math.abs(new Date(f.timestamp || 0).getTime() - new Date(p.timestamp || 0).getTime()) < 10000))
             );
             const combined = unmergedPrev.length > 0 ? [...finalized, ...unmergedPrev] : finalized;
-            if (prev.length === combined.length) {
-              const isSame = prev.every((m, idx) => String(m.id) === String(combined[idx]?.id) && m.content === combined[idx]?.content);
-              if (isSame) return prev;
-            }
-            return combined;
+            return deduplicateChatMessages(combined);
           });
         };
 
@@ -302,10 +292,7 @@ export default function ApplicantMessagesPage() {
 
         const handleCustomMsg = (e: any) => {
           if (e.detail) {
-            setMessages((prev: any[]) => {
-              if (prev.some(m => m.id === e.detail.id)) return prev;
-              return [...prev, e.detail];
-            });
+            setMessages((prev: any[]) => deduplicateChatMessages([...prev, e.detail]));
           }
         };
         window.addEventListener("etayo_new_message", handleCustomMsg);
@@ -316,10 +303,7 @@ export default function ApplicantMessagesPage() {
             bc = new BroadcastChannel("etayo_chat_channel");
             bc.onmessage = (event) => {
               if (event.data) {
-                setMessages(prev => {
-                  if (prev.some(m => m.id === event.data.id)) return prev;
-                  return [...prev, event.data];
-                });
+                setMessages(prev => deduplicateChatMessages([...prev, event.data]));
               }
             };
           }
@@ -350,16 +334,11 @@ export default function ApplicantMessagesPage() {
             client.subscribe(`/topic/messages/${email}`, (message) => {
               try {
                 const receivedMessage = JSON.parse(message.body);
-                setMessages(prev => {
-                  if (prev.some(m => m.id && m.id === receivedMessage.id)) return prev;
-                  return [...prev, receivedMessage];
-                });
+                setMessages(prev => deduplicateChatMessages([...prev, receivedMessage]));
                 try {
                   const raw = localStorage.getItem("etayo_messages_history");
                   const cur: any[] = raw ? JSON.parse(raw) : [];
-                  if (!cur.some(m => m.id && m.id === receivedMessage.id)) {
-                    localStorage.setItem("etayo_messages_history", JSON.stringify([...cur, receivedMessage]));
-                  }
+                  localStorage.setItem("etayo_messages_history", JSON.stringify(deduplicateChatMessages([...cur, receivedMessage])));
                 } catch (e) {}
               } catch (e) {
                 console.error("Failed to parse incoming message", e);
@@ -688,13 +667,7 @@ export default function ApplicantMessagesPage() {
     }
 
     // Deduplicate identical duplicate message IDs or exact contents
-    const seen = new Set<string>();
-    threadMsgs = threadMsgs.filter(m => {
-      const key = `${m.id || ''}-${(m.content || '').slice(0, 50)}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    threadMsgs = deduplicateChatMessages(threadMsgs);
 
     // Strictly chronological sort: by timestamp ascending, with logical ordering tie-breaker
     return threadMsgs.sort((a, b) => {
@@ -836,11 +809,8 @@ export default function ApplicantMessagesPage() {
     try {
       const raw = localStorage.getItem("etayo_messages_history");
       const curList: SystemPermitMessage[] = raw ? JSON.parse(raw) : [];
-      if (!curList.some(m => m.id === localMsg.id)) {
-        localStorage.setItem("etayo_messages_history", JSON.stringify([...curList, localMsg]));
-      }
+      localStorage.setItem("etayo_messages_history", JSON.stringify(deduplicateChatMessages([...curList, localMsg])));
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("etayo_new_message", { detail: localMsg }));
         try {
           if (typeof BroadcastChannel !== "undefined") {
             const bc = new BroadcastChannel("etayo_chat_channel");
@@ -851,34 +821,30 @@ export default function ApplicantMessagesPage() {
       }
     } catch (e) {}
 
-    setMessages(prev => {
-      if (prev.some(m => m.id === localMsg.id)) return prev;
-      return [...prev, localMsg];
-    });
+    setMessages(prev => deduplicateChatMessages([...prev, localMsg]));
 
     // 1. Send via STOMP WebSocket if connected
+    let sentViaWs = false;
     if (stompClient.current && connected) {
       try {
         stompClient.current.publish({
           destination: "/app/chat.sendMessage",
           body: JSON.stringify(payload),
         });
+        sentViaWs = true;
       } catch (err) {
         console.warn("WebSocket publish failed, falling back to HTTP", err);
       }
     }
 
-    // 2. ALWAYS dispatch via HTTP so message is permanently saved in /api/messages/send
-    dispatchPermitMessage(payload).then(newMsg => {
-      setMessages(prev => {
-        if (prev.some(m => String(m.id) === String(newMsg.id) || String(m.id) === String(localMsg.id))) {
-          return prev.map(m => String(m.id) === String(localMsg.id) ? newMsg : m);
-        }
-        return [...prev, newMsg];
+    // 2. Dispatch via HTTP only if WebSocket publish didn't occur
+    if (!sentViaWs) {
+      dispatchPermitMessage(payload).then(newMsg => {
+        setMessages(prev => deduplicateChatMessages([...prev, newMsg]));
+      }).catch(err => {
+        console.warn("HTTP dispatch error", err);
       });
-    }).catch(err => {
-      console.warn("HTTP dispatch error", err);
-    });
+    }
 
     // 3. Handle attached payment receipt persistence if applicable
     if (attachedFile && targetAppForPayment && (targetAppForPayment.status === "approved" || targetAppForPayment.status === "released")) {

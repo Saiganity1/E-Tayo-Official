@@ -35,8 +35,32 @@ public class ChatController {
         this.notificationRepository = notificationRepository;
     }
 
+    private final java.util.Map<String, Long> recentMessageCache = new java.util.concurrent.ConcurrentHashMap<>();
+
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(@Payload ChatMessage chatMessage) {
+        if (chatMessage == null) return;
+
+        // In-memory deduplication: prevent dual-dispatch (WebSocket + HTTP) from saving duplicate records in DB
+        String sender = chatMessage.getSenderEmail() != null ? chatMessage.getSenderEmail().trim().toLowerCase() : "";
+        String recipient = chatMessage.getRecipientEmail() != null ? chatMessage.getRecipientEmail().trim().toLowerCase() : "";
+        String content = chatMessage.getContent() != null ? chatMessage.getContent().trim() : "";
+        String appId = chatMessage.getApplicationId() != null ? chatMessage.getApplicationId().trim() : "";
+
+        String dedupKey = sender + "|" + recipient + "|" + appId + "|" + content;
+        long now = System.currentTimeMillis();
+        Long lastSeen = recentMessageCache.get(dedupKey);
+
+        if (lastSeen != null && (now - lastSeen) < 5000) {
+            // Duplicate detected within 5 seconds - skip redundant database insert & broadcast
+            return;
+        }
+        recentMessageCache.put(dedupKey, now);
+
+        if (recentMessageCache.size() > 500) {
+            recentMessageCache.entrySet().removeIf(entry -> (now - entry.getValue()) > 30000);
+        }
+
         chatMessage.setTimestamp(Instant.now());
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
         
@@ -46,10 +70,13 @@ public class ChatController {
         }
         
         // Also broadcast to the staff and admin inboxes
-        if (chatMessage.getRecipientEmail() != null && 
-            (chatMessage.getRecipientEmail().equals("staff@etayo.gov.ph") || chatMessage.getRecipientEmail().equals("admin@etayo.gov.ph"))) {
+        if (recipient.equals("staff@etayo.gov.ph") || 
+            recipient.equals("admin@etayo.gov.ph") ||
+            recipient.contains("obo") ||
+            recipient.contains("stotomas")) {
             messagingTemplate.convertAndSend("/topic/messages/staff@etayo.gov.ph", savedMessage);
             messagingTemplate.convertAndSend("/topic/messages/admin@etayo.gov.ph", savedMessage);
+            messagingTemplate.convertAndSend("/topic/messages/obo.stotomas@gmail.com", savedMessage);
         }
 
         // --- Non-blocking Notification Logic ---
@@ -93,12 +120,36 @@ public class ChatController {
             @RequestParam String user1, 
             @RequestParam String user2,
             @RequestParam(required = false) String applicationId) {
+        List<ChatMessage> history;
         if (applicationId != null && !applicationId.trim().isEmpty() && !applicationId.equalsIgnoreCase("all")) {
-            List<ChatMessage> history = chatMessageRepository.findChatHistoryByApplication(user1, user2, applicationId.trim());
-            return ResponseEntity.ok(history);
+            history = chatMessageRepository.findChatHistoryByApplication(user1, user2, applicationId.trim());
+        } else {
+            history = chatMessageRepository.findChatHistory(user1, user2);
         }
-        List<ChatMessage> history = chatMessageRepository.findChatHistory(user1, user2);
-        return ResponseEntity.ok(history);
+
+        // Deduplicate any historical duplicate records
+        List<ChatMessage> cleanHistory = new java.util.ArrayList<>();
+        if (history != null) {
+            for (ChatMessage m : history) {
+                boolean isDup = false;
+                for (ChatMessage ex : cleanHistory) {
+                    if (ex.getContent() != null && ex.getContent().equals(m.getContent()) &&
+                        ex.getSenderEmail() != null && ex.getSenderEmail().equalsIgnoreCase(m.getSenderEmail()) &&
+                        ex.getTimestamp() != null && m.getTimestamp() != null) {
+                        long diff = java.lang.Math.abs(java.time.Duration.between(ex.getTimestamp(), m.getTimestamp()).toMillis());
+                        if (diff < 15000) {
+                            isDup = true;
+                            break;
+                        }
+                    }
+                }
+                if (!isDup) {
+                    cleanHistory.add(m);
+                }
+            }
+        }
+
+        return ResponseEntity.ok(cleanHistory);
     }
 
     @GetMapping("/api/messages/conversations")

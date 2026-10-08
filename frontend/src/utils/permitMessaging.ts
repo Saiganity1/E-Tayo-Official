@@ -27,6 +27,87 @@ export interface SystemPermitMessage {
   timestamp: string;
 }
 
+/**
+ * Robust deduplication of chat messages:
+ * 1. Checks exact message ID.
+ * 2. Checks exact content + same sender within 20s.
+ * 3. Checks stripped content (without [Ref: ...]) + same sender within 20s.
+ * 4. Resolves ties by preferring server DB id and messages preserving permit references.
+ */
+export function deduplicateChatMessages<T extends { id?: any; content?: string; senderEmail?: string; timestamp?: any; applicationId?: any }>(
+  messages: T[]
+): T[] {
+  if (!messages || messages.length === 0) return [];
+  const result: T[] = [];
+  const seenIds = new Set<string>();
+
+  const getCleanText = (c?: string) => {
+    if (!c) return "";
+    return c
+      .replace(/^\s*\[Ref:\s*(?:\[[^\]]*\]|[^\]])*\]\s*/i, "")
+      .replace(/(?:📎\s*)?\[Attachment:\s*[^\]|]+(?:\|[^\]]*)?\]/gi, "")
+      .trim();
+  };
+
+  for (const msg of messages) {
+    if (!msg) continue;
+    const msgId = msg.id != null ? String(msg.id).trim() : "";
+
+    if (msgId && seenIds.has(msgId)) {
+      continue;
+    }
+
+    const msgContent = (msg.content || "").trim();
+    const msgClean = getCleanText(msgContent);
+    const msgSender = (msg.senderEmail || "").toLowerCase().trim();
+    const msgTime = new Date(msg.timestamp || 0).getTime();
+
+    const dupIdx = result.findIndex(existing => {
+      const exContent = (existing.content || "").trim();
+      const exClean = getCleanText(exContent);
+      const exSender = (existing.senderEmail || "").toLowerCase().trim();
+      const exTime = new Date(existing.timestamp || 0).getTime();
+
+      const timeDiff = (!isNaN(msgTime) && !isNaN(exTime) && msgTime > 0 && exTime > 0)
+        ? Math.abs(msgTime - exTime)
+        : 0;
+
+      const sameSender = !msgSender || !exSender || msgSender === exSender;
+
+      if (sameSender && msgContent === exContent && timeDiff < 20000) {
+        return true;
+      }
+
+      if (sameSender && msgClean && exClean && msgClean === exClean && timeDiff < 20000) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (dupIdx !== -1) {
+      const existing = result[dupIdx];
+      const existingHasRef = (existing.content || "").includes("[Ref:") || Boolean(existing.applicationId);
+      const msgHasRef = msgContent.includes("[Ref:") || Boolean(msg.applicationId);
+      const existingIsTemp = String(existing.id || "").startsWith("local-") || String(existing.id || "").startsWith("msg-");
+      const msgIsTemp = msgId.startsWith("local-") || msgId.startsWith("msg-");
+
+      if ((!existingHasRef && msgHasRef) || (existingIsTemp && !msgIsTemp)) {
+        result[dupIdx] = msg;
+        if (msgId) seenIds.add(msgId);
+      }
+      continue;
+    }
+
+    if (msgId) {
+      seenIds.add(msgId);
+    }
+    result.push(msg);
+  }
+
+  return result;
+}
+
 export const dispatchPermitMessage = async ({
   applicationId,
   recipientEmail,
@@ -54,7 +135,7 @@ export const dispatchPermitMessage = async ({
   try {
     const raw = localStorage.getItem("etayo_messages_history");
     const currentList: SystemPermitMessage[] = raw ? JSON.parse(raw) : [];
-    const updatedList = [...currentList, newMsg];
+    const updatedList = deduplicateChatMessages([...currentList, newMsg]);
     localStorage.setItem("etayo_messages_history", JSON.stringify(updatedList));
 
     // Also register user thread if not present
@@ -533,5 +614,5 @@ All official permit papers, ancillary clearances, and approved plans for ${appId
     };
     return getOrder(a) - getOrder(b);
   });
-  return result;
+  return deduplicateChatMessages(result);
 };

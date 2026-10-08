@@ -18,7 +18,7 @@ import {
   AttachmentPreviewModal, 
   ParsedAttachment 
 } from "../../../../components/chat/ChatAttachmentRenderer";
-import { ensureApplicationConversationMessages, dispatchPermitMessage, getAuthoritativePermitFee } from "../../../../utils/permitMessaging";
+import { ensureApplicationConversationMessages, dispatchPermitMessage, getAuthoritativePermitFee, deduplicateChatMessages } from "../../../../utils/permitMessaging";
 
 // Canned official municipal responses for fast staff dispatch
 const CANNED_RESPONSES = [
@@ -778,19 +778,17 @@ export default function AdminMessagesPage() {
     };
 
     // 1. Optimistic append to UI
-    setMessages(prev => [...prev, newMsg]);
+    setMessages(prev => deduplicateChatMessages([...prev, newMsg]));
 
     // 2. Cache locally to etayo_messages_history
     try {
       const raw = localStorage.getItem("etayo_messages_history");
       const list = raw ? JSON.parse(raw) : [];
-      list.push(newMsg);
-      localStorage.setItem("etayo_messages_history", JSON.stringify(list));
+      localStorage.setItem("etayo_messages_history", JSON.stringify(deduplicateChatMessages([...list, newMsg])));
     } catch (err) {}
 
     // 3. Broadcast to all open tabs/windows
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("etayo_new_message", { detail: newMsg }));
       try {
         if (typeof BroadcastChannel !== "undefined") {
           const bc = new BroadcastChannel("etayo_chat_channel");
@@ -801,6 +799,7 @@ export default function AdminMessagesPage() {
     }
 
     // 4. Send via STOMP WebSocket if connected
+    let sentWs = false;
     if (stompClient.current && connected) {
       try {
         stompClient.current.publish({
@@ -813,17 +812,20 @@ export default function AdminMessagesPage() {
             applicationId: activeThreadId !== "all" && activeThreadId !== "general" ? activeThreadId : null
           })
         });
+        sentWs = true;
       } catch (err) {
         console.warn("STOMP publish failed, falling back to HTTP", err);
       }
     }
 
-    // 5. Always POST to /api/messages/send
-    fetch("/api/messages/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newMsg)
-    }).catch(() => {});
+    // 5. POST to /api/messages/send only if WebSocket wasn't sent
+    if (!sentWs) {
+      fetch("/api/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMsg)
+      }).catch(() => {});
+    }
 
     setInputMessage("");
     setAdminAttachedFile(null);
@@ -947,7 +949,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
         if (synthesized.length > 0) return synthesized;
       }
     }
-    return threadMsgs;
+    return deduplicateChatMessages(threadMsgs);
   }, [messages, activeThreadId, applications, applicantEmail]);
 
   // Filter contacts list by search and category
