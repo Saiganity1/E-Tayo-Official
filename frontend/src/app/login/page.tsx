@@ -176,12 +176,6 @@ export default function LoginPage() {
             role: "ROLE_STAFF",
             name: "Dave Sicat"
           };
-        } else if (sanitizedEmail === "juan.verifier@etayo.gov.ph") {
-          data = {
-            accessToken: `staff_session_${Date.now()}`,
-            role: "ROLE_STAFF",
-            name: "Juan Verifier"
-          };
         } else if (sanitizedEmail === "gilbert.cruz@etayo.gov.ph") {
           data = {
             accessToken: `staff_session_${Date.now()}`,

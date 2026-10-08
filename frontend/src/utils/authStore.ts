@@ -41,14 +41,6 @@ if (!globalForAuth._registeredUsers) {
     },
     {
       id: 3,
-      name: "Juan Verifier",
-      email: "juan.verifier@etayo.gov.ph",
-      password: "password123",
-      role: "ROLE_STAFF",
-      createdAt: "2026-09-01T08:00:00Z"
-    },
-    {
-      id: 4,
       name: "Engr. Gilbert Cruz",
       email: "gilbert.cruz@etayo.gov.ph",
       password: "password123",

@@ -128,6 +128,7 @@ const isDummyApp = (app: PermitApplication) => {
     name === "juan verifier" ||
     name === "null" ||
     email === "admin@etayo.gov.ph" ||
+    email === "juan.verifier@etayo.gov.ph" ||
     email === "citizen.verifier@gmail.com" ||
     email === "maria.santos@gmail.com" ||
     email === "maria.santos@example.com" ||

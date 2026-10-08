@@ -31,34 +31,27 @@ if (!globalForUsers._assignedUsersStore) {
     },
     {
       id: 3,
-      name: "Juan Verifier",
-      email: "juan.verifier@etayo.gov.ph",
-      role: "ROLE_STAFF",
-      createdAt: "2026-09-01T08:00:00Z"
-    },
-    {
-      id: 4,
       name: "Engr. Gilbert Cruz",
       email: "gilbert.cruz@etayo.gov.ph",
       role: "ROLE_STAFF",
       createdAt: "2026-09-01T08:00:00Z"
     },
     {
-      id: 5,
+      id: 4,
       name: "RANDREB YUTUC DAVID",
       email: "randreb.david@example.com",
       role: "ROLE_APPLICANT",
       createdAt: "2026-10-08T10:00:00Z"
     },
     {
-      id: 6,
+      id: 5,
       name: "Kathleen Ann Abarquez",
       email: "kathleen.abarquez@example.com",
       role: "ROLE_APPLICANT",
       createdAt: "2026-10-08T10:00:00Z"
     },
     {
-      id: 7,
+      id: 6,
       name: "Dave Sicat",
       email: "davesicat@gmail.com",
       role: "ROLE_APPLICANT",
@@ -73,9 +66,11 @@ export const isAutomaticDummyStaff = (u: any): boolean => {
   return (
     email === "staff@etayo.gov.ph" ||
     email === "dummy@example.com" ||
+    email === "juan.verifier@etayo.gov.ph" ||
     email === "citizen.verifier@gmail.com" ||
     email === "maria.santos@gmail.com" ||
     email === "maria.santos@example.com" ||
+    name === "juan verifier" ||
     name === "maria santos" ||
     name === "admin user"
   );

@@ -38,9 +38,11 @@ const isAutomaticDummyStaff = (u: any): boolean => {
   return (
     email === "staff@etayo.gov.ph" ||
     email === "dummy@example.com" ||
+    email === "juan.verifier@etayo.gov.ph" ||
     email === "citizen.verifier@gmail.com" ||
     email === "maria.santos@gmail.com" ||
     email === "maria.santos@example.com" ||
+    name === "juan verifier" ||
     name === "maria santos" ||
     name === "admin user"
   );
