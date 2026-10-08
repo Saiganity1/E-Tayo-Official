@@ -36,10 +36,11 @@ import {
   MessageSquare,
   ArrowRight,
   Lock,
-  AlertCircle
+  AlertCircle,
+  Calendar
 } from "lucide-react";
 import { dispatchPermitMessage, getAuthoritativePermitFee } from "../../../../../utils/permitMessaging";
-import { getConnectedProjectApp, isApplicationApproved, isApplicationReleased } from "@/utils/projectGrouping";
+import { getConnectedProjectApp, isApplicationApproved, isApplicationReleased, formatSubmissionDateTime } from "@/utils/projectGrouping";
 import Link from "next/link";
 import { 
   generateUnifiedPermitPdf, 
@@ -68,7 +69,7 @@ import { INITIAL_APPLICATIONS } from "../../../../../data/mock";
 export default function ApplicationTrackDetail() {
   const params = useParams();
   const router = useRouter();
-  const { applications, updateApplication, cancelApplication } = usePermitContext();
+  const { applications, systemLogs, updateApplication, cancelApplication } = usePermitContext();
 
   const rawId = params?.id;
   const appId = useMemo(() => {
@@ -1957,9 +1958,15 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
 
               <div>
-                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date Submitted</span>
-                <span style={{ color: "#0f172a", fontWeight: "700", fontSize: "0.95rem" }}>
-                  {appData.dateSubmitted || "Recorded"}
+                <span style={{ display: "block", color: "#64748b", fontSize: "0.82rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date & Time Submitted</span>
+                <span style={{ color: "#0f172a", fontWeight: "700", fontSize: "0.95rem", display: "inline-flex", alignItems: "center", gap: "5px", flexWrap: "wrap" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                    <Calendar size={13} color="#2563eb" /> {formatSubmissionDateTime(appData, { systemLogs }).date}
+                  </span>
+                  <span style={{ color: "#cbd5e1" }}>•</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", color: "#64748b" }}>
+                    <Clock size={12} color="#2563eb" /> {formatSubmissionDateTime(appData, { systemLogs }).time}
+                  </span>
                 </span>
               </div>
 

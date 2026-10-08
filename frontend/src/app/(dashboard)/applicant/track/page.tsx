@@ -22,7 +22,8 @@ import {
   ProjectDossier,
   isApplicationApproved,
   isApplicationReleased,
-  compareAppsNewestFirst 
+  compareAppsNewestFirst,
+  formatSubmissionDateTime 
 } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "flat";
@@ -30,7 +31,7 @@ type ViewMode = "project" | "flat";
 export default function ApplicationStatusPage() {
   const router = useRouter();
   const { language, t } = useLanguage();
-  const { applications, updateApplication, archiveApplication, cancelApplication, refreshApplications } = usePermitContext();
+  const { applications, systemLogs, updateApplication, archiveApplication, cancelApplication, refreshApplications } = usePermitContext();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -954,12 +955,13 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               </div>
             )}
 
-            {app.dateSubmitted && (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                <Calendar size={15} color="#94a3b8" />
-                <span>Filed on: <strong>{app.dateSubmitted}</strong></span>
-              </div>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+              <Calendar size={15} color="#94a3b8" />
+              <span>Filed on: <strong>{formatSubmissionDateTime(app, { systemLogs }).date}</strong></span>
+              <span style={{ color: "#cbd5e1" }}>•</span>
+              <Clock size={14} color="#94a3b8" />
+              <strong>{formatSubmissionDateTime(app, { systemLogs }).time}</strong>
+            </div>
           </div>
         </div>
 
@@ -2196,13 +2198,19 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                           })()}
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.85rem", color: "#64748b", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.85rem", color: "#64748b", flexWrap: "wrap" }}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                             <MapPin size={13} color="#94a3b8" /> {dossier.projectAddress}
                           </span>
                           <span>•</span>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                             <FolderKanban size={13} color="#94a3b8" /> {dossier.applications.length} Connected Permit Form{dossier.applications.length > 1 ? "s" : ""}
+                          </span>
+                          <span>•</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: "#334155", fontWeight: "600" }}>
+                            <Calendar size={13} color="#2563eb" /> {formatSubmissionDateTime(dossier, { systemLogs }).date}
+                            <span style={{ color: "#cbd5e1" }}>•</span>
+                            <Clock size={12} color="#2563eb" /> {formatSubmissionDateTime(dossier, { systemLogs }).time}
                           </span>
                         </div>
                       </div>

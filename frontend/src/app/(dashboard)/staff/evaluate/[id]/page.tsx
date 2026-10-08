@@ -75,7 +75,7 @@ import {
 } from "lucide-react";
 import { formatPhilippineDateTime } from "@/utils/philippineTime";
 import { dispatchPermitMessage } from "../../../../../utils/permitMessaging";
-import { isApplicationApproved, isApplicationReleased } from "@/utils/projectGrouping";
+import { isApplicationApproved, isApplicationReleased, formatSubmissionDateTime } from "@/utils/projectGrouping";
 
 interface ViewerDoc {
   id: string;
@@ -94,7 +94,7 @@ export default function StaffEvaluatePage() {
   const router = useRouter();
   const rawParamId = typeof params?.id === "string" ? decodeURIComponent(params.id).trim() : "";
   const id = rawParamId;
-  const { applications, updateApplication, addSystemLog } = usePermitContext();
+  const { applications, systemLogs, updateApplication, addSystemLog } = usePermitContext();
 
   const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
   let activeStaffName = "Staff Evaluator";
@@ -2599,8 +2599,16 @@ ${isDisapprove
 
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                       <div>
-                        <span style={{ color: "#64748b", display: "block", fontSize: "0.72rem", fontWeight: "700", textTransform: "uppercase" }}>Date Filed</span>
-                        <span style={{ color: "#334155" }}>{app.dateSubmitted}</span>
+                        <span style={{ color: "#64748b", display: "block", fontSize: "0.72rem", fontWeight: "700", textTransform: "uppercase" }}>Date & Time Filed</span>
+                        <span style={{ color: "#334155", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "5px", flexWrap: "wrap" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                            <Calendar size={13} color="#2563eb" /> {formatSubmissionDateTime(app, { systemLogs }).date}
+                          </span>
+                          <span style={{ color: "#cbd5e1" }}>•</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", color: "#64748b" }}>
+                            <Clock size={12} color="#2563eb" /> {formatSubmissionDateTime(app, { systemLogs }).time}
+                          </span>
+                        </span>
                       </div>
                       <div>
                         <span style={{ color: "#64748b", display: "block", fontSize: "0.72rem", fontWeight: "700", textTransform: "uppercase" }}>Estimated Cost</span>

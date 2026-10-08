@@ -25,6 +25,7 @@ public class PermitApplication {
     private String projectDescription;
     private String status;
     private String dateSubmitted;
+    private String createdAt;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "permit_requirements", joinColumns = @JoinColumn(name = "permit_id"))
@@ -84,6 +85,8 @@ public class PermitApplication {
     public void setStatus(String status) { this.status = status; }
     public String getDateSubmitted() { return dateSubmitted; }
     public void setDateSubmitted(String dateSubmitted) { this.dateSubmitted = dateSubmitted; }
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
     public List<Requirement> getRequirements() { return requirements; }
     public void setRequirements(List<Requirement> requirements) { this.requirements = requirements; }
     public LocationCoordinates getLocation() { return location; }

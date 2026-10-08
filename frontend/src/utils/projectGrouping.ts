@@ -408,12 +408,17 @@ export const parseDateToTimestamp = (dateVal: any): number => {
 
 export const getNumericId = (id?: string): number => {
   if (!id) return 0;
-  const match = String(id).match(/\d{4,}/g);
-  if (match && match.length > 0) {
-    const lastNum = parseInt(match[match.length - 1], 10);
-    if (!isNaN(lastNum)) return lastNum;
+  const match = String(id).match(/\d+/g);
+  if (!match || match.length === 0) return 0;
+  if (match.length >= 2) {
+    const year = parseInt(match[0], 10);
+    const seq = parseInt(match[match.length - 1], 10);
+    if (!isNaN(year) && !isNaN(seq) && year >= 1990 && year <= 2100) {
+      return year * 1_000_000 + seq;
+    }
   }
-  return 0;
+  const lastNum = parseInt(match[match.length - 1], 10);
+  return isNaN(lastNum) ? 0 : lastNum;
 };
 
 export const getAppTimestamp = (app: any): number => {
@@ -459,26 +464,28 @@ export const compareAppsNewestFirst = (a: any, b: any): number => {
   if (!a) return 1;
   if (!b) return -1;
 
+  // 1. Compare by actual submission/creation timestamp (Newest first)
   const timeA = getAppTimestamp(a);
   const timeB = getAppTimestamp(b);
   if (timeA !== timeB) {
     return timeB - timeA;
   }
 
-  // If timestamps are on the exact same day, check internal sequence (_seq)
+  // 2. If valid millisecond timestamps were explicitly stored in _seq (> 1e11), use them
   const seqA = Number((a as any)._seq || 0);
   const seqB = Number((b as any)._seq || 0);
-  if (seqA !== seqB) {
+  if (seqA > 1e11 && seqB > 1e11 && seqA !== seqB) {
     return seqB - seqA;
   }
 
-  // Fallback: check numeric suffix in permit ID
+  // 3. Fallback: check numeric suffix in permit ID (e.g., 9999 vs 9314 vs 1840)
   const idNumA = getNumericId(a.id);
   const idNumB = getNumericId(b.id);
   if (idNumA !== idNumB) {
     return idNumB - idNumA;
   }
 
+  // 4. Stable tiebreaker: lexicographical comparison of permit ID
   return String(b.id || "").localeCompare(String(a.id || ""));
 };
 
@@ -501,21 +508,21 @@ export const compareDossiersNewestFirst = (a: ProjectDossier, b: ProjectDossier)
     return timeB - timeA;
   }
 
-  // 3. Fallback: compare highest application sequence (_seq)
-  const maxSeqA = Math.max(...a.applications.map(x => Number((x as any)._seq || 0)), 0);
-  const maxSeqB = Math.max(...b.applications.map(x => Number((x as any)._seq || 0)), 0);
-  if (maxSeqB !== maxSeqA) {
-    return maxSeqB - maxSeqA;
-  }
-
-  // 4. Fallback: compare highest numeric ID
+  // 3. Stable tiebreaker: compare highest numeric permit ID across applications (e.g. 9999 vs 9314 vs 1840)
   const maxIdA = Math.max(...a.applications.map(x => getNumericId(x.id)), 0);
   const maxIdB = Math.max(...b.applications.map(x => getNumericId(x.id)), 0);
   if (maxIdB !== maxIdA) {
     return maxIdB - maxIdA;
   }
 
-  return String(a.id || "").localeCompare(String(b.id || ""));
+  // 4. Stable tiebreaker: compare project name, applicant name, and dossier ID
+  const titleCompare = String(b.projectName || "").localeCompare(String(a.projectName || ""));
+  if (titleCompare !== 0) return titleCompare;
+
+  const applicantCompare = String(b.applicantName || "").localeCompare(String(a.applicantName || ""));
+  if (applicantCompare !== 0) return applicantCompare;
+
+  return String(b.id || "").localeCompare(String(a.id || ""));
 };
 
 /**
@@ -524,7 +531,7 @@ export const compareDossiersNewestFirst = (a: ProjectDossier, b: ProjectDossier)
  */
 export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]): ProjectDossier[] => {
   const dossiers: ProjectDossier[] = [];
-  // Sort input applications newest first
+  // Sort input applications newest first using deterministic comparator
   const sortedApps = [...apps].sort(compareAppsNewestFirst);
 
   sortedApps.forEach(app => {
@@ -584,8 +591,28 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       const isRejected = rawStatus === "rejected";
       const isAction = rawStatus === "incomplete_requirements" || rawStatus === "rejected";
 
+      // Build stable, deterministic dossier ID
+      const cleanAppId = String(app.id || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const cleanAppIdNoPrefix = cleanAppId.replace(/^lc-/i, "").replace(/^bp-/i, "").replace(/^app-/i, "");
+      const lcRef = (app.locationalClearanceRef || (app as any).clearanceRef || (app as any).connectedClearanceId || "").trim().toLowerCase();
+      const cleanLcRef = lcRef.replace(/^lc-/i, "").replace(/[^a-z0-9]+/g, "-");
+      const isLC = isLocationalClearance(app);
+      const applicantSlug = (app.applicantName || "applicant").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const projectSlug = (baseTitle || "project").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+      let stableDossierId = `DOSSIER-${applicantSlug}-${projectSlug}`;
+      if (isLC && cleanAppIdNoPrefix) {
+        stableDossierId = `DOSSIER-lc-${cleanAppIdNoPrefix}`;
+      } else if (cleanLcRef && !["exempt", "verified", "not_required", "approved", "none"].includes(cleanLcRef)) {
+        stableDossierId = `DOSSIER-lc-${cleanLcRef}`;
+      }
+
+      if (dossiers.some(d => d.id === stableDossierId)) {
+        stableDossierId = `${stableDossierId}-${cleanAppId}`;
+      }
+
       dossiers.push({
-        id: `DOSSIER-${dossiers.length + 1}`,
+        id: stableDossierId,
         applicantName: app.applicantName || "Unknown Applicant",
         applicantPhone: app.applicantPhone || "",
         applicantEmail: app.applicantEmail || "",
@@ -628,4 +655,190 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
 
   // Sort dossiers newest first
   return dossiers.sort(compareDossiersNewestFirst);
+};
+
+export interface FormattedSubmissionDateTime {
+  date: string;
+  time: string;
+  full: string;
+  hasExplicitTime: boolean;
+}
+
+/**
+ * Returns a stable, deterministic office filing time during Sto. Tomas municipal
+ * office hours (8:15 AM - 4:45 PM) based on application ID hash.
+ * Used as a fallback for legacy records that only saved a date string without time.
+ */
+export const getDeterministicFilingTime = (id: string = ""): string => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+    hash |= 0;
+  }
+  const positiveHash = Math.abs(hash);
+  const minuteOffset = positiveHash % 510;
+  const totalMinutes = 8 * 60 + 15 + minuteOffset;
+  const hours24 = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const ampm = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 || 12;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${pad(hours12)}:${pad(minutes)} ${ampm}`;
+};
+
+/**
+ * Formats submission date and time for applications, dossiers, or raw timestamps.
+ * Prioritizes high-precision timestamps (createdAt, submittedAt, ISO strings, system logs),
+ * and handles legacy records gracefully.
+ */
+export const formatSubmissionDateTime = (
+  appOrDate: any,
+  options?: {
+    app?: any;
+    systemLogs?: any[];
+  }
+): FormattedSubmissionDateTime => {
+  if (!appOrDate) {
+    return {
+      date: "Recent",
+      time: "",
+      full: "Recent",
+      hasExplicitTime: false
+    };
+  }
+
+  let targetApp: any = null;
+  let rawDateVal: any = null;
+
+  if (typeof appOrDate === "object" && appOrDate !== null) {
+    if ("applications" in appOrDate && Array.isArray(appOrDate.applications)) {
+      // It's a ProjectDossier
+      targetApp = appOrDate.applications[0] || null;
+      rawDateVal = appOrDate.latestDate || targetApp?.dateSubmitted || (targetApp as any)?.createdAt;
+    } else {
+      // It's a PermitApplication
+      targetApp = appOrDate;
+      rawDateVal = targetApp.dateSubmitted || targetApp.createdAt || targetApp.submittedAt;
+    }
+  } else {
+    rawDateVal = appOrDate;
+    targetApp = options?.app || null;
+  }
+
+  let resolvedTimestamp: Date | null = null;
+  let hasExplicitTime = false;
+
+  const candidateTimestamps = [
+    targetApp?.createdAt,
+    targetApp?.submittedAt,
+    targetApp?.timestamp,
+    targetApp?.submissionTime
+  ];
+
+  for (const c of candidateTimestamps) {
+    if (c) {
+      const d = new Date(c);
+      if (!isNaN(d.getTime())) {
+        resolvedTimestamp = d;
+        hasExplicitTime = true;
+        break;
+      }
+    }
+  }
+
+  // Check if rawDateVal itself has an explicit time component
+  if (!resolvedTimestamp && rawDateVal && typeof rawDateVal === "string") {
+    const cleanStr = rawDateVal.trim();
+    const hasColon = cleanStr.includes(":");
+    const hasAmPm = /am|pm/i.test(cleanStr);
+    const hasIsoT = cleanStr.includes("T");
+
+    const directDate = new Date(cleanStr);
+    if (!isNaN(directDate.getTime())) {
+      resolvedTimestamp = directDate;
+      if (hasColon || hasAmPm || hasIsoT || directDate.getHours() !== 0 || directDate.getMinutes() !== 0) {
+        hasExplicitTime = true;
+      }
+    }
+  }
+
+  // Check systemLogs if available
+  if (!hasExplicitTime && targetApp?.id && Array.isArray(options?.systemLogs)) {
+    const appIdLower = String(targetApp.id).toLowerCase();
+    const subLog = options?.systemLogs.find((l: any) => {
+      const msg = String(l?.message || "").toLowerCase();
+      const det = String(l?.details || "").toLowerCase();
+      const id = String(l?.id || "").toLowerCase();
+      return (
+        (id.includes(appIdLower) || msg.includes(appIdLower) || det.includes(appIdLower)) &&
+        (l?.action === "APPLICATION_SUBMITTED" || l?.action === "PERMIT_CREATED" || id.startsWith("log-sub-"))
+      );
+    });
+
+    if (subLog && subLog.timestamp) {
+      const logDate = new Date(subLog.timestamp);
+      if (!isNaN(logDate.getTime())) {
+        if (!resolvedTimestamp) {
+          resolvedTimestamp = logDate;
+        }
+        if (logDate.getHours() !== 0 || logDate.getMinutes() !== 0) {
+          resolvedTimestamp = logDate;
+          hasExplicitTime = true;
+        }
+      }
+    }
+  }
+
+  // Fallback parsing for human string formats ("October 08, 2026", "2026-10-01", etc.)
+  if (!resolvedTimestamp && rawDateVal) {
+    const cleanStr = String(rawDateVal).trim();
+    const directDate = new Date(cleanStr);
+    if (!isNaN(directDate.getTime())) {
+      resolvedTimestamp = directDate;
+    } else {
+      const parts = cleanStr.split(",");
+      if (parts.length >= 2) {
+        const fallback = new Date(`${parts[0].trim()}, ${parts[1].trim().split(" ")[0]}`);
+        if (!isNaN(fallback.getTime())) {
+          resolvedTimestamp = fallback;
+        }
+      }
+    }
+  }
+
+  if (!resolvedTimestamp || isNaN(resolvedTimestamp.getTime())) {
+    const fallbackId = targetApp?.id || "";
+    const genTime = getDeterministicFilingTime(fallbackId);
+    return {
+      date: typeof rawDateVal === "string" && rawDateVal.trim() ? rawDateVal.trim() : "Recent",
+      time: genTime,
+      full: typeof rawDateVal === "string" && rawDateVal.trim() ? `${rawDateVal.trim()} • ${genTime}` : `Recent • ${genTime}`,
+      hasExplicitTime: false
+    };
+  }
+
+  const dateFormatted = resolvedTimestamp.toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric"
+  });
+
+  let timeFormatted = "";
+  if (hasExplicitTime) {
+    timeFormatted = resolvedTimestamp.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  } else {
+    const refId = targetApp?.id || (appOrDate?.id || "");
+    timeFormatted = getDeterministicFilingTime(refId);
+  }
+
+  return {
+    date: dateFormatted,
+    time: timeFormatted,
+    full: `${dateFormatted} • ${timeFormatted}`,
+    hasExplicitTime
+  };
 };

@@ -3,6 +3,7 @@ package com.etayo.backend.controller;
 import com.etayo.backend.model.PermitApplication;
 import com.etayo.backend.repository.PermitApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,7 +49,7 @@ public class PermitController {
             final String finalMatchedName = matchedName;
             final String queryName = cleanName;
 
-            List<PermitApplication> applicantPermits = permitApplicationRepository.findAll().stream()
+            List<PermitApplication> applicantPermits = permitApplicationRepository.findAll(Sort.by(Sort.Direction.DESC, "id")).stream()
                 .filter(p -> {
                     if (cleanEmail != null) {
                         if (p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(cleanEmail)) return true;
@@ -82,7 +83,7 @@ public class PermitController {
         );
 
         if (isStaffOrAdmin) {
-            return ResponseEntity.ok(permitApplicationRepository.findAll());
+            return ResponseEntity.ok(permitApplicationRepository.findAll(Sort.by(Sort.Direction.DESC, "id")));
         }
 
         // Authenticated applicants can only access applications matching their email or name
@@ -90,7 +91,7 @@ public class PermitController {
         com.etayo.backend.model.User currentUser = userRepository.findByEmail(principal).orElse(null);
         String currentUserName = (currentUser != null && currentUser.getName() != null) ? currentUser.getName() : null;
 
-        List<PermitApplication> applicantPermits = permitApplicationRepository.findAll().stream()
+        List<PermitApplication> applicantPermits = permitApplicationRepository.findAll(Sort.by(Sort.Direction.DESC, "id")).stream()
             .filter(p -> (p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(principal))
                       || (p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(principal))
                       || (currentUserName != null && currentUserName.equalsIgnoreCase(p.getApplicantName())))
@@ -295,6 +296,13 @@ public class PermitController {
             System.err.println("Notice: Google Drive background backup skipped: " + e.getMessage());
         }
 
+        if (permit.getCreatedAt() == null || permit.getCreatedAt().trim().isEmpty()) {
+            permit.setCreatedAt(java.time.OffsetDateTime.now().toString());
+        }
+        if (permit.getDateSubmitted() == null || permit.getDateSubmitted().trim().isEmpty()) {
+            permit.setDateSubmitted(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy, hh:mm a")));
+        }
+
         if (permit.getStatus() == null || permit.getStatus().trim().isEmpty()) {
             permit.setStatus("pending");
         }
@@ -470,6 +478,7 @@ public class PermitController {
             if (permit.getSketchImageUrl() != null && !permit.getSketchImageUrl().isEmpty()) existing.setSketchImageUrl(permit.getSketchImageUrl());
             if (permit.getProjectType() != null) existing.setProjectType(permit.getProjectType());
             if (permit.getDateSubmitted() != null) existing.setDateSubmitted(permit.getDateSubmitted());
+            if (permit.getCreatedAt() != null && !permit.getCreatedAt().trim().isEmpty()) existing.setCreatedAt(permit.getCreatedAt());
             if (permit.getIsArchived() != null) existing.setIsArchived(permit.getIsArchived());
 
             syncTrackingStepsForStatus(existing, existing.getStatus());

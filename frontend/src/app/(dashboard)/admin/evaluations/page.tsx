@@ -16,13 +16,14 @@ import {
   compareAppsNewestFirst, 
   compareDossiersNewestFirst, 
   getAppTimestamp, 
-  parseDateToTimestamp 
+  parseDateToTimestamp,
+  formatSubmissionDateTime 
 } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "applicant" | "flat";
 
 export default function StaffEvaluationsPage() {
-  const { applications, updateApplication } = usePermitContext();
+  const { applications, systemLogs, updateApplication } = usePermitContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
@@ -224,8 +225,9 @@ export default function StaffEvaluationsPage() {
       const groupKey = normApplicant;
 
       if (!groups[groupKey]) {
+        const applicantSlug = normApplicant.replace(/[^a-z0-9]+/g, "-") || "unknown";
         groups[groupKey] = {
-          id: `APP-${Object.keys(groups).length + 1}`,
+          id: `APP-${applicantSlug}`,
           applicantName: app.applicantName || "Unknown Applicant",
           applicantPhone: app.applicantPhone || "",
           applicantEmail: app.applicantEmail || "",
@@ -833,6 +835,7 @@ export default function StaffEvaluationsPage() {
               const hasPending = dossier.pendingCount > 0;
               const isExpanded = isDossierExpanded(dossier.id, hasPending);
               const nextPendingApp = dossier.applications.find(a => a.status === "pending" || a.status === "under_review");
+              const dossierSub = formatSubmissionDateTime(dossier, { systemLogs });
 
               return (
                 <div 
@@ -896,7 +899,7 @@ export default function StaffEvaluationsPage() {
                           </span>
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.85rem", color: "#64748b", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.85rem", color: "#64748b", flexWrap: "wrap" }}>
                           <span style={{ fontWeight: "700", color: "#334155", display: "inline-flex", alignItems: "center", gap: "4px" }}>
                             <User size={14} color="#64748b" /> {dossier.applicantName}
                           </span>
@@ -907,6 +910,27 @@ export default function StaffEvaluationsPage() {
                           )}
                           <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                             <MapPin size={13} color="#94a3b8" /> {dossier.projectAddress}
+                          </span>
+                          <span 
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              color: "#334155",
+                              background: "#f8fafc",
+                              padding: "2px 8px",
+                              borderRadius: "6px",
+                              border: "1px solid #e2e8f0",
+                              fontSize: "0.78rem",
+                              fontWeight: "600"
+                            }}
+                            title={`Submitted: ${dossierSub.full}`}
+                          >
+                            <Calendar size={12} color="#2563eb" />
+                            <span>Submitted: <strong style={{ color: "#0f172a" }}>{dossierSub.date}</strong></span>
+                            <span style={{ color: "#cbd5e1" }}>•</span>
+                            <Clock size={12} color="#2563eb" />
+                            <strong style={{ color: "#0f172a" }}>{dossierSub.time}</strong>
                           </span>
                         </div>
                       </div>
@@ -1002,6 +1026,8 @@ export default function StaffEvaluationsPage() {
                           const typeBadge = getPermitTypeBadge(app.permitType);
                           const StatusIcon = statusStyle.icon;
 
+                          const appSub = formatSubmissionDateTime(app, { systemLogs });
+
                           return (
                             <div 
                               key={app.id}
@@ -1061,7 +1087,19 @@ export default function StaffEvaluationsPage() {
                                       {app.id} {copiedId === app.id ? <Check size={11} color="#16a34a" /> : <Copy size={11} color="#94a3b8" />}
                                     </button>
                                     <span>•</span>
-                                    <span>Submitted: {app.dateSubmitted || "Recent"}</span>
+                                    <span style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "5px",
+                                      color: "#334155",
+                                      fontWeight: "600"
+                                    }}>
+                                      <Calendar size={12} color="#64748b" />
+                                      <span>Submitted: <strong style={{ color: "#0f172a" }}>{appSub.date}</strong></span>
+                                      <span style={{ color: "#cbd5e1" }}>•</span>
+                                      <Clock size={12} color="#64748b" />
+                                      <strong style={{ color: "#0f172a" }}>{appSub.time}</strong>
+                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -1147,6 +1185,7 @@ export default function StaffEvaluationsPage() {
                 <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Applicant</th>
                 <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Project Details</th>
                 <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Type</th>
+                <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Date & Time Submitted</th>
                 <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</th>
                 <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</th>
               </tr>
@@ -1154,7 +1193,7 @@ export default function StaffEvaluationsPage() {
             <tbody>
               {filteredApps.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: "4rem 2rem", textAlign: "center" }}>
+                  <td colSpan={7} style={{ padding: "4rem 2rem", textAlign: "center" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", color: "#94a3b8" }}>
                       <Search size={40} opacity={0.5} />
                       <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: "600" }}>No applications found matching your criteria.</p>
@@ -1165,6 +1204,7 @@ export default function StaffEvaluationsPage() {
                 filteredApps.map((app, i) => {
                   const statusStyle = getStatusColor(app.status);
                   const typeBadge = getPermitTypeBadge(app.permitType);
+                  const appSub = formatSubmissionDateTime(app, { systemLogs });
                   return (
                     <tr key={app.id} style={{ background: "white", borderBottom: i === filteredApps.length - 1 ? "none" : "1px solid #e2e8f0" }}>
                       <td style={{ padding: "1.2rem 1.5rem" }}>
@@ -1188,6 +1228,14 @@ export default function StaffEvaluationsPage() {
                         <span style={{ background: typeBadge.bg, color: typeBadge.color, border: `1px solid ${typeBadge.border}`, padding: "4px 10px", borderRadius: "8px", fontSize: "0.8rem", fontWeight: "700" }}>
                           {typeBadge.label}
                         </span>
+                      </td>
+                      <td style={{ padding: "1.2rem 1.5rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "5px", fontWeight: "700", color: "#0f172a", fontSize: "0.84rem" }}>
+                          <Calendar size={13} color="#2563eb" /> {appSub.date}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "5px", color: "#64748b", fontSize: "0.78rem", marginTop: "3px" }}>
+                          <Clock size={12} color="#64748b" /> {appSub.time}
+                        </div>
                       </td>
                       <td style={{ padding: "1.2rem 1.5rem" }}>
                         <span style={{ 

@@ -920,10 +920,12 @@ export default function ApplyPage() {
       });
 
       const isApplyingLC = selectedPermitType === "locational_clearance";
+      const now = new Date();
       const newId = isApplyingLC
-        ? `LC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
-        : `APP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const submissionDate = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+        ? `LC-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+        : `APP-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const submissionTimeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+      const submissionDate = `${now.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}, ${submissionTimeStr}`;
       const formattedFileName = isApplyingLC
         ? `${newId}_${selectedProjectType.name.replace(/\s+/g, '_')}_Locational_Clearance.pdf`
         : `${newId}_${selectedProjectType.name.replace(/\s+/g, '_')}_Permit_Package.pdf`;
@@ -949,6 +951,9 @@ export default function ApplyPage() {
 
       const newApp: any = {
         id: newId,
+        createdAt: now.toISOString(),
+        submittedAt: now.toISOString(),
+        submissionTime: submissionTimeStr,
         projectName: finalProjectName,
         projectType: selectedProjectType.name,
         permitType: selectedPermitType,

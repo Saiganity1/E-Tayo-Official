@@ -30,13 +30,13 @@ import {
 import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
 import { PermitApplication } from "../../../../types";
-import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationApproved, compareAppsNewestFirst } from "@/utils/projectGrouping";
+import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationApproved, compareAppsNewestFirst, formatSubmissionDateTime } from "@/utils/projectGrouping";
 import { useLanguage } from "@/context/LanguageContext";
 
 type ViewMode = "project" | "flat";
 
 export default function ApplicantDashboard() {
-  const { applications, archiveApplication } = usePermitContext();
+  const { applications, systemLogs, archiveApplication } = usePermitContext();
   const { language, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -741,13 +741,19 @@ export default function ApplicantDashboard() {
                             </span>
                           </div>
 
-                          <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.85rem", color: "#64748b", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.85rem", color: "#64748b", flexWrap: "wrap" }}>
                             <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                               <MapPin size={13} color="#94a3b8" /> {dossier.projectAddress}
                             </span>
                             <span>•</span>
                             <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                               <FolderKanban size={13} color="#94a3b8" /> {dossier.applications.length} {t("connectedPermitForms", "Connected Permit Forms")}
+                            </span>
+                            <span>•</span>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: "#334155", fontWeight: "600" }}>
+                              <Calendar size={13} color="#2563eb" /> {formatSubmissionDateTime(dossier, { systemLogs }).date}
+                              <span style={{ color: "#cbd5e1" }}>•</span>
+                              <Clock size={12} color="#2563eb" /> {formatSubmissionDateTime(dossier, { systemLogs }).time}
                             </span>
                           </div>
                         </div>
@@ -893,8 +899,12 @@ export default function ApplicantDashboard() {
 
                                 {/* Footer Row: Submission Date & Actions */}
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "0.6rem", borderTop: "1px solid #f1f5f9", gap: "8px", flexWrap: "wrap" }}>
-                                  <span style={{ color: "#94a3b8", fontWeight: "600", fontSize: "0.78rem" }}>
-                                    {t("submittedPrefix", "Submitted")}: {app.dateSubmitted || "Online Portal"}
+                                  <span style={{ color: "#64748b", fontWeight: "600", fontSize: "0.78rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                    <Calendar size={12} color="#64748b" />
+                                    <span>{t("submittedPrefix", "Submitted")}: <strong style={{ color: "#334155" }}>{formatSubmissionDateTime(app, { systemLogs }).date}</strong></span>
+                                    <span style={{ color: "#cbd5e1" }}>•</span>
+                                    <Clock size={11} color="#64748b" />
+                                    <strong style={{ color: "#334155" }}>{formatSubmissionDateTime(app, { systemLogs }).time}</strong>
                                   </span>
 
                                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -1077,8 +1087,12 @@ export default function ApplicantDashboard() {
 
                     {/* Card Footer */}
                     <div className="app-footer" style={{ marginTop: "1.25rem", borderTop: "1px solid #f1f5f9", paddingTop: "0.85rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span className="app-date" style={{ color: "#94a3b8", fontWeight: "600", fontSize: "0.82rem" }}>
-                        Submitted: {app.dateSubmitted || "Online Portal"}
+                      <span className="app-date" style={{ color: "#64748b", fontWeight: "600", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <Calendar size={12} color="#64748b" />
+                        <span>Submitted: <strong style={{ color: "#334155" }}>{formatSubmissionDateTime(app, { systemLogs }).date}</strong></span>
+                        <span style={{ color: "#cbd5e1" }}>•</span>
+                        <Clock size={11} color="#64748b" />
+                        <strong style={{ color: "#334155" }}>{formatSubmissionDateTime(app, { systemLogs }).time}</strong>
                       </span>
 
                       <Link

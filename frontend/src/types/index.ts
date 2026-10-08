@@ -54,6 +54,9 @@ export interface PermitApplication {
   projectDescription: string;
   status: ApplicationStatus;
   dateSubmitted: string;
+  createdAt?: string;
+  submittedAt?: string;
+  submissionTime?: string;
   requirements: Requirement[];
   location: LocationCoordinates;
   trackingSteps: TrackingStep[];

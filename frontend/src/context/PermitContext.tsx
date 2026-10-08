@@ -399,11 +399,6 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         backendApps = await appsRes.json();
       }
       const cleanBackendApps = (backendApps || []).filter(a => !isDummyApp(a));
-      cleanBackendApps.forEach((app, idx) => {
-        if (!(app as any)._seq) {
-          (app as any)._seq = idx + 1;
-        }
-      });
       
       const matchPermitId = (a?: string, b?: string) => Boolean(a && b && a.trim().toLowerCase() === b.trim().toLowerCase());
 
@@ -910,7 +905,32 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
 
       mergedApps.sort(compareAppsNewestFirst);
-      setApplications(mergedApps);
+      setApplications(prev => {
+        if (prev && prev.length === mergedApps.length) {
+          const isUnchanged = prev.every((p, idx) => {
+            const m = mergedApps[idx];
+            return (
+              p.id === m.id &&
+              p.status === m.status &&
+              p.dateSubmitted === m.dateSubmitted &&
+              p.dateApproved === m.dateApproved &&
+              p.paymentStatus === m.paymentStatus &&
+              p.isReleased === m.isReleased &&
+              p.isArchived === m.isArchived &&
+              p.assessedFees === m.assessedFees &&
+              p.orderOfPaymentNo === m.orderOfPaymentNo &&
+              p.evaluatedBy === m.evaluatedBy &&
+              p.remarks === m.remarks &&
+              p.trackingSteps?.length === m.trackingSteps?.length
+            );
+          });
+          if (isUnchanged) {
+            return prev;
+          }
+        }
+        return mergedApps;
+      });
+
       try {
         localStorage.setItem("etayo_cached_applications", JSON.stringify(mergedApps.map(a => sanitizeAppForStorage(a))));
       } catch (e) {}
@@ -934,7 +954,16 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       // Build accurate, comprehensive system logs
       const combinedLogs = buildAccurateSystemLogs(mergedApps, backendLogs.length > 0 ? backendLogs : cachedLogs);
-      setSystemLogs(combinedLogs);
+      setSystemLogs(prev => {
+        if (prev && prev.length === combinedLogs.length) {
+          const isSameLogs = prev.every((pl, i) => {
+            const cl = combinedLogs[i];
+            return pl.id === cl.id && pl.action === cl.action && pl.status === cl.status && pl.timestamp === cl.timestamp;
+          });
+          if (isSameLogs) return prev;
+        }
+        return combinedLogs;
+      });
       try {
         localStorage.setItem("etayo_cached_logs", JSON.stringify(combinedLogs));
       } catch (e) {}
