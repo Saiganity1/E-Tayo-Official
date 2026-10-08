@@ -1113,9 +1113,23 @@ export default function StaffEvaluationsPage() {
                                 <span>•</span>
                                 <div>
                                   <span style={{ color: "#64748b" }}>Assessed Fee: </span>
-                                  <span style={{ fontWeight: "700", color: "#0f172a" }}>
-                                    ₱{app.estimatedFees ? app.estimatedFees.toLocaleString() : "2,500.00"}
-                                  </span>
+                                  {app.assessedFees && Number(app.assessedFees) > 0 ? (
+                                    <span style={{ fontWeight: "800", color: "#0f172a" }}>
+                                      ₱{Number(app.assessedFees).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                  ) : (
+                                    <span style={{
+                                      fontWeight: "700",
+                                      color: "#b45309",
+                                      background: "#fef3c7",
+                                      border: "1px solid #fde68a",
+                                      padding: "2px 8px",
+                                      borderRadius: "6px",
+                                      fontSize: "0.78rem"
+                                    }}>
+                                      Pending Staff Assessment
+                                    </span>
+                                  )}
                                 </div>
                               </div>
 

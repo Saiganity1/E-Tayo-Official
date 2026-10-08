@@ -635,8 +635,13 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 paymentStatus: isPaidLocal ? "paid" : (bApp.paymentStatus || (foundCached as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : undefined)),
                 userConfirmedPayment: isConfirmedLocal,
                 officialReceiptNo: (bApp as any).officialReceiptNo || (foundCached as any)?.officialReceiptNo,
-                orderOfPaymentNo: (storedOp && storedOp !== "OP-2026" ? storedOp : null) || (bApp as any).orderOfPaymentNo || (foundCached as any)?.orderOfPaymentNo || `OP-${String(bApp.id || "").replace(/^[A-Za-z]+-/i, "") || "2026"}`,
-                assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (foundCached as any)?.assessedFees || (bApp as any).estimatedFees || (bApp.permitType === "locational_clearance" || String(bApp.id).toUpperCase().startsWith("LC-") ? 1500 : 6200)),
+                assessedFees: (storedFees && !isNaN(Number(storedFees)) && Number(storedFees) > 0)
+                  ? Number(storedFees)
+                  : (((bApp as any).assessedFees && !isNaN(Number((bApp as any).assessedFees)) && Number((bApp as any).assessedFees) > 0)
+                      ? Number((bApp as any).assessedFees)
+                      : ((foundCached as any)?.assessedFees && !isNaN(Number((foundCached as any).assessedFees)) && Number((foundCached as any).assessedFees) > 0)
+                          ? Number((foundCached as any).assessedFees)
+                          : undefined),
                 dateApproved: storedDateApproved || (bApp as any).dateApproved || (foundCached as any)?.dateApproved || (isApproved ? ((bApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
                 evaluatedAt: storedEvaluatedAt || (foundCached as any)?.evaluatedAt || (bApp as any).evaluatedAt || ((storedDateApproved && storedDateApproved.includes(":")) ? storedDateApproved : undefined),
                 remarks: storedRemarks || bApp.remarks || foundCached.remarks,
@@ -659,7 +664,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 paymentStatus: isPaidLocal ? "paid" : ((bApp as any).paymentStatus || (isConfirmedLocal ? "awaiting_verification" : (isApprovedLocal ? "awaiting_payment" : undefined))),
                 userConfirmedPayment: isConfirmedLocal,
                 orderOfPaymentNo: (storedOp && storedOp !== "OP-2026" ? storedOp : null) || (bApp as any).orderOfPaymentNo || `OP-${curCleanSeq || "2026"}`,
-                assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (bApp as any).estimatedFees || (curIsLC ? 1500 : 6200)),
+                assessedFees: (storedFees && !isNaN(Number(storedFees)) && Number(storedFees) > 0)
+                  ? Number(storedFees)
+                  : (((bApp as any).assessedFees && !isNaN(Number((bApp as any).assessedFees)) && Number((bApp as any).assessedFees) > 0)
+                      ? Number((bApp as any).assessedFees)
+                      : undefined),
                 dateApproved: storedDateApproved || (bApp as any).dateApproved || (isApprovedLocal ? new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : undefined),
                 evaluatedAt: storedEvaluatedAt || (bApp as any).evaluatedAt || ((storedDateApproved && storedDateApproved.includes(":")) ? storedDateApproved : undefined),
                 remarks: storedRemarks || bApp.remarks,
@@ -898,7 +907,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           evaluatorEmail: mEvaluatorEmail || mApp.evaluatorEmail,
           trackingSteps: mTracking,
           orderOfPaymentNo: (mOp && mOp !== "OP-2026" ? mOp : null) || (mApp as any).orderOfPaymentNo || `OP-${mCleanSeq || "2026"}`,
-          assessedFees: mFees ? Number(mFees) : ((mApp as any).assessedFees || (mApp as any).estimatedFees || (mIsLC ? 1500 : 6200)),
+          assessedFees: (mFees && !isNaN(Number(mFees)) && Number(mFees) > 0)
+            ? Number(mFees)
+            : (((mApp as any).assessedFees && !isNaN(Number((mApp as any).assessedFees)) && Number((mApp as any).assessedFees) > 0)
+                ? Number((mApp as any).assessedFees)
+                : undefined),
           dateApproved: mDateApp || (mApp as any).dateApproved || (mIsApproved ? ((mApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
           remarks: mRemarks || mApp.remarks,
         };

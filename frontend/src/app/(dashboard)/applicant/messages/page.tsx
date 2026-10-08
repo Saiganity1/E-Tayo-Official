@@ -2217,7 +2217,11 @@ export default function ApplicantMessagesPage() {
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                             <CreditCard size={12} />
-                            <span>Assessed Fee: <strong>PHP {feeNum.toLocaleString()}</strong></span>
+                            <span>Assessed Fee: {feeNum > 0 ? (
+                              <strong>PHP {feeNum.toLocaleString()}</strong>
+                            ) : (
+                              <em style={{ color: "#d97706", fontWeight: "600" }}>Pending Staff Assessment</em>
+                            )}</span>
                           </div>
                         </div>
 

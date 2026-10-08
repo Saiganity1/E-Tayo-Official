@@ -1765,11 +1765,20 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                   ) : isLC ? (
                     <>
                       Your Locational Clearance (<strong>{appData.id}</strong>) has been officially approved by the Sto. Tomas Zoning Administrator / Municipal Planning and Development Office (MPDO). 
-                      Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {getAuthoritativePermitFee(appData, appData.id).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) at the Municipal Treasury or online. Your official clearance papers will be released once settled.
+                      {getAuthoritativePermitFee(appData, appData.id) > 0 ? (
+                        <> Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {getAuthoritativePermitFee(appData, appData.id).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) at the Municipal Treasury or online.</>
+                      ) : (
+                        <> The official assessed fee is being finalized by municipal staff (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>).</>
+                      )} Your official clearance papers will be released once settled.
                     </>
                   ) : (
                     <>
-                      Great news! Your application has formally passed municipal evaluation. Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {getAuthoritativePermitFee(appData, appData.id).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) at the Municipal Treasury or online to receive your final signed release papers.
+                      Great news! Your application has formally passed municipal evaluation. 
+                      {getAuthoritativePermitFee(appData, appData.id) > 0 ? (
+                        <> Please settle the assessed regulatory fee of <strong style={{ color: "#065f46", fontSize: "1rem" }}>PHP {getAuthoritativePermitFee(appData, appData.id).toLocaleString()}</strong> (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>) at the Municipal Treasury or online to receive your final signed release papers.</>
+                      ) : (
+                        <> The official assessed regulatory fee is being finalized by municipal staff (Ref: <strong>{appData.orderOfPaymentNo || `OP-${appData.id?.replace(/^[A-Za-z]+-/i, "") || "2026"}`}</strong>).</>
+                      )}
                     </>
                   )}
                 </div>

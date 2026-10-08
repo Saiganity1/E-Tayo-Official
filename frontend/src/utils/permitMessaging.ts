@@ -140,12 +140,7 @@ export const getAuthoritativePermitFee = (app?: any, rawAppId?: string): number 
     return Number((app as any).assessedFees);
   }
 
-  // 3. Application object estimatedFees
-  if (app && (app as any).estimatedFees && !isNaN(Number((app as any).estimatedFees)) && Number((app as any).estimatedFees) > 0) {
-    return Number((app as any).estimatedFees);
-  }
-
-  // 4. Lookup from localStorage cached applications if app not passed or missing fees
+  // 3. Lookup from localStorage cached applications if app not passed or missing fees
   if (typeof window !== "undefined" && id) {
     try {
       const rawApps = localStorage.getItem("etayo_cached_applications");
@@ -159,16 +154,13 @@ export const getAuthoritativePermitFee = (app?: any, rawAppId?: string): number 
           if (found.assessedFees && !isNaN(Number(found.assessedFees)) && Number(found.assessedFees) > 0) {
             return Number(found.assessedFees);
           }
-          if (found.estimatedFees && !isNaN(Number(found.estimatedFees)) && Number(found.estimatedFees) > 0) {
-            return Number(found.estimatedFees);
-          }
         }
       }
     } catch (e) {}
   }
 
-  // 5. Default standard municipal fee: LC = 1500 (Sto. Tomas Fee Schedule FEE-001), Building Permit = 6200
-  return isLC ? 1500 : 6200;
+  // 4. Return 0 if not yet assessed by staff or admin
+  return 0;
 };
 
 /**

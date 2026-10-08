@@ -337,7 +337,6 @@ export default function UnifiedProjectGoogleForm({
         projectDescription: `${projectType.name} construction project under unified permit application package.`,
         fileUrl: `data:application/pdf;base64,${base64Pdf}`,
         fileName: `${applicationNo}_${projectType.name.replace(/\s+/g, '_')}_Unified_Permit.pdf`,
-        estimatedFees: 3500.0,
         paymentStatus: "unpaid",
         location: {
           lat: 15.0050,
