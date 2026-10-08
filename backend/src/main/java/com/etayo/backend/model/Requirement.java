@@ -11,6 +11,8 @@ public class Requirement {
     private String fileName;
     private String fileSize;
     @Column(columnDefinition = "TEXT")
+    private String fileUrl;
+    @Column(columnDefinition = "TEXT")
     private String remarks;
 
     // Getters and Setters
@@ -24,6 +26,8 @@ public class Requirement {
     public void setFileName(String fileName) { this.fileName = fileName; }
     public String getFileSize() { return fileSize; }
     public void setFileSize(String fileSize) { this.fileSize = fileSize; }
+    public String getFileUrl() { return fileUrl; }
+    public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }
     public String getRemarks() { return remarks; }
     public void setRemarks(String remarks) { this.remarks = remarks; }
 }

@@ -65,6 +65,11 @@ public class PermitApplication {
     private String evaluatorEmail;
     private String evaluatedAt;
 
+    @Column(columnDefinition = "TEXT")
+    private String bfpUploadedFile;
+
+    private String bfpUploadedFileName;
+
     // Getters and Setters
 
     public String getId() { return id; }
@@ -129,4 +134,8 @@ public class PermitApplication {
     public void setEvaluatorEmail(String evaluatorEmail) { this.evaluatorEmail = evaluatorEmail; }
     public String getEvaluatedAt() { return evaluatedAt; }
     public void setEvaluatedAt(String evaluatedAt) { this.evaluatedAt = evaluatedAt; }
+    public String getBfpUploadedFile() { return bfpUploadedFile; }
+    public void setBfpUploadedFile(String bfpUploadedFile) { this.bfpUploadedFile = bfpUploadedFile; }
+    public String getBfpUploadedFileName() { return bfpUploadedFileName; }
+    public void setBfpUploadedFileName(String bfpUploadedFileName) { this.bfpUploadedFileName = bfpUploadedFileName; }
 }

@@ -84,6 +84,8 @@ export interface PermitApplication {
   datePaymentSubmitted?: string;
   officialReceiptNo?: string;
   datePaid?: string;
+  bfpUploadedFile?: string;
+  bfpUploadedFileName?: string;
   [key: string]: any;
 }
 

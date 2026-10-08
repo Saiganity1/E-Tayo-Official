@@ -21,7 +21,6 @@ import {
   generateCertificateOfOccupancyPdf,
   generateCertificateOfCompletionPdf,
   generateCfeiPdf,
-  generateBfpApplicationPdf,
   UnifiedPermitFormData
 } from "../../../../../utils/unifiedPermitPdfGenerator";
 import { getSystemActivePresets } from "../../../../../utils/systemFormPresets";
@@ -81,12 +80,13 @@ interface ViewerDoc {
   id: string;
   title: string;
   tabLabel: string;
-  type: "pdf" | "image" | "doc";
+  type: "pdf" | "image" | "doc" | "missing-bfp";
   url: string;
   fileName: string;
   isOfficialForm?: boolean;
   hasDriveBackup?: boolean;
   driveBackupUrl?: string;
+  isApplicantUploadedBfp?: boolean;
 }
 
 export default function StaffEvaluatePage() {
@@ -1084,7 +1084,7 @@ export default function StaffEvaluatePage() {
           }
         }
 
-        // 15. Bureau of Fire Protection Clearance (Applicant-uploaded certificate & FSEC evaluation)
+        // 15. Bureau of Fire Protection Clearance (Strictly Applicant-Uploaded Certificate ONLY; Never Auto-Generated)
         const bfpReq = Array.isArray(app.requirements) ? app.requirements.find((r: any) => {
           const n = (r?.name || "").toLowerCase();
           const fn = (r?.fileName || "").toLowerCase();
@@ -1095,7 +1095,7 @@ export default function StaffEvaluatePage() {
         const lowerEvalId = curEvaluatedId.toLowerCase();
         const upperEvalId = curEvaluatedId.toUpperCase();
         let bfpFileUrl = (app as any).bfpUploadedFile || bfpReq?.fileUrl;
-        let bfpFileName = (app as any).bfpUploadedFileName || bfpReq?.fileName || "BFP_Fire_Safety_Clearance.pdf";
+        let bfpFileName = (app as any).bfpUploadedFileName || bfpReq?.fileName;
 
         // Check if there is a local cached copy in localStorage if not already a valid data/network url
         if (typeof window !== "undefined") {
@@ -1103,51 +1103,93 @@ export default function StaffEvaluatePage() {
                             localStorage.getItem(`etayo_bfp_${lowerEvalId}`) ||
                             localStorage.getItem(`etayo_bfp_${upperEvalId}`) ||
                             (bfpReq?.fileName ? (localStorage.getItem(`att_${bfpReq.fileName}`) || localStorage.getItem(`etayo_att_${bfpReq.fileName}`)) : null) ||
+                            (bfpFileName ? (localStorage.getItem(`att_${bfpFileName}`) || localStorage.getItem(`etayo_att_${bfpFileName}`)) : null) ||
                             localStorage.getItem("etayo_bfp_file_data");
-          if (cachedUrl && (!bfpFileUrl || bfpFileUrl.includes("/templates/UNIFIED"))) {
+          if (cachedUrl && (!bfpFileUrl || bfpFileUrl.includes("/templates/"))) {
             bfpFileUrl = cachedUrl;
           }
-          const cachedName = localStorage.getItem(`etayo_bfp_name_${curEvaluatedId}`) || localStorage.getItem("etayo_bfp_file_name");
-          if (cachedName && (!bfpFileName || bfpFileName === "BFP_Fire_Safety_Clearance.pdf")) {
+          const cachedName = localStorage.getItem(`etayo_bfp_name_${curEvaluatedId}`) ||
+                             localStorage.getItem(`etayo_bfp_name_${lowerEvalId}`) ||
+                             localStorage.getItem(`etayo_bfp_name_${upperEvalId}`) ||
+                             localStorage.getItem("etayo_bfp_file_name");
+          if (cachedName && !bfpFileName) {
             bfpFileName = cachedName;
           }
         }
 
-        const isUserFile = Boolean(bfpFileUrl && !bfpFileUrl.includes("/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT"));
+        // Also check cached applications in localStorage
+        if (!bfpFileUrl && typeof window !== "undefined") {
+          try {
+            const rawCached = localStorage.getItem("etayo_cached_applications");
+            if (rawCached) {
+              const cachedList = JSON.parse(rawCached);
+              const found = Array.isArray(cachedList) ? cachedList.find((c: any) => c.id && c.id.toLowerCase() === lowerEvalId) : null;
+              if (found) {
+                if (found.bfpUploadedFile) bfpFileUrl = found.bfpUploadedFile;
+                if (found.bfpUploadedFileName && !bfpFileName) bfpFileName = found.bfpUploadedFileName;
+                if (!bfpFileUrl && Array.isArray(found.requirements)) {
+                  const cReq = found.requirements.find((r: any) => {
+                    const n = (r?.name || "").toLowerCase();
+                    const fn = (r?.fileName || "").toLowerCase();
+                    return n.includes("bfp") || n.includes("fire safety") || n.includes("fsec") || fn.includes("bfp") || fn.includes("fsec");
+                  });
+                  if (cReq?.fileUrl) bfpFileUrl = cReq.fileUrl;
+                  if (cReq?.fileName && !bfpFileName) bfpFileName = cReq.fileName;
+                }
+              }
+            }
+          } catch (e) {}
+        }
+
+        if (bfpFileUrl && bfpFileUrl.startsWith("/api/files/")) {
+          bfpFileUrl = `${apiBase}${bfpFileUrl}`;
+        }
+
+        const isUserFile = Boolean(bfpFileUrl && !bfpFileUrl.includes("/templates/"));
 
         if (isUserFile && bfpFileUrl) {
-          const cleanName = (bfpFileName || "").toLowerCase();
+          const cleanName = (bfpFileName || "BFP_Fire_Safety_Clearance.pdf").toLowerCase();
           const cleanUrl = (bfpFileUrl || "").toLowerCase();
           const isImg = cleanUrl.includes(".png") || cleanUrl.includes(".jpg") || cleanUrl.includes(".jpeg") || cleanUrl.startsWith("data:image/") || /\.(png|jpe?g|webp)$/i.test(cleanName);
           const isDoc = /\.(docx?|doc)$/i.test(cleanName) || cleanUrl.includes("application/msword") || cleanUrl.includes("wordprocessingml") || cleanUrl.includes("officedocument");
           const docType = isImg ? "image" : isDoc ? "doc" : "pdf";
 
+          let resolvedDisplayUrl = bfpFileUrl;
+          if (docType === "pdf" && bfpFileUrl.startsWith("data:application/pdf")) {
+            try {
+              const parts = bfpFileUrl.split(",");
+              if (parts.length > 1) {
+                resolvedDisplayUrl = createBlobFromBase64(parts[1]);
+              }
+            } catch (decErr) {
+              console.warn("Could not convert BFP base64 to blob:", decErr);
+            }
+          }
+
           docs.push({
             id: "bfp-clearance-tab",
-            title: `Fire Safety Evaluation Clearance (BFP / FSEC) — ${bfpFileName}`,
+            title: `Fire Safety Evaluation Clearance (BFP / FSEC) — ${bfpFileName || "Uploaded Certificate"}`,
             tabLabel: "🔥 BFP Clearance (Uploaded)",
             type: docType,
-            url: bfpFileUrl,
-            fileName: bfpFileName,
+            url: resolvedDisplayUrl,
+            fileName: bfpFileName || `${app.id}_BFP_Fire_Safety_Clearance.pdf`,
             isOfficialForm: false,
+            isApplicantUploadedBfp: true,
           });
         } else {
-          // If no applicant-uploaded file was captured, provide official BFP FSEC evaluation summary
-          try {
-            const bfpPdfB64 = await generateBfpApplicationPdf(formData);
-            const bfpUrl = createBlobFromBase64(bfpPdfB64);
-            docs.push({
-              id: "bfp-clearance-tab",
-              title: "Bureau of Fire Protection (BFP) Fire Safety Evaluation Clearance Summary",
-              tabLabel: "🔥 BFP Clearance",
-              type: "pdf",
-              url: bfpUrl,
-              fileName: `${app.id}_BFP_FSEC_Evaluation.pdf`,
-              isOfficialForm: true,
-            });
-          } catch (e) {
-            console.warn("Could not generate BFP evaluation PDF fallback", e);
-          }
+          // STRICT RULE: Never generate any synthetic BFP clearance!
+          // Under Republic Act No. 9514, BFP clearances are issued exclusively by the Bureau of Fire Protection.
+          // Show notice that applicant certificate upload is required.
+          docs.push({
+            id: "bfp-clearance-tab",
+            title: "Bureau of Fire Protection (BFP) Clearance — Pending Applicant Upload",
+            tabLabel: "🔥 BFP Clearance (Not Uploaded)",
+            type: "missing-bfp",
+            url: "",
+            fileName: "No_BFP_Clearance_Uploaded.pdf",
+            isOfficialForm: false,
+            isApplicantUploadedBfp: false,
+          });
         }
       }
 
@@ -2534,50 +2576,55 @@ ${isDisapprove
                     )}
 
                     {/* BFP Fire Safety Evaluation Clearance (FSEC) Status */}
-                    {isBuildingPermit && (
-                      <div style={{
-                        background: "#fff7ed",
-                        border: "1.5px solid #fdba74",
-                        borderRadius: "10px",
-                        padding: "10px 12px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between"
-                      }}>
-                        <div>
-                          <span style={{ color: "#c2410c", fontSize: "0.72rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "5px", textTransform: "uppercase" }}>
-                            <Flame size={14} color="#ea580c" /> Bureau of Fire Protection (BFP) Clearance
-                          </span>
-                          <strong style={{ color: "#9a3412", fontSize: "0.88rem" }}>
-                            {documents.find(d => d.id === "bfp-clearance-tab") ? "✓ BFP / FSEC Uploaded & Attached" : "Pending BFP Verification"}
-                          </strong>
+                    {isBuildingPermit && (() => {
+                      const bfpDoc = documents.find(d => d.id === "bfp-clearance-tab");
+                      const hasUploadedBfp = Boolean(bfpDoc && bfpDoc.type !== "missing-bfp");
+
+                      return (
+                        <div style={{
+                          background: hasUploadedBfp ? "#fff7ed" : "#fef2f2",
+                          border: hasUploadedBfp ? "1.5px solid #fdba74" : "1.5px solid #fca5a5",
+                          borderRadius: "10px",
+                          padding: "10px 12px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between"
+                        }}>
+                          <div>
+                            <span style={{ color: hasUploadedBfp ? "#c2410c" : "#b91c1c", fontSize: "0.72rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "5px", textTransform: "uppercase" }}>
+                              <Flame size={14} color={hasUploadedBfp ? "#ea580c" : "#dc2626"} /> Bureau of Fire Protection (BFP) Clearance
+                            </span>
+                            <strong style={{ color: hasUploadedBfp ? "#9a3412" : "#991b1b", fontSize: "0.88rem" }}>
+                              {hasUploadedBfp ? "✓ BFP / FSEC Uploaded & Attached" : "⚠️ No BFP Clearance Attached (Applicant Upload Required)"}
+                            </strong>
+                          </div>
+                          {bfpDoc && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const bfpIdx = documents.findIndex(d => d.id === "bfp-clearance-tab");
+                                if (bfpIdx !== -1) setActiveDocIndex(bfpIdx);
+                              }}
+                              style={{
+                                background: hasUploadedBfp ? "#ea580c" : "#dc2626",
+                                color: "#ffffff",
+                                fontSize: "0.75rem",
+                                fontWeight: "700",
+                                padding: "5px 12px",
+                                borderRadius: "6px",
+                                border: "none",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px"
+                              }}
+                            >
+                              <Eye size={13} /> {hasUploadedBfp ? "Inspect BFP" : "View Notice"}
+                            </button>
+                          )}
                         </div>
-                        {documents.findIndex(d => d.id === "bfp-clearance-tab") !== -1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const bfpIdx = documents.findIndex(d => d.id === "bfp-clearance-tab");
-                              if (bfpIdx !== -1) setActiveDocIndex(bfpIdx);
-                            }}
-                            style={{
-                              background: "#ea580c",
-                              color: "#ffffff",
-                              fontSize: "0.75rem",
-                              fontWeight: "700",
-                              padding: "5px 12px",
-                              borderRadius: "6px",
-                              border: "none",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px"
-                            }}
-                          >
-                            <Eye size={13} /> Inspect BFP
-                          </button>
-                        )}
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                       <div>
@@ -3249,74 +3296,84 @@ ${isDisapprove
             </div>
 
             {/* Center: Viewer Controls (Zoom, Reset, Rotate) */}
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#f8fafc", padding: "3px 6px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-              <button
-                onClick={handleZoomOut}
-                title="Zoom Out"
-                style={{ background: "none", border: "none", padding: "5px", cursor: "pointer", borderRadius: "4px", color: "#475569", display: "flex", alignItems: "center" }}
-              >
-                <ZoomOut size={16} />
-              </button>
-              <span style={{ fontSize: "0.75rem", fontWeight: "700", minWidth: "42px", textAlign: "center", color: "#1e293b" }}>
-                {zoomLevel}%
-              </span>
-              <button
-                onClick={handleZoomIn}
-                title="Zoom In"
-                style={{ background: "none", border: "none", padding: "5px", cursor: "pointer", borderRadius: "4px", color: "#475569", display: "flex", alignItems: "center" }}
-              >
-                <ZoomIn size={16} />
-              </button>
-              <div style={{ width: "1px", height: "16px", background: "#cbd5e1", margin: "0 2px" }} />
-              {activeDoc?.type === "image" && (
+            {activeDoc?.type !== "missing-bfp" ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#f8fafc", padding: "3px 6px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
                 <button
-                  onClick={handleRotate}
-                  title="Rotate 90deg"
+                  onClick={handleZoomOut}
+                  title="Zoom Out"
                   style={{ background: "none", border: "none", padding: "5px", cursor: "pointer", borderRadius: "4px", color: "#475569", display: "flex", alignItems: "center" }}
                 >
-                  <RotateCw size={15} />
+                  <ZoomOut size={16} />
                 </button>
-              )}
-              <button
-                onClick={handleResetZoom}
-                title="Reset View"
-                style={{ background: "none", border: "none", padding: "4px 8px", cursor: "pointer", borderRadius: "4px", color: "#475569", fontSize: "0.72rem", fontWeight: "700" }}
-              >
-                Reset
-              </button>
-            </div>
+                <span style={{ fontSize: "0.75rem", fontWeight: "700", minWidth: "42px", textAlign: "center", color: "#1e293b" }}>
+                  {zoomLevel}%
+                </span>
+                <button
+                  onClick={handleZoomIn}
+                  title="Zoom In"
+                  style={{ background: "none", border: "none", padding: "5px", cursor: "pointer", borderRadius: "4px", color: "#475569", display: "flex", alignItems: "center" }}
+                >
+                  <ZoomIn size={16} />
+                </button>
+                <div style={{ width: "1px", height: "16px", background: "#cbd5e1", margin: "0 2px" }} />
+                {activeDoc?.type === "image" && (
+                  <button
+                    onClick={handleRotate}
+                    title="Rotate 90deg"
+                    style={{ background: "none", border: "none", padding: "5px", cursor: "pointer", borderRadius: "4px", color: "#475569", display: "flex", alignItems: "center" }}
+                  >
+                    <RotateCw size={15} />
+                  </button>
+                )}
+                <button
+                  onClick={handleResetZoom}
+                  title="Reset View"
+                  style={{ background: "none", border: "none", padding: "4px 8px", cursor: "pointer", borderRadius: "4px", color: "#475569", fontSize: "0.72rem", fontWeight: "700" }}
+                >
+                  Reset
+                </button>
+              </div>
+            ) : <div />}
 
             {/* Right: Actions (Print, Download, Open Tab, Fullscreen) */}
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <button
-                onClick={handlePrint}
-                title="Print Document"
-                style={{ padding: "0.45rem 0.75rem", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#334155", fontSize: "0.82rem", fontWeight: "700", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}
-              >
-                <Printer size={15} /> Print
-              </button>
-              <a
-                href={activeDoc?.url}
-                download={activeDoc?.fileName || `${app.id}_Document.pdf`}
-                style={{ padding: "0.45rem 0.75rem", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#334155", fontSize: "0.82rem", fontWeight: "700", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px", textDecoration: "none" }}
-              >
-                <Download size={15} /> Download
-              </a>
-              <a
-                href={activeDoc?.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ padding: "0.45rem 0.85rem", background: "#2563eb", color: "#ffffff", borderRadius: "8px", fontSize: "0.82rem", fontWeight: "700", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px", textDecoration: "none", boxShadow: "0 2px 6px rgba(37, 99, 235, 0.25)" }}
-              >
-                <ExternalLink size={15} /> Open in New Tab
-              </a>
-              <button
-                onClick={handleToggleFullscreen}
-                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-                style={{ padding: "0.45rem", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#475569", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
-              >
-                {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-              </button>
+              {activeDoc?.type === "missing-bfp" ? (
+                <span style={{ color: "#991b1b", fontSize: "0.82rem", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "6px", background: "#fef2f2", border: "1px solid #fecaca", padding: "6px 14px", borderRadius: "8px" }}>
+                  <AlertTriangle size={15} color="#dc2626" /> Applicant Certificate Upload Required
+                </span>
+              ) : (
+                <>
+                  <button
+                    onClick={handlePrint}
+                    title="Print Document"
+                    style={{ padding: "0.45rem 0.75rem", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#334155", fontSize: "0.82rem", fontWeight: "700", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}
+                  >
+                    <Printer size={15} /> Print
+                  </button>
+                  <a
+                    href={activeDoc?.url}
+                    download={activeDoc?.fileName || `${app.id}_Document.pdf`}
+                    style={{ padding: "0.45rem 0.75rem", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#334155", fontSize: "0.82rem", fontWeight: "700", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px", textDecoration: "none" }}
+                  >
+                    <Download size={15} /> Download
+                  </a>
+                  <a
+                    href={activeDoc?.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ padding: "0.45rem 0.85rem", background: "#2563eb", color: "#ffffff", borderRadius: "8px", fontSize: "0.82rem", fontWeight: "700", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px", textDecoration: "none", boxShadow: "0 2px 6px rgba(37, 99, 235, 0.25)" }}
+                  >
+                    <ExternalLink size={15} /> Open in New Tab
+                  </a>
+                  <button
+                    onClick={handleToggleFullscreen}
+                    title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                    style={{ padding: "0.45rem", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#475569", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+                  >
+                    {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -3326,6 +3383,26 @@ ${isDisapprove
               <div style={{ color: "#ffffff", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
                 <RefreshCw size={32} className="animate-spin" color="#60a5fa" />
                 <span style={{ fontSize: "0.95rem", fontWeight: "700" }}>Rendering Official Government Permit Form...</span>
+              </div>
+            ) : activeDoc?.type === "missing-bfp" ? (
+              <div style={{ padding: "3.5rem 2rem", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", width: "100%", minHeight: "680px", textAlign: "center" }}>
+                <div style={{ width: "88px", height: "88px", borderRadius: "22px", background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.25rem", boxShadow: "0 8px 24px rgba(217, 119, 6, 0.2)" }}>
+                  <Flame size={46} color="#d97706" />
+                </div>
+                <h3 style={{ margin: "0 0 8px 0", fontSize: "1.35rem", fontWeight: "800", color: "#ffffff" }}>
+                  No BFP Clearance (FSEC) Uploaded by Applicant
+                </h3>
+                <p style={{ margin: "0 0 1.5rem 0", fontSize: "0.9rem", color: "#cbd5e1", maxWidth: "560px", lineHeight: "1.6" }}>
+                  Pursuant to Republic Act No. 9514 (Fire Code of the Philippines), Fire Safety Evaluation Clearances (FSEC) are issued exclusively by the Bureau of Fire Protection (BFP Sto. Tomas Fire Station). The municipal permitting system does not generate synthetic BFP certificates.
+                </p>
+                <div style={{ background: "rgba(255, 255, 255, 0.08)", border: "1px solid rgba(255, 255, 255, 0.2)", borderRadius: "12px", padding: "14px 20px", maxWidth: "540px", textAlign: "left" }}>
+                  <div style={{ color: "#fef08a", fontWeight: "700", fontSize: "0.85rem", marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <AlertTriangle size={16} /> Action Required: Applicant Certificate Upload
+                  </div>
+                  <div style={{ color: "#e2e8f0", fontSize: "0.8rem", lineHeight: "1.5" }}>
+                    The applicant is required to obtain their Fire Safety Evaluation Clearance directly from BFP and upload the certificate file. You may use <strong>Request Revisions</strong> to notify the applicant to attach their official BFP certificate.
+                  </div>
+                </div>
               </div>
             ) : activeDoc?.type === "image" ? (
               <div style={{ padding: "2rem", display: "flex", justifyContent: "center", alignItems: "center", width: "100%", height: "100%", overflow: "auto" }}>

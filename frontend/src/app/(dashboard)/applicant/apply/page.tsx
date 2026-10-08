@@ -973,8 +973,8 @@ export default function ApplyPage() {
           address: projectAddress || matchedClearanceApp?.projectAddress || 'Sto. Tomas, Pampanga',
         },
         requirements: requirementsList,
-        bfpUploadedFile: uploadedPermitDocs['fireBfpPermit']?.fileUrl,
-        bfpUploadedFileName: uploadedPermitDocs['fireBfpPermit']?.fileName,
+        bfpUploadedFile: uploadedPermitDocs['fireBfpPermit']?.fileUrl || (typeof window !== "undefined" ? (localStorage.getItem("etayo_bfp_file_data") || undefined) : undefined),
+        bfpUploadedFileName: uploadedPermitDocs['fireBfpPermit']?.fileName || (typeof window !== "undefined" ? (localStorage.getItem("etayo_bfp_file_name") || undefined) : undefined),
         trackingSteps: [
           { title: 'Application Submitted', status: 'completed', date: submissionDate, notes: `Application dossier filed online with ${requirementsList.length} verified engineering attachments.` },
           { title: 'Initial Document Verification', status: 'upcoming', notes: 'Reviewing all technical engineering attachments for completeness and licensed PRC sign-offs.' }
@@ -987,12 +987,16 @@ export default function ApplyPage() {
       // Persist BFP clearance upload for administrative evaluation
       if (typeof window !== "undefined") {
         const bfpDoc = uploadedPermitDocs['fireBfpPermit'];
-        if (bfpDoc?.fileUrl) {
-          const bfpUrl = bfpDoc.fileUrl;
-          const bfpName = bfpDoc.fileName || 'BFP_Fire_Safety_Clearance.pdf';
+        const bfpUrl = bfpDoc?.fileUrl || newApp.bfpUploadedFile;
+        const bfpName = bfpDoc?.fileName || newApp.bfpUploadedFileName || 'BFP_Fire_Safety_Clearance.pdf';
+        if (bfpUrl) {
           try {
             localStorage.setItem(`etayo_bfp_${newApp.id}`, bfpUrl);
+            localStorage.setItem(`etayo_bfp_${newApp.id.toLowerCase()}`, bfpUrl);
+            localStorage.setItem(`etayo_bfp_${newApp.id.toUpperCase()}`, bfpUrl);
             localStorage.setItem(`etayo_bfp_name_${newApp.id}`, bfpName);
+            localStorage.setItem(`etayo_bfp_name_${newApp.id.toLowerCase()}`, bfpName);
+            localStorage.setItem(`etayo_bfp_name_${newApp.id.toUpperCase()}`, bfpName);
             localStorage.setItem("etayo_bfp_file_data", bfpUrl);
             localStorage.setItem("etayo_bfp_file_name", bfpName);
             localStorage.setItem(`att_${bfpName}`, bfpUrl);

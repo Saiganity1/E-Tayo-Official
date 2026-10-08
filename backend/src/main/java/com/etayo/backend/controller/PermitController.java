@@ -259,6 +259,57 @@ public class PermitController {
             }
         }
 
+        // 5b. Primary: Save applicant-uploaded BFP Fire Safety Evaluation Clearance locally
+        if (permit.getBfpUploadedFile() != null && permit.getBfpUploadedFile().contains("base64,")) {
+            byte[] bfpBytes = decodeBase64Safely(permit.getBfpUploadedFile());
+            if (bfpBytes != null && bfpBytes.length > 0) {
+                String originalName = permit.getBfpUploadedFileName() != null && !permit.getBfpUploadedFileName().trim().isEmpty()
+                        ? permit.getBfpUploadedFileName().trim()
+                        : (permit.getId() + "_BFP_Fire_Safety_Clearance.pdf");
+                String ext = ".pdf";
+                if (originalName.toLowerCase().endsWith(".png")) ext = ".png";
+                else if (originalName.toLowerCase().endsWith(".jpg") || originalName.toLowerCase().endsWith(".jpeg")) ext = ".jpg";
+                else if (originalName.toLowerCase().endsWith(".docx")) ext = ".docx";
+                else if (originalName.toLowerCase().endsWith(".doc")) ext = ".doc";
+
+                try {
+                    String localBfpName = fileStorageService.saveBytes(bfpBytes, permit.getId() + "_BFP_Clearance" + ext);
+                    permit.setBfpUploadedFile("/api/files/" + localBfpName);
+                    permit.setBfpUploadedFileName(originalName);
+                    savedDocBytes.add(bfpBytes);
+                    savedDocNames.add(permit.getId() + "_BFP_Clearance" + ext);
+                } catch (Exception ioEx) {
+                    System.err.println("Failed to save BFP clearance locally: " + ioEx.getMessage());
+                }
+            }
+        }
+
+        // 5c. Primary: Process individual requirement attachments (including BFP requirements)
+        if (permit.getRequirements() != null) {
+            for (int rIdx = 0; rIdx < permit.getRequirements().size(); rIdx++) {
+                Requirement req = permit.getRequirements().get(rIdx);
+                if (req.getFileUrl() != null && req.getFileUrl().contains("base64,")) {
+                    byte[] rBytes = decodeBase64Safely(req.getFileUrl());
+                    if (rBytes != null && rBytes.length > 0) {
+                        String rName = req.getFileName() != null && !req.getFileName().trim().isEmpty()
+                                ? req.getFileName().trim()
+                                : (permit.getId() + "_Req_" + rIdx + ".pdf");
+                        try {
+                            String localRName = fileStorageService.saveBytes(rBytes, permit.getId() + "_Req_" + rIdx + "_" + rName.replaceAll("[^a-zA-Z0-9.-]", "_"));
+                            req.setFileUrl("/api/files/" + localRName);
+                            String nLower = (req.getName() != null ? req.getName() : "").toLowerCase();
+                            if ((nLower.contains("bfp") || nLower.contains("fsec") || nLower.contains("fire safety")) && (permit.getBfpUploadedFile() == null || permit.getBfpUploadedFile().isEmpty())) {
+                                permit.setBfpUploadedFile("/api/files/" + localRName);
+                                permit.setBfpUploadedFileName(rName);
+                            }
+                        } catch (Exception ioEx) {
+                            System.err.println("Failed to save requirement file locally: " + ioEx.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+
         // 6. Secondary / Archival: Background backup to Google Drive (if configured)
         // Note: Primary fileUrl is kept pointing to in-system storage; Drive is for backups only.
         try {
@@ -483,6 +534,36 @@ public class PermitController {
             if (permit.getEvaluatedBy() != null) existing.setEvaluatedBy(permit.getEvaluatedBy());
             if (permit.getEvaluatorEmail() != null) existing.setEvaluatorEmail(permit.getEvaluatorEmail());
             if (permit.getEvaluatedAt() != null) existing.setEvaluatedAt(permit.getEvaluatedAt());
+            if (permit.getBfpUploadedFile() != null && !permit.getBfpUploadedFile().isEmpty()) {
+                if (permit.getBfpUploadedFile().contains("base64,")) {
+                    byte[] bfpBytes = decodeBase64Safely(permit.getBfpUploadedFile());
+                    if (bfpBytes != null && bfpBytes.length > 0) {
+                        String originalName = permit.getBfpUploadedFileName() != null && !permit.getBfpUploadedFileName().trim().isEmpty()
+                                ? permit.getBfpUploadedFileName().trim()
+                                : (existing.getId() + "_BFP_Fire_Safety_Clearance.pdf");
+                        String ext = ".pdf";
+                        if (originalName.toLowerCase().endsWith(".png")) ext = ".png";
+                        else if (originalName.toLowerCase().endsWith(".jpg") || originalName.toLowerCase().endsWith(".jpeg")) ext = ".jpg";
+                        else if (originalName.toLowerCase().endsWith(".docx")) ext = ".docx";
+                        else if (originalName.toLowerCase().endsWith(".doc")) ext = ".doc";
+
+                        try {
+                            String localBfpName = fileStorageService.saveBytes(bfpBytes, existing.getId() + "_BFP_Clearance" + ext);
+                            existing.setBfpUploadedFile("/api/files/" + localBfpName);
+                            existing.setBfpUploadedFileName(originalName);
+                        } catch (Exception ioEx) {
+                            existing.setBfpUploadedFile(permit.getBfpUploadedFile());
+                        }
+                    } else {
+                        existing.setBfpUploadedFile(permit.getBfpUploadedFile());
+                    }
+                } else {
+                    existing.setBfpUploadedFile(permit.getBfpUploadedFile());
+                }
+            }
+            if (permit.getBfpUploadedFileName() != null && !permit.getBfpUploadedFileName().isEmpty()) {
+                existing.setBfpUploadedFileName(permit.getBfpUploadedFileName());
+            }
 
             syncTrackingStepsForStatus(existing, existing.getStatus());
             return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(existing));

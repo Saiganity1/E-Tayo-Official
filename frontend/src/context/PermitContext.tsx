@@ -443,6 +443,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const upperId = id.toUpperCase();
             const bAppStatus = String(bApp.status || "").toLowerCase().trim();
 
+            const resolvedBfpFile = bApp.bfpUploadedFile || (foundCached as any)?.bfpUploadedFile || (typeof window !== "undefined" ? (localStorage.getItem(`etayo_bfp_${id}`) || localStorage.getItem(`etayo_bfp_${lowerId}`) || localStorage.getItem(`etayo_bfp_${upperId}`) || localStorage.getItem("etayo_bfp_file_data")) : undefined);
+            const resolvedBfpName = bApp.bfpUploadedFileName || (foundCached as any)?.bfpUploadedFileName || (typeof window !== "undefined" ? (localStorage.getItem(`etayo_bfp_name_${id}`) || localStorage.getItem(`etayo_bfp_name_${lowerId}`) || localStorage.getItem(`etayo_bfp_name_${upperId}`) || localStorage.getItem("etayo_bfp_file_name")) : undefined);
+
             const isArchived = isAppLocallyArchived(id) || Boolean(bApp.isArchived) || Boolean(foundCached?.isArchived);
             if (isArchived && typeof window !== "undefined" && id) {
               try {
@@ -526,7 +529,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 orderOfPaymentNo: undefined,
                 dateApproved: undefined,
                 remarks: bApp.remarks || undefined,
-                trackingSteps: pendingSteps
+                trackingSteps: pendingSteps,
+                bfpUploadedFile: resolvedBfpFile,
+                bfpUploadedFileName: resolvedBfpName
               };
             }
 
@@ -649,7 +654,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail || (foundCached as any)?.evaluatorEmail,
                 trackingSteps: (bApp.trackingSteps && bApp.trackingSteps.length > 0) ? bApp.trackingSteps : foundCached.trackingSteps,
                 historyLog: (bApp.historyLog && bApp.historyLog.length > 0) ? bApp.historyLog : foundCached.historyLog,
-                paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl || (foundCached as any)?.paymentProofUrl
+                paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl || (foundCached as any)?.paymentProofUrl,
+                bfpUploadedFile: resolvedBfpFile,
+                bfpUploadedFileName: resolvedBfpName
               };
             }
 
@@ -674,7 +681,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 remarks: storedRemarks || bApp.remarks,
                 evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy,
                 evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail,
-                paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl
+                paymentProofUrl: cachedReceiptUrl || (bApp as any).paymentProofUrl,
+                bfpUploadedFile: resolvedBfpFile,
+                bfpUploadedFileName: resolvedBfpName
               };
             }
 
@@ -696,7 +705,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 isArchived,
                 evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy,
                 evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail,
-                trackingSteps: pendingSteps
+                trackingSteps: pendingSteps,
+                bfpUploadedFile: resolvedBfpFile,
+                bfpUploadedFileName: resolvedBfpName
               };
             }
 
@@ -705,7 +716,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               status: effectiveStatus || bApp.status,
               evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy,
               evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail,
-              isArchived
+              isArchived,
+              bfpUploadedFile: resolvedBfpFile,
+              bfpUploadedFileName: resolvedBfpName
             };
           });
 
@@ -799,6 +812,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const mEvaluatedBy = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${mId}`) || localStorage.getItem(`etayo_evaluated_by_${mLower}`) || localStorage.getItem(`etayo_evaluated_by_${mUpper}`)) : null;
           const mEvaluatorEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${mId}`) || localStorage.getItem(`etayo_evaluator_email_${mLower}`) || localStorage.getItem(`etayo_evaluator_email_${mUpper}`)) : null;
 
+          const mResolvedBfpFile = mApp.bfpUploadedFile || (typeof window !== "undefined" ? (localStorage.getItem(`etayo_bfp_${mId}`) || localStorage.getItem(`etayo_bfp_${mLower}`) || localStorage.getItem(`etayo_bfp_${mUpper}`) || localStorage.getItem("etayo_bfp_file_data")) : undefined);
+          const mResolvedBfpName = mApp.bfpUploadedFileName || (typeof window !== "undefined" ? (localStorage.getItem(`etayo_bfp_name_${mId}`) || localStorage.getItem(`etayo_bfp_name_${mLower}`) || localStorage.getItem(`etayo_bfp_name_${mUpper}`) || localStorage.getItem("etayo_bfp_file_name")) : undefined);
+
           return {
             ...mApp,
             status: mEffectiveRawStatus,
@@ -810,7 +826,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             paymentStatus: "unpaid" as const,
             userConfirmedPayment: false,
             orderOfPaymentNo: undefined,
-            dateApproved: undefined
+            dateApproved: undefined,
+            bfpUploadedFile: mResolvedBfpFile,
+            bfpUploadedFileName: mResolvedBfpName
           };
         }
 
@@ -899,6 +917,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const mCleanSeq = String(mApp.id || "").replace(/^[A-Za-z]+-/i, "");
         const mEvaluatedBy = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${mId}`) || localStorage.getItem(`etayo_evaluated_by_${mLower}`) || localStorage.getItem(`etayo_evaluated_by_${mUpper}`)) : null;
         const mEvaluatorEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${mId}`) || localStorage.getItem(`etayo_evaluator_email_${mLower}`) || localStorage.getItem(`etayo_evaluator_email_${mUpper}`)) : null;
+        const mResolvedBfpFile = mApp.bfpUploadedFile || (typeof window !== "undefined" ? (localStorage.getItem(`etayo_bfp_${mId}`) || localStorage.getItem(`etayo_bfp_${mLower}`) || localStorage.getItem(`etayo_bfp_${mUpper}`) || localStorage.getItem("etayo_bfp_file_data")) : undefined);
+        const mResolvedBfpName = mApp.bfpUploadedFileName || (typeof window !== "undefined" ? (localStorage.getItem(`etayo_bfp_name_${mId}`) || localStorage.getItem(`etayo_bfp_name_${mLower}`) || localStorage.getItem(`etayo_bfp_name_${mUpper}`) || localStorage.getItem("etayo_bfp_file_name")) : undefined);
         return {
           ...mApp,
           status: mEffectiveStatus,
@@ -914,6 +934,8 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 : undefined),
           dateApproved: mDateApp || (mApp as any).dateApproved || (mIsApproved ? ((mApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
           remarks: mRemarks || mApp.remarks,
+          bfpUploadedFile: mResolvedBfpFile,
+          bfpUploadedFileName: mResolvedBfpName,
         };
       });
 
