@@ -41,34 +41,45 @@ public class ChatController {
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
         
         // Broadcast the message to the recipient
-        messagingTemplate.convertAndSend("/topic/messages/" + chatMessage.getRecipientEmail(), savedMessage);
+        if (chatMessage.getRecipientEmail() != null) {
+            messagingTemplate.convertAndSend("/topic/messages/" + chatMessage.getRecipientEmail(), savedMessage);
+        }
         
-        // Also broadcast to the staff inbox if the recipient is staff
-        if (chatMessage.getRecipientEmail().equals("staff@etayo.gov.ph")) {
-             messagingTemplate.convertAndSend("/topic/messages/staff@etayo.gov.ph", savedMessage);
+        // Also broadcast to the staff and admin inboxes
+        if (chatMessage.getRecipientEmail() != null && 
+            (chatMessage.getRecipientEmail().equals("staff@etayo.gov.ph") || chatMessage.getRecipientEmail().equals("admin@etayo.gov.ph"))) {
+            messagingTemplate.convertAndSend("/topic/messages/staff@etayo.gov.ph", savedMessage);
+            messagingTemplate.convertAndSend("/topic/messages/admin@etayo.gov.ph", savedMessage);
         }
 
-        // --- Notification Logic ---
-        // Save in-app notification
-        String title = "New Message from " + chatMessage.getSenderEmail();
-        String messagePreview = chatMessage.getContent();
-        if (messagePreview.length() > 50) messagePreview = messagePreview.substring(0, 50) + "...";
-        
-        Notification notification = new Notification(
-            chatMessage.getRecipientEmail(),
-            title,
-            messagePreview,
-            "NEW_MESSAGE",
-            "/messages"
-        );
-        notificationRepository.save(notification);
+        // --- Non-blocking Notification Logic ---
+        try {
+            String title = "New Message from " + chatMessage.getSenderEmail();
+            String messagePreview = chatMessage.getContent();
+            if (messagePreview != null && messagePreview.length() > 50) messagePreview = messagePreview.substring(0, 50) + "...";
+            
+            Notification notification = new Notification(
+                chatMessage.getRecipientEmail(),
+                title,
+                messagePreview,
+                "NEW_MESSAGE",
+                "/messages"
+            );
+            notificationRepository.save(notification);
+        } catch (Exception e) {
+            // Non-critical: do not fail chat if notifications table is unreachable
+        }
 
-        // Send Email Alert
-        String htmlBody = "<h2>You have a new message on e-Tayo</h2>" +
-                          "<p><b>From:</b> " + chatMessage.getSenderEmail() + "</p>" +
-                          "<p><b>Message:</b> " + chatMessage.getContent() + "</p>" +
-                          "<br><p>Log in to your dashboard to reply.</p>";
-        emailService.sendEmail(chatMessage.getRecipientEmail(), "e-Tayo: New Message Received", htmlBody);
+        // --- Non-blocking Email Alert ---
+        try {
+            String htmlBody = "<h2>You have a new message on e-Tayo</h2>" +
+                              "<p><b>From:</b> " + chatMessage.getSenderEmail() + "</p>" +
+                              "<p><b>Message:</b> " + chatMessage.getContent() + "</p>" +
+                              "<br><p>Log in to your dashboard to reply.</p>";
+            emailService.sendEmail(chatMessage.getRecipientEmail(), "e-Tayo: New Message Received", htmlBody);
+        } catch (Exception e) {
+            // Non-critical: do not fail chat if SMTP is not configured
+        }
     }
 
     @PostMapping("/api/messages/send")

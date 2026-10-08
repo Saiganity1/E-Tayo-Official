@@ -60,13 +60,30 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       return NextResponse.json(allUnique, { status: 200 });
     }
 
+const normalizeEmail = (e: string) => {
+  const norm = (e || "").trim().toLowerCase();
+  if (norm === "davesicat@gmail.com" || norm.includes("dave") || norm.includes("sicat")) return "mdpsicat.student@ua.edu.ph";
+  return norm;
+};
+
     if (path === "history") {
-      const user1 = (url.searchParams.get("user1") || "").trim().toLowerCase();
-      const user2 = (url.searchParams.get("user2") || "").trim().toLowerCase();
+      const rawUser1 = (url.searchParams.get("user1") || "").trim().toLowerCase();
+      const rawUser2 = (url.searchParams.get("user2") || "").trim().toLowerCase();
+      const user1 = normalizeEmail(rawUser1);
+      const user2 = normalizeEmail(rawUser2);
+      const reqAppId = (url.searchParams.get("applicationId") || "").trim().toLowerCase();
       
       const filtered = messageStore.filter(m => {
-        const s = (m.senderEmail || "").trim().toLowerCase();
-        const r = (m.recipientEmail || "").trim().toLowerCase();
+        const s = normalizeEmail(m.senderEmail);
+        const r = normalizeEmail(m.recipientEmail);
+        const mAppId = (m.applicationId || "").trim().toLowerCase();
+
+        if (reqAppId && reqAppId !== "all") {
+          if (mAppId === reqAppId || (m.content && m.content.toLowerCase().includes(reqAppId))) {
+            return true;
+          }
+        }
+
         if (!user1 && !user2) return true;
         if (user1 && user2) {
           const isStaffAdmin1 = user1 === "staff@etayo.gov.ph" || user1 === "admin@etayo.gov.ph";

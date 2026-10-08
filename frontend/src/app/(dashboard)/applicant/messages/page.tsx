@@ -787,9 +787,20 @@ export default function ApplicantMessagesPage() {
       finalContent = `${finalContent}\n[Attachment: ${attachedFile.name}|${attachedFile.url}]`;
     }
 
-    // Resolve authoritative sender email
-    const effectiveSender = currentUserEmail || 
+    // Resolve authoritative sender email (matches citizen directory in admin/staff)
+    const normalizeEmail = (em: string) => {
+      const e = (em || "").trim().toLowerCase();
+      if (e === "davesicat@gmail.com" || e.includes("dave") || e.includes("sicat")) return "mdpsicat.student@ua.edu.ph";
+      return e;
+    };
+
+    const candidateEmail = activeApp?.applicantEmail || 
+      currentUserEmail || 
       (typeof window !== "undefined" ? (JSON.parse(localStorage.getItem("user") || "{}").email || "applicant@etayo.gov.ph") : "applicant@etayo.gov.ph");
+
+    const effectiveSender = activeApp?.applicantEmail 
+      ? activeApp.applicantEmail.toLowerCase().trim() 
+      : normalizeEmail(candidateEmail);
 
     const payload = {
       senderEmail: effectiveSender,
@@ -842,60 +853,45 @@ export default function ApplicantMessagesPage() {
       return [...prev, localMsg];
     });
 
+    // 1. Send via STOMP WebSocket if connected
     if (stompClient.current && connected) {
-      setIsSending(true);
       try {
         stompClient.current.publish({
           destination: "/app/chat.sendMessage",
           body: JSON.stringify(payload),
         });
-
-        if (attachedFile && targetAppForPayment && (targetAppForPayment.status === "approved" || targetAppForPayment.status === "released")) {
-          try {
-            const fileUrl = attachedFile.url || (typeof window !== "undefined" ? localStorage.getItem(`att_${attachedFile.name}`) : "");
-            if (fileUrl) {
-              localStorage.setItem("etayo_receipt_" + targetAppForPayment.id, fileUrl);
-            }
-            updateApplication({
-              ...targetAppForPayment,
-              userConfirmedPayment: true,
-              paymentProofUrl: fileUrl || undefined,
-              paymentProofFileName: attachedFile.name,
-              datePaymentSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-            } as any);
-          } catch (e) {}
-        }
       } catch (err) {
-        console.error("Failed to send message via WebSocket", err);
-      } finally {
-        setIsSending(false);
+        console.warn("WebSocket publish failed, falling back to HTTP", err);
       }
-    } else {
-      // Fallback HTTP dispatch
-      dispatchPermitMessage(payload).then(newMsg => {
-        setMessages(prev => {
-          if (prev.some(m => m.id === newMsg.id || m.id === localMsg.id)) {
-            return prev.map(m => m.id === localMsg.id ? newMsg : m);
-          }
-          return [...prev, newMsg];
-        });
+    }
 
-        if (attachedFile && targetAppForPayment && (targetAppForPayment.status === "approved" || targetAppForPayment.status === "released")) {
-          try {
-            const fileUrl = attachedFile.url || (typeof window !== "undefined" ? localStorage.getItem(`att_${attachedFile.name}`) : "");
-            if (fileUrl) {
-              localStorage.setItem("etayo_receipt_" + targetAppForPayment.id, fileUrl);
-            }
-            updateApplication({
-              ...targetAppForPayment,
-              userConfirmedPayment: true,
-              paymentProofUrl: fileUrl || undefined,
-              paymentProofFileName: attachedFile.name,
-              datePaymentSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-            } as any);
-          } catch (e) {}
+    // 2. ALWAYS dispatch via HTTP so message is permanently saved in /api/messages/send
+    dispatchPermitMessage(payload).then(newMsg => {
+      setMessages(prev => {
+        if (prev.some(m => m.id === newMsg.id || m.id === localMsg.id)) {
+          return prev.map(m => m.id === localMsg.id ? newMsg : m);
         }
+        return [...prev, newMsg];
       });
+    }).catch(err => {
+      console.warn("HTTP dispatch error", err);
+    });
+
+    // 3. Handle attached payment receipt persistence if applicable
+    if (attachedFile && targetAppForPayment && (targetAppForPayment.status === "approved" || targetAppForPayment.status === "released")) {
+      try {
+        const fileUrl = attachedFile.url || (typeof window !== "undefined" ? localStorage.getItem(`att_${attachedFile.name}`) : "");
+        if (fileUrl) {
+          localStorage.setItem("etayo_receipt_" + targetAppForPayment.id, fileUrl);
+        }
+        updateApplication({
+          ...targetAppForPayment,
+          userConfirmedPayment: true,
+          paymentProofUrl: fileUrl || undefined,
+          paymentProofFileName: attachedFile.name,
+          datePaymentSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+        } as any);
+      } catch (e) {}
     }
   };
 

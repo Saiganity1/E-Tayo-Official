@@ -422,8 +422,8 @@ export default function AdminMessagesPage() {
   useEffect(() => {
     const handleIncomingChatMessage = (receivedMessage: any) => {
       if (!receivedMessage) return;
-      const sender = (receivedMessage.senderEmail || "").trim().toLowerCase();
-      const recipient = (receivedMessage.recipientEmail || "").trim().toLowerCase();
+      const sender = normalizeContactEmail((receivedMessage.senderEmail || "").trim());
+      const recipient = normalizeContactEmail((receivedMessage.recipientEmail || "").trim());
 
       const otherParty = sender !== "staff@etayo.gov.ph" && sender !== "admin@etayo.gov.ph"
         ? sender
@@ -431,7 +431,7 @@ export default function AdminMessagesPage() {
 
       if (otherParty) {
         setContacts(prev => {
-          const normalized = prev.map(p => p.toLowerCase());
+          const normalized = prev.map(p => normalizeContactEmail(p));
           if (!normalized.includes(otherParty)) {
             return [otherParty, ...prev];
           }
@@ -440,8 +440,15 @@ export default function AdminMessagesPage() {
       }
 
       setApplicantEmail(currentApplicant => {
-        const curNorm = currentApplicant?.toLowerCase();
-        if (sender === curNorm || recipient === curNorm) {
+        const curNorm = normalizeContactEmail(currentApplicant || "");
+        const userApps = (applications || []).filter(a => normalizeContactEmail(a.applicantEmail || "") === curNorm);
+        const userAppIds = new Set(userApps.map(a => a.id));
+        const msgAppId = receivedMessage.applicationId || getMessageThreadId(receivedMessage);
+
+        const isDirectMatch = sender === curNorm || recipient === curNorm;
+        const isAppMatch = Boolean(msgAppId && userAppIds.has(msgAppId));
+
+        if (isDirectMatch || isAppMatch) {
           setMessages(prev => {
             const exists = prev.some(m => m.id === receivedMessage.id || (m.content === receivedMessage.content && Math.abs(new Date(m.timestamp).getTime() - new Date(receivedMessage.timestamp).getTime()) < 3000));
             if (exists) return prev;

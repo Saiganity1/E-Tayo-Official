@@ -11,10 +11,22 @@ import java.util.List;
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
     
-    @Query("SELECT m FROM ChatMessage m WHERE (m.senderEmail = :user1 AND m.recipientEmail = :user2) OR (m.senderEmail = :user2 AND m.recipientEmail = :user1) ORDER BY m.timestamp ASC")
+    @Query("SELECT m FROM ChatMessage m WHERE " +
+           "(LOWER(m.senderEmail) = LOWER(:user1) AND LOWER(m.recipientEmail) = LOWER(:user2)) OR " +
+           "(LOWER(m.senderEmail) = LOWER(:user2) AND LOWER(m.recipientEmail) = LOWER(:user1)) OR " +
+           "((LOWER(:user2) = 'mdpsicat.student@ua.edu.ph' OR LOWER(:user2) = 'davesicat@gmail.com') AND " +
+           " (LOWER(m.senderEmail) = 'davesicat@gmail.com' OR LOWER(m.senderEmail) = 'mdpsicat.student@ua.edu.ph' OR " +
+           "  LOWER(m.recipientEmail) = 'davesicat@gmail.com' OR LOWER(m.recipientEmail) = 'mdpsicat.student@ua.edu.ph')) " +
+           "ORDER BY m.timestamp ASC")
     List<ChatMessage> findChatHistory(@Param("user1") String user1, @Param("user2") String user2);
 
-    @Query("SELECT m FROM ChatMessage m WHERE ((m.senderEmail = :user1 AND m.recipientEmail = :user2) OR (m.senderEmail = :user2 AND m.recipientEmail = :user1)) AND m.applicationId = :applicationId ORDER BY m.timestamp ASC")
+    @Query("SELECT m FROM ChatMessage m WHERE " +
+           "(((LOWER(m.senderEmail) = LOWER(:user1) AND LOWER(m.recipientEmail) = LOWER(:user2)) OR " +
+           "  (LOWER(m.senderEmail) = LOWER(:user2) AND LOWER(m.recipientEmail) = LOWER(:user1)) OR " +
+           "  ((LOWER(:user2) = 'mdpsicat.student@ua.edu.ph' OR LOWER(:user2) = 'davesicat@gmail.com') AND " +
+           "   (LOWER(m.senderEmail) = 'davesicat@gmail.com' OR LOWER(m.senderEmail) = 'mdpsicat.student@ua.edu.ph' OR " +
+           "    LOWER(m.recipientEmail) = 'davesicat@gmail.com' OR LOWER(m.recipientEmail) = 'mdpsicat.student@ua.edu.ph')))) " +
+           "AND m.applicationId = :applicationId ORDER BY m.timestamp ASC")
     List<ChatMessage> findChatHistoryByApplication(@Param("user1") String user1, @Param("user2") String user2, @Param("applicationId") String applicationId);
 
     @Query("SELECT DISTINCT CASE WHEN m.senderEmail = :user THEN m.recipientEmail ELSE m.senderEmail END FROM ChatMessage m WHERE m.senderEmail = :user OR m.recipientEmail = :user")
