@@ -628,7 +628,7 @@ export default function StaffEvaluatePage() {
           approvalDate: (app as any).approvalDate || (app as any).dateApproved,
           locationalClearanceRef: (app as any).locationalClearanceRef || "LC-2026-9307",
           projectType: pTypeObj,
-          applicantName: app.applicantName || "Paul Payumo",
+          applicantName: app.applicantName || "Applicant",
           applicantPhone: app.applicantPhone || "0917-123-4567",
           applicantEmail: app.applicantEmail || "applicant@etayo.gov.ph",
           applicantAddress: app.projectAddress || app.applicantAddress || "Lawasn St., Blue Diamond, Brgy. Sapa, Sto. Tomas, Pampanga",
@@ -2463,7 +2463,7 @@ ${isDisapprove
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.88rem" }}>
                     <div>
                       <span style={{ color: "#64748b", display: "block", fontSize: "0.72rem", fontWeight: "700", textTransform: "uppercase" }}>Full Name</span>
-                      <strong style={{ color: "#0f172a", fontSize: "0.95rem" }}>{app.applicantName || "Paul Payumo"}</strong>
+                      <strong style={{ color: "#0f172a", fontSize: "0.95rem" }}>{app.applicantName || "Applicant"}</strong>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                       <div>

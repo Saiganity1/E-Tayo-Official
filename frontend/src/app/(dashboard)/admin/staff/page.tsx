@@ -34,7 +34,7 @@ interface EvaluationLog {
 
 const isAutomaticDummyStaff = (u: any): boolean => {
   const email = String(u?.email || "").toLowerCase().trim();
-  return email === "staff@etayo.gov.ph" || email === "dave.sicat@etayo.gov.ph";
+  return email === "staff@etayo.gov.ph" || email === "dummy@example.com";
 };
 
 const isDummyRecord = (item: any): boolean => {

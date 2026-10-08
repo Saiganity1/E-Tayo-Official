@@ -1,8 +1,8 @@
 import { PermitApplication } from "@/types";
 import { compareAppsNewestFirst } from "@/utils/projectGrouping";
+import { INITIAL_APPLICATIONS } from "@/data/mock";
 
-// No seed data — all permits must come from the real database only.
-// The fallback store starts empty; real data is fetched from the backend each time.
+export const SEED_APPLICATIONS: PermitApplication[] = INITIAL_APPLICATIONS;
 
 // Persistent global variable across Next.js API route calls within one server instance.
 const globalForPermits = globalThis as unknown as {
@@ -11,6 +11,9 @@ const globalForPermits = globalThis as unknown as {
 
 if (!globalForPermits._etayoPermitStore) {
   globalForPermits._etayoPermitStore = new Map<string, PermitApplication>();
+  SEED_APPLICATIONS.forEach(app => {
+    globalForPermits._etayoPermitStore.set(app.id.trim().toLowerCase(), app);
+  });
 }
 
 const store = globalForPermits._etayoPermitStore;

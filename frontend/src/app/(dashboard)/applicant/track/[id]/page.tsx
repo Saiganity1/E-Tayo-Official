@@ -1108,7 +1108,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       approvalDate: (appData as any)?.approvalDate || (appData as any)?.dateApproved,
       locationalClearanceRef: appData?.locationalClearanceRef || "LC-2026-9307",
       projectType: pTypeObj,
-      applicantName: appData?.applicantName || "Paul Payumo",
+      applicantName: appData?.applicantName || "Applicant",
       applicantPhone: appData?.applicantPhone || "0917-123-4567",
       applicantEmail: appData?.applicantEmail || "applicant@etayo.gov.ph",
       applicantAddress: appData?.projectAddress || appData?.applicantAddress || "Sto. Tomas, Pampanga",
@@ -1294,7 +1294,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         const b64 = await generateLocationalClearancePdf({
           applicationNo: appData?.locationalClearanceRef || appData?.id || "LC-2026-9307",
           submissionDate: appData?.dateSubmitted || new Date().toLocaleDateString(),
-          applicantName: appData?.applicantName || "Paul Payumo",
+          applicantName: appData?.applicantName || "Applicant",
           applicantFirstName: (appData as any)?.applicantFirstName,
           applicantLastName: (appData as any)?.applicantLastName,
           applicantMiddleName: (appData as any)?.applicantMiddleName,

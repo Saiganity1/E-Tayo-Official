@@ -170,16 +170,43 @@ export default function LoginPage() {
             role: registeredUser.role || "ROLE_APPLICANT",
             name: registeredUser.name || "Applicant"
           };
-        } else if (
-          sanitizedEmail === "mdpsicat.student@ua.edu.ph" || 
-          sanitizedEmail === "paul.payumo@etayo.gov.ph"
-        ) {
+        } else if (sanitizedEmail === "dave.sicat@etayo.gov.ph") {
+          data = {
+            accessToken: `staff_session_${Date.now()}`,
+            role: "ROLE_STAFF",
+            name: "Dave Sicat"
+          };
+        } else if (sanitizedEmail === "juan.verifier@etayo.gov.ph") {
+          data = {
+            accessToken: `staff_session_${Date.now()}`,
+            role: "ROLE_STAFF",
+            name: "Juan Verifier"
+          };
+        } else if (sanitizedEmail === "gilbert.cruz@etayo.gov.ph") {
+          data = {
+            accessToken: `staff_session_${Date.now()}`,
+            role: "ROLE_STAFF",
+            name: "Engr. Gilbert Cruz"
+          };
+        } else if (sanitizedEmail === "randreb.david@example.com") {
           data = {
             accessToken: `applicant_session_${Date.now()}`,
             role: "ROLE_APPLICANT",
-            name: "Paul Payumo"
+            name: "RANDREB YUTUC DAVID"
           };
-        } else if (sanitizedEmail === "davesicat@example.com") {
+        } else if (sanitizedEmail === "kathleen.abarquez@example.com") {
+          data = {
+            accessToken: `applicant_session_${Date.now()}`,
+            role: "ROLE_APPLICANT",
+            name: "Kathleen Ann Abarquez"
+          };
+        } else if (sanitizedEmail === "maria.santos@example.com") {
+          data = {
+            accessToken: `applicant_session_${Date.now()}`,
+            role: "ROLE_APPLICANT",
+            name: "Maria Santos"
+          };
+        } else if (sanitizedEmail === "davesicat@gmail.com") {
           data = {
             accessToken: `applicant_session_${Date.now()}`,
             role: "ROLE_APPLICANT",
@@ -202,8 +229,6 @@ export default function LoginPage() {
           resolvedFullName = registeredUser.name;
         } else if (sanitizedEmail.includes("admin")) {
           resolvedFullName = "Municipal Administrator";
-        } else if (sanitizedEmail.includes("paul") || sanitizedEmail.includes("payumo")) {
-          resolvedFullName = "Paul Payumo";
         } else {
           resolvedFullName = "Applicant";
         }

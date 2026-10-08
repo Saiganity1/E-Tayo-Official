@@ -945,7 +945,7 @@ export default function ApplyPage() {
       const finalProjectName = (projectName || "").trim() || (matchedClearanceApp?.projectName || "").trim() || `${selectedProjectType.name} Installation & Construction`;
       const finalApplicantName = (applicantName && applicantName !== "Applicant") 
         ? applicantName 
-        : (curUser?.name || matchedClearanceApp?.applicantName || "Paul Payumo");
+        : (curUser?.name || matchedClearanceApp?.applicantName || "Applicant");
       const finalApplicantEmail = applicantEmail || curUser?.email || matchedClearanceApp?.applicantEmail || "applicant@etayo.gov.ph";
       const finalClearanceRef = activeClearanceRef || matchedClearanceApp?.id || undefined;
 
@@ -1307,7 +1307,7 @@ export default function ApplyPage() {
                   {requirementsCount} Verified Technical Forms
                 </div>
                 <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "2px" }}>
-                  Applicant: {submittedApp.applicantName || applicantName || "Paul Payumo"}
+                  Applicant: {submittedApp.applicantName || applicantName || "Applicant"}
                 </div>
               </div>
             </div>

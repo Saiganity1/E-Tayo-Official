@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     }
 
     // Explicitly reject automatic dummy staff accounts (staff must be explicitly assigned by admin)
-    if (sanitizedEmail === "staff@etayo.gov.ph" || sanitizedEmail === "dave.sicat@etayo.gov.ph") {
+    if (sanitizedEmail === "staff@etayo.gov.ph") {
       const isAssigned = getAssignedUserByEmail(sanitizedEmail);
       if (!isAssigned || isAssigned.role !== "ROLE_STAFF") {
         return NextResponse.json({ 

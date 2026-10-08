@@ -25,35 +25,59 @@ if (!globalForAuth._registeredUsers) {
   globalForAuth._registeredUsers = [
     {
       id: 1,
-      name: "Paul Payumo",
-      email: "mdpsicat.student@ua.edu.ph",
-      password: "password123",
-      role: "ROLE_APPLICANT",
-      createdAt: "2026-09-15T08:00:00Z"
-    },
-    {
-      id: 2,
-      name: "Paul Payumo",
-      email: "paul.payumo@etayo.gov.ph",
-      password: "password123",
-      role: "ROLE_APPLICANT",
-      createdAt: "2026-09-15T08:00:00Z"
-    },
-    {
-      id: 3,
-      name: "Dave Sicat",
-      email: "davesicat@example.com",
-      password: "password123",
-      role: "ROLE_APPLICANT",
-      createdAt: "2026-09-20T10:30:00Z"
-    },
-    {
-      id: 4,
       name: "Municipal Administrator",
       email: "admin@etayo.gov.ph",
       password: "admin123",
       role: "ROLE_ADMIN",
       createdAt: "2026-08-01T09:00:00Z"
+    },
+    {
+      id: 2,
+      name: "Dave Sicat",
+      email: "dave.sicat@etayo.gov.ph",
+      password: "password123",
+      role: "ROLE_STAFF",
+      createdAt: "2026-09-01T08:00:00Z"
+    },
+    {
+      id: 3,
+      name: "Juan Verifier",
+      email: "juan.verifier@etayo.gov.ph",
+      password: "password123",
+      role: "ROLE_STAFF",
+      createdAt: "2026-09-01T08:00:00Z"
+    },
+    {
+      id: 4,
+      name: "Engr. Gilbert Cruz",
+      email: "gilbert.cruz@etayo.gov.ph",
+      password: "password123",
+      role: "ROLE_STAFF",
+      createdAt: "2026-09-01T08:00:00Z"
+    },
+    {
+      id: 5,
+      name: "RANDREB YUTUC DAVID",
+      email: "randreb.david@example.com",
+      password: "password123",
+      role: "ROLE_APPLICANT",
+      createdAt: "2026-10-08T10:00:00Z"
+    },
+    {
+      id: 6,
+      name: "Kathleen Ann Abarquez",
+      email: "kathleen.abarquez@example.com",
+      password: "password123",
+      role: "ROLE_APPLICANT",
+      createdAt: "2026-10-08T10:00:00Z"
+    },
+    {
+      id: 7,
+      name: "Maria Santos",
+      email: "maria.santos@example.com",
+      password: "password123",
+      role: "ROLE_APPLICANT",
+      createdAt: "2026-10-08T10:00:00Z"
     }
   ];
 }

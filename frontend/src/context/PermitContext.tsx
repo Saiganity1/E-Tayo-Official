@@ -249,38 +249,23 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
     });
 };
 
-const STORAGE_VERSION = "etayo_clean_db_v7";
+const STORAGE_VERSION = "etayo_clean_db_v8";
 
 if (typeof window !== "undefined") {
   try {
     const curVer = localStorage.getItem("etayo_storage_version");
     if (curVer !== STORAGE_VERSION) {
-      localStorage.removeItem("etayo_cached_applications");
       localStorage.removeItem("etayo_archived_application_ids");
       localStorage.removeItem("etayo_messages_history");
       localStorage.removeItem("etayo_notifications");
       localStorage.removeItem("etayo_unread_messages_count");
-      const toRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && (
-          k.startsWith("etayo_status_") ||
-          k.startsWith("etayo_approved_") ||
-          k.startsWith("etayo_released_") ||
-          k.startsWith("etayo_paid_") ||
-          k.startsWith("etayo_payment_") ||
-          k.startsWith("etayo_receipt_") ||
-          k.startsWith("etayo_op_") ||
-          k.startsWith("etayo_fees_") ||
-          k.startsWith("etayo_archived_") ||
-          k.startsWith("etayo_date_approved_") ||
-          k.startsWith("etayo_remarks_") ||
-          k.startsWith("etayo_threads_")
-        )) {
-          toRemove.push(k);
-        }
+
+      const currentCache = localStorage.getItem("etayo_cached_applications");
+      if (!currentCache || currentCache === "[]" || currentCache === "null") {
+        try {
+          localStorage.setItem("etayo_cached_applications", JSON.stringify(INITIAL_APPLICATIONS));
+        } catch (e) {}
       }
-      toRemove.forEach(k => localStorage.removeItem(k));
       localStorage.setItem("etayo_storage_version", STORAGE_VERSION);
     }
   } catch (e) {}
@@ -427,15 +412,20 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           );
         };
 
+        let cleanCached: PermitApplication[] = [];
         if (cachedStr) {
-          const cachedApps: PermitApplication[] = JSON.parse(cachedStr);
-          const cleanCached = (cachedApps || []).filter(c => !isDummyApp(c));
-          if (cleanCached.length !== cachedApps.length) {
-            try {
-              localStorage.setItem("etayo_cached_applications", JSON.stringify(cleanCached));
-            } catch (e) {}
-          }
+          try {
+            const cachedApps: PermitApplication[] = JSON.parse(cachedStr);
+            cleanCached = (cachedApps || []).filter(c => !isDummyApp(c));
+          } catch (e) {}
+        }
+        if (cleanCached.length === 0 && INITIAL_APPLICATIONS.length > 0) {
+          cleanCached = [...INITIAL_APPLICATIONS];
+        }
 
+        if (cleanBackendApps.length === 0) {
+          mergedApps = cleanCached.length > 0 ? cleanCached : [...INITIAL_APPLICATIONS];
+        } else {
           mergedApps = cleanBackendApps.map((bApp) => {
             const foundCached = cleanCached.find((c) => matchPermitId(c.id, bApp.id));
             const id = (bApp.id || "").trim();
@@ -693,11 +683,17 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             };
           });
 
-          // Always retain valid locally cached applications (e.g. newly submitted applications
-          // that are pending backend database synchronization or local offline submissions)
           cleanCached.forEach((c) => {
             if (!mergedApps.some((m) => matchPermitId(m.id, c.id))) {
               mergedApps.push(c);
+            }
+          });
+        }
+
+        if (INITIAL_APPLICATIONS && INITIAL_APPLICATIONS.length > 0) {
+          INITIAL_APPLICATIONS.forEach((seed) => {
+            if (!mergedApps.some((m) => matchPermitId(m.id, seed.id))) {
+              mergedApps.push(seed);
             }
           });
         }
@@ -958,10 +954,20 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // 1. Immediately restore locally cached applications for authenticated session
       try {
         const stored = localStorage.getItem("etayo_cached_applications");
+        let parsed: PermitApplication[] = [];
         if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const clean = parsed.filter(a => !isDummyApp(a)).map(a => {
+          try {
+            parsed = JSON.parse(stored);
+          } catch (e) {}
+        }
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+          parsed = INITIAL_APPLICATIONS;
+          try {
+            localStorage.setItem("etayo_cached_applications", JSON.stringify(INITIAL_APPLICATIONS));
+          } catch (e) {}
+        }
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const clean = parsed.filter(a => !isDummyApp(a)).map(a => {
               const aId = String(a.id || "").trim();
               const aLower = aId.toLowerCase();
               const aUpper = aId.toUpperCase();
@@ -1045,7 +1051,6 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               } catch (e) {}
             }
           }
-        }
       } catch (e) {
         console.warn("Could not load cached applications from localStorage", e);
       }
