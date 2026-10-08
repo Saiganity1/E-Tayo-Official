@@ -61,6 +61,10 @@ public class PermitApplication {
 
     private Boolean isArchived = false;
 
+    private String evaluatedBy;
+    private String evaluatorEmail;
+    private String evaluatedAt;
+
     // Getters and Setters
 
     public String getId() { return id; }
@@ -119,4 +123,10 @@ public class PermitApplication {
     public void setLocationalClearanceRef(String locationalClearanceRef) { this.locationalClearanceRef = locationalClearanceRef; }
     public Boolean getIsArchived() { return isArchived != null && isArchived; }
     public void setIsArchived(Boolean isArchived) { this.isArchived = isArchived; }
+    public String getEvaluatedBy() { return evaluatedBy; }
+    public void setEvaluatedBy(String evaluatedBy) { this.evaluatedBy = evaluatedBy; }
+    public String getEvaluatorEmail() { return evaluatorEmail; }
+    public void setEvaluatorEmail(String evaluatorEmail) { this.evaluatorEmail = evaluatorEmail; }
+    public String getEvaluatedAt() { return evaluatedAt; }
+    public void setEvaluatedAt(String evaluatedAt) { this.evaluatedAt = evaluatedAt; }
 }

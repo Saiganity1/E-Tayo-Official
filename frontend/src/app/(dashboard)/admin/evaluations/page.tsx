@@ -6,7 +6,7 @@ import {
   Search, Filter, AlertCircle, FileCheck, MapPin, Eye, ChevronDown, 
   ChevronRight, FolderKanban, FolderOpen, Building2, User, Phone, 
   CheckCircle2, Clock, XCircle, ArrowRight, Layers, List, ShieldCheck, 
-  Sparkles, Check, Copy, Calendar, CalendarDays, X, RotateCcw
+  Sparkles, Check, Copy, Calendar, CalendarDays, X, RotateCcw, UserCheck
 } from "lucide-react";
 import Link from "next/link";
 import { PermitApplication } from "../../../../types";
@@ -17,7 +17,8 @@ import {
   compareDossiersNewestFirst, 
   getAppTimestamp, 
   parseDateToTimestamp,
-  formatSubmissionDateTime 
+  formatSubmissionDateTime,
+  getApplicationEvaluator 
 } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "applicant" | "flat";
@@ -1027,6 +1028,7 @@ export default function StaffEvaluationsPage() {
                           const StatusIcon = statusStyle.icon;
 
                           const appSub = formatSubmissionDateTime(app, { systemLogs });
+                          const evaluator = getApplicationEvaluator(app, { systemLogs });
 
                           return (
                             <div 
@@ -1104,8 +1106,8 @@ export default function StaffEvaluationsPage() {
                                 </div>
                               </div>
 
-                              {/* Center: Requirements & Fees */}
-                              <div style={{ display: "flex", alignItems: "center", gap: "1rem", fontSize: "0.85rem", color: "#475569" }}>
+                              {/* Center: Requirements, Fees & Evaluator */}
+                              <div style={{ display: "flex", alignItems: "center", gap: "1rem", fontSize: "0.85rem", color: "#475569", flexWrap: "wrap" }}>
                                 <div>
                                   <span style={{ color: "#64748b" }}>Docs: </span>
                                   <span style={{ fontWeight: "700" }}>{app.requirements?.length || 5} Required</span>
@@ -1128,6 +1130,48 @@ export default function StaffEvaluationsPage() {
                                       fontSize: "0.78rem"
                                     }}>
                                       Pending Staff Assessment
+                                    </span>
+                                  )}
+                                </div>
+                                <span>•</span>
+                                <div style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                                  <span style={{ color: "#64748b" }}>Evaluated by: </span>
+                                  {evaluator.isAssigned ? (
+                                    <span 
+                                      style={{
+                                        fontWeight: "800",
+                                        color: "#1d4ed8",
+                                        background: "#eff6ff",
+                                        border: "1px solid #bfdbfe",
+                                        padding: "2px 8px",
+                                        borderRadius: "6px",
+                                        fontSize: "0.8rem",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "4px"
+                                      }}
+                                      title={evaluator.email ? `${evaluator.name} (${evaluator.email})` : evaluator.name}
+                                    >
+                                      <UserCheck size={13} color="#2563eb" />
+                                      <span>{evaluator.name}</span>
+                                      {evaluator.role && (
+                                        <span style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: "600" }}>
+                                          · {evaluator.role}
+                                        </span>
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span style={{
+                                      color: "#94a3b8",
+                                      fontStyle: "italic",
+                                      fontWeight: "600",
+                                      fontSize: "0.78rem",
+                                      background: "#f8fafc",
+                                      border: "1px dashed #cbd5e1",
+                                      padding: "2px 8px",
+                                      borderRadius: "6px"
+                                    }}>
+                                      Pending Staff Assignment
                                     </span>
                                   )}
                                 </div>
@@ -1200,6 +1244,7 @@ export default function StaffEvaluationsPage() {
                 <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Project Details</th>
                 <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Type</th>
                 <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Date & Time Submitted</th>
+                <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Evaluated By</th>
                 <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</th>
                 <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.82rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</th>
               </tr>
@@ -1207,7 +1252,7 @@ export default function StaffEvaluationsPage() {
             <tbody>
               {filteredApps.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: "4rem 2rem", textAlign: "center" }}>
+                  <td colSpan={8} style={{ padding: "4rem 2rem", textAlign: "center" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", color: "#94a3b8" }}>
                       <Search size={40} opacity={0.5} />
                       <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: "600" }}>No applications found matching your criteria.</p>
@@ -1219,6 +1264,7 @@ export default function StaffEvaluationsPage() {
                   const statusStyle = getStatusColor(app.status);
                   const typeBadge = getPermitTypeBadge(app.permitType);
                   const appSub = formatSubmissionDateTime(app, { systemLogs });
+                  const evaluator = getApplicationEvaluator(app, { systemLogs });
                   return (
                     <tr key={app.id} style={{ background: "white", borderBottom: i === filteredApps.length - 1 ? "none" : "1px solid #e2e8f0" }}>
                       <td style={{ padding: "1.2rem 1.5rem" }}>
@@ -1250,6 +1296,24 @@ export default function StaffEvaluationsPage() {
                         <div style={{ display: "flex", alignItems: "center", gap: "5px", color: "#64748b", fontSize: "0.78rem", marginTop: "3px" }}>
                           <Clock size={12} color="#64748b" /> {appSub.time}
                         </div>
+                      </td>
+                      <td style={{ padding: "1.2rem 1.5rem" }}>
+                        {evaluator.isAssigned ? (
+                          <div>
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontWeight: "700", color: "#1d4ed8", fontSize: "0.82rem", background: "#eff6ff", border: "1px solid #bfdbfe", padding: "2px 8px", borderRadius: "6px" }}>
+                              <UserCheck size={12} color="#2563eb" /> {evaluator.name}
+                            </div>
+                            {evaluator.role && (
+                              <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "3px", fontWeight: "600" }}>
+                                {evaluator.role}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ color: "#94a3b8", fontSize: "0.78rem", fontStyle: "italic", background: "#f8fafc", border: "1px dashed #cbd5e1", padding: "2px 8px", borderRadius: "6px", display: "inline-block" }}>
+                            Pending Assignment
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: "1.2rem 1.5rem" }}>
                         <span style={{ 

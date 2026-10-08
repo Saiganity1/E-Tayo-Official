@@ -842,3 +842,140 @@ export const formatSubmissionDateTime = (
     hasExplicitTime
   };
 };
+
+export interface EvaluatorInfo {
+  name: string;
+  role?: string;
+  email?: string;
+  isAssigned: boolean;
+  evaluatedAt?: string;
+}
+
+/**
+ * Resolves the staff or admin officer who evaluated the permit application.
+ * Checks app.evaluatedBy, localStorage records, assignedStaff, tracking steps,
+ * history logs, and system audit logs, with official Sto. Tomas municipal authority
+ * attribution for Locational Clearance and Building Permits.
+ */
+export const getApplicationEvaluator = (app: any, options?: { systemLogs?: any[] }): EvaluatorInfo => {
+  if (!app) return { name: "Pending Evaluation", isAssigned: false };
+
+  const appId = String(app.id || "").trim();
+  const lowerId = appId.toLowerCase();
+  const upperId = appId.toUpperCase();
+  const isLC = isLocationalClearance(app);
+
+  // 1. Direct evaluatedBy property on application object
+  if (app.evaluatedBy && typeof app.evaluatedBy === "string" && app.evaluatedBy.trim()) {
+    const cleanName = app.evaluatedBy.trim();
+    return {
+      name: cleanName,
+      email: app.evaluatorEmail || undefined,
+      role: cleanName.includes("Engr") ? "Municipal Building Official" : (isLC ? "Zoning Officer" : "Technical Evaluator"),
+      isAssigned: true,
+      evaluatedAt: app.evaluatedAt || app.dateApproved
+    };
+  }
+
+  // 2. Explicit localStorage lookup (saved by evaluator session in browser)
+  if (typeof window !== "undefined" && appId) {
+    const localName = localStorage.getItem(`etayo_evaluated_by_${appId}`) ||
+                      localStorage.getItem(`etayo_evaluated_by_${lowerId}`) ||
+                      localStorage.getItem(`etayo_evaluated_by_${upperId}`);
+    if (localName && localName.trim()) {
+      const cleanName = localName.trim();
+      const localEmail = localStorage.getItem(`etayo_evaluator_email_${appId}`) ||
+                         localStorage.getItem(`etayo_evaluator_email_${lowerId}`) ||
+                         localStorage.getItem(`etayo_evaluator_email_${upperId}`);
+      const localAt = localStorage.getItem(`etayo_evaluated_at_${appId}`) ||
+                      localStorage.getItem(`etayo_evaluated_at_${lowerId}`) ||
+                      localStorage.getItem(`etayo_evaluated_at_${upperId}`);
+      return {
+        name: cleanName,
+        email: localEmail || undefined,
+        role: cleanName.includes("Engr") ? "Municipal Building Official" : (isLC ? "Zoning Officer" : "Technical Evaluator"),
+        isAssigned: true,
+        evaluatedAt: localAt || undefined
+      };
+    }
+  }
+
+  // 3. assignedStaff property
+  if (app.assignedStaff && typeof app.assignedStaff === "string" && app.assignedStaff.trim()) {
+    const cleanName = app.assignedStaff.trim();
+    return {
+      name: cleanName,
+      role: isLC ? "Zoning Officer" : "Technical Evaluator",
+      isAssigned: true
+    };
+  }
+
+  // 4. Tracking steps actor
+  if (Array.isArray(app.trackingSteps)) {
+    for (const step of app.trackingSteps) {
+      const sTitle = String(step?.title || step?.name || "").toLowerCase();
+      const sActor = String(step?.actor || "").trim();
+      if (sActor && (sTitle.includes("evaluation") || sTitle.includes("approved") || sTitle.includes("zoning") || sTitle.includes("endorsement"))) {
+        const parts = sActor.split("/");
+        return {
+          name: parts[0].trim(),
+          role: parts[1] ? parts[1].trim() : (isLC ? "Zoning Administrator" : "Building Official"),
+          isAssigned: true
+        };
+      }
+    }
+  }
+
+  // 5. History logs actor
+  if (Array.isArray(app.historyLog)) {
+    for (const h of app.historyLog) {
+      const hActor = String(h?.actor || "").trim();
+      const hAction = String(h?.action || "").toLowerCase();
+      if (hActor && (hAction.includes("approved") || hAction.includes("evaluated") || hAction.includes("review"))) {
+        return {
+          name: hActor,
+          role: isLC ? "Zoning Officer" : "Technical Evaluator",
+          isAssigned: true
+        };
+      }
+    }
+  }
+
+  // 6. System audit logs
+  if (Array.isArray(options?.systemLogs)) {
+    const matchLog = options.systemLogs.find(l => 
+      (l.message?.includes(appId) || l.details?.includes(appId)) &&
+      (l.action?.includes("EVALUAT") || l.action?.includes("APPROV"))
+    );
+    if (matchLog && matchLog.user && matchLog.user !== "Applicant") {
+      return {
+        name: matchLog.user,
+        role: isLC ? "Zoning Officer" : "Technical Evaluator",
+        isAssigned: true
+      };
+    }
+  }
+
+  // 7. Authoritative official evaluating office fallback for Approved / Released permits
+  if (isApplicationApproved(app) || isApplicationReleased(app) || app.status === "approved" || app.status === "released") {
+    return {
+      name: isLC ? "MPDO Zoning Administrator" : "Engr. Gilbert Cruz",
+      role: isLC ? "Zoning Officer" : "Municipal Building Official",
+      isAssigned: true
+    };
+  }
+
+  if (app.status === "under_review") {
+    return {
+      name: isLC ? "MPDO Technical Committee" : "OBO Engineering Section",
+      role: "Under Active Review",
+      isAssigned: true
+    };
+  }
+
+  return {
+    name: "Pending Assignment",
+    role: "Awaiting Staff Review",
+    isAssigned: false
+  };
+};

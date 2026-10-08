@@ -12,7 +12,8 @@ import {
   MapPin, Sparkles, Layers, ShieldCheck, ArrowRight, MessageSquare, Lock,
   XCircle, Trash2, Archive, ArchiveRestore, RotateCcw, Filter, Calendar,
   Building2, DollarSign, Eye, RefreshCw, FolderKanban, List, ChevronDown,
-  CreditCard, Receipt, Banknote, Download, X, Send, Camera, AlertCircle
+  CreditCard, Receipt, Banknote, Download, X, Send, Camera, AlertCircle,
+  UserCheck
 } from "lucide-react";
 import { dispatchPermitMessage, getAuthoritativePermitFee } from "../../../../utils/permitMessaging";
 import { 
@@ -23,7 +24,8 @@ import {
   isApplicationApproved,
   isApplicationReleased,
   compareAppsNewestFirst,
-  formatSubmissionDateTime 
+  formatSubmissionDateTime,
+  getApplicationEvaluator 
 } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "flat";
@@ -799,6 +801,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     const shouldHideMessageDesk = Boolean(options?.hideMessageDesk) || Boolean(connectedStage2App);
     const isActuallyReleased = isActuallyReleasedApp(app);
     const paymentInfo = checkUserConfirmedPayment(app);
+    const evaluator = getApplicationEvaluator(app, { systemLogs });
     const appIdStr = String(app.id || "").trim();
     const lowerAppId = appIdStr.toLowerCase();
     const upperAppId = appIdStr.toUpperCase();
@@ -962,6 +965,27 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               <Clock size={14} color="#94a3b8" />
               <strong>{formatSubmissionDateTime(app, { systemLogs }).time}</strong>
             </div>
+
+            {evaluator.isAssigned && (
+              <div style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                color: "#1d4ed8",
+                background: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                padding: "2px 8px",
+                borderRadius: "6px",
+                fontSize: "0.82rem",
+                fontWeight: "700"
+              }}>
+                <UserCheck size={13} color="#2563eb" />
+                <span>Evaluated by: <strong>{evaluator.name}</strong></span>
+                {evaluator.role && (
+                  <span style={{ color: "#3b82f6", fontSize: "0.74rem", fontWeight: "600" }}>· {evaluator.role}</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

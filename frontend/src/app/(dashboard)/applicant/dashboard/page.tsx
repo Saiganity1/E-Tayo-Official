@@ -25,12 +25,13 @@ import {
   Copy, 
   MapPin, 
   Calendar,
-  XCircle
+  XCircle,
+  UserCheck
 } from "lucide-react";
 import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
 import { PermitApplication } from "../../../../types";
-import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationApproved, compareAppsNewestFirst, formatSubmissionDateTime } from "@/utils/projectGrouping";
+import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationApproved, compareAppsNewestFirst, formatSubmissionDateTime, getApplicationEvaluator } from "@/utils/projectGrouping";
 import { useLanguage } from "@/context/LanguageContext";
 
 type ViewMode = "project" | "flat";
@@ -812,6 +813,7 @@ export default function ApplicantDashboard() {
                             const statusConfig = getStatusConfig(app.status, app);
                             const StatusIcon = statusConfig.icon;
                             const badge = getPermitTypeBadge(app.permitType, app.id);
+                            const evaluator = getApplicationEvaluator(app, { systemLogs });
 
                             return (
                               <div
@@ -895,6 +897,29 @@ export default function ApplicantDashboard() {
                                   <p style={{ color: "#64748b", fontWeight: "500", fontSize: "0.82rem", margin: 0, textTransform: "capitalize" }}>
                                     {String(app.permitType || "locational_clearance").replace(/_/g, " ")}
                                   </p>
+
+                                  {evaluator.isAssigned && (
+                                    <div style={{ marginTop: "6px" }}>
+                                      <span style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "4px",
+                                        fontSize: "0.76rem",
+                                        fontWeight: "700",
+                                        color: "#1d4ed8",
+                                        background: "#eff6ff",
+                                        border: "1px solid #bfdbfe",
+                                        padding: "2px 8px",
+                                        borderRadius: "6px"
+                                      }}>
+                                        <UserCheck size={12} color="#2563eb" />
+                                        <span>Evaluated by: <strong>{evaluator.name}</strong></span>
+                                        {evaluator.role && (
+                                          <span style={{ color: "#3b82f6", fontSize: "0.7rem", fontWeight: "600" }}>· {evaluator.role}</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {/* Footer Row: Submission Date & Actions */}
@@ -979,6 +1004,7 @@ export default function ApplicantDashboard() {
                 const statusConfig = getStatusConfig(app.status);
                 const StatusIcon = statusConfig.icon;
                 const badge = getPermitTypeBadge(app.permitType, app.id);
+                const evaluator = getApplicationEvaluator(app, { systemLogs });
 
                 return (
                   <div 
@@ -1083,6 +1109,29 @@ export default function ApplicantDashboard() {
                       <p className="app-type" style={{ color: "#64748b", fontWeight: "500", fontSize: "0.85rem", margin: 0, textTransform: "capitalize" }}>
                         {String(app.permitType || "locational_clearance").replace(/_/g, " ")}
                       </p>
+
+                      {evaluator.isAssigned && (
+                        <div style={{ marginTop: "6px" }}>
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            fontSize: "0.76rem",
+                            fontWeight: "700",
+                            color: "#1d4ed8",
+                            background: "#eff6ff",
+                            border: "1px solid #bfdbfe",
+                            padding: "2px 8px",
+                            borderRadius: "6px"
+                          }}>
+                            <UserCheck size={12} color="#2563eb" />
+                            <span>Evaluated by: <strong>{evaluator.name}</strong></span>
+                            {evaluator.role && (
+                              <span style={{ color: "#3b82f6", fontSize: "0.7rem", fontWeight: "600" }}>· {evaluator.role}</span>
+                            )}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Card Footer */}

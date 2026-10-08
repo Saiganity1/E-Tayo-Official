@@ -480,6 +480,9 @@ public class PermitController {
             if (permit.getDateSubmitted() != null) existing.setDateSubmitted(permit.getDateSubmitted());
             if (permit.getCreatedAt() != null && !permit.getCreatedAt().trim().isEmpty()) existing.setCreatedAt(permit.getCreatedAt());
             if (permit.getIsArchived() != null) existing.setIsArchived(permit.getIsArchived());
+            if (permit.getEvaluatedBy() != null) existing.setEvaluatedBy(permit.getEvaluatedBy());
+            if (permit.getEvaluatorEmail() != null) existing.setEvaluatorEmail(permit.getEvaluatorEmail());
+            if (permit.getEvaluatedAt() != null) existing.setEvaluatedAt(permit.getEvaluatedAt());
 
             syncTrackingStepsForStatus(existing, existing.getStatus());
             return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(existing));
@@ -622,18 +625,32 @@ public class PermitController {
             if (payload.containsKey("orderOfPaymentNo") && payload.get("orderOfPaymentNo") != null) {
                 existing.setOrderOfPaymentNo(String.valueOf(payload.get("orderOfPaymentNo")));
             }
+            if (payload.containsKey("evaluatedBy") && payload.get("evaluatedBy") != null) {
+                existing.setEvaluatedBy(String.valueOf(payload.get("evaluatedBy")));
+            }
+            if (payload.containsKey("evaluatorEmail") && payload.get("evaluatorEmail") != null) {
+                existing.setEvaluatorEmail(String.valueOf(payload.get("evaluatorEmail")));
+            }
+            if (payload.containsKey("evaluatedAt") && payload.get("evaluatedAt") != null) {
+                existing.setEvaluatedAt(String.valueOf(payload.get("evaluatedAt")));
+            }
+            if (payload.containsKey("assignedStaff") && payload.get("assignedStaff") != null) {
+                existing.setAssignedStaff(String.valueOf(payload.get("assignedStaff")));
+            }
             syncTrackingStepsForStatus(existing, existing.getStatus());
             if (oldStatus != null && !oldStatus.equalsIgnoreCase(existing.getStatus())) {
                 try {
+                    String evalActor = existing.getEvaluatedBy() != null ? existing.getEvaluatedBy() : (existing.getAssignedStaff() != null ? existing.getAssignedStaff() : "Staff Evaluator");
                     auditLoggingService.logAction(
                         "PERMIT_EVALUATED_" + existing.getStatus().toUpperCase(),
-                        existing.getAssignedStaff() != null ? existing.getAssignedStaff() : "Staff Evaluator",
-                        String.format("Application %s (%s) status changed from '%s' to '%s' for applicant %s. Remarks: %s",
+                        evalActor,
+                        String.format("Application %s (%s) status changed from '%s' to '%s' for applicant %s. Evaluated by: %s. Remarks: %s",
                             id,
                             existing.getProjectName() != null ? existing.getProjectName() : "Permit",
                             oldStatus,
                             existing.getStatus(),
                             existing.getApplicantName() != null ? existing.getApplicantName() : existing.getApplicantEmail(),
+                            evalActor,
                             existing.getRemarks() != null ? existing.getRemarks() : "None")
                     );
                 } catch (Exception ignored) {}
@@ -660,6 +677,18 @@ public class PermitController {
             }
             if (payload.containsKey("orderOfPaymentNo") && payload.get("orderOfPaymentNo") != null) {
                 app.setOrderOfPaymentNo(String.valueOf(payload.get("orderOfPaymentNo")));
+            }
+            if (payload.containsKey("evaluatedBy") && payload.get("evaluatedBy") != null) {
+                app.setEvaluatedBy(String.valueOf(payload.get("evaluatedBy")));
+            }
+            if (payload.containsKey("evaluatorEmail") && payload.get("evaluatorEmail") != null) {
+                app.setEvaluatorEmail(String.valueOf(payload.get("evaluatorEmail")));
+            }
+            if (payload.containsKey("evaluatedAt") && payload.get("evaluatedAt") != null) {
+                app.setEvaluatedAt(String.valueOf(payload.get("evaluatedAt")));
+            }
+            if (payload.containsKey("assignedStaff") && payload.get("assignedStaff") != null) {
+                app.setAssignedStaff(String.valueOf(payload.get("assignedStaff")));
             }
             syncTrackingStepsForStatus(app, app.getStatus());
             return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(app));
