@@ -200,12 +200,6 @@ export default function LoginPage() {
             role: "ROLE_APPLICANT",
             name: "Kathleen Ann Abarquez"
           };
-        } else if (sanitizedEmail === "maria.santos@example.com") {
-          data = {
-            accessToken: `applicant_session_${Date.now()}`,
-            role: "ROLE_APPLICANT",
-            name: "Maria Santos"
-          };
         } else if (sanitizedEmail === "davesicat@gmail.com") {
           data = {
             accessToken: `applicant_session_${Date.now()}`,

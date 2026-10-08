@@ -59,8 +59,8 @@ if (!globalForUsers._assignedUsersStore) {
     },
     {
       id: 7,
-      name: "Maria Santos",
-      email: "maria.santos@example.com",
+      name: "Dave Sicat",
+      email: "davesicat@gmail.com",
       role: "ROLE_APPLICANT",
       createdAt: "2026-10-08T10:00:00Z"
     }
@@ -69,7 +69,16 @@ if (!globalForUsers._assignedUsersStore) {
 
 export const isAutomaticDummyStaff = (u: any): boolean => {
   const email = String(u?.email || "").toLowerCase().trim();
-  return email === "staff@etayo.gov.ph" || email === "dummy@example.com";
+  const name = String(u?.name || "").toLowerCase().trim();
+  return (
+    email === "staff@etayo.gov.ph" ||
+    email === "dummy@example.com" ||
+    email === "citizen.verifier@gmail.com" ||
+    email === "maria.santos@gmail.com" ||
+    email === "maria.santos@example.com" ||
+    name === "maria santos" ||
+    name === "admin user"
+  );
 };
 
 export function getAssignedUsers(roleFilter?: string | null): AssignedUser[] {

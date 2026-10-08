@@ -36,7 +36,25 @@ export default function AdminUsersPage() {
       if (Array.isArray(data)) {
         setUsers(data.filter((u: any) => {
           const email = String(u.email || "").toLowerCase().trim();
-          return email !== "staff@etayo.gov.ph" && email !== "dave.sicat@etayo.gov.ph";
+          const name = String(u.name || "").toLowerCase().trim();
+          return (
+            email &&
+            email !== "null" &&
+            email !== "undefined" &&
+            email !== "staff@etayo.gov.ph" &&
+            email !== "dave.sicat@etayo.gov.ph" &&
+            email !== "juan.verifier@etayo.gov.ph" &&
+            email !== "gilbert.cruz@etayo.gov.ph" &&
+            email !== "citizen.verifier@gmail.com" &&
+            email !== "maria.santos@gmail.com" &&
+            email !== "maria.santos@example.com" &&
+            email !== "admin@etayo.gov.ph" &&
+            name !== "admin user" &&
+            name !== "maria santos" &&
+            name !== "unknown applicant" &&
+            name !== "null" &&
+            name !== "undefined"
+          );
         }));
       } else {
         setUsers([]);

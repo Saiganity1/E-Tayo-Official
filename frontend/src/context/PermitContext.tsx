@@ -95,8 +95,17 @@ const isDummyApp = (app: PermitApplication) => {
   const name = String(app.applicantName || "").toLowerCase().trim();
   const email = String(app.applicantEmail || "").toLowerCase().trim();
 
-  // Legacy sample/seed application IDs and dummy records
+  // Explicit fake applications identified by user
   if (
+    id === "APP-2026-9999" ||
+    id === "LC-2026-9314" ||
+    id === "LC-2026-1840" ||
+    id === "LC-2026-6528" ||
+    id === "LC-2026-7811" ||
+    id === "CITIZEN-1477" ||
+    id === "LC-2026-2911" ||
+    id === "NULL" ||
+    id === "" ||
     id === "LC-2025-0001" ||
     id === "BP-2025-0005" ||
     id === "APP-2026-6636" ||
@@ -111,10 +120,22 @@ const isDummyApp = (app: PermitApplication) => {
     return true;
   }
 
-  // Only filter legacy seed applications that used the dummy name/email
+  // Explicit fake accounts and fake names identified by user
   if (
-    (id.startsWith("LC-2025-") || id.startsWith("BP-2025-") || id === "APP-2026-6636") &&
-    (name.includes("juan dela cruz") || email.includes("juan.delacruz@email.com"))
+    name === "admin user" ||
+    name === "maria santos" ||
+    name === "unknown applicant" ||
+    name === "juan verifier" ||
+    name === "null" ||
+    email === "admin@etayo.gov.ph" ||
+    email === "citizen.verifier@gmail.com" ||
+    email === "maria.santos@gmail.com" ||
+    email === "maria.santos@example.com" ||
+    email === "null" ||
+    email.includes("citizen@example.com") ||
+    email.includes("business@example.com") ||
+    email.includes("juan.delacruz@email.com") ||
+    name.includes("juan dela cruz")
   ) {
     return true;
   }
@@ -249,7 +270,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
     });
 };
 
-const STORAGE_VERSION = "etayo_clean_db_v8";
+const STORAGE_VERSION = "etayo_clean_db_v9";
 
 if (typeof window !== "undefined") {
   try {
@@ -260,8 +281,18 @@ if (typeof window !== "undefined") {
       localStorage.removeItem("etayo_notifications");
       localStorage.removeItem("etayo_unread_messages_count");
 
+      // Purge fake applications from local cache and retain only authentic applications
       const currentCache = localStorage.getItem("etayo_cached_applications");
-      if (!currentCache || currentCache === "[]" || currentCache === "null") {
+      if (currentCache) {
+        try {
+          const parsed = JSON.parse(currentCache);
+          if (Array.isArray(parsed)) {
+            const purged = parsed.filter(a => !isDummyApp(a));
+            const toSave = purged.length > 0 ? purged : INITIAL_APPLICATIONS;
+            localStorage.setItem("etayo_cached_applications", JSON.stringify(toSave));
+          }
+        } catch (e) {}
+      } else {
         try {
           localStorage.setItem("etayo_cached_applications", JSON.stringify(INITIAL_APPLICATIONS));
         } catch (e) {}

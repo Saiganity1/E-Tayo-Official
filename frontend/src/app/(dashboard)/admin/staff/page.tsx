@@ -34,15 +34,25 @@ interface EvaluationLog {
 
 const isAutomaticDummyStaff = (u: any): boolean => {
   const email = String(u?.email || "").toLowerCase().trim();
-  return email === "staff@etayo.gov.ph" || email === "dummy@example.com";
+  const name = String(u?.name || "").toLowerCase().trim();
+  return (
+    email === "staff@etayo.gov.ph" ||
+    email === "dummy@example.com" ||
+    email === "citizen.verifier@gmail.com" ||
+    email === "maria.santos@gmail.com" ||
+    email === "maria.santos@example.com" ||
+    name === "maria santos" ||
+    name === "admin user"
+  );
 };
 
 const isDummyRecord = (item: any): boolean => {
   if (!item) return true;
   const applicant = String(item.applicantEmail || item.user || "").toLowerCase();
   const id = String(item.id || item.permitId || "");
-  if (applicant.includes("citizen@example.com") || applicant.includes("business@example.com")) return true;
+  if (applicant.includes("citizen@example.com") || applicant.includes("business@example.com") || applicant.includes("maria.santos") || applicant.includes("citizen.verifier")) return true;
   if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return true;
+  if (id === "APP-2026-9999" || id === "LC-2026-9314" || id === "LC-2026-1840" || id === "LC-2026-6528" || id === "CITIZEN-1477") return true;
   if (id.startsWith("eval-sys-")) return true;
   return false;
 };

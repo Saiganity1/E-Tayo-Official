@@ -73,8 +73,8 @@ if (!globalForAuth._registeredUsers) {
     },
     {
       id: 7,
-      name: "Maria Santos",
-      email: "maria.santos@example.com",
+      name: "Dave Sicat",
+      email: "davesicat@gmail.com",
       password: "password123",
       role: "ROLE_APPLICANT",
       createdAt: "2026-10-08T10:00:00Z"
