@@ -937,38 +937,8 @@ export default function StaffEvaluationsPage() {
                       </div>
                     </div>
 
-                    {/* Right: Milestone Flow Chips & Action */}
+                    {/* Right: Actions & Expand */}
                     <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-                      {/* Milestone Chips Sequence */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                        {dossier.applications.map((app, idx) => {
-                          const badge = getPermitTypeBadge(app.permitType);
-                          const stStyle = getStatusColor(app.status);
-                          return (
-                            <div 
-                              key={app.id} 
-                              style={{ 
-                                display: "inline-flex", 
-                                alignItems: "center", 
-                                gap: "6px", 
-                                padding: "4px 10px", 
-                                borderRadius: "8px", 
-                                background: stStyle.bg, 
-                                border: `1px solid ${stStyle.border}`,
-                                fontSize: "0.78rem"
-                              }}
-                              title={`${badge.label}: ${(app.status || "PENDING").toUpperCase()} (${app.id})`}
-                            >
-                              <span style={{ fontWeight: "800", color: badge.color }}>{badge.code}</span>
-                              <span style={{ color: "#64748b" }}>•</span>
-                              <span style={{ fontWeight: "700", color: stStyle.color, textTransform: "capitalize" }}>
-                                {app.status === "approved" ? "Approved" : app.status === "pending" ? "Pending" : (app.status || "Pending")}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-
                       {/* Evaluate Next Button Shortcut */}
                       {nextPendingApp && (
                         <Link

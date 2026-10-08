@@ -83,32 +83,7 @@ export const isApplicationReleased = (app: any): boolean => {
   }
 
   // 1. Direct status on app object
-  if (rawStatus === "released" || Boolean((app as any).isReleased) || (app as any).paymentStatus === "paid") {
-    return true;
-  }
-
-  // 2. Check localStorage flags
-  if (typeof window !== "undefined" && appId) {
-    if (
-      localStorage.getItem(`etayo_released_${appId}`) === "true" ||
-      localStorage.getItem(`etayo_released_${lowerAppId}`) === "true" ||
-      localStorage.getItem(`etayo_released_${upperAppId}`) === "true" ||
-      localStorage.getItem(`etayo_paid_${appId}`) === "true" ||
-      localStorage.getItem(`etayo_paid_${lowerAppId}`) === "true" ||
-      localStorage.getItem(`etayo_paid_${upperAppId}`) === "true" ||
-      localStorage.getItem(`etayo_status_${appId}`) === "released" ||
-      localStorage.getItem(`etayo_status_${lowerAppId}`) === "released" ||
-      localStorage.getItem(`etayo_status_${upperAppId}`) === "released"
-    ) {
-      return true;
-    }
-  }
-
-  // 3. Check tracking steps
-  if (Array.isArray(app.trackingSteps) && app.trackingSteps.some((s: any) => 
-    (String(s.title || s.name || "").toLowerCase().includes("released") || String(s.title || s.name || "").toLowerCase().includes("4.")) && 
-    s.status === "completed"
-  )) {
+  if (rawStatus === "released" || Boolean((app as any).isReleased)) {
     return true;
   }
 
@@ -116,88 +91,26 @@ export const isApplicationReleased = (app: any): boolean => {
 };
 
 /**
- * Authoritative check if an application has reached Step 3 (Approved) or Step 4 (Released)
- * across all permit types (Locational Clearance, Building Permits, Ancillary, etc.)
+ * Authoritative check if an application has been Approved or Released by municipal staff.
+ * Strictly checks authentic status without fake heuristic assumptions.
  */
 export const isApplicationApproved = (app: any): boolean => {
   if (!app) return false;
-  const appId = String(app.id || "").trim();
-  const lowerAppId = appId.toLowerCase();
-  const upperAppId = appId.toUpperCase();
   const rawStatus = String(app.status || "").toLowerCase().trim();
 
-  // Explicitly rejected or cancelled applications are NOT approved
+  // Explicitly rejected, incomplete, or cancelled applications are NOT approved
   if (rawStatus === "rejected" || rawStatus === "cancelled" || rawStatus === "incomplete_requirements") {
     return false;
   }
 
-  // 1. Direct status flags from backend or app object — these are authoritative
-  if (rawStatus === "approved" || rawStatus.includes("approv") || rawStatus === "released" || Boolean(app.isReleased)) {
-    if (typeof window !== "undefined" && appId) {
-      try {
-        [appId, lowerAppId, upperAppId].forEach(k => {
-          if (k) {
-            localStorage.setItem(`etayo_status_${k}`, rawStatus === "released" ? "released" : "approved");
-            localStorage.setItem(`etayo_approved_${k}`, "true");
-          }
-        });
-      } catch (e) {}
-    }
+  // 1. Direct status flags from backend or app record — these are authoritative
+  if (rawStatus === "approved" || rawStatus === "released" || Boolean(app.isReleased)) {
     return true;
   }
 
-  // 2. Local storage persistence (admin approved in this session or browser)
-  if (typeof window !== "undefined" && appId) {
-    const isLocalApproved = 
-      localStorage.getItem(`etayo_approved_${appId}`) === "true" ||
-      localStorage.getItem(`etayo_approved_${lowerAppId}`) === "true" ||
-      localStorage.getItem(`etayo_approved_${upperAppId}`) === "true" ||
-      localStorage.getItem(`etayo_status_${appId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${lowerAppId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${upperAppId}`) === "approved" ||
-      localStorage.getItem(`etayo_status_${appId}`) === "released" ||
-      localStorage.getItem(`etayo_status_${lowerAppId}`) === "released" ||
-      localStorage.getItem(`etayo_status_${upperAppId}`) === "released";
-
-    if (isLocalApproved) {
-      return true;
-    }
-  }
-
-  // 3. Date approved is populated by admin
-  if (Boolean(app.dateApproved)) {
+  // 2. Date approved is populated by admin or staff evaluation record
+  if (Boolean(app.dateApproved) && rawStatus !== "pending") {
     return true;
-  }
-
-  // 4. Remarks explicitly indicate approval by admin/staff
-  if (typeof app.remarks === "string" && app.remarks.trim()) {
-    const rem = app.remarks.toLowerCase();
-    if (
-      (rem.includes("approved") || rem.includes("clearance approved") || rem.includes("locational clearance approved")) &&
-      !rem.includes("not approved") &&
-      !rem.includes("disapproved") &&
-      !rem.includes("pending")
-    ) {
-      return true;
-    }
-  }
-
-  // 5. Tracking steps: check if any step indicates approval is completed
-  if (Array.isArray(app.trackingSteps)) {
-    const hasApproved = app.trackingSteps.some((st: any) => {
-      const sTitle = String(st?.title || st?.name || "").toLowerCase();
-      const sStatus = String(st?.status || "").toLowerCase();
-      return sStatus === "completed" && (
-        sTitle.includes("approved") ||
-        sTitle.includes("3.") ||
-        sTitle.includes("step 3") ||
-        sTitle.includes("endorsement") ||
-        sTitle.includes("zoning clearance")
-      );
-    });
-    if (hasApproved) {
-      return true;
-    }
   }
 
   return false;
@@ -553,19 +466,14 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
 
     const isAppApproved = isApplicationApproved(app);
 
-    const isLocalUnderReview = typeof window !== "undefined" && Boolean(appId) && (
-      localStorage.getItem(`etayo_status_${appId}`) === "under_review" ||
-      localStorage.getItem(`etayo_status_${lowerAppId}`) === "under_review" ||
-      localStorage.getItem(`etayo_status_${upperAppId}`) === "under_review" ||
-      rawStatus === "under_review"
-    );
+    const isUnderReview = rawStatus === "under_review";
 
     if (matchedDossier) {
       matchedDossier.applications.push(app);
       matchedDossier.totalCount++;
       if (isAppApproved) {
         matchedDossier.approvedCount++;
-      } else if (rawStatus === "pending" || rawStatus === "under_review" || isLocalUnderReview) {
+      } else if (rawStatus === "pending" || isUnderReview) {
         matchedDossier.pendingCount++;
       } else if (rawStatus === "rejected") {
         matchedDossier.rejectedCount++;
@@ -587,7 +495,7 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       }
     } else {
       const baseTitle = extractBaseProjectName(app);
-      const isPending = !isAppApproved && (rawStatus === "pending" || rawStatus === "under_review" || isLocalUnderReview);
+      const isPending = !isAppApproved && (rawStatus === "pending" || isUnderReview);
       const isRejected = rawStatus === "rejected";
       const isAction = rawStatus === "incomplete_requirements" || rawStatus === "rejected";
 
