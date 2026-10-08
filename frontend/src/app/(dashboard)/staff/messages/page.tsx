@@ -129,13 +129,6 @@ const isDummyMsg = (m: any): boolean => {
     return true;
   }
 
-  // Common random mash or test strings: dasdsa, asdasd, asdasdas, asd, qwe, zxc, test, etc.
-  if (
-    /^(dasdsa|asdasd|asdasdas|asdasd[a-z]*|asd+|qwe+|zxc+|test|testing|tester|sample|trial|check|haha+|hehe+|123+|12345+)$/i.test(cleanText)
-  ) {
-    return true;
-  }
-
   return false;
 };
 

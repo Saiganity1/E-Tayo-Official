@@ -236,11 +236,8 @@ export default function ApplicantMessagesPage() {
               return true;
             }
 
-            const cleanText = content.replace(/\[Ref:\s*[^\]]+\]/gi, "").replace(/\[Attachment:\s*[^\]]+\]/gi, "").trim().toLowerCase();
+            const cleanText = content.replace(/\[Ref:\s*[^\]]+\]/gi, "").replace(/\[Attachment:\s*[^\]]+\]/gi, "").trim();
             if (!cleanText && !content.includes("[Attachment:")) return true;
-            if (/^(dasdsa|asdasd|asdasdas|asdasd[a-z]*|asd+|qwe+|zxc+|test|testing|tester|sample|trial|check|haha+|hehe+|123+|12345+)$/i.test(cleanText)) {
-              return true;
-            }
 
             return false;
           };
@@ -257,7 +254,6 @@ export default function ApplicantMessagesPage() {
           const merged = [...cleanApi];
           cleanLocal.forEach((lm: any) => {
             if (
-              (lm.recipientEmail === email || lm.senderEmail === email || !lm.recipientEmail || lm.recipientEmail === "applicant@etayo.gov.ph") &&
               !merged.some((m: any) => m.id === lm.id || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
             ) {
               merged.push(lm);
@@ -265,11 +261,16 @@ export default function ApplicantMessagesPage() {
           });
           const finalized = ensureApplicationConversationMessages(applications || [], email, merged);
           setMessages(prev => {
-            if (prev.length === finalized.length) {
-              const isSame = prev.every((m, idx) => m.id === finalized[idx]?.id && m.content === finalized[idx]?.content);
+            // Always preserve freshly dispatched local messages currently in state
+            const unmergedPrev = prev.filter(p => 
+              !finalized.some(f => f.id === p.id || (f.content === p.content && Math.abs(new Date(f.timestamp || 0).getTime() - new Date(p.timestamp || 0).getTime()) < 10000))
+            );
+            const combined = unmergedPrev.length > 0 ? [...finalized, ...unmergedPrev] : finalized;
+            if (prev.length === combined.length) {
+              const isSame = prev.every((m, idx) => m.id === combined[idx]?.id && m.content === combined[idx]?.content);
               if (isSame) return prev;
             }
-            return finalized;
+            return combined;
           });
         };
 
