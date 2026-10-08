@@ -129,10 +129,38 @@ export default function StaffMessagesPage() {
   // Helper to resolve applicant metadata from applications
   const getApplicantData = (email: string) => {
     const cleanEmail = email.toLowerCase().trim();
-    const matchingApps = applications.filter(
+    // 1. Direct match by applicantEmail
+    let matchingApps = applications.filter(
       a => a.applicantEmail && a.applicantEmail.toLowerCase().trim() === cleanEmail
     );
-    const primaryApp = matchingApps[0];
+    let primaryApp = matchingApps[0];
+
+    // 2. If no direct email match, try matching by name or email handle
+    if (matchingApps.length === 0) {
+      const cleanPrefix = cleanEmail.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+      const appByName = applications.find(a => {
+        const aName = (a.applicantName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        return aName && (aName.includes(cleanPrefix) || cleanPrefix.includes(aName));
+      });
+      if (appByName && appByName.applicantName) {
+        const targetName = appByName.applicantName.toLowerCase().trim();
+        matchingApps = applications.filter(a => (a.applicantName || "").toLowerCase().trim() === targetName);
+        primaryApp = matchingApps[0];
+      }
+    }
+
+    // 3. If primaryApp has a known applicantName, ensure any permit sharing the exact same applicantName is included
+    if (primaryApp && primaryApp.applicantName) {
+      const appNameLower = primaryApp.applicantName.toLowerCase().trim();
+      const sameNameApps = applications.filter(a => {
+        const aName = (a.applicantName || "").toLowerCase().trim();
+        return aName && aName === appNameLower;
+      });
+      if (sameNameApps.length > matchingApps.length) {
+        matchingApps = sameNameApps;
+      }
+    }
+
     const name = primaryApp?.applicantName || cleanEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     const phone = primaryApp?.applicantPhone || "Not provided";
     const address = primaryApp?.applicantAddress || primaryApp?.projectAddress || "Santo Tomas, Pampanga";
@@ -411,12 +439,17 @@ export default function StaffMessagesPage() {
     if (applicantEmail) {
       const cleanEmail = applicantEmail.toLowerCase().trim();
       const staffInbox = "staff@etayo.gov.ph";
+      const applicantData = getApplicantData(cleanEmail);
+      const userApps = applicantData.applications;
+      const userAppIds = new Set(userApps.map(a => a.id));
+
       const mergeWithLocal = (apiData: any[]) => {
         let localMsgs: any[] = [];
         try {
           const raw = localStorage.getItem("etayo_messages_history");
           if (raw) localMsgs = JSON.parse(raw);
         } catch (e) {}
+
         const isDummyMsg = (m: any) => {
           if (!m) return true;
           const id = String(m.id || "");
@@ -424,20 +457,40 @@ export default function StaffMessagesPage() {
           const appId = String(m.applicationId || "");
           return id === "seed-msg-1" || appId === "LC-2026-6494" || content.includes("Greetings Mr. Payumo") || content.includes("LC-2026-6494");
         };
-        const cleanApi = (apiData || []).filter(m => !isDummyMsg(m));
-        const cleanLocal = (localMsgs || []).filter(m => !isDummyMsg(m));
+
+        // Filter out any messages that explicitly reference a permit belonging to another citizen
+        const isForeignPermit = (m: any) => {
+          if (userAppIds.size === 0) return false;
+          const mAppId = m.applicationId || getMessageThreadId(m);
+          if (mAppId && mAppId !== "general" && !userAppIds.has(mAppId)) {
+            return true;
+          }
+          return false;
+        };
+
+        const cleanApi = (apiData || []).filter(m => !isDummyMsg(m) && !isForeignPermit(m));
+        const cleanLocal = (localMsgs || []).filter(m => !isDummyMsg(m) && !isForeignPermit(m));
         const merged = [...cleanApi];
+
         cleanLocal.forEach((lm: any) => {
           const r = (lm.recipientEmail || "").toLowerCase().trim();
           const s = (lm.senderEmail || "").toLowerCase().trim();
-          if (
-            (r === cleanEmail || s === cleanEmail || !r || r === "applicant@etayo.gov.ph") &&
-            !merged.some((m: any) => m.id === lm.id || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
-          ) {
-            merged.push(lm);
+          const mAppId = lm.applicationId || getMessageThreadId(lm);
+
+          const isDirectEmail = r === cleanEmail || s === cleanEmail;
+          const isUserPermit = mAppId && userAppIds.has(mAppId);
+
+          if (isDirectEmail || isUserPermit) {
+            if (
+              !merged.some((m: any) => m.id === lm.id || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
+            ) {
+              merged.push(lm);
+            }
           }
         });
-        const finalized = ensureApplicationConversationMessages(applications || [], cleanEmail, merged);
+
+        // Strictly synthesize official notices ONLY for this applicant's permits
+        const finalized = ensureApplicationConversationMessages(userApps, cleanEmail, merged);
         setMessages(finalized);
         setActiveThreadId("all");
       };
@@ -694,7 +747,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
       });
     });
 
-    // Also scan messages for any references or general tag
+    // Scan messages to count messages for THIS applicant's permits, or general
     let generalCount = 0;
     messages.forEach(msg => {
       const threadId = getMessageThreadId(msg);
@@ -702,13 +755,8 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
         generalCount++;
       } else if (threadMap.has(threadId)) {
         threadMap.get(threadId)!.count++;
-      } else {
-        threadMap.set(threadId, {
-          id: threadId,
-          title: threadId,
-          count: 1
-        });
       }
+      // CRITICAL: Strictly do NOT add foreign permits belonging to other citizens into this applicant's threadMap!
     });
 
     const threadList = Array.from(threadMap.values());
@@ -1388,7 +1436,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                           fontSize: "0.72rem",
                           fontWeight: "800"
                         }}>
-                          {applicantThreads.allCount}
+                          {applicantThreads.threads.length}
                         </span>
                       )}
                       <ChevronDown size={14} style={{ transform: showThreadDropdown ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />

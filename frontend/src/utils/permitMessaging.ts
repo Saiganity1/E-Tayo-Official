@@ -175,8 +175,19 @@ export const ensureApplicationConversationMessages = (
   const result = [...existingMessages];
   let updated = false;
 
+  const cleanUserEmail = userEmail ? userEmail.toLowerCase().trim() : "";
+
   (applications || []).forEach(app => {
     if (!app || !app.id) return;
+
+    // Strict guard: Only synthesize messages for applications belonging to this applicant
+    if (cleanUserEmail && cleanUserEmail !== "staff@etayo.gov.ph" && cleanUserEmail !== "admin@etayo.gov.ph") {
+      const appEmail = (app.applicantEmail || "").toLowerCase().trim();
+      if (appEmail && appEmail !== cleanUserEmail) {
+        return;
+      }
+    }
+
     const isApprovedOrPast = app.status === "approved" || app.status === "released" || Boolean(app.orderOfPaymentNo) || Boolean(app.assessedFees);
     if (!isApprovedOrPast) return;
 
