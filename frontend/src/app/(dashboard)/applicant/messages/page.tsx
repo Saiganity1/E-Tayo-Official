@@ -1528,6 +1528,43 @@ export default function ApplicantMessagesPage() {
                 </div>
               </div>
             </div>
+
+            {/* Right Action: Toggle Permit Records */}
+            <button
+              type="button"
+              onClick={() => setShowDossier(prev => !prev)}
+              style={{
+                background: showDossier ? "#2563eb" : "#f8fafc",
+                border: showDossier ? "1.5px solid #1d4ed8" : "1.5px solid #e2e8f0",
+                color: showDossier ? "#ffffff" : "#334155",
+                padding: "8px 14px",
+                borderRadius: "11px",
+                fontSize: "0.84rem",
+                fontWeight: "700",
+                display: "flex",
+                alignItems: "center",
+                gap: "7px",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                boxShadow: showDossier ? "0 2px 8px rgba(37, 99, 235, 0.25)" : "none"
+              }}
+              title="Toggle Permit Records"
+            >
+              <Briefcase size={15} />
+              <span>{showDossier ? "Hide Records" : "Permit Records"}</span>
+              {activeThread.applications && activeThread.applications.length > 0 && (
+                <span style={{
+                  background: showDossier ? "rgba(255,255,255,0.25)" : "#e2e8f0",
+                  color: showDossier ? "#ffffff" : "#475569",
+                  padding: "1px 6px",
+                  borderRadius: "8px",
+                  fontSize: "0.72rem",
+                  fontWeight: "800"
+                }}>
+                  {activeThread.applications.length}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* SLIM NOTICE BANNERS (Order of Payment & Clearances Released) */}
@@ -2068,7 +2105,7 @@ export default function ApplicantMessagesPage() {
                   transition: "all 0.15s"
                 }}
               >
-                <span>Dispatch</span>
+                <span>Send</span>
                 <Send size={16} />
               </button>
             </form>
@@ -2098,7 +2135,7 @@ export default function ApplicantMessagesPage() {
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Briefcase size={17} color="#2563eb" />
-                <h3 style={{ fontSize: "1rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>Permit Dossier</h3>
+                <h3 style={{ fontSize: "1rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>Permit Records</h3>
               </div>
               <button
                 onClick={() => setShowDossier(false)}

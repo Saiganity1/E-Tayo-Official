@@ -77,6 +77,23 @@ export default function StaffMessagesPage() {
 
   // Thread Categorization within Selected Applicant's Chat
   const [activeThreadId, setActiveThreadId] = useState<string>("all");
+  const [showThreadDropdown, setShowThreadDropdown] = useState(false);
+  const threadDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close thread dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (threadDropdownRef.current && !threadDropdownRef.current.contains(e.target as Node)) {
+        setShowThreadDropdown(false);
+      }
+    };
+    if (showThreadDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showThreadDropdown]);
 
   // Collapsible Dossier Sidebar (Default false for 75%+ wide readable chat)
   const [showDossier, setShowDossier] = useState(false);
@@ -1321,178 +1338,299 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                   </div>
                 </div>
 
-                {/* Right Header Action: Toggle Dossier Inspector */}
-                <button
-                  onClick={() => setShowDossier(prev => !prev)}
-                  style={{
-                    background: showDossier ? "#2563eb" : "#f8fafc",
-                    border: showDossier ? "1.5px solid #1d4ed8" : "1.5px solid #e2e8f0",
-                    color: showDossier ? "#ffffff" : "#334155",
-                    padding: "8px 14px",
-                    borderRadius: "11px",
-                    fontSize: "0.84rem",
-                    fontWeight: "700",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "7px",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    boxShadow: showDossier ? "0 2px 8px rgba(37, 99, 235, 0.25)" : "none"
-                  }}
-                  title="Toggle Applicant & Permit Dossier"
-                >
-                  <Briefcase size={15} />
-                  <span>{showDossier ? "Hide Dossier" : "Permit Dossier"}</span>
-                  {selectedApplicantData.applications.length > 0 && (
-                    <span style={{
-                      background: showDossier ? "rgba(255,255,255,0.25)" : "#e2e8f0",
-                      color: showDossier ? "#ffffff" : "#475569",
-                      padding: "1px 6px",
-                      borderRadius: "8px",
-                      fontSize: "0.72rem",
-                      fontWeight: "800"
-                    }}>
-                      {selectedApplicantData.applications.length}
-                    </span>
-                  )}
-                </button>
-              </div>
-
-              {/* =============================================================== */}
-              {/* APPLICATION THREAD SELECTOR (CLEAN, NO UGLY SCROLLBARS) */}
-              {/* =============================================================== */}
-              <div style={{
-                background: "#f8fafc",
-                borderBottom: "1.5px solid #e2e8f0",
-                padding: "8px 1.4rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                overflowX: "auto",
-                scrollbarWidth: "none",
-                msOverflowStyle: "none"
-              }}>
-                <span style={{ fontSize: "0.76rem", fontWeight: "800", color: "#64748b", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px", marginRight: "2px", flexShrink: 0 }}>
-                  <Filter size={13} /> Threads:
-                </span>
-
-                {/* All Messages Tab */}
-                <button
-                  onClick={() => setActiveThreadId("all")}
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: "10px",
-                    fontSize: "0.82rem",
-                    fontWeight: "700",
-                    border: activeThreadId === "all" ? "1.5px solid #2563eb" : "1.5px solid #e2e8f0",
-                    background: activeThreadId === "all" ? "#2563eb" : "#ffffff",
-                    color: activeThreadId === "all" ? "#ffffff" : "#475569",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    whiteSpace: "nowrap",
-                    flexShrink: 0,
-                    transition: "all 0.15s",
-                    boxShadow: activeThreadId === "all" ? "0 2px 6px rgba(37, 99, 235, 0.2)" : "none"
-                  }}
-                >
-                  <Layers size={14} />
-                  <span>All Messages</span>
-                  <span style={{
-                    background: activeThreadId === "all" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
-                    color: activeThreadId === "all" ? "#ffffff" : "#64748b",
-                    padding: "1px 6px",
-                    borderRadius: "6px",
-                    fontSize: "0.72rem"
-                  }}>
-                    {applicantThreads.allCount}
-                  </span>
-                </button>
-
-                {/* Individual Permit Threads */}
-                {applicantThreads.threads.map(thread => {
-                  const isActive = activeThreadId === thread.id;
-                  const statusBadge = getStatusBadge(thread.status);
-                  return (
+                {/* Right Header Actions: Thread Filter Button + Permit Records Button */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", position: "relative" }}>
+                  {/* Thread Dropdown Button */}
+                  <div style={{ position: "relative" }} ref={threadDropdownRef}>
                     <button
-                      key={thread.id}
-                      onClick={() => setActiveThreadId(thread.id)}
+                      type="button"
+                      onClick={() => setShowThreadDropdown(prev => !prev)}
                       style={{
-                        padding: "6px 14px",
-                        borderRadius: "10px",
-                        fontSize: "0.82rem",
+                        background: showThreadDropdown || activeThreadId !== "all" ? "#eff6ff" : "#f8fafc",
+                        border: showThreadDropdown || activeThreadId !== "all" ? "1.5px solid #3b82f6" : "1.5px solid #e2e8f0",
+                        color: activeThreadId !== "all" ? "#1d4ed8" : "#334155",
+                        padding: "8px 14px",
+                        borderRadius: "11px",
+                        fontSize: "0.84rem",
                         fontWeight: "700",
-                        border: isActive ? "1.5px solid #2563eb" : "1.5px solid #e2e8f0",
-                        background: isActive ? "#2563eb" : "#ffffff",
-                        color: isActive ? "#ffffff" : "#334155",
-                        cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
-                        gap: "6px",
-                        whiteSpace: "nowrap",
-                        flexShrink: 0,
-                        transition: "all 0.15s",
-                        boxShadow: isActive ? "0 2px 6px rgba(37, 99, 235, 0.2)" : "none"
+                        gap: "7px",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                        boxShadow: showThreadDropdown ? "0 2px 8px rgba(59, 130, 246, 0.2)" : "none"
                       }}
+                      title="Filter conversations by permit thread"
                     >
-                      <Building2 size={14} />
-                      <span>{thread.id}</span>
-                      <span style={{
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        background: statusBadge.color,
-                        display: "inline-block"
-                      }} />
-                      {thread.count > 0 && (
+                      <Layers size={15} color={activeThreadId !== "all" ? "#2563eb" : "#64748b"} />
+                      <span>Thread</span>
+                      {activeThreadId !== "all" ? (
                         <span style={{
-                          background: isActive ? "rgba(255, 255, 255, 0.25)" : "#eff6ff",
-                          color: isActive ? "#ffffff" : "#2563eb",
+                          background: "#2563eb",
+                          color: "#ffffff",
+                          padding: "1px 7px",
+                          borderRadius: "8px",
                           fontSize: "0.72rem",
-                          padding: "1px 6px",
-                          borderRadius: "6px"
+                          fontWeight: "800",
+                          maxWidth: "110px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap"
                         }}>
-                          {thread.count}
+                          {activeThreadId}
+                        </span>
+                      ) : (
+                        <span style={{
+                          background: "#e2e8f0",
+                          color: "#475569",
+                          padding: "1px 6px",
+                          borderRadius: "8px",
+                          fontSize: "0.72rem",
+                          fontWeight: "800"
+                        }}>
+                          {applicantThreads.allCount}
                         </span>
                       )}
+                      <ChevronDown size={14} style={{ transform: showThreadDropdown ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
                     </button>
-                  );
-                })}
 
-                {/* General Inquiries Tab if general messages exist */}
-                {applicantThreads.generalCount > 0 && (
+                    {/* Popover Dropdown Menu */}
+                    {showThreadDropdown && (
+                      <div style={{
+                        position: "absolute",
+                        top: "calc(100% + 6px)",
+                        right: 0,
+                        zIndex: 100,
+                        background: "#ffffff",
+                        border: "1.5px solid #e2e8f0",
+                        borderRadius: "14px",
+                        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)",
+                        width: "320px",
+                        padding: "6px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px"
+                      }}>
+                        <div style={{
+                          padding: "8px 10px 4px 10px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between"
+                        }}>
+                          <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                            Filter by Thread
+                          </span>
+                          <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>
+                            {applicantThreads.threads.length} {applicantThreads.threads.length === 1 ? "Permit" : "Permits"}
+                          </span>
+                        </div>
+
+                        {/* All Messages Option */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveThreadId("all");
+                            setShowThreadDropdown(false);
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "9px",
+                            border: activeThreadId === "all" ? "1px solid #bfdbfe" : "1px solid transparent",
+                            background: activeThreadId === "all" ? "#eff6ff" : "transparent",
+                            color: activeThreadId === "all" ? "#1d4ed8" : "#334155",
+                            cursor: "pointer",
+                            fontSize: "0.82rem",
+                            fontWeight: activeThreadId === "all" ? "700" : "600",
+                            textAlign: "left",
+                            transition: "background 0.15s"
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <Layers size={14} color={activeThreadId === "all" ? "#2563eb" : "#64748b"} />
+                            <span>All Messages</span>
+                          </div>
+                          <span style={{
+                            background: activeThreadId === "all" ? "#dbeafe" : "#f1f5f9",
+                            color: activeThreadId === "all" ? "#1e40af" : "#64748b",
+                            padding: "2px 7px",
+                            borderRadius: "6px",
+                            fontSize: "0.72rem",
+                            fontWeight: "800"
+                          }}>
+                            {applicantThreads.allCount}
+                          </span>
+                        </button>
+
+                        <div style={{ height: "1px", background: "#f1f5f9", margin: "4px 0" }} />
+
+                        {/* Thread List Header */}
+                        {applicantThreads.threads.length > 0 && (
+                          <div style={{ padding: "4px 10px 2px 10px", fontSize: "0.68rem", fontWeight: "800", color: "#94a3b8", textTransform: "uppercase" }}>
+                            Permit Applications
+                          </div>
+                        )}
+
+                        {/* Permit Threads */}
+                        <div style={{ maxHeight: "240px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "3px" }}>
+                          {applicantThreads.threads.map(thread => {
+                            const isSelected = activeThreadId === thread.id;
+                            const statusBadge = getStatusBadge(thread.status);
+                            return (
+                              <button
+                                key={thread.id}
+                                type="button"
+                                onClick={() => {
+                                  setActiveThreadId(thread.id);
+                                  setShowThreadDropdown(false);
+                                }}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  width: "100%",
+                                  padding: "8px 10px",
+                                  borderRadius: "9px",
+                                  border: isSelected ? "1px solid #bfdbfe" : "1px solid transparent",
+                                  background: isSelected ? "#eff6ff" : "transparent",
+                                  cursor: "pointer",
+                                  textAlign: "left",
+                                  transition: "background 0.15s"
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+                                  <div style={{
+                                    width: "8px",
+                                    height: "8px",
+                                    borderRadius: "50%",
+                                    background: statusBadge.color,
+                                    flexShrink: 0
+                                  }} />
+                                  <div style={{ minWidth: 0 }}>
+                                    <div style={{
+                                      fontSize: "0.82rem",
+                                      fontWeight: isSelected ? "700" : "600",
+                                      color: isSelected ? "#1d4ed8" : "#0f172a",
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis"
+                                    }}>
+                                      {thread.id}
+                                    </div>
+                                    <div style={{
+                                      fontSize: "0.7rem",
+                                      color: "#64748b",
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis"
+                                    }}>
+                                      {statusBadge.label}
+                                    </div>
+                                  </div>
+                                </div>
+                                {thread.count > 0 && (
+                                  <span style={{
+                                    background: isSelected ? "#2563eb" : "#f1f5f9",
+                                    color: isSelected ? "#ffffff" : "#475569",
+                                    padding: "2px 7px",
+                                    borderRadius: "6px",
+                                    fontSize: "0.72rem",
+                                    fontWeight: "800",
+                                    flexShrink: 0
+                                  }}>
+                                    {thread.count}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* General Inquiries */}
+                        {applicantThreads.generalCount > 0 && (
+                          <>
+                            <div style={{ height: "1px", background: "#f1f5f9", margin: "4px 0" }} />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveThreadId("general");
+                                setShowThreadDropdown(false);
+                              }}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                width: "100%",
+                                padding: "8px 10px",
+                                borderRadius: "9px",
+                                border: activeThreadId === "general" ? "1px solid #bfdbfe" : "none",
+                                background: activeThreadId === "general" ? "#eff6ff" : "transparent",
+                                cursor: "pointer",
+                                textAlign: "left"
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <MessageSquare size={14} color="#64748b" />
+                                <span style={{ fontSize: "0.82rem", fontWeight: activeThreadId === "general" ? "700" : "600", color: "#334155" }}>
+                                  General Inquiries
+                                </span>
+                              </div>
+                              <span style={{
+                                background: "#f1f5f9",
+                                color: "#64748b",
+                                padding: "2px 7px",
+                                borderRadius: "6px",
+                                fontSize: "0.72rem",
+                                fontWeight: "800"
+                              }}>
+                                {applicantThreads.generalCount}
+                              </span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Toggle Permit Records Inspector */}
                   <button
-                    onClick={() => setActiveThreadId("general")}
+                    onClick={() => setShowDossier(prev => !prev)}
                     style={{
-                      padding: "6px 14px",
-                      borderRadius: "10px",
-                      fontSize: "0.82rem",
+                      background: showDossier ? "#2563eb" : "#f8fafc",
+                      border: showDossier ? "1.5px solid #1d4ed8" : "1.5px solid #e2e8f0",
+                      color: showDossier ? "#ffffff" : "#334155",
+                      padding: "8px 14px",
+                      borderRadius: "11px",
+                      fontSize: "0.84rem",
                       fontWeight: "700",
-                      border: activeThreadId === "general" ? "1.5px solid #2563eb" : "1.5px solid #e2e8f0",
-                      background: activeThreadId === "general" ? "#2563eb" : "#ffffff",
-                      color: activeThreadId === "general" ? "#ffffff" : "#475569",
-                      cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
-                      gap: "6px",
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                      transition: "all 0.15s"
+                      gap: "7px",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                      boxShadow: showDossier ? "0 2px 8px rgba(37, 99, 235, 0.25)" : "none"
                     }}
+                    title="Toggle Applicant & Permit Records"
                   >
-                    <MessageSquare size={14} />
-                    <span>General Inquiries</span>
-                    <span style={{
-                      background: activeThreadId === "general" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
-                      padding: "1px 6px",
-                      borderRadius: "6px",
-                      fontSize: "0.72rem"
-                    }}>
-                      {applicantThreads.generalCount}
-                    </span>
+                    <Briefcase size={15} />
+                    <span>{showDossier ? "Hide Records" : "Permit Records"}</span>
+                    {selectedApplicantData.applications.length > 0 && (
+                      <span style={{
+                        background: showDossier ? "rgba(255,255,255,0.25)" : "#e2e8f0",
+                        color: showDossier ? "#ffffff" : "#475569",
+                        padding: "1px 6px",
+                        borderRadius: "8px",
+                        fontSize: "0.72rem",
+                        fontWeight: "800"
+                      }}>
+                        {selectedApplicantData.applications.length}
+                      </span>
+                    )}
                   </button>
-                )}
+                </div>
               </div>
 
               {/* =============================================================== */}
@@ -1596,7 +1734,69 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                         <span>Confirm Payment &amp; Release</span>
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setActiveThreadId("all")}
+                      style={{
+                        background: "#ffffff",
+                        border: "1.5px solid #cbd5e1",
+                        color: "#475569",
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        fontSize: "0.78rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px"
+                      }}
+                      title="Clear thread filter"
+                    >
+                      <X size={13} />
+                      <span>All Messages</span>
+                    </button>
                   </div>
+                </div>
+              )}
+
+              {/* General Inquiries banner if selected */}
+              {activeThreadId === "general" && (
+                <div style={{
+                  padding: "10px 1.4rem",
+                  background: "#f8fafc",
+                  borderBottom: "1.5px solid #e2e8f0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "10px"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <MessageSquare size={16} color="#64748b" />
+                    <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "#334155" }}>
+                      Viewing General Inquiries Thread
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveThreadId("all")}
+                    style={{
+                      background: "#ffffff",
+                      border: "1.5px solid #cbd5e1",
+                      color: "#475569",
+                      padding: "5px 11px",
+                      borderRadius: "7px",
+                      fontSize: "0.76rem",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}
+                  >
+                    <X size={12} />
+                    <span>All Messages</span>
+                  </button>
                 </div>
               )}
 
@@ -1976,7 +2176,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                       transition: "all 0.15s"
                     }}
                   >
-                    <span>Dispatch</span>
+                    <span>Send</span>
                     <Send size={16} />
                   </button>
                 </form>
@@ -2008,7 +2208,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Briefcase size={17} color="#2563eb" />
-                <h3 style={{ fontSize: "1rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>Permit Dossier</h3>
+                <h3 style={{ fontSize: "1rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>Permit Records</h3>
               </div>
               <button
                 onClick={() => setShowDossier(false)}
