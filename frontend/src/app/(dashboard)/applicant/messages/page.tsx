@@ -236,8 +236,7 @@ export default function ApplicantMessagesPage() {
               return true;
             }
 
-            const cleanText = content.replace(/\[Ref:\s*[^\]]+\]/gi, "").replace(/\[Attachment:\s*[^\]]+\]/gi, "").trim();
-            if (!cleanText && !content.includes("[Attachment:")) return true;
+            if (!content) return true;
 
             return false;
           };
@@ -254,7 +253,7 @@ export default function ApplicantMessagesPage() {
           const merged = [...cleanApi];
           cleanLocal.forEach((lm: any) => {
             if (
-              !merged.some((m: any) => m.id === lm.id || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
+              !merged.some((m: any) => String(m.id) === String(lm.id) || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
             ) {
               merged.push(lm);
             }
@@ -263,11 +262,11 @@ export default function ApplicantMessagesPage() {
           setMessages(prev => {
             // Always preserve freshly dispatched local messages currently in state
             const unmergedPrev = prev.filter(p => 
-              !finalized.some(f => f.id === p.id || (f.content === p.content && Math.abs(new Date(f.timestamp || 0).getTime() - new Date(p.timestamp || 0).getTime()) < 10000))
+              !finalized.some(f => String(f.id) === String(p.id) || (f.content === p.content && Math.abs(new Date(f.timestamp || 0).getTime() - new Date(p.timestamp || 0).getTime()) < 10000))
             );
             const combined = unmergedPrev.length > 0 ? [...finalized, ...unmergedPrev] : finalized;
             if (prev.length === combined.length) {
-              const isSame = prev.every((m, idx) => m.id === combined[idx]?.id && m.content === combined[idx]?.content);
+              const isSame = prev.every((m, idx) => String(m.id) === String(combined[idx]?.id) && m.content === combined[idx]?.content);
               if (isSame) return prev;
             }
             return combined;
@@ -661,11 +660,15 @@ export default function ApplicantMessagesPage() {
       if (msg.applicationId && targetIds.some(tid => tid.toLowerCase() === String(msg.applicationId).toLowerCase())) return true;
       if (msg.content && targetIds.some(tid => msg.content.toLowerCase().includes(tid.toLowerCase()))) return true;
       // Allow optimistic/local messages for active thread
-      if (msg.id?.startsWith("local-") && (!msg.applicationId || msg.applicationId === "all" || targetIds.includes(msg.applicationId))) {
+      if (String(msg?.id || "").startsWith("local-") && (!msg.applicationId || msg.applicationId === "all" || targetIds.includes(msg.applicationId))) {
         return true;
       }
       return false;
     });
+
+    if (threadMsgs.length === 0 && messages.length > 0 && conversationThreads.length <= 1) {
+      threadMsgs = messages;
+    }
 
     if (threadMsgs.length === 0 && activeThread?.applications && activeThread.applications.length > 0) {
       const email = currentUserEmail || "applicant@etayo.gov.ph";
@@ -868,8 +871,8 @@ export default function ApplicantMessagesPage() {
     // 2. ALWAYS dispatch via HTTP so message is permanently saved in /api/messages/send
     dispatchPermitMessage(payload).then(newMsg => {
       setMessages(prev => {
-        if (prev.some(m => m.id === newMsg.id || m.id === localMsg.id)) {
-          return prev.map(m => m.id === localMsg.id ? newMsg : m);
+        if (prev.some(m => String(m.id) === String(newMsg.id) || String(m.id) === String(localMsg.id))) {
+          return prev.map(m => String(m.id) === String(localMsg.id) ? newMsg : m);
         }
         return [...prev, newMsg];
       });

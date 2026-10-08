@@ -19,6 +19,12 @@ interface StoredMessage {
 // In-memory persistent message store on Next.js server instance
 const messageStore: StoredMessage[] = [];
 
+const normalizeEmail = (e: string) => {
+  const norm = (e || "").trim().toLowerCase();
+  if (norm === "davesicat@gmail.com" || norm.includes("dave") || norm.includes("sicat")) return "mdpsicat.student@ua.edu.ph";
+  return norm;
+};
+
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string[] }> }) {
   try {
     const { slug } = await params;
@@ -26,7 +32,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     const url = new URL(req.url);
     const targetUrl = `${BACKEND_API}/messages/${path}${url.search}`;
 
-    // 1. If remote backend is available, attempt to query it
+    // 1. If remote backend is available, query it
+    let remoteMessages: any[] = [];
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
@@ -42,29 +49,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         if (text.trim().startsWith("[") || text.trim().startsWith("{")) {
           const parsed = JSON.parse(text);
           if (Array.isArray(parsed)) {
-            return NextResponse.json(parsed);
+            remoteMessages = parsed;
           }
         }
       }
     } catch (e) {}
 
-    // 2. Fallback based on requested path
+    // 2. Route-specific responses
     if (path === "conversations") {
-      // Gather contacts from both permits and messages
       const permits = getAllPermits();
       const permitEmails = permits.map(p => p.applicantEmail).filter(Boolean);
       const msgEmails = messageStore.flatMap(m => [m.senderEmail, m.recipientEmail]).filter(Boolean);
-      const allUnique = Array.from(new Set([...permitEmails, ...msgEmails]))
-        .map(e => (e || "").trim().toLowerCase())
+      const remoteEmails = Array.isArray(remoteMessages) ? remoteMessages.map(c => typeof c === "string" ? c : (c?.email || c?.senderEmail || c?.recipientEmail)).filter(Boolean) : [];
+      const allUnique = Array.from(new Set([...permitEmails, ...msgEmails, ...remoteEmails]))
+        .map(e => normalizeEmail(e))
         .filter(e => e && e !== "staff@etayo.gov.ph" && e !== "admin@etayo.gov.ph");
       return NextResponse.json(allUnique, { status: 200 });
     }
-
-const normalizeEmail = (e: string) => {
-  const norm = (e || "").trim().toLowerCase();
-  if (norm === "davesicat@gmail.com" || norm.includes("dave") || norm.includes("sicat")) return "mdpsicat.student@ua.edu.ph";
-  return norm;
-};
 
     if (path === "history") {
       const rawUser1 = (url.searchParams.get("user1") || "").trim().toLowerCase();
@@ -73,7 +74,7 @@ const normalizeEmail = (e: string) => {
       const user2 = normalizeEmail(rawUser2);
       const reqAppId = (url.searchParams.get("applicationId") || "").trim().toLowerCase();
       
-      const filtered = messageStore.filter(m => {
+      const filteredStore = messageStore.filter(m => {
         const s = normalizeEmail(m.senderEmail);
         const r = normalizeEmail(m.recipientEmail);
         const mAppId = (m.applicationId || "").trim().toLowerCase();
@@ -102,10 +103,24 @@ const normalizeEmail = (e: string) => {
         return s === target || r === target;
       });
 
-      return NextResponse.json(filtered, { status: 200 });
+      // Seamlessly combine remote backend messages + local server memory messages
+      const merged: any[] = [...remoteMessages];
+      filteredStore.forEach(sm => {
+        const exists = merged.some(rm => 
+          String(rm.id) === String(sm.id) || 
+          (rm.content === sm.content && Math.abs(new Date(rm.timestamp).getTime() - new Date(sm.timestamp).getTime()) < 5000)
+        );
+        if (!exists) {
+          merged.push(sm);
+        }
+      });
+
+      merged.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+      return NextResponse.json(merged, { status: 200 });
     }
 
-    return NextResponse.json(messageStore, { status: 200 });
+    return NextResponse.json(remoteMessages.length > 0 ? remoteMessages : messageStore, { status: 200 });
   } catch (error) {
     return NextResponse.json([], { status: 200 });
   }
@@ -124,19 +139,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     };
 
     // Store in-memory
-    if (!messageStore.some(m => m.id === newMsg.id || (m.content === newMsg.content && m.timestamp === newMsg.timestamp))) {
+    if (!messageStore.some(m => String(m.id) === String(newMsg.id) || (m.content === newMsg.content && m.timestamp === newMsg.timestamp))) {
       messageStore.push(newMsg);
     }
 
-    // Forward to remote backend asynchronously if available
+    // Forward to remote backend asynchronously if available (strip non-numeric id for Spring Boot Long type)
     try {
       const { slug } = await params;
       const path = slug.join("/");
       const targetUrl = `${BACKEND_API}/messages/${path}`;
+      const backendPayload = { ...body };
+      if (typeof backendPayload.id === "string" && !/^\d+$/.test(backendPayload.id)) {
+        delete backendPayload.id;
+      }
       fetch(targetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        body: JSON.stringify(backendPayload)
       }).catch(() => null);
     } catch (e) {}
 

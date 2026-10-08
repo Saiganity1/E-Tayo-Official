@@ -88,7 +88,7 @@ const normalizeContactEmail = (email?: string): string => {
   return em;
 };
 
-// Filter out dummy fixture messages, messages to/from fake accounts, and gibberish spam
+// Filter out dummy fixture messages and messages to/from fake accounts
 const isDummyMsg = (m: any): boolean => {
   if (!m) return true;
   const id = String(m.id || "").trim();
@@ -107,10 +107,8 @@ const isDummyMsg = (m: any): boolean => {
     return true;
   }
 
-  // 2. Messages associated with fake accounts
+  // 2. Messages associated with fake test accounts
   if (
-    isFakeAccount(sender) ||
-    isFakeAccount(recipient) ||
     sender.includes("maria.santos") || recipient.includes("maria.santos") ||
     sender.includes("citizen.verifier") || recipient.includes("citizen.verifier") ||
     sender.includes("juan.verifier") || recipient.includes("juan.verifier")
@@ -118,14 +116,8 @@ const isDummyMsg = (m: any): boolean => {
     return true;
   }
 
-  // 3. Gibberish / test spam messages
-  const cleanText = content
-    .replace(/\[Ref:\s*[^\]]+\]/gi, "")
-    .replace(/\[Attachment:\s*[^\]]+\]/gi, "")
-    .trim()
-    .toLowerCase();
-
-  if (!cleanText && !content.includes("[Attachment:")) {
+  // 3. Drop only completely empty messages without attachments
+  if (!content) {
     return true;
   }
 
@@ -451,7 +443,7 @@ export default function StaffMessagesPage() {
 
         if (isDirectMatch || isAppMatch) {
           setMessages(prev => {
-            const exists = prev.some(m => m.id === receivedMessage.id || (m.content === receivedMessage.content && Math.abs(new Date(m.timestamp).getTime() - new Date(receivedMessage.timestamp).getTime()) < 3000));
+            const exists = prev.some(m => String(m.id) === String(receivedMessage.id) || (m.content === receivedMessage.content && Math.abs(new Date(m.timestamp).getTime() - new Date(receivedMessage.timestamp).getTime()) < 3000));
             if (exists) return prev;
             return [...prev, receivedMessage];
           });
@@ -541,6 +533,13 @@ export default function StaffMessagesPage() {
                 } catch (err) {}
               });
             }
+            if (parsedUser.email !== "admin@etayo.gov.ph") {
+              client.subscribe(`/topic/messages/admin@etayo.gov.ph`, (message) => {
+                try {
+                  handleIncomingChatMessage(JSON.parse(message.body));
+                } catch (err) {}
+              });
+            }
           },
           onStompError: frame => {
             console.warn("STOMP notice:", frame?.headers?.["message"]);
@@ -608,7 +607,14 @@ export default function StaffMessagesPage() {
         }
 
         // Filter out any messages that explicitly reference a permit belonging to another citizen
+        // Filter out any messages that explicitly reference a permit belonging to another citizen
         const isForeignPermit = (m: any) => {
+          const s = normalizeContactEmail((m.senderEmail || "").trim());
+          const r = normalizeContactEmail((m.recipientEmail || "").trim());
+          // If the message is between staff/admin and THIS citizen, it belongs to this conversation!
+          if (s === cleanEmail || r === cleanEmail) {
+            return false;
+          }
           if (userAppIds.size === 0) return false;
           const mAppId = m.applicationId || getMessageThreadId(m);
           if (mAppId && mAppId !== "general" && !userAppIds.has(mAppId)) {
@@ -631,7 +637,7 @@ export default function StaffMessagesPage() {
 
           if (isDirectEmail || isUserPermit) {
             if (
-              !merged.some((m: any) => m.id === lm.id || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
+              !merged.some((m: any) => String(m.id) === String(lm.id) || (m.content === lm.content && Math.abs(new Date(m.timestamp).getTime() - new Date(lm.timestamp).getTime()) < 5000))
             ) {
               merged.push(lm);
             }
@@ -644,7 +650,7 @@ export default function StaffMessagesPage() {
         // Only update messages state when count or contents actually change to eliminate lag
         setMessages(prev => {
           if (prev.length === finalized.length) {
-            const isIdentical = prev.every((m, idx) => m.id === finalized[idx]?.id && m.content === finalized[idx]?.content);
+            const isIdentical = prev.every((m, idx) => String(m.id) === String(finalized[idx]?.id) && m.content === finalized[idx]?.content);
             if (isIdentical) return prev;
           }
           return finalized;
@@ -911,8 +917,14 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
         generalCount++;
       } else if (threadMap.has(threadId)) {
         threadMap.get(threadId)!.count++;
+      } else if (threadId && threadId !== "all") {
+        threadMap.set(threadId, {
+          id: threadId,
+          title: threadId,
+          count: 1,
+          status: "active"
+        });
       }
-      // CRITICAL: Strictly do NOT add foreign permits belonging to other citizens into this applicant's threadMap!
     });
 
     const threadList = Array.from(threadMap.values());
@@ -927,7 +939,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
   const filteredMessages = useMemo(() => {
     let threadMsgs = activeThreadId === "all" ? messages : messages.filter(msg => {
       const msgThread = getMessageThreadId(msg);
-      return msgThread === activeThreadId;
+      return msgThread.toLowerCase() === activeThreadId.toLowerCase() || (msg.applicationId && String(msg.applicationId).toLowerCase() === activeThreadId.toLowerCase());
     });
 
     if (activeThreadId !== "all" && threadMsgs.length === 0) {

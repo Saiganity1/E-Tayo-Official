@@ -82,6 +82,11 @@ export const dispatchPermitMessage = async ({
 
   // 3. Attempt POST to backend /api/messages/send
   try {
+    const backendPayload: any = { ...newMsg };
+    if (typeof backendPayload.id === "string" && !/^\d+$/.test(backendPayload.id)) {
+      delete backendPayload.id;
+    }
+
     let res = await fetch("/api/messages/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -94,7 +99,7 @@ export const dispatchPermitMessage = async ({
       await fetch(backendUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newMsg)
+        body: JSON.stringify(backendPayload)
       }).catch(() => null);
     }
   } catch (e) {
