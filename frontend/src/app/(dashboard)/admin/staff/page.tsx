@@ -343,6 +343,9 @@ export default function AdminStaffPage() {
       );
     };
 
+    let apiLogs: any[] = [];
+    let localLogs: any[] = [];
+
     // 1. Fetch from backend API / Next.js proxy
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -360,29 +363,11 @@ export default function AdminStaffPage() {
       if (res && res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          data.forEach((item: any) => {
-            if (isDummyRecord(item)) return;
+          apiLogs = data.filter((item: any) => {
+            if (isDummyRecord(item)) return false;
             const itemStaffEmail = String(item.staffEmail || item.evaluatorEmail || "").trim();
             const itemStaffName = String(item.evaluatorName || item.user || "").trim();
-            if (isStaffMatch(itemStaffEmail, itemStaffName)) {
-              const appId = item.applicationId || item.permitId;
-              const matchedApp = findMatchedApp(appId);
-              const actionLabel = normalizeActionLabel(item.action, item.comments);
-
-              gatheredLogs.push({
-                id: item.id ? `eval-api-${item.id}` : `eval-api-${appId}-${actionLabel}`,
-                permitId: appId || matchedApp?.id,
-                projectName: item.projectName || matchedApp?.projectName || matchedApp?.projectType || (item.permitType ? `${item.permitType.replace(/_/g, " ").toUpperCase()} Project` : "Permit Application"),
-                staffEmail: staff.email,
-                applicantEmail: item.applicantEmail || matchedApp?.applicantEmail || "Applicant",
-                applicantName: item.applicantName || matchedApp?.applicantName,
-                permitType: item.permitType ? item.permitType.replace(/_/g, " ").toUpperCase() : (matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE"),
-                action: actionLabel,
-                comments: item.comments || "Official evaluation recorded in municipal portal.",
-                timestamp: item.timestamp || new Date().toISOString(),
-                evaluatorName: staff.name
-              });
-            }
+            return isStaffMatch(itemStaffEmail, itemStaffName);
           });
         }
       }
@@ -390,165 +375,184 @@ export default function AdminStaffPage() {
       console.error("Error fetching evaluations for staff", err);
     }
 
-    // 2. Cross-reference localStorage evaluation records (strictly matching this staff)
+    // 2. Fetch from localStorage evaluation records
     if (typeof window !== "undefined") {
       try {
         const localLogsRaw = localStorage.getItem("etayo_evaluation_logs");
         if (localLogsRaw) {
-          const localLogs = JSON.parse(localLogsRaw);
-          if (Array.isArray(localLogs)) {
-            localLogs.forEach((l: any) => {
-              if (isDummyRecord(l)) return;
-              if (isStaffMatch(l.staffEmail || l.evaluatorEmail, l.evaluatorName || l.user)) {
-                const appId = l.permitId || l.applicationId;
-                const matchedApp = findMatchedApp(appId);
-                const actionLabel = normalizeActionLabel(l.action, l.comments);
-
-                gatheredLogs.push({
-                  id: l.id ? `eval-local-${l.id}` : `eval-local-${appId}-${actionLabel}`,
-                  permitId: appId || matchedApp?.id,
-                  projectName: l.projectName || matchedApp?.projectName || matchedApp?.projectType || "Permit Application",
-                  staffEmail: staff.email,
-                  applicantEmail: l.applicantEmail || matchedApp?.applicantEmail || "Applicant",
-                  applicantName: l.applicantName || matchedApp?.applicantName,
-                  permitType: l.permitType ? l.permitType.replace(/_/g, " ").toUpperCase() : (matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE"),
-                  action: actionLabel,
-                  comments: l.comments || "Official evaluation recorded.",
-                  timestamp: l.timestamp || new Date().toISOString(),
-                  evaluatorName: staff.name
-                });
-              }
+          const parsed = JSON.parse(localLogsRaw);
+          if (Array.isArray(parsed)) {
+            localLogs = parsed.filter((l: any) => {
+              if (isDummyRecord(l)) return false;
+              return isStaffMatch(l.staffEmail || l.evaluatorEmail, l.evaluatorName || l.user);
             });
-          }
-        }
-      } catch (e) {}
-
-      // Scan individual evaluated keys strictly matching this staff
-      try {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith("etayo_evaluated_by_")) {
-            const rawId = key.replace("etayo_evaluated_by_", "").trim();
-            const evalName = localStorage.getItem(key) || "";
-            const evalEmail = localStorage.getItem(`etayo_evaluator_email_${rawId}`) || "";
-            const statusVal = (localStorage.getItem(`etayo_status_${rawId}`) || "approved").toLowerCase();
-            const remarksVal = localStorage.getItem(`etayo_remarks_${rawId}`) || "";
-            const dateVal = localStorage.getItem(`etayo_date_approved_${rawId}`) || new Date().toISOString();
-
-            if (isStaffMatch(evalEmail, evalName)) {
-              const matchedApp = findMatchedApp(rawId);
-              let actionLabel = "Approved";
-              if (statusVal === "released") actionLabel = "Permit Released";
-              else if (statusVal === "rejected") actionLabel = "Disapproved";
-              else if (statusVal === "incomplete_requirements") actionLabel = "Revision Requested";
-
-              gatheredLogs.push({
-                id: `local-eval-key-${rawId}-${actionLabel}`,
-                permitId: matchedApp?.id || rawId.toUpperCase(),
-                projectName: matchedApp?.projectName || matchedApp?.projectType || (rawId.toUpperCase().startsWith("BP") ? "Building & Structural Works" : "Locational Zoning Clearance"),
-                staffEmail: staff.email,
-                applicantEmail: matchedApp?.applicantEmail || "Applicant",
-                applicantName: matchedApp?.applicantName,
-                permitType: matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : (rawId.toUpperCase().startsWith("LC-") ? "LOCATIONAL CLEARANCE" : "BUILDING PERMIT"),
-                action: actionLabel,
-                comments: remarksVal || matchedApp?.remarks || `Official evaluation conducted by ${staff.name}.`,
-                timestamp: dateVal,
-                evaluatorName: staff.name
-              });
-            }
           }
         }
       } catch (e) {}
     }
 
-    // 3. Cross-reference applications in PermitContext (strictly where this staff is the evaluator)
+    // 3. Build canonical list of evaluated permits (strictly 1 unique entry per permit ID)
+    const evaluatedPermitsMap = new Map<string, EvaluationLog>();
+
+    // Process applications from PermitContext (the single source of truth for the municipal portal)
     (applications || []).forEach(app => {
       if (!app || !app.id || isDummyRecord(app)) return;
-      const appId = String(app.id).trim();
+      const cleanId = String(app.id).trim().toUpperCase();
 
-      const localEvaluator = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${appId}`) || localStorage.getItem(`etayo_evaluated_by_${appId.toLowerCase()}`) || localStorage.getItem(`etayo_evaluated_by_${appId.toUpperCase()}`)) : null;
-      const localEvalEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${appId}`) || localStorage.getItem(`etayo_evaluator_email_${appId.toLowerCase()}`) || localStorage.getItem(`etayo_evaluator_email_${appId.toUpperCase()}`)) : null;
-      const localRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${appId}`) || localStorage.getItem(`etayo_remarks_${appId.toLowerCase()}`) || localStorage.getItem(`etayo_remarks_${appId.toUpperCase()}`)) : null;
+      const localEvaluator = typeof window !== "undefined" ? (
+        localStorage.getItem(`etayo_evaluated_by_${cleanId}`) ||
+        localStorage.getItem(`etayo_evaluated_by_${cleanId.toLowerCase()}`) ||
+        localStorage.getItem(`etayo_evaluated_by_${app.id}`)
+      ) : null;
+      const localEvalEmail = typeof window !== "undefined" ? (
+        localStorage.getItem(`etayo_evaluator_email_${cleanId}`) ||
+        localStorage.getItem(`etayo_evaluator_email_${cleanId.toLowerCase()}`) ||
+        localStorage.getItem(`etayo_evaluator_email_${app.id}`)
+      ) : null;
+      const localStatus = typeof window !== "undefined" ? (
+        localStorage.getItem(`etayo_status_${cleanId}`) ||
+        localStorage.getItem(`etayo_status_${cleanId.toLowerCase()}`) ||
+        localStorage.getItem(`etayo_status_${app.id}`)
+      ) : null;
+      const isLocalReleased = typeof window !== "undefined" && (
+        localStorage.getItem(`etayo_released_${cleanId}`) === "true" ||
+        localStorage.getItem(`etayo_released_${cleanId.toLowerCase()}`) === "true"
+      );
 
-      const appEvaluator = localEvaluator || app.evaluatedBy;
+      const matchingApi = apiLogs.find(l => {
+        const p = String(l.permitId || l.applicationId || "").trim().toUpperCase();
+        return p === cleanId;
+      });
+      const matchingLocal = localLogs.find(l => {
+        const p = String(l.permitId || l.applicationId || "").trim().toUpperCase();
+        return p === cleanId;
+      });
+      const matchingSys = (systemLogs || []).find(l => {
+        const str = `${l.message || ""} ${l.details || ""} ${l.id || ""}`.toUpperCase();
+        const act = (l.action || "").toUpperCase();
+        const isEval = act.startsWith("EVALUATION") || act === "PERMIT_RELEASED";
+        return isEval && str.includes(cleanId) && isStaffMatch(l.userEmail, l.user);
+      });
+      const matchingHist = Array.isArray(app.historyLog) ? app.historyLog.find((h: any) => {
+        const act = (h.action || "").toLowerCase();
+        const isEval = act.includes("approv") || act.includes("release") || act.includes("evaluat") || act.includes("reject") || act.includes("revis");
+        return isEval && isStaffMatch(h.actor, h.actor);
+      }) : null;
+
+      const appEvaluator = localEvaluator || app.evaluatedBy || (app as any).assignedStaff;
       const appEvalEmail = localEvalEmail || app.evaluatorEmail;
 
-      // STRICT match: Must actually be this staff member
-      if (!isStaffMatch(appEvalEmail, appEvaluator)) return;
+      const isEvaluatedByStaff = isStaffMatch(appEvalEmail, appEvaluator) || Boolean(matchingHist) || Boolean(matchingApi || matchingLocal || matchingSys);
+      if (!isEvaluatedByStaff) return;
 
-      const effectiveStatus = (app.status || "").toLowerCase().trim();
-      const isEvaluatedStatus = effectiveStatus === "approved" || effectiveStatus === "released" || effectiveStatus === "rejected" || effectiveStatus === "incomplete_requirements";
+      const effectiveStatus = (isLocalReleased ? "released" : (localStatus || app.status || "")).toLowerCase().trim();
+      const isEvaluatedStatus = effectiveStatus === "approved" || effectiveStatus === "released" || effectiveStatus === "rejected" || effectiveStatus === "incomplete_requirements" || Boolean((app as any).isReleased);
 
-      if (isEvaluatedStatus) {
-        let actionLabel = "Approved";
-        if (effectiveStatus === "released") actionLabel = "Permit Released";
-        else if (effectiveStatus === "rejected") actionLabel = "Disapproved";
-        else if (effectiveStatus === "incomplete_requirements") actionLabel = "Revision Requested";
+      if (!isEvaluatedStatus && !matchingApi && !matchingLocal && !matchingSys) return;
 
-        const evalTime = app.evaluatedAt || (app as any).dateApproved || (app as any).dateIssued || app.dateSubmitted || new Date().toISOString();
-
-        gatheredLogs.push({
-          id: `APP-EVAL-${app.id}-${actionLabel}`,
-          permitId: app.id,
-          projectName: app.projectName || app.projectType || "Permit Application",
-          staffEmail: staff.email,
-          applicantEmail: app.applicantEmail || "Applicant",
-          applicantName: app.applicantName,
-          permitType: app.permitType ? app.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE",
-          action: actionLabel,
-          comments: localRemarks || app.remarks || `Evaluation officially recorded for ${app.id}.`,
-          timestamp: evalTime,
-          evaluatorName: staff.name
-        });
+      let actionLabel = "Approved";
+      if (effectiveStatus === "released" || (app as any).isReleased || isLocalReleased) {
+        actionLabel = "Permit Released";
+      } else if (effectiveStatus === "rejected") {
+        actionLabel = "Disapproved";
+      } else if (effectiveStatus === "incomplete_requirements") {
+        actionLabel = "Revision Requested";
+      } else if (effectiveStatus === "approved") {
+        actionLabel = "Approved";
+      } else if (matchingApi?.action || matchingLocal?.action) {
+        actionLabel = normalizeActionLabel(matchingApi?.action || matchingLocal?.action);
       }
+
+      const localRemarks = typeof window !== "undefined" ? (
+        localStorage.getItem(`etayo_remarks_${cleanId}`) ||
+        localStorage.getItem(`etayo_remarks_${cleanId.toLowerCase()}`) ||
+        localStorage.getItem(`etayo_remarks_${app.id}`)
+      ) : null;
+      const comments = localRemarks || app.remarks || matchingApi?.comments || matchingLocal?.comments || matchingSys?.details || (
+        actionLabel === "Permit Released" ? "Official receipt verified. Permits released." : `Official evaluation conducted by ${staff.name}.`
+      );
+
+      // Resolve authentic evaluation timestamp
+      let resolvedTimestamp = "";
+      if (matchingLocal?.timestamp && String(matchingLocal.timestamp).includes(":")) {
+        resolvedTimestamp = matchingLocal.timestamp;
+      } else if (matchingApi?.timestamp && String(matchingApi.timestamp).includes(":")) {
+        resolvedTimestamp = matchingApi.timestamp;
+      } else if (matchingSys?.timestamp && String(matchingSys.timestamp).includes(":")) {
+        resolvedTimestamp = matchingSys.timestamp;
+      } else if (matchingHist?.date && String(matchingHist.date).includes(":")) {
+        resolvedTimestamp = matchingHist.date;
+      } else if (app.evaluatedAt && String(app.evaluatedAt).includes(":")) {
+        resolvedTimestamp = app.evaluatedAt;
+      } else if (typeof window !== "undefined") {
+        const localEvalAt = localStorage.getItem(`etayo_evaluated_at_${cleanId}`) || localStorage.getItem(`etayo_evaluated_at_${cleanId.toLowerCase()}`);
+        if (localEvalAt && localEvalAt.includes(":")) {
+          resolvedTimestamp = localEvalAt;
+        }
+      }
+
+      if (!resolvedTimestamp) {
+        const rawDateVal = (app as any).dateApproved || (app as any).dateIssued || app.dateSubmitted;
+        if (rawDateVal && String(rawDateVal).includes(":")) {
+          resolvedTimestamp = rawDateVal;
+        } else if (rawDateVal) {
+          resolvedTimestamp = rawDateVal;
+        } else {
+          resolvedTimestamp = new Date().toISOString();
+        }
+      }
+
+      evaluatedPermitsMap.set(cleanId, {
+        id: `eval-${cleanId}`,
+        permitId: app.id,
+        projectName: app.projectName || app.projectType || (cleanId.startsWith("BP") ? "Building & Structural Works" : "Locational Zoning Clearance"),
+        staffEmail: staff.email,
+        applicantEmail: app.applicantEmail || "Applicant",
+        applicantName: app.applicantName,
+        permitType: app.permitType ? app.permitType.replace(/_/g, " ").toUpperCase() : (cleanId.startsWith("LC") ? "LOCATIONAL CLEARANCE" : "BUILDING PERMIT"),
+        action: actionLabel,
+        comments: comments,
+        timestamp: resolvedTimestamp,
+        evaluatorName: staff.name
+      });
     });
 
-    // 4. Strict evaluation logs from systemLogs (ONLY genuine EVALUATION_* or PERMIT_RELEASED actions)
-    (systemLogs || []).forEach(log => {
-      if (!log || isDummyRecord(log)) return;
-      const act = (log.action || "").toUpperCase();
-      const isExplicitEval = act.startsWith("EVALUATION_") || act === "PERMIT_RELEASED";
-      if (!isExplicitEval) return;
+    // 4. Incorporate any unique evaluations found only in apiLogs or localLogs (without duplicating)
+    [...apiLogs, ...localLogs].forEach((l: any) => {
+      if (!l || isDummyRecord(l)) return;
+      const rawId = l.permitId || l.applicationId;
+      if (!rawId) return;
+      const cleanId = String(rawId).trim().toUpperCase();
 
-      if (isStaffMatch(log.userEmail, log.user)) {
-        let permitId = "";
-        const idMatch = (log.message + " " + (log.details || "") + " " + log.id).match(/(?:LC|BP|APP)-\d{4}-\d{3,5}/i);
-        if (idMatch) permitId = idMatch[0].toUpperCase();
-
-        const matchedApp = findMatchedApp(permitId);
-        let actionLabel = "Approved";
-        if (act === "PERMIT_RELEASED") actionLabel = "Permit Released";
-        else if (act === "EVALUATION_REJECTED") actionLabel = "Disapproved";
-        else if (act === "EVALUATION_REVISION_REQUESTED") actionLabel = "Revision Requested";
-        else if (act === "EVALUATION_APPROVED") actionLabel = "Approved";
-        else actionLabel = normalizeActionLabel(act, log.details || log.message);
-
-        gatheredLogs.push({
-          id: `eval-sys-${log.id}`,
-          permitId: permitId || matchedApp?.id,
-          projectName: matchedApp?.projectName || matchedApp?.projectType || (permitId ? "Permit Application" : "Official Evaluation"),
-          staffEmail: staff.email,
-          applicantEmail: matchedApp?.applicantEmail || "Applicant",
-          applicantName: matchedApp?.applicantName,
-          permitType: matchedApp?.permitType ? matchedApp.permitType.replace(/_/g, " ").toUpperCase() : "CLEARANCE",
-          action: actionLabel,
-          comments: log.details || log.message || "Evaluation recorded in official audit log.",
-          timestamp: log.timestamp || new Date().toISOString(),
-          evaluatorName: staff.name
-        });
+      if (evaluatedPermitsMap.has(cleanId)) {
+        const existing = evaluatedPermitsMap.get(cleanId)!;
+        if (l.comments && (!existing.comments || existing.comments.startsWith("Official evaluation conducted"))) {
+          existing.comments = l.comments;
+        }
+        if (l.timestamp && String(l.timestamp).includes(":") && !String(existing.timestamp).includes(":")) {
+          existing.timestamp = l.timestamp;
+        }
+        return;
       }
+
+      const matchedApp = findMatchedApp(cleanId);
+      const actionLabel = normalizeActionLabel(l.action, l.comments);
+      evaluatedPermitsMap.set(cleanId, {
+        id: `eval-${cleanId}`,
+        permitId: matchedApp?.id || cleanId,
+        projectName: l.projectName || matchedApp?.projectName || matchedApp?.projectType || "Permit Application",
+        staffEmail: staff.email,
+        applicantEmail: l.applicantEmail || matchedApp?.applicantEmail || "Applicant",
+        applicantName: l.applicantName || matchedApp?.applicantName,
+        permitType: l.permitType ? l.permitType.replace(/_/g, " ").toUpperCase() : (cleanId.startsWith("LC") ? "LOCATIONAL CLEARANCE" : "BUILDING PERMIT"),
+        action: actionLabel,
+        comments: l.comments || `Official evaluation conducted by ${staff.name}.`,
+        timestamp: l.timestamp || new Date().toISOString(),
+        evaluatorName: staff.name
+      });
     });
 
-    // Deduplicate logs by permitId and action
-    const logMap = new Map<string, EvaluationLog>();
-    gatheredLogs.forEach(l => {
-      const key = l.permitId ? `${String(l.permitId).toUpperCase()}-${l.action}` : String(l.id);
-      if (!logMap.has(key)) {
-        logMap.set(key, l);
-      }
-    });
-
-    const finalLogs = Array.from(logMap.values()).sort((a, b) => {
+    const finalLogs = Array.from(evaluatedPermitsMap.values()).sort((a, b) => {
       const tA = new Date(a.timestamp || 0).getTime();
       const tB = new Date(b.timestamp || 0).getTime();
       return tB - tA;

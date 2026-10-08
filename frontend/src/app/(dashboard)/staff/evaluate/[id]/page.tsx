@@ -1467,6 +1467,7 @@ export default function StaffEvaluatePage() {
       },
     ];
 
+    const nowIso = new Date().toISOString();
     const updatedApp = {
       ...app,
       status: "approved" as const,
@@ -1474,11 +1475,11 @@ export default function StaffEvaluatePage() {
       evaluatedBy: staffName,
       evaluatorEmail: staffEmail,
       assignedStaff: staffName,
-      evaluatedAt: new Date().toISOString(),
+      evaluatedAt: nowIso,
       userConfirmedPayment: (app as any).userConfirmedPayment || false,
-      dateApproved: (app as any).dateApproved || issuedDateFormatted,
-      dateIssued: (app as any).dateIssued || issuedDateFormatted,
-      permitIssuedDate: (app as any).permitIssuedDate || issuedDateFormatted,
+      dateApproved: (app as any).dateApproved || nowIso,
+      dateIssued: (app as any).dateIssued || nowIso,
+      permitIssuedDate: (app as any).permitIssuedDate || nowIso,
       orderOfPaymentNo: orderOfPaymentNo,
       assessedFees: totalFees,
       estimatedFees: totalFees,
@@ -1500,11 +1501,12 @@ export default function StaffEvaluatePage() {
         localStorage.setItem(`etayo_approved_${k}`, "true");
         localStorage.setItem(`etayo_evaluated_by_${k}`, staffName);
         localStorage.setItem(`etayo_evaluator_email_${k}`, staffEmail);
+        localStorage.setItem(`etayo_evaluated_at_${k}`, nowIso);
         localStorage.removeItem(`etayo_released_${k}`);
         localStorage.removeItem(`etayo_paid_${k}`);
         if (orderOfPaymentNo) localStorage.setItem(`etayo_op_${k}`, orderOfPaymentNo);
         if (totalFees) localStorage.setItem(`etayo_fees_${k}`, String(totalFees));
-        if (issuedDateFormatted) localStorage.setItem(`etayo_date_approved_${k}`, issuedDateFormatted);
+        localStorage.setItem(`etayo_date_approved_${k}`, (app as any).dateApproved || nowIso);
         if (decisionNotes || shortSummary) localStorage.setItem(`etayo_remarks_${k}`, decisionNotes || shortSummary);
       });
 
@@ -1733,13 +1735,15 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
       },
     ];
 
+    const nowIso = new Date().toISOString();
     const updatedApp = {
       ...app,
       status: "released" as const,
       paymentStatus: "paid" as const,
       isReleased: true,
       officialReceiptNo: orNumber,
-      dateReleased: releaseDateFormatted,
+      dateReleased: nowIso,
+      evaluatedAt: (app as any).evaluatedAt || nowIso,
       cashierOfficer: certifyingCashierInput.trim() || staffName,
       evaluatedBy: app.evaluatedBy || staffName,
       evaluatorEmail: app.evaluatorEmail || staffEmail,
@@ -1757,6 +1761,8 @@ Once we inspect your receipt picture in this conversation, we will click "Confir
         localStorage.setItem(`etayo_released_${k}`, "true");
         localStorage.setItem(`etayo_paid_${k}`, "true");
         localStorage.setItem(`etayo_or_${k}`, orNumber);
+        localStorage.setItem(`etayo_evaluated_at_${k}`, nowIso);
+        localStorage.setItem(`etayo_date_released_${k}`, nowIso);
         if (staffName) localStorage.setItem(`etayo_evaluated_by_${k}`, staffName);
         if (staffEmail) localStorage.setItem(`etayo_evaluator_email_${k}`, staffEmail);
       });

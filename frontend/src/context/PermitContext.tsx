@@ -584,6 +584,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${id}`) || localStorage.getItem(`etayo_op_${lowerId}`) || localStorage.getItem(`etayo_op_${upperId}`)) : null;
             const storedFees = typeof window !== "undefined" ? (localStorage.getItem(`etayo_fees_${id}`) || localStorage.getItem(`etayo_fees_${lowerId}`) || localStorage.getItem(`etayo_fees_${upperId}`)) : null;
             const storedDateApproved = typeof window !== "undefined" ? (localStorage.getItem(`etayo_date_approved_${id}`) || localStorage.getItem(`etayo_date_approved_${lowerId}`) || localStorage.getItem(`etayo_date_approved_${upperId}`)) : null;
+            const storedEvaluatedAt = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_at_${id}`) || localStorage.getItem(`etayo_evaluated_at_${lowerId}`) || localStorage.getItem(`etayo_evaluated_at_${upperId}`)) : null;
             const storedRemarks = typeof window !== "undefined" ? (localStorage.getItem(`etayo_remarks_${id}`) || localStorage.getItem(`etayo_remarks_${lowerId}`) || localStorage.getItem(`etayo_remarks_${upperId}`)) : null;
             const storedEvaluatedBy = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${id}`) || localStorage.getItem(`etayo_evaluated_by_${lowerId}`) || localStorage.getItem(`etayo_evaluated_by_${upperId}`)) : null;
             const storedEvaluatorEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${id}`) || localStorage.getItem(`etayo_evaluator_email_${lowerId}`) || localStorage.getItem(`etayo_evaluator_email_${upperId}`)) : null;
@@ -642,6 +643,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 orderOfPaymentNo: (storedOp && storedOp !== "OP-2026" ? storedOp : null) || (bApp as any).orderOfPaymentNo || (foundCached as any)?.orderOfPaymentNo || `OP-${String(bApp.id || "").replace(/^[A-Za-z]+-/i, "") || "2026"}`,
                 assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (foundCached as any)?.assessedFees || (bApp as any).estimatedFees || (bApp.permitType === "locational_clearance" || String(bApp.id).toUpperCase().startsWith("LC-") ? 1500 : 6200)),
                 dateApproved: storedDateApproved || (bApp as any).dateApproved || (foundCached as any)?.dateApproved || (isApproved ? ((bApp as any).dateIssued || new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })) : undefined),
+                evaluatedAt: storedEvaluatedAt || (foundCached as any)?.evaluatedAt || (bApp as any).evaluatedAt || ((storedDateApproved && storedDateApproved.includes(":")) ? storedDateApproved : undefined),
                 remarks: storedRemarks || bApp.remarks || foundCached.remarks,
                 evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy || (foundCached as any)?.evaluatedBy,
                 evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail || (foundCached as any)?.evaluatorEmail,
@@ -664,6 +666,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 orderOfPaymentNo: (storedOp && storedOp !== "OP-2026" ? storedOp : null) || (bApp as any).orderOfPaymentNo || `OP-${curCleanSeq || "2026"}`,
                 assessedFees: storedFees ? Number(storedFees) : ((bApp as any).assessedFees || (bApp as any).estimatedFees || (curIsLC ? 1500 : 6200)),
                 dateApproved: storedDateApproved || (bApp as any).dateApproved || (isApprovedLocal ? new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : undefined),
+                evaluatedAt: storedEvaluatedAt || (bApp as any).evaluatedAt || ((storedDateApproved && storedDateApproved.includes(":")) ? storedDateApproved : undefined),
                 remarks: storedRemarks || bApp.remarks,
                 evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy,
                 evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail,

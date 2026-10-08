@@ -82,9 +82,21 @@ export function formatPhilippineDate(input?: string | number | Date | null): str
 
 /**
  * Formats date and time strictly in Philippine Standard Time (e.g. "6:38 AM · Oct 2, 2026")
+ * If the input is date-only (e.g. "Oct 08, 2026", "2026-10-08"), it cleanly formats as date only ("Oct 8, 2026")
+ * instead of fabricating a fake midnight "12:00 AM".
  */
 export function formatPhilippineDateTime(input?: string | number | Date | null): string {
   try {
+    if (!input) return "";
+
+    // If input is a string that has no time information (no colon), return date only
+    if (typeof input === "string") {
+      const trimmed = input.trim();
+      if (!trimmed.includes(":")) {
+        return formatPhilippineDate(trimmed);
+      }
+    }
+
     const d = parsePhilippineDate(input);
     const datePart = new Intl.DateTimeFormat("en-US", {
       timeZone: PHT_TIMEZONE,
@@ -98,6 +110,15 @@ export function formatPhilippineDateTime(input?: string | number | Date | null):
       minute: "2-digit",
       hour12: true
     }).format(d);
+
+    // If parsed as 12:00 AM and input is a string that doesn't explicitly specify midnight, return datePart only
+    if (timePart === "12:00 AM" && typeof input === "string") {
+      const lower = input.toLowerCase();
+      if (!lower.includes("12:00") && !lower.includes("00:00")) {
+        return datePart;
+      }
+    }
+
     return `${timePart} · ${datePart}`;
   } catch {
     return "";
