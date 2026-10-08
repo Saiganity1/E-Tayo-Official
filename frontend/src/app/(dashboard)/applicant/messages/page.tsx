@@ -218,13 +218,42 @@ export default function ApplicantMessagesPage() {
           } catch (e) {}
           const isDummyMsg = (m: any) => {
             if (!m) return true;
-            const id = String(m.id || "");
-            const content = String(m.content || "");
-            const appId = String(m.applicationId || "");
-            return id === "seed-msg-1" || appId === "LC-2026-6494" || content.includes("Greetings Mr. Payumo") || content.includes("LC-2026-6494");
+            const id = String(m.id || "").trim();
+            const content = String(m.content || "").trim();
+            const appId = String(m.applicationId || "").trim();
+            const sender = String(m.senderEmail || m.actualSender || "").toLowerCase().trim();
+            const recipient = String(m.recipientEmail || "").toLowerCase().trim();
+
+            if (id === "seed-msg-1" || appId === "LC-2026-6494" || content.includes("Greetings Mr. Payumo") || content.includes("LC-2026-6494")) {
+              return true;
+            }
+
+            if (
+              sender.includes("maria.santos") || recipient.includes("maria.santos") ||
+              sender.includes("citizen.verifier") || recipient.includes("citizen.verifier") ||
+              sender.includes("juan.verifier") || recipient.includes("juan.verifier")
+            ) {
+              return true;
+            }
+
+            const cleanText = content.replace(/\[Ref:\s*[^\]]+\]/gi, "").replace(/\[Attachment:\s*[^\]]+\]/gi, "").trim().toLowerCase();
+            if (!cleanText && !content.includes("[Attachment:")) return true;
+            if (/^(dasdsa|asdasd|asdasdas|asdasd[a-z]*|asd+|qwe+|zxc+|test|testing|tester|sample|trial|check|haha+|hehe+|123+|12345+)$/i.test(cleanText)) {
+              return true;
+            }
+
+            return false;
           };
+
+          const scrubbedLocal = (localMsgs || []).filter(m => !isDummyMsg(m));
+          if (scrubbedLocal.length !== localMsgs.length) {
+            try {
+              localStorage.setItem("etayo_messages_history", JSON.stringify(scrubbedLocal));
+            } catch (e) {}
+          }
+
           const cleanApi = (apiData || []).filter(m => !isDummyMsg(m));
-          const cleanLocal = (localMsgs || []).filter(m => !isDummyMsg(m));
+          const cleanLocal = scrubbedLocal;
           const merged = [...cleanApi];
           cleanLocal.forEach((lm: any) => {
             if (
@@ -235,7 +264,13 @@ export default function ApplicantMessagesPage() {
             }
           });
           const finalized = ensureApplicationConversationMessages(applications || [], email, merged);
-          setMessages(finalized);
+          setMessages(prev => {
+            if (prev.length === finalized.length) {
+              const isSame = prev.every((m, idx) => m.id === finalized[idx]?.id && m.content === finalized[idx]?.content);
+              if (isSame) return prev;
+            }
+            return finalized;
+          });
         };
 
         const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");

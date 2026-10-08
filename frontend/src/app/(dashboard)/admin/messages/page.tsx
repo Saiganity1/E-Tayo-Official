@@ -49,6 +49,96 @@ const CANNED_RESPONSES = [
   }
 ];
 
+// Helper to identify fake or unwanted test accounts
+const isFakeAccount = (email?: string, name?: string): boolean => {
+  const em = (email || "").toLowerCase().trim();
+  const nm = (name || "").toLowerCase().trim();
+  if (
+    !em ||
+    em === "null" ||
+    em === "undefined" ||
+    em === "admin@etayo.gov.ph" ||
+    em === "staff@etayo.gov.ph" ||
+    em === "juan.verifier@etayo.gov.ph" ||
+    em === "citizen.verifier@gmail.com" ||
+    em === "maria.santos@gmail.com" ||
+    em === "maria.santos@example.com" ||
+    em.includes("maria.santos") ||
+    em.includes("citizen@example.com") ||
+    em.includes("business@example.com") ||
+    em.includes("juan.delacruz") ||
+    nm === "maria santos" ||
+    nm === "juan verifier" ||
+    nm === "admin user" ||
+    nm === "unknown applicant" ||
+    nm === "null"
+  ) {
+    return true;
+  }
+  return false;
+};
+
+// Canonical mapping for authentic citizen emails to deduplicate twins
+const normalizeContactEmail = (email?: string): string => {
+  if (!email) return "";
+  const em = email.toLowerCase().trim();
+  if (em === "randreb.david@example.com") return "david.randreb@gmail.com";
+  if (em === "davesicat@gmail.com") return "mdpsicat.student@ua.edu.ph";
+  if (em === "kathleen.abarquez@example.com") return "kathleenabarquez@gmail.com";
+  return em;
+};
+
+// Filter out dummy fixture messages, messages to/from fake accounts, and gibberish spam
+const isDummyMsg = (m: any): boolean => {
+  if (!m) return true;
+  const id = String(m.id || "").trim();
+  const content = String(m.content || "").trim();
+  const appId = String(m.applicationId || "").trim();
+  const sender = String(m.senderEmail || m.actualSender || "").toLowerCase().trim();
+  const recipient = String(m.recipientEmail || "").toLowerCase().trim();
+
+  // 1. Obsolete seed or fake ID fixtures
+  if (
+    id === "seed-msg-1" ||
+    appId === "LC-2026-6494" ||
+    content.includes("Greetings Mr. Payumo") ||
+    content.includes("LC-2026-6494")
+  ) {
+    return true;
+  }
+
+  // 2. Messages associated with fake accounts
+  if (
+    isFakeAccount(sender) ||
+    isFakeAccount(recipient) ||
+    sender.includes("maria.santos") || recipient.includes("maria.santos") ||
+    sender.includes("citizen.verifier") || recipient.includes("citizen.verifier") ||
+    sender.includes("juan.verifier") || recipient.includes("juan.verifier")
+  ) {
+    return true;
+  }
+
+  // 3. Gibberish / test spam messages
+  const cleanText = content
+    .replace(/\[Ref:\s*[^\]]+\]/gi, "")
+    .replace(/\[Attachment:\s*[^\]]+\]/gi, "")
+    .trim()
+    .toLowerCase();
+
+  if (!cleanText && !content.includes("[Attachment:")) {
+    return true;
+  }
+
+  // Common random mash or test strings: dasdsa, asdasd, asdasdas, asd, qwe, zxc, test, etc.
+  if (
+    /^(dasdsa|asdasd|asdasdas|asdasd[a-z]*|asd+|qwe+|zxc+|test|testing|tester|sample|trial|check|haha+|hehe+|123+|12345+)$/i.test(cleanText)
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 export default function AdminMessagesPage() {
   const { applications, updateApplication, refreshApplications } = usePermitContext();
 
@@ -78,6 +168,7 @@ export default function AdminMessagesPage() {
   const [activeThreadId, setActiveThreadId] = useState<string>("all");
   const [showThreadDropdown, setShowThreadDropdown] = useState(false);
   const threadDropdownRef = useRef<HTMLDivElement>(null);
+  const currentApplicantEmailRef = useRef<string | null>(null);
 
   // Close thread dropdown when clicking outside
   useEffect(() => {
@@ -127,16 +218,21 @@ export default function AdminMessagesPage() {
 
   // Helper to resolve applicant metadata from applications
   const getApplicantData = (email: string) => {
-    const cleanEmail = email.toLowerCase().trim();
-    // 1. Direct match by applicantEmail
-    let matchingApps = applications.filter(
-      a => a.applicantEmail && a.applicantEmail.toLowerCase().trim() === cleanEmail
-    );
+    const rawEmail = (email || "").toLowerCase().trim();
+    const canonicalEmail = normalizeContactEmail(rawEmail);
+
+    // 1. Direct match by applicantEmail (raw, canonical, or normalized)
+    let matchingApps = applications.filter(a => {
+      if (!a.applicantEmail) return false;
+      const aEm = a.applicantEmail.toLowerCase().trim();
+      const aNorm = normalizeContactEmail(aEm);
+      return aEm === rawEmail || aNorm === canonicalEmail || aEm === canonicalEmail;
+    });
     let primaryApp = matchingApps[0];
 
     // 2. If no direct email match, try matching by name or email handle
     if (matchingApps.length === 0) {
-      const cleanPrefix = cleanEmail.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+      const cleanPrefix = canonicalEmail.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
       const appByName = applications.find(a => {
         const aName = (a.applicantName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
         return aName && (aName.includes(cleanPrefix) || cleanPrefix.includes(aName));
@@ -160,7 +256,16 @@ export default function AdminMessagesPage() {
       }
     }
 
-    const name = primaryApp?.applicantName || cleanEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    // Strict deduplication of applications by ID to avoid inflated permit counts
+    const uniqueAppMap = new Map<string, any>();
+    matchingApps.forEach(a => {
+      if (a && a.id && !uniqueAppMap.has(a.id)) {
+        uniqueAppMap.set(a.id, a);
+      }
+    });
+    matchingApps = Array.from(uniqueAppMap.values());
+
+    const name = primaryApp?.applicantName || canonicalEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     const phone = primaryApp?.applicantPhone || "Not provided";
     const address = primaryApp?.applicantAddress || primaryApp?.projectAddress || "Santo Tomas, Pampanga";
     return {
@@ -170,6 +275,43 @@ export default function AdminMessagesPage() {
       applications: matchingApps,
       latestStatus: primaryApp?.status || null
     };
+  };
+
+  // Helper to deduplicate contacts by citizen name / authentic email
+  const deduplicateContacts = (emails: string[]): string[] => {
+    const seenNames = new Map<string, string>(); // normalized name -> best email
+    const seenEmails = new Set<string>();
+    const result: string[] = [];
+
+    for (const raw of emails) {
+      const email = normalizeContactEmail(raw);
+      if (!email || isFakeAccount(email) || seenEmails.has(email)) continue;
+
+      const data = getApplicantData(email);
+      if (isFakeAccount(email, data.name)) continue;
+
+      const normName = (data.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+      if (normName && seenNames.has(normName)) {
+        const existingEmail = seenNames.get(normName)!;
+        if (existingEmail.endsWith("@example.com") && !email.endsWith("@example.com")) {
+          seenNames.set(normName, email);
+          seenEmails.delete(existingEmail);
+          seenEmails.add(email);
+          const idx = result.indexOf(existingEmail);
+          if (idx !== -1) result[idx] = email;
+        }
+        continue;
+      }
+
+      if (normName) {
+        seenNames.set(normName, email);
+      }
+      seenEmails.add(email);
+      result.push(email);
+    }
+
+    return result;
   };
 
   // Fetch unique conversations on load with strict deduplication
@@ -254,21 +396,23 @@ export default function AdminMessagesPage() {
         }
       } catch (e) {}
 
-      // Unique set of emails
-      let uniqueEmails = Array.from(new Set([
+      // Deduplicated set of authentic citizen emails
+      const rawCandidates = [
         ...serverContacts, 
         ...appApplicants, 
         ...cachedAppApplicants, 
         ...registeredApplicants, 
         ...localApplicants
-      ])).filter(Boolean);
+      ];
 
-      setContacts(uniqueEmails);
+      const cleanUniqueEmails = deduplicateContacts(rawCandidates);
+      setContacts(cleanUniqueEmails);
 
       // If no applicant currently selected, select the first one
       setApplicantEmail(curr => {
-        if (curr && uniqueEmails.includes(curr.toLowerCase())) return curr.toLowerCase();
-        return uniqueEmails.length > 0 ? uniqueEmails[0] : null;
+        const curNorm = curr ? normalizeContactEmail(curr) : null;
+        if (curNorm && cleanUniqueEmails.includes(curNorm)) return curNorm;
+        return cleanUniqueEmails.length > 0 ? cleanUniqueEmails[0] : null;
       });
     } catch (err) {
       console.error("Failed to load conversations", err);
@@ -436,7 +580,12 @@ export default function AdminMessagesPage() {
   // Fetch chat history whenever selected applicant changes, with polling
   useEffect(() => {
     if (applicantEmail) {
-      const cleanEmail = applicantEmail.toLowerCase().trim();
+      const cleanEmail = normalizeContactEmail(applicantEmail);
+      if (currentApplicantEmailRef.current !== cleanEmail) {
+        currentApplicantEmailRef.current = cleanEmail;
+        setActiveThreadId("all");
+      }
+
       const staffInbox = "staff@etayo.gov.ph";
       const applicantData = getApplicantData(cleanEmail);
       const userApps = applicantData.applications;
@@ -449,13 +598,13 @@ export default function AdminMessagesPage() {
           if (raw) localMsgs = JSON.parse(raw);
         } catch (e) {}
 
-        const isDummyMsg = (m: any) => {
-          if (!m) return true;
-          const id = String(m.id || "");
-          const content = String(m.content || "");
-          const appId = String(m.applicationId || "");
-          return id === "seed-msg-1" || appId === "LC-2026-6494" || content.includes("Greetings Mr. Payumo") || content.includes("LC-2026-6494");
-        };
+        // Scrub fake and spam messages from localStorage permanently
+        const scrubbedLocal = (localMsgs || []).filter(m => !isDummyMsg(m));
+        if (scrubbedLocal.length !== localMsgs.length) {
+          try {
+            localStorage.setItem("etayo_messages_history", JSON.stringify(scrubbedLocal));
+          } catch (e) {}
+        }
 
         // Filter out any messages that explicitly reference a permit belonging to another citizen
         const isForeignPermit = (m: any) => {
@@ -468,12 +617,12 @@ export default function AdminMessagesPage() {
         };
 
         const cleanApi = (apiData || []).filter(m => !isDummyMsg(m) && !isForeignPermit(m));
-        const cleanLocal = (localMsgs || []).filter(m => !isDummyMsg(m) && !isForeignPermit(m));
+        const cleanLocal = scrubbedLocal.filter(m => !isForeignPermit(m));
         const merged = [...cleanApi];
 
         cleanLocal.forEach((lm: any) => {
-          const r = (lm.recipientEmail || "").toLowerCase().trim();
-          const s = (lm.senderEmail || "").toLowerCase().trim();
+          const r = normalizeContactEmail((lm.recipientEmail || "").trim());
+          const s = normalizeContactEmail((lm.senderEmail || "").trim());
           const mAppId = lm.applicationId || getMessageThreadId(lm);
 
           const isDirectEmail = r === cleanEmail || s === cleanEmail;
@@ -490,8 +639,15 @@ export default function AdminMessagesPage() {
 
         // Strictly synthesize official notices ONLY for this applicant's permits
         const finalized = ensureApplicationConversationMessages(userApps, cleanEmail, merged);
-        setMessages(finalized);
-        setActiveThreadId("all");
+
+        // Only update messages state when count or contents actually change to eliminate lag
+        setMessages(prev => {
+          if (prev.length === finalized.length) {
+            const isIdentical = prev.every((m, idx) => m.id === finalized[idx]?.id && m.content === finalized[idx]?.content);
+            if (isIdentical) return prev;
+          }
+          return finalized;
+        });
       };
 
       const fetchHistory = async () => {
@@ -518,7 +674,7 @@ export default function AdminMessagesPage() {
       const interval = setInterval(fetchHistory, 3000);
       return () => clearInterval(interval);
     }
-  }, [applicantEmail, applications]);
+  }, [applicantEmail]);
 
   // Synchronize official notices and payment messages for any approved applications
   useEffect(() => {
@@ -1120,7 +1276,11 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
                   <div
                     key={idx}
                     onClick={() => {
-                      setApplicantEmail(email);
+                      const norm = normalizeContactEmail(email);
+                      if (applicantEmail?.toLowerCase().trim() !== norm) {
+                        setActiveThreadId("all");
+                        setApplicantEmail(norm);
+                      }
                       setMobileView("chat");
                     }}
                     style={{

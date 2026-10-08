@@ -271,7 +271,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
     });
 };
 
-const STORAGE_VERSION = "etayo_clean_db_v9";
+const STORAGE_VERSION = "etayo_clean_db_v10";
 
 if (typeof window !== "undefined") {
   try {
@@ -282,22 +282,8 @@ if (typeof window !== "undefined") {
       localStorage.removeItem("etayo_notifications");
       localStorage.removeItem("etayo_unread_messages_count");
 
-      // Purge fake applications from local cache and retain only authentic applications
-      const currentCache = localStorage.getItem("etayo_cached_applications");
-      if (currentCache) {
-        try {
-          const parsed = JSON.parse(currentCache);
-          if (Array.isArray(parsed)) {
-            const purged = parsed.filter(a => !isDummyApp(a));
-            const toSave = purged.length > 0 ? purged : INITIAL_APPLICATIONS;
-            localStorage.setItem("etayo_cached_applications", JSON.stringify(toSave));
-          }
-        } catch (e) {}
-      } else {
-        try {
-          localStorage.setItem("etayo_cached_applications", JSON.stringify(INITIAL_APPLICATIONS));
-        } catch (e) {}
-      }
+      // Reset cached applications cleanly using authentic INITIAL_APPLICATIONS
+      localStorage.setItem("etayo_cached_applications", JSON.stringify(INITIAL_APPLICATIONS));
       localStorage.setItem("etayo_storage_version", STORAGE_VERSION);
     }
   } catch (e) {}
@@ -897,6 +883,22 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           bfpUploadedFileName: mResolvedBfpName,
         };
       });
+
+      // Normalize legacy emails, purge dummy applications, and deduplicate by application ID
+      const appMap = new Map<string, PermitApplication>();
+      mergedApps.forEach(a => {
+        if (!a || !a.id || isDummyApp(a)) return;
+        const normEmail = (a.applicantEmail || "").toLowerCase().trim();
+        if (normEmail === "randreb.david@example.com") a.applicantEmail = "david.randreb@gmail.com";
+        else if (normEmail === "davesicat@gmail.com") a.applicantEmail = "mdpsicat.student@ua.edu.ph";
+        else if (normEmail === "kathleen.abarquez@example.com") a.applicantEmail = "kathleenabarquez@gmail.com";
+        
+        const cleanId = a.id.trim();
+        if (!appMap.has(cleanId)) {
+          appMap.set(cleanId, a);
+        }
+      });
+      mergedApps = Array.from(appMap.values());
 
       mergedApps.sort(compareAppsNewestFirst);
       setApplications(prev => {
