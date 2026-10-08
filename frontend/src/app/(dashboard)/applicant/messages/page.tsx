@@ -47,29 +47,29 @@ const MANG_TOMAS = OBO_ADMIN;
 
 const CANNED_INQUIRIES = [
   {
-    id: "docs_received",
-    label: "Documents Verified",
-    text: "Good day! May I clarify if our submitted permit requirements have been formally received and verified by technical staff?"
+    id: "followup_status",
+    label: "Follow Up Status",
+    text: "Good day! May I follow up on the evaluation status of our permit application?"
+  },
+  {
+    id: "requirements",
+    label: "Requirements Inquiry",
+    text: "Good day! Are there any additional documents or technical clearances required for our project?"
   },
   {
     id: "inspection_sched",
-    label: "Inspection Notice",
-    text: "Notice inquiry: When is the next scheduled on-site municipal engineering and zoning inspection for our project?"
+    label: "Inspection Schedule",
+    text: "May we ask about the scheduled date for our on-site municipal engineering and zoning inspection?"
   },
   {
-    id: "deficiency",
-    label: "Incomplete Items",
-    text: "Good day. We have reviewed the checklist remarks and are uploading the updated engineering plans and clearances."
+    id: "order_payment",
+    label: "Order of Payment",
+    text: "Good day! May we confirm if our Order of Payment has been finalized for treasury payment?"
   },
   {
-    id: "approved",
-    label: "Clearance Approved",
-    text: "Thank you for the evaluation update! May we confirm if our Order of Payment has been endorsed to the treasury?"
-  },
-  {
-    id: "payment",
-    label: "Payment Ready",
-    text: "Official Payment Notice: We have settled the required regulatory fees at the Municipal Treasury. Attached is our receipt."
+    id: "payment_settled",
+    label: "Payment Submitted",
+    text: "Official Notice: We have settled the required regulatory fees at the Municipal Treasury. Attached is our receipt."
   }
 ];
 
@@ -646,17 +646,23 @@ export default function ApplicantMessagesPage() {
 
   // Filter messages for active thread (unified timeline for all linked applications in the project)
   const activeThreadMessages = useMemo(() => {
-    const targetIds = activeThread?.applicationIds && activeThread.applicationIds.length > 0
-      ? activeThread.applicationIds
-      : (activeThreadId ? [activeThreadId] : []);
+    const targetIds = Array.from(new Set([
+      ...(activeThread?.applicationIds || []),
+      ...(activeThread?.id ? [activeThread.id] : []),
+      ...(activeThreadId ? [activeThreadId] : [])
+    ])).filter(Boolean);
 
     if (targetIds.length === 0) return [];
 
     let threadMsgs = messages.filter(msg => {
       const msgTid = getMessageThreadId(msg);
-      if (targetIds.includes(msgTid)) return true;
-      if (msg.applicationId && targetIds.includes(msg.applicationId)) return true;
-      if (msg.content && targetIds.some(tid => msg.content.includes(tid))) return true;
+      if (msgTid && targetIds.some(tid => tid.toLowerCase() === msgTid.toLowerCase())) return true;
+      if (msg.applicationId && targetIds.some(tid => tid.toLowerCase() === String(msg.applicationId).toLowerCase())) return true;
+      if (msg.content && targetIds.some(tid => msg.content.toLowerCase().includes(tid.toLowerCase()))) return true;
+      // Allow optimistic/local messages for active thread
+      if (msg.id?.startsWith("local-") && (!msg.applicationId || msg.applicationId === "all" || targetIds.includes(msg.applicationId))) {
+        return true;
+      }
       return false;
     });
 
@@ -701,7 +707,17 @@ export default function ApplicantMessagesPage() {
     });
   }, [messages, activeThreadId, activeThread, currentUserEmail]);
 
-  const displayedMessages = activeThreadMessages;
+  const displayedMessages = useMemo(() => {
+    if (!selectedPermitTab || selectedPermitTab === "all") {
+      return activeThreadMessages;
+    }
+    return activeThreadMessages.filter(msg => {
+      const tid = getMessageThreadId(msg);
+      return tid === selectedPermitTab || 
+        (msg.applicationId && msg.applicationId === selectedPermitTab) || 
+        (msg.content && msg.content.includes(selectedPermitTab));
+    });
+  }, [activeThreadMessages, selectedPermitTab, knownAppIds]);
 
   // Filter conversation threads by quick filter pills and search query
   const filteredConversationThreads = useMemo(() => {
@@ -752,39 +768,54 @@ export default function ApplicantMessagesPage() {
     }
   };
 
-  // Send message handler
+  // Send message handler (Instant, functional, responsive)
   const handleSendMessage = (contentToSend?: string) => {
     const rawContent = (contentToSend !== undefined ? contentToSend : inputMessage).trim();
     if (!rawContent && !attachedFile) return;
 
-    let finalContent = rawContent;
     const targetRefId = activeApp?.id || activeThread?.id || activeThreadId;
     const projName = activeThread?.title || activeApp?.projectName || "Permit Project";
-    finalContent = `[Ref: ${targetRefId} - ${projName}] ${finalContent}`;
+    
+    // Avoid double prefixing [Ref: ...]
+    let finalContent = rawContent;
+    if (!finalContent.startsWith("[Ref:")) {
+      finalContent = `[Ref: ${targetRefId} - ${projName}] ${finalContent}`;
+    }
 
     if (attachedFile) {
       finalContent = `${finalContent}\n[Attachment: ${attachedFile.name}|${attachedFile.url}]`;
     }
 
+    // Resolve authoritative sender email
+    const effectiveSender = currentUserEmail || 
+      (typeof window !== "undefined" ? (JSON.parse(localStorage.getItem("user") || "{}").email || "applicant@etayo.gov.ph") : "applicant@etayo.gov.ph");
+
     const payload = {
-      senderEmail: currentUserEmail,
+      senderEmail: effectiveSender,
       recipientEmail: MANG_TOMAS.email,
       content: finalContent,
       applicationId: targetRefId
     };
 
-    const targetAppForPayment = activeThread?.applications.find(a => (a.status === "approved" || isApplicationApproved(a)) && !a.paymentVerified) 
+    const targetAppForPayment = activeThread?.applications?.find(a => (a.status === "approved" || isApplicationApproved(a)) && !a.paymentVerified) 
       || activeApp 
       || activeThread?.primaryApp;
 
     const localMsg: SystemPermitMessage = {
       id: `local-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      senderEmail: currentUserEmail,
+      senderEmail: effectiveSender,
       recipientEmail: MANG_TOMAS.email,
       content: finalContent,
       applicationId: targetRefId,
       timestamp: new Date().toISOString()
     };
+
+    // Immediately clear input for instant snappy response
+    setInputMessage("");
+    setAttachedFile(null);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
 
     // Immediately persist locally so chats NEVER disappear on reload or re-render
     try {
@@ -833,19 +864,13 @@ export default function ApplicantMessagesPage() {
             } as any);
           } catch (e) {}
         }
-
-        setInputMessage("");
-        setAttachedFile(null);
-        if (textareaRef.current) {
-          textareaRef.current.style.height = "auto";
-        }
       } catch (err) {
         console.error("Failed to send message via WebSocket", err);
       } finally {
         setIsSending(false);
       }
     } else {
-      // Fallback
+      // Fallback HTTP dispatch
       dispatchPermitMessage(payload).then(newMsg => {
         setMessages(prev => {
           if (prev.some(m => m.id === newMsg.id || m.id === localMsg.id)) {
@@ -868,12 +893,6 @@ export default function ApplicantMessagesPage() {
               datePaymentSubmitted: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
             } as any);
           } catch (e) {}
-        }
-
-        setInputMessage("");
-        setAttachedFile(null);
-        if (textareaRef.current) {
-          textareaRef.current.style.height = "auto";
         }
       });
     }
@@ -990,11 +1009,25 @@ export default function ApplicantMessagesPage() {
 
       const receiptMsgContent = `[Ref: ${targetId} - Payment Receipt] Official payment settled for ${permitTitle} (${targetId}) - Order of Payment Ref: ${opNo}, Amount: PHP ${assessedAmt}.\nOfficial Receipt / Reference: ${orRef}.\nAttached is the photo of my payment receipt for municipal verification.\n[Attachment: ${receiptModalFile.name}|${receiptModalFile.dataUrl}]`;
 
+      const effectiveSender = currentUserEmail || 
+        (typeof window !== "undefined" ? (JSON.parse(localStorage.getItem("user") || "{}").email || "applicant@etayo.gov.ph") : "applicant@etayo.gov.ph");
+
+      // Optimistic message in chat
+      const localMsg: SystemPermitMessage = {
+        id: `local-rcpt-${Date.now()}`,
+        applicationId: targetId,
+        recipientEmail: MANG_TOMAS.email,
+        senderEmail: effectiveSender,
+        content: receiptMsgContent,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, localMsg]);
+
       // 1. Dispatch message
       await dispatchPermitMessage({
         applicationId: targetId,
         recipientEmail: MANG_TOMAS.email,
-        senderEmail: currentUserEmail,
+        senderEmail: effectiveSender,
         content: receiptMsgContent
       });
 
@@ -1183,7 +1216,7 @@ export default function ApplicantMessagesPage() {
       {/* ========================================================================= */}
       <div className={`messages-workspace-grid ${mobileView === "chat" ? "show-chat" : "show-list"}`} style={{
         display: "grid",
-        gridTemplateColumns: "300px 1fr",
+        gridTemplateColumns: showDossier ? "300px 1fr 340px" : "300px 1fr",
         gap: "1.25rem",
         height: "calc(100vh - 215px)",
         minHeight: "680px",
@@ -1602,29 +1635,29 @@ export default function ApplicantMessagesPage() {
             </button>
           </div>
 
-          {/* SLIM NOTICE BANNERS (Order of Payment & Clearances Released) */}
+          {/* ACTION BAR: CONDITIONAL (ONLY IF UNRELEASED PERMIT HAS PENDING PAYMENT) */}
           {(() => {
-            const approvedApps = (activeThread.applications || []).filter(a => a.status === "approved" || isApplicationApproved(a));
-            if (approvedApps.length === 0 && activeApp && (activeApp.status === "approved" || isApplicationApproved(activeApp))) {
-              approvedApps.push(activeApp);
-            }
-            if (approvedApps.length === 0) return null;
+            const pendingPaymentApps = (activeThread.applications || []).filter(app => {
+              const isReleased = app.status === "released" || isApplicationReleased(app);
+              const isPaid = app.paymentStatus === "paid" || app.paymentVerified;
+              const isApproved = app.status === "approved" || isApplicationApproved(app);
+              return isApproved && !isReleased && !isPaid;
+            });
 
-            return approvedApps.map(app => {
+            if (pendingPaymentApps.length === 0) return null;
+
+            return pendingPaymentApps.map(app => {
               const isLC = isLocationalClearance(app);
               const feeNum = getAuthoritativePermitFee(app, app.id);
               const cleanSeq = app?.id ? app.id.replace(/^[A-Za-z]+-/i, "") : "2026";
               const storedOp = typeof window !== "undefined" ? (localStorage.getItem(`etayo_op_${app.id}`) || localStorage.getItem(`etayo_op_${String(app.id).toLowerCase()}`)) : null;
               const opNo = (app as any).orderOfPaymentNo || storedOp || `OP-${cleanSeq}`;
               const isConfirmed = Boolean((app as any).userConfirmedPayment);
-              const permitLabel = isLC ? "Locational Clearance (MPDO)" : "Building Permit (OBO PD 1096)";
-              const approvalDate = (app as any).dateApproved || (app as any).permitIssuedDate || app.dateSubmitted || new Date();
-              const bannerDate = formatPhilippineDate(approvalDate);
-              const bannerTime = formatPhilippineTime(approvalDate);
+              const permitLabel = isLC ? "Locational Clearance" : "Building Permit";
 
               return (
                 <div 
-                  key={app.id}
+                  key={`pending-pay-${app.id}`}
                   style={{
                     padding: "7px 1.25rem",
                     background: "#f0f7ff",
@@ -1639,35 +1672,18 @@ export default function ApplicantMessagesPage() {
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                     <CreditCard size={15} color="#0038A8" />
-                    <span style={{ 
-                      fontWeight: "800", 
-                      color: "#0038A8" 
-                    }}>
-                      {permitLabel} Order of Payment: PHP {feeNum.toLocaleString()} ({opNo})
-                    </span>
-                    <span style={{
-                      background: "#ffffff",
-                      color: "#0038A8",
-                      border: "1px solid #bfdbfe",
-                      padding: "2px 7px",
-                      borderRadius: "5px",
-                      fontSize: "0.72rem",
-                      fontWeight: "700",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px"
-                    }}>
-                      <Calendar size={11} color="#0038A8" /> {bannerDate} • <Clock size={11} color="#0038A8" /> {bannerTime}
+                    <span style={{ fontWeight: "800", color: "#0038A8" }}>
+                      {permitLabel} ({app.id}) • Order of Payment: PHP {feeNum.toLocaleString()} ({opNo})
                     </span>
                     <span style={{ color: "#94a3b8" }}>•</span>
                     <span style={{ color: "#334155" }}>
                       {isConfirmed
-                        ? `Receipt submitted for ${app.id}. Awaiting municipal verification.`
-                        : `Settle fee for ${app.id} at Municipal Treasury and attach receipt photo here.`}
+                        ? `Receipt uploaded for ${app.id}. Awaiting municipal verification.`
+                        : `Settle fee at Municipal Treasury and attach receipt photo.`}
                     </span>
                   </div>
 
-                  {!isConfirmed && (
+                  {!isConfirmed ? (
                     <button
                       type="button"
                       onClick={() => receiptFileInputRef.current?.click()}
@@ -1688,81 +1704,18 @@ export default function ApplicantMessagesPage() {
                       <ImageIcon size={12} />
                       <span>Upload Receipt</span>
                     </button>
-                  )}
-                </div>
-              );
-            });
-          })()}
-
-          {/* PERMIT RELEASED BANNERS */}
-          {(() => {
-            const releasedApps = (activeThread.applications || []).filter(a => a.status === "released" || isApplicationReleased(a));
-            if (releasedApps.length === 0 && activeApp && (activeApp.status === "released" || isApplicationReleased(activeApp))) {
-              releasedApps.push(activeApp);
-            }
-            if (releasedApps.length === 0) return null;
-
-            return releasedApps.map(app => {
-              const isLC = isLocationalClearance(app);
-              const label = isLC ? "Official Locational Clearance Released" : "Official Building Permit Released (PD 1096)";
-              const relDate = (app as any).dateReleased || (app as any).dateApproved || new Date();
-              const relDateStr = formatPhilippineDate(relDate);
-              const relTimeStr = formatPhilippineTime(relDate);
-              return (
-                <div 
-                  key={`rel-${app.id}`}
-                  style={{
-                    padding: "7px 1.25rem",
-                    background: "#f0f7ff",
-                    borderBottom: "1px solid #bfdbfe",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                    fontSize: "0.8rem",
-                    flexWrap: "wrap"
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <CheckCircle2 size={16} color="#0038A8" />
-                    <span style={{ fontWeight: "700", color: "#0038A8" }}>
-                      {label} • {app.id} (OR #{(app as any).officialReceiptNo || "Verified"})
-                    </span>
+                  ) : (
                     <span style={{
-                      background: "#ffffff",
-                      color: "#0038A8",
-                      border: "1px solid #bfdbfe",
-                      padding: "2px 7px",
-                      borderRadius: "5px",
                       fontSize: "0.72rem",
-                      fontWeight: "700",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px"
-                    }}>
-                      <Calendar size={11} color="#0038A8" /> {relDateStr} • <Clock size={11} color="#0038A8" /> {relTimeStr}
-                    </span>
-                    <span style={{ color: "#94a3b8" }}>•</span>
-                    <span style={{ color: "#334155" }}>Clearances ready for download.</span>
-                  </div>
-                  <Link
-                    href={`/applicant/track/${encodeURIComponent(app.id)}`}
-                    style={{
-                      background: "#0038A8",
-                      color: "white",
-                      padding: "4px 10px",
+                      color: "#166534",
+                      background: "#dcfce7",
+                      padding: "2px 8px",
                       borderRadius: "6px",
-                      fontSize: "0.74rem",
-                      fontWeight: "700",
-                      textDecoration: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px"
-                    }}
-                  >
-                    <span>View Downloads</span>
-                    <ExternalLink size={11} />
-                  </Link>
+                      fontWeight: "700"
+                    }}>
+                      Receipt Submitted
+                    </span>
+                  )}
                 </div>
               );
             });
@@ -1845,7 +1798,29 @@ export default function ApplicantMessagesPage() {
 
             {/* MESSAGES LIST */}
             {displayedMessages.map((msg, idx) => {
-              const isMe = msg.senderEmail === currentUserEmail;
+              const isStaffOrAdminSender = (email?: string, name?: string) => {
+                const e = (email || "").toLowerCase().trim();
+                const n = (name || "").toLowerCase().trim();
+                return (
+                  e.includes("staff@etayo.gov.ph") ||
+                  e.includes("admin@etayo.gov.ph") ||
+                  e === "obo_admin" ||
+                  e === "obo_staff" ||
+                  n.includes("building official") ||
+                  n.includes("obo staff") ||
+                  n.includes("gilbert cruz") ||
+                  n.includes("mang tomas")
+                );
+              };
+
+              const senderEmailNorm = (msg.senderEmail || "").toLowerCase().trim();
+              const currentEmailNorm = (currentUserEmail || "").toLowerCase().trim();
+
+              const isMe = Boolean(
+                (currentEmailNorm && senderEmailNorm === currentEmailNorm) ||
+                (senderEmailNorm && !isStaffOrAdminSender(senderEmailNorm, msg.actualSender) && (isStaffOrAdminSender(msg.recipientEmail) || !msg.recipientEmail)) ||
+                (!isStaffOrAdminSender(msg.senderEmail, msg.actualSender) && String(msg.id || "").startsWith("local-"))
+              );
               const timeStr = formatPhilippineTime(msg.timestamp);
 
               return (
@@ -1991,7 +1966,11 @@ export default function ApplicantMessagesPage() {
                 type="button"
                 onClick={() => {
                   setInputMessage(cq.text);
-                  if (textareaRef.current) textareaRef.current.focus();
+                  if (textareaRef.current) {
+                    textareaRef.current.focus();
+                    textareaRef.current.style.height = "auto";
+                    textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 130)}px`;
+                  }
                 }}
                 style={{
                   background: "#ffffff",
