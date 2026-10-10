@@ -2186,7 +2186,13 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
 
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
-                          <h3 style={{ fontSize: "1.25rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                          <h3 style={{ 
+                            fontSize: "1.25rem", 
+                            fontWeight: "800", 
+                            color: isExpanded ? "#1d4ed8" : "#0f172a", 
+                            margin: 0,
+                            transition: "color 0.2s ease"
+                          }}>
                             {dossier.projectName}
                           </h3>
                           {(() => {

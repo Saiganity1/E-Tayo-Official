@@ -860,8 +860,12 @@ export default function StaffEvaluationsPage() {
                   style={{
                     background: "white",
                     borderRadius: "18px",
-                    border: hasPending ? "1.5px solid #cbd5e1" : "1.5px solid #e2e8f0",
-                    boxShadow: hasPending ? "0 4px 16px -2px rgba(0,0,0,0.05)" : "0 2px 6px rgba(0,0,0,0.02)",
+                    border: isExpanded 
+                      ? "1.5px solid #3b82f6" 
+                      : (hasPending ? "1.5px solid #cbd5e1" : "1.5px solid #e2e8f0"),
+                    boxShadow: isExpanded 
+                      ? "0 8px 24px -4px rgba(37,99,235,0.12)" 
+                      : (hasPending ? "0 4px 16px -2px rgba(0,0,0,0.05)" : "0 2px 6px rgba(0,0,0,0.02)"),
                     overflow: "hidden",
                     transition: "all 0.2s ease"
                   }}
@@ -871,14 +875,17 @@ export default function StaffEvaluationsPage() {
                     onClick={() => toggleDossier(dossier.id)}
                     style={{
                       padding: "1.25rem 1.75rem",
-                      background: hasPending ? "linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)" : "#ffffff",
+                      background: isExpanded 
+                        ? "linear-gradient(180deg, #eff6ff 0%, #ffffff 100%)" 
+                        : (hasPending ? "linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)" : "#ffffff"),
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
                       flexWrap: "wrap",
                       gap: "1.25rem",
-                      borderBottom: isExpanded ? "1px solid #e2e8f0" : "none"
+                      borderBottom: isExpanded ? "1.5px solid #bfdbfe" : "none",
+                      transition: "all 0.2s ease"
                     }}
                   >
                     {/* Left: Project & Applicant Identification */}
@@ -887,20 +894,27 @@ export default function StaffEvaluationsPage() {
                         width: "48px",
                         height: "48px",
                         borderRadius: "14px",
-                        background: hasPending ? "#eff6ff" : "#f1f5f9",
-                        color: hasPending ? "#1d4ed8" : "#475569",
+                        background: isExpanded ? "#2563eb" : (hasPending ? "#eff6ff" : "#f1f5f9"),
+                        color: isExpanded ? "#ffffff" : (hasPending ? "#1d4ed8" : "#475569"),
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         flexShrink: 0,
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.04)"
+                        boxShadow: isExpanded ? "0 4px 12px rgba(37,99,235,0.28)" : "0 2px 6px rgba(0,0,0,0.04)",
+                        transition: "all 0.2s ease"
                       }}>
                         <Building2 size={24} />
                       </div>
 
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "3px" }}>
-                          <h3 style={{ fontSize: "1.2rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                          <h3 style={{ 
+                            fontSize: "1.2rem", 
+                            fontWeight: "800", 
+                            color: isExpanded ? "#1d4ed8" : "#0f172a", 
+                            margin: 0,
+                            transition: "color 0.2s ease"
+                          }}>
                             {dossier.projectName}
                           </h3>
                           <span style={{
@@ -987,13 +1001,14 @@ export default function StaffEvaluationsPage() {
                         width: "32px", 
                         height: "32px", 
                         borderRadius: "8px", 
-                        background: "#f1f5f9", 
+                        background: isExpanded ? "#eff6ff" : "#f1f5f9", 
                         display: "flex", 
                         alignItems: "center", 
-                        justifyContent: "center",
-                        color: "#475569",
+                        justifyContent: "center", 
+                        color: isExpanded ? "#2563eb" : "#475569",
+                        border: isExpanded ? "1px solid #bfdbfe" : "none",
                         transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                        transition: "transform 0.2s ease"
+                        transition: "all 0.2s ease"
                       }}>
                         <ChevronDown size={18} />
                       </div>
@@ -1003,8 +1018,8 @@ export default function StaffEvaluationsPage() {
                   {/* EXPANDED DOSSIER SUBMISSIONS LIST */}
                   {isExpanded && (
                     <div style={{ background: "#f8fafc", padding: "1rem 1.5rem" }}>
-                      <div style={{ fontSize: "0.8rem", fontWeight: "800", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <Layers size={14} /> Permits & Submissions in this Project Dossier ({dossier.applications.length})
+                      <div style={{ fontSize: "0.8rem", fontWeight: "800", color: isExpanded ? "#1d4ed8" : "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <Layers size={14} color={isExpanded ? "#2563eb" : "#64748b"} /> Permits & Submissions in this Project Dossier ({dossier.applications.length})
                       </div>
 
                       <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
