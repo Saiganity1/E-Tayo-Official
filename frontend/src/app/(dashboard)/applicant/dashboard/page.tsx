@@ -237,10 +237,13 @@ export default function ApplicantDashboard() {
   }, [filteredApps]);
 
   const toggleDossier = (dossierId: string) => {
-    setExpandedDossiers(prev => ({
-      ...prev,
-      [dossierId]: !prev[dossierId]
-    }));
+    setExpandedDossiers(prev => {
+      const isCurrentlyOpen = Boolean(prev[dossierId]);
+      if (isCurrentlyOpen) {
+        return {};
+      }
+      return { [dossierId]: true };
+    });
   };
 
   const isDossierExpanded = (dossierId: string) => {

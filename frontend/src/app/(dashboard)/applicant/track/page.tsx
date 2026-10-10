@@ -738,10 +738,13 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
   }, [filteredApps]);
 
   const toggleDossier = (dossierId: string) => {
-    setExpandedDossiers(prev => ({
-      ...prev,
-      [dossierId]: !prev[dossierId]
-    }));
+    setExpandedDossiers(prev => {
+      const isCurrentlyOpen = Boolean(prev[dossierId]);
+      if (isCurrentlyOpen) {
+        return {};
+      }
+      return { [dossierId]: true };
+    });
   };
 
   const isDossierExpanded = (dossierId: string) => {
