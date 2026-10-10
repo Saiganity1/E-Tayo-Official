@@ -123,7 +123,7 @@ export default function AdminUsersPage() {
         boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
         borderRadius: "20px",
         padding: "1.25rem 1.75rem",
-        marginBottom: "1.25rem", 
+        marginBottom: 0, 
         display: "flex", 
         justifyContent: "space-between", 
         alignItems: "center", 

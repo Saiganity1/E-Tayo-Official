@@ -2174,12 +2174,12 @@ ${isDisapprove
         borderRadius: "18px",
         border: "1.5px solid #e2e8f0",
         padding: "1.25rem 1.5rem",
-        marginBottom: "1.5rem",
+        marginBottom: "0.875rem",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
         flexWrap: "wrap",
-        gap: "1.25rem",
+        gap: "1rem",
         boxShadow: "0 2px 12px rgba(0, 0, 0, 0.03)"
       }}>
         <div>
@@ -2374,7 +2374,7 @@ ${isDisapprove
           border: "1.5px solid #86efac",
           borderRadius: "14px",
           padding: "1rem 1.25rem",
-          marginBottom: "1.5rem",
+          marginBottom: "0.875rem",
           display: "flex",
           alignItems: "center",
           gap: "12px",
@@ -2392,14 +2392,14 @@ ${isDisapprove
         style={{
           display: "grid",
           gridTemplateColumns: isFocusMode ? "1fr" : "420px 1fr",
-          gap: "1.5rem",
+          gap: "0.875rem",
           alignItems: "start"
         }}
       >
         
         {/* LEFT COLUMN: EVALUATION WORKSPACE PANEL */}
         {!isFocusMode && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
             
             {/* Segmented Tab Navigation */}
             <div style={{

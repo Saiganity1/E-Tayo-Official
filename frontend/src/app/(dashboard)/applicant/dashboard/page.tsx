@@ -390,7 +390,7 @@ export default function ApplicantDashboard() {
   }
 
   return (
-    <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1400px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "1.25rem", paddingBottom: "4rem" }}>
+    <div className="dashboard-page animate-fade-in-up" style={{ maxWidth: "1400px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "0.875rem", paddingBottom: "4rem" }}>
       {/* Page Header */}
       <header className="page-header" style={{ 
         background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))",
@@ -433,7 +433,7 @@ export default function ApplicantDashboard() {
       </header>
 
       {/* KPI Stats Cards */}
-      <section className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem" }}>
+      <section className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.875rem" }}>
         {/* Card 1: Project Dossiers */}
         <div style={{ 
           background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", 

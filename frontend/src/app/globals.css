@@ -141,7 +141,7 @@ button {
 
 .dashboard-content {
   flex: 1;
-  padding: 2rem;
+  padding: 1.25rem 1.5rem;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
@@ -1164,7 +1164,42 @@ button {
 .dashboard-page {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.875rem;
+}
+
+.dashboard-page > header,
+.dashboard-page > .page-header,
+.dashboard-page > section,
+.dashboard-page > div.stats-grid,
+.dashboard-page > .track-kpi-grid,
+.dashboard-page > .track-filter-toolbar,
+.dashboard-page > .card,
+.dashboard-page > .glass-panel {
+  margin-bottom: 0 !important;
+}
+
+.evaluate-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.evaluate-page > div:first-child {
+  margin-bottom: 0.875rem !important;
+}
+
+.admin-messages-container,
+.staff-messages-container,
+.applicant-messages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.admin-messages-container > header,
+.staff-messages-container > header,
+.applicant-messages-container > header {
+  margin-bottom: 0 !important;
 }
 
 .page-header {
@@ -1172,7 +1207,8 @@ button {
   justify-content: space-between;
   align-items: flex-end;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.875rem;
+  margin-bottom: 0 !important;
 }
 
 .page-title {
@@ -1189,15 +1225,16 @@ button {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.875rem;
+  margin-bottom: 0 !important;
 }
 
 .stat-card {
-  padding: 1.5rem;
+  padding: 1.15rem 1.35rem;
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .stat-icon {
@@ -1569,9 +1606,15 @@ button {
 .wizard-page {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 0.875rem;
   max-width: 1180px;
   margin: 0 auto;
+}
+
+.wizard-page > header,
+.wizard-page > .page-header,
+.wizard-page > section {
+  margin-bottom: 0 !important;
 }
 
 .project-cards-container {
@@ -2559,7 +2602,7 @@ div[style*="overflow-x: auto"] {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0 !important;
 }
 
 .track-kpi-card {
@@ -2591,7 +2634,7 @@ div[style*="overflow-x: auto"] {
   border-radius: 18px;
   border: 1.5px solid #e2e8f0;
   padding: 1rem 1.4rem;
-  margin-bottom: 1.75rem;
+  margin-bottom: 0 !important;
   display: flex;
   align-items: center;
   justify-content: space-between;

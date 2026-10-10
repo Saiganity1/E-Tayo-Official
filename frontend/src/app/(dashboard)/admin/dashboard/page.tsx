@@ -105,7 +105,7 @@ export default function AdminDashboard() {
         boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
         borderRadius: "20px",
         padding: "1.25rem 1.75rem",
-        marginBottom: "1.25rem", 
+        marginBottom: 0, 
         display: "flex", 
         justifyContent: "space-between", 
         alignItems: "center", 
@@ -172,7 +172,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* Summary KPI Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.25rem", marginBottom: "1.25rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.875rem", marginBottom: 0 }}>
         <div style={{ background: "white", padding: "1.25rem 1.5rem", borderRadius: "18px", border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
             <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Audit Events</span>

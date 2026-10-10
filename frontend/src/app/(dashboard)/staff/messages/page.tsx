@@ -1023,7 +1023,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
         boxShadow: "0 10px 35px rgba(0, 0, 0, 0.08)",
         borderRadius: "20px",
         padding: "1.25rem 1.75rem",
-        marginBottom: "1.25rem",
+        marginBottom: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -1172,7 +1172,7 @@ All official permit papers, ancillary clearances, and approved plans for ${relea
       <div className={`messages-workspace-grid ${mobileView === "chat" ? "show-chat" : "show-list"}`} style={{
         display: "grid",
         gridTemplateColumns: showDossier ? "290px 1fr 340px" : "290px 1fr",
-        gap: "1.25rem",
+        gap: "0.875rem",
         height: "calc(100vh - 215px)",
         minHeight: "680px",
         transition: "grid-template-columns 0.25s cubic-bezier(0.16, 1, 0.3, 1)"

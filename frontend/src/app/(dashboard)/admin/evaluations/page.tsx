@@ -336,7 +336,7 @@ export default function StaffEvaluationsPage() {
         boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
         borderRadius: "20px",
         padding: "1.25rem 1.75rem",
-        marginBottom: "1.25rem",
+        marginBottom: 0,
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -426,7 +426,7 @@ export default function StaffEvaluationsPage() {
       </header>
 
       {/* KPI METRIC CARDS */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "1.75rem" }}>
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.875rem", marginBottom: 0 }}>
         <div style={{ background: "white", padding: "1.25rem 1.5rem", borderRadius: "18px", border: "1px solid #e2e8f0", boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
             <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#64748b" }}>Project Dossiers</span>
@@ -473,7 +473,7 @@ export default function StaffEvaluationsPage() {
       </section>
 
       {/* FILTER & SEARCH TOOLBAR */}
-      <section style={{ background: "white", padding: "1.5rem", borderRadius: "20px", border: "1px solid #e2e8f0", marginBottom: "1.75rem", boxShadow: "0 4px 20px -5px rgba(0,0,0,0.04)" }}>
+      <section style={{ background: "white", padding: "1.25rem 1.5rem", borderRadius: "20px", border: "1px solid #e2e8f0", marginBottom: 0, boxShadow: "0 4px 20px -5px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           {/* Search Box */}
           <div style={{ display: "flex", alignItems: "center", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "0.5rem 1rem", flex: "1", minWidth: "280px" }}>
@@ -818,7 +818,7 @@ export default function StaffEvaluationsPage() {
       {/* VIEW 1 & 2: GROUPED BY PROJECT DOSSIER / APPLICANT                       */}
       {/* ========================================================================= */}
       {viewMode !== "flat" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {(() => {
             const activeDossiers = viewMode === "applicant" ? applicantDossiers : projectDossiers;
 

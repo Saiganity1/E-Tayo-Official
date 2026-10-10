@@ -1485,7 +1485,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         boxShadow: "0 10px 35px rgba(0, 0, 0, 0.14)",
         borderRadius: "20px",
         padding: "1.25rem 1.75rem",
-        marginBottom: "0.5rem"
+        marginBottom: 0
       }}>
         <div>
           <button 
@@ -1595,7 +1595,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
               alignItems: "center",
               gap: "8px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-        marginBottom: "0.5rem"
+              marginBottom: 0
             }}>
               <CheckCircle2 size={18} />
               <span>{toastMsg.text}</span>
@@ -1610,7 +1610,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           borderRadius: "20px",
           padding: "1.4rem",
           boxShadow: "0 6px 20px rgba(220, 38, 38, 0.08)",
-          marginBottom: "0.75rem"
+          marginBottom: 0
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem", flex: 1, minWidth: "280px" }}>
@@ -1719,7 +1719,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
           borderRadius: "20px",
           padding: "1.4rem",
           boxShadow: "0 4px 16px rgba(16, 185, 129, 0.08)",
-          marginBottom: "0.5rem"
+          marginBottom: 0
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flex: 1, minWidth: "260px" }}>
@@ -1939,15 +1939,14 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
             </div>
           )}
 
-      {/* Unified Application Details & Documents Card */}
       <div className="glass-panel" style={{ 
-        padding: "2rem", 
+        padding: "1.75rem", 
         background: "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92))", 
         borderRadius: "24px", 
         border: "1px solid rgba(255,255,255,0.9)", 
         boxShadow: "0 10px 35px rgba(0,0,0,0.06)" 
       }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(380px, 500px)", gap: "1.75rem", alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(380px, 500px)", gap: "1rem", alignItems: "start" }}>
           
           {/* Left Column: Project Information (Top) & Timeline (Bottom) */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
