@@ -472,9 +472,25 @@ export default function StaffEvaluationsPage() {
         </div>
       </section>
 
-      {/* FILTER & SEARCH TOOLBAR */}
-      <section style={{ background: "white", padding: "1.25rem 1.5rem", borderRadius: "20px", border: "1px solid #e2e8f0", marginBottom: 0, boxShadow: "0 4px 20px -5px rgba(0,0,0,0.04)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+      {/* ========================================================================= */}
+      {/* UNIFIED EVALUATIONS WORKSPACE CARD (SINGLE CARD CONTAINER)                */}
+      {/* ========================================================================= */}
+      <section 
+        className="evaluations-workspace-card"
+        style={{ 
+          background: "#ffffff", 
+          borderRadius: "24px", 
+          border: "1.5px solid #e2e8f0", 
+          padding: "1.5rem", 
+          boxShadow: "0 10px 40px -10px rgba(0,0,0,0.08)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "1.25rem"
+        }}
+      >
+        {/* FILTER & SEARCH TOOLBAR */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", paddingBottom: "1.25rem", borderBottom: "1px solid #f1f5f9" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           {/* Search Box */}
           <div style={{ display: "flex", alignItems: "center", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "0.5rem 1rem", flex: "1", minWidth: "280px" }}>
             <Search size={18} color="#94a3b8" />
@@ -812,22 +828,22 @@ export default function StaffEvaluationsPage() {
             ))}
           </div>
         )}
-      </section>
+        </div>
 
       {/* ========================================================================= */}
       {/* VIEW 1 & 2: GROUPED BY PROJECT DOSSIER / APPLICANT                       */}
       {/* ========================================================================= */}
       {viewMode !== "flat" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
           {(() => {
             const activeDossiers = viewMode === "applicant" ? applicantDossiers : projectDossiers;
 
             if (activeDossiers.length === 0) {
               return (
-                <div style={{ background: "white", padding: "4rem 2rem", borderRadius: "20px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                <div style={{ background: "#f8fafc", padding: "3.5rem 2rem", borderRadius: "18px", textAlign: "center", border: "1px dashed #cbd5e1" }}>
                   <FolderOpen size={48} color="#94a3b8" style={{ margin: "0 auto 1rem auto" }} />
-                  <h3 style={{ fontSize: "1.2rem", fontWeight: "800", color: "#1e293b", margin: "0 0 0.5rem 0" }}>No matching project dossiers found</h3>
-                  <p style={{ color: "#64748b", margin: 0, fontSize: "0.95rem" }}>Try adjusting your search query or status filters.</p>
+                  <h3 style={{ fontSize: "1.15rem", fontWeight: "800", color: "#1e293b", margin: "0 0 0.5rem 0" }}>No matching project dossiers found</h3>
+                  <p style={{ color: "#64748b", margin: 0, fontSize: "0.92rem" }}>Try adjusting your search query or status filters.</p>
                 </div>
               );
             }
@@ -843,9 +859,9 @@ export default function StaffEvaluationsPage() {
                   key={dossier.id}
                   style={{
                     background: "white",
-                    borderRadius: "20px",
+                    borderRadius: "18px",
                     border: hasPending ? "1.5px solid #cbd5e1" : "1.5px solid #e2e8f0",
-                    boxShadow: hasPending ? "0 8px 24px -5px rgba(0,0,0,0.06)" : "0 2px 8px rgba(0,0,0,0.02)",
+                    boxShadow: hasPending ? "0 4px 16px -2px rgba(0,0,0,0.05)" : "0 2px 6px rgba(0,0,0,0.02)",
                     overflow: "hidden",
                     transition: "all 0.2s ease"
                   }}
@@ -1318,6 +1334,7 @@ export default function StaffEvaluationsPage() {
           </table>
         </div>
       )}
+      </section>
     </div>
   );
 }
