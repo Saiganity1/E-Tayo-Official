@@ -1,6 +1,7 @@
 package com.etayo.backend.controller;
 
 import com.etayo.backend.model.PermitApplication;
+import com.etayo.backend.model.Requirement;
 import com.etayo.backend.repository.PermitApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
