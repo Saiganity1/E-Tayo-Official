@@ -19,6 +19,18 @@ export default function Sidebar() {
   const { language, setLanguage, t } = useLanguage();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [currentSearch, setCurrentSearch] = useState<string>("");
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentSearch(window.location.search || "");
+      const handleLocationChange = () => {
+        setCurrentSearch(window.location.search || "");
+      };
+      window.addEventListener("popstate", handleLocationChange);
+      return () => window.removeEventListener("popstate", handleLocationChange);
+    }
+  }, [pathname]);
 
   const [userName, setUserName] = useState("");
   const [approvedClearanceRef, setApprovedClearanceRef] = useState<string | null>(() => {
@@ -332,18 +344,47 @@ export default function Sidebar() {
         <nav className="sidebar-nav">
           <div className="nav-label">{userRole === "admin" ? t("adminPanel", "Admin Panel") : t("mainMenu", "Main Menu")}</div>
           {navItems.map((item) => {
-            const isActive = (item.href.includes("clearanceRef") || (item.href.includes("/applicant/track/") && item.href !== "/applicant/track"))
-              ? (pathname === "/applicant/apply" && typeof window !== "undefined" && window.location.search.includes("clearanceRef"))
-              : (item.href === "/applicant/apply"
-                  ? (pathname === "/applicant/apply" && (typeof window === "undefined" || !window.location.search.includes("clearanceRef")))
-                  : pathname === item.href);
+            const cleanPath = decodeURIComponent(pathname.split("?")[0].replace(/\/+$/, "").toLowerCase());
+            const itemClean = decodeURIComponent(item.href.split("?")[0].replace(/\/+$/, "").toLowerCase());
+
+            const effectiveSearch = typeof window !== "undefined" ? (window.location.search || currentSearch) : currentSearch;
+            const hasClearanceRefQuery = effectiveSearch.includes("clearanceRef");
+
+            const hasDedicatedTrackItem = navItems.some((nav) => {
+              if (nav.href.startsWith("/applicant/track/") && nav.href !== "/applicant/track") {
+                const navClean = decodeURIComponent(nav.href.split("?")[0].replace(/\/+$/, "").toLowerCase());
+                return cleanPath === navClean;
+              }
+              return false;
+            });
+
+            let isActive = false;
+            if (item.href.includes("clearanceRef")) {
+              isActive = cleanPath === "/applicant/apply" && hasClearanceRefQuery;
+            } else if (item.href === "/applicant/apply") {
+              isActive = cleanPath === "/applicant/apply" && !hasClearanceRefQuery;
+            } else if (item.href.startsWith("/applicant/track/") && item.href !== "/applicant/track") {
+              isActive = cleanPath === itemClean;
+            } else if (item.href === "/applicant/track") {
+              isActive = cleanPath === "/applicant/track" || (cleanPath.startsWith("/applicant/track/") && !hasDedicatedTrackItem);
+            } else {
+              isActive = cleanPath === itemClean;
+            }
+
             const Icon = item.icon;
             return (
               <Link 
                 key={item.href} 
                 href={item.href}
                 className={`nav-item ${isActive ? "active" : ""}`}
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false);
+                  if (item.href.includes("?")) {
+                    setCurrentSearch("?" + item.href.split("?")[1]);
+                  } else {
+                    setCurrentSearch("");
+                  }
+                }}
               >
                 <div className="nav-item-content">
                   <Icon size={17} strokeWidth={2.2} />
