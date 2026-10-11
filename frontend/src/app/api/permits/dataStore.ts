@@ -35,16 +35,20 @@ export function getAllPermits(emailFilter?: string, nameFilter?: string): Permit
     const appName = (app.applicantName || "").trim().toLowerCase();
 
     if (cleanEmail) {
-      if (appEmail === cleanEmail || appEmail.includes(cleanEmail) || cleanEmail.includes(appEmail)) {
-        return true;
+      if (appEmail) {
+        return appEmail === cleanEmail || normalizeEmail(appEmail) === normalizeEmail(cleanEmail);
       }
-      if (normalizeEmail(appEmail) === normalizeEmail(cleanEmail)) {
-        return true;
+      // If the application has no email attached, match by exact name
+      if (cleanName && appName) {
+        return appName === cleanName;
       }
+      return false;
     }
-    if (cleanName && (appName === cleanName || appName.includes(cleanName) || cleanName.includes(appName))) {
-      return true;
+
+    if (cleanName) {
+      return appName === cleanName;
     }
+
     // Check if linked clearance belongs to user
     const linkedRef = String(app.locationalClearanceRef || app.clearanceRef || app.connectedClearanceId || "").trim().toLowerCase();
     if (linkedRef && linkedRef !== "exempt" && linkedRef !== "not_required") {
@@ -52,11 +56,11 @@ export function getAllPermits(emailFilter?: string, nameFilter?: string): Permit
       if (parent) {
         const pEmail = (parent.applicantEmail || "").trim().toLowerCase();
         const pName = (parent.applicantName || "").trim().toLowerCase();
-        if (cleanEmail && (pEmail === cleanEmail || normalizeEmail(pEmail) === normalizeEmail(cleanEmail))) {
-          return true;
+        if (cleanEmail && pEmail) {
+          return pEmail === cleanEmail || normalizeEmail(pEmail) === normalizeEmail(cleanEmail);
         }
-        if (cleanName && (pName === cleanName || pName.includes(cleanName) || cleanName.includes(pName))) {
-          return true;
+        if (cleanName && pName) {
+          return pName === cleanName;
         }
       }
     }

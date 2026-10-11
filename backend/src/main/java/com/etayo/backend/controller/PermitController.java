@@ -49,22 +49,31 @@ public class PermitController {
             }
             final String finalMatchedName = matchedName;
             final String queryName = cleanName;
+            final String filterEmail = cleanEmail;
 
             List<PermitApplication> applicantPermits = permitApplicationRepository.findAll(Sort.by(Sort.Direction.DESC, "id")).stream()
                 .filter(p -> {
-                    if (cleanEmail != null) {
-                        if (p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(cleanEmail)) return true;
-                        if (p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(cleanEmail)) return true;
+                    String appEmail = p.getApplicantEmail() != null ? p.getApplicantEmail().trim() : null;
+                    String appName = p.getApplicantName() != null ? p.getApplicantName().trim() : null;
+
+                    // If an applicant email is specified, enforce strict ownership by that email
+                    if (filterEmail != null) {
+                        if (appEmail != null) {
+                            return appEmail.equalsIgnoreCase(filterEmail);
+                        }
+                        // Only match by exact name if the permit record has no email attached
+                        if (finalMatchedName != null && appName != null && appName.equalsIgnoreCase(finalMatchedName)) {
+                            return true;
+                        }
+                        if (queryName != null && appName != null && appName.equalsIgnoreCase(queryName)) {
+                            return true;
+                        }
+                        return false;
                     }
-                    if (finalMatchedName != null && p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(finalMatchedName)) {
-                        return true;
-                    }
-                    if (queryName != null && p.getApplicantName() != null && (
-                        p.getApplicantName().equalsIgnoreCase(queryName) ||
-                        p.getApplicantName().toLowerCase().contains(queryName.toLowerCase()) ||
-                        queryName.toLowerCase().contains(p.getApplicantName().toLowerCase())
-                    )) {
-                        return true;
+
+                    // If only name was provided without an email, match exact name only
+                    if (queryName != null && appName != null) {
+                        return appName.equalsIgnoreCase(queryName);
                     }
                     return false;
                 })
@@ -87,15 +96,24 @@ public class PermitController {
             return ResponseEntity.ok(permitApplicationRepository.findAll(Sort.by(Sort.Direction.DESC, "id")));
         }
 
-        // Authenticated applicants can only access applications matching their email or name
+        // Authenticated applicants can only access applications matching their email or exact name (if no email)
         String principal = authentication.getName();
         com.etayo.backend.model.User currentUser = userRepository.findByEmail(principal).orElse(null);
-        String currentUserName = (currentUser != null && currentUser.getName() != null) ? currentUser.getName() : null;
+        String currentUserName = (currentUser != null && currentUser.getName() != null) ? currentUser.getName().trim() : null;
 
         List<PermitApplication> applicantPermits = permitApplicationRepository.findAll(Sort.by(Sort.Direction.DESC, "id")).stream()
-            .filter(p -> (p.getApplicantEmail() != null && p.getApplicantEmail().equalsIgnoreCase(principal))
-                      || (p.getApplicantName() != null && p.getApplicantName().equalsIgnoreCase(principal))
-                      || (currentUserName != null && currentUserName.equalsIgnoreCase(p.getApplicantName())))
+            .filter(p -> {
+                String appEmail = p.getApplicantEmail() != null ? p.getApplicantEmail().trim() : null;
+                String appName = p.getApplicantName() != null ? p.getApplicantName().trim() : null;
+
+                if (appEmail != null) {
+                    return appEmail.equalsIgnoreCase(principal);
+                }
+                if (currentUserName != null && appName != null) {
+                    return appName.equalsIgnoreCase(currentUserName);
+                }
+                return false;
+            })
             .toList();
 
         return ResponseEntity.ok(applicantPermits);

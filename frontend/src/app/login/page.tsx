@@ -222,6 +222,22 @@ export default function LoginPage() {
         }
       }
 
+      // If logging in as a different user or new session, isolate cached data
+      try {
+        const prevUserStr = localStorage.getItem("user");
+        const prevEmail = prevUserStr ? JSON.parse(prevUserStr)?.email?.toLowerCase() : null;
+        if (prevEmail !== sanitizedEmail) {
+          localStorage.removeItem("etayo_submitted_app_ids");
+          localStorage.removeItem("etayo_active_clearance_ref");
+          localStorage.removeItem("etayo_cached_applications");
+          localStorage.removeItem("etayo_last_submitted_id");
+          localStorage.removeItem("etayo_archived_application_ids");
+          localStorage.removeItem("etayo_unread_messages_count");
+          localStorage.removeItem("etayo_notifications");
+          localStorage.removeItem("etayo_messages_history");
+        }
+      } catch (e) {}
+
       // Store token and user securely with full name
       localStorage.setItem("token", data.accessToken);
       localStorage.setItem("user", JSON.stringify({ 

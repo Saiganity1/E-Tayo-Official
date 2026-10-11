@@ -298,11 +298,18 @@ export default function ApplyPage() {
     const appEmail = (app.applicantEmail || app.userEmail || (typeof app.user === "string" ? app.user : "") || "").trim().toLowerCase();
     const appName = (app.applicantName || app.userName || "").trim().toLowerCase();
 
-    if (curEmail && appEmail && (appEmail === curEmail || appEmail.includes(curEmail) || curEmail.includes(appEmail))) {
-      return true;
+    if (curEmail) {
+      if (appEmail) {
+        return appEmail === curEmail;
+      }
+      if (curName && curName !== "applicant" && appName) {
+        return appName === curName;
+      }
+      return false;
     }
-    if (curName && curName !== "applicant" && appName && (appName === curName || appName.includes(curName) || curName.includes(appName))) {
-      return true;
+
+    if (curName && curName !== "applicant" && appName) {
+      return appName === curName;
     }
     return false;
   }, [applicantEmail, applicantName, isIgnoredDummyApp]);

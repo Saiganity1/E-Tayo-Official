@@ -62,7 +62,10 @@ export async function GET(req: Request) {
     });
   } catch (error: any) {
     console.warn("Proxy /api/permits GET fallback:", error?.message);
-    const fallback = getAllPermits();
+    const url = new URL(req.url);
+    const emailFilter = url.searchParams.get("email") || undefined;
+    const nameFilter = url.searchParams.get("name") || undefined;
+    const fallback = getAllPermits(emailFilter, nameFilter);
     return NextResponse.json(fallback, { status: 200 });
   }
 }

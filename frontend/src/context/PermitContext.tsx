@@ -271,7 +271,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
     });
 };
 
-const STORAGE_VERSION = "etayo_clean_db_v10";
+const STORAGE_VERSION = "etayo_clean_db_v11";
 
 if (typeof window !== "undefined") {
   try {
@@ -281,9 +281,9 @@ if (typeof window !== "undefined") {
       localStorage.removeItem("etayo_messages_history");
       localStorage.removeItem("etayo_notifications");
       localStorage.removeItem("etayo_unread_messages_count");
-
-      // Reset cached applications cleanly using authentic INITIAL_APPLICATIONS
-      localStorage.setItem("etayo_cached_applications", JSON.stringify(INITIAL_APPLICATIONS));
+      localStorage.removeItem("etayo_submitted_app_ids");
+      localStorage.removeItem("etayo_active_clearance_ref");
+      localStorage.removeItem("etayo_cached_applications");
       localStorage.setItem("etayo_storage_version", STORAGE_VERSION);
     }
   } catch (e) {}
@@ -434,15 +434,22 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (cachedStr) {
           try {
             const cachedApps: PermitApplication[] = JSON.parse(cachedStr);
-            cleanCached = (cachedApps || []).filter(c => !isDummyApp(c));
+            cleanCached = (cachedApps || []).filter(c => {
+              if (isDummyApp(c)) return false;
+              if (!isStaffOrAdmin && userEmail) {
+                const cEmail = (c.applicantEmail || (c as any).userEmail || "").trim().toLowerCase();
+                if (cEmail && cEmail !== userEmail.toLowerCase().trim()) return false;
+              }
+              return true;
+            });
           } catch (e) {}
         }
-        if (cleanCached.length === 0 && INITIAL_APPLICATIONS.length > 0) {
+        if (cleanCached.length === 0 && isStaffOrAdmin && INITIAL_APPLICATIONS.length > 0) {
           cleanCached = [...INITIAL_APPLICATIONS];
         }
 
         if (cleanBackendApps.length === 0) {
-          mergedApps = cleanCached.length > 0 ? cleanCached : [...INITIAL_APPLICATIONS];
+          mergedApps = isStaffOrAdmin ? (cleanCached.length > 0 ? cleanCached : [...INITIAL_APPLICATIONS]) : cleanCached;
         } else {
           mergedApps = cleanBackendApps.map((bApp) => {
             const foundCached = cleanCached.find((c) => matchPermitId(c.id, bApp.id));
@@ -710,8 +717,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         if (INITIAL_APPLICATIONS && INITIAL_APPLICATIONS.length > 0) {
           INITIAL_APPLICATIONS.forEach((seed) => {
-            if (!mergedApps.some((m) => matchPermitId(m.id, seed.id))) {
-              mergedApps.push(seed);
+            const belongsToUser = Boolean(userEmail && seed.applicantEmail && seed.applicantEmail.toLowerCase().trim() === userEmail.toLowerCase().trim());
+            if (isStaffOrAdmin || belongsToUser) {
+              if (!mergedApps.some((m) => matchPermitId(m.id, seed.id))) {
+                mergedApps.push(seed);
+              }
             }
           });
         }
@@ -995,13 +1005,42 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           } catch (e) {}
         }
         if (!Array.isArray(parsed) || parsed.length === 0) {
-          parsed = INITIAL_APPLICATIONS;
+          let userObj: any = null;
           try {
-            localStorage.setItem("etayo_cached_applications", JSON.stringify(INITIAL_APPLICATIONS));
+            const uStr = localStorage.getItem("user");
+            if (uStr) userObj = JSON.parse(uStr);
           } catch (e) {}
+          const isStaffAdmin = userObj?.role === "ROLE_STAFF" || userObj?.role === "ROLE_ADMIN" || userObj?.role === "ROLE_SUPERADMIN";
+          if (isStaffAdmin) {
+            parsed = INITIAL_APPLICATIONS;
+            try {
+              localStorage.setItem("etayo_cached_applications", JSON.stringify(INITIAL_APPLICATIONS));
+            } catch (e) {}
+          } else {
+            parsed = [];
+          }
         }
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const clean = parsed.filter(a => !isDummyApp(a)).map(a => {
+          let curUserEmail = "";
+          let isCurStaffAdmin = false;
+          try {
+            const uStr = localStorage.getItem("user");
+            if (uStr) {
+              const u = JSON.parse(uStr);
+              curUserEmail = (u?.email || "").toLowerCase().trim();
+              const r = String(u?.role || "").toUpperCase();
+              isCurStaffAdmin = r.includes("ADMIN") || r.includes("STAFF");
+            }
+          } catch (e) {}
+
+          const clean = parsed.filter(a => {
+            if (isDummyApp(a)) return false;
+            if (!isCurStaffAdmin && curUserEmail) {
+              const aEmail = (a.applicantEmail || (a as any).userEmail || "").trim().toLowerCase();
+              if (aEmail && aEmail !== curUserEmail) return false;
+            }
+            return true;
+          }).map(a => {
               const aId = String(a.id || "").trim();
               const aLower = aId.toLowerCase();
               const aUpper = aId.toUpperCase();

@@ -439,40 +439,40 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       const appEmail = (app.applicantEmail || (app as any).userEmail || (typeof (app as any).user === "string" ? (app as any).user : "") || "").toLowerCase().trim();
       const appName = (app.applicantName || (app as any).userName || "").toLowerCase().trim();
 
+      // If user is authenticated with an email, enforce strict email ownership
+      if (email) {
+        if (appEmail) {
+          return appEmail === email || norm(appEmail) === norm(email);
+        }
+        // If app has no email attached, only match if exact full name matches
+        if (name && name !== "applicant" && appName && appName === name) {
+          return true;
+        }
+
+        // Check if linked clearance belongs to this user
+        const linkedRef = String(app.locationalClearanceRef || (app as any).clearanceRef || (app as any).connectedClearanceId || "").trim().toLowerCase();
+        if (linkedRef && linkedRef !== "exempt" && linkedRef !== "not_required" && pool) {
+          const parent = pool.find(p => p && p.id && String(p.id).trim().toLowerCase() === linkedRef);
+          if (parent) {
+            const pEmail = (parent.applicantEmail || (parent as any).userEmail || "").toLowerCase().trim();
+            if (pEmail && (pEmail === email || norm(pEmail) === norm(email))) {
+              return true;
+            }
+          }
+        }
+
+        return false;
+      }
+
+      // Unauthenticated fallback: strictly matches local submissions on this device
       const matchSubmitted = localSubmittedIds.some(sid => sid && sid.trim().toLowerCase() === appId);
-
-      const matchEmail = Boolean(email && appEmail && (
-        appEmail === email || 
-        appEmail.includes(email) || 
-        email.includes(appEmail) ||
-        norm(appEmail) === norm(email)
-      ));
-      const matchName = Boolean(name && appName && (appName === name || appName.includes(name) || name.includes(appName)));
-
-      // If this application matches the active clearance reference from existing application flow
       const matchActiveRef = Boolean(activeStoredRef && activeStoredRef !== "exempt" && (
         appId === activeStoredRef ||
         String(app.locationalClearanceRef || "").trim().toLowerCase() === activeStoredRef ||
         String((app as any).clearanceRef || "").trim().toLowerCase() === activeStoredRef
       ));
 
-      // CRITICAL FIX: If this application has locationalClearanceRef, check if that LC belongs to this user!
-      // This guarantees that any Stage 2 permit linked to user's LC is NEVER dropped!
-      const linkedRef = String(app.locationalClearanceRef || (app as any).clearanceRef || (app as any).connectedClearanceId || "").trim().toLowerCase();
-      let matchLinkedLC = false;
-      if (linkedRef && linkedRef !== "exempt" && linkedRef !== "not_required" && pool) {
-        matchLinkedLC = pool.some(other => {
-          if (!other || !other.id) return false;
-          const otherId = String(other.id).trim().toLowerCase();
-          if (otherId !== linkedRef) return false;
-          const otherEmail = (other.applicantEmail || (other as any).userEmail || "").toLowerCase().trim();
-          const otherName = (other.applicantName || "").toLowerCase().trim();
-          return (email && otherEmail && (otherEmail === email || otherEmail.includes(email) || norm(otherEmail) === norm(email))) ||
-                 (name && otherName && (otherName === name || otherName.includes(name)));
-        });
-      }
-
-      return matchEmail || matchName || matchActiveRef || matchLinkedLC || matchSubmitted;
+      return matchSubmitted || matchActiveRef;
     });
   }, [applications, isLoggedIn, currentUser]);
 

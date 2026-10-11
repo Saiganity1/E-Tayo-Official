@@ -187,6 +187,15 @@ export default function AdminApp() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userRole");
+    localStorage.removeItem("user");
+    localStorage.removeItem("etayo_submitted_app_ids");
+    localStorage.removeItem("etayo_active_clearance_ref");
+    localStorage.removeItem("etayo_cached_applications");
+    localStorage.removeItem("etayo_last_submitted_id");
+    localStorage.removeItem("etayo_archived_application_ids");
+    localStorage.removeItem("etayo_unread_messages_count");
+    localStorage.removeItem("etayo_notifications");
+    localStorage.removeItem("etayo_messages_history");
     setIsAuthenticated(false);
     router.push("/login");
   };

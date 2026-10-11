@@ -124,15 +124,29 @@ export default function ApplicantDashboard() {
     const email = (userEmail || "").toLowerCase().trim();
     const name = (userName || "").toLowerCase().trim();
 
+    if (!email && !name) return [];
+
     return (applications || [])
       .filter(app => {
+        if (!app) return false;
         const appEmail = (app.applicantEmail || "").toLowerCase().trim();
         const appName = (app.applicantName || "").toLowerCase().trim();
 
-        const matchEmail = Boolean(email && appEmail && (appEmail === email || appEmail.includes(email)));
-        const matchName = Boolean(name && appName && (appName === name || appName.includes(name)));
+        if (email) {
+          if (appEmail) {
+            return appEmail === email;
+          }
+          // Only fall back to exact name if app has no applicantEmail attached
+          if (name && name !== "applicant" && appName) {
+            return appName === name;
+          }
+          return false;
+        }
 
-        return matchEmail || matchName || (name !== "applicant" && appName === name);
+        if (name && name !== "applicant" && appName) {
+          return appName === name;
+        }
+        return false;
       })
       .map(app => {
         const id = String(app.id || "");
