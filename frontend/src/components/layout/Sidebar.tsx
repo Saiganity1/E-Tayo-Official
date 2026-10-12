@@ -277,16 +277,116 @@ export default function Sidebar() {
   const displayName = rawDisplayName.includes("@") ? (defaultNames[userRole] || "User") : rawDisplayName;
   const avatarChar = displayName.charAt(0).toUpperCase();
 
+  const getBottomNavItems = () => {
+    switch (userRole) {
+      case "applicant":
+        return [
+          { href: "/applicant/dashboard", label: language === "fil" ? "Home" : "Dashboard", icon: Home },
+          { href: "/applicant/apply", label: language === "fil" ? "Apply" : "Apply", icon: PlusCircle },
+          { href: "/applicant/track", label: language === "fil" ? "Status" : "Status", icon: ClipboardList },
+          { href: "/applicant/map", label: language === "fil" ? "Map" : "Map", icon: Map },
+          { href: "/applicant/messages", label: language === "fil" ? "Messages" : "Messages", icon: MessageSquare },
+        ];
+      case "staff":
+        return [
+          { href: "/admin/evaluations", label: language === "fil" ? "Pagsusuri" : "Evaluations", icon: FileCheck },
+          { href: "/staff/map", label: language === "fil" ? "Mapa" : "Map", icon: Map },
+          { href: "/staff/messages", label: language === "fil" ? "Mensahe" : "Messages", icon: MessageSquare },
+        ];
+      case "admin":
+        return [
+          { href: "/admin/evaluations", label: "Evaluations", icon: FileCheck },
+          { href: "/admin/security", label: "Security", icon: Shield },
+          { href: "/staff/templates", label: "Forms", icon: FileText },
+          { href: "/admin/users", label: "Users", icon: Users },
+          { href: "/admin/messages", label: "Messages", icon: MessageSquare },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const bottomNavItems = getBottomNavItems();
+
+  const isBottomItemActive = (itemHref: string) => {
+    const cleanPath = decodeURIComponent(pathname.split("?")[0].replace(/\/+$/, "").toLowerCase());
+    const itemClean = decodeURIComponent(itemHref.split("?")[0].replace(/\/+$/, "").toLowerCase());
+
+    if (itemClean === "/applicant/dashboard") {
+      return cleanPath === "/applicant/dashboard" || cleanPath === "/applicant";
+    }
+    if (itemClean === "/applicant/apply") {
+      return cleanPath === "/applicant/apply";
+    }
+    if (itemClean === "/applicant/track") {
+      return cleanPath.startsWith("/applicant/track");
+    }
+    if (itemClean === "/applicant/map") {
+      return cleanPath === "/applicant/map";
+    }
+    if (itemClean === "/applicant/messages") {
+      return cleanPath.startsWith("/applicant/messages");
+    }
+    if (itemClean === "/admin/evaluations") {
+      return cleanPath.startsWith("/admin/evaluations") || cleanPath.startsWith("/staff/evaluate");
+    }
+    if (itemClean === "/staff/messages" || itemClean === "/admin/messages") {
+      return cleanPath.includes("/messages");
+    }
+    return cleanPath === itemClean;
+  };
+
   return (
     <>
-      {/* Mobile Toggle */}
-      <button 
-        className="mobile-toggle" 
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Toggle Menu"
-      >
-        <Menu size={24} />
-      </button>
+      {/* Mobile Sticky Top Header Bar */}
+      <header className="mobile-header-bar">
+        <div className="mobile-header-content">
+          {/* Left side: App Logo & Municipal Branding */}
+          <Link 
+            href={userRole === "applicant" ? "/applicant/dashboard" : userRole === "staff" ? "/admin/evaluations" : userRole === "admin" ? "/admin/evaluations" : "/"} 
+            className="mobile-header-brand"
+            title="eTAYO - Sto. Tomas, Pampanga"
+          >
+            <Image 
+              src="/logo.png" 
+              alt="eTAYO" 
+              width={100} 
+              height={28} 
+              style={{ height: "24px", width: "auto", objectFit: "contain" }} 
+              priority 
+            />
+            <div className="mobile-header-brand-divider" />
+            <div className="mobile-header-brand-text">
+              <span className="mobile-header-muni">Sto. Tomas, Pampanga</span>
+            </div>
+          </Link>
+
+          {/* Right side: Notification Bell & Profile / Menu Drawer Trigger */}
+          <div className="mobile-header-actions">
+            {userRole !== "public" && (
+              <div className="mobile-header-bell">
+                <NotificationBell />
+              </div>
+            )}
+            
+            <button 
+              type="button" 
+              className="mobile-header-profile-btn"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Toggle Menu Drawer"
+              title={displayName}
+            >
+              <div className="mobile-header-avatar">
+                {avatarChar}
+              </div>
+              <span className="mobile-header-name">
+                {displayName.split(" ")[0]}
+              </span>
+              <Menu size={18} className="mobile-header-menu-icon" />
+            </button>
+          </div>
+        </div>
+      </header>
 
       {/* Mobile Backdrop Overlay */}
       <div 
@@ -466,6 +566,33 @@ export default function Sidebar() {
         </div>
 
       </aside>
+
+      {/* Mobile Fixed Bottom Navigation Bar */}
+      {bottomNavItems.length > 0 && (
+        <nav className="mobile-bottom-nav" aria-label="Mobile Navigation">
+          <div className="mobile-bottom-nav-inner">
+            {bottomNavItems.map((item) => {
+              const Icon = item.icon;
+              const active = isBottomItemActive(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`mobile-bottom-nav-item ${active ? "active" : ""}`}
+                  title={item.label}
+                >
+                  <div className="mobile-bottom-nav-icon-wrapper">
+                    <Icon size={20} strokeWidth={active ? 2.5 : 1.9} />
+                  </div>
+                  <span className="mobile-bottom-nav-label">{item.label}</span>
+                  {active && <span className="mobile-bottom-nav-indicator" />}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </>
   );
 }

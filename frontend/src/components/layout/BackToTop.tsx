@@ -196,12 +196,12 @@ export default function BackToTop({ hasChatBot = false }: BackToTopProps) {
 
         @media (max-width: 768px) {
           .dashboard-back-to-top {
-            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-            right: calc(20px + env(safe-area-inset-right, 0px));
+            bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+            right: calc(16px + env(safe-area-inset-right, 0px));
           }
           .dashboard-back-to-top.with-bot {
-            bottom: calc(86px + env(safe-area-inset-bottom, 0px));
-            right: calc(24px + env(safe-area-inset-right, 0px));
+            bottom: calc(146px + env(safe-area-inset-bottom, 0px));
+            right: calc(16px + env(safe-area-inset-right, 0px));
           }
         }
       `}</style>
