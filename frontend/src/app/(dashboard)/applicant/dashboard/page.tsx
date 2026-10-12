@@ -598,17 +598,63 @@ export default function ApplicantDashboard() {
           {/* Search, Filter, and Expand/Collapse Toolbar */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, minWidth: "280px", maxWidth: "720px", flexWrap: "wrap" }}>
-              <div className="search-bar" style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "0.55rem 1rem", display: "flex", alignItems: "center", gap: "8px", flex: "1 1 320px", minWidth: "260px", boxShadow: "0 2px 6px rgba(0,0,0,0.02)" }}>
+              <div 
+                style={{ 
+                  background: "#ffffff", 
+                  border: "1px solid #cbd5e1", 
+                  borderRadius: "12px", 
+                  padding: "0 14px", 
+                  height: "44px",
+                  boxSizing: "border-box",
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "8px", 
+                  flex: "1 1 320px", 
+                  minWidth: "260px", 
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+                  transition: "border-color 0.2s, box-shadow 0.2s"
+                }}
+              >
                 <Search size={18} color="#94a3b8" style={{ flexShrink: 0 }} />
                 <input 
                   type="text" 
                   placeholder={t("searchPlaceholder", "Search projects, IDs, or permits...")} 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{ background: "transparent", border: "none", outline: "none", width: "100%", fontSize: "0.92rem", color: "#1e293b", fontWeight: "500" }}
+                  style={{ 
+                    background: "transparent", 
+                    border: "none", 
+                    outline: "none", 
+                    width: "100%", 
+                    height: "100%",
+                    padding: 0,
+                    margin: 0,
+                    fontSize: "0.92rem", 
+                    color: "#1e293b", 
+                    fontWeight: "500",
+                    boxShadow: "none"
+                  }}
                 />
                 {searchTerm && (
-                  <button onClick={() => setSearchTerm("")} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "0.8rem", fontWeight: "700", padding: "0 4px" }}>✕</button>
+                  <button 
+                    type="button"
+                    onClick={() => setSearchTerm("")} 
+                    style={{ 
+                      background: "none", 
+                      border: "none", 
+                      color: "#94a3b8", 
+                      cursor: "pointer", 
+                      fontSize: "0.85rem", 
+                      fontWeight: "700", 
+                      padding: "0 4px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                    title="Clear search"
+                  >
+                    ✕
+                  </button>
                 )}
               </div>
 
@@ -616,7 +662,24 @@ export default function ApplicantDashboard() {
                 className="status-filter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "0.6rem 1rem", fontWeight: "600", fontSize: "0.88rem", color: "#334155", outline: "none", cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,0.02)", flexShrink: 0 }}
+                style={{ 
+                  background: "#ffffff", 
+                  border: "1px solid #cbd5e1", 
+                  borderRadius: "12px", 
+                  padding: "0 14px", 
+                  height: "44px",
+                  boxSizing: "border-box",
+                  fontWeight: "600", 
+                  fontSize: "0.92rem", 
+                  color: "#334155", 
+                  outline: "none", 
+                  cursor: "pointer", 
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.02)", 
+                  flexShrink: 0,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  transition: "all 0.2s ease"
+                }}
               >
                 <option value="all">{t("allStatus", "All Status")}</option>
                 <option value="pending">{t("statusPending", "Pending Review")}</option>
