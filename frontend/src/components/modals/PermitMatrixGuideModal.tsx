@@ -169,7 +169,7 @@ export default function PermitMatrixGuideModal({
         {/* HEADER */}
         <div
           style={{
-            background: "linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)",
+            background: "linear-gradient(135deg, #0038A8 0%, #1e40af 50%, #2563eb 100%)",
             color: "#ffffff",
             padding: "1.25rem 1.75rem",
             display: "flex",
@@ -184,8 +184,8 @@ export default function PermitMatrixGuideModal({
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
               <span
                 style={{
-                  background: "rgba(0,0,0,0.25)",
-                  color: "#fef3c7",
+                  background: "rgba(255,255,255,0.2)",
+                  color: "#ffffff",
                   padding: "3px 9px",
                   borderRadius: "6px",
                   fontSize: "0.72rem",
@@ -196,7 +196,7 @@ export default function PermitMatrixGuideModal({
               >
                 Official LGU Reference
               </span>
-              <span style={{ fontSize: "0.8rem", color: "#fef3c7", fontWeight: "600" }}>
+              <span style={{ fontSize: "0.8rem", color: "#dbeafe", fontWeight: "600" }}>
                 National Building Code of the Philippines (PD 1096)
               </span>
             </div>
@@ -212,7 +212,7 @@ export default function PermitMatrixGuideModal({
             >
               PROJECT TYPE × REQUIRED PERMIT FORM MATRIX
             </h3>
-            <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#fffbeb", opacity: 0.95 }}>
+            <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#eff6ff", opacity: 0.95 }}>
               Official Sto. Tomas municipal permitting matrix indicating mandatory (✓), conditional (C), and exempt (—) permits per project type.
             </p>
           </div>

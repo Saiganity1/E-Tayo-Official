@@ -36,13 +36,13 @@ import {
 import { STO_TOMAS_BARANGAYS } from "../../../../data/stoTomasGeoJSON";
 
 const CATEGORY_THEMES: Record<string, { icon: any; color: string; bg: string; border: string; glow: string }> = {
-  All: { icon: Layers, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
-  Residential: { icon: Home, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
-  Commercial: { icon: Building2, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
-  Industrial: { icon: Factory, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
-  Institutional: { icon: Landmark, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
-  "Ancillary & Alterations": { icon: Wrench, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
-  "Utilities & Mechanical": { icon: Zap, color: "#b45309", bg: "#fef3c7", border: "#fde68a", glow: "rgba(245, 158, 11, 0.25)" },
+  All: { icon: Layers, color: "#334155", bg: "#f1f5f9", border: "#cbd5e1", glow: "rgba(100, 116, 139, 0.15)" },
+  Residential: { icon: Home, color: "#047857", bg: "#f0fdf4", border: "#bbf7d0", glow: "rgba(16, 185, 129, 0.15)" },
+  Commercial: { icon: Building2, color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe", glow: "rgba(37, 99, 235, 0.15)" },
+  Industrial: { icon: Factory, color: "#4338ca", bg: "#eef2ff", border: "#c7d2fe", glow: "rgba(99, 102, 241, 0.15)" },
+  Institutional: { icon: Landmark, color: "#6d28d9", bg: "#f5f3ff", border: "#ddd6fe", glow: "rgba(139, 92, 246, 0.15)" },
+  "Ancillary & Alterations": { icon: Wrench, color: "#0369a1", bg: "#f0f9ff", border: "#bae6fd", glow: "rgba(14, 165, 233, 0.15)" },
+  "Utilities & Mechanical": { icon: Zap, color: "#0f766e", bg: "#f0fdfa", border: "#99f6e4", glow: "rgba(20, 184, 166, 0.15)" },
 };
 
 const PERMIT_ICONS: Record<keyof PermitFormMatrix, any> = {
@@ -1707,25 +1707,25 @@ export default function ApplyPage() {
                   <span style={{
                     fontSize: "0.72rem",
                     fontWeight: "800",
-                    color: "#ffffff",
-                    background: "rgba(255, 255, 255, 0.2)",
-                    border: "1px solid rgba(255, 255, 255, 0.35)",
+                    color: "#2563eb",
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
                     padding: "2px 8px",
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
                     STEP 1 OF 5
                   </span>
-                  <span style={{ fontSize: "0.88rem", color: "#ffffff", fontWeight: "700", textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)" }}>
+                  <span style={{ fontSize: "0.88rem", color: "#64748b", fontWeight: "700" }}>
                     Municipal Project Matrix
                   </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
                   <div>
-                    <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#ffffff", margin: "0 0 0.35rem 0" }}>
+                    <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
                       Project Type
                     </h2>
-                    <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.9)", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                    <p style={{ margin: 0, color: "#64748b", fontSize: "0.92rem", lineHeight: "1.5" }}>
                       Select your specific project classification from the official Sto. Tomas 31-Project Type Matrix to determine required permits.
                     </p>
                   </div>
@@ -1734,9 +1734,9 @@ export default function ApplyPage() {
                       type="button"
                       onClick={() => setShowAllTemplatesModal(true)}
                       style={{
-                        background: "#ffffff",
-                        border: "1.5px solid rgba(255, 255, 255, 0.9)",
-                        color: "#b45309",
+                        background: "#f8fafc",
+                        border: "1.5px solid #cbd5e1",
+                        color: "#1e293b",
                         padding: "8px 16px",
                         borderRadius: "12px",
                         fontSize: "0.82rem",
@@ -1745,13 +1745,13 @@ export default function ApplyPage() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "6px",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+                        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
                         transition: "all 0.15s ease"
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.borderColor = "#94a3b8"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.borderColor = "#cbd5e1"; }}
                     >
-                      <Download size={14} color="#b45309" />
+                      <Download size={14} color="#2563eb" />
                       Official Templates (16 PDFs)
                     </button>
                   </div>
@@ -1766,12 +1766,12 @@ export default function ApplyPage() {
                 marginBottom: "0.65rem",
                 padding: "0 4px",
                 fontSize: "0.82rem",
-                color: "rgba(255, 255, 255, 0.95)"
+                color: "#64748b"
               }}>
                 <span style={{ fontWeight: "600" }}>
-                  Showing <strong style={{ color: "#ffffff" }}>{filteredProjectTypes.length}</strong> project types
+                  Showing <strong style={{ color: "#0f172a" }}>{filteredProjectTypes.length}</strong> project types
                 </span>
-                <span style={{ fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "5px", color: "#ffffff", fontWeight: "700", background: "rgba(0, 0, 0, 0.15)", border: "1px solid rgba(255, 255, 255, 0.4)", padding: "3px 10px", borderRadius: "999px" }}>
+                <span style={{ fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "5px", color: "#64748b", fontWeight: "700", background: "#f1f5f9", border: "1px solid #e2e8f0", padding: "3px 10px", borderRadius: "999px" }}>
                   <span>Scroll to browse</span>
                   <span style={{ fontSize: "0.85rem" }}>↕</span>
                 </span>
@@ -2006,9 +2006,9 @@ export default function ApplyPage() {
                             gap: "4px",
                             fontSize: "0.7rem",
                             fontWeight: "700",
-                            color: isSelected ? "#ffffff" : "#b45309",
-                            background: isSelected ? "rgba(255, 255, 255, 0.2)" : "#fef3c7",
-                            border: isSelected ? "1px solid rgba(255, 255, 255, 0.35)" : "1px solid #fde68a",
+                            color: isSelected ? "#ffffff" : theme.color,
+                            background: isSelected ? "rgba(255, 255, 255, 0.2)" : theme.bg,
+                            border: isSelected ? "1px solid rgba(255, 255, 255, 0.35)" : `1px solid ${theme.border}`,
                             padding: "2px 8px",
                             borderRadius: "999px"
                           }}>
@@ -2153,9 +2153,9 @@ export default function ApplyPage() {
                               setShowRequirementsAlert(true);
                             }}
                             style={{
-                              background: isSelected ? "rgba(255, 255, 255, 0.2)" : "#fef3c7",
-                              border: isSelected ? "1px solid rgba(255, 255, 255, 0.4)" : "1px solid #fde68a",
-                              color: isSelected ? "#ffffff" : "#b45309",
+                              background: isSelected ? "rgba(255, 255, 255, 0.2)" : "#eff6ff",
+                              border: isSelected ? "1px solid rgba(255, 255, 255, 0.4)" : "1px solid #bfdbfe",
+                              color: isSelected ? "#ffffff" : "#2563eb",
                               borderRadius: "6px",
                               cursor: "pointer",
                               fontSize: "0.72rem",
@@ -2171,7 +2171,7 @@ export default function ApplyPage() {
                                 e.currentTarget.style.background = "#ffffff";
                                 e.currentTarget.style.color = "#1d4ed8";
                               } else {
-                                e.currentTarget.style.background = "#d97706";
+                                e.currentTarget.style.background = "#2563eb";
                                 e.currentTarget.style.color = "#ffffff";
                               }
                             }}
@@ -2180,8 +2180,8 @@ export default function ApplyPage() {
                                 e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
                                 e.currentTarget.style.color = "#ffffff";
                               } else {
-                                e.currentTarget.style.background = "#fef3c7";
-                                e.currentTarget.style.color = "#b45309";
+                                e.currentTarget.style.background = "#eff6ff";
+                                e.currentTarget.style.color = "#2563eb";
                               }
                             }}
                             title="View Required Docs for this Project Type"
@@ -2312,25 +2312,25 @@ export default function ApplyPage() {
                   <span style={{
                     fontSize: "0.72rem",
                     fontWeight: "800",
-                    color: "#ffffff",
-                    background: "rgba(255, 255, 255, 0.2)",
-                    border: "1px solid rgba(255, 255, 255, 0.35)",
+                    color: "#2563eb",
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
                     padding: "2px 8px",
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
                     STEP 2 OF 5
                   </span>
-                  <span style={{ fontSize: "0.88rem", color: "#ffffff", fontWeight: "700", textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)" }}>
+                  <span style={{ fontSize: "0.88rem", color: "#64748b", fontWeight: "700" }}>
                     Prerequisite Verification
                   </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
                   <div>
-                    <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#ffffff", margin: "0 0 0.35rem 0" }}>
+                    <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
                       Locational Clearance
                     </h2>
-                    <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.9)", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                    <p style={{ margin: 0, color: "#64748b", fontSize: "0.92rem", lineHeight: "1.5" }}>
                       {isClearanceRequired ? (
                         <>
                           Under Sto. Tomas Municipal Permitting Matrix, permitting for <strong>{selectedProjectType?.name}</strong> requires an approved <strong>Locational Clearance</strong> confirming zoning classification before completing the required technical permit forms.
@@ -3178,22 +3178,23 @@ export default function ApplyPage() {
                   <span style={{
                     fontSize: "0.72rem",
                     fontWeight: "800",
-                    color: "#4338ca",
-                    background: "#e0e7ff",
+                    color: "#2563eb",
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
                     padding: "2px 8px",
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
                     STEP 4 OF 5
                   </span>
-                  <span style={{ fontSize: "0.88rem", color: "#ffffff", fontWeight: "700", textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)" }}>
+                  <span style={{ fontSize: "0.88rem", color: "#64748b", fontWeight: "700" }}>
                     Site & Cadastral Mapping
                   </span>
                 </div>
-                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#ffffff", margin: "0 0 0.35rem 0", textShadow: "0 2px 10px rgba(0, 0, 0, 0.18)" }}>
+                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
                   Mapping
                 </h2>
-                <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.95)", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                <p style={{ margin: 0, color: "#64748b", fontSize: "0.92rem", lineHeight: "1.5" }}>
                   Pinpoint your project location in Sto. Tomas, Pampanga to determine cadastral boundaries, coordinates, and zoning compliance.
                 </p>
               </div>
@@ -3201,7 +3202,7 @@ export default function ApplyPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", marginTop: "1rem" }}>
                 {/* 1. Basic Details: Project Name */}
                 <div className="form-group">
-                  <label style={{ fontWeight: "700", color: "#ffffff", marginBottom: "0.5rem", display: "block", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>Project Name *</label>
+                  <label style={{ fontWeight: "700", color: "#0f172a", marginBottom: "0.5rem", display: "block" }}>Project Name *</label>
                   <input 
                     type="text" 
                     required
@@ -3358,22 +3359,23 @@ export default function ApplyPage() {
                   <span style={{
                     fontSize: "0.72rem",
                     fontWeight: "800",
-                    color: "#4338ca",
-                    background: "#e0e7ff",
+                    color: "#2563eb",
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
                     padding: "2px 8px",
                     borderRadius: "6px",
                     letterSpacing: "0.5px"
                   }}>
                     STEP 5 OF 5
                   </span>
-                  <span style={{ fontSize: "0.88rem", color: "#ffffff", fontWeight: "700", textShadow: "0 1px 2px rgba(0, 0, 0, 0.25)" }}>
+                  <span style={{ fontSize: "0.88rem", color: "#64748b", fontWeight: "700" }}>
                     Final Verification & Filing
                   </span>
                 </div>
-                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#ffffff", margin: "0 0 0.35rem 0", textShadow: "0 2px 10px rgba(0, 0, 0, 0.18)" }}>
+                <h2 style={{ fontSize: "1.65rem", fontWeight: "800", color: "#0f172a", margin: "0 0 0.35rem 0" }}>
                   Review
                 </h2>
-                <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.95)", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                <p style={{ margin: 0, color: "#64748b", fontSize: "0.92rem", lineHeight: "1.5" }}>
                   Review your application details, selected municipal project type, required permit forms, and site mapping before filing endorsement.
                 </p>
               </div>
@@ -4056,10 +4058,10 @@ export default function ApplyPage() {
                   className="btn-primary btn-wizard-next" 
                   onClick={() => goToStep(2)}
                   style={{ 
-                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                    background: "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)", 
                     color: "#ffffff",
                     border: "1.5px solid transparent",
-                    boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                    boxShadow: "0 4px 14px rgba(0, 56, 168, 0.3)", 
                     display: "flex", 
                     alignItems: "center", 
                     gap: "8px", 
@@ -4070,16 +4072,12 @@ export default function ApplyPage() {
                     transition: "all 0.2s ease"
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#ffffff";
-                    e.currentTarget.style.color = "#d97706";
-                    e.currentTarget.style.borderColor = "#ffffff";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                    e.currentTarget.style.background = "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 56, 168, 0.4)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
-                    e.currentTarget.style.color = "#ffffff";
-                    e.currentTarget.style.borderColor = "transparent";
-                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                    e.currentTarget.style.background = "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 56, 168, 0.3)";
                   }}
                 >
                   <span>Next: Locational Clearance</span>
@@ -4090,10 +4088,10 @@ export default function ApplyPage() {
                   className="btn-primary btn-wizard-next" 
                   onClick={() => goToStep(3)}
                   style={{ 
-                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                    background: "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)", 
                     color: "#ffffff",
                     border: "1.5px solid transparent",
-                    boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                    boxShadow: "0 4px 14px rgba(0, 56, 168, 0.3)", 
                     display: "flex", 
                     alignItems: "center", 
                     gap: "8px", 
@@ -4104,16 +4102,12 @@ export default function ApplyPage() {
                     transition: "all 0.2s ease"
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#ffffff";
-                    e.currentTarget.style.color = "#d97706";
-                    e.currentTarget.style.borderColor = "#ffffff";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                    e.currentTarget.style.background = "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 56, 168, 0.4)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
-                    e.currentTarget.style.color = "#ffffff";
-                    e.currentTarget.style.borderColor = "transparent";
-                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                    e.currentTarget.style.background = "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 56, 168, 0.3)";
                   }}
                 >
                   <span>Next: Required Permit Forms</span>
@@ -4126,10 +4120,10 @@ export default function ApplyPage() {
                   className="btn-primary btn-wizard-next" 
                   onClick={() => goToStep(3)}
                   style={{ 
-                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                    background: "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)", 
                     color: "#ffffff",
                     border: "1.5px solid transparent",
-                    boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                    boxShadow: "0 4px 14px rgba(0, 56, 168, 0.3)", 
                     display: "flex", 
                     alignItems: "center", 
                     gap: "8px", 
@@ -4140,16 +4134,12 @@ export default function ApplyPage() {
                     transition: "all 0.2s ease"
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#ffffff";
-                    e.currentTarget.style.color = "#d97706";
-                    e.currentTarget.style.borderColor = "#ffffff";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                    e.currentTarget.style.background = "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 56, 168, 0.4)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
-                    e.currentTarget.style.color = "#ffffff";
-                    e.currentTarget.style.borderColor = "transparent";
-                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                    e.currentTarget.style.background = "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 56, 168, 0.3)";
                   }}
                 >
                   <span>Next: Required Permit Forms</span>
@@ -4183,10 +4173,10 @@ export default function ApplyPage() {
                   className="btn-primary btn-wizard-next" 
                   onClick={() => setShowGoogleForm(true)} 
                   style={{ 
-                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                    background: "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)", 
                     color: "#ffffff",
                     border: "1.5px solid transparent",
-                    boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                    boxShadow: "0 4px 14px rgba(0, 56, 168, 0.3)", 
                     display: "flex", 
                     alignItems: "center", 
                     gap: "8px", 
@@ -4197,16 +4187,12 @@ export default function ApplyPage() {
                     transition: "all 0.2s ease"
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#ffffff";
-                    e.currentTarget.style.color = "#d97706";
-                    e.currentTarget.style.borderColor = "#ffffff";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                    e.currentTarget.style.background = "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 56, 168, 0.4)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
-                    e.currentTarget.style.color = "#ffffff";
-                    e.currentTarget.style.borderColor = "transparent";
-                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                    e.currentTarget.style.background = "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 56, 168, 0.3)";
                   }}
                 >
                   <FileText size={18} />
@@ -4257,10 +4243,10 @@ export default function ApplyPage() {
                 className="btn-primary btn-wizard-next" 
                 onClick={() => goToStep(5)}
                 style={{ 
-                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
+                  background: "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)", 
                   color: "#ffffff",
                   border: "1.5px solid transparent",
-                  boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)", 
+                  boxShadow: "0 4px 14px rgba(0, 56, 168, 0.3)", 
                   display: "flex", 
                   alignItems: "center", 
                   gap: "8px", 
@@ -4271,16 +4257,12 @@ export default function ApplyPage() {
                   transition: "all 0.2s ease"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#ffffff";
-                  e.currentTarget.style.color = "#d97706";
-                  e.currentTarget.style.borderColor = "#ffffff";
-                  e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.15)";
+                  e.currentTarget.style.background = "linear-gradient(135deg, #021a4f 0%, #0038A8 100%)";
+                  e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 56, 168, 0.4)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
-                  e.currentTarget.style.color = "#ffffff";
-                  e.currentTarget.style.borderColor = "transparent";
-                  e.currentTarget.style.boxShadow = "0 4px 14px rgba(217, 119, 6, 0.3)";
+                  e.currentTarget.style.background = "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)";
+                  e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 56, 168, 0.3)";
                 }}
               >
                 <span>Next: Review & Submit</span>
