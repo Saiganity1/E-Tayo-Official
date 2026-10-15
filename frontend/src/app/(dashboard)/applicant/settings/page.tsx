@@ -6,6 +6,7 @@ import {
   AlertCircle, Upload, Trash2, ShieldCheck, Save, RefreshCw 
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { getBackendApiUrl } from "@/utils/apiConfig";
 
 export default function ApplicantSettingsPage() {
   const { language, t } = useLanguage();
@@ -57,18 +58,29 @@ export default function ApplicantSettingsPage() {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
-        const res = await fetch("/api/users/me", {
+
+        const apiBase = getBackendApiUrl();
+        let res = await fetch(`${apiBase}/users/me`, {
           headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.name) setName(data.name);
-          if (data.email) setEmail(data.email);
-          if (data.phone) setPhone(data.phone);
-          if (data.address) setAddress(data.address);
-          if (data.profileImage) {
-            setProfileImage(data.profileImage);
-            setPreviewImage(data.profileImage);
+        }).catch(() => null);
+
+        if (!res || !res.ok) {
+          res = await fetch("/api/users/me", {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => null);
+        }
+
+        if (res && res.ok) {
+          const data = await res.json().catch(() => null);
+          if (data) {
+            if (data.name) setName(data.name);
+            if (data.email) setEmail(data.email);
+            if (data.phone) setPhone(data.phone);
+            if (data.address) setAddress(data.address);
+            if (data.profileImage) {
+              setProfileImage(data.profileImage);
+              setPreviewImage(data.profileImage);
+            }
           }
         }
       } catch (err) {
@@ -101,17 +113,31 @@ export default function ApplicantSettingsPage() {
       // 3. Persist to backend if token available
       const token = localStorage.getItem("token");
       if (token) {
-        await fetch("/api/users/profile", {
+        const apiBase = getBackendApiUrl();
+        const payload = JSON.stringify({
+          email,
+          profileImage: imgUrl
+        });
+
+        let res = await fetch(`${apiBase}/users/profile`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({
-            email,
-            profileImage: imgUrl
-          })
-        });
+          body: payload
+        }).catch(() => null);
+
+        if (!res || !res.ok) {
+          await fetch("/api/users/profile", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: payload
+          }).catch(() => null);
+        }
       }
 
       setSuccessMsg(language === "fil" 
@@ -153,15 +179,24 @@ export default function ApplicantSettingsPage() {
         formData.append("permitType", "Profile");
         
         const token = localStorage.getItem("token");
-        const uploadRes = await fetch("/api/upload", {
+        const apiBase = getBackendApiUrl();
+        let uploadRes = await fetch(`${apiBase}/upload`, {
           method: "POST",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: formData
-        });
+        }).catch(() => null);
 
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          const uploadedUrl = uploadData.urls?.[0] || base64;
+        if (!uploadRes || !uploadRes.ok) {
+          uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: formData
+          }).catch(() => null);
+        }
+
+        if (uploadRes && uploadRes.ok) {
+          const uploadData = await uploadRes.json().catch(() => null);
+          const uploadedUrl = uploadData?.urls?.[0] || base64;
           await saveProfileImage(uploadedUrl);
         } else {
           // Fallback to storing base64
@@ -197,24 +232,33 @@ export default function ApplicantSettingsPage() {
       // 3. Persist to backend
       const token = localStorage.getItem("token");
       if (token) {
-        const res = await fetch("/api/users/profile", {
+        const apiBase = getBackendApiUrl();
+        const payload = JSON.stringify({
+          email,
+          name,
+          phone,
+          address,
+          profileImage
+        });
+
+        let res = await fetch(`${apiBase}/users/profile`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({
-            email,
-            name,
-            phone,
-            address,
-            profileImage
-          })
-        });
+          body: payload
+        }).catch(() => null);
 
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || "Failed to update profile on server");
+        if (!res || !res.ok) {
+          res = await fetch("/api/users/profile", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: payload
+          }).catch(() => null);
         }
       }
 
@@ -253,22 +297,36 @@ export default function ApplicantSettingsPage() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Authentication required");
 
-      const res = await fetch("/api/users/profile", {
+      const apiBase = getBackendApiUrl();
+      const payload = JSON.stringify({
+        email,
+        currentPassword,
+        newPassword
+      });
+
+      let res = await fetch(`${apiBase}/users/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          email,
-          currentPassword,
-          newPassword
-        })
-      });
+        body: payload
+      }).catch(() => null);
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to update password");
+      if (!res || !res.ok) {
+        res = await fetch("/api/users/profile", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: payload
+        }).catch(() => null);
+      }
+
+      if (res && !res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Failed to update password");
       }
 
       setCurrentPassword("");
