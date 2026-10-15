@@ -210,7 +210,7 @@ public class AuthController {
             
             auditLoggingService.logAction("USER_LOGIN", user.getEmail(), "User logged in successfully");
 
-            return ResponseEntity.ok(new JwtAuthResponse(jwt, user.getRole().name(), user.getName()));
+            return ResponseEntity.ok(new JwtAuthResponse(jwt, user.getRole().name(), user.getName(), user.getProfileImage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid email or password"));

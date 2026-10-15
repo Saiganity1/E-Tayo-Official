@@ -30,6 +30,12 @@ public class PermitController {
     @Autowired
     private com.etayo.backend.service.FileStorageService fileStorageService;
 
+    @Autowired
+    private com.etayo.backend.service.EmailService emailService;
+
+    @Autowired
+    private com.etayo.backend.repository.NotificationRepository notificationRepository;
+
     @GetMapping
     public ResponseEntity<List<PermitApplication>> getAllPermits(
             @RequestParam(required = false) String email,
@@ -487,9 +493,9 @@ public class PermitController {
             if (permit.getRemarks() != null) existing.setRemarks(permit.getRemarks());
 
             if (oldStatus != null && !oldStatus.equalsIgnoreCase(permit.getStatus())) {
+                String staff = permit.getAssignedStaff() != null ? permit.getAssignedStaff() : (permit.getEvaluatedBy() != null ? permit.getEvaluatedBy() : "Staff Evaluator");
+                String applicant = existing.getApplicantName() != null ? existing.getApplicantName() : existing.getApplicantEmail();
                 try {
-                    String staff = permit.getAssignedStaff() != null ? permit.getAssignedStaff() : "Staff Evaluator";
-                    String applicant = existing.getApplicantName() != null ? existing.getApplicantName() : existing.getApplicantEmail();
                     auditLoggingService.logAction(
                         "PERMIT_EVALUATED_" + permit.getStatus().toUpperCase(),
                         staff,
@@ -502,6 +508,47 @@ public class PermitController {
                             permit.getRemarks() != null ? permit.getRemarks() : "None")
                     );
                 } catch (Exception ignored) {}
+
+                // Send email to applicant notifying about the status change
+                try {
+                    String applicantEmail = existing.getApplicantEmail() != null ? existing.getApplicantEmail() : permit.getApplicantEmail();
+                    if (applicantEmail != null && !applicantEmail.trim().isEmpty()) {
+                        emailService.sendApplicationStatusEmail(
+                            applicantEmail.trim(),
+                            applicant,
+                            id,
+                            existing.getPermitType() != null ? existing.getPermitType() : permit.getPermitType(),
+                            existing.getProjectName() != null ? existing.getProjectName() : permit.getProjectName(),
+                            existing.getProjectAddress() != null ? existing.getProjectAddress() : permit.getProjectAddress(),
+                            oldStatus,
+                            permit.getStatus(),
+                            permit.getRemarks(),
+                            staff
+                        );
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Notice: Could not send status change email: " + ex.getMessage());
+                }
+
+                // In-App Notification
+                try {
+                    String applicantEmail = existing.getApplicantEmail() != null ? existing.getApplicantEmail() : permit.getApplicantEmail();
+                    if (applicantEmail != null && !applicantEmail.trim().isEmpty()) {
+                        String notifTitle = "Application Update: " + permit.getStatus().toUpperCase();
+                        String notifMsg = String.format("Your application %s (%s) has been updated to %s. Remarks: %s",
+                            id,
+                            existing.getPermitType() != null ? existing.getPermitType().replace("_", " ") : "Permit",
+                            permit.getStatus(),
+                            permit.getRemarks() != null ? permit.getRemarks() : "None");
+                        notificationRepository.save(new com.etayo.backend.model.Notification(
+                            applicantEmail.trim(),
+                            notifTitle,
+                            notifMsg,
+                            "PERMIT_UPDATE",
+                            "/applicant/track"
+                        ));
+                    }
+                } catch (Exception notifEx) {}
             }
             
             if (permit.getTrackingSteps() != null) {
@@ -739,8 +786,8 @@ public class PermitController {
             }
             syncTrackingStepsForStatus(existing, existing.getStatus());
             if (oldStatus != null && !oldStatus.equalsIgnoreCase(existing.getStatus())) {
+                String evalActor = existing.getEvaluatedBy() != null ? existing.getEvaluatedBy() : (existing.getAssignedStaff() != null ? existing.getAssignedStaff() : "Staff Evaluator");
                 try {
-                    String evalActor = existing.getEvaluatedBy() != null ? existing.getEvaluatedBy() : (existing.getAssignedStaff() != null ? existing.getAssignedStaff() : "Staff Evaluator");
                     auditLoggingService.logAction(
                         "PERMIT_EVALUATED_" + existing.getStatus().toUpperCase(),
                         evalActor,
@@ -754,6 +801,45 @@ public class PermitController {
                             existing.getRemarks() != null ? existing.getRemarks() : "None")
                     );
                 } catch (Exception ignored) {}
+
+                // Send specific email to applicant
+                try {
+                    if (existing.getApplicantEmail() != null && !existing.getApplicantEmail().trim().isEmpty()) {
+                        emailService.sendApplicationStatusEmail(
+                            existing.getApplicantEmail().trim(),
+                            existing.getApplicantName(),
+                            existing.getId(),
+                            existing.getPermitType(),
+                            existing.getProjectName(),
+                            existing.getProjectAddress(),
+                            oldStatus,
+                            existing.getStatus(),
+                            existing.getRemarks(),
+                            evalActor
+                        );
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Notice: Could not send status change email: " + ex.getMessage());
+                }
+
+                // In-App Notification
+                try {
+                    if (existing.getApplicantEmail() != null && !existing.getApplicantEmail().trim().isEmpty()) {
+                        String notifTitle = "Application Update: " + existing.getStatus().toUpperCase();
+                        String notifMsg = String.format("Your application %s (%s) has been updated to %s. Remarks: %s",
+                            existing.getId(),
+                            existing.getPermitType() != null ? existing.getPermitType().replace("_", " ") : "Permit",
+                            existing.getStatus(),
+                            existing.getRemarks() != null ? existing.getRemarks() : "None");
+                        notificationRepository.save(new com.etayo.backend.model.Notification(
+                            existing.getApplicantEmail().trim(),
+                            notifTitle,
+                            notifMsg,
+                            "PERMIT_UPDATE",
+                            "/applicant/track"
+                        ));
+                    }
+                } catch (Exception notifEx) {}
             }
             return ResponseEntity.ok(permitApplicationRepository.saveAndFlush(existing));
         }).orElseGet(() -> {

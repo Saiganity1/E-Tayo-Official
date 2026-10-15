@@ -31,17 +31,37 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     };
     if (authHeader) headers["Authorization"] = authHeader;
 
+    let backendSuccess = false;
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
-      await fetch(targetUrl, {
+      const res = await fetch(targetUrl, {
         method: "PATCH",
         headers,
         body: JSON.stringify(body),
         signal: controller.signal
       });
       clearTimeout(timeoutId);
+      if (res.ok) backendSuccess = true;
     } catch (e) {}
+
+    // 3. Fallback direct email notification if backend didn't handle it or local store is primary
+    if (!backendSuccess && patched && patched.applicantEmail) {
+      try {
+        const { sendApplicationStatusEmailDirect } = await import("@/app/api/permits/emailHelper");
+        sendApplicationStatusEmailDirect({
+          toEmail: patched.applicantEmail,
+          applicantName: patched.applicantName,
+          applicationId: patched.id,
+          permitType: patched.permitType,
+          projectName: patched.projectName,
+          projectAddress: patched.projectAddress,
+          newStatus: body.status,
+          remarks: body.remarks,
+          evaluatorName: body.evaluatedBy || body.assignedStaff || "Municipal Evaluator"
+        });
+      } catch (err) {}
+    }
 
     return NextResponse.json(patched || body, { status: 200 });
   } catch (error: any) {

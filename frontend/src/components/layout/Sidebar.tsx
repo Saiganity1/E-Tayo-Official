@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { 
   Building2, Home, PlusCircle, Search, FileCheck, 
   MessageSquare, ShieldAlert, Map, X, Menu, LogOut, Users, FileText, ClipboardList,
-  Shield, CheckSquare, Globe
+  Shield, CheckSquare, Globe, Settings
 } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -33,6 +33,7 @@ export default function Sidebar() {
   }, [pathname]);
 
   const [userName, setUserName] = useState("");
+  const [userProfileImage, setUserProfileImage] = useState<string | null>(null);
   const [approvedClearanceRef, setApprovedClearanceRef] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("etayo_active_clearance_ref");
@@ -47,44 +48,57 @@ export default function Sidebar() {
   });
   
   React.useEffect(() => {
-    try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const userObj = JSON.parse(userStr);
-        let name = userObj.name || "";
-        
-        // If name looks like an email or is empty, resolve actual Full Name from local registered stores
-        if (!name || name.includes("@")) {
-          const registeredUsersRaw = localStorage.getItem("etayo_registered_users");
-          if (registeredUsersRaw) {
-            try {
-              const regList = JSON.parse(registeredUsersRaw);
-              const found = regList.find((u: any) => u.email?.toLowerCase() === userObj.email?.toLowerCase());
-              if (found && found.name) name = found.name;
-            } catch (e) {}
-          }
+    const loadUserData = () => {
+      try {
+        const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+        if (userStr) {
+          const userObj = JSON.parse(userStr);
+          setUserProfileImage(userObj.profileImage || null);
+          let name = userObj.name || "";
+          
+          // If name looks like an email or is empty, resolve actual Full Name from local registered stores
           if (!name || name.includes("@")) {
-            const assignedStaffRaw = localStorage.getItem("etayo_assigned_staff");
-            if (assignedStaffRaw) {
+            const registeredUsersRaw = localStorage.getItem("etayo_registered_users");
+            if (registeredUsersRaw) {
               try {
-                const staffList = JSON.parse(assignedStaffRaw);
-                const found = staffList.find((u: any) => u.email?.toLowerCase() === userObj.email?.toLowerCase());
+                const regList = JSON.parse(registeredUsersRaw);
+                const found = regList.find((u: any) => u.email?.toLowerCase() === userObj.email?.toLowerCase());
                 if (found && found.name) name = found.name;
               } catch (e) {}
             }
+            if (!name || name.includes("@")) {
+              const assignedStaffRaw = localStorage.getItem("etayo_assigned_staff");
+              if (assignedStaffRaw) {
+                try {
+                  const staffList = JSON.parse(assignedStaffRaw);
+                  const found = staffList.find((u: any) => u.email?.toLowerCase() === userObj.email?.toLowerCase());
+                  if (found && found.name) name = found.name;
+                } catch (e) {}
+              }
+            }
+          }
+
+          if ((!name || name.includes("@")) && userObj.email?.toLowerCase().includes("admin")) {
+            name = "Municipal Administrator";
+          }
+
+          if (name && !name.includes("@")) {
+            setUserName(name);
           }
         }
-
-        if ((!name || name.includes("@")) && userObj.email?.toLowerCase().includes("admin")) {
-          name = "Municipal Administrator";
-        }
-
-        if (name && !name.includes("@")) {
-          setUserName(name);
-        }
+      } catch (e) {
+        console.error("Failed to parse user from localStorage");
       }
-    } catch (e) {
-      console.error("Failed to parse user from localStorage");
+    };
+
+    loadUserData();
+    if (typeof window !== "undefined") {
+      window.addEventListener("etayo_user_updated", loadUserData);
+      window.addEventListener("storage", loadUserData);
+      return () => {
+        window.removeEventListener("etayo_user_updated", loadUserData);
+        window.removeEventListener("storage", loadUserData);
+      };
     }
   }, []);
 
@@ -241,6 +255,7 @@ export default function Sidebar() {
           ] : []),
           { href: "/applicant/map", label: t("map", "Map"), icon: Map },
           { href: "/applicant/messages", label: t("messages", "Messages"), icon: MessageSquare },
+          { href: "/applicant/settings", label: t("Settings", "Settings"), icon: Settings },
         ];
       }
       case "staff":
@@ -406,9 +421,22 @@ export default function Sidebar() {
         </div>
 
         <div className="user-profile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1 }}>
-            <div className="user-avatar" style={{ flexShrink: 0 }}>
-              {avatarChar}
+          <Link 
+            href={userRole === "applicant" ? "/applicant/settings" : "#"} 
+            style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1, textDecoration: 'none', color: 'inherit', cursor: userRole === "applicant" ? 'pointer' : 'default' }}
+            title={userRole === "applicant" ? "Buksan ang Settings / Palitan ang Profile Image" : displayName}
+          >
+            <div className="user-avatar" style={{ flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+              {userProfileImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img 
+                  src={userProfileImage} 
+                  alt={displayName} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
+              ) : (
+                avatarChar
+              )}
             </div>
             <div className="user-info" style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
               <span 
@@ -433,7 +461,7 @@ export default function Sidebar() {
                   : (language === "fil" ? "PUBLIKO" : "PUBLIC")}
               </span>
             </div>
-          </div>
+          </Link>
           {userRole !== "public" && (
             <div style={{ flexShrink: 0 }}>
               <NotificationBell />

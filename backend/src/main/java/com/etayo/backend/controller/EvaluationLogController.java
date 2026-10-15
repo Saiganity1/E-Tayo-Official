@@ -76,14 +76,23 @@ public class EvaluationLogController {
             System.err.println("Could not save notification: " + e.getMessage());
         }
 
-        // Send Email Alert
+        // Send Specific Email Alert
         try {
-            String htmlBody = "<h2>Update on your e-Tayo Permit Application</h2>" +
-                              "<p><b>Permit Type:</b> " + saved.getPermitType() + "</p>" +
-                              "<p><b>Status:</b> " + saved.getAction() + "</p>" +
-                              "<p><b>Remarks:</b> " + saved.getComments() + "</p>" +
-                              "<br><p>Log in to your dashboard to view more details.</p>";
-            emailService.sendEmail(saved.getApplicantEmail(), "e-Tayo Permit Update: " + saved.getAction(), htmlBody);
+            if (saved.getApplicantEmail() != null && !saved.getApplicantEmail().trim().isEmpty()) {
+                String staffName = (saved.getStaffEmail() != null && !saved.getStaffEmail().isEmpty()) ? saved.getStaffEmail() : "Municipal Building Official / Evaluator";
+                emailService.sendApplicationStatusEmail(
+                    saved.getApplicantEmail().trim(),
+                    "Valued Applicant",
+                    (saved.getPermitId() != null && !saved.getPermitId().isEmpty()) ? saved.getPermitId() : "Application",
+                    saved.getPermitType(),
+                    saved.getPermitType() != null ? saved.getPermitType().replace("_", " ") : "Permit",
+                    "Sto. Tomas, Pampanga",
+                    "Under Review",
+                    saved.getAction(),
+                    saved.getComments(),
+                    staffName
+                );
+            }
         } catch (Exception e) {
             System.err.println("Could not send email alert: " + e.getMessage());
         }

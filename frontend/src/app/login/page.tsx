@@ -243,7 +243,8 @@ export default function LoginPage() {
       localStorage.setItem("user", JSON.stringify({ 
         email: sanitizedEmail, 
         name: resolvedFullName, 
-        role: data.role 
+        role: data.role,
+        profileImage: data.profileImage || null
       }));
 
       let role: "applicant" | "staff" | "admin" = "applicant";

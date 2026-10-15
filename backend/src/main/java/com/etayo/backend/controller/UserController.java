@@ -44,6 +44,9 @@ public class UserController {
             map.put("name", user.getName());
             map.put("email", user.getEmail());
             map.put("role", user.getRole() != null ? user.getRole().name() : "ROLE_APPLICANT");
+            map.put("profileImage", user.getProfileImage());
+            map.put("phone", user.getPhone());
+            map.put("address", user.getAddress());
             return map;
         }).collect(Collectors.toList());
 
@@ -53,6 +56,90 @@ public class UserController {
                 .header("X-Total-Count", String.valueOf(users.size()))
                 .header("Content-Range", contentRange)
                 .body(userList);
+    }
+
+    /**
+     * Get profile of currently logged-in user.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not authenticated"));
+        }
+        String email = authentication.getName();
+        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (user == null) return ResponseEntity.notFound().build();
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", user.getId());
+        map.put("name", user.getName());
+        map.put("email", user.getEmail());
+        map.put("role", user.getRole() != null ? user.getRole().name() : "ROLE_APPLICANT");
+        map.put("profileImage", user.getProfileImage());
+        map.put("phone", user.getPhone());
+        map.put("address", user.getAddress());
+        return ResponseEntity.ok(map);
+    }
+
+    /**
+     * Update current user profile (name, profileImage, phone, address, and password).
+     */
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(@RequestBody Map<String, Object> payload, org.springframework.security.core.Authentication authentication) {
+        String email = null;
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            email = authentication.getName();
+        } else if (payload.containsKey("email") && payload.get("email") != null) {
+            email = String.valueOf(payload.get("email")).trim();
+        }
+
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).body(Map.of("error", "Authentication required to update profile"));
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(email.trim()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (payload.containsKey("name") && payload.get("name") != null) {
+            String name = String.valueOf(payload.get("name")).trim();
+            if (!name.isEmpty()) user.setName(name);
+        }
+        if (payload.containsKey("profileImage")) {
+            user.setProfileImage(payload.get("profileImage") != null ? String.valueOf(payload.get("profileImage")) : null);
+        }
+        if (payload.containsKey("phone")) {
+            user.setPhone(payload.get("phone") != null ? String.valueOf(payload.get("phone")).trim() : null);
+        }
+        if (payload.containsKey("address")) {
+            user.setAddress(payload.get("address") != null ? String.valueOf(payload.get("address")).trim() : null);
+        }
+        if (payload.containsKey("newPassword") && payload.get("newPassword") != null) {
+            String newPass = String.valueOf(payload.get("newPassword")).trim();
+            if (!newPass.isEmpty()) {
+                if (payload.containsKey("currentPassword")) {
+                    String currPass = String.valueOf(payload.get("currentPassword")).trim();
+                    if (!passwordEncoder.matches(currPass, user.getPassword()) && !currPass.equals(user.getPassword())) {
+                        return ResponseEntity.badRequest().body(Map.of("error", "Current password does not match"));
+                    }
+                }
+                user.setPassword(passwordEncoder.encode(newPass));
+            }
+        }
+
+        userRepository.save(user);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", user.getId());
+        map.put("name", user.getName());
+        map.put("email", user.getEmail());
+        map.put("role", user.getRole() != null ? user.getRole().name() : "ROLE_APPLICANT");
+        map.put("profileImage", user.getProfileImage());
+        map.put("phone", user.getPhone());
+        map.put("address", user.getAddress());
+        map.put("message", "Profile updated successfully");
+        return ResponseEntity.ok(map);
     }
 
     @GetMapping("/{id}")
@@ -66,6 +153,9 @@ public class UserController {
         map.put("name", user.getName());
         map.put("email", user.getEmail());
         map.put("role", user.getRole() != null ? user.getRole().name() : "ROLE_APPLICANT");
+        map.put("profileImage", user.getProfileImage());
+        map.put("phone", user.getPhone());
+        map.put("address", user.getAddress());
         
         return ResponseEntity.ok(map);
     }
@@ -79,6 +169,15 @@ public class UserController {
         if (payload.containsKey("name")) user.setName((String) payload.get("name"));
         if (payload.containsKey("email") && payload.get("email") != null) {
             user.setEmail(((String) payload.get("email")).trim().toLowerCase());
+        }
+        if (payload.containsKey("profileImage")) {
+            user.setProfileImage((String) payload.get("profileImage"));
+        }
+        if (payload.containsKey("phone")) {
+            user.setPhone((String) payload.get("phone"));
+        }
+        if (payload.containsKey("address")) {
+            user.setAddress((String) payload.get("address"));
         }
         if (payload.containsKey("password") && payload.get("password") != null) {
             String rawPassword = (String) payload.get("password");
@@ -102,6 +201,9 @@ public class UserController {
         map.put("name", user.getName());
         map.put("email", user.getEmail());
         map.put("role", user.getRole() != null ? user.getRole().name() : "ROLE_APPLICANT");
+        map.put("profileImage", user.getProfileImage());
+        map.put("phone", user.getPhone());
+        map.put("address", user.getAddress());
 
         return ResponseEntity.ok(map);
     }

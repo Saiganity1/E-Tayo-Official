@@ -5,11 +5,19 @@ public class JwtAuthResponse {
     private String tokenType = "Bearer";
     private String role;
     private String name;
+    private String profileImage;
 
     public JwtAuthResponse(String accessToken, String role, String name) {
         this.accessToken = accessToken;
         this.role = role;
         this.name = name;
+    }
+
+    public JwtAuthResponse(String accessToken, String role, String name, String profileImage) {
+        this.accessToken = accessToken;
+        this.role = role;
+        this.name = name;
+        this.profileImage = profileImage;
     }
 
     public String getAccessToken() { return accessToken; }
@@ -23,4 +31,7 @@ public class JwtAuthResponse {
     
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
+    public String getProfileImage() { return profileImage; }
+    public void setProfileImage(String profileImage) { this.profileImage = profileImage; }
 }
