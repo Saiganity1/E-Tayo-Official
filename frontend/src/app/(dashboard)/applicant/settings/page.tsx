@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Camera, User, Mail, Phone, MapPin, Lock, CheckCircle2, 
-  AlertCircle, Upload, Trash2, ShieldCheck, BellRing, Save, RefreshCw, Sparkles 
+  AlertCircle, Upload, Trash2, ShieldCheck, Save, RefreshCw 
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -29,20 +29,8 @@ export default function ApplicantSettingsPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [testEmailLoading, setTestEmailLoading] = useState(false);
-  const [testEmailStatus, setTestEmailStatus] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  // Preset avatar choices
-  const PRESET_AVATARS = [
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80",
-    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&q=80",
-    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80",
-    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80",
-    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80",
-  ];
 
   // Load existing profile from localStorage and backend
   useEffect(() => {
@@ -295,47 +283,6 @@ export default function ApplicantSettingsPage() {
     }
   };
 
-  // Test Email Notification trigger to verify status alert setup
-  const handleSendTestEmail = async () => {
-    if (!email) {
-      setErrorMsg("No applicant email found");
-      return;
-    }
-
-    setTestEmailLoading(true);
-    setTestEmailStatus(null);
-    setErrorMsg(null);
-
-    try {
-      const { sendApplicationStatusEmailDirect } = await import("@/app/api/permits/emailHelper");
-      const sent = await sendApplicationStatusEmailDirect({
-        toEmail: email,
-        applicantName: name || "Applicant",
-        applicationId: "APP-TEST-2026",
-        permitType: "Locational Clearance & Building Permit",
-        projectName: "Sample Evaluation Demonstration",
-        projectAddress: "Poblacion, Sto. Tomas, Pampanga",
-        oldStatus: "Pending",
-        newStatus: "Under Evaluation",
-        remarks: "This is a real test status email verifying that Paul and other applicants receive specific email notifications upon evaluation.",
-        evaluatorName: "Engr. Evaluator (Municipal Building Official)"
-      });
-
-      if (sent) {
-        setTestEmailStatus(language === "fil" 
-          ? `Nagpadala ng test evaluation email sa ${email}! Pakisuri ang inyong Inbox / Spam folder.` 
-          : `Test evaluation email sent to ${email}! Please check your Inbox / Spam folder.`);
-      } else {
-        setTestEmailStatus("Could not dispatch test email. Please ensure your email is valid.");
-      }
-    } catch (e: any) {
-      setTestEmailStatus(e?.message || "Failed to dispatch test email");
-    } finally {
-      setTestEmailLoading(false);
-      setTimeout(() => setTestEmailStatus(null), 7000);
-    }
-  };
-
   const avatarChar = (name || "Applicant").charAt(0).toUpperCase();
 
   return (
@@ -347,8 +294,8 @@ export default function ApplicantSettingsPage() {
         </h1>
         <p style={{ color: "#64748b", marginTop: "0.35rem", fontSize: "0.95rem" }}>
           {language === "fil"
-            ? "Pamahalaan ang inyong impormasyon, palitan ang inyong Profile Image, at suriin ang inyong automated email status notifications."
-            : "Manage your personal information, update your profile image, and review automated email status alerts."}
+            ? "Pamahalaan ang inyong impormasyon at palitan ang inyong Profile Image."
+            : "Manage your personal information and update your profile image."}
         </p>
       </div>
 
@@ -390,8 +337,8 @@ export default function ApplicantSettingsPage() {
               </h2>
               <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "0.25rem 0 0 0" }}>
                 {language === "fil" 
-                  ? "Pumili ng bagong larawan mula sa inyong device o pumili sa mga available na preset." 
-                  : "Upload a custom photo from your device or select from official avatars."}
+                  ? "Pumili ng bagong larawan mula sa inyong device." 
+                  : "Upload a custom photo from your device."}
               </p>
             </div>
             {profileImage && (
@@ -481,102 +428,12 @@ export default function ApplicantSettingsPage() {
                   ? "Tumatanggap ng PNG, JPG, JPEG, o WEBP. Hanggang 5MB ang maximum na laki. Agad itong lilitaw sa inyong profile at sa sidebar navigation."
                   : "Supports PNG, JPG, JPEG, or WEBP up to 5MB. Automatically syncs with your sidebar and header profile."}
               </p>
-
-              {/* Quick Preset Avatars */}
-              <div style={{ marginTop: "1rem" }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  {language === "fil" ? "O Pumili ng Preset Avatar:" : "Or Choose Preset Avatar:"}
-                </span>
-                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-                  {PRESET_AVATARS.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => saveProfileImage(preset)}
-                      disabled={uploadingImage}
-                      style={{
-                        width: "38px", height: "38px", borderRadius: "10px", overflow: "hidden",
-                        border: previewImage === preset ? "2px solid #0038A8" : "1px solid #cbd5e1",
-                        padding: 0, cursor: "pointer", background: "none"
-                      }}
-                      title={`Pumili ng Preset ${idx + 1}`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={preset} alt={`Preset ${idx}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
         {/* ========================================================================= */}
-        {/* 2. AUTOMATED EMAIL NOTIFICATIONS STATUS CARD */}
-        {/* ========================================================================= */}
-        <div style={{
-          background: "linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)", borderRadius: "12px",
-          border: "1px solid #bbf7d0", padding: "1.75rem", boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <div style={{ width: "44px", height: "44px", borderRadius: "10px", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <BellRing size={22} color="#16a34a" />
-              </div>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#166534", margin: 0 }}>
-                    {language === "fil" ? "Automated Email Status Updates" : "Automated Email Status Updates"}
-                  </h3>
-                  <span style={{ background: "#22c55e", color: "#ffffff", fontSize: "0.68rem", fontWeight: 800, padding: "2px 8px", borderRadius: "9999px" }}>
-                    ACTIVE
-                  </span>
-                </div>
-                <p style={{ fontSize: "0.82rem", color: "#15803d", margin: "0.25rem 0 0 0" }}>
-                  {language === "fil"
-                    ? `Nakatakdang mag-email sa: ${email || "Inyong Rehistradong Email"}`
-                    : `Configured to notify: ${email || "Your Registered Email"}`}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleSendTestEmail}
-              disabled={testEmailLoading}
-              style={{
-                background: "#ffffff", border: "1px solid #86efac", color: "#15803d",
-                padding: "0.55rem 1rem", borderRadius: "8px", fontWeight: 700, fontSize: "0.82rem",
-                display: "flex", alignItems: "center", gap: "0.45rem", cursor: "pointer",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-              }}
-              title="Magpadala ng sample evaluation update email"
-            >
-              {testEmailLoading ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
-              <span>{testEmailLoading ? "Ipinapadala..." : (language === "fil" ? "Subukan ang Email Alert" : "Send Test Alert Email")}</span>
-            </button>
-          </div>
-
-          <div style={{ marginTop: "1rem", background: "#ffffff", padding: "1rem", borderRadius: "8px", border: "1px solid #dcfce7", fontSize: "0.84rem", color: "#334155", lineHeight: 1.55 }}>
-            <p style={{ margin: "0 0 0.5rem 0" }}>
-              <b>{language === "fil" ? "Paano ito gumagana?" : "How does this work?"}</b>
-            </p>
-            <p style={{ margin: 0 }}>
-              {language === "fil"
-                ? "Sa bawat pagkilos ng evaluator o administrator (tulad ng pagbabago mula Pending patungong Under Evaluation, For Payment, o Approved), awtomatikong magpapadala ang e-Tayo ng detalyadong email na naglalaman ng inyong Application ID, Permit Classification, Pangalan ng Proyekto, at Opisyal na Remarks ng Evaluator."
-                : "Whenever an evaluator or administrator acts on your permit (e.g. status changes from Pending to Under Evaluation, For Payment, or Approved), e-Tayo immediately dispatches an official email containing your Reference ID, Permit Type, Project Title, and Evaluator Remarks."}
-            </p>
-          </div>
-
-          {testEmailStatus && (
-            <div style={{ marginTop: "0.75rem", padding: "0.6rem 0.9rem", background: "#dcfce7", borderRadius: "6px", color: "#166534", fontSize: "0.85rem", fontWeight: 600 }}>
-              {testEmailStatus}
-            </div>
-          )}
-        </div>
-
-        {/* ========================================================================= */}
-        {/* 3. PERSONAL INFORMATION FORM */}
+        {/* 2. PERSONAL INFORMATION FORM */}
         {/* ========================================================================= */}
         <div style={{
           background: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0",
