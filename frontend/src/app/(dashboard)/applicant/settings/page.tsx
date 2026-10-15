@@ -3,10 +3,63 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Camera, User, Mail, Phone, MapPin, Lock, CheckCircle2, 
-  AlertCircle, Upload, Trash2, ShieldCheck, Save, RefreshCw 
+  AlertCircle, Upload, Trash2, ShieldCheck, Save, RefreshCw, Settings 
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { getBackendApiUrl } from "@/utils/apiConfig";
+
+function sanitizeProfileImage(url: string | null | undefined): string | null {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.toLowerCase().endsWith(".pdf") || trimmed.includes("UNIFIED-APPLICATION-FORM") || trimmed === "null" || trimmed === "undefined") {
+    return null;
+  }
+  if (trimmed.startsWith("/api/files/")) {
+    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+    return `${rawApi}${trimmed}`;
+  }
+  return trimmed;
+}
+
+const processImageToAvatarDataUrl = (file: File): Promise<string> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const rawBase64 = e.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 320;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(rawBase64);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.88));
+      };
+      img.onerror = () => resolve(rawBase64);
+      img.src = rawBase64;
+    };
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(file);
+  });
+};
 
 export default function ApplicantSettingsPage() {
   const { language, t } = useLanguage();
@@ -44,9 +97,15 @@ export default function ApplicantSettingsPage() {
         setPhone(u.phone || "");
         setAddress(u.address || "");
         setRole(u.role || "ROLE_APPLICANT");
-        if (u.profileImage) {
-          setProfileImage(u.profileImage);
-          setPreviewImage(u.profileImage);
+        const cleanImg = sanitizeProfileImage(u.profileImage);
+        if (cleanImg) {
+          setProfileImage(cleanImg);
+          setPreviewImage(cleanImg);
+        } else if (u.profileImage) {
+          u.profileImage = null;
+          localStorage.setItem("user", JSON.stringify(u));
+          setProfileImage(null);
+          setPreviewImage(null);
         }
       }
     } catch (e) {
@@ -78,8 +137,9 @@ export default function ApplicantSettingsPage() {
             if (data.phone) setPhone(data.phone);
             if (data.address) setAddress(data.address);
             if (data.profileImage) {
-              setProfileImage(data.profileImage);
-              setPreviewImage(data.profileImage);
+              const cleanImg = sanitizeProfileImage(data.profileImage);
+              setProfileImage(cleanImg);
+              setPreviewImage(cleanImg);
             }
           }
         }
@@ -151,8 +211,8 @@ export default function ApplicantSettingsPage() {
     }
   };
 
-  // Handle local file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle local file selection with client-side canvas optimization
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -161,53 +221,28 @@ export default function ApplicantSettingsPage() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg(language === "fil" ? "Hindi dapat lalampas sa 5MB ang sukat ng larawan." : "Image size must not exceed 5MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMsg(language === "fil" ? "Hindi dapat lalampas sa 10MB ang sukat ng larawan." : "Image size must not exceed 10MB.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      setPreviewImage(base64);
+    setUploadingImage(true);
+    setErrorMsg(null);
 
-      // Try uploading to backend /api/upload
-      try {
-        setUploadingImage(true);
-        const formData = new FormData();
-        formData.append("files", file);
-        formData.append("permitType", "Profile");
-        
-        const token = localStorage.getItem("token");
-        const apiBase = getBackendApiUrl();
-        let uploadRes = await fetch(`${apiBase}/upload`, {
-          method: "POST",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: formData
-        }).catch(() => null);
-
-        if (!uploadRes || !uploadRes.ok) {
-          uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-            body: formData
-          }).catch(() => null);
-        }
-
-        if (uploadRes && uploadRes.ok) {
-          const uploadData = await uploadRes.json().catch(() => null);
-          const uploadedUrl = uploadData?.urls?.[0] || base64;
-          await saveProfileImage(uploadedUrl);
-        } else {
-          // Fallback to storing base64
-          await saveProfileImage(base64);
-        }
-      } catch (err) {
-        // Fallback to storing base64
-        await saveProfileImage(base64);
+    try {
+      const optimizedAvatar = await processImageToAvatarDataUrl(file);
+      if (!optimizedAvatar) {
+        throw new Error(language === "fil" ? "Hindi ma-proseso ang larawan." : "Could not process selected image.");
       }
-    };
-    reader.readAsDataURL(file);
+
+      setPreviewImage(optimizedAvatar);
+      await saveProfileImage(optimizedAvatar);
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Failed to save profile picture");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   // Save personal details form
@@ -345,16 +380,63 @@ export default function ApplicantSettingsPage() {
 
   return (
     <div style={{ padding: "1.5rem", maxWidth: "960px", margin: "0 auto" }}>
-      {/* Page Header */}
-      <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <span>{t("Settings", "Account Settings & Profile")}</span>
-        </h1>
-        <p style={{ color: "#64748b", marginTop: "0.35rem", fontSize: "0.95rem" }}>
-          {language === "fil"
-            ? "Pamahalaan ang inyong impormasyon at palitan ang inyong Profile Image."
-            : "Manage your personal information and update your profile image."}
-        </p>
+      {/* Page Header Card */}
+      <div style={{
+        background: "#ffffff",
+        borderRadius: "14px",
+        padding: "1.5rem 1.75rem",
+        marginBottom: "1.75rem",
+        border: "1px solid #e2e8f0",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "1rem"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            borderRadius: "12px",
+            background: "linear-gradient(135deg, #0038A8 0%, #1e40af 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#ffffff",
+            boxShadow: "0 4px 12px rgba(0, 56, 168, 0.2)",
+            flexShrink: 0
+          }}>
+            <Settings size={26} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-0.01em" }}>
+              {t("Settings", "Account Settings & Profile")}
+            </h1>
+            <p style={{ color: "#64748b", marginTop: "0.25rem", fontSize: "0.9rem", margin: 0 }}>
+              {language === "fil"
+                ? "Pamahalaan ang inyong impormasyon at palitan ang inyong Profile Image."
+                : "Manage your personal information and update your profile image."}
+            </p>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{
+            background: "#eff6ff",
+            color: "#0038A8",
+            fontSize: "0.78rem",
+            fontWeight: 700,
+            padding: "0.35rem 0.75rem",
+            borderRadius: "9999px",
+            border: "1px solid #bfdbfe",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.35rem"
+          }}>
+            <ShieldCheck size={14} />
+            <span>{language === "fil" ? "Aplikante" : "Verified Applicant"}</span>
+          </span>
+        </div>
       </div>
 
       {/* Global Alerts */}
@@ -432,6 +514,10 @@ export default function ApplicantSettingsPage() {
                     src={previewImage} 
                     alt="Preview" 
                     style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                    onError={() => {
+                      setPreviewImage(null);
+                      setProfileImage(null);
+                    }}
                   />
                 ) : (
                   avatarChar

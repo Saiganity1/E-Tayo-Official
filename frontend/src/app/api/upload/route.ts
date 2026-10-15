@@ -65,7 +65,8 @@ export async function POST(req: Request) {
       }
     }
 
-    if (urls.length === 0) {
+    const permitType = (formData.get("permitType") || "").toString().toLowerCase();
+    if (urls.length === 0 && !permitType.includes("profile")) {
       urls.push("/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf");
     }
 

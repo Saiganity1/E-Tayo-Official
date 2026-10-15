@@ -14,6 +14,19 @@ import { useLanguage } from "../../context/LanguageContext";
 import NotificationBell from "./NotificationBell";
 import { isApplicationReleased } from "@/utils/projectGrouping";
 
+function sanitizeProfileImage(url: string | null | undefined): string | null {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.toLowerCase().endsWith(".pdf") || trimmed.includes("UNIFIED-APPLICATION-FORM") || trimmed === "null" || trimmed === "undefined") {
+    return null;
+  }
+  if (trimmed.startsWith("/api/files/")) {
+    const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+    return `${rawApi}${trimmed}`;
+  }
+  return trimmed;
+}
+
 export default function Sidebar() {
   const { userRole, setUserRole, applications } = usePermitContext();
   const { language, setLanguage, t } = useLanguage();
@@ -53,7 +66,7 @@ export default function Sidebar() {
         const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
         if (userStr) {
           const userObj = JSON.parse(userStr);
-          setUserProfileImage(userObj.profileImage || null);
+          setUserProfileImage(sanitizeProfileImage(userObj.profileImage));
           let name = userObj.name || "";
           
           // If name looks like an email or is empty, resolve actual Full Name from local registered stores
@@ -391,8 +404,18 @@ export default function Sidebar() {
               aria-label="Toggle Menu Drawer"
               title={displayName}
             >
-              <div className="mobile-header-avatar">
-                {avatarChar}
+              <div className="mobile-header-avatar" style={{ overflow: "hidden" }}>
+                {userProfileImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img 
+                    src={userProfileImage} 
+                    alt={displayName} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    onError={() => setUserProfileImage(null)}
+                  />
+                ) : (
+                  avatarChar
+                )}
               </div>
               <span className="mobile-header-name">
                 {displayName.split(" ")[0]}
@@ -433,6 +456,7 @@ export default function Sidebar() {
                   src={userProfileImage} 
                   alt={displayName} 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  onError={() => setUserProfileImage(null)}
                 />
               ) : (
                 avatarChar
