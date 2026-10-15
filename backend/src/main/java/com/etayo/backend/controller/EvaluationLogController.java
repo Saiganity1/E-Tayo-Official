@@ -80,12 +80,15 @@ public class EvaluationLogController {
         try {
             if (saved.getApplicantEmail() != null && !saved.getApplicantEmail().trim().isEmpty()) {
                 String staffName = (saved.getStaffEmail() != null && !saved.getStaffEmail().isEmpty()) ? saved.getStaffEmail() : "Municipal Building Official / Evaluator";
+                String appId = (saved.getApplicationId() != null && !saved.getApplicationId().isEmpty()) ? saved.getApplicationId() : "Application";
+                String applicantName = (saved.getApplicantName() != null && !saved.getApplicantName().isEmpty()) ? saved.getApplicantName() : "Valued Applicant";
+                String projectName = (saved.getProjectName() != null && !saved.getProjectName().isEmpty()) ? saved.getProjectName() : (saved.getPermitType() != null ? saved.getPermitType().replace("_", " ") : "Permit");
                 emailService.sendApplicationStatusEmail(
                     saved.getApplicantEmail().trim(),
-                    "Valued Applicant",
-                    (saved.getPermitId() != null && !saved.getPermitId().isEmpty()) ? saved.getPermitId() : "Application",
+                    applicantName,
+                    appId,
                     saved.getPermitType(),
-                    saved.getPermitType() != null ? saved.getPermitType().replace("_", " ") : "Permit",
+                    projectName,
                     "Sto. Tomas, Pampanga",
                     "Under Review",
                     saved.getAction(),

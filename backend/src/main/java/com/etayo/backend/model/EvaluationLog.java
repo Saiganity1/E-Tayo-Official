@@ -72,6 +72,9 @@ public class EvaluationLog {
     public String getApplicationId() { return applicationId; }
     public void setApplicationId(String applicationId) { this.applicationId = applicationId; }
 
+    public String getPermitId() { return applicationId; }
+    public void setPermitId(String permitId) { this.applicationId = permitId; }
+
     public String getProjectName() { return projectName; }
     public void setProjectName(String projectName) { this.projectName = projectName; }
 
