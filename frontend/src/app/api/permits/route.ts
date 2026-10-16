@@ -110,7 +110,7 @@ export async function POST(req: Request) {
       }
     })();
 
-    return NextResponse.json(savedLocally, { status: 200 });
+    return NextResponse.json(savedLocally, { status: 201 });
   } catch (error: any) {
     console.warn("Proxy /api/permits POST failed:", error?.message);
     return NextResponse.json({ error: error?.message || "Failed to save permit" }, { status: 500 });

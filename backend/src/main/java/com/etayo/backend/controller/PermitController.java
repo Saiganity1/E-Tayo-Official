@@ -396,7 +396,7 @@ public class PermitController {
                     (saved.getFileUrl() != null && saved.getFileUrl().contains("drive.google.com")) ? "YES" : "LOCAL")
             );
         } catch (Exception ignored) {}
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(saved);
     }
 
     /**
@@ -748,7 +748,7 @@ public class PermitController {
         }
     }
 
-    @PatchMapping("/{id}/status")
+    @RequestMapping(value = "/{id}/status", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<PermitApplication> updatePermitStatus(@PathVariable String id, @RequestBody java.util.Map<String, Object> payload) {
         return findPermitFlexible(id).map(existing -> {
