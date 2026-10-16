@@ -25,7 +25,8 @@ import {
   isApplicationReleased,
   compareAppsNewestFirst,
   formatSubmissionDateTime,
-  getApplicationEvaluator 
+  getApplicationEvaluator,
+  normalizeApplicantName 
 } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "flat";
@@ -232,7 +233,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                   updated = true;
                 }
                 if ((!a.applicantName || a.applicantName === "Applicant") && (matchedLC.applicantName || userObj?.name)) {
-                  a.applicantName = matchedLC.applicantName || userObj?.name;
+                  a.applicantName = normalizeApplicantName(matchedLC.applicantName || userObj?.name);
                   updated = true;
                 }
                 if (matchedLC.projectName && (!a.projectName || a.projectName.includes("Installation & Construction"))) {
@@ -250,7 +251,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
                   updated = true;
                 }
                 if ((!a.applicantName || a.applicantName === "Applicant") && userObj.name) {
-                  a.applicantName = userObj.name;
+                  a.applicantName = normalizeApplicantName(userObj.name);
                   updated = true;
                 }
               }
@@ -436,8 +437,8 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
     return pool.filter(app => {
       if (!app) return false;
       const appId = String(app.id || "").trim().toLowerCase();
-      const appEmail = (app.applicantEmail || (app as any).userEmail || (typeof (app as any).user === "string" ? (app as any).user : "") || "").toLowerCase().trim();
-      const appName = (app.applicantName || (app as any).userName || "").toLowerCase().trim();
+      const appEmail = String(app.applicantEmail || (app as any).userEmail || (typeof (app as any).user === "string" ? (app as any).user : "") || "").toLowerCase().trim();
+      const appName = normalizeApplicantName(app.applicantName || (app as any).userName).toLowerCase().trim();
 
       // If user is authenticated with an email, enforce strict email ownership
       if (email) {

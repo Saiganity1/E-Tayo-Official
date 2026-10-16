@@ -20,7 +20,7 @@ import UnifiedProjectGoogleForm from "../../../../components/forms/UnifiedProjec
 import TechnicalPermitFormsStep from "../../../../components/forms/TechnicalPermitFormsStep";
 import { generateUnifiedPermitPdf } from "../../../../utils/unifiedPermitPdfGenerator";
 import { generateLocationalClearancePdf } from "../../../../utils/locationalClearancePdfGenerator";
-import { isApplicationReleased } from "../../../../utils/projectGrouping";
+import { isApplicationReleased, normalizeApplicantName } from "../../../../utils/projectGrouping";
 import { 
   PROJECT_TYPES_MATRIX, 
   ProjectTypeItem, 
@@ -292,11 +292,11 @@ export default function ApplyPage() {
   // Helper to verify if an application belongs to the current logged-in applicant
   const isAppOwnedByCurrentUser = useCallback((app: any) => {
     if (!app || isIgnoredDummyApp(app)) return false;
-    const curEmail = (applicantEmail || "").trim().toLowerCase();
-    const curName = (applicantName || "").trim().toLowerCase();
+    const curEmail = String(applicantEmail || "").trim().toLowerCase();
+    const curName = normalizeApplicantName(applicantName).toLowerCase();
 
-    const appEmail = (app.applicantEmail || app.userEmail || (typeof app.user === "string" ? app.user : "") || "").trim().toLowerCase();
-    const appName = (app.applicantName || app.userName || "").trim().toLowerCase();
+    const appEmail = String(app.applicantEmail || app.userEmail || (typeof app.user === "string" ? app.user : "") || "").trim().toLowerCase();
+    const appName = normalizeApplicantName(app.applicantName || app.userName).toLowerCase();
 
     if (curEmail) {
       if (appEmail) {

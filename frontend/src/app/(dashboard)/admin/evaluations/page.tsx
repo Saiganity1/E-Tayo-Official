@@ -18,7 +18,8 @@ import {
   getAppTimestamp, 
   parseDateToTimestamp,
   formatSubmissionDateTime,
-  getApplicationEvaluator 
+  getApplicationEvaluator,
+  normalizeApplicantName
 } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "applicant" | "flat";
@@ -87,7 +88,7 @@ export default function StaffEvaluationsPage() {
   const handleStartEvaluation = (targetApp: any, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (!targetApp || !targetApp.id) return;
-    const curStatus = (targetApp.status || "").toLowerCase().trim();
+    const curStatus = String(targetApp.status || "").toLowerCase().trim();
     if (curStatus === "pending") {
       const curId = String(targetApp.id).trim();
       const lowerId = curId.toLowerCase();
@@ -152,17 +153,18 @@ export default function StaffEvaluationsPage() {
   // Filter individual applications and sort newest first
   const filteredApps = useMemo(() => {
     const list = applications.filter(app => {
-      const pName = (app.projectName || app.projectDescription || "Locational Clearance").toLowerCase();
-      const appId = (app.id || "").toLowerCase();
-      const aName = (app.applicantName || "").toLowerCase();
-      const pAddr = (app.projectAddress || app.location?.address || "").toLowerCase();
-      const sTerm = searchTerm.toLowerCase();
+      if (!app) return false;
+      const pName = String(app.projectName || app.projectDescription || "Locational Clearance").toLowerCase();
+      const appId = String(app.id || "").toLowerCase();
+      const aName = normalizeApplicantName(app.applicantName).toLowerCase();
+      const pAddr = String(app.projectAddress || app.location?.address || "").toLowerCase();
+      const sTerm = String(searchTerm || "").toLowerCase();
 
       const matchesSearch = pName.includes(sTerm) || appId.includes(sTerm) || aName.includes(sTerm) || pAddr.includes(sTerm);
       const matchesStatus = filterStatus === "all" || app.status === filterStatus;
       
-      const appType = (app.permitType || "locational_clearance").toLowerCase();
-      const matchesType = filterType === "all" || appType.includes(filterType.toLowerCase());
+      const appType = String(app.permitType || "locational_clearance").toLowerCase();
+      const matchesType = filterType === "all" || appType.includes(String(filterType || "").toLowerCase());
 
       const matchesDate = (() => {
         if (datePreset === "all" && !startDate && !endDate) return true;
@@ -222,18 +224,19 @@ export default function StaffEvaluationsPage() {
     const groups: Record<string, ProjectDossier> = {};
 
     filteredApps.forEach(app => {
-      const normApplicant = (app.applicantName || "Unknown Applicant").trim().toLowerCase();
+      const applicantRaw = normalizeApplicantName(app.applicantName);
+      const normApplicant = applicantRaw.toLowerCase();
       const groupKey = normApplicant;
 
       if (!groups[groupKey]) {
         const applicantSlug = normApplicant.replace(/[^a-z0-9]+/g, "-") || "unknown";
         groups[groupKey] = {
           id: `APP-${applicantSlug}`,
-          applicantName: app.applicantName || "Unknown Applicant",
-          applicantPhone: app.applicantPhone || "",
-          applicantEmail: app.applicantEmail || "",
-          projectName: `${app.applicantName}'s Project Portfolio`,
-          projectAddress: app.projectAddress || app.location?.address || "Sto. Tomas, Pampanga",
+          applicantName: applicantRaw,
+          applicantPhone: typeof app.applicantPhone === "string" ? app.applicantPhone : "",
+          applicantEmail: typeof app.applicantEmail === "string" ? app.applicantEmail : "",
+          projectName: `${applicantRaw}'s Project Portfolio`,
+          projectAddress: (typeof app.projectAddress === "string" ? app.projectAddress : app.location?.address) || "Sto. Tomas, Pampanga",
           applications: [],
           totalCount: 0,
           pendingCount: 0,
@@ -311,7 +314,7 @@ export default function StaffEvaluationsPage() {
   };
 
   const getPermitTypeBadge = (type?: string) => {
-    const t = (type || "").toLowerCase();
+    const t = String(type || "").toLowerCase();
     if (t.includes("locational") || t.includes("zoning")) {
       return { label: "Locational Clearance", code: "LC", bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" };
     }
@@ -938,7 +941,7 @@ export default function StaffEvaluationsPage() {
 
                         <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.85rem", color: isExpanded ? "rgba(255, 255, 255, 0.9)" : "#64748b", flexWrap: "wrap" }}>
                           <span style={{ fontWeight: "700", color: isExpanded ? "#ffffff" : "#334155", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                            <User size={14} color={isExpanded ? "#bfdbfe" : "#64748b"} /> {dossier.applicantName}
+                            <User size={14} color={isExpanded ? "#bfdbfe" : "#64748b"} /> {normalizeApplicantName(dossier.applicantName)}
                           </span>
                           {dossier.applicantPhone && (
                             <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: isExpanded ? "#dbeafe" : "#64748b" }}>
@@ -1280,7 +1283,7 @@ export default function StaffEvaluationsPage() {
                         </span>
                       </td>
                       <td style={{ padding: "1.2rem 1.5rem" }}>
-                        <div style={{ fontWeight: "700", color: "#0f172a", marginBottom: "3px" }}>{app.applicantName}</div>
+                        <div style={{ fontWeight: "700", color: "#0f172a", marginBottom: "3px" }}>{normalizeApplicantName(app.applicantName)}</div>
                         <div style={{ fontSize: "0.82rem", color: "#64748b" }}>{app.applicantPhone}</div>
                       </td>
                       <td style={{ padding: "1.2rem 1.5rem" }}>

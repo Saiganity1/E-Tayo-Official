@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { PermitApplication, SystemLog, FeeStructure, PermitType } from "../types";
-import { isApplicationApproved, compareAppsNewestFirst } from "../utils/projectGrouping";
+import { isApplicationApproved, compareAppsNewestFirst, normalizeApplicantName } from "../utils/projectGrouping";
 import { INITIAL_APPLICATIONS } from "../data/mock";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
@@ -332,7 +332,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           try {
             const parsed = JSON.parse(cachedStr);
             if (Array.isArray(parsed)) {
-              setApplications(parsed.filter(a => !isDummyApp(a)));
+              setApplications(parsed.filter(a => !isDummyApp(a)).map(a => ({
+                ...a,
+                applicantName: normalizeApplicantName(a.applicantName)
+              })));
             }
           } catch (e) {}
         }
@@ -700,11 +703,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             return {
               ...bApp,
               status: effectiveStatus || bApp.status,
-              evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy,
-              evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail,
+              evaluatedBy: storedEvaluatedBy || (bApp as any).evaluatedBy || undefined,
+              evaluatorEmail: storedEvaluatorEmail || (bApp as any).evaluatorEmail || undefined,
               isArchived,
-              bfpUploadedFile: resolvedBfpFile,
-              bfpUploadedFileName: resolvedBfpName
+              bfpUploadedFile: resolvedBfpFile || undefined,
+              bfpUploadedFileName: resolvedBfpName || undefined
             };
           });
 
@@ -870,10 +873,10 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         const mIsLC = mApp.permitType === "locational_clearance" || String(mApp.id || "").toUpperCase().startsWith("LC-");
         const mCleanSeq = String(mApp.id || "").replace(/^[A-Za-z]+-/i, "");
-        const mEvaluatedBy = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${mId}`) || localStorage.getItem(`etayo_evaluated_by_${mLower}`) || localStorage.getItem(`etayo_evaluated_by_${mUpper}`)) : null;
-        const mEvaluatorEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${mId}`) || localStorage.getItem(`etayo_evaluator_email_${mLower}`) || localStorage.getItem(`etayo_evaluator_email_${mUpper}`)) : null;
-        const mResolvedBfpFile = mApp.bfpUploadedFile || (typeof window !== "undefined" ? (localStorage.getItem(`etayo_bfp_${mId}`) || localStorage.getItem(`etayo_bfp_${mLower}`) || localStorage.getItem(`etayo_bfp_${mUpper}`) || localStorage.getItem("etayo_bfp_file_data")) : undefined);
-        const mResolvedBfpName = mApp.bfpUploadedFileName || (typeof window !== "undefined" ? (localStorage.getItem(`etayo_bfp_name_${mId}`) || localStorage.getItem(`etayo_bfp_name_${mLower}`) || localStorage.getItem(`etayo_bfp_name_${mUpper}`) || localStorage.getItem("etayo_bfp_file_name")) : undefined);
+        const mEvaluatedBy = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluated_by_${mId}`) || localStorage.getItem(`etayo_evaluated_by_${mLower}`) || localStorage.getItem(`etayo_evaluated_by_${mUpper}`) || undefined) : undefined;
+        const mEvaluatorEmail = typeof window !== "undefined" ? (localStorage.getItem(`etayo_evaluator_email_${mId}`) || localStorage.getItem(`etayo_evaluator_email_${mLower}`) || localStorage.getItem(`etayo_evaluator_email_${mUpper}`) || undefined) : undefined;
+        const mResolvedBfpFile = mApp.bfpUploadedFile || (typeof window !== "undefined" ? (localStorage.getItem(`etayo_bfp_${mId}`) || localStorage.getItem(`etayo_bfp_${mLower}`) || localStorage.getItem(`etayo_bfp_${mUpper}`) || localStorage.getItem("etayo_bfp_file_data") || undefined) : undefined);
+        const mResolvedBfpName = mApp.bfpUploadedFileName || (typeof window !== "undefined" ? (localStorage.getItem(`etayo_bfp_name_${mId}`) || localStorage.getItem(`etayo_bfp_name_${mLower}`) || localStorage.getItem(`etayo_bfp_name_${mUpper}`) || localStorage.getItem("etayo_bfp_file_name") || undefined) : undefined);
         return {
           ...mApp,
           status: mEffectiveStatus,
@@ -898,6 +901,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const appMap = new Map<string, PermitApplication>();
       mergedApps.forEach(a => {
         if (!a || !a.id || isDummyApp(a)) return;
+        a.applicantName = normalizeApplicantName(a.applicantName);
         const normEmail = (a.applicantEmail || "").toLowerCase().trim();
         if (normEmail === "randreb.david@example.com") a.applicantEmail = "david.randreb@gmail.com";
         else if (normEmail === "davesicat@gmail.com") a.applicantEmail = "mdpsicat.student@ua.edu.ph";
@@ -1117,7 +1121,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 isArchived
               };
             });
-            setApplications(clean);
+            setApplications(clean as PermitApplication[]);
             if (clean.length !== parsed.length) {
               try {
                 localStorage.setItem("etayo_cached_applications", JSON.stringify(clean));
@@ -1271,6 +1275,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const sanitizeAppForStorage = (app: PermitApplication): PermitApplication => {
     if (!app) return app;
     const clean: any = { ...app };
+    clean.applicantName = normalizeApplicantName(clean.applicantName);
     if (typeof clean.fileUrl === "string" && clean.fileUrl.startsWith("data:") && clean.fileUrl.length > 500) {
       clean.fileUrl = "/templates/UNIFIED-APPLICATION-FORM-FOR-BUILDING-PERMIT-Cruz-Final.pdf";
     }
@@ -1391,6 +1396,9 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const updateApplication = async (updatedApp: PermitApplication) => {
     const matchPermitId = (a?: string, b?: string) => Boolean(a && b && a.trim().toLowerCase() === b.trim().toLowerCase());
+    if (updatedApp && updatedApp.applicantName) {
+      updatedApp.applicantName = normalizeApplicantName(updatedApp.applicantName);
+    }
 
     if (updatedApp.status === "approved" || (updatedApp.status as string) === "released") {
       const rawSteps = (updatedApp.trackingSteps && updatedApp.trackingSteps.length > 0) ? [...updatedApp.trackingSteps] : [

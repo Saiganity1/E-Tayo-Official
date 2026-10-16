@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Client } from "@stomp/stompjs";
 import { formatPhilippineDateTime, formatPhilippineDate, formatPhilippineTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../../../context/PermitContext";
+import { normalizeApplicantName } from "@/utils/projectGrouping";
 import { dispatchPermitMessage, ensureApplicationConversationMessages, getAuthoritativePermitFee, deduplicateChatMessages } from "../../../../utils/permitMessaging";
 import { 
   MessageBubbleContent, 
@@ -220,21 +221,21 @@ export default function StaffMessagesPage() {
     if (matchingApps.length === 0) {
       const cleanPrefix = canonicalEmail.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
       const appByName = applications.find(a => {
-        const aName = (a.applicantName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const aName = normalizeApplicantName(a.applicantName).toLowerCase().replace(/[^a-z0-9]/g, "");
         return aName && (aName.includes(cleanPrefix) || cleanPrefix.includes(aName));
       });
       if (appByName && appByName.applicantName) {
-        const targetName = appByName.applicantName.toLowerCase().trim();
-        matchingApps = applications.filter(a => (a.applicantName || "").toLowerCase().trim() === targetName);
+        const targetName = normalizeApplicantName(appByName.applicantName).toLowerCase().trim();
+        matchingApps = applications.filter(a => normalizeApplicantName(a.applicantName).toLowerCase().trim() === targetName);
         primaryApp = matchingApps[0];
       }
     }
 
     // 3. If primaryApp has a known applicantName, ensure any permit sharing the exact same applicantName is included
     if (primaryApp && primaryApp.applicantName) {
-      const appNameLower = primaryApp.applicantName.toLowerCase().trim();
+      const appNameLower = normalizeApplicantName(primaryApp.applicantName).toLowerCase().trim();
       const sameNameApps = applications.filter(a => {
-        const aName = (a.applicantName || "").toLowerCase().trim();
+        const aName = normalizeApplicantName(a.applicantName).toLowerCase().trim();
         return aName && aName === appNameLower;
       });
       if (sameNameApps.length > matchingApps.length) {

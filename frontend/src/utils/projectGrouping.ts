@@ -18,12 +18,38 @@ export interface ProjectDossier {
 }
 
 /**
+ * Safely extracts a clean applicant name string from any input (string, object, undefined, null)
+ */
+export const normalizeApplicantName = (input: any): string => {
+  if (!input) return "Applicant";
+  if (typeof input === "string") {
+    const trimmed = input.trim();
+    return trimmed || "Applicant";
+  }
+  if (typeof input === "object") {
+    if (typeof input.name === "string" && input.name.trim()) return input.name.trim();
+    if (typeof input.fullName === "string" && input.fullName.trim()) return input.fullName.trim();
+    if (typeof input.applicantName === "string" && input.applicantName.trim()) return input.applicantName.trim();
+    const first = typeof input.firstName === "string" ? input.firstName : (typeof input.applicantFirstName === "string" ? input.applicantFirstName : "");
+    const middle = typeof input.middleName === "string" ? input.middleName : (typeof input.applicantMiddleName === "string" ? input.applicantMiddleName : "");
+    const last = typeof input.lastName === "string" ? input.lastName : (typeof input.applicantLastName === "string" ? input.applicantLastName : "");
+    const full = [first, middle, last].filter(Boolean).join(" ").trim();
+    if (full) return full;
+    try {
+      const jsonStr = JSON.stringify(input);
+      if (jsonStr !== "{}" && jsonStr.length < 50) return jsonStr;
+    } catch {}
+  }
+  return String(input || "Applicant");
+};
+
+/**
  * Checks if an application is Stage 1 Locational Clearance / Zoning
  */
 export const isLocationalClearance = (app: any): boolean => {
   if (!app) return false;
-  const pType = (app.permitType || "").toLowerCase();
-  const id = (app.id || "").toLowerCase();
+  const pType = String(app.permitType || "").toLowerCase();
+  const id = String(app.id || "").toLowerCase();
   return pType.includes("locational") || pType.includes("zoning") || id.startsWith("lc-");
 };
 
@@ -32,8 +58,8 @@ export const isLocationalClearance = (app: any): boolean => {
  */
 export const isBuildingPermit = (app: any): boolean => {
   if (!app) return false;
-  const pType = (app.permitType || "").toLowerCase();
-  const id = (app.id || "").toLowerCase();
+  const pType = String(app.permitType || "").toLowerCase();
+  const id = String(app.id || "").toLowerCase();
   return (
     pType.includes("building") ||
     pType.includes("architectural") ||
@@ -244,8 +270,8 @@ export const areAppsInSameProject = (appA: any, appB: any): boolean => {
   }
 
   // 3. Applicant check: tolerate generic names like "Applicant" or "Juan Dela Cruz"
-  const nameA = (appA.applicantName || "").trim().toLowerCase();
-  const nameB = (appB.applicantName || "").trim().toLowerCase();
+  const nameA = normalizeApplicantName(appA?.applicantName).toLowerCase();
+  const nameB = normalizeApplicantName(appB?.applicantName).toLowerCase();
   const isGenericName = (n: string) => !n || ["applicant", "juan dela cruz", "user"].includes(n);
   if (!isGenericName(nameA) && !isGenericName(nameB) && nameA !== nameB) {
     return false;
@@ -505,7 +531,7 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
       const lcRef = (app.locationalClearanceRef || (app as any).clearanceRef || (app as any).connectedClearanceId || "").trim().toLowerCase();
       const cleanLcRef = lcRef.replace(/^lc-/i, "").replace(/[^a-z0-9]+/g, "-");
       const isLC = isLocationalClearance(app);
-      const applicantSlug = (app.applicantName || "applicant").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const applicantSlug = normalizeApplicantName(app?.applicantName).toLowerCase().replace(/[^a-z0-9]+/g, "-");
       const projectSlug = (baseTitle || "project").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
       let stableDossierId = `DOSSIER-${applicantSlug}-${projectSlug}`;
@@ -521,7 +547,7 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
 
       dossiers.push({
         id: stableDossierId,
-        applicantName: app.applicantName || "Unknown Applicant",
+        applicantName: normalizeApplicantName(app?.applicantName),
         applicantPhone: app.applicantPhone || "",
         applicantEmail: app.applicantEmail || "",
         projectName: baseTitle,

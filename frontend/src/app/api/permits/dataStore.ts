@@ -1,5 +1,5 @@
 import { PermitApplication } from "@/types";
-import { compareAppsNewestFirst } from "@/utils/projectGrouping";
+import { compareAppsNewestFirst, normalizeApplicantName } from "@/utils/projectGrouping";
 import { INITIAL_APPLICATIONS } from "@/data/mock";
 
 export const SEED_APPLICATIONS: PermitApplication[] = INITIAL_APPLICATIONS;
@@ -31,8 +31,8 @@ export function getAllPermits(emailFilter?: string, nameFilter?: string): Permit
   const normalizeEmail = (em: string) => (em || "").trim().toLowerCase().replace("mdpsicot", "mdpsicat");
 
   return all.filter(app => {
-    const appEmail = (app.applicantEmail || "").trim().toLowerCase();
-    const appName = (app.applicantName || "").trim().toLowerCase();
+    const appEmail = String(app.applicantEmail || "").trim().toLowerCase();
+    const appName = normalizeApplicantName(app.applicantName).toLowerCase();
 
     if (cleanEmail) {
       if (appEmail) {
@@ -54,8 +54,8 @@ export function getAllPermits(emailFilter?: string, nameFilter?: string): Permit
     if (linkedRef && linkedRef !== "exempt" && linkedRef !== "not_required") {
       const parent = store.get(linkedRef);
       if (parent) {
-        const pEmail = (parent.applicantEmail || "").trim().toLowerCase();
-        const pName = (parent.applicantName || "").trim().toLowerCase();
+        const pEmail = String(parent.applicantEmail || "").trim().toLowerCase();
+        const pName = normalizeApplicantName(parent.applicantName).toLowerCase();
         if (cleanEmail && pEmail) {
           return pEmail === cleanEmail || normalizeEmail(pEmail) === normalizeEmail(cleanEmail);
         }
@@ -91,6 +91,7 @@ export function savePermit(newApp: PermitApplication): PermitApplication {
   if (!newApp.id) {
     newApp.id = `APP-2026-${Math.floor(1000 + Math.random() * 9000)}`;
   }
+  newApp.applicantName = normalizeApplicantName(newApp.applicantName);
   if (!(newApp as any).createdAt) {
     (newApp as any).createdAt = new Date().toISOString();
   }

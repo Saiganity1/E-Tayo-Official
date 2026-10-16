@@ -31,7 +31,7 @@ import {
 import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
 import { PermitApplication } from "../../../../types";
-import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationApproved, compareAppsNewestFirst, formatSubmissionDateTime, getApplicationEvaluator } from "@/utils/projectGrouping";
+import { groupApplicationsIntoProjectDossiers, ProjectDossier, isApplicationApproved, compareAppsNewestFirst, formatSubmissionDateTime, getApplicationEvaluator, normalizeApplicantName } from "@/utils/projectGrouping";
 import { useLanguage } from "@/context/LanguageContext";
 
 type ViewMode = "project" | "flat";
@@ -129,8 +129,8 @@ export default function ApplicantDashboard() {
     return (applications || [])
       .filter(app => {
         if (!app) return false;
-        const appEmail = (app.applicantEmail || "").toLowerCase().trim();
-        const appName = (app.applicantName || "").toLowerCase().trim();
+        const appEmail = String(app.applicantEmail || "").toLowerCase().trim();
+        const appName = normalizeApplicantName(app.applicantName).toLowerCase();
 
         if (email) {
           if (appEmail) {
