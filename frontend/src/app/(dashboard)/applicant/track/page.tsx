@@ -299,11 +299,11 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
       }
     };
 
-    // Auto-poll every 2.5s to detect admin approval without delay across windows/tabs
+    // Auto-poll every 30s as safety fallback (real-time updates handled by WebSocket and window focus)
     const pollTimer = setInterval(() => {
       syncArchived();
       if (refreshApplications) refreshApplications();
-    }, 2500);
+    }, 30000);
 
     if (typeof window !== "undefined") {
       window.addEventListener("storage", handleSync);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getBackendApiUrl } from "@/utils/apiConfig";
-import { verifyAndConsumeOtp, registerUser } from "@/utils/authStore";
+import { verifyAndConsumeOtp, registerUser, validatePasswordStrength } from "@/utils/authStore";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +14,11 @@ export async function POST(req: Request) {
 
     if (!name || !email || !password || !otp) {
       return NextResponse.json({ error: "All fields including OTP are required" }, { status: 400 });
+    }
+
+    const passwordValidation = validatePasswordStrength(password);
+    if (!passwordValidation.valid) {
+      return NextResponse.json({ error: passwordValidation.error }, { status: 400 });
     }
 
     const backendUrl = `${getBackendApiUrl()}/auth/register`;

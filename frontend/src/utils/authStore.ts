@@ -27,7 +27,7 @@ if (!globalForAuth._registeredUsers) {
       id: 1,
       name: "Municipal Administrator",
       email: "admin@etayo.gov.ph",
-      password: "admin123",
+      password: process.env.ADMIN_DEFAULT_PASSWORD || "Admin#StoTomas2026!Secured",
       role: "ROLE_ADMIN",
       createdAt: "2026-08-01T09:00:00Z"
     },
@@ -161,13 +161,40 @@ export function findRegisteredUser(email: string): RegisteredUser | undefined {
       id: 999,
       name: "Municipal Administrator",
       email: "admin@etayo.gov.ph",
-      password: "admin123",
+      password: process.env.ADMIN_DEFAULT_PASSWORD || "Admin#StoTomas2026!Secured",
       role: "ROLE_ADMIN",
       createdAt: "2026-08-01T09:00:00Z"
     };
   }
 
   return undefined;
+}
+
+/**
+ * Validates password complexity: minimum 12 chars, upper, lower, number, and symbol.
+ */
+export function validatePasswordStrength(password: string): { valid: boolean; error?: string } {
+  if (!password || password.length < 12) {
+    return { valid: false, error: "Password must be at least 12 characters long." };
+  }
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasDigit = /[0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+  if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
+    return { 
+      valid: false, 
+      error: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character." 
+    };
+  }
+
+  const commonWeak = ["admin12345678", "password12345", "123456789012", "qwertyuiop12", "admin#stotomas"];
+  if (commonWeak.includes(password.toLowerCase())) {
+    return { valid: false, error: "Password is too common. Please select a more unique password." };
+  }
+
+  return { valid: true };
 }
 
 /**

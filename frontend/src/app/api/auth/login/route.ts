@@ -1,12 +1,45 @@
 import { NextResponse } from "next/server";
 import { getAssignedUserByEmail } from "@/utils/staffStore";
 import { findRegisteredUser } from "@/utils/authStore";
+import { signJwtToken, getClientIp } from "@/utils/security";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// In-memory sliding-window failed login attempt tracker (Max 5 attempts per 15 minutes)
+const loginFailureStore = new Map<string, { count: number; lockedUntil: number }>();
+
+function isLoginRateLimited(key: string): boolean {
+  const record = loginFailureStore.get(key);
+  if (!record) return false;
+  if (Date.now() < record.lockedUntil) {
+    return true;
+  }
+  // Reset after lockout expires
+  loginFailureStore.delete(key);
+  return false;
+}
+
+function recordLoginFailure(key: string): void {
+  const record = loginFailureStore.get(key);
+  const now = Date.now();
+  if (!record || now > record.lockedUntil) {
+    loginFailureStore.set(key, { count: 1, lockedUntil: now + 15 * 60 * 1000 });
+  } else {
+    record.count += 1;
+    if (record.count >= 5) {
+      record.lockedUntil = now + 15 * 60 * 1000; // Lock for 15 minutes
+    }
+  }
+}
+
+function resetLoginFailure(key: string): void {
+  loginFailureStore.delete(key);
+}
+
 export async function POST(req: Request) {
   try {
+    const clientIp = getClientIp(req);
     const body = await req.json();
     const { email, password } = body;
 
@@ -17,13 +50,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
+    const rateKey = `${clientIp}_${sanitizedEmail}`;
+    if (isLoginRateLimited(rateKey) || isLoginRateLimited(clientIp)) {
+      return NextResponse.json({ 
+        error: "Too many failed login attempts. Please wait 15 minutes before trying again." 
+      }, { 
+        status: 429,
+        headers: { "Retry-After": "900" }
+      });
+    }
+
     // Explicitly reject automatic dummy staff accounts (staff must be explicitly assigned by admin)
     if (sanitizedEmail === "staff@etayo.gov.ph") {
       const isAssigned = getAssignedUserByEmail(sanitizedEmail);
       if (!isAssigned || isAssigned.role !== "ROLE_STAFF") {
-        return NextResponse.json({ 
-          error: "This automatic staff account has been removed. All staff accounts must be explicitly assigned by the Admin." 
-        }, { status: 401 });
+        recordLoginFailure(rateKey);
+        return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
       }
     }
 
@@ -45,7 +87,8 @@ export async function POST(req: Request) {
 
       if (res.ok) {
         const data = await res.json();
-        // Ensure name is clean and not an email
+        resetLoginFailure(rateKey);
+        resetLoginFailure(clientIp);
         if (data && (!data.name || data.name.includes("@"))) {
           const registered = findRegisteredUser(sanitizedEmail);
           if (registered) data.name = registered.name;
@@ -55,19 +98,12 @@ export async function POST(req: Request) {
 
       // If backend explicitly rejected with 401/400
       if (res.status === 401 || res.status === 400) {
-        // Check if the user is known in local registered store (e.g. backend DB restarted or local registration)
         const localUser = findRegisteredUser(sanitizedEmail);
         if (!localUser) {
-          let errText = "";
-          try {
-            const errJson = await res.json();
-            errText = errJson.error || errJson.message;
-          } catch (e) {
-            errText = await res.text();
-          }
-          return NextResponse.json({ 
-            error: errText || "Account not found. Please register first to access eTAYO." 
-          }, { status: 401 });
+          recordLoginFailure(rateKey);
+          recordLoginFailure(clientIp);
+          // Generic error message: Prevents user enumeration
+          return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
         }
       }
     } catch (netErr: any) {
@@ -75,41 +111,42 @@ export async function POST(req: Request) {
     }
 
     // 2. Strict Authentication against Registered Users
-    // Users NOT registered in the system are STRICTLY REJECTED!
     const registeredUser = findRegisteredUser(sanitizedEmail);
 
     if (!registeredUser) {
-      return NextResponse.json({ 
-        error: "This account is not registered in the system. Please register first to access eTAYO." 
-      }, { status: 401 });
+      recordLoginFailure(rateKey);
+      recordLoginFailure(clientIp);
+      // Generic error message: Prevents user enumeration
+      return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
 
-    // Verify Password if stored locally
+    // Verify Password
     if (registeredUser.password && registeredUser.password !== sanitizedPassword) {
-      return NextResponse.json({ 
-        error: "Invalid password. Please check your credentials." 
-      }, { status: 401 });
+      recordLoginFailure(rateKey);
+      recordLoginFailure(clientIp);
+      // Generic error message: Prevents password guessing feedback
+      return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
 
-    // Generate authenticated JWT session with Full Name
-    const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-    const payload = Buffer.from(JSON.stringify({
+    // Reset rate limits on successful authentication
+    resetLoginFailure(rateKey);
+    resetLoginFailure(clientIp);
+
+    // Generate authenticated JWT session with cryptographically secure HMAC-SHA256 signature
+    const accessToken = signJwtToken({
       sub: sanitizedEmail,
       role: registeredUser.role,
-      name: registeredUser.name,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 3600)
-    })).toString("base64url");
-    const fallbackToken = `${header}.${payload}.etayo_signature_resilient`;
+      name: registeredUser.name
+    });
 
     return NextResponse.json({
-      accessToken: fallbackToken,
+      accessToken,
       tokenType: "Bearer",
       role: registeredUser.role,
       name: registeredUser.name,
       email: sanitizedEmail
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -443,7 +443,7 @@ Action Required: Please inspect the receipt photo and click "Confirmed Payment" 
         });
       }
       fetchFreshStatus();
-    }, 2500);
+    }, 30000);
 
     // 5. Cross-tab & multi-window instant reactive update listener
     const handleSync = (e?: any) => {

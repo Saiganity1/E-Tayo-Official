@@ -1177,7 +1177,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const currentToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       if (!currentToken) return; // Do not poll when logged out
       fetchData();
-    }, 4000);
+    }, 30000);
 
     // 6. Cross-tab & multi-window instant reactive update listener
     const handleSyncEvent = () => {

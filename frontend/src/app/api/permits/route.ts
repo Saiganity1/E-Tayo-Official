@@ -49,15 +49,15 @@ export async function GET(req: Request) {
 
     if (!isPrivileged) {
       if (authUser) {
-        // Authenticated applicant: strictly restrict to their own email
+        // Authenticated applicant: strictly restrict to their own email (Anti-IDOR)
         effectiveEmail = authUser.email;
         effectiveName = authUser.name || effectiveName;
       } else {
         // ANONYMOUS CALLER:
-        // In strict compliance with RA 10173 and Security Controls:
-        // If no specific permit reference ID or email lookup is provided, return empty array (0 rows)
-        // to prevent open PII database dumps.
-        if (!queryId && !queryEmail && !queryName) {
+        // In strict compliance with RA 10173 and Anti-IDOR:
+        // Unauthenticated callers cannot query by email or name.
+        // Only public permit reference tracking (queryId) is allowed, which returns stripped PII.
+        if (!queryId) {
           return NextResponse.json([], {
             status: 200,
             headers: {
@@ -67,6 +67,8 @@ export async function GET(req: Request) {
             }
           });
         }
+        effectiveEmail = undefined;
+        effectiveName = undefined;
       }
     }
 

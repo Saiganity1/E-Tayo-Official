@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getBackendApiUrl } from "@/utils/apiConfig";
+import { validatePasswordStrength } from "@/utils/authStore";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +8,13 @@ export async function PUT(req: Request) {
   try {
     const authHeader = req.headers.get("authorization");
     const body = await req.json();
+
+    if (body?.newPassword) {
+      const passCheck = validatePasswordStrength(String(body.newPassword));
+      if (!passCheck.valid) {
+        return NextResponse.json({ error: passCheck.error }, { status: 400 });
+      }
+    }
 
     const backendUrl = `${getBackendApiUrl()}/users/profile`;
     const controller = new AbortController();
