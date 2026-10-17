@@ -266,26 +266,26 @@ export default function Sidebar() {
                 : (language === "fil" ? "Sinusuri" : "Under Review")
             }
           ] : []),
-          { href: "/applicant/map", label: t("map", "Map"), icon: Map },
-          { href: "/applicant/messages", label: t("messages", "Messages"), icon: MessageSquare },
           { href: "/applicant/settings", label: t("Settings", "Settings"), icon: Settings },
+          { href: "/applicant/messages", label: t("messages", "Messages"), icon: MessageSquare },
+          { href: "/applicant/map", label: t("map", "Map"), icon: Map },
         ];
       }
       case "staff":
         return [
           { href: "/admin/evaluations", label: t("staffEvaluations", "Staff Evaluations"), icon: FileCheck },
-          { href: "/staff/map", label: t("map", "Map"), icon: Map },
           { href: "/staff/messages", label: t("messages", "Messages"), icon: MessageSquare },
+          { href: "/staff/map", label: t("map", "Map"), icon: Map },
         ];
       case "admin":
         return [
           { href: "/admin/evaluations", label: t("staffEvaluations", "Staff Evaluations"), icon: FileCheck },
-          { href: "/admin/map", label: t("map", "Map"), icon: Map },
           { href: "/admin/security", label: t("securityAuth", "Security & Auth"), icon: Shield },
           { href: "/staff/templates", label: t("officialForms", "Official Forms"), icon: FileText },
           { href: "/admin/users", label: t("applicantManagement", "Applicants Management"), icon: Users },
           { href: "/admin/staff", label: t("staffManagement", "Staff Management"), icon: ShieldAlert },
           { href: "/admin/messages", label: t("messages", "Messages"), icon: MessageSquare },
+          { href: "/admin/map", label: t("map", "Map"), icon: Map },
         ];
       default:
         return [];
@@ -313,23 +313,23 @@ export default function Sidebar() {
           { href: "/applicant/dashboard", label: language === "fil" ? "Home" : "Dashboard", icon: Home },
           { href: "/applicant/apply", label: language === "fil" ? "Apply" : "Apply", icon: PlusCircle },
           { href: "/applicant/track", label: language === "fil" ? "Status" : "Status", icon: ClipboardList },
-          { href: "/applicant/map", label: language === "fil" ? "Map" : "Map", icon: Map },
           { href: "/applicant/messages", label: language === "fil" ? "Messages" : "Messages", icon: MessageSquare },
+          { href: "/applicant/map", label: language === "fil" ? "Map" : "Map", icon: Map },
         ];
       case "staff":
         return [
           { href: "/admin/evaluations", label: language === "fil" ? "Pagsusuri" : "Evaluations", icon: FileCheck },
-          { href: "/staff/map", label: language === "fil" ? "Mapa" : "Map", icon: Map },
           { href: "/staff/messages", label: language === "fil" ? "Mensahe" : "Messages", icon: MessageSquare },
+          { href: "/staff/map", label: language === "fil" ? "Mapa" : "Map", icon: Map },
         ];
       case "admin":
         return [
           { href: "/admin/evaluations", label: "Evaluations", icon: FileCheck },
-          { href: "/admin/map", label: "Map", icon: Map },
           { href: "/admin/security", label: "Security", icon: Shield },
           { href: "/staff/templates", label: "Forms", icon: FileText },
           { href: "/admin/users", label: "Users", icon: Users },
           { href: "/admin/messages", label: "Messages", icon: MessageSquare },
+          { href: "/admin/map", label: "Map", icon: Map },
         ];
       default:
         return [];
