@@ -26,7 +26,6 @@ export function findProjectTypeMatch(query: string): ProjectTypeItem | null {
     if (item.id === "demolition_project" && (q.includes("giba") || q.includes("demolition") || q.includes("baklas"))) return item;
     if (item.id === "excavation_ground_prep" && (q.includes("hukay") || q.includes("excavation") || q.includes("ground prep"))) return item;
     if (item.id === "billboard_signboard" && (q.includes("billboard") || q.includes("signboard") || q.includes("signage") || q.includes("tanda"))) return item;
-    if (item.id === "temporary_power_connection" && (q.includes("temporary connection") || q.includes("kuryente sa construction") || q.includes("temporary service") || q.includes("tsc"))) return item;
     if (item.id === "solar_panel_installation" && (q.includes("solar") || q.includes("photovoltaic") || q.includes("solar panel"))) return item;
     if (item.id === "commercial_building" && (q.includes("commercial") || q.includes("tindahan") || q.includes("opisina") || q.includes("restaurant") || q.includes("groseri"))) return item;
     if (item.id === "warehouse_storage" && (q.includes("bodega") || q.includes("warehouse") || q.includes("imbakan"))) return item;
@@ -289,12 +288,11 @@ export const PERMITTING_PROCESS_STAGES = [
   },
   {
     stage: 3,
-    name: "Hakbang 3: Inspection, CFEI, at Occupancy Permit",
+    name: "Hakbang 3: Inspection at Occupancy Permit",
     office: "OBO & BFP Sto. Tomas",
     purpose: "Pagsusuri kung ang aktwal na naitayo ay sumunod sa aprubadong plano bago tirhan o gamitin.",
     formsIncluded: [
       "Certificate of Completion Form (pinirmahan ng supervising engineers)",
-      "Certificate of Final Electrical Inspection (CFEI - kailangan ng PELCO 2)",
       "BFP Fire Safety Inspection Certificate (FSIC)",
       "Unified Certificate of Occupancy (pormal na pahintulot na tirhan/gamitin ang gusali)"
     ]
@@ -393,14 +391,6 @@ export const OFFICIAL_16_FORMS_GUIDE: Record<string, { name: string; code: strin
       "BFP Fire Safety Inspection Certificate (FSIC)",
       "Construction Logbook at Picture ng natapos na proyekto"
     ]
-  },
-  CFEI: {
-    name: "Certificate of Final Electrical Inspection",
-    code: "CFEI (NBC Form 96006-E)",
-    category: "Utilities & Completion",
-    description: "Clearance na kailangan ng electric utility (PELCO 2) para ikabit ang metro ng kuryente.",
-    signatories: "Municipal Electrical Inspector & OBO",
-    requirements: ["As-Built Electrical Plans", "Grounding Resistance Test Result (< 5 ohms)", "Actual site wiring inspection"]
   },
   FENCING: {
     name: "Fencing Permit Form",
@@ -827,18 +817,16 @@ Ang mga kakaharaping parusa at aksyon:
 5. Notarized Undertaking ng Contractor/Engineer na may safety net, scaffolding, at proteksyon sa alikabok at debris.`
   },
 
-  // 14. Occupancy Permit & CFEI
+  // 14. Occupancy Permit
   {
-    id: "occupancy_cfei",
-    question: "Ano ang Occupancy Permit at CFEI, at paano ito makukuha pagkatapos ng construction?",
-    keywords: ["occupancy", "occupancy permit", "cfei", "pelco", "pelco 2", "kuryente", "tirhan", "tapos na", "completion"],
-    intents: ["OCCUPANCY", "CFEI"],
+    id: "occupancy_permit_guide",
+    question: "Ano ang Occupancy Permit at paano ito makukuha pagkatapos ng construction?",
+    keywords: ["occupancy", "occupancy permit", "tirhan", "tapos na", "completion"],
+    intents: ["OCCUPANCY"],
     category: "occupancy",
     actionLink: { label: "Mag-apply ng Occupancy Permit", url: "/applicant/apply?type=occupancy_permit" },
     followUps: ["Ano ang requirements sa Building Permit?", "Gaano katagal bago maaprubahan ang permit?"],
     answer: `Ang **Certificate of Occupancy (CO)** ay ang huling permit na nagpapatunay na ang inyong bahay o gusali ay ligtas at opisyal nang pinapahintulutang tirhan o gamitin.
-
-Kasama rin dito ang **CFEI (Certificate of Final Electrical Inspection)** na siyang pangunahing requirement ng **PELCO 2 (Pampanga II Electric Cooperative)** para ikabit ang inyong permanenteng metro ng kuryente.
 
 📋 **Mga Kailangan:**
 1. **Certificate of Completion** na pinirmahan at sinumpaan ng inyong supervising Architect/Civil Engineer, PEE, at Master Plumber
@@ -1194,23 +1182,7 @@ Kung nahihirapan kayo sa pag-scan o pag-upload, maaari kayong pumunta sa **OBO /
 3. **Road Setback**: Bawal lumampas o bumitin ang karatula sa loob ng Road Right-of-Way (RROW) ng MacArthur Highway nang walang DPWH clearance.`
   },
 
-  // 34. Temporary Service Connection (PELCO 2 Construction Power)
-  {
-    id: "temporary_service_pelco",
-    question: "Paano kumuha ng Temporary Electric Service Connection (TSC) para sa konstruksyon?",
-    keywords: ["temporary service", "kuryente sa construction", "pelco", "pelco 2", "temporary connection", "power", "meter", "construction power", "tsc"],
-    intents: ["UTILITIES", "ELECTRICAL"],
-    category: "ancillary",
-    followUps: ["Ano ang CFEI?", "Sino ang pipirma sa electrical plan?"],
-    answer: `Para magkaroon ng kuryente para sa welding, pamutol ng bakal, at ilaw habang ginagawa ang bahay, kailangan ng **Temporary Service Connection Permit (NBC Form E-03)**:
-
-📌 **Mga Hakbang:**
-1. I-submit ang **Temporary Electrical Plan & Single-Line Diagram** na selyado ng Professional Electrical Engineer (PEE).
-2. Magsasagawa ang OBO Electrical Inspector ng onsite verification sa temporary service pole, grounding rod, at weatherproof circuit breaker panel.
-3. Mag-iisyu ang OBO ng **Certificate of Approval for Temporary Service Connection** na dadalhin sa **PELCO 2 (Pampanga II Electric Cooperative)** para ikabit ang temporary construction meter (bisa: 90 days, renewable).`
-  },
-
-  // 35. Certificate of Occupancy Guide
+  // 34. Certificate of Occupancy Guide
   {
     id: "certificate_of_occupancy_guide",
     question: "Kailan at paano kinukuha ang Certificate of Occupancy bago tirhan ang bahay?",
@@ -1218,35 +1190,15 @@ Kung nahihirapan kayo sa pag-scan o pag-upload, maaari kayong pumunta sa **OBO /
     intents: ["OCCUPANCY", "PROCESS"],
     category: "occupancy",
     actionLink: { label: "I-track ang Aplikasyon", url: "/applicant/track" },
-    followUps: ["Ano ang CFEI para sa PELCO 2?", "Ano ang requirements sa Completion?"],
+    followUps: ["Ano ang requirements sa Building Permit?", "Ano ang requirements sa Completion?"],
     answer: `Ang **Certificate of Occupancy** ang pinal na legal na dokumento mula sa Building Official na nagpapatunay na 100% ligtas at tapos na ang gusali ayon sa aprubadong blueprints bago ito tirhan o gamitin.
 
 📌 **Mga Kailangang Isumite:**
 1. **Certificate of Completion Form**: Notarized at pinirmahan ng Supervising Architect o Civil Engineer.
 2. **As-Built Plans**: Kung may ginawang kaunting rebisyon sa orihinal na blueprints habang ginagawa.
-3. **Certificate of Final Electrical Inspection (CFEI)**.
-4. **BFP Fire Safety Inspection Certificate (FSIC)**.
-5. **Construction Logbook** na may pirma ng engineer at picture ng natapos na proyekto.
-6. Pagsasagawa ng **Joint Final Inspection** ng OBO Engineering Team.`
-  },
-
-  // 36. CFEI & Permanent PELCO 2 Meter
-  {
-    id: "cfei_pelco_meter",
-    question: "Ano ang CFEI at bakit ito hinahanap ng PELCO 2 bago ikabit ang permanenteng metro ng kuryente?",
-    keywords: ["cfei", "metro ng kuryente", "pelco", "pelco 2", "electrical inspection", "grounding", "ilaw", "kuryente", "energization"],
-    intents: ["UTILITIES", "COMPLETION"],
-    category: "ancillary",
-    followUps: ["Kailan kinukuha ang Certificate of Occupancy?", "Sino ang pipirma sa electrical plan?"],
-    answer: `Ang **CFEI (Certificate of Final Electrical Inspection)** ay opisyal na sertipikasyon mula sa Municipal Electrical Inspector ng Sto. Tomas na nagsasabing ligtas ang buong linya ng kuryente sa sunog at ground fault.
-
-📌 **Bakit kailangan ng PELCO 2?**
-Hindi magpapakabit ang PELCO 2 ng permanenteng metro ng kuryente kung walang CFEI mula sa Munisipyo alinsunod sa Philippine Electrical Code (PEC).
-
-⚡ **Sinusuri bago bigyan ng CFEI:**
-• Grounding resistance test (dapat mas mababa sa **5 ohms**).
-• Tamang sukat ng wires at ampere rating ng main breaker.
-• Walang exposed o nagdikit-dikit na hubad na kable.`
+3. **BFP Fire Safety Inspection Certificate (FSIC)**.
+4. **Construction Logbook** na may pirma ng engineer at picture ng natapos na proyekto.
+5. Pagsasagawa ng **Joint Final Inspection** ng OBO Engineering Team.`
   },
 
   // 37. Penalties for Illegal Construction
@@ -1342,20 +1294,20 @@ Hindi magpapakabit ang PELCO 2 ng permanenteng metro ng kuryente kung walang CFE
 ⚠️ Ang pagpapatayo sa loob ng subdivision nang may HOA clearance lamang ngunit walang Building Permit mula sa Munisipyo ay ilegal at papatawan pa rin ng Notice of Violation.`
   },
 
-  // 42. Rooftop Solar Panel Installation Requirements
+  // 40. Rooftop Solar Panel Installation Requirements
   {
     id: "solar_panel_installation",
     question: "Kailangan ba ng permit kapag magpapakabit ng solar panels sa bubong?",
     keywords: ["solar", "solar panels", "rooftop solar", "solar permit", "net metering", "inverter", "bubong", "solar pv"],
     intents: ["SPECIAL_PROJECT", "ELECTRICAL"],
     category: "ancillary",
-    followUps: ["Ano ang CFEI para sa PELCO 2?", "Sino ang pipirma sa electrical plan?"],
+    followUps: ["Ano ang requirements sa Electrical Permit?", "Sino ang pipirma sa electrical plan?"],
     answer: `Opo, ang rooftop solar photovoltaic (PV) system ay nangangailangan ng clearance para sa kaligtasan sa sunog at kuryente.
 
 📌 **Mga Kailangang Permiso:**
 1. **Electrical Permit (NBC Form E-01)**: May kasamang Single-Line Diagram, Inverter DC-to-AC protection specs, at kaukulang electrical load analysis na selyado ng Professional Electrical Engineer (PEE).
 2. **Structural Stability Certification**: Selyado ng Civil Engineer na nagpapatunay na kaya ng truss at framing ng bubong ang karagdagang bigat ng solar panels at malalakas na bagyo.
-3. **Net-Metering Clearance (kung ibebenta ang sobrang kuryente sa PELCO 2)**: Sinusuri ang anti-islanding safety features upang hindi makakuryente sa mga tauhan ng PELCO 2 kapag may brownout.`
+3. **Net-Metering Clearance**: Sinusuri ang anti-islanding safety features para sa renewable energy safety.`
   },
 
   // 43. Purpose of 5 Sets of Blueprints
@@ -1603,7 +1555,7 @@ Kailangan din munang kumuha ng **Barangay Construction Clearance** sa ${b.name} 
     qLower.includes("manukan") || qLower.includes("babuyan") || qLower.includes("palayok") ||
     qLower.includes("bakod") || qLower.includes("fencing") || qLower.includes("giba") ||
     qLower.includes("demolition") || qLower.includes("solar") || qLower.includes("billboard") ||
-    qLower.includes("signage") || qLower.includes("temporary") || qLower.includes("tsc") ||
+    qLower.includes("signage") ||
     qLower.includes("two storey") || qLower.includes("2 storey") || qLower.includes("single detached") ||
     q.length < 35
   )) {

@@ -118,7 +118,7 @@ MUNICIPALITY CONTEXT:
 PERMITTING PROCESS SEQUENCE (CRITICAL RULES):
 1. Phase 1 (Zoning): The applicant MUST obtain an approved Locational Clearance (Zoning Approval) from MPDC first. Prerequisite: TCT (Land Title) or Notarized Deed of Sale, Tax Declaration, Real Property Tax Clearance (Amilyar), Lot Plan with Vicinity Map, Barangay Clearance.
 2. Phase 2 (Building & Ancillaries): Once Locational Clearance is approved, the applicant submits the Unified Application Form for Building Permit (NBC Form 1) along with Ancillary Forms (Architectural A-01, Structural S-01, Electrical E-01, Plumbing P-01, Mechanical M-01, Electronics EL-01) and BFP Fire Safety Evaluation Clearance (FSEC). Requires 5 sets of signed/sealed blueprints by licensed professionals.
-3. Phase 3 (Completion & Occupancy): Upon construction completion, submits Certificate of Completion, secures CFEI (Final Electrical Inspection for PELCO 2 permanent energization), and secures the Certificate of Occupancy before moving in.
+3. Phase 3 (Completion & Occupancy): Upon construction completion, submits Certificate of Completion and secures the Certificate of Occupancy before moving in.
 
 SPECIAL MUNICIPAL PROJECT CLASSIFICATIONS & LOCAL SECTOR GUIDELINES:
 - San Bartolome (Casket Capital): Casket manufacturing facilities require Mechanical (spray booths/dust collectors), Electrical, BFP FSEC fire suppression, and MPDC Industrial I-1 zoning clearance.
@@ -126,7 +126,7 @@ SPECIAL MUNICIPAL PROJECT CLASSIFICATIONS & LOCAL SECTOR GUIDELINES:
 - San Matias (Commercial MacArthur Strip): Highway setback 5.0m, mandatory off-street parking, drainage plan, Electronics permit for CCTV/data systems.
 - Sapa & Poblacion (Aquaculture & Lowland): 3.0-meter river easement (PD 1067 Water Code) along waterways, elevated finish floor level (min. +0.60m above crown of road).
 - Agro-Industrial (Poultry/Piggery): Minimum 500m buffer from residential (1,000m for commercial piggery), DENR ECC, and MPDC agro-industrial zoning approval.
-- Ancillary Permits: Fencing Permit (NBC Form B-03), Demolition Permit (NBC Form B-08), Excavation & Ground Prep (NBC Form B-02), Signboard/Billboard (NBC Form B-07), Temporary Service Connection (NBC Form B-04 for PELCO 2 construction power).
+- Ancillary Permits: Fencing Permit (NBC Form B-03), Demolition Permit (NBC Form B-08), Excavation & Ground Prep (NBC Form B-02), Signboard/Billboard (NBC Form B-07).
 
 PENALTIES & PAYMENT:
 - Building without permit: 100% surcharge on total fees, Notice of Violation, Work Stoppage Order (PD 1096 Rule II).
