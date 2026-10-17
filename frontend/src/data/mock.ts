@@ -38,22 +38,24 @@ export const INITIAL_APPLICATIONS: PermitApplication[] = [
     applicantEmail: "david.randreb@gmail.com",
     projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
     projectDescription: "Construction of single-detached residential house in San Bartolome.",
-    status: "released",
-    isReleased: true,
-    paymentStatus: "paid",
-    dateSubmitted: "October 08, 2026, 10:13 PM",
-    dateApproved: "October 08, 2026",
-    evaluatedBy: "Dave Sicat",
-    evaluatorEmail: "dave.sicat@etayo.gov.ph",
+    status: "pending",
+    isReleased: false,
+    paymentStatus: "unpaid",
+    dateSubmitted: "October 16, 2026, 02:30 PM",
     projectType: "Single-Detached House",
+    location: {
+      lat: 14.982609,
+      lng: 120.70649,
+      address: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga"
+    },
     requirements: [
-      { name: "Locational Clearance Application Form", required: true, status: "approved" },
-      { name: "Certified True Copy of Transfer Certificate of Title (TCT)", required: true, status: "approved" }
+      { name: "Locational Clearance Application Form", required: true, status: "submitted" },
+      { name: "Certified True Copy of Transfer Certificate of Title (TCT)", required: true, status: "submitted" }
     ],
     trackingSteps: [
-      { title: "Application Submitted", status: "completed", date: "Oct 08, 2026" },
-      { title: "Zoning Clearance Approved", status: "completed", date: "Oct 08, 2026" },
-      { title: "Permit Released", status: "completed", date: "Oct 08, 2026" }
+      { title: "Application Submitted", status: "completed", date: "Oct 16, 2026" },
+      { title: "Zoning Clearance Evaluation", status: "in-progress" },
+      { title: "Permit Release", status: "upcoming" }
     ]
   },
   {
@@ -65,20 +67,25 @@ export const INITIAL_APPLICATIONS: PermitApplication[] = [
     applicantEmail: "mdpsicat.student@ua.edu.ph",
     projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
     projectDescription: "Residential construction clearance for Sicat House.",
-    status: "released",
-    isReleased: true,
-    paymentStatus: "paid",
-    dateSubmitted: "October 08, 2026, 10:13 PM",
-    dateApproved: "October 08, 2026",
-    evaluatedBy: "Dave Sicat",
-    evaluatorEmail: "dave.sicat@etayo.gov.ph",
+    status: "under_review",
+    isReleased: false,
+    paymentStatus: "unpaid",
+    dateSubmitted: "October 14, 2026, 11:20 AM",
+    evaluatedBy: "Engr. Ricardo Mercado",
+    evaluatorEmail: "ricardo.mercado@etayo.gov.ph",
     projectType: "Single-Detached House",
+    location: {
+      lat: 14.98402,
+      lng: 120.70781,
+      address: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga"
+    },
     requirements: [
-      { name: "Locational Clearance Application Form", required: true, status: "approved" }
+      { name: "Locational Clearance Application Form", required: true, status: "submitted" }
     ],
     trackingSteps: [
-      { title: "Application Submitted", status: "completed", date: "Oct 08, 2026" },
-      { title: "Permit Released", status: "completed", date: "Oct 08, 2026" }
+      { title: "Application Submitted", status: "completed", date: "Oct 14, 2026" },
+      { title: "Under Technical Review", status: "in-progress", notes: "Reviewing site setback and height limits." },
+      { title: "Permit Release", status: "upcoming" }
     ]
   },
   {
@@ -90,21 +97,24 @@ export const INITIAL_APPLICATIONS: PermitApplication[] = [
     applicantEmail: "mdpsicat.student@ua.edu.ph",
     projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
     projectDescription: "Building permit for Sicat House residential construction.",
-    status: "released",
-    isReleased: true,
-    paymentStatus: "paid",
-    dateSubmitted: "October 08, 2026, 10:13 PM",
-    dateApproved: "October 08, 2026",
-    evaluatedBy: "Engr. Gilbert Cruz",
-    evaluatorEmail: "gilbert.cruz@etayo.gov.ph",
+    status: "pending",
+    isReleased: false,
+    paymentStatus: "unpaid",
+    dateSubmitted: "October 14, 2026, 11:35 AM",
     locationalClearanceRef: "LC-2026-4419",
     projectType: "Single-Detached House",
+    location: {
+      lat: 14.98451,
+      lng: 120.70725,
+      address: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga"
+    },
     requirements: [
-      { name: "Unified Building Permit Application Form", required: true, status: "approved" }
+      { name: "Unified Building Permit Application Form", required: true, status: "submitted" }
     ],
     trackingSteps: [
-      { title: "Application Submitted", status: "completed", date: "Oct 08, 2026" },
-      { title: "Permit Released", status: "completed", date: "Oct 08, 2026" }
+      { title: "Application Submitted", status: "completed", date: "Oct 14, 2026" },
+      { title: "Architectural & Structural Review", status: "in-progress" },
+      { title: "Permit Release", status: "upcoming" }
     ]
   },
   {
@@ -115,20 +125,26 @@ export const INITIAL_APPLICATIONS: PermitApplication[] = [
     applicantEmail: "kathleenabarquez@gmail.com",
     projectAddress: "12, Brgy. San Vicente, Sto. Tomas, Pampanga",
     projectDescription: "Locational clearance for Single-Detached House in San Vicente.",
-    status: "released",
-    isReleased: true,
-    paymentStatus: "paid",
+    status: "approved",
+    isReleased: false,
+    paymentStatus: "unpaid",
     dateSubmitted: "October 08, 2026, 10:13 PM",
-    dateApproved: "October 08, 2026",
+    dateApproved: "October 09, 2026",
     evaluatedBy: "Dave Sicat",
     evaluatorEmail: "dave.sicat@etayo.gov.ph",
     projectType: "Single-Detached House",
+    location: {
+      lat: 14.997766,
+      lng: 120.703387,
+      address: "12, Brgy. San Vicente, Sto. Tomas, Pampanga"
+    },
     requirements: [
       { name: "Locational Clearance Application Form", required: true, status: "approved" }
     ],
     trackingSteps: [
       { title: "Application Submitted", status: "completed", date: "Oct 08, 2026" },
-      { title: "Permit Released", status: "completed", date: "Oct 08, 2026" }
+      { title: "Zoning Clearance Approved", status: "completed", date: "Oct 09, 2026" },
+      { title: "Awaiting Order of Payment", status: "in-progress" }
     ]
   },
   {
@@ -143,17 +159,23 @@ export const INITIAL_APPLICATIONS: PermitApplication[] = [
     isReleased: true,
     paymentStatus: "paid",
     dateSubmitted: "October 08, 2026, 10:13 PM",
-    dateApproved: "October 08, 2026",
+    dateApproved: "October 10, 2026",
     evaluatedBy: "Engr. Gilbert Cruz",
     evaluatorEmail: "gilbert.cruz@etayo.gov.ph",
     locationalClearanceRef: "LC-2026-3820",
     projectType: "Single-Detached House",
+    location: {
+      lat: 14.99821,
+      lng: 120.70412,
+      address: "12, Brgy. San Vicente, Sto. Tomas, Pampanga"
+    },
     requirements: [
       { name: "Unified Building Permit Application Form", required: true, status: "approved" }
     ],
     trackingSteps: [
       { title: "Application Submitted", status: "completed", date: "Oct 08, 2026" },
-      { title: "Permit Released", status: "completed", date: "Oct 08, 2026" }
+      { title: "Permit Approved", status: "completed", date: "Oct 10, 2026" },
+      { title: "Permit Released", status: "completed", date: "Oct 10, 2026" }
     ]
   },
   {
@@ -162,22 +184,28 @@ export const INITIAL_APPLICATIONS: PermitApplication[] = [
     projectName: "Multi-Storey Residential",
     applicantName: "Dave Sicat",
     applicantEmail: "mdpsicat.student@ua.edu.ph",
-    projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
-    projectDescription: "Locational clearance for Multi-Storey Residential dwelling in San Bartolome.",
-    status: "released",
-    isReleased: true,
+    projectAddress: "Purok 3, Brgy. San Matias, Sto. Tomas, Pampanga",
+    projectDescription: "Locational clearance for Multi-Storey Residential dwelling in San Matias.",
+    status: "approved",
+    isReleased: false,
     paymentStatus: "paid",
     dateSubmitted: "October 08, 2026, 09:27 PM",
-    dateApproved: "October 08, 2026",
+    dateApproved: "October 09, 2026",
     evaluatedBy: "Dave Sicat",
     evaluatorEmail: "dave.sicat@etayo.gov.ph",
     projectType: "Multi-Storey Residential",
+    location: {
+      lat: 15.000839,
+      lng: 120.720593,
+      address: "Purok 3, Brgy. San Matias, Sto. Tomas, Pampanga"
+    },
     requirements: [
       { name: "Locational Clearance Application Form", required: true, status: "approved" }
     ],
     trackingSteps: [
       { title: "Application Submitted", status: "completed", date: "Oct 08, 2026" },
-      { title: "Permit Released", status: "completed", date: "Oct 08, 2026" }
+      { title: "Zoning Clearance Approved", status: "completed", date: "Oct 09, 2026" },
+      { title: "Payment Verified", status: "completed", date: "Oct 09, 2026" }
     ]
   },
   {
@@ -186,23 +214,29 @@ export const INITIAL_APPLICATIONS: PermitApplication[] = [
     projectName: "Multi-Storey Residential",
     applicantName: "Dave Sicat",
     applicantEmail: "mdpsicat.student@ua.edu.ph",
-    projectAddress: "Purok 3, Brgy. San Bartolome, Sto. Tomas, Pampanga",
+    projectAddress: "Purok 3, Brgy. San Matias, Sto. Tomas, Pampanga",
     projectDescription: "Building permit for Multi-Storey Residential construction.",
     status: "released",
     isReleased: true,
     paymentStatus: "paid",
     dateSubmitted: "October 08, 2026, 09:27 PM",
-    dateApproved: "October 08, 2026",
+    dateApproved: "October 11, 2026",
     evaluatedBy: "Engr. Gilbert Cruz",
     evaluatorEmail: "gilbert.cruz@etayo.gov.ph",
     locationalClearanceRef: "LC-2026-1188",
     projectType: "Multi-Storey Residential",
+    location: {
+      lat: 15.00152,
+      lng: 120.72124,
+      address: "Purok 3, Brgy. San Matias, Sto. Tomas, Pampanga"
+    },
     requirements: [
       { name: "Unified Building Permit Application Form", required: true, status: "approved" }
     ],
     trackingSteps: [
       { title: "Application Submitted", status: "completed", date: "Oct 08, 2026" },
-      { title: "Permit Released", status: "completed", date: "Oct 08, 2026" }
+      { title: "Technical Evaluation Passed", status: "completed", date: "Oct 11, 2026" },
+      { title: "Permit Released", status: "completed", date: "Oct 11, 2026" }
     ]
   }
 ];

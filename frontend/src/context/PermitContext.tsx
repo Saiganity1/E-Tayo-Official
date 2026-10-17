@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { PermitApplication, SystemLog, FeeStructure, PermitType } from "../types";
-import { isApplicationApproved, compareAppsNewestFirst, normalizeApplicantName } from "../utils/projectGrouping";
+import { isApplicationApproved, compareAppsNewestFirst, normalizeApplicantName, resolveAppLocation } from "../utils/projectGrouping";
 import { INITIAL_APPLICATIONS } from "../data/mock";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
@@ -271,7 +271,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
     });
 };
 
-const STORAGE_VERSION = "etayo_clean_db_v11";
+const STORAGE_VERSION = "etayo_clean_db_v12";
 
 if (typeof window !== "undefined") {
   try {
@@ -907,6 +907,11 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         else if (normEmail === "davesicat@gmail.com") a.applicantEmail = "mdpsicat.student@ua.edu.ph";
         else if (normEmail === "kathleen.abarquez@example.com") a.applicantEmail = "kathleenabarquez@gmail.com";
         
+        // Guarantee every application has valid Sto. Tomas geographical coordinates
+        if (!a.location || typeof a.location.lat !== "number" || typeof a.location.lng !== "number" || isNaN(a.location.lat) || isNaN(a.location.lng)) {
+          a.location = resolveAppLocation(a);
+        }
+
         const cleanId = a.id.trim();
         if (!appMap.has(cleanId)) {
           appMap.set(cleanId, a);

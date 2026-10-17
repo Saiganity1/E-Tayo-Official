@@ -51,9 +51,17 @@ export default function AdminMapPage() {
 
   const stats = useMemo(() => {
     const total = applications.length;
-    const pending = applications.filter(a => a.status === "pending" || a.status === "under_review").length;
-    const approved = applications.filter(a => a.status === "approved" || a.status === "released").length;
-    return { total, pending, approved };
+    const pending = applications.filter(a => (a.status || "").toLowerCase() === "pending").length;
+    const underReview = applications.filter(a => (a.status || "").toLowerCase() === "under_review").length;
+    const approved = applications.filter(a => {
+      const st = (a.status || "").toLowerCase();
+      return st === "approved" || st === "released";
+    }).length;
+    const actionRequired = applications.filter(a => {
+      const st = (a.status || "").toLowerCase();
+      return st === "rejected" || st === "incomplete_requirements";
+    }).length;
+    return { total, pending, underReview, approved, actionRequired };
   }, [applications]);
 
   return (
@@ -119,7 +127,7 @@ export default function AdminMapPage() {
 
         {/* Quick Stats & Action Link */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
             <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "6px 12px", borderRadius: "10px", textAlign: "center" }}>
               <div style={{ fontSize: "1.05rem", fontWeight: "800", color: "#021a4f", lineHeight: "1" }}>{stats.total}</div>
               <div style={{ fontSize: "0.68rem", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>
@@ -129,7 +137,13 @@ export default function AdminMapPage() {
             <div style={{ background: "#fffbeb", border: "1px solid #fde68a", padding: "6px 12px", borderRadius: "10px", textAlign: "center" }}>
               <div style={{ fontSize: "1.05rem", fontWeight: "800", color: "#d97706", lineHeight: "1" }}>{stats.pending}</div>
               <div style={{ fontSize: "0.68rem", color: "#b45309", fontWeight: "600", textTransform: "uppercase" }}>
-                {isEn ? "Pending" : "Sinusuri"}
+                {isEn ? "Pending" : "Naghihintay"}
+              </div>
+            </div>
+            <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "6px 12px", borderRadius: "10px", textAlign: "center" }}>
+              <div style={{ fontSize: "1.05rem", fontWeight: "800", color: "#2563eb", lineHeight: "1" }}>{stats.underReview}</div>
+              <div style={{ fontSize: "0.68rem", color: "#1d4ed8", fontWeight: "600", textTransform: "uppercase" }}>
+                {isEn ? "Under Review" : "Sinusuri"}
               </div>
             </div>
             <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "6px 12px", borderRadius: "10px", textAlign: "center" }}>
@@ -138,6 +152,14 @@ export default function AdminMapPage() {
                 {isEn ? "Approved" : "Aprubado"}
               </div>
             </div>
+            {stats.actionRequired > 0 && (
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "6px 12px", borderRadius: "10px", textAlign: "center" }}>
+                <div style={{ fontSize: "1.05rem", fontWeight: "800", color: "#dc2626", lineHeight: "1" }}>{stats.actionRequired}</div>
+                <div style={{ fontSize: "0.68rem", color: "#991b1b", fontWeight: "600", textTransform: "uppercase" }}>
+                  {isEn ? "Action Req." : "Kailangang Ayusin"}
+                </div>
+              </div>
+            )}
           </div>
 
           <Link

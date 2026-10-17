@@ -913,3 +913,74 @@ export const getApplicationEvaluator = (app: any, options?: { systemLogs?: any[]
     isAssigned: false
   };
 };
+
+export interface ResolvedLocation {
+  lat: number;
+  lng: number;
+  address: string;
+}
+
+/**
+ * Resolves reliable Sto. Tomas geographical coordinates for any application.
+ * If coordinates exist on app.location, validates and returns them.
+ * Otherwise, maps by Barangay (with deterministic jitter by app.id) so pins never disappear or overlap.
+ */
+export const resolveAppLocation = (app: any): ResolvedLocation => {
+  if (
+    app?.location &&
+    typeof app.location.lat === "number" &&
+    typeof app.location.lng === "number" &&
+    !isNaN(app.location.lat) &&
+    !isNaN(app.location.lng) &&
+    app.location.lat !== 0 &&
+    app.location.lng !== 0
+  ) {
+    return {
+      lat: Number(app.location.lat),
+      lng: Number(app.location.lng),
+      address: app.location.address || app.projectAddress || "Sto. Tomas, Pampanga"
+    };
+  }
+
+  const rawAddr = String(app?.projectAddress || app?.location?.address || app?.barangay || "").toLowerCase();
+
+  // Deterministic micro-offset based on app.id so multiple pins in the same barangay do not overlap
+  let hash = 0;
+  const idStr = String(app?.id || "APP-DEFAULT");
+  for (let i = 0; i < idStr.length; i++) {
+    hash = (hash << 5) - hash + idStr.charCodeAt(i);
+    hash |= 0;
+  }
+  const latOffset = ((Math.abs(hash) % 80) - 40) * 0.0001;
+  const lngOffset = ((Math.abs(hash * 37) % 80) - 40) * 0.0001;
+
+  if (rawAddr.includes("bartolome")) {
+    return { lat: 14.982609 + latOffset, lng: 120.70649 + lngOffset, address: app?.projectAddress || "Brgy. San Bartolome, Sto. Tomas, Pampanga" };
+  }
+  if (rawAddr.includes("vicente")) {
+    return { lat: 14.997766 + latOffset, lng: 120.703387 + lngOffset, address: app?.projectAddress || "Brgy. San Vicente, Sto. Tomas, Pampanga" };
+  }
+  if (rawAddr.includes("matias")) {
+    return { lat: 15.000839 + latOffset, lng: 120.720593 + lngOffset, address: app?.projectAddress || "Brgy. San Matias, Sto. Tomas, Pampanga" };
+  }
+  if (rawAddr.includes("moras") || rawAddr.includes("paz")) {
+    return { lat: 15.014536 + latOffset, lng: 120.706979 + lngOffset, address: app?.projectAddress || "Brgy. Moras Dela Paz, Sto. Tomas, Pampanga" };
+  }
+  if (rawAddr.includes("poblacion")) {
+    return { lat: 14.988519 + latOffset, lng: 120.712058 + lngOffset, address: app?.projectAddress || "Brgy. Poblacion, Sto. Tomas, Pampanga" };
+  }
+  if (rawAddr.includes("rosario") || rawAddr.includes("pau")) {
+    return { lat: 15.019837 + latOffset, lng: 120.723417 + lngOffset, address: app?.projectAddress || "Brgy. Santo Rosario (Pau), Sto. Tomas, Pampanga" };
+  }
+  if (rawAddr.includes("sapa") || rawAddr.includes("niño") || rawAddr.includes("nino")) {
+    return { lat: 15.002718 + latOffset, lng: 120.707035 + lngOffset, address: app?.projectAddress || "Brgy. Sapa (Santo Niño), Sto. Tomas, Pampanga" };
+  }
+
+  // Fallback to Municipal Center
+  return {
+    lat: 15.0032 + latOffset,
+    lng: 120.7123 + lngOffset,
+    address: app?.projectAddress || "Sto. Tomas, Pampanga"
+  };
+};
+

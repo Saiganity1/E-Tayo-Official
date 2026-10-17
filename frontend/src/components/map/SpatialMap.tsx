@@ -11,6 +11,7 @@ import { Eye, ExternalLink, ArrowRight, MousePointerClick } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { PROJECT_TYPES_MATRIX, ProjectCategory } from "../../data/projectTypeMatrix";
+import { resolveAppLocation } from "../../utils/projectGrouping";
 import { 
   stoTomasZoningGeoJSON, 
   stoTomasMunicipalBoundaryGeoJSON, 
@@ -265,6 +266,7 @@ export default function SpatialMap({
   // Direct Click Navigation mode (defaults to true for Admin)
   const [directClickEnabled, setDirectClickEnabled] = useState<boolean>(initialDirectClick);
   const [filterType, setFilterType] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBarangay, setSelectedBarangay] = useState<any>(null);
   const [hoveredZone, setHoveredZone] = useState<any>(null);
@@ -317,16 +319,25 @@ export default function SpatialMap({
       if (filterType !== 'ALL' && category !== filterType) return false;
       if (searchQuery && !app.projectName?.toLowerCase().includes(searchQuery.toLowerCase()) && !app.id?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       
-      // If a barangay is selected, filter by its bounds (simplified by matching address text for mock data)
+      // Filter by Application Status
+      if (statusFilter !== 'ALL') {
+        const st = String(app.status || "").toLowerCase().trim();
+        if (statusFilter === 'approved' && st !== 'approved' && st !== 'released') return false;
+        if (statusFilter === 'pending' && st !== 'pending') return false;
+        if (statusFilter === 'under_review' && st !== 'under_review') return false;
+        if (statusFilter === 'rejected' && st !== 'rejected' && st !== 'incomplete_requirements') return false;
+      }
+
+      // If a barangay is selected, filter by its bounds
       if (selectedBarangay) {
-        if (!app.location || !app.location.address) return false;
-        if (!app.location.address.toLowerCase().includes(selectedBarangay.toLowerCase())) {
+        const loc = resolveAppLocation(app);
+        if (!loc.address.toLowerCase().includes(selectedBarangay.toLowerCase())) {
           return false;
         }
       }
       return true;
     });
-  }, [applications, filterType, searchQuery, selectedBarangay]);
+  }, [applications, filterType, statusFilter, searchQuery, selectedBarangay]);
 
   const selectedFeature = useMemo(() => {
     if (!selectedBarangay) return null;
@@ -627,40 +638,68 @@ export default function SpatialMap({
           </LayersControl.Overlay>
         </LayersControl>
 
-        {/* CLUSTERED PERMITS (Rendered with Project Type Category icons and colors) */}
+        {/* CLUSTERED PERMITS (Rendered with Status Badges and Project Type Category icons) */}
         <>
           {filteredApps.map((app) => {
-            if (!app.location || typeof app.location.lat === 'undefined' || typeof app.location.lng === 'undefined') {
-              return null; // Skip rendering applications without valid location data to prevent crashes
-            }
-
+            const loc = resolveAppLocation(app);
             const { category, projectNameDisplay, projectTypeName } = getAppProjectCategory(app);
             const theme = PROJECT_CATEGORY_THEMES[category] || PROJECT_CATEGORY_THEMES.Residential;
+
+            const statusRaw = String(app.status || "pending").toLowerCase().trim();
+            const isApproved = statusRaw === "approved" || statusRaw === "released";
+            const isReview = statusRaw === "under_review";
+            const isPending = statusRaw === "pending";
+            const isRejected = statusRaw === "rejected" || statusRaw === "incomplete_requirements";
+
+            const statusColor = isApproved ? "#10b981" : isReview ? "#2563eb" : isRejected ? "#ef4444" : "#f59e0b";
+            const statusLabel = isApproved ? (isEn ? "Approved" : "Aprubado") : isReview ? (isEn ? "Under Review" : "Sinusuri") : isRejected ? (isEn ? "Action Required" : "Kailangang Ayusin") : (isEn ? "Pending Review" : "Naghihintay");
+            const statusIcon = isApproved ? "✓" : isReview ? "👁" : isRejected ? "✕" : "⏳";
+            const statusRing = isApproved ? "rgba(16, 185, 129, 0.45)" : isReview ? "rgba(37, 99, 235, 0.45)" : isRejected ? "rgba(239, 68, 68, 0.45)" : "rgba(245, 158, 11, 0.55)";
 
             const permitIcon = L.divIcon({
               html: `
                 <div style="
+                  position: relative;
                   background: ${theme.color};
                   color: white;
-                  width: 38px;
-                  height: 38px;
+                  width: 42px;
+                  height: 42px;
                   border-radius: 50%;
-                  border: 2.5px solid white;
+                  border: 3.5px solid ${statusColor};
                   display: flex;
                   align-items: center;
                   justify-content: center;
-                  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                  box-shadow: 0 0 0 3px rgba(255,255,255,0.9), 0 6px 16px ${statusRing}, 0 2px 6px rgba(0,0,0,0.3);
                   transform: translate(-50%, -50%);
                 ">
                   <div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;">
                     ${theme.svg}
                   </div>
+                  <div style="
+                    position: absolute;
+                    top: -5px;
+                    right: -5px;
+                    background: ${statusColor};
+                    color: white;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 10px;
+                    font-weight: 900;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                  ">
+                    ${statusIcon}
+                  </div>
                 </div>
               `,
               className: 'custom-div-icon',
-              iconSize: [38, 38],
-              iconAnchor: [19, 19],
-              popupAnchor: [0, -19]
+              iconSize: [42, 42],
+              iconAnchor: [21, 21],
+              popupAnchor: [0, -21]
             });
 
             const appUrl = isAdminOrStaff ? `/staff/evaluate/${app.id}` : `/applicant/track/${app.id}`;
@@ -668,7 +707,7 @@ export default function SpatialMap({
             return (
               <Marker 
                 key={app.id} 
-                position={[app.location.lat, app.location.lng]} 
+                position={[loc.lat, loc.lng]} 
                 icon={permitIcon}
                 eventHandlers={{
                   click: () => {
@@ -683,17 +722,36 @@ export default function SpatialMap({
                   }
                 }}
               >
-                <Tooltip direction="top" offset={[0, -20]} opacity={0.96} className="permit-hover-tooltip">
-                  <div style={{ padding: '4px 6px', maxWidth: '240px' }}>
-                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.85rem', lineHeight: '1.2' }}>{projectNameDisplay}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
-                      <strong>{app.id}</strong> • <span style={{ textTransform: 'capitalize' }}>{app.status.replace("_", " ")}</span>
+                <Tooltip direction="top" offset={[0, -22]} opacity={0.97} className="permit-hover-tooltip">
+                  <div style={{ padding: '6px 8px', maxWidth: '250px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                      <span style={{
+                        background: isApproved ? '#ecfdf5' : isReview ? '#eff6ff' : isRejected ? '#fef2f2' : '#fffbeb',
+                        color: statusColor,
+                        border: `1px solid ${statusColor}`,
+                        fontSize: '0.7rem',
+                        fontWeight: '800',
+                        padding: '2px 6px',
+                        borderRadius: '6px',
+                        textTransform: 'uppercase'
+                      }}>
+                        {statusIcon} {statusLabel}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700' }}>
+                        {app.id}
+                      </span>
+                    </div>
+                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.88rem', lineHeight: '1.25' }}>
+                      {projectNameDisplay}
+                    </div>
+                    <div style={{ fontSize: '0.74rem', color: '#475569', marginTop: '3px' }}>
+                      📍 {loc.address}
                     </div>
                     {isAdmin && (
-                      <div style={{ marginTop: '5px', fontSize: '0.72rem', color: '#0038A8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ marginTop: '6px', fontSize: '0.72rem', color: '#0038A8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', borderTop: '1px dashed #cbd5e1', paddingTop: '4px' }}>
                         <span>👉</span> {directClickEnabled 
-                          ? (isEn ? "Click marker to open application" : "I-click para buksan ang aplikasyon")
-                          : (isEn ? "Click marker to view preview card" : "I-click para sa preview card")}
+                          ? (isEn ? "Click marker to evaluate application" : "I-click para suriin ang aplikasyon")
+                          : (isEn ? "Click marker to view card" : "I-click para sa detalye")}
                       </div>
                     )}
                   </div>
@@ -716,13 +774,18 @@ export default function SpatialMap({
                         <span style={{ display: 'inline-flex', width: '13px', height: '13px' }} dangerouslySetInnerHTML={{ __html: theme.svg }} />
                         {category}
                       </span>
-                      <Link 
-                        href={appUrl} 
-                        style={{ fontSize: '0.7rem', color: '#0038A8', fontWeight: '700', textDecoration: 'none' }}
-                        title={isEn ? "Open application" : "Buksan ang aplikasyon"}
-                      >
-                        {app.id}
-                      </Link>
+                      <span style={{
+                        background: isApproved ? '#ecfdf5' : isReview ? '#eff6ff' : isRejected ? '#fef2f2' : '#fffbeb',
+                        color: statusColor,
+                        border: `1px solid ${statusColor}`,
+                        fontSize: '0.7rem',
+                        fontWeight: '800',
+                        padding: '2px 6px',
+                        borderRadius: '6px',
+                        textTransform: 'uppercase'
+                      }}>
+                        {statusIcon} {statusLabel}
+                      </span>
                     </div>
 
                     <Link 
@@ -736,12 +799,12 @@ export default function SpatialMap({
                       </h3>
                     </Link>
                     <div style={{ fontSize: '0.78rem', color: '#475569', marginBottom: '8px', fontWeight: '600' }}>
-                      {projectTypeName}
+                      {projectTypeName} • <strong>{app.id}</strong>
                     </div>
 
                     <p style={{ margin: '0 0 12px 0', fontSize: '0.82rem', color: '#64748b', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                      {app.location.address}
+                      {loc.address}
                     </p>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
@@ -749,12 +812,8 @@ export default function SpatialMap({
                         <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>
                           {isEn ? "Status" : "Katayuan"}
                         </div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 
-                          app.status.toLowerCase() === 'approved' || app.status.toLowerCase() === 'released' ? '#10b981' : 
-                          app.status.toLowerCase() === 'rejected' ? '#ef4444' : 
-                          app.status.toLowerCase() === 'under_review' ? '#3b82f6' : '#f59e0b'
-                        }}>
-                          {app.status.replace("_", " ")}
+                        <div style={{ fontSize: '0.85rem', fontWeight: '700', color: statusColor }}>
+                          {statusLabel}
                         </div>
                       </div>
                       <div>
@@ -1100,6 +1159,83 @@ export default function SpatialMap({
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         )}
       </button>
+
+      {/* FLOATING APPLICATION STATUS QUICK FILTER BAR */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          background: 'rgba(255, 255, 255, 0.96)',
+          backdropFilter: 'blur(16px)',
+          border: '1.5px solid rgba(0, 56, 168, 0.15)',
+          borderRadius: '16px',
+          padding: '6px 12px',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          maxWidth: 'calc(100% - 32px)',
+          overflowX: 'auto'
+        }}
+      >
+        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', paddingRight: '4px', whiteSpace: 'nowrap' }}>
+          {isEn ? "Filter Status:" : "I-filter ang Status:"}
+        </span>
+        {[
+          { key: 'ALL', label: isEn ? "All Permits" : "Lahat", count: applications.length, color: '#0038A8' },
+          { key: 'pending', label: isEn ? "Pending" : "Naghihintay", count: applications.filter(a => (a.status || "").toLowerCase() === 'pending').length, color: '#d97706', dot: '#f59e0b' },
+          { key: 'under_review', label: isEn ? "Under Review" : "Sinusuri", count: applications.filter(a => (a.status || "").toLowerCase() === 'under_review').length, color: '#2563eb', dot: '#3b82f6' },
+          { key: 'approved', label: isEn ? "Approved" : "Aprubado", count: applications.filter(a => (a.status || "").toLowerCase() === 'approved' || (a.status || "").toLowerCase() === 'released').length, color: '#059669', dot: '#10b981' }
+        ].map(item => {
+          const isSelected = statusFilter === item.key;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setStatusFilter(item.key)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '10px',
+                fontSize: '0.76rem',
+                fontWeight: isSelected ? 800 : 600,
+                background: isSelected ? item.color : '#f8fafc',
+                color: isSelected ? '#ffffff' : '#334155',
+                border: isSelected ? `1px solid ${item.color}` : '1px solid #e2e8f0',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s ease',
+                boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.18)' : 'none'
+              }}
+            >
+              {item.dot && (
+                <span style={{ 
+                  width: '8px', 
+                  height: '8px', 
+                  borderRadius: '50%', 
+                  backgroundColor: isSelected ? '#ffffff' : item.dot 
+                }} />
+              )}
+              <span>{item.label}</span>
+              <span style={{ 
+                background: isSelected ? 'rgba(255,255,255,0.28)' : '#e2e8f0', 
+                color: isSelected ? '#ffffff' : '#475569',
+                borderRadius: '999px',
+                padding: '1px 7px',
+                fontSize: '0.68rem',
+                fontWeight: 800
+              }}>
+                {item.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* ADMIN DIRECT CLICK MODE TOGGLE PILL */}
       {isAdmin && (
