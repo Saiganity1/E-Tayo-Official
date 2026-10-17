@@ -1599,8 +1599,8 @@ Kailangan din munang kumuha ng **Barangay Construction Clearance** sa ${b.name} 
     }
   }
 
-  // Confidence Threshold for ML match
-  if (bestMatch && highestScore >= 4.0) {
+  // Confidence Threshold for ML match - Lowered to 1.2 for high sensitivity and responsive answers
+  if (bestMatch && highestScore >= 1.2) {
     let response = bestMatch.answer;
 
     if (bestMatch.actionLink) {
@@ -1614,7 +1614,78 @@ Kailangan din munang kumuha ng **Barangay Construction Clearance** sa ${b.name} 
     return response;
   }
 
-  // 6. CONTEXTUAL RECOVERY FALLBACKS
+  // 6. COMPREHENSIVE DOMAIN INTENT HANDLERS
+  if (qLower.includes("oras") || qLower.includes("bukas") || qLower.includes("sarado") || qLower.includes("saan") || qLower.includes("nasaan") || qLower.includes("location") || qLower.includes("opisina") || qLower.includes("telepono") || qLower.includes("contact") || qLower.includes("address") || qLower.includes("obo") || qLower.includes("munisipyo")) {
+    return `🏛️ **Opisina ng Munisipyo at Building Official (OBO - Sto. Tomas, Pampanga)**:
+
+• **Lokasyon**: 2nd Floor, Sto. Tomas Municipal Hall, Poblacion, Sto. Tomas, Pampanga
+• **Mga Tanggapan**: Office of the Building Official (OBO) & Municipal Planning and Development Coordinator (MPDC / Zoning)
+• **Oras ng Serbisyo**: Lunes hanggang Biyernes, 8:00 AM – 5:00 PM (Walang pasok tuwing Sabado, Linggo, at Opisyal na Holidays)
+• **Opisyal na Email**: obo@stotomaspampanga.gov.ph
+• **Telepono**: (045) 436-1234
+
+Maaari rin po kayong mag-submit ng aplikasyon online anumang oras 24/7 dito sa ating eTAYO Portal!`;
+  }
+
+  if (qLower.includes("bayad") || qLower.includes("payment") || qLower.includes("magkano") || qLower.includes("singil") || qLower.includes("presyo") || qLower.includes("online payment") || qLower.includes("gcash") || qLower.includes("maya") || qLower.includes("landbank")) {
+    return `💳 **Paraan ng Pagbabayad ng Permit Fees sa Sto. Tomas**:
+
+1. **Online via Landbank Link.BizPortal**: Pumili ng Merchant: *Municipality of Sto. Tomas, Pampanga*, ilagay ang inyong Assessment Reference Number.
+2. **E-Wallets (GCash / Maya)**: Sa pamamagitan ng Link.BizPortal QR Ph gateway sa inyong opisyal na Order of Payment.
+3. **Municipal Treasury Cashier**: Cash o Manager's Check sa Ground Floor ng Sto. Tomas Municipal Hall.
+
+💡 *Paalala*: Pagkatapos magbayad, mangyaring i-upload ang validated Official Receipt (OR) sa inyong [Application Tracking Page](/applicant/track) upang maipagkaloob agad ang inyong opisyal na permit.`;
+  }
+
+  if (qLower.includes("tagal") || qLower.includes("araw") || qLower.includes("matatapos") || qLower.includes("timeline") || qLower.includes("release") || qLower.includes("kailan ma-approve")) {
+    return `⏱️ **Pagtataya sa Tagal ng Pagproseso (Processing Timeline)**:
+
+Alinsunod sa RA 11032 (Ease of Doing Business Act):
+• **Phase 1: Locational Clearance (Zoning)**: **3 hanggang 5 working days** matapos makumpleto ang pagsusuri sa titulo at lot plan.
+• **Phase 2: Building Permit & Ancillaries**: **7 hanggang 14 working days** kasabay ng technical review ng Civil, Electrical, Sanitary, Mechanical engineers at BFP Fire Safety Evaluation Clearance (FSEC).
+• **Phase 3: Certificate of Occupancy**: **3 hanggang 5 working days** matapos ang joint onsite safety inspection.`;
+  }
+
+  if (qLower.includes("pirma") || qLower.includes("pipirma") || qLower.includes("engineer") || qLower.includes("architect") || qLower.includes("propesyonal") || qLower.includes("selyo") || qLower.includes("blueprint") || qLower.includes("kopya")) {
+    return `✍️ **Mga Lisensyadong Propesyonal na Dapat Pumirma at Mag-dry Seal sa 5 Sets ng Blueprints**:
+
+1. **Architect**: Architectural Plans (A-01) at Floor Layouts
+2. **Civil / Structural Engineer**: Structural Plans (S-01), Foundation Details, at Structural Computations
+3. **Professional Electrical Engineer (PEE)**: Electrical Plans (E-01) at Load Schedules
+4. **Master Plumber / Sanitary Engineer**: Plumbing & Sanitary Plans (P-01) at Septic Tank Design
+5. **Professional Mechanical Engineer (PME)**: Mechanical Plans (kung may elevator, central AC, o industrial exhausts)
+
+*Kailangan ng limang (5) kumpletong sets ng blueprints (20" x 30" standard sheet size) na may dry seal ng bawat propesyonal.*`;
+  }
+
+  if (qLower.includes("subdivision") || qLower.includes("hoa") || qLower.includes("village")) {
+    return `🏡 **Patakaran sa Pagpapatayo sa Loob ng Subdivision**:
+
+Obligado pa rin po kayong kumuha ng opisyal na **Building Permit mula sa Munisipyo ng Sto. Tomas** kahit may clearance na kayo mula sa inyong Homeowners Association (HOA). Ang HOA clearance ay pahintulot lamang para makapasok ang materyales sa subdivision gates, ngunit ang legal na permit na nagpapatunay na ligtas at sumusunod sa National Building Code ang inyong bahay ay nagmumula lamang sa Office of the Building Official (OBO).`;
+  }
+
+  if (qLower.includes("tax dec") || qLower.includes("walang titulo") || qLower.includes("deed of sale") || qLower.includes("katibayan")) {
+    return `📄 **Pag-apply gamit ang Tax Declaration (Kung Walang Titulo/TCT)**:
+
+Opo, tinatanggap ng Munisipyo ng Sto. Tomas ang Tax Declaration kalakip ang mga sumusunod na karagdagang dokumento:
+1. Certified True Copy ng pinakabagong **Tax Declaration** mula sa Municipal Assessor's Office
+2. Updated **Real Property Tax Clearance (Amilyar)**
+3. Notarized **Deed of Absolute Sale** o Extrajudicial Settlement
+4. **Affidavit of Ownership and Undertaking** na walang ibang humahabol sa nasabing lupa
+5. **Barangay Certificate of Non-Tenancy and Possession**
+
+👉 [Maaari na kayong mag-apply para sa Locational Clearance dito](/applicant/apply?type=locational_clearance)`;
+  }
+
+  if (qLower.includes("walang permit") || qLower.includes("huli") || qLower.includes("parusa") || qLower.includes("multa") || qLower.includes("penalty") || qLower.includes("bawal")) {
+    return `⚠️ **Mga Parusa sa Pagtatayo Nang Walang Building Permit (PD 1096 Section 212)**:
+
+1. **100% Surcharge Penalty**: Doble ang babayarang permit fees kapag naaktuhan ang konstruksyon bago mag-apply.
+2. **Notice of Violation & Work Stoppage Order**: Agarang pagpapahinto ng konstruksyon ng OBO Building Inspectors.
+3. **Cease and Desist Order**: Maaaring ipasara ang site at hindi tatanggapin ang utility installations.
+4. **Demolition Order**: Kung mapatunayang labag sa zoning, nasa loob ng river easement, o mapanganib sa publiko.`;
+  }
+
   if (qLower.includes("locational") || qLower.includes("zoning")) {
     return OFFICIAL_16_FORMS_GUIDE.LC.description + "\n\n**Mga Pangunahing Dokumento**:\n" + OFFICIAL_16_FORMS_GUIDE.LC.requirements.map(r => `• ${r}`).join("\n") + "\n\n👉 [Mag-apply para sa Locational Clearance](/applicant/apply?type=locational_clearance)";
   }

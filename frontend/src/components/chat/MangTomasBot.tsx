@@ -6,6 +6,7 @@ import { MessageSquare, X, Send, Bot, Sparkles, RefreshCw, Layers, ExternalLink 
 import { formatPhilippineTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../context/PermitContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { findKnowledgeBaseMatches } from "@/data/stoTomasKnowledgeBase";
 
 interface ChatMessage {
   id: string;
@@ -228,15 +229,16 @@ export default function MangTomasBot({
         throw new Error("Chat API returned non-OK status");
       }
     } catch (err) {
-      console.warn("Error calling /api/chat, falling back to local guidance:", err);
+      console.warn("Error calling /api/chat, evaluating with local engine:", err);
+      const fallbackReply = findKnowledgeBaseMatches(userText, applications || []);
       setMessages(prev => [
         ...prev,
         {
           id: `msg-${Date.now() + 1}`,
           role: "bot",
-          text: "Mabuhay! Ako po si Mang Tomas. Maaari ninyong tingnan ang inyong [Application Status](/applicant/track) o mag-apply para sa bagong permit sa aming [Permits Application Page](/applicant/apply).",
+          text: fallbackReply,
           timestamp: new Date(),
-          source: "error_fallback"
+          source: "local_ml"
         }
       ]);
     } finally {

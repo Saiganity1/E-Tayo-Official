@@ -24,9 +24,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden: CSRF check failed", reason: csrfCheck.reason }, { status: 403 });
     }
 
-    // 1. IP Rate Limiting (10 requests per minute with Retry-After)
+    // 1. IP Rate Limiting (30 requests per minute with Retry-After)
     const clientIp = getClientIp(req);
-    const rateCheck = checkRateLimit(clientIp, 10, 60 * 1000);
+    const rateCheck = checkRateLimit(clientIp, 30, 60 * 1000);
     if (!rateCheck.allowed) {
       return NextResponse.json({ 
         error: "Chat rate limit exceeded. Please wait before sending another inquiry." 
