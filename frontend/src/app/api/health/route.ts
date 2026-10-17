@@ -10,7 +10,7 @@ export async function GET() {
   // Safe and cheap backend check with a fast timeout (1.5s)
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com";
   try {
-    const pingTarget = backendUrl.replace(/\/+$/, "") + "/actuator/health";
+    const pingTarget = backendUrl.replace(/\/+$/, "") + "/";
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 1500);
 
