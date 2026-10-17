@@ -273,12 +273,14 @@ export default function Sidebar() {
       }
       case "staff":
         return [
-          { href: "/admin/evaluations", label: t("staffEvaluations", "Staff Evaluations"), icon: FileCheck },
+          { href: "/staff/dashboard", label: t("staffDashboard", "Staff Dashboard"), icon: Home },
+          { href: "/admin/evaluations", label: t("staffEvaluations", "Evaluations Console"), icon: FileCheck },
           { href: "/staff/messages", label: t("messages", "Messages"), icon: MessageSquare },
           { href: "/staff/map", label: t("map", "Map"), icon: Map },
         ];
       case "admin":
         return [
+          { href: "/admin/dashboard", label: t("dashboard", "Dashboard"), icon: Home },
           { href: "/admin/evaluations", label: t("staffEvaluations", "Staff Evaluations"), icon: FileCheck },
           { href: "/admin/security", label: t("securityAuth", "Security & Auth"), icon: Shield },
           { href: "/staff/templates", label: t("officialForms", "Official Forms"), icon: FileText },
@@ -318,12 +320,14 @@ export default function Sidebar() {
         ];
       case "staff":
         return [
+          { href: "/staff/dashboard", label: language === "fil" ? "Home" : "Dashboard", icon: Home },
           { href: "/admin/evaluations", label: language === "fil" ? "Pagsusuri" : "Evaluations", icon: FileCheck },
           { href: "/staff/messages", label: language === "fil" ? "Mensahe" : "Messages", icon: MessageSquare },
           { href: "/staff/map", label: language === "fil" ? "Mapa" : "Map", icon: Map },
         ];
       case "admin":
         return [
+          { href: "/admin/dashboard", label: "Dashboard", icon: Home },
           { href: "/admin/evaluations", label: "Evaluations", icon: FileCheck },
           { href: "/admin/security", label: "Security", icon: Shield },
           { href: "/staff/templates", label: "Forms", icon: FileText },
@@ -357,6 +361,12 @@ export default function Sidebar() {
     if (itemClean === "/applicant/messages") {
       return cleanPath.startsWith("/applicant/messages");
     }
+    if (itemClean === "/admin/dashboard") {
+      return cleanPath === "/admin/dashboard";
+    }
+    if (itemClean === "/staff/dashboard") {
+      return cleanPath === "/staff/dashboard" || cleanPath === "/staff";
+    }
     if (itemClean === "/admin/evaluations") {
       return cleanPath.startsWith("/admin/evaluations") || cleanPath.startsWith("/staff/evaluate");
     }
@@ -373,7 +383,7 @@ export default function Sidebar() {
         <div className="mobile-header-content">
           {/* Left side: App Logo & Municipal Branding */}
           <Link 
-            href={userRole === "applicant" ? "/applicant/dashboard" : userRole === "staff" ? "/admin/evaluations" : userRole === "admin" ? "/admin/evaluations" : "/"} 
+            href={userRole === "applicant" ? "/applicant/dashboard" : userRole === "staff" ? "/staff/dashboard" : userRole === "admin" ? "/admin/dashboard" : "/"} 
             className="mobile-header-brand"
             title="eTAYO - Sto. Tomas, Pampanga"
           >
@@ -600,6 +610,10 @@ export default function Sidebar() {
                     localStorage.removeItem("etayo_unread_messages_count");
                     localStorage.removeItem("etayo_notifications");
                     localStorage.removeItem("etayo_messages_history");
+                    if (typeof document !== "undefined") {
+                      document.cookie = "token=; path=/; max-age=0";
+                      document.cookie = "role=; path=/; max-age=0";
+                    }
                     setUserRole("public");
                     setIsOpen(false);
                   }}

@@ -171,6 +171,10 @@ export default function AdminApp() {
       localStorage.setItem("token", data.accessToken);
       localStorage.setItem("userRole", data.role);
       localStorage.setItem("user", JSON.stringify({ email: loginEmail, name: data.name, role: data.role }));
+      if (typeof document !== "undefined") {
+        document.cookie = `token=${encodeURIComponent(data.accessToken)}; path=/; max-age=28800; SameSite=Lax`;
+        document.cookie = `role=${encodeURIComponent(data.role)}; path=/; max-age=28800; SameSite=Lax`;
+      }
       
       setCurrentUserEmail(loginEmail);
       setCurrentUserName(data.name || "Super Admin");
@@ -196,6 +200,10 @@ export default function AdminApp() {
     localStorage.removeItem("etayo_unread_messages_count");
     localStorage.removeItem("etayo_notifications");
     localStorage.removeItem("etayo_messages_history");
+    if (typeof document !== "undefined") {
+      document.cookie = "token=; path=/; max-age=0";
+      document.cookie = "role=; path=/; max-age=0";
+    }
     setIsAuthenticated(false);
     router.push("/login");
   };

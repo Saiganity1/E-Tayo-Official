@@ -247,12 +247,18 @@ export default function LoginPage() {
         profileImage: data.profileImage || null
       }));
 
+      // Set cookie for Server Component / Server-side gate checks (e.g., /superadmin)
+      if (typeof document !== "undefined") {
+        document.cookie = `token=${encodeURIComponent(data.accessToken)}; path=/; max-age=28800; SameSite=Lax`;
+        document.cookie = `role=${encodeURIComponent(data.role || "ROLE_APPLICANT")}; path=/; max-age=28800; SameSite=Lax`;
+      }
+
       let role: "applicant" | "staff" | "admin" = "applicant";
       let destination = "/applicant/dashboard";
 
       if (data.role === "ROLE_STAFF") {
         role = "staff";
-        destination = "/admin/evaluations";
+        destination = "/staff/dashboard";
       } else if (data.role === "ROLE_ADMIN" || data.role === "ROLE_SUPERADMIN") {
         role = "admin";
         destination = "/admin/evaluations";

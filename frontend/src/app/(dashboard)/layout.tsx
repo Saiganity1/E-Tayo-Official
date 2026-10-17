@@ -49,6 +49,10 @@ export default function DashboardLayout({
           localStorage.removeItem("user");
           localStorage.removeItem("etayo_session_start");
           localStorage.removeItem("etayo_last_active");
+          if (typeof document !== "undefined") {
+            document.cookie = "token=; path=/; max-age=0";
+            document.cookie = "role=; path=/; max-age=0";
+          }
           router.replace("/login?expired=1");
         }
       }
@@ -107,6 +111,10 @@ export default function DashboardLayout({
         localStorage.removeItem("user");
         localStorage.removeItem("etayo_session_start");
         localStorage.removeItem("etayo_last_active");
+        if (typeof document !== "undefined") {
+          document.cookie = "token=; path=/; max-age=0";
+          document.cookie = "role=; path=/; max-age=0";
+        }
         setIsAuthorized(false);
         router.replace("/login?expired=1");
         return;

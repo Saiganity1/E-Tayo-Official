@@ -182,12 +182,20 @@ export default function Footer() {
       {/* Bottom Copyright & Legal Strip */}
       <div className="footer-bottom-strip">
         <div className="bottom-content">
-          <div className="copy-left">
+          <div className="copy-left" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <span>
               {isFil
                 ? `© ${new Date().getFullYear()} Republika ng Pilipinas • Bayan ng Sto. Tomas, Pampanga.`
                 : `© ${new Date().getFullYear()} Republic of the Philippines • Municipality of Sto. Tomas, Pampanga.`}
             </span>
+            <span aria-hidden="true" style={{ opacity: 0.4 }}>•</span>
+            <a
+              href="/privacy-policy"
+              style={{ color: "#0038A8", textDecoration: "underline", textUnderlineOffset: "3px", fontWeight: 600, fontSize: "0.85rem" }}
+              title={isFil ? "Patakaran sa Pagkapribado" : "Privacy Policy"}
+            >
+              {isFil ? "Patakaran sa Pagkapribado" : "Privacy Policy"}
+            </a>
           </div>
           <div className="copy-right developer-credits">
             <div className="dev-badge">

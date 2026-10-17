@@ -24,17 +24,37 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/staff",
-        destination: "/admin/evaluations",
-        permanent: false,
-      },
-      {
-        source: "/staff/dashboard",
-        destination: "/admin/evaluations",
+        destination: "/staff/dashboard",
         permanent: false,
       },
       {
         source: "/admin",
-        destination: "/admin/evaluations",
+        destination: "/admin/dashboard",
+        permanent: false,
+      },
+      {
+        source: "/admin/forms",
+        destination: "/staff/templates",
+        permanent: false,
+      },
+      {
+        source: "/admin/applicants",
+        destination: "/admin/users",
+        permanent: false,
+      },
+      {
+        source: "/staff/evaluations",
+        destination: "/staff/dashboard",
+        permanent: false,
+      },
+      {
+        source: "/staff/applicants",
+        destination: "/admin/users",
+        permanent: false,
+      },
+      {
+        source: "/staff/security",
+        destination: "/staff/dashboard",
         permanent: false,
       },
       {
