@@ -642,10 +642,17 @@ const SORTED_PHRASES = Object.keys(SYSTEM_WIDE_DICTIONARY).sort((a, b) => b.leng
 
 // Lowercase lookup map for case-insensitive exact matching (preferring non-ALL-CAPS entries)
 const LOWERCASE_MAP = new Map<string, string>();
+function sanitizeTranslationString(val: string): string {
+  if (!val || typeof val !== "string") return "";
+  // Strip any HTML tags, script attempts, or injected attributes to prevent DOM-based XSS
+  return val.replace(/<[^>]*>/g, "").replace(/javascript:/gi, "").replace(/data:/gi, "");
+}
+
 for (const [k, v] of Object.entries(SYSTEM_WIDE_DICTIONARY)) {
   const lowerKey = k.trim().toLowerCase();
+  const safeVal = sanitizeTranslationString(v);
   if (!LOWERCASE_MAP.has(lowerKey) || k !== k.toUpperCase()) {
-    LOWERCASE_MAP.set(lowerKey, v);
+    LOWERCASE_MAP.set(lowerKey, safeVal);
   }
 }
 
@@ -654,7 +661,7 @@ function escapeRegex(s: string) {
 }
 
 /**
- * Translates a given English string into Tagalog/Filipino with smart case preservation.
+ * Translates a given English string into Tagalog/Filipino with smart case preservation and XSS sanitization.
  */
 export function translateToFilipino(text: string): string {
   if (!text || typeof text !== "string") return text;
@@ -726,7 +733,7 @@ export function translateToFilipino(text: string): string {
     return w;
   });
 
-  return result;
+  return sanitizeTranslationString(result);
 }
 
 export interface LanguageContextProps {

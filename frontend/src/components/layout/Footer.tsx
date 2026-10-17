@@ -168,11 +168,11 @@ export default function Footer() {
               </div>
               <div className="contact-item">
                 <Mail size={17} className="info-icon" />
-                <span>engineering@stotomaspampanga.gov.ph</span>
+                <span>{process.env.NEXT_PUBLIC_MUNICIPAL_EMAIL || "engineering@stotomaspampanga.gov.ph"}</span>
               </div>
               <div className="contact-item">
                 <Phone size={17} className="info-icon" />
-                <span>{isFil ? "(045) 434-1234 / Helpdesk ng Publiko ng LGU" : "(045) 434-1234 / LGU Public Helpdesk"}</span>
+                <span>{process.env.NEXT_PUBLIC_MUNICIPAL_PHONE || (isFil ? "(045) 434-1234 / Helpdesk ng Publiko ng LGU" : "(045) 434-1234 / LGU Public Helpdesk")}</span>
               </div>
             </div>
           </div>
@@ -198,8 +198,12 @@ export default function Footer() {
                 className="niceone-logo"
               />
             </div>
-            <span className="dev-divider" aria-hidden="true">•</span>
-            <span className="dev-team">BONDOC • DAVID • SICAT</span>
+            {process.env.NODE_ENV !== "production" && (
+              <>
+                <span className="dev-divider" aria-hidden="true">•</span>
+                <span className="dev-team">BONDOC • DAVID • SICAT</span>
+              </>
+            )}
           </div>
         </div>
       </div>

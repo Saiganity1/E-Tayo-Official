@@ -6,7 +6,8 @@ import {
   stripPermitPII, 
   getClientIp, 
   checkRateLimit, 
-  sanitizeString 
+  sanitizeString,
+  validateCsrf 
 } from "@/utils/security";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
@@ -143,6 +144,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const csrfCheck = validateCsrf(req);
+    if (!csrfCheck.valid) {
+      return NextResponse.json({ error: "Forbidden: CSRF check failed", reason: csrfCheck.reason }, { status: 403 });
+    }
+
     // 1. IP Rate Limiting (30 creates per minute)
     const clientIp = getClientIp(req);
     const rateCheck = checkRateLimit(clientIp, 30, 60000);

@@ -5,7 +5,8 @@ import {
   isStaffOrAdmin, 
   isAdmin, 
   stripPermitPII, 
-  sanitizeString 
+  sanitizeString,
+  validateCsrf 
 } from "@/utils/security";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
@@ -63,10 +64,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "Permit not found" }, { status: 404 });
     }
 
-    // 3. PII Gate: If anonymous or unauthorized applicant, strip PII
+    // 3. IDOR Gate: Verify permit ownership for applicant or require Staff/Admin privileges
     if (!isPrivileged) {
-      if (!authUser || (existing.applicantEmail && authUser.email !== existing.applicantEmail.toLowerCase())) {
+      if (!authUser) {
+        // Mask PII for public verification queries without revealing sensitive applicant data
         existing = stripPermitPII(existing);
+      } else {
+        const permitEmail = String(existing.applicantEmail || "").toLowerCase().trim();
+        const userEmail = String(authUser.email || "").toLowerCase().trim();
+
+        if (permitEmail && permitEmail !== userEmail) {
+          return NextResponse.json({ 
+            error: "Forbidden: You are not authorized to access this permit record." 
+          }, { status: 403 });
+        }
       }
     }
 
@@ -84,6 +95,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const csrfCheck = validateCsrf(req);
+    if (!csrfCheck.valid) {
+      return NextResponse.json({ error: "Forbidden: CSRF check failed", reason: csrfCheck.reason }, { status: 403 });
+    }
+
     const { id } = await params;
     const cleanId = String(id || "").trim();
 
@@ -137,6 +153,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const csrfCheck = validateCsrf(req);
+    if (!csrfCheck.valid) {
+      return NextResponse.json({ error: "Forbidden: CSRF check failed", reason: csrfCheck.reason }, { status: 403 });
+    }
+
     const { id } = await params;
     const cleanId = String(id || "").trim();
 

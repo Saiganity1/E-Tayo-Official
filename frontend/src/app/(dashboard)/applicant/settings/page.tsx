@@ -315,8 +315,17 @@ export default function ApplicantSettingsPage() {
       setErrorMsg(language === "fil" ? "Pakilagay ang kasalukuyang password." : "Please enter your current password.");
       return;
     }
-    if (!newPassword || newPassword.length < 6) {
-      setErrorMsg(language === "fil" ? "Dapat hindi bababa sa 6 na karakter ang bagong password." : "New password must be at least 6 characters.");
+    if (!newPassword || newPassword.length < 8) {
+      setErrorMsg(language === "fil" ? "Dapat hindi bababa sa 8 na karakter ang bagong password." : "New password must be at least 8 characters.");
+      return;
+    }
+    const hasUpper = /[A-Z]/.test(newPassword);
+    const hasLower = /[a-z]/.test(newPassword);
+    const hasDigit = /[0-9]/.test(newPassword);
+    if (!hasUpper || !hasLower || !hasDigit) {
+      setErrorMsg(language === "fil" 
+        ? "Dapat may malaking titik (A-Z), maliit na titik (a-z), at numero (0-9) ang password." 
+        : "Password must contain at least one uppercase letter, one lowercase letter, and one number.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -731,7 +740,7 @@ export default function ApplicantSettingsPage() {
                   width: "100%", padding: "0.7rem 0.9rem", borderRadius: "8px",
                   border: "1px solid #cbd5e1", fontSize: "0.95rem"
                 }}
-                placeholder="Minimum 6 characters"
+                placeholder="Minimum 8 characters (Upper, Lower, Number)"
               />
             </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { MessageSquare, X, Send, Bot, Sparkles, RefreshCw, Layers, ExternalLink } from "lucide-react";
 import { formatPhilippineTime } from "@/utils/philippineTime";
 import { usePermitContext } from "../../context/PermitContext";
@@ -286,16 +287,30 @@ export default function MangTomasBot({
   };
 
   const renderFormattedText = (text: string) => {
-    // 1. Replace markdown links [label](url)
-    let formatted = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="chat-markdown-link" target="_self">$1 <span style="font-size:0.75em">↗</span></a>');
-    // 2. Replace **bold**
+    if (!text) return "";
+    // 1. Pre-sanitize raw input to strip out any raw scripts, iframes, or event handlers
+    const rawClean = typeof window !== "undefined"
+      ? DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
+      : text.replace(/<[^>]+>/g, "");
+
+    // 2. Safe markdown formatting
+    let formatted = rawClean.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, href) => {
+      const isSafe = href.startsWith("/") || href.startsWith("https://") || href.startsWith("http://");
+      const cleanHref = isSafe ? href.replace(/"/g, "&quot;") : "#";
+      return `<a href="${cleanHref}" class="chat-markdown-link" target="_self">${label} <span style="font-size:0.75em">↗</span></a>`;
+    });
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // 3. Replace `code`
     formatted = formatted.replace(/`([^`]+)`/g, '<code class="chat-code-badge">$1</code>');
-    // 4. Replace bullet points • 
     formatted = formatted.replace(/^• (.*?)$/gm, '<li class="chat-bullet-item">$1</li>');
-    // 5. Replace newlines with <br/>
     formatted = formatted.replace(/\n/g, '<br/>');
+
+    // 3. Final DOMPurify pass allowing strictly safe tags and attributes
+    if (typeof window !== "undefined") {
+      return DOMPurify.sanitize(formatted, {
+        ALLOWED_TAGS: ["strong", "a", "code", "li", "br", "span"],
+        ALLOWED_ATTR: ["href", "class", "target", "style"]
+      });
+    }
     return formatted;
   };
 

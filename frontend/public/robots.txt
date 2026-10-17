@@ -1,0 +1,13 @@
+# eTAYO Tomasino Permit Portal Robots Policy
+User-agent: *
+Disallow: /api/
+Disallow: /admin/
+Disallow: /staff/
+Disallow: /superadmin/
+Disallow: /applicant/
+Allow: /
+Allow: /login
+Allow: /register
+Allow: /applicant/track
+
+Sitemap: https://e-tayo-official.vercel.app/sitemap.xml

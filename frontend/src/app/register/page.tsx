@@ -72,8 +72,17 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMsg("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setErrorMsg("Password must be at least 8 characters long.");
+      return;
+    }
+
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+
+    if (!hasUpper || !hasLower || !hasDigit) {
+      setErrorMsg("Password must contain at least one uppercase letter, one lowercase letter, and one number.");
       return;
     }
 

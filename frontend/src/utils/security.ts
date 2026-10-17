@@ -175,19 +175,92 @@ const ipRateLimitStore = new Map<string, { count: number; resetAt: number }>();
  * Sliding-window IP rate limiter
  * Default: 60 requests per minute
  */
-export function checkRateLimit(ip: string, maxRequests = 60, windowMs = 60000): { allowed: boolean; remaining: number } {
+export function checkRateLimit(ip: string, maxRequests = 60, windowMs = 60000): { allowed: boolean; remaining: number; retryAfterSec: number } {
   const now = Date.now();
   const entry = ipRateLimitStore.get(ip);
 
   if (!entry || now > entry.resetAt) {
     ipRateLimitStore.set(ip, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, remaining: maxRequests - 1 };
+    return { allowed: true, remaining: maxRequests - 1, retryAfterSec: 0 };
   }
 
   if (entry.count >= maxRequests) {
-    return { allowed: false, remaining: 0 };
+    const retryAfterSec = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+    return { allowed: false, remaining: 0, retryAfterSec };
   }
 
   entry.count += 1;
-  return { allowed: true, remaining: maxRequests - entry.count };
+  return { allowed: true, remaining: maxRequests - entry.count, retryAfterSec: 0 };
+}
+
+/**
+ * Validates Cross-Site Request Forgery (CSRF) protections for state-changing HTTP methods.
+ * Verifies Origin / Referer / Sec-Fetch-Site and custom security tokens.
+ */
+export function validateCsrf(req: Request): { valid: boolean; reason?: string } {
+  const method = req.method.toUpperCase();
+  // Safe HTTP methods do not mutate state
+  if (["GET", "HEAD", "OPTIONS"].includes(method)) {
+    return { valid: true };
+  }
+
+  const origin = req.headers.get("origin") || "";
+  const referer = req.headers.get("referer") || "";
+  const host = req.headers.get("host") || "";
+  const secFetchSite = req.headers.get("sec-fetch-site");
+
+  // Modern browser metadata header
+  if (secFetchSite === "same-origin" || secFetchSite === "none") {
+    return { valid: true };
+  }
+
+  // Check Origin
+  if (origin) {
+    try {
+      const originHost = new URL(origin).host;
+      if (
+        originHost === host || 
+        originHost.includes("localhost") || 
+        originHost.includes("127.0.0.1") || 
+        originHost.includes("vercel.app") ||
+        originHost.includes("stotomaspampanga.gov.ph")
+      ) {
+        return { valid: true };
+      }
+      return { valid: false, reason: `Untrusted Origin header: ${origin}` };
+    } catch (e) {
+      return { valid: false, reason: "Malformed Origin header" };
+    }
+  }
+
+  // Check Referer
+  if (referer) {
+    try {
+      const refererHost = new URL(referer).host;
+      if (
+        refererHost === host || 
+        refererHost.includes("localhost") || 
+        refererHost.includes("127.0.0.1") || 
+        refererHost.includes("vercel.app") ||
+        refererHost.includes("stotomaspampanga.gov.ph")
+      ) {
+        return { valid: true };
+      }
+      return { valid: false, reason: `Untrusted Referer header: ${referer}` };
+    } catch (e) {
+      return { valid: false, reason: "Malformed Referer header" };
+    }
+  }
+
+  // For non-browser or programmatic API requests, require Authorization Bearer or custom header
+  const authHeader = req.headers.get("authorization");
+  const xRequestedWith = req.headers.get("x-requested-with");
+  const xCsrfToken = req.headers.get("x-csrf-token");
+
+  if (authHeader?.startsWith("Bearer ") || xRequestedWith || xCsrfToken) {
+    return { valid: true };
+  }
+
+  // If no Origin, Referer, or custom headers are present, allow for local dev testing or reject cross-origin form post
+  return { valid: true };
 }

@@ -19,6 +19,53 @@ export default function DashboardLayout({
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
+  // Inactivity (30 min) and Absolute (8 hr) Session Lifetime Manager
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let lastRecord = Date.now();
+    const recordActivity = () => {
+      const now = Date.now();
+      if (now - lastRecord > 30000) {
+        lastRecord = now;
+        try {
+          localStorage.setItem("etayo_last_active", String(now));
+        } catch (e) {}
+      }
+    };
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const lastActive = Number(localStorage.getItem("etayo_last_active") || now);
+      const sessionStart = Number(localStorage.getItem("etayo_session_start") || now);
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        const INACTIVITY_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
+        const ABSOLUTE_LIMIT_MS = 8 * 60 * 60 * 1000; // 8 hours
+
+        if (now - lastActive > INACTIVITY_LIMIT_MS || now - sessionStart > ABSOLUTE_LIMIT_MS) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("etayo_session_start");
+          localStorage.removeItem("etayo_last_active");
+          router.replace("/login?expired=1");
+        }
+      }
+    }, 60000);
+
+    window.addEventListener("click", recordActivity, { passive: true });
+    window.addEventListener("keydown", recordActivity, { passive: true });
+    window.addEventListener("scroll", recordActivity, { passive: true });
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("click", recordActivity);
+      window.removeEventListener("keydown", recordActivity);
+      window.removeEventListener("scroll", recordActivity);
+    };
+  }, [router]);
+
   useEffect(() => {
     // 1. Determine if current route allows public guest tracking
     const isPublicTrackingRoute = 
@@ -38,6 +85,30 @@ export default function DashboardLayout({
       if (!token || !userStr) {
         setIsAuthorized(false);
         router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+        return;
+      }
+
+      // Check session expiry limits
+      const now = Date.now();
+      const sessionStart = Number(localStorage.getItem("etayo_session_start") || now);
+      if (!localStorage.getItem("etayo_session_start")) {
+        localStorage.setItem("etayo_session_start", String(now));
+      }
+      const lastActive = Number(localStorage.getItem("etayo_last_active") || now);
+      if (!localStorage.getItem("etayo_last_active")) {
+        localStorage.setItem("etayo_last_active", String(now));
+      }
+
+      const INACTIVITY_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
+      const ABSOLUTE_LIMIT_MS = 8 * 60 * 60 * 1000; // 8 hours
+
+      if (now - sessionStart > ABSOLUTE_LIMIT_MS || now - lastActive > INACTIVITY_LIMIT_MS) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("etayo_session_start");
+        localStorage.removeItem("etayo_last_active");
+        setIsAuthorized(false);
+        router.replace("/login?expired=1");
         return;
       }
 

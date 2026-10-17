@@ -98,6 +98,14 @@ const nextConfig: NextConfig = {
             value: "SAMEORIGIN"
           },
           {
+            key: "X-XSS-Protection",
+            value: "1; mode=block"
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload"
+          },
+          {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin"
           },
@@ -108,6 +116,23 @@ const nextConfig: NextConfig = {
           {
             key: "Content-Security-Policy",
             value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://unpkg.com https://*.google.com https://*.googleusercontent.com; connect-src 'self' https: wss:; frame-src 'self' https://drive.google.com blob:; frame-ancestors 'self' https://*.vercel.app;"
+          }
+        ]
+      },
+      {
+        source: "/(admin|staff|applicant|dashboard|api)/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+          },
+          {
+            key: "Pragma",
+            value: "no-cache"
+          },
+          {
+            key: "Expires",
+            value: "0"
           }
         ]
       }
