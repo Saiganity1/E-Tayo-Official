@@ -237,7 +237,23 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterDto registerDto) {
         try {
+            if (registerDto == null || registerDto.getEmail() == null || registerDto.getEmail().trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Email is required"));
+            }
             String email = registerDto.getEmail().trim().toLowerCase();
+
+            // Enforce password policy ON THE SERVER before OTP or database operations
+            String password = registerDto.getPassword();
+            if (password == null || password.length() < 12 
+                    || !password.matches(".*[A-Z].*") 
+                    || !password.matches(".*[a-z].*") 
+                    || !password.matches(".*[0-9].*") 
+                    || !password.matches(".*[^A-Za-z0-9].*")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "error", "Password does not meet policy. Must be at least 12 characters and contain uppercase, lowercase, number, and special character."
+                ));
+            }
+
             String providedOtp = registerDto.getOtp();
 
             if (providedOtp == null || providedOtp.trim().isEmpty()) {

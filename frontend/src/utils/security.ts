@@ -204,12 +204,22 @@ export function validateCsrf(req: Request): { valid: boolean; reason?: string } 
     return { valid: true };
   }
 
+  // EXCEPTION: Token-based API clients with valid Authorization Bearer header
+  // are inherently immune to browser ambient-credential CSRF and skip sibling origin checks.
+  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return { valid: true };
+  }
+
   const origin = req.headers.get("origin") || "";
   const referer = req.headers.get("referer") || "";
   const host = req.headers.get("host") || "";
   const secFetchSite = req.headers.get("sec-fetch-site");
 
-  // Modern browser metadata header
+  // Modern browser metadata header: reject cross-site navigation/POST
+  if (secFetchSite === "cross-site") {
+    return { valid: false, reason: "Cross-site request blocked by Sec-Fetch-Site" };
+  }
   if (secFetchSite === "same-origin" || secFetchSite === "none") {
     return { valid: true };
   }
@@ -252,15 +262,14 @@ export function validateCsrf(req: Request): { valid: boolean; reason?: string } 
     }
   }
 
-  // For non-browser or programmatic API requests, require Authorization Bearer or custom header
-  const authHeader = req.headers.get("authorization");
+  // Custom client headers (e.g. AJAX requests explicitly adding CSRF token or requested-with)
   const xRequestedWith = req.headers.get("x-requested-with");
   const xCsrfToken = req.headers.get("x-csrf-token");
-
-  if (authHeader?.startsWith("Bearer ") || xRequestedWith || xCsrfToken) {
+  if (xRequestedWith || xCsrfToken) {
     return { valid: true };
   }
 
-  // If no Origin, Referer, or custom headers are present, allow for local dev testing or reject cross-origin form post
-  return { valid: true };
+  // FINDING 3 FIX: If NO Origin, NO Referer, and NO Sec-Fetch-Site cues are present,
+  // fail closed to prevent anonymous unverified POST exploitation.
+  return { valid: false, reason: "no origin context" };
 }

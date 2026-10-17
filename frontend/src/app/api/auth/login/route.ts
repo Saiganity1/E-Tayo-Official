@@ -1,45 +1,37 @@
 import { NextResponse } from "next/server";
 import { getAssignedUserByEmail } from "@/utils/staffStore";
 import { findRegisteredUser } from "@/utils/authStore";
-import { signJwtToken, getClientIp } from "@/utils/security";
+import { signJwtToken } from "@/utils/security";
+import { loginLimiter, clientIp as getRealClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// In-memory sliding-window failed login attempt tracker (Max 5 attempts per 15 minutes)
-const loginFailureStore = new Map<string, { count: number; lockedUntil: number }>();
-
-function isLoginRateLimited(key: string): boolean {
-  const record = loginFailureStore.get(key);
-  if (!record) return false;
-  if (Date.now() < record.lockedUntil) {
-    return true;
-  }
-  // Reset after lockout expires
-  loginFailureStore.delete(key);
-  return false;
-}
-
-function recordLoginFailure(key: string): void {
-  const record = loginFailureStore.get(key);
-  const now = Date.now();
-  if (!record || now > record.lockedUntil) {
-    loginFailureStore.set(key, { count: 1, lockedUntil: now + 15 * 60 * 1000 });
-  } else {
-    record.count += 1;
-    if (record.count >= 5) {
-      record.lockedUntil = now + 15 * 60 * 1000; // Lock for 15 minutes
-    }
-  }
-}
-
-function resetLoginFailure(key: string): void {
-  loginFailureStore.delete(key);
-}
-
 export async function POST(req: Request) {
   try {
-    const clientIp = getClientIp(req);
+    const clientIp = getRealClientIp(req.headers);
+    const rl = await loginLimiter.limit(clientIp);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many failed login attempts. Please wait 15 minutes before trying again." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000))),
+            "X-RateLimit-Limit": "5",
+            "X-RateLimit-Remaining": String(rl.remaining),
+            "X-RateLimit-Reset": String(rl.reset),
+          },
+        }
+      );
+    }
+
+    const rateLimitHeaders = {
+      "X-RateLimit-Limit": "5",
+      "X-RateLimit-Remaining": String(rl.remaining),
+      "X-RateLimit-Reset": String(rl.reset),
+    };
+
     const body = await req.json();
     const { email, password } = body;
 
@@ -50,21 +42,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    const rateKey = `${clientIp}_${sanitizedEmail}`;
-    if (isLoginRateLimited(rateKey) || isLoginRateLimited(clientIp)) {
-      return NextResponse.json({ 
-        error: "Too many failed login attempts. Please wait 15 minutes before trying again." 
-      }, { 
-        status: 429,
-        headers: { "Retry-After": "900" }
-      });
-    }
-
     // Explicitly reject automatic dummy staff accounts (staff must be explicitly assigned by admin)
     if (sanitizedEmail === "staff@etayo.gov.ph") {
       const isAssigned = getAssignedUserByEmail(sanitizedEmail);
       if (!isAssigned || isAssigned.role !== "ROLE_STAFF") {
-        recordLoginFailure(rateKey);
         return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
       }
     }
@@ -87,21 +68,17 @@ export async function POST(req: Request) {
 
       if (res.ok) {
         const data = await res.json();
-        resetLoginFailure(rateKey);
-        resetLoginFailure(clientIp);
         if (data && (!data.name || data.name.includes("@"))) {
           const registered = findRegisteredUser(sanitizedEmail);
           if (registered) data.name = registered.name;
         }
-        return NextResponse.json(data);
+        return NextResponse.json(data, { headers: rateLimitHeaders });
       }
 
       // If backend explicitly rejected with 401/400
       if (res.status === 401 || res.status === 400) {
         const localUser = findRegisteredUser(sanitizedEmail);
         if (!localUser) {
-          recordLoginFailure(rateKey);
-          recordLoginFailure(clientIp);
           // Generic error message: Prevents user enumeration
           return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
         }
@@ -114,23 +91,15 @@ export async function POST(req: Request) {
     const registeredUser = findRegisteredUser(sanitizedEmail);
 
     if (!registeredUser) {
-      recordLoginFailure(rateKey);
-      recordLoginFailure(clientIp);
       // Generic error message: Prevents user enumeration
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
 
     // Verify Password
     if (registeredUser.password && registeredUser.password !== sanitizedPassword) {
-      recordLoginFailure(rateKey);
-      recordLoginFailure(clientIp);
       // Generic error message: Prevents password guessing feedback
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
-
-    // Reset rate limits on successful authentication
-    resetLoginFailure(rateKey);
-    resetLoginFailure(clientIp);
 
     // Generate authenticated JWT session with cryptographically secure HMAC-SHA256 signature
     const accessToken = signJwtToken({
@@ -145,7 +114,7 @@ export async function POST(req: Request) {
       role: registeredUser.role,
       name: registeredUser.name,
       email: sanitizedEmail
-    });
+    }, { headers: rateLimitHeaders });
   } catch (err: any) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

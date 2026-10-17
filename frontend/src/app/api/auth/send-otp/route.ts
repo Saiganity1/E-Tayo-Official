@@ -1,11 +1,35 @@
 import { NextResponse } from "next/server";
 import { getBackendApiUrl } from "@/utils/apiConfig";
-import { generateOtp, isUserRegistered } from "@/utils/authStore";
+import { generateOtp } from "@/utils/authStore";
+import { otpLimiter, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    const ip = clientIp(req.headers);
+    const rl = await otpLimiter.limit(ip);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many OTP requests. Please wait 15 minutes before trying again." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000))),
+            "X-RateLimit-Limit": "6",
+            "X-RateLimit-Remaining": String(rl.remaining),
+            "X-RateLimit-Reset": String(rl.reset),
+          },
+        }
+      );
+    }
+
+    const rateLimitHeaders = {
+      "X-RateLimit-Limit": "6",
+      "X-RateLimit-Remaining": String(rl.remaining),
+      "X-RateLimit-Reset": String(rl.reset),
+    };
+
     const body = await req.json();
     const email = String(body?.email || "").trim().toLowerCase();
 
@@ -14,7 +38,7 @@ export async function POST(req: Request) {
     }
 
     // Generate active OTP in authStore
-    const generatedCode = generateOtp(email);
+    generateOtp(email);
 
     const backendUrl = `${getBackendApiUrl()}/auth/send-otp`;
 
@@ -32,21 +56,24 @@ export async function POST(req: Request) {
       const text = await res.text();
       if (text.trim().startsWith("{")) {
         const data = JSON.parse(text);
-        // Include generated OTP in response for testing/dev environments
-        return NextResponse.json({
-          ...data,
-          debugOtp: generatedCode
-        }, { status: res.status });
+        // Do NOT leak OTP in response
+        delete data.debugOtp;
+        delete data.otp;
+        return NextResponse.json(data, {
+          status: res.status,
+          headers: rateLimitHeaders,
+        });
       }
     } catch (e) {
       console.warn("Backend send-otp failed/timed out, returning resilient OTP generator response", e);
     }
 
-    return NextResponse.json({ 
-      message: "OTP sent to email",
-      debugOtp: generatedCode
-    }, { status: 200 });
+    return NextResponse.json(
+      { message: "OTP sent to email" },
+      { status: 200, headers: rateLimitHeaders }
+    );
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Failed to generate OTP" }, { status: 500 });
   }
 }
+

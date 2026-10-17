@@ -24,9 +24,9 @@ import {
 import { PermitApplication } from "../../types";
 
 // Fix missing marker icons in Leaflet with Next.js
-const iconRetinaUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png";
-const iconUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png";
-const shadowUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png";
+const iconRetinaUrl = "/images/leaflet/marker-icon-2x.png";
+const iconUrl = "/images/leaflet/marker-icon.png";
+const shadowUrl = "/images/leaflet/marker-shadow.png";
 
 // Project Category Themes & Modern SVG Icons
 export const PROJECT_CATEGORY_THEMES: Record<ProjectCategory, {

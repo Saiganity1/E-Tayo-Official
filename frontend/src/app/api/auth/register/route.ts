@@ -1,11 +1,35 @@
 import { NextResponse } from "next/server";
 import { getBackendApiUrl } from "@/utils/apiConfig";
 import { verifyAndConsumeOtp, registerUser, validatePasswordStrength } from "@/utils/authStore";
+import { otpLimiter, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    const ip = clientIp(req.headers);
+    const rl = await otpLimiter.limit(ip);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please wait 15 minutes before trying again." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000))),
+            "X-RateLimit-Limit": "6",
+            "X-RateLimit-Remaining": String(rl.remaining),
+            "X-RateLimit-Reset": String(rl.reset),
+          },
+        }
+      );
+    }
+
+    const rateLimitHeaders = {
+      "X-RateLimit-Limit": "6",
+      "X-RateLimit-Remaining": String(rl.remaining),
+      "X-RateLimit-Reset": String(rl.reset),
+    };
+
     const body = await req.json();
     const name = String(body?.name || "").trim();
     const email = String(body?.email || "").trim().toLowerCase();
@@ -42,7 +66,7 @@ export async function POST(req: Request) {
         return NextResponse.json({
           ...data,
           name
-        }, { status: 200 });
+        }, { status: 200, headers: rateLimitHeaders });
       }
     } catch (e) {
       console.warn("Backend register timed out/failed, checking local OTP store", e);
@@ -63,7 +87,7 @@ export async function POST(req: Request) {
       message: "Registration successful! You can now log in.",
       name: registered.name,
       email: registered.email
-    }, { status: 200 });
+    }, { status: 200, headers: rateLimitHeaders });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Registration failed" }, { status: 500 });
   }

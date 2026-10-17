@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClientIp, checkRateLimit, sanitizeString, validateCsrf } from "@/utils/security";
+import { sanitizeString, validateCsrf } from "@/utils/security";
+import { chatLimiter, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -24,17 +25,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden: CSRF check failed", reason: csrfCheck.reason }, { status: 403 });
     }
 
-    // 1. IP Rate Limiting (30 requests per minute with Retry-After)
-    const clientIp = getClientIp(req);
-    const rateCheck = checkRateLimit(clientIp, 30, 60 * 1000);
-    if (!rateCheck.allowed) {
-      return NextResponse.json({ 
-        error: "Chat rate limit exceeded. Please wait before sending another inquiry." 
-      }, { 
-        status: 429,
-        headers: { "Retry-After": String(rateCheck.retryAfterSec || 60) }
-      });
+    // 1. Durable Upstash Redis Rate Limiting (10 requests per minute)
+    const ip = clientIp(req.headers);
+    const rl = await chatLimiter.limit(ip);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000))),
+            "X-RateLimit-Limit": "10",
+            "X-RateLimit-Remaining": String(rl.remaining),
+            "X-RateLimit-Reset": String(rl.reset),
+          },
+        }
+      );
     }
+
+    const rateLimitHeaders = {
+      "X-RateLimit-Limit": "10",
+      "X-RateLimit-Remaining": String(rl.remaining),
+      "X-RateLimit-Reset": String(rl.reset),
+    };
+
+    const successResponse = (data: any, status = 200) =>
+      NextResponse.json(data, { status, headers: rateLimitHeaders });
 
     const body = await req.json();
     const { message, history = [], userApplications = [] } = body;
@@ -85,7 +101,7 @@ export async function POST(req: NextRequest) {
     // If user explicitly asks for a fee calculation or has specific floor area, calculate it directly
     if (entities.floorArea && entities.floorArea > 0) {
       const calcResult = calculateEstimatedFees(entities.floorArea, entities.buildingType, entities.storeys);
-      return NextResponse.json({
+      return successResponse({
         reply: calcResult.breakdownSummary + `\n\n👉 [Mag-apply para sa Locational Clearance](/applicant/apply?type=locational_clearance)`,
         source: "local_ml_calculator",
         entities
@@ -204,7 +220,7 @@ SECURITY & PROMPT INJECTION GUARDRAILS (CRITICAL & NON-NEGOTIABLE):
             const data = await geminiRes.json();
             const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (replyText && replyText.trim()) {
-              return NextResponse.json({
+              return successResponse({
                 reply: replyText.trim(),
                 source: "gemini",
                 model
@@ -232,7 +248,7 @@ SECURITY & PROMPT INJECTION GUARDRAILS (CRITICAL & NON-NEGOTIABLE):
               const data = await retryRes.json();
               const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
               if (replyText && replyText.trim()) {
-                return NextResponse.json({
+                return successResponse({
                   reply: replyText.trim(),
                   source: "gemini",
                   model
@@ -276,7 +292,7 @@ SECURITY & PROMPT INJECTION GUARDRAILS (CRITICAL & NON-NEGOTIABLE):
           const data = await openAiRes.json();
           const replyText = data.choices?.[0]?.message?.content;
           if (replyText && replyText.trim()) {
-            return NextResponse.json({
+            return successResponse({
               reply: replyText.trim(),
               source: "openai"
             });
@@ -290,7 +306,7 @@ SECURITY & PROMPT INJECTION GUARDRAILS (CRITICAL & NON-NEGOTIABLE):
     // 4. Seamless Local Machine Learning & NLP Knowledge Base Fallback
     // Guaranteed instant, high-precision, 100% helpful responses even without any external API keys!
     const localReply = findKnowledgeBaseMatches(trimmedMessage, activeUserApplications);
-    return NextResponse.json({
+    return successResponse({
       reply: localReply,
       source: "local_ml"
     });
