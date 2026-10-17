@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { extractUserFromRequest, isStaffOrAdmin, sanitizeString } from "@/utils/security";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,6 +26,14 @@ const isDummyEvaluation = (item: any) => {
 
 export async function GET(req: Request) {
   try {
+    // STRICT RBAC: Staff or Administrator privileges required to inspect official evaluations
+    const authUser = extractUserFromRequest(req);
+    if (!isStaffOrAdmin(authUser)) {
+      return NextResponse.json({ 
+        error: "Forbidden: Staff or Administrator privileges required to access evaluations." 
+      }, { status: 403 });
+    }
+
     const authHeader = req.headers.get("authorization");
     const headers: Record<string, string> = { "Accept": "application/json" };
     if (authHeader) headers["Authorization"] = authHeader;
@@ -56,7 +65,18 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    // STRICT RBAC: Staff or Administrator privileges required to submit official evaluations
+    const authUser = extractUserFromRequest(req);
+    if (!isStaffOrAdmin(authUser)) {
+      return NextResponse.json({ 
+        error: "Forbidden: Staff or Administrator privileges required to post evaluations." 
+      }, { status: 403 });
+    }
+
     const body = await req.json();
+    if (body.comments) body.comments = sanitizeString(body.comments);
+    if (body.evaluatorName) body.evaluatorName = sanitizeString(body.evaluatorName);
+
     const newEntry = {
       id: body.id || Date.now(),
       timestamp: body.timestamp || new Date().toISOString(),

@@ -1,8 +1,20 @@
 import { PermitApplication } from "@/types";
 import { compareAppsNewestFirst, normalizeApplicantName } from "@/utils/projectGrouping";
 import { INITIAL_APPLICATIONS } from "@/data/mock";
+import { sanitizeString } from "@/utils/security";
 
-export const SEED_APPLICATIONS: PermitApplication[] = INITIAL_APPLICATIONS;
+// Known vulnerability test IDs to purge
+export const VULNERABILITY_CLEANUP_IDS = new Set([
+  "app-2026-2913",
+  "app-2026-2571",
+  "app-2026-3000",
+  "app-2026-7292",
+  "app-2026-7804"
+]);
+
+export const SEED_APPLICATIONS: PermitApplication[] = INITIAL_APPLICATIONS.filter(
+  app => !VULNERABILITY_CLEANUP_IDS.has(app.id.trim().toLowerCase())
+);
 
 // Persistent global variable across Next.js API route calls within one server instance.
 const globalForPermits = globalThis as unknown as {
@@ -14,6 +26,9 @@ if (!globalForPermits._etayoPermitStore) {
   SEED_APPLICATIONS.forEach(app => {
     globalForPermits._etayoPermitStore.set(app.id.trim().toLowerCase(), app);
   });
+} else {
+  // Purge any dynamically created test rows from existing memory
+  VULNERABILITY_CLEANUP_IDS.forEach(id => globalForPermits._etayoPermitStore.delete(id));
 }
 
 const store = globalForPermits._etayoPermitStore;
@@ -91,7 +106,15 @@ export function savePermit(newApp: PermitApplication): PermitApplication {
   if (!newApp.id) {
     newApp.id = `APP-2026-${Math.floor(1000 + Math.random() * 9000)}`;
   }
-  newApp.applicantName = normalizeApplicantName(newApp.applicantName);
+  // XSS Sanitization & Normalization
+  newApp.applicantName = sanitizeString(normalizeApplicantName(newApp.applicantName));
+  if (newApp.projectName) newApp.projectName = sanitizeString(newApp.projectName);
+  if (newApp.projectAddress) newApp.projectAddress = sanitizeString(newApp.projectAddress);
+  if (newApp.projectDescription) newApp.projectDescription = sanitizeString(newApp.projectDescription);
+  if (newApp.applicantAddress) newApp.applicantAddress = sanitizeString(newApp.applicantAddress);
+  if (newApp.applicantEmail) newApp.applicantEmail = sanitizeString(newApp.applicantEmail).toLowerCase();
+  if (newApp.remarks) newApp.remarks = sanitizeString(newApp.remarks);
+
   if (!(newApp as any).createdAt) {
     (newApp as any).createdAt = new Date().toISOString();
   }
@@ -143,6 +166,13 @@ export function updatePermit(updatedApp: PermitApplication): PermitApplication {
   } else if (existingStatus === "under_review" && (newStatus === "pending" || !newStatus)) {
     updatedApp.status = "under_review";
   }
+
+  // XSS Sanitization
+  if (updatedApp.applicantName) updatedApp.applicantName = sanitizeString(updatedApp.applicantName);
+  if (updatedApp.projectName) updatedApp.projectName = sanitizeString(updatedApp.projectName);
+  if (updatedApp.projectAddress) updatedApp.projectAddress = sanitizeString(updatedApp.projectAddress);
+  if (updatedApp.projectDescription) updatedApp.projectDescription = sanitizeString(updatedApp.projectDescription);
+  if (updatedApp.remarks) updatedApp.remarks = sanitizeString(updatedApp.remarks);
 
   const merged = { ...existing, ...updatedApp };
   if (updatedApp.isArchived !== undefined) {

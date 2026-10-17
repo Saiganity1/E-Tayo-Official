@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { getBackendApiUrl } from "@/utils/apiConfig";
 import { updateUserRoleInMemory } from "../../route";
+import { extractUserFromRequest, isAdmin } from "@/utils/security";
 
 export const dynamic = "force-dynamic";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const authUser = extractUserFromRequest(req);
+    if (!isAdmin(authUser)) {
+      return NextResponse.json({ error: "Forbidden: Administrator privileges required" }, { status: 403 });
+    }
+
     const { id } = await params;
     updateUserRoleInMemory(id, "ROLE_STAFF");
 

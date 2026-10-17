@@ -7,11 +7,20 @@ import {
   getAssignedUserByEmail,
   isAutomaticDummyStaff 
 } from "@/utils/staffStore";
+import { extractUserFromRequest, isAdmin } from "@/utils/security";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    // STRICT RBAC: Administrator privileges required to enumerate user accounts
+    const authUser = extractUserFromRequest(req);
+    if (!isAdmin(authUser)) {
+      return NextResponse.json({ 
+        error: "Forbidden: Administrator privileges required to view user directory." 
+      }, { status: 403 });
+    }
+
     const url = new URL(req.url);
     const role = url.searchParams.get("role");
     const backendUrl = `${getBackendApiUrl()}/users${url.search}`;

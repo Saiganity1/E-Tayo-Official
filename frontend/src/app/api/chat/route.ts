@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getClientIp, checkRateLimit, sanitizeString } from "@/utils/security";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,6 +17,15 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
+    // 1. IP Rate Limiting (20 requests per 10 minutes)
+    const clientIp = getClientIp(req);
+    const rateCheck = checkRateLimit(clientIp, 20, 10 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ 
+        error: "Chat rate limit exceeded. Please wait a few minutes before sending another inquiry." 
+      }, { status: 429 });
+    }
+
     const body = await req.json();
     const { message, history = [], userApplications = [] } = body;
 
@@ -23,7 +33,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    const trimmedMessage = message.trim();
+    const rawMessage = message.trim();
+
+    // 2. Message Length Cap (Max 500 characters)
+    if (rawMessage.length > 500) {
+      return NextResponse.json({ 
+        error: "Message is too long. Maximum allowed length is 500 characters." 
+      }, { status: 400 });
+    }
+
+    // 3. Anti-Spam / Keyboard Mash Pre-screening
+    const keyboardMashRegex = /^[asdfghjklzxcvbnmqwerty]{15,}$/i;
+    if (keyboardMashRegex.test(rawMessage.replace(/\s+/g, ""))) {
+      return NextResponse.json({
+        success: false,
+        isInvalidReport: true,
+        error: "Your message appears to contain random keyboard patterns. Please state your permit inquiry clearly.",
+        reason: "KEYBOARD_MASH"
+      }, { status: 422 });
+    }
+
+    const trimmedMessage = sanitizeString(rawMessage);
 
     // 1. Run Local NLP / Entity Extraction first
     const entities = extractEntities(trimmedMessage);

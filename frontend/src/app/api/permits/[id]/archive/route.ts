@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPermitById, archivePermit } from "@/app/api/permits/dataStore";
+import { extractUserFromRequest, isStaffOrAdmin } from "@/utils/security";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
 const BACKEND_API = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
@@ -11,6 +12,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const { id } = await params;
     const cleanId = String(id || "").trim();
+
+    // STRICT RBAC: Staff or Admin role required to archive permits
+    const authUser = extractUserFromRequest(req);
+    if (!isStaffOrAdmin(authUser)) {
+      return NextResponse.json({ 
+        error: "Forbidden: Staff or Administrator privileges required to archive permits." 
+      }, { status: 403 });
+    }
     const { searchParams } = new URL(req.url);
     
     let isArchived = true;

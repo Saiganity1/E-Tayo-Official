@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { patchPermitStatus } from "@/app/api/permits/dataStore";
+import { extractUserFromRequest, isStaffOrAdmin, sanitizeString } from "@/utils/security";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
 const BACKEND_API = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
@@ -11,7 +12,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const { id } = await params;
     const cleanId = String(id || "").trim();
+
+    // STRICT RBAC: Staff or Admin role required to approve/change status
+    const authUser = extractUserFromRequest(req);
+    if (!isStaffOrAdmin(authUser)) {
+      return NextResponse.json({ 
+        error: "Forbidden: Staff or Administrator privileges required to change permit status." 
+      }, { status: 403 });
+    }
+
     const body = await req.json();
+    if (body.remarks) body.remarks = sanitizeString(body.remarks);
 
     // 1. Immediately update local data store
     const patched = patchPermitStatus(cleanId, body.status, body.remarks, {

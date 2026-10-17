@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getBackendApiUrl } from "@/utils/apiConfig";
+import { extractUserFromRequest, isStaffOrAdmin } from "@/utils/security";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,8 +15,18 @@ if (!globalForLogs._etayoLogsStore) {
   globalForLogs._etayoLogsStore = [];
 }
 
+const TEST_CLEANUP_STRINGS = ["2913", "2571", "3000", "7292", "7804", "{{7*7}}"];
+
 export async function GET(req: Request) {
   try {
+    // STRICT RBAC: Staff or Administrator privileges required to inspect system audit logs
+    const authUser = extractUserFromRequest(req);
+    if (!isStaffOrAdmin(authUser)) {
+      return NextResponse.json({ 
+        error: "Forbidden: Staff or Administrator privileges required to access audit logs." 
+      }, { status: 403 });
+    }
+
     const authHeader = req.headers.get("authorization");
     const headers: Record<string, string> = { "Accept": "application/json" };
     if (authHeader) headers["Authorization"] = authHeader;
@@ -35,8 +46,10 @@ export async function GET(req: Request) {
               if (!l) return false;
               const id = String(l.id || "");
               const u = String(l.user || l.userEmail || "").toLowerCase();
+              const d = String(l.details || l.action || "").toLowerCase();
               if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return false;
               if (u.includes("citizen@example.com") || u.includes("business@example.com")) return false;
+              if (TEST_CLEANUP_STRINGS.some(s => id.includes(s) || d.includes(s.toLowerCase()))) return false;
               return true;
             });
             return NextResponse.json(clean);
@@ -49,8 +62,10 @@ export async function GET(req: Request) {
       if (!l) return false;
       const id = String(l.id || "");
       const u = String(l.user || l.userEmail || "").toLowerCase();
+      const d = String(l.details || l.action || "").toLowerCase();
       if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return false;
       if (u.includes("citizen@example.com") || u.includes("business@example.com")) return false;
+      if (TEST_CLEANUP_STRINGS.some(s => id.includes(s) || d.includes(s.toLowerCase()))) return false;
       return true;
     });
 
