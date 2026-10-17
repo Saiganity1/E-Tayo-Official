@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, GeoJSON, LayersControl, useMap, useMapEvents } from "react-leaflet";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, GeoJSON, LayersControl, useMap, useMapEvents } from "react-leaflet";
 import { createLayerComponent } from "@react-leaflet/core";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { Eye, ExternalLink, ArrowRight, MousePointerClick } from "lucide-react";
 import { usePermitContext } from "../../context/PermitContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { PROJECT_TYPES_MATRIX, ProjectCategory } from "../../data/projectTypeMatrix";
@@ -238,10 +241,29 @@ function FitStoTomasButton() {
   );
 }
 
-export default function SpatialMap() {
+export interface SpatialMapProps {
+  mode?: "applicant" | "staff" | "admin";
+  initialDirectClick?: boolean;
+}
+
+export default function SpatialMap({ 
+  mode, 
+  initialDirectClick = true 
+}: SpatialMapProps = {}) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { applications } = usePermitContext();
   const { language } = useLanguage();
   const isEn = language === "en";
+
+  // Mode resolution: explicit prop OR pathname detection
+  const currentMode = mode || (pathname?.startsWith("/admin") ? "admin" : pathname?.startsWith("/staff") ? "staff" : "applicant");
+  const isAdmin = currentMode === "admin";
+  const isStaff = currentMode === "staff";
+  const isAdminOrStaff = isAdmin || isStaff;
+
+  // Direct Click Navigation mode (defaults to true for Admin)
+  const [directClickEnabled, setDirectClickEnabled] = useState<boolean>(initialDirectClick);
   const [filterType, setFilterType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBarangay, setSelectedBarangay] = useState<any>(null);
@@ -641,10 +663,43 @@ export default function SpatialMap() {
               popupAnchor: [0, -19]
             });
 
+            const appUrl = isAdminOrStaff ? `/staff/evaluate/${app.id}` : `/applicant/track/${app.id}`;
+
             return (
-              <Marker key={app.id} position={[app.location.lat, app.location.lng]} icon={permitIcon}>
+              <Marker 
+                key={app.id} 
+                position={[app.location.lat, app.location.lng]} 
+                icon={permitIcon}
+                eventHandlers={{
+                  click: () => {
+                    if (isAdmin && directClickEnabled) {
+                      router.push(appUrl);
+                    }
+                  },
+                  dblclick: () => {
+                    if (isAdminOrStaff) {
+                      router.push(appUrl);
+                    }
+                  }
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -20]} opacity={0.96} className="permit-hover-tooltip">
+                  <div style={{ padding: '4px 6px', maxWidth: '240px' }}>
+                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.85rem', lineHeight: '1.2' }}>{projectNameDisplay}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
+                      <strong>{app.id}</strong> • <span style={{ textTransform: 'capitalize' }}>{app.status.replace("_", " ")}</span>
+                    </div>
+                    {isAdmin && (
+                      <div style={{ marginTop: '5px', fontSize: '0.72rem', color: '#0038A8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span>👉</span> {directClickEnabled 
+                          ? (isEn ? "Click marker to open application" : "I-click para buksan ang aplikasyon")
+                          : (isEn ? "Click marker to view preview card" : "I-click para sa preview card")}
+                      </div>
+                    )}
+                  </div>
+                </Tooltip>
                 <Popup className="permit-popup">
-                  <div style={{ padding: '0.5rem', minWidth: '230px' }}>
+                  <div style={{ padding: '0.5rem', minWidth: '240px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
                       <span style={{ 
                         background: theme.bg, 
@@ -661,12 +716,25 @@ export default function SpatialMap() {
                         <span style={{ display: 'inline-flex', width: '13px', height: '13px' }} dangerouslySetInnerHTML={{ __html: theme.svg }} />
                         {category}
                       </span>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600' }}>
+                      <Link 
+                        href={appUrl} 
+                        style={{ fontSize: '0.7rem', color: '#0038A8', fontWeight: '700', textDecoration: 'none' }}
+                        title={isEn ? "Open application" : "Buksan ang aplikasyon"}
+                      >
                         {app.id}
-                      </span>
+                      </Link>
                     </div>
 
-                    <h3 style={{ margin: '0 0 2px 0', fontSize: '1.05rem', fontWeight: '800', color: '#0f172a' }}>{projectNameDisplay}</h3>
+                    <Link 
+                      href={appUrl} 
+                      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                      title={isEn ? "Open application" : "Buksan ang aplikasyon"}
+                    >
+                      <h3 style={{ margin: '0 0 2px 0', fontSize: '1.05rem', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {projectNameDisplay}
+                        <ExternalLink size={14} style={{ color: '#0038A8', opacity: 0.8, flexShrink: 0 }} />
+                      </h3>
+                    </Link>
                     <div style={{ fontSize: '0.78rem', color: '#475569', marginBottom: '8px', fontWeight: '600' }}>
                       {projectTypeName}
                     </div>
@@ -699,20 +767,34 @@ export default function SpatialMap() {
                       </div>
                     </div>
                     
-                    <a href={`/applicant/track/${app.id}`} style={{ 
-                      display: 'block', 
-                      background: '#f1f5f9', 
-                      color: 'var(--color-primary)', 
-                      textAlign: 'center', 
-                      padding: '8px', 
-                      borderRadius: '6px', 
-                      textDecoration: 'none', 
-                      fontSize: '0.85rem', 
-                      fontWeight: '600',
-                      border: '1px solid #e2e8f0'
-                    }}>
-                      {isEn ? "View Application Details" : "Tingnan ang Detalye"}
-                    </a>
+                    <Link 
+                      href={appUrl} 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        background: isAdminOrStaff ? 'linear-gradient(135deg, #021a4f 0%, #0038A8 100%)' : '#0038A8', 
+                        color: '#ffffff', 
+                        textAlign: 'center', 
+                        padding: '10px 14px', 
+                        borderRadius: '8px', 
+                        textDecoration: 'none', 
+                        fontSize: '0.86rem', 
+                        fontWeight: '700',
+                        boxShadow: '0 4px 12px rgba(0, 56, 168, 0.25)',
+                        border: 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <Eye size={15} />
+                      {isAdmin 
+                        ? (isEn ? "Evaluate Application" : "Suriin ang Aplikasyon") 
+                        : isStaff 
+                        ? (isEn ? "Evaluate Application" : "Suriin ang Aplikasyon") 
+                        : (isEn ? "View Application Details" : "Tingnan ang Detalye")}
+                      <ArrowRight size={14} />
+                    </Link>
                   </div>
                 </Popup>
               </Marker>
@@ -1019,6 +1101,65 @@ export default function SpatialMap() {
         )}
       </button>
 
+      {/* ADMIN DIRECT CLICK MODE TOGGLE PILL */}
+      {isAdmin && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '16px',
+            left: '60px',
+            zIndex: 1000,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(12px)',
+            border: '1.5px solid rgba(0, 56, 168, 0.2)',
+            borderRadius: '12px',
+            padding: '6px 12px',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ 
+              width: '8px', 
+              height: '8px', 
+              borderRadius: '50%', 
+              backgroundColor: directClickEnabled ? '#10b981' : '#f59e0b',
+              boxShadow: `0 0 8px ${directClickEnabled ? '#10b981' : '#f59e0b'}` 
+            }} />
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a' }}>
+              {isEn ? "Map Click Action:" : "Aksyon sa Pag-click:"}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDirectClickEnabled(!directClickEnabled)}
+            style={{
+              background: directClickEnabled ? '#0038A8' : '#f1f5f9',
+              border: `1px solid ${directClickEnabled ? '#0038A8' : '#cbd5e1'}`,
+              color: directClickEnabled ? '#ffffff' : '#475569',
+              borderRadius: '6px',
+              padding: '4px 10px',
+              fontSize: '0.75rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              boxShadow: directClickEnabled ? '0 2px 6px rgba(0, 56, 168, 0.25)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+            title={directClickEnabled ? "I-click upang buksan ang preview card muna" : "I-click upang direktang pumunta sa aplikasyon"}
+          >
+            <MousePointerClick size={13} />
+            {directClickEnabled 
+              ? (isEn ? "Direct to Application (ON)" : "Pumunta sa Aplikasyon (ON)")
+              : (isEn ? "Preview Card (OFF)" : "Preview Card (OFF)")}
+          </button>
+        </div>
+      )}
+
       {/* TOOLTIP STYLES */}
       <style>{`
         .zone-hover-tooltip {
@@ -1031,6 +1172,18 @@ export default function SpatialMap() {
           pointer-events: none !important;
         }
         .zone-hover-tooltip::before {
+          border-top-color: rgba(255, 255, 255, 0.98) !important;
+        }
+        .permit-hover-tooltip {
+          background: rgba(255, 255, 255, 0.98) !important;
+          border: 1px solid #94a3b8 !important;
+          border-radius: 10px !important;
+          box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.2) !important;
+          padding: 6px 10px !important;
+          backdrop-filter: blur(8px) !important;
+          pointer-events: none !important;
+        }
+        .permit-hover-tooltip::before {
           border-top-color: rgba(255, 255, 255, 0.98) !important;
         }
       `}</style>

@@ -280,6 +280,7 @@ export default function Sidebar() {
       case "admin":
         return [
           { href: "/admin/evaluations", label: t("staffEvaluations", "Staff Evaluations"), icon: FileCheck },
+          { href: "/admin/map", label: t("map", "Map"), icon: Map },
           { href: "/admin/security", label: t("securityAuth", "Security & Auth"), icon: Shield },
           { href: "/staff/templates", label: t("officialForms", "Official Forms"), icon: FileText },
           { href: "/admin/users", label: t("applicantManagement", "Applicants Management"), icon: Users },
@@ -324,6 +325,7 @@ export default function Sidebar() {
       case "admin":
         return [
           { href: "/admin/evaluations", label: "Evaluations", icon: FileCheck },
+          { href: "/admin/map", label: "Map", icon: Map },
           { href: "/admin/security", label: "Security", icon: Shield },
           { href: "/staff/templates", label: "Forms", icon: FileText },
           { href: "/admin/users", label: "Users", icon: Users },
@@ -349,8 +351,8 @@ export default function Sidebar() {
     if (itemClean === "/applicant/track") {
       return cleanPath.startsWith("/applicant/track");
     }
-    if (itemClean === "/applicant/map") {
-      return cleanPath === "/applicant/map";
+    if (itemClean === "/applicant/map" || itemClean === "/staff/map" || itemClean === "/admin/map") {
+      return cleanPath === itemClean;
     }
     if (itemClean === "/applicant/messages") {
       return cleanPath.startsWith("/applicant/messages");
