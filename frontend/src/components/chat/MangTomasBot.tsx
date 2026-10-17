@@ -61,6 +61,25 @@ const CATEGORIZED_PROMPTS_FIL: QuickPromptCategory[] = [
     ]
   },
   {
+    category: "⚡ Kuryente at PELCO 2",
+    prompts: [
+      "Paano makakuha ng CFEI para sa PELCO 2?",
+      "Ano ang Temporary Service Connection (TSC) para sa konstruksyon?",
+      "Kailangan ba ng Electrical Permit bago magpakabit ng kuryente?",
+      "Ano ang requirements sa Certificate of Occupancy?"
+    ]
+  },
+  {
+    category: "🏭 Lokal na Proyekto",
+    prompts: [
+      "Ano ang requirements sa pagawaan ng kabaong sa San Bartolome?",
+      "Ano ang zoning at setbacks sa Poultry o Piggery farm?",
+      "Ano ang kailangan sa pagawaan ng palayok sa Santo Rosario?",
+      "Kailangan ba ng permit kapag magkakabit ng Solar Panel?",
+      "Ano ang requirements sa komersyal na gusali sa San Matias?"
+    ]
+  },
+  {
     category: "🔍 Katayuan at OBO",
     prompts: [
       "Kumusta ang status ng application ko?",
@@ -110,6 +129,25 @@ const CATEGORIZED_PROMPTS_EN: QuickPromptCategory[] = [
       "What are the zoning rules in San Matias?",
       "What is the required setback from rivers or creeks?",
       "What is the minimum ceiling height and window size?"
+    ]
+  },
+  {
+    category: "⚡ Power & PELCO 2",
+    prompts: [
+      "How do I get a CFEI certificate for PELCO 2 energization?",
+      "What is a Temporary Service Connection (TSC) for construction?",
+      "Is an Electrical Permit required before power installation?",
+      "What are the requirements for a Certificate of Occupancy?"
+    ]
+  },
+  {
+    category: "🏭 Local Projects",
+    prompts: [
+      "What are the requirements for a casket manufacturing shop in San Bartolome?",
+      "What are the zoning setbacks for a Poultry or Piggery farm?",
+      "What are the requirements for pottery kilns in Santo Rosario?",
+      "Do I need a building permit for rooftop solar panels?",
+      "What are the commercial building guidelines along MacArthur Highway?"
     ]
   },
   {

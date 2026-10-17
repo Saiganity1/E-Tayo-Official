@@ -10,6 +10,64 @@
  * 6. Contextual RAG Retrieval for LLMs (Gemini / OpenAI)
  */
 
+import { PROJECT_TYPES_MATRIX, PERMIT_FORM_METADATA, ProjectTypeItem, PermitFormMatrix } from "./projectTypeMatrix";
+
+export function findProjectTypeMatch(query: string): ProjectTypeItem | null {
+  const q = query.toLowerCase();
+  for (const item of PROJECT_TYPES_MATRIX) {
+    if (q.includes(item.name.toLowerCase()) || q.includes(item.id.replace(/_/g, " "))) {
+      return item;
+    }
+    // Specific local terms
+    if (item.id === "casket_manufacturing_facility" && (q.includes("kabaong") || q.includes("casket") || q.includes("coffin"))) return item;
+    if (item.id === "poultry_piggery_farm" && (q.includes("poultry") || q.includes("manukan") || q.includes("babuyan") || q.includes("piggery"))) return item;
+    if (item.id === "pottery_ceramic_workshop" && (q.includes("palayok") || q.includes("pottery") || q.includes("paso") || q.includes("ceramic"))) return item;
+    if (item.id === "fencing_perimeter_wall" && (q.includes("bakod") || q.includes("fencing") || q.includes("pader"))) return item;
+    if (item.id === "demolition_project" && (q.includes("giba") || q.includes("demolition") || q.includes("baklas"))) return item;
+    if (item.id === "excavation_ground_prep" && (q.includes("hukay") || q.includes("excavation") || q.includes("ground prep"))) return item;
+    if (item.id === "billboard_signboard" && (q.includes("billboard") || q.includes("signboard") || q.includes("signage") || q.includes("tanda"))) return item;
+    if (item.id === "temporary_power_connection" && (q.includes("temporary connection") || q.includes("kuryente sa construction") || q.includes("temporary service") || q.includes("tsc"))) return item;
+    if (item.id === "solar_panel_installation" && (q.includes("solar") || q.includes("photovoltaic") || q.includes("solar panel"))) return item;
+    if (item.id === "commercial_building" && (q.includes("commercial") || q.includes("tindahan") || q.includes("opisina") || q.includes("restaurant") || q.includes("groseri"))) return item;
+    if (item.id === "warehouse_storage" && (q.includes("bodega") || q.includes("warehouse") || q.includes("imbakan"))) return item;
+    if (item.id === "two_storey_house" && (q.includes("dalawang palapag") || q.includes("2 storey") || q.includes("2-storey") || q.includes("two storey"))) return item;
+    if (item.id === "single_detached_house" && (q.includes("isang palapag") || q.includes("single storey") || q.includes("bungalow") || q.includes("detached"))) return item;
+  }
+  return null;
+}
+
+export function formatProjectTypeResponse(item: ProjectTypeItem): string {
+  const requiredList: string[] = [];
+  const conditionalList: string[] = [];
+
+  for (const [key, level] of Object.entries(item.matrix)) {
+    const meta = PERMIT_FORM_METADATA[key as keyof PermitFormMatrix];
+    const label = meta ? `${meta.label} (${meta.code})` : key;
+    if (level === 'required') {
+      requiredList.push(`• **${label}**: ${meta?.desc || ""}`);
+    } else if (level === 'conditional') {
+      conditionalList.push(`• **${label}**: ${meta?.desc || ""}`);
+    }
+  }
+
+  let text = `🏗️ **OPISYAL NA MATRIS NG MGA PERMIT: ${item.name.toUpperCase()}**\n\n`;
+  text += `• **Kategorya**: ${item.category}\n`;
+  text += `• **Pagtataya sa Araw ng Pagproseso**: **${item.estimatedDays}**\n`;
+  text += `• **Paglalarawan**: ${item.description}\n\n`;
+
+  if (requiredList.length > 0) {
+    text += `📌 **MGA OBLIGADONG PERMIT (REQUIRED)**:\n${requiredList.join("\n")}\n\n`;
+  }
+  if (conditionalList.length > 0) {
+    text += `⚠️ **KONDISYONAL NA MGA PERMIT (DEPENDE SA PLANO / SITE EVALUATION)**:\n${conditionalList.join("\n")}\n\n`;
+  }
+
+  text += `💡 *Paalala*: Ang mga plano ay dapat pirmado at may selyo ng lisensyadong propesyonal (Architect, Civil, PECE, PEE, PME, Sanitary Engineer).\n\n`;
+  text += `👉 [Mag-apply na para sa ${item.name}](/applicant/apply?type=${item.id})`;
+
+  return text;
+}
+
 export interface FAQItem {
   id: string;
   question: string;
@@ -985,6 +1043,371 @@ Maaari ninyong i-upload ang inyong mga scanned requirements, titulo, at blueprin
 Kung nahihirapan kayo sa pag-scan o pag-upload, maaari kayong pumunta sa **OBO / MPDC Helpdesk sa Ground Floor ng Municipal Hall**. Tutulungan kayo ng ating mga IT at Engineering staff na i-scan at ipasok ang inyong aplikasyon sa sistema.
 
 💡 *Tandaan: Para sa opisyal na releasing ng selyadong Blueprints at Permit Cards, mag-iiwan pa rin kayo ng 5 sets ng hardcopy blueprints sa OBO para sa opisyal na dry seal ng Building Official.*`
+  },
+
+  // 26. Casket / Woodworking Manufacturing (San Bartolome & Moras De La Paz)
+  {
+    id: "casket_factory_rules",
+    question: "Ano ang requirements para sa pagawaan ng kabaong (casket manufacturing) sa San Bartolome o Moras De La Paz?",
+    keywords: ["kabaong", "casket", "coffin", "san bartolome", "woodworking", "pabrika ng kabaong", "pagawaan ng kabaong", "funeral", "tai-an", "paggawa ng kabaong"],
+    intents: ["PROJECT_TYPE", "INDUSTRIAL", "SPECIAL_INDUSTRY"],
+    category: "building",
+    actionLink: { label: "Mag-apply para sa Industrial / Commercial Permit", url: "/applicant/apply?category=Industrial" },
+    followUps: ["Ano ang BFP Fire Safety requirements para sa wood shop?", "Ano ang zoning sa San Bartolome?"],
+    answer: `Ang Bayan ng Sto. Tomas, partikular ang **Barangay San Bartolome** at **Moras De La Paz**, ang tinaguriang **Casket Capital of the Philippines**.
+
+📌 **Mga Partikular na Rekisito para sa Casket / Woodworking Facility:**
+1. **Locational Clearance sa Tamang Sona**: Dapat nakatirik sa Light Industrial (I-1) o Commercial Zone (C-2). Kung malapit sa residential, kailangan ng Barangay Resolution at pagsang-ayon ng katabing homeowners.
+2. **5 Sets ng Blueprints**:
+   • Architectural (AP) & Structural (SP) para sa bigat ng makinarya at bodega ng kahoy.
+   • Mechanical Permit (MP) para sa mandatory **Dust Collection Cyclone System** at **Paint Spray Booth Exhaust**.
+   • Electrical Permit (EP) na may PEE seal para sa heavy motor load at emergency cutoffs.
+3. **BFP Fire Safety Evaluation Clearance (FSEC)**: Mandatory ang 2-hour fire-rated CHB firewalls sa boundary, portable ABC dry chemical extinguishers, at no-smoking hazard zones dahil sa sawdust at lacquer thinner.
+4. **Environmental Buffer**: Bawal magbuga ng alikabok o chemical fumes sa katabing mga tahanan.`
+  },
+
+  // 27. Pottery & Ceramic Workshop (Santo Rosario - Pau)
+  {
+    id: "pottery_workshop_rules",
+    question: "Ano ang requirements para sa pagawaan ng palayok o paso (pottery/ceramics) sa Santo Rosario?",
+    keywords: ["palayok", "pottery", "paso", "ceramics", "santo rosario", "pugon", "kiln", "clay", "pau", "earthenware"],
+    intents: ["PROJECT_TYPE", "COMMERCIAL"],
+    category: "building",
+    actionLink: { label: "Mag-apply para sa Locational Clearance", url: "/applicant/apply?type=locational_clearance" },
+    followUps: ["Ano ang setback mula sa kalsada?", "Kailangan ba ng mechanical permit?"],
+    answer: `Ang **Barangay Santo Rosario** ay tanyag sa tradisyunal na paggawa ng palayok at mga produktong luwad (clay pottery).
+
+📌 **Mga Tuntunin sa Pagtatayo ng Pottery / Ceramic Workshop:**
+1. **Pugon / Kiln Thermal Clearance**: Ang firing kiln o pugon ay dapat may minimum na **3.00 metrong distansya** mula sa anumang kahoy o nasusunog na materyales.
+2. **Chimney at Exhaust**: Ang tsimenea ng pugon ay dapat may sapat na taas (hindi bababa sa 2.0 metro mas mataas kaysa sa pinakamataas na bubong ng katabing bahay) upang maiwasan ang usok sa kapitbahay.
+3. **Locational Clearance mula sa MPDC**: Pagpapatunay na ang lote ay hindi sakop ng floodway at may sapat na daanan ng delivery trucks.
+4. **Permiso**: Locational Clearance, Building Permit, at Electrical Permit para sa motorized clay mixers o pugon blowers.`
+  },
+
+  // 28. Poultry & Piggery Farm rules (Agro-Industrial buffer & waste treatment)
+  {
+    id: "poultry_piggery_rules",
+    question: "Maaari ba akong magtayo ng poultry o piggery farm sa Sto. Tomas? Ano ang mga patakaran?",
+    keywords: ["poultry", "piggery", "manukan", "babuyan", "farm", "agro-industrial", "kulungan ng baboy", "manok", "amoy", "dumi", "waste lagoon"],
+    intents: ["AGRO_INDUSTRIAL", "ZONING", "ENVIRONMENTAL"],
+    category: "zoning",
+    actionLink: { label: "Konsultahin ang MPDC Zoning Office", url: "/applicant/dashboard" },
+    followUps: ["Ano ang zoning sa barangay ko?", "Paano kumuha ng Locational Clearance?"],
+    answer: `Mahigpit na ipinapatupad sa Sto. Tomas ang mga panuntunan sa **Agro-Industrial Facilities** ayon sa Municipal CLUP at HLURB Guidelines:
+
+📌 **Mga Mahahalagang Tuntunin:**
+1. **Zoning Restriction**: Pinapayagan lamang sa itinalagang **Agro-Industrial Zone** sa labas ng urban residential settlements. Mahigpit na ipinagbabawal sa loob ng mga subdivision o R-1/R-2 residential clusters.
+2. **Buffer Distance (Layong Distansya)**:
+   • **Piggery (Babuyan)**: Minimum na **1,000 metro (1 km)** ang layo mula sa built-up residential areas at minimum na **500 metro** mula sa national/provincial roads.
+   • **Poultry (Manukan)**: Minimum na **500 metro** ang layo mula sa mga kabahayan.
+3. **DENR Environmental Compliance Certificate (ECC)**: Mandatory bago maglabas ng Locational Clearance ang MPDC.
+4. **Waste Management System**: Mandatory ang pagkakaroon ng closed biogas digester o multi-chamber concrete waste retention lagoon upang maiwasan ang masangsang na amoy at kontaminasyon sa mga sapa o irigasyon.`
+  },
+
+  // 29. Aquaculture, Fishponds & Fish Cages (Poblacion & Sapa)
+  {
+    id: "aquaculture_rules",
+    question: "Ano ang mga patakaran sa palaisdaan o fishpond structures sa Poblacion o Sapa?",
+    keywords: ["palaisdaan", "fishpond", "tilapia", "hito", "sapa", "poblacion", "waterways", "dike", "pilapil", "aquaculture", "tubig"],
+    intents: ["AQUACULTURE", "WATER_CODE"],
+    category: "zoning",
+    followUps: ["Gaano kalayo kapag malapit sa ilog o sapa?", "Ano ang zoning sa Poblacion?"],
+    answer: `Ang **Barangay Poblacion** at **Barangay Sapa** ay may malalawak na freshwater aquaculture grounds para sa tilapia at hito.
+
+📌 **Mga Tuntunin sa Fishpond Structures:**
+1. **3.0-Meter River Easement (PD 1067 Water Code)**: Mahigpit na ipinagbabawal ang pagtatayo ng permanenteng dikes o istruktura sa loob ng 3.0 metrong public easement mula sa natural bank ng Sto. Tomas River at Masaluso River.
+2. **Bawal Harangan ang Natural Drainage**: Hindi maaaring paliitin o harangan ang daloy ng tubig-baha papuntang retention basins.
+3. **Storage Shed & Caretaker House**: Kung magtatayo ng permanenteng concrete caretaker shed na may kuryente sa gilid ng palaisdaan, kailangan pa rin itong kumuha ng regular na Locational Clearance at Building Permit.`
+  },
+
+  // 30. Fencing Permit Details (NBC Form B-03)
+  {
+    id: "fencing_permit_details",
+    question: "Kailangan ba ng permit bago magpagawa ng bakod (Fencing Permit)? Ano ang requirements?",
+    keywords: ["bakod", "fence", "fencing", "fencing permit", "pader", "boundary wall", "perimeter", "bakod permit"],
+    intents: ["ACCESSORY_PERMIT", "REQUIREMENTS"],
+    category: "building",
+    actionLink: { label: "Mag-apply para sa Fencing Permit", url: "/applicant/apply?type=fencing_permit" },
+    followUps: ["Ano ang maximum height ng bakod?", "Magkano ang bayad sa fencing permit?"],
+    answer: `Opo, ayon sa National Building Code, kinakailangan ang **Fencing Permit (NBC Form B-03)** bago magsimula ng anumang kongkretong bakod upang maiwasan ang encroachment sa kalsada o sa katabing lote.
+
+📌 **Mga Kailangang Dokumento:**
+1. Notarized Fencing Permit Application Form (NBC Form B-03)
+2. Certified True Copy ng **TCT / Titulo ng Lupa** o Notarized Deed of Sale
+3. Updated **Tax Declaration** at **Amilyar Clearance**
+4. **Fencing Plan, Elevation, at Foundation Details** na may pirma at dry seal ng lisensyadong Civil Engineer
+5. **Barangay Clearance for Fencing**
+
+📏 **Alituntunin sa Sukat at Taas (Height Limits):**
+• **Gilid at Likod (Side & Rear)**: Hanggang **2.00 metro** ang maximum solid masonry wall.
+• **Harapan sa Kalsada (Front)**: Hanggang **1.50 metro** lamang ang solid concrete wall mula sa road curb; ang karugtong pataas ay dapat see-through ornamental grills upang hindi makaharang sa paningin ng trapiko.`
+  },
+
+  // 31. Demolition Permit Details (NBC Form B-08)
+  {
+    id: "demolition_permit_details",
+    question: "Kailangan ba ng Demolition Permit bago gibain ang isang lumang bahay o gusali?",
+    keywords: ["demolition", "giba", "gibain", "baklas", "baklasin", "demolish", "demolition permit", "lumang bahay", "pagbaklas"],
+    intents: ["ACCESSORY_PERMIT", "SAFETY"],
+    category: "building",
+    actionLink: { label: "Mag-apply para sa Demolition Permit", url: "/applicant/apply?type=demolition_permit" },
+    followUps: ["Magkano ang demolition permit?", "Ano ang requirements sa Building Permit?"],
+    answer: `Opo! Bago magbaklas, mag-giba, o magpatumba ng anumang bahay o istruktura, legal na obligasyon ang pagkuha ng **Demolition Permit (NBC Form B-08)** para sa kaligtasan ng publiko at katabing bahay.
+
+📌 **Mga Rekisito sa Demolition Permit:**
+1. Certified True Copy ng Titulo (TCT) ng Lupa at Gusali
+2. **Demolition Methodology & Safety Plan** na pinirmahan at selyado ng Civil Engineer
+3. **Protective Canopy & Catchment Netting Plan** (upang hindi bumagsak ang debris sa kalsada o kapitbahay)
+4. Notarized Affidavit of Undertaking para sa pananagutan sa katabing ari-arian
+5. **Barangay Demolition Clearance** at pormal na abiso sa katabing mga residente.`
+  },
+
+  // 32. Excavation & Ground Prep (NBC Form B-02)
+  {
+    id: "excavation_ground_prep",
+    question: "Ano ang mga patakaran para sa Excavation and Ground Preparation Permit?",
+    keywords: ["hukay", "excavation", "ground preparation", "soil boring", "slope", "shoring", "foundation", "bungkal", "tambak"],
+    intents: ["ACCESSORY_PERMIT", "CIVIL_WORKS"],
+    category: "building",
+    followUps: ["Kailan mandatory ang Soil Boring Test?", "Ano ang requirements sa 2-storey house?"],
+    answer: `Para sa malalimang paghuhukay ng basement, foundation, o malaking tambak, kailangan ang **Excavation & Ground Preparation Permit (NBC Form B-02)**.
+
+📌 **Mahalagang Tuntunin sa Kaligtasan:**
+1. **Shoring & Sheet Piling**: Obligadong maglagay ng matibay na temporary shoring o retaining system upang hindi gumuho ang lupa ng katabing bahay o kalsada habang naghuhukay.
+2. **Soil Boring Test**: Mandatory kapag ang gusali ay **3 storeys pataas**, may malalim na basement, o itatayo sa soft clayey delta soils.
+3. **Dewatering & Siltation**: Bawal ibuga ang maruming putik nang direkta sa kalsada nang walang sedimentation trap.`
+  },
+
+  // 33. Sign & Billboard Permit (NBC Form B-07)
+  {
+    id: "sign_billboard_permit",
+    question: "Ano ang requirements para magkabit ng commercial signage o billboard sa Sto. Tomas?",
+    keywords: ["signage", "billboard", "sign permit", "tanda", "commercial sign", "poste", "tarpaulin", "led board"],
+    intents: ["ACCESSORY_PERMIT", "COMMERCIAL"],
+    category: "building",
+    followUps: ["Ano ang setback sa MacArthur Highway?", "Magkano ang commercial fees?"],
+    answer: `Lahat ng commercial signs, neon lights, LED electronic displays, at billboards ay nangangailangan ng **Sign Permit (NBC Form B-07)** bago ikabit.
+
+📌 **Mga Rekisito:**
+1. **Structural Design & Wind Load Computations**: Selyado ng Civil/Structural Engineer na nagpapatunay na kaya ng poste ang minimum na **250 kph wind gust load** ayon sa National Structural Code of the Philippines (NSCP 2015).
+2. **Electrical Layout**: Selyado ng PEE kung may ilaw o electronic LED power supply.
+3. **Road Setback**: Bawal lumampas o bumitin ang karatula sa loob ng Road Right-of-Way (RROW) ng MacArthur Highway nang walang DPWH clearance.`
+  },
+
+  // 34. Temporary Service Connection (PELCO 2 Construction Power)
+  {
+    id: "temporary_service_pelco",
+    question: "Paano kumuha ng Temporary Electric Service Connection (TSC) para sa konstruksyon?",
+    keywords: ["temporary service", "kuryente sa construction", "pelco", "pelco 2", "temporary connection", "power", "meter", "construction power", "tsc"],
+    intents: ["UTILITIES", "ELECTRICAL"],
+    category: "ancillary",
+    followUps: ["Ano ang CFEI?", "Sino ang pipirma sa electrical plan?"],
+    answer: `Para magkaroon ng kuryente para sa welding, pamutol ng bakal, at ilaw habang ginagawa ang bahay, kailangan ng **Temporary Service Connection Permit (NBC Form E-03)**:
+
+📌 **Mga Hakbang:**
+1. I-submit ang **Temporary Electrical Plan & Single-Line Diagram** na selyado ng Professional Electrical Engineer (PEE).
+2. Magsasagawa ang OBO Electrical Inspector ng onsite verification sa temporary service pole, grounding rod, at weatherproof circuit breaker panel.
+3. Mag-iisyu ang OBO ng **Certificate of Approval for Temporary Service Connection** na dadalhin sa **PELCO 2 (Pampanga II Electric Cooperative)** para ikabit ang temporary construction meter (bisa: 90 days, renewable).`
+  },
+
+  // 35. Certificate of Occupancy Guide
+  {
+    id: "certificate_of_occupancy_guide",
+    question: "Kailan at paano kinukuha ang Certificate of Occupancy bago tirhan ang bahay?",
+    keywords: ["occupancy", "certificate of occupancy", "occupancy permit", "lipat", "tirhan", "tapos na bahay", "inspection", "final permit"],
+    intents: ["OCCUPANCY", "PROCESS"],
+    category: "occupancy",
+    actionLink: { label: "I-track ang Aplikasyon", url: "/applicant/track" },
+    followUps: ["Ano ang CFEI para sa PELCO 2?", "Ano ang requirements sa Completion?"],
+    answer: `Ang **Certificate of Occupancy** ang pinal na legal na dokumento mula sa Building Official na nagpapatunay na 100% ligtas at tapos na ang gusali ayon sa aprubadong blueprints bago ito tirhan o gamitin.
+
+📌 **Mga Kailangang Isumite:**
+1. **Certificate of Completion Form**: Notarized at pinirmahan ng Supervising Architect o Civil Engineer.
+2. **As-Built Plans**: Kung may ginawang kaunting rebisyon sa orihinal na blueprints habang ginagawa.
+3. **Certificate of Final Electrical Inspection (CFEI)**.
+4. **BFP Fire Safety Inspection Certificate (FSIC)**.
+5. **Construction Logbook** na may pirma ng engineer at picture ng natapos na proyekto.
+6. Pagsasagawa ng **Joint Final Inspection** ng OBO Engineering Team.`
+  },
+
+  // 36. CFEI & Permanent PELCO 2 Meter
+  {
+    id: "cfei_pelco_meter",
+    question: "Ano ang CFEI at bakit ito hinahanap ng PELCO 2 bago ikabit ang permanenteng metro ng kuryente?",
+    keywords: ["cfei", "metro ng kuryente", "pelco", "pelco 2", "electrical inspection", "grounding", "ilaw", "kuryente", "energization"],
+    intents: ["UTILITIES", "COMPLETION"],
+    category: "ancillary",
+    followUps: ["Kailan kinukuha ang Certificate of Occupancy?", "Sino ang pipirma sa electrical plan?"],
+    answer: `Ang **CFEI (Certificate of Final Electrical Inspection)** ay opisyal na sertipikasyon mula sa Municipal Electrical Inspector ng Sto. Tomas na nagsasabing ligtas ang buong linya ng kuryente sa sunog at ground fault.
+
+📌 **Bakit kailangan ng PELCO 2?**
+Hindi magpapakabit ang PELCO 2 ng permanenteng metro ng kuryente kung walang CFEI mula sa Munisipyo alinsunod sa Philippine Electrical Code (PEC).
+
+⚡ **Sinusuri bago bigyan ng CFEI:**
+• Grounding resistance test (dapat mas mababa sa **5 ohms**).
+• Tamang sukat ng wires at ampere rating ng main breaker.
+• Walang exposed o nagdikit-dikit na hubad na kable.`
+  },
+
+  // 37. Penalties for Illegal Construction
+  {
+    id: "penalties_illegal_construction",
+    question: "Ano ang parusa kapag nagpatayo ng walang building permit sa Sto. Tomas?",
+    keywords: ["walang permit", "huli", "parusa", "illegal construction", "violation", "cease and desist", "penalty", "surcharge", "multa"],
+    intents: ["LEGAL", "PENALTIES"],
+    category: "legal",
+    followUps: ["Paano mag-apply ng building permit?", "Ano ang requirements sa Locational Clearance?"],
+    answer: `Sa ilalim ng **Presidential Decree 1096 (National Building Code of the Philippines, Section 212)**:
+
+⚠️ **Mga Kahihinatnan ng Konstruksyon ng Walang Permit:**
+1. **Notice of Violation (NOV)**: Agarang ipapadala ng OBO building inspector.
+2. **Cease and Desist Order (CDO)**: Pormal na pagpapatigil sa lahat ng trabaho sa construction site.
+3. **100% Surcharge Penalty**: Bukod sa regular na permit fees, magbabayad ng dagdag na **100% surcharge penalty** sa kabuuang halaga ng permit fee bago maregularisa ang proyekto.
+4. **Demolition Order**: Kung ang gusali ay itinayo sa pampublikong daan, waterway easement, o mapanganib sa kaligtasan, maaari itong ipa-giba sa gastusin ng may-ari.`
+  },
+
+  // 38. Payment Methods: Treasury vs Online
+  {
+    id: "payment_methods_treasury",
+    question: "Paano at saan magbabayad ng permit fees sa Sto. Tomas?",
+    keywords: ["paano magbayad", "saan magbabayad", "cashier", "treasury", "online payment", "gcash", "landbank", "order of payment", "resibo"],
+    intents: ["FEES", "PAYMENT"],
+    category: "fees",
+    actionLink: { label: "I-upload ang Proof of Payment sa Track Page", url: "/applicant/track" },
+    followUps: ["Magkano ang permit fees para sa 100 sqm?", "Gaano katagal bago maaprubahan ang permit?"],
+    answer: `May dalawang maginhawang paraan upang bayaran ang inyong opisyal na Order of Payment (OP):
+
+🏛️ **Paraan 1: On-site sa Municipal Treasury Cashier (Over-the-Counter)**
+• Pumunta sa **Ground Floor, Sto. Tomas Municipal Hall (San Vicente)**.
+• Ipakita ang inyong **Application ID / Order of Payment No.** sa Cashier Window.
+• Bayaran ang assessed amount at kumuha ng Official Receipt (OR).
+
+💻 **Paraan 2: Online Reference Submission sa eTAYO Portal**
+• Kapag naaprubahan ang inyong Order of Payment, maaari kayong magbayad sa accredited payment channels ng LGU (Landbank Link.BizPortal o over-the-counter deposit).
+• I-upload lamang ang larawan ng inyong resibo o i-input ang reference number sa inyong **[Application Track Detail Page](/applicant/track)**.
+• Agad itong ive-verify ng Municipal Cashier online.`
+  },
+
+  // 39. Citizen's Charter Turnaround Times
+  {
+    id: "citizens_charter_timelines",
+    question: "Gaano katagal bago maaprubahan ang Locational Clearance at Building Permit?",
+    keywords: ["gaano katagal", "ilang araw", "timeline", "processing time", "releasing", "turnaround", "kailan matatapos", "araw"],
+    intents: ["PROCESS", "TIMELINE"],
+    category: "general",
+    followUps: ["Paano i-track ang application ko?", "Ano ang requirements sa Locational Clearance?"],
+    answer: `Ayon sa **Citizen's Charter ng Bayan ng Sto. Tomas** at Republic Act 11032 (Ease of Doing Business Act):
+
+⏱️ **Opisyal na Processing Turnaround Times:**
+• **Locational Clearance (MPDC)**: **1 hanggang 3 working days** mula sa araw ng kumpletong pag-sumite ng dokumento.
+• **Simple Residential Building Permit**: **3 hanggang 5 working days** para sa sabay-sabay na technical evaluation ng Architectural, Structural, Electrical, at Sanitary sections.
+• **Commercial / Industrial Building Permit**: **5 hanggang 7 working days** (kasama ang BFP Fire Safety Evaluation Clearance).
+• **Certificate of Occupancy**: **3 hanggang 5 working days** matapos ang joint on-site inspection.
+
+💡 *Maaari ninyong subaybayan ang real-time progress ng inyong papeles sa [eTAYO Track Portal](/applicant/track)!*`
+  },
+
+  // 40. Untitled Land / Tax Declaration Only
+  {
+    id: "untitled_lot_tax_declaration",
+    question: "Maaari ba akong kumuha ng permit kung wala pang Titulo (TCT) at Tax Declaration lamang ang hawak?",
+    keywords: ["walang titulo", "tax declaration lang", "tax dec", "rights", "mana", "deed of sale", "affidavit", "walang tct", "possession"],
+    intents: ["LEGAL", "LAND_OWNERSHIP"],
+    category: "legal",
+    followUps: ["Ano ang requirements sa Locational Clearance?", "Sino ang pipirma sa plano?"],
+    answer: `Opo, pinapayagan sa Sto. Tomas ang pag-apply ng permit para sa mga lupang wala pang TCT basta't may matibay na **Patunay ng Karapatan sa Pagmamay-ari**:
+
+📌 **Mga Katanggap-tanggap na Alternatibong Dokumento:**
+1. Updated **Tax Declaration (Lupa)** na nakapangalan sa aplikante o sa magulang kung minana.
+2. **Notarized Deed of Absolute Sale** o Contract to Sell kung binili.
+3. **Extrajudicial Settlement of Estate with Waiver of Rights** kung lupang minana sa mga ninuno.
+4. **Barangay Certification of Actual Physical Possession**: Nagpapatunay mula sa Punong Barangay na kayo ang aktwal na nakatira at walang aktibong boundary dispute sa katabing lote.
+5. **Notarized Affidavit of Ownership and Undertaking**: Legal na pananagutan ng aplikante na walang ibang taong may pag-aangkin sa nasabing lupa.`
+  },
+
+  // 41. HOA Subdivision vs LGU Building Permit
+  {
+    id: "hoa_subdivision_vs_lgu",
+    question: "Kailangan pa ba ng permit sa munisipyo kung may clearance na mula sa Homeowners Association (HOA) ng subdivision?",
+    keywords: ["hoa", "homeowners", "subdivision", "glory heights", "la corona", "subdivision clearance", "kailangan pa ba munisipyo", "subdivision permit"],
+    intents: ["ZONING", "LEGAL"],
+    category: "legal",
+    followUps: ["Ano ang requirements sa pagpapatayo ng bahay?", "Magkano ang permit fees para sa 100 sqm?"],
+    answer: `**Opo, kailangan pa rin ng opisyal na Building Permit mula sa Munisipyo.**
+
+📌 **Bakit magkaiba ang HOA Clearance at LGU Building Permit?**
+• **HOA Construction Clearance**: Tanging pribadong pahintulot lamang ito mula sa inyong subdivision para sa kanilang village architectural theme, construction bond, at pagpasok ng mga delivery trucks.
+• **Municipal Building Permit (PD 1096)**: Ito ang **batas ng Republika ng Pilipinas**. Tanging ang Municipal Building Official lamang ang may legal na kapangyarihang mag-apruba ng kaligtasan sa lindol (Structural), sunog (BFP), linya ng kuryente (Electrical), at kalinisan ng imburnal (Sanitary).
+
+⚠️ Ang pagpapatayo sa loob ng subdivision nang may HOA clearance lamang ngunit walang Building Permit mula sa Munisipyo ay ilegal at papatawan pa rin ng Notice of Violation.`
+  },
+
+  // 42. Rooftop Solar Panel Installation Requirements
+  {
+    id: "solar_panel_installation",
+    question: "Kailangan ba ng permit kapag magpapakabit ng solar panels sa bubong?",
+    keywords: ["solar", "solar panels", "rooftop solar", "solar permit", "net metering", "inverter", "bubong", "solar pv"],
+    intents: ["SPECIAL_PROJECT", "ELECTRICAL"],
+    category: "ancillary",
+    followUps: ["Ano ang CFEI para sa PELCO 2?", "Sino ang pipirma sa electrical plan?"],
+    answer: `Opo, ang rooftop solar photovoltaic (PV) system ay nangangailangan ng clearance para sa kaligtasan sa sunog at kuryente.
+
+📌 **Mga Kailangang Permiso:**
+1. **Electrical Permit (NBC Form E-01)**: May kasamang Single-Line Diagram, Inverter DC-to-AC protection specs, at kaukulang electrical load analysis na selyado ng Professional Electrical Engineer (PEE).
+2. **Structural Stability Certification**: Selyado ng Civil Engineer na nagpapatunay na kaya ng truss at framing ng bubong ang karagdagang bigat ng solar panels at malalakas na bagyo.
+3. **Net-Metering Clearance (kung ibebenta ang sobrang kuryente sa PELCO 2)**: Sinusuri ang anti-islanding safety features upang hindi makakuryente sa mga tauhan ng PELCO 2 kapag may brownout.`
+  },
+
+  // 43. Purpose of 5 Sets of Blueprints
+  {
+    id: "five_sets_blueprints_purpose",
+    question: "Bakit kailangang magsumite ng limang (5) sets ng blueprints?",
+    keywords: ["5 sets", "limang sets", "blueprints", "kopya ng plano", "blueprint", "bakit lima", "sets ng plano"],
+    intents: ["PROCESS", "REQUIREMENTS"],
+    category: "building",
+    followUps: ["Sino-sino ang kailangang pumirma sa plano?", "Gaano katagal bago maaprubahan ang permit?"],
+    answer: `Sa ilalim ng National Building Code Implementing Rules (DPWH NBCDO), ang **5 sets ng signed and sealed blueprints** ay opisyal na ipinapamahagi sa mga sumusunod:
+
+1. **Set 1 (OBO Archive Copy)**: Permanenteng itinatago sa municipal records ng Office of the Building Official.
+2. **Set 2 (MPDC Zoning Copy)**: Para sa land use monitoring at mapping ng Municipal Planning Office.
+3. **Set 3 (BFP Fire Station Copy)**: Para sa Bureau of Fire Protection para sa kanilang annual Fire Safety Inspection (FSIC).
+4. **Set 4 (Municipal Assessor's Copy)**: Para sa computation ng real property tax assessment kapag natapos ang gusali.
+5. **Set 5 (Owner's Jobsite Copy)**: Ibabalik sa may-ari na may opisyal na dry seal. **Dapat itong manatili sa construction site** para maiprisinta sa sinumang building inspector ng munisipyo.`
+  },
+
+  // 44. Order of Payment Validity
+  {
+    id: "order_of_payment_validity",
+    question: "Ano ang Order of Payment (OP) at gaano katagal ito bago mapaso?",
+    keywords: ["order of payment", "op", "assessment", "kwentada", "bayaran", "validity ng op", "kailan mapapaso"],
+    intents: ["FEES", "PROCESS"],
+    category: "fees",
+    followUps: ["Paano at saan magbabayad ng permit fees?", "Magkano ang permit fees para sa 100 sqm?"],
+    answer: `Ang **Order of Payment (OP)** ay ang opisyal na komputasyon ng mga bayarin sa munisipyo batay sa sukat, kategorya, at engineering evaluation ng inyong plano.
+
+📌 **Mahahalagang Paalala sa OP:**
+• **Bisa (Validity)**: Karaniwang may bisa ng **30 araw** mula sa petsa ng pagkakalabas nito.
+• **Saan Babayaran**: Maaaring bayaran sa Municipal Treasury Cashier (Ground Floor) o sa accredited online payment channel.
+• **Re-assessment**: Kung lumampas sa 30 araw nang hindi nababayaran, kailangang magpa-reassess sa OBO bago tanggapin ng Treasury Cashier.`
+  },
+
+  // 45. Linking Locational Clearance to Building Permit
+  {
+    id: "linking_locational_to_building",
+    question: "Paano i-link ang aking naaprubahang Locational Clearance sa aking Building Permit application sa portal?",
+    keywords: ["link", "i-link", "ikabit", "connect", "locational clearance id", "paano i-apply ang building permit", "pag-link"],
+    intents: ["PORTAL_USAGE", "PROCESS"],
+    category: "general",
+    actionLink: { label: "Mag-apply para sa Building Permit", url: "/applicant/apply?type=building_permit" },
+    followUps: ["Ano ang requirements sa Building Permit?", "Kumusta ang status ng application ko?"],
+    answer: `Napakadali po mag-link ng naaprubahang Locational Clearance sa eTAYO portal:
+
+📌 **Hakbang sa Pag-link:**
+1. Pumunta sa **[Mag-apply Page](/applicant/apply)** at piliin ang **Building Permit (NBC Form 1)**.
+2. Sa unang bahagi ng form, makikita ninyo ang field na **"Locational Clearance Reference ID"**.
+3. I-type ang inyong approved ID (halimbawa: \`LC-2026-0042\`) o piliin ito sa dropdown ng inyong mga aktibong aplikasyon.
+4. **Kusang mag-aautofill** ang inyong project name, barangay address, sukat ng lote, at hindi na ninyo kailangang mag-upload muli ng inyong TCT / Land Title dahil naka-attach na ito mula sa Phase 1!
+5. I-upload na lamang ang inyong 5 sets ng blueprints, bill of materials, at BFP endorsements!`
   }
 ];
 
@@ -1170,6 +1593,23 @@ ${b.specialRules.map(r => `• ${r}`).join("\n")}
 Kailangan din munang kumuha ng **Barangay Construction Clearance** sa ${b.name} Barangay Hall bago mag-apply para sa inyong Locational Clearance sa Munisipyo.`;
   }
 
+  // 4.5. OFFICIAL PROJECT TYPE CHECKLIST & PERMIT MATRIX MATCH
+  const matchedProj = findProjectTypeMatch(q);
+  if (matchedProj && (
+    qLower.includes("matrix") || qLower.includes("checklist") || qLower.includes("anong permit") ||
+    qLower.includes("mga permit") || qLower.includes("requirements") || qLower.includes("kailangan") ||
+    qLower.includes("paano") || qLower.includes("pwede") || qLower.includes("magkano") ||
+    qLower.includes("plano") || qLower.includes("kabaong") || qLower.includes("poultry") ||
+    qLower.includes("manukan") || qLower.includes("babuyan") || qLower.includes("palayok") ||
+    qLower.includes("bakod") || qLower.includes("fencing") || qLower.includes("giba") ||
+    qLower.includes("demolition") || qLower.includes("solar") || qLower.includes("billboard") ||
+    qLower.includes("signage") || qLower.includes("temporary") || qLower.includes("tsc") ||
+    qLower.includes("two storey") || qLower.includes("2 storey") || qLower.includes("single detached") ||
+    q.length < 35
+  )) {
+    return formatProjectTypeResponse(matchedProj);
+  }
+
   // 5. ML TOKEN SIMILARITY SCORING ACROSS FAQS
   const userTokens = tokenizeAndNormalize(q);
   let bestMatch: FAQItem | null = null;
@@ -1261,8 +1701,16 @@ Maaari ninyong piliin ang alinman sa mga **Suggested Inquiries** sa ibaba o i-ty
 /**
  * Retrieves top matching context strings for injection into LLM prompts (RAG).
  */
-export function getTopContextForRAG(query: string, maxItems: number = 3): string {
+export function getTopContextForRAG(query: string, maxItems: number = 5): string {
   const userTokens = tokenizeAndNormalize(query);
+  const contexts: string[] = [];
+
+  // Check if project type matrix matches
+  const matchedProj = findProjectTypeMatch(query);
+  if (matchedProj) {
+    contexts.push(formatProjectTypeResponse(matchedProj));
+  }
+
   const scored = FAQ_DATABASE.map(item => {
     let score = 0;
     for (const kw of item.keywords) {
@@ -1277,9 +1725,13 @@ export function getTopContextForRAG(query: string, maxItems: number = 3): string
   scored.sort((a, b) => b.score - a.score);
   const top = scored.slice(0, maxItems).filter(s => s.score > 0);
 
-  if (top.length === 0) {
+  top.forEach(t => {
+    contexts.push(`Q: ${t.item.question}\nA: ${t.item.answer}`);
+  });
+
+  if (contexts.length === 0) {
     return `GENERAL POLICY: Follow Presidential Decree 1096 (National Building Code of the Philippines) and Sto. Tomas Local Zoning Ordinances. Phase 1 is Locational Clearance, Phase 2 is Building Permit with 5 sets of blueprints, Phase 3 is Certificate of Occupancy.`;
   }
 
-  return top.map(t => `Q: ${t.item.question}\nA: ${t.item.answer}`).join("\n\n---\n\n");
+  return contexts.join("\n\n---\n\n");
 }
