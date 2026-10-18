@@ -32,8 +32,13 @@ export async function POST(req: Request) {
       "X-RateLimit-Reset": String(rl.reset),
     };
 
-    const body = await req.json();
-    const { email, password } = body;
+    let body: any;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
+    }
+    const { email, password } = body || {};
 
     const sanitizedEmail = String(email || "").trim().toLowerCase();
     const sanitizedPassword = String(password || "").trim();
