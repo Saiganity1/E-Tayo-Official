@@ -116,6 +116,10 @@ export async function POST(req: Request) {
       email: sanitizedEmail
     }, { headers: rateLimitHeaders });
   } catch (err: any) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Login route error:", err);
+    return NextResponse.json({ 
+      error: err?.message || "Internal server error",
+      detail: String(err)
+    }, { status: 500 });
   }
 }
