@@ -44,18 +44,37 @@ function createSlidingLimiter(
   windowDuration: "1 m" | "15 m"
 ): LimiterWrapper {
   let ratelimitInstance: Ratelimit | null = null;
+  const inMemoryTracker = new Map<string, number[]>();
+  const windowMs = windowDuration === "1 m" ? 60 * 1000 : 15 * 60 * 1000;
 
   return {
     async limit(identifier: string) {
       const redis = getRedis();
 
       if (!redis) {
-        // Fail CLOSED: When Upstash Redis credentials are not configured, reject the request
+        // Resilient in-memory sliding window fallback while Upstash credentials are not yet configured
+        const now = Date.now();
+        let timestamps = inMemoryTracker.get(identifier) || [];
+        timestamps = timestamps.filter(t => now - t < windowMs);
+
+        if (timestamps.length >= requests) {
+          const reset = (timestamps[0] || now) + windowMs;
+          return {
+            success: false,
+            limit: requests,
+            remaining: 0,
+            reset,
+          };
+        }
+
+        timestamps.push(now);
+        inMemoryTracker.set(identifier, timestamps);
+
         return {
-          success: false,
+          success: true,
           limit: requests,
-          remaining: 0,
-          reset: Date.now() + 60000,
+          remaining: requests - timestamps.length,
+          reset: now + windowMs,
         };
       }
 
