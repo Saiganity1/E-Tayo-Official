@@ -9,6 +9,7 @@ import {
   sanitizeString,
   validateCsrf 
 } from "@/utils/security";
+import { getBackendAdminToken } from "@/utils/backendAuth";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
 const BACKEND_API = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
@@ -80,11 +81,22 @@ export async function GET(req: Request) {
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Pragma": "no-cache"
     };
-    if (authHeader) headers["Authorization"] = authHeader;
+
+    // If caller is staff/admin or using session tokens, use backend admin token to fetch master records
+    let tokenToForward = authHeader?.replace(/^Bearer\s+/i, "") || null;
+    if (isPrivileged || !tokenToForward || tokenToForward.startsWith("admin_session") || tokenToForward.startsWith("staff_session")) {
+      const backendToken = await getBackendAdminToken();
+      if (backendToken) {
+        tokenToForward = backendToken;
+      }
+    }
+    if (tokenToForward) {
+      headers["Authorization"] = `Bearer ${tokenToForward}`;
+    }
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
       const res = await fetch(`${BACKEND_API}/permits${url.search}`, {
         method: "GET",
         headers,
@@ -214,27 +226,44 @@ export async function POST(req: Request) {
     // 5. Persist locally
     const savedLocally = savePermit(sanitizedApp);
 
-    // 6. Asynchronously sync to remote Spring Boot backend
-    const authHeader = req.headers.get("authorization");
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    };
-    if (authHeader) headers["Authorization"] = authHeader;
+    // 6. Synchronously sync to remote Spring Boot backend (ensures persistence before Vercel serverless freeze)
+    try {
+      const authHeader = req.headers.get("authorization");
+      let syncToken = authHeader?.replace(/^Bearer\s+/i, "") || null;
+      if (!syncToken || syncToken.startsWith("admin_session") || syncToken.startsWith("staff_session")) {
+        const backendToken = await getBackendAdminToken();
+        if (backendToken) syncToken = backendToken;
+      }
 
-    (async () => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        await fetch(`${BACKEND_API}/permits`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(sanitizedApp),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-      } catch (e) {}
-    })();
+      const syncHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      };
+      if (syncToken) syncHeaders["Authorization"] = `Bearer ${syncToken}`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(`${BACKEND_API}/permits`, {
+        method: "POST",
+        headers: syncHeaders,
+        body: JSON.stringify(sanitizedApp),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res && res.ok) {
+        const text = await res.text();
+        if (text.trim().startsWith("{")) {
+          const backendRecord = JSON.parse(text);
+          if (backendRecord && backendRecord.id) {
+            savePermit(backendRecord);
+            return NextResponse.json(backendRecord, { status: 201 });
+          }
+        }
+      }
+    } catch (e: any) {
+      console.warn("Backend sync failed during permit creation:", e?.message || e);
+    }
 
     return NextResponse.json(savedLocally, { status: 201 });
   } catch (error: any) {

@@ -8,6 +8,7 @@ import {
   sanitizeString,
   validateCsrf 
 } from "@/utils/security";
+import { getBackendAdminToken } from "@/utils/backendAuth";
 
 const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
 const BACKEND_API = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
@@ -27,18 +28,24 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Pragma": "no-cache"
     };
-    if (authHeader) headers["Authorization"] = authHeader;
 
     const authUser = extractUserFromRequest(req);
     const isPrivileged = isStaffOrAdmin(authUser);
 
+    let tokenToForward = authHeader?.replace(/^Bearer\s+/i, "") || null;
+    if (isPrivileged || !tokenToForward || tokenToForward.startsWith("admin_session") || tokenToForward.startsWith("staff_session")) {
+      const backendToken = await getBackendAdminToken();
+      if (backendToken) tokenToForward = backendToken;
+    }
+    if (tokenToForward) headers["Authorization"] = `Bearer ${tokenToForward}`;
+
     // 1. Check local resilient store first
     let existing = getPermitById(cleanId);
 
-    // 2. Try remote backend with short timeout
+    // 2. Try remote backend with safe timeout
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(targetUrl, { headers, cache: "no-store", signal: controller.signal });
       clearTimeout(timeoutId);
 
@@ -124,18 +131,23 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     // 1. Update local store
     const updated = updatePermit({ ...body, id: cleanId });
 
-    // 2. Sync to remote backend in background
+    // 2. Sync to remote backend
     const targetUrl = `${BACKEND_API}/permits/${encodeURIComponent(cleanId)}`;
-    const authHeader = req.headers.get("authorization");
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    };
-    if (authHeader) headers["Authorization"] = authHeader;
-
     try {
+      const authHeader = req.headers.get("authorization");
+      let syncToken = authHeader?.replace(/^Bearer\s+/i, "") || null;
+      if (!syncToken || syncToken.startsWith("admin_session") || syncToken.startsWith("staff_session")) {
+        const backendToken = await getBackendAdminToken();
+        if (backendToken) syncToken = backendToken;
+      }
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      };
+      if (syncToken) headers["Authorization"] = `Bearer ${syncToken}`;
+
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       await fetch(targetUrl, {
         method: "PUT",
         headers,
@@ -171,15 +183,20 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     deletePermit(cleanId);
 
-    // Call backend endpoint in background
+    // Call backend endpoint
     const targetUrl = `${BACKEND_API}/permits/${encodeURIComponent(cleanId)}`;
-    const authHeader = req.headers.get("authorization");
-    const headers: Record<string, string> = { "Accept": "application/json" };
-    if (authHeader) headers["Authorization"] = authHeader;
-
     try {
+      const authHeader = req.headers.get("authorization");
+      let syncToken = authHeader?.replace(/^Bearer\s+/i, "") || null;
+      if (!syncToken || syncToken.startsWith("admin_session") || syncToken.startsWith("staff_session")) {
+        const backendToken = await getBackendAdminToken();
+        if (backendToken) syncToken = backendToken;
+      }
+      const headers: Record<string, string> = { "Accept": "application/json" };
+      if (syncToken) headers["Authorization"] = `Bearer ${syncToken}`;
+
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       await fetch(targetUrl, { method: "DELETE", headers, signal: controller.signal });
       clearTimeout(timeoutId);
     } catch (e) {}

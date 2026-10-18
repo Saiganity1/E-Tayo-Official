@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     // 1. Try to authenticate directly with Render backend (fast 2.5s timeout)
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       const res = await fetch(backendUrl, {
         method: "POST",
