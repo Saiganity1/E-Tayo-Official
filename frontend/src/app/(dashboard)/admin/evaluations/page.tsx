@@ -34,11 +34,15 @@ export default function StaffEvaluationsPage() {
   const [expandedDossiers, setExpandedDossiers] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Calendar / Date Filter State
+  // Calendar / Date & Time Filter State
   const [showCalendarFilter, setShowCalendarFilter] = useState(false);
-  const [datePreset, setDatePreset] = useState("all"); // 'all' | 'today' | '7days' | 'this_month' | '30days' | 'custom'
+  const [datePreset, setDatePreset] = useState("all"); // 'all' | 'today' | 'yesterday' | 'last_24h' | 'last_hour' | '7days' | 'this_month' | '30days' | 'custom'
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [timePreset, setTimePreset] = useState("all"); // 'all' | 'working_hours' | 'morning' | 'afternoon' | 'evening' | 'custom'
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const calendarRef = useRef<HTMLDivElement>(null);
 
   // Close calendar popover on outside click
@@ -56,12 +60,34 @@ export default function StaffEvaluationsPage() {
     };
   }, [showCalendarFilter]);
 
-  // Robust date parser for various string formats ("October 01, 2026", "2026-10-01", etc.)
+  // Robust date and time parser for all string formats ("October 14, 2026, 11:35 AM", ISO, etc.)
   const parseAppDate = (dateStr?: string): Date | null => {
     if (!dateStr) return null;
     const clean = String(dateStr).trim();
     const parsed = new Date(clean);
     if (!isNaN(parsed.getTime())) return parsed;
+
+    // Pattern: Month DD, YYYY, HH:MM AM/PM
+    const match = clean.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})(?:,\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?/i);
+    if (match) {
+      const monthNames = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+      const monthAbbr = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+      const mStr = match[1].toLowerCase();
+      let mIdx = monthNames.indexOf(mStr);
+      if (mIdx === -1) mIdx = monthAbbr.indexOf(mStr);
+      if (mIdx !== -1) {
+        const day = parseInt(match[2], 10);
+        const year = parseInt(match[3], 10);
+        let hour = match[4] ? parseInt(match[4], 10) : 0;
+        const min = match[5] ? parseInt(match[5], 10) : 0;
+        const sec = match[6] ? parseInt(match[6], 10) : 0;
+        const ampm = match[7] ? match[7].toUpperCase() : null;
+        if (ampm === "PM" && hour < 12) hour += 12;
+        if (ampm === "AM" && hour === 12) hour = 0;
+        return new Date(year, mIdx, day, hour, min, sec);
+      }
+    }
+
     const parts = clean.split(",");
     if (parts.length >= 2) {
       const fallback = new Date(`${parts[0]}, ${parts[1].trim().split(" ")[0]}`);
@@ -70,19 +96,39 @@ export default function StaffEvaluationsPage() {
     return null;
   };
 
-  const isDateFilterActive = datePreset !== "all" || Boolean(startDate) || Boolean(endDate);
+  const isDateFilterActive = 
+    datePreset !== "all" || 
+    timePreset !== "all" || 
+    Boolean(startDate) || 
+    Boolean(endDate) || 
+    Boolean(startTime) || 
+    Boolean(endTime) ||
+    sortOrder !== "newest";
 
   const getDateFilterButtonLabel = () => {
-    if (datePreset === "today") return "Date: Today";
-    if (datePreset === "7days") return "Date: Last 7 Days";
-    if (datePreset === "this_month") return "Date: This Month";
-    if (datePreset === "30days") return "Date: Last 30 Days";
-    if (startDate && endDate) {
-      return `${startDate} → ${endDate}`;
-    }
-    if (startDate) return `From: ${startDate}`;
-    if (endDate) return `To: ${endDate}`;
-    return "Calendar Filter";
+    const parts: string[] = [];
+    if (datePreset === "today") parts.push("Today");
+    else if (datePreset === "yesterday") parts.push("Yesterday");
+    else if (datePreset === "last_24h") parts.push("Past 24h");
+    else if (datePreset === "last_hour") parts.push("Past 1h");
+    else if (datePreset === "7days") parts.push("Last 7 Days");
+    else if (datePreset === "this_month") parts.push("This Month");
+    else if (datePreset === "30days") parts.push("Last 30 Days");
+    else if (startDate && endDate) parts.push(`${startDate} → ${endDate}`);
+    else if (startDate) parts.push(`From: ${startDate}`);
+    else if (endDate) parts.push(`To: ${endDate}`);
+
+    if (timePreset === "working_hours") parts.push("Office Hours (8AM-5PM)");
+    else if (timePreset === "morning") parts.push("Morning (6AM-12PM)");
+    else if (timePreset === "afternoon") parts.push("Afternoon (12PM-6PM)");
+    else if (timePreset === "evening") parts.push("Night (6PM-6AM)");
+    else if (startTime && endTime) parts.push(`${startTime} - ${endTime}`);
+    else if (startTime) parts.push(`From ${startTime}`);
+    else if (endTime) parts.push(`Until ${endTime}`);
+
+    if (sortOrder === "oldest") parts.push("Oldest First");
+
+    return parts.length > 0 ? parts.join(" • ") : "Date & Time Filter";
   };
 
   const handleStartEvaluation = (targetApp: any, e?: React.MouseEvent) => {
@@ -166,53 +212,102 @@ export default function StaffEvaluationsPage() {
       const appType = String(app.permitType || "locational_clearance").toLowerCase();
       const matchesType = filterType === "all" || appType.includes(String(filterType || "").toLowerCase());
 
-      const matchesDate = (() => {
-        if (datePreset === "all" && !startDate && !endDate) return true;
+      const matchesDateAndTime = (() => {
+        if (datePreset === "all" && timePreset === "all" && !startDate && !endDate && !startTime && !endTime) {
+          return true;
+        }
+
         const appDate = parseAppDate(app.dateSubmitted || (app as any).createdAt || (app as any).submissionDate);
         if (!appDate) return true;
 
         const now = new Date();
+        const appTimeMs = appDate.getTime();
 
-        if (datePreset === "today") {
-          return appDate.getFullYear() === now.getFullYear() &&
-                 appDate.getMonth() === now.getMonth() &&
-                 appDate.getDate() === now.getDate();
-        }
-        if (datePreset === "7days") {
-          const sevenDaysAgo = new Date();
+        // 1. Recency & Date Presets
+        if (datePreset === "last_hour") {
+          const diffMs = now.getTime() - appTimeMs;
+          if (diffMs > 3600000 || diffMs < 0) return false;
+        } else if (datePreset === "last_24h") {
+          const diffMs = now.getTime() - appTimeMs;
+          if (diffMs > 86400000 || diffMs < 0) return false;
+        } else if (datePreset === "today") {
+          const isToday = appDate.getFullYear() === now.getFullYear() &&
+                          appDate.getMonth() === now.getMonth() &&
+                          appDate.getDate() === now.getDate();
+          if (!isToday) return false;
+        } else if (datePreset === "yesterday") {
+          const yesterday = new Date(now);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const isYesterday = appDate.getFullYear() === yesterday.getFullYear() &&
+                              appDate.getMonth() === yesterday.getMonth() &&
+                              appDate.getDate() === yesterday.getDate();
+          if (!isYesterday) return false;
+        } else if (datePreset === "7days") {
+          const sevenDaysAgo = new Date(now);
           sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
           sevenDaysAgo.setHours(0, 0, 0, 0);
-          return appDate >= sevenDaysAgo;
-        }
-        if (datePreset === "this_month") {
-          return appDate.getMonth() === now.getMonth() && appDate.getFullYear() === now.getFullYear();
-        }
-        if (datePreset === "30days") {
-          const thirtyDaysAgo = new Date();
+          if (appDate < sevenDaysAgo) return false;
+        } else if (datePreset === "this_month") {
+          const isThisMonth = appDate.getMonth() === now.getMonth() && appDate.getFullYear() === now.getFullYear();
+          if (!isThisMonth) return false;
+        } else if (datePreset === "30days") {
+          const thirtyDaysAgo = new Date(now);
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
           thirtyDaysAgo.setHours(0, 0, 0, 0);
-          return appDate >= thirtyDaysAgo;
+          if (appDate < thirtyDaysAgo) return false;
         }
-        if (startDate || endDate) {
-          let valid = true;
-          if (startDate) {
-            const start = new Date(`${startDate}T00:00:00`);
-            if (!isNaN(start.getTime())) valid = valid && appDate >= start;
-          }
-          if (endDate) {
-            const end = new Date(`${endDate}T23:59:59`);
-            if (!isNaN(end.getTime())) valid = valid && appDate <= end;
-          }
-          return valid;
+
+        // Custom Date Range
+        if (startDate) {
+          const start = new Date(`${startDate}T00:00:00`);
+          if (!isNaN(start.getTime()) && appDate < start) return false;
         }
+        if (endDate) {
+          const end = new Date(`${endDate}T23:59:59`);
+          if (!isNaN(end.getTime()) && appDate > end) return false;
+        }
+
+        // 2. Time-of-Day Presets & Custom Time Range
+        const appMinutes = appDate.getHours() * 60 + appDate.getMinutes();
+
+        if (timePreset === "working_hours") {
+          // 8:00 AM (480m) to 5:00 PM (1020m)
+          if (appMinutes < 480 || appMinutes > 1020) return false;
+        } else if (timePreset === "morning") {
+          // 6:00 AM (360m) to 12:00 PM (720m)
+          if (appMinutes < 360 || appMinutes >= 720) return false;
+        } else if (timePreset === "afternoon") {
+          // 12:00 PM (720m) to 6:00 PM (1080m)
+          if (appMinutes < 720 || appMinutes >= 1080) return false;
+        } else if (timePreset === "evening") {
+          // 6:00 PM (1080m) to 6:00 AM (360m)
+          if (appMinutes >= 360 && appMinutes < 1080) return false;
+        }
+
+        if (startTime) {
+          const [sH, sM] = startTime.split(":").map(Number);
+          const startMin = (sH || 0) * 60 + (sM || 0);
+          if (appMinutes < startMin) return false;
+        }
+        if (endTime) {
+          const [eH, eM] = endTime.split(":").map(Number);
+          const endMin = (eH || 0) * 60 + (eM || 0);
+          if (appMinutes > endMin) return false;
+        }
+
         return true;
       })();
 
-      return matchesSearch && matchesStatus && matchesType && matchesDate;
+      return matchesSearch && matchesStatus && matchesType && matchesDateAndTime;
     });
 
-    return list.sort(compareAppsNewestFirst);
-  }, [applications, searchTerm, filterStatus, filterType, datePreset, startDate, endDate]);
+    const sorted = [...list].sort((a, b) => {
+      const cmp = compareAppsNewestFirst(a, b);
+      return sortOrder === "oldest" ? -cmp : cmp;
+    });
+
+    return sorted;
+  }, [applications, searchTerm, filterStatus, filterType, datePreset, startDate, endDate, timePreset, startTime, endTime, sortOrder]);
 
   // Group applications by Project Dossier (Stage 1 Locational Clearance + Stage 2 Building Permit of the same project)
   const projectDossiers = useMemo(() => {
@@ -532,7 +627,7 @@ export default function StaffEvaluationsPage() {
             <Filter size={16} /> Status Filter <ChevronDown size={15} style={{ transform: showFilters ? "rotate(180deg)" : "rotate(0)", transition: "0.2s" }} />
           </button>
 
-          {/* Calendar / Date Filter Button & Popover */}
+          {/* Calendar / Date & Time Filter Button & Popover */}
           <div ref={calendarRef} style={{ position: "relative" }}>
             <button 
               type="button"
@@ -552,7 +647,7 @@ export default function StaffEvaluationsPage() {
                 boxShadow: isDateFilterActive ? "0 2px 8px rgba(37,99,235,0.18)" : "none",
                 transition: "all 0.2s"
               }}
-              title="Filter applications by submission calendar date"
+              title="Filter applications by submission date and time"
             >
               <Calendar size={16} color={isDateFilterActive ? "#2563eb" : "#64748b"} />
               <span>{getDateFilterButtonLabel()}</span>
@@ -568,11 +663,13 @@ export default function StaffEvaluationsPage() {
                   top: "calc(100% + 8px)",
                   right: 0,
                   zIndex: 999,
-                  width: "330px",
+                  width: "360px",
+                  maxHeight: "82vh",
+                  overflowY: "auto",
                   background: "#ffffff",
                   borderRadius: "18px",
                   border: "1.5px solid #cbd5e1",
-                  boxShadow: "0 18px 45px rgba(15, 23, 42, 0.16)",
+                  boxShadow: "0 20px 50px rgba(15, 23, 42, 0.18)",
                   padding: "1.25rem",
                   display: "flex",
                   flexDirection: "column",
@@ -583,11 +680,11 @@ export default function StaffEvaluationsPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <CalendarDays size={18} />
+                      <Clock size={18} />
                     </div>
                     <div>
-                      <h4 style={{ margin: 0, fontSize: "0.92rem", fontWeight: "800", color: "#0f172a" }}>Submission Calendar</h4>
-                      <p style={{ margin: 0, fontSize: "0.74rem", color: "#64748b" }}>Filter applications by submission date</p>
+                      <h4 style={{ margin: 0, fontSize: "0.92rem", fontWeight: "800", color: "#0f172a" }}>Date & Time Filter</h4>
+                      <p style={{ margin: 0, fontSize: "0.74rem", color: "#64748b" }}>Filter applications by date, time of day, or recency</p>
                     </div>
                   </div>
                   <button
@@ -599,15 +696,20 @@ export default function StaffEvaluationsPage() {
                   </button>
                 </div>
 
-                {/* Quick Presets */}
+                {/* Section 1: Date Quick Presets */}
                 <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>
-                    Quick Presets
-                  </label>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      <Calendar size={13} color="#2563eb" /> Date Presets
+                    </label>
+                  </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "6px" }}>
                     {[
                       { id: "all", label: "All Dates" },
                       { id: "today", label: "Today" },
+                      { id: "yesterday", label: "Yesterday" },
+                      { id: "last_24h", label: "Past 24 Hours" },
+                      { id: "last_hour", label: "Past 1 Hour" },
                       { id: "7days", label: "Last 7 Days" },
                       { id: "this_month", label: "This Month" },
                       { id: "30days", label: "Last 30 Days" }
@@ -625,7 +727,7 @@ export default function StaffEvaluationsPage() {
                         style={{
                           padding: "7px 10px",
                           borderRadius: "9px",
-                          fontSize: "0.8rem",
+                          fontSize: "0.78rem",
                           fontWeight: "700",
                           cursor: "pointer",
                           transition: "all 0.15s ease",
@@ -646,9 +748,9 @@ export default function StaffEvaluationsPage() {
                   <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>
                     Custom Date Range
                   </label>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                     <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#64748b", display: "block", marginBottom: "3px" }}>Date From:</span>
+                      <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#64748b", display: "block", marginBottom: "3px" }}>From Date:</span>
                       <input
                         type="date"
                         value={startDate}
@@ -658,10 +760,10 @@ export default function StaffEvaluationsPage() {
                         }}
                         style={{
                           width: "100%",
-                          padding: "7px 10px",
-                          borderRadius: "9px",
+                          padding: "6px 8px",
+                          borderRadius: "8px",
                           border: "1.5px solid #cbd5e1",
-                          fontSize: "0.84rem",
+                          fontSize: "0.82rem",
                           color: "#0f172a",
                           background: "#ffffff",
                           outline: "none"
@@ -669,7 +771,7 @@ export default function StaffEvaluationsPage() {
                       />
                     </div>
                     <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#64748b", display: "block", marginBottom: "3px" }}>Date To:</span>
+                      <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#64748b", display: "block", marginBottom: "3px" }}>To Date:</span>
                       <input
                         type="date"
                         value={endDate}
@@ -679,16 +781,146 @@ export default function StaffEvaluationsPage() {
                         }}
                         style={{
                           width: "100%",
-                          padding: "7px 10px",
-                          borderRadius: "9px",
+                          padding: "6px 8px",
+                          borderRadius: "8px",
                           border: "1.5px solid #cbd5e1",
-                          fontSize: "0.84rem",
+                          fontSize: "0.82rem",
                           color: "#0f172a",
                           background: "#ffffff",
                           outline: "none"
                         }}
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Time of Day Filter */}
+                <div style={{ borderTop: "1px dashed #e2e8f0", paddingTop: "0.85rem" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>
+                    <Clock size={13} color="#d97706" /> Time of Day
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "6px" }}>
+                    {[
+                      { id: "all", label: "All Hours (24h)" },
+                      { id: "working_hours", label: "Office (8AM - 5PM)" },
+                      { id: "morning", label: "Morning (6AM - 12PM)" },
+                      { id: "afternoon", label: "Afternoon (12PM - 6PM)" },
+                      { id: "evening", label: "Night (6PM - 6AM)" }
+                    ].map(preset => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          setTimePreset(preset.id);
+                          if (preset.id !== "custom") {
+                            setStartTime("");
+                            setEndTime("");
+                          }
+                        }}
+                        style={{
+                          padding: "7px 10px",
+                          borderRadius: "9px",
+                          fontSize: "0.78rem",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                          background: timePreset === preset.id && !startTime && !endTime ? "#d97706" : "#f8fafc",
+                          color: timePreset === preset.id && !startTime && !endTime ? "#ffffff" : "#334155",
+                          border: `1px solid ${timePreset === preset.id && !startTime && !endTime ? "#d97706" : "#e2e8f0"}`,
+                          textAlign: "center"
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom Time Range */}
+                  <div style={{ marginTop: "8px" }}>
+                    <span style={{ fontSize: "0.74rem", fontWeight: "700", color: "#64748b", display: "block", marginBottom: "3px" }}>Custom Time Range (HH:MM):</span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                      <input
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => {
+                          setStartTime(e.target.value);
+                          setTimePreset("custom");
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "6px 8px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #cbd5e1",
+                          fontSize: "0.82rem",
+                          color: "#0f172a",
+                          background: "#ffffff",
+                          outline: "none"
+                        }}
+                      />
+                      <input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => {
+                          setEndTime(e.target.value);
+                          setTimePreset("custom");
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "6px 8px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #cbd5e1",
+                          fontSize: "0.82rem",
+                          color: "#0f172a",
+                          background: "#ffffff",
+                          outline: "none"
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Time Sorting */}
+                <div style={{ borderTop: "1px dashed #e2e8f0", paddingTop: "0.85rem" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "800", color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>
+                    Sort Order
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setSortOrder("newest")}
+                      style={{
+                        padding: "7px 10px",
+                        borderRadius: "9px",
+                        fontSize: "0.78rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                        background: sortOrder === "newest" ? "#1e293b" : "#f8fafc",
+                        color: sortOrder === "newest" ? "#ffffff" : "#475569",
+                        border: `1px solid ${sortOrder === "newest" ? "#1e293b" : "#e2e8f0"}`,
+                        textAlign: "center"
+                      }}
+                    >
+                      Newest First
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSortOrder("oldest")}
+                      style={{
+                        padding: "7px 10px",
+                        borderRadius: "9px",
+                        fontSize: "0.78rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                        background: sortOrder === "oldest" ? "#1e293b" : "#f8fafc",
+                        color: sortOrder === "oldest" ? "#ffffff" : "#475569",
+                        border: `1px solid ${sortOrder === "oldest" ? "#1e293b" : "#e2e8f0"}`,
+                        textAlign: "center"
+                      }}
+                    >
+                      Oldest First
+                    </button>
                   </div>
                 </div>
 
@@ -700,6 +932,10 @@ export default function StaffEvaluationsPage() {
                       setDatePreset("all");
                       setStartDate("");
                       setEndDate("");
+                      setTimePreset("all");
+                      setStartTime("");
+                      setEndTime("");
+                      setSortOrder("newest");
                     }}
                     style={{
                       background: "none",
@@ -757,10 +993,10 @@ export default function StaffEvaluationsPage() {
           )}
         </div>
 
-        {/* Active Date Filter Chip Row */}
+        {/* Active Date & Time Filter Chip Row */}
         {isDateFilterActive && (
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "0.85rem", paddingTop: "0.75rem", borderTop: "1px dashed #e2e8f0", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#64748b" }}>Active Date Filter:</span>
+            <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#64748b" }}>Active Date & Time Filter:</span>
             <span style={{
               display: "inline-flex",
               alignItems: "center",
@@ -774,7 +1010,7 @@ export default function StaffEvaluationsPage() {
               fontWeight: "700",
               boxShadow: "0 1px 3px rgba(37,99,235,0.08)"
             }}>
-              <Calendar size={13} color="#2563eb" />
+              <Clock size={13} color="#2563eb" />
               <span>{getDateFilterButtonLabel()}</span>
               <button
                 type="button"
@@ -782,6 +1018,10 @@ export default function StaffEvaluationsPage() {
                   setDatePreset("all");
                   setStartDate("");
                   setEndDate("");
+                  setTimePreset("all");
+                  setStartTime("");
+                  setEndTime("");
+                  setSortOrder("newest");
                 }}
                 style={{
                   background: "none",
@@ -793,7 +1033,7 @@ export default function StaffEvaluationsPage() {
                   borderRadius: "50%",
                   marginLeft: "2px"
                 }}
-                title="Clear date filter"
+                title="Clear date and time filter"
               >
                 <X size={13} />
               </button>
