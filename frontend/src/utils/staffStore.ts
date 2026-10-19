@@ -16,13 +16,6 @@ const globalForUsers = globalThis as unknown as {
 if (!globalForUsers._assignedUsersStore) {
   globalForUsers._assignedUsersStore = [
     {
-      id: 1,
-      name: "Municipal Administrator",
-      email: "admin@etayo.gov.ph",
-      role: "ROLE_ADMIN",
-      createdAt: "2026-08-01T09:00:00Z"
-    },
-    {
       id: 2,
       name: "Dave Sicat",
       email: "dave.sicat@etayo.gov.ph",

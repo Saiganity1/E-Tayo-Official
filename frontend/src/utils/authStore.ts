@@ -24,14 +24,6 @@ const globalForAuth = globalThis as unknown as {
 if (!globalForAuth._registeredUsers) {
   globalForAuth._registeredUsers = [
     {
-      id: 1,
-      name: "Municipal Administrator",
-      email: "admin@etayo.gov.ph",
-      password: process.env.ADMIN_DEFAULT_PASSWORD || "Admin#StoTomas2026!Secured",
-      role: "ROLE_ADMIN",
-      createdAt: "2026-08-01T09:00:00Z"
-    },
-    {
       id: 2,
       name: "Dave Sicat",
       email: "dave.sicat@etayo.gov.ph",
@@ -155,17 +147,6 @@ export function findRegisteredUser(email: string): RegisteredUser | undefined {
     };
   }
 
-  // 3. Admin alias check
-  if (cleanEmail === "admin" || cleanEmail.includes("admin@")) {
-    return {
-      id: 999,
-      name: "Municipal Administrator",
-      email: "admin@etayo.gov.ph",
-      password: process.env.ADMIN_DEFAULT_PASSWORD || "Admin#StoTomas2026!Secured",
-      role: "ROLE_ADMIN",
-      createdAt: "2026-08-01T09:00:00Z"
-    };
-  }
 
   return undefined;
 }

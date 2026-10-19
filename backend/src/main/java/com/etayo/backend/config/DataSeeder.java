@@ -68,26 +68,14 @@ public class DataSeeder implements CommandLineRunner {
             jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN project_description TYPE TEXT;");
         } catch (Exception ignored) {}
 
-        // Ensure administrative user exists with strong credentials
-        userRepository.findByEmail("admin@etayo.gov.ph").ifPresentOrElse(
-            admin -> {
-                if (passwordEncoder.matches("Admin", admin.getPassword()) || passwordEncoder.matches("admin123", admin.getPassword())) {
-                    admin.setPassword(passwordEncoder.encode("Admin#StoTomas2026!Secured"));
-                    userRepository.save(admin);
-                    System.out.println("Upgraded admin@etayo.gov.ph password to strong credentials");
-                }
-            },
-            () -> {
-                User municipalAdmin = new User(
-                        "admin@etayo.gov.ph",
-                        passwordEncoder.encode("Admin#StoTomas2026!Secured"),
-                        Role.ROLE_ADMIN,
-                        "Admin User"
-                );
-                userRepository.save(municipalAdmin);
-                System.out.println("Created admin@etayo.gov.ph with strong credentials");
-            }
-        );
+        // Clean up automatic dummy admin account and its spam login logs - Admin assigns users manually
+        userRepository.findByEmail("admin@etayo.gov.ph").ifPresent(admin -> {
+            userRepository.delete(admin);
+            System.out.println("Cleaned up automatic admin account: admin@etayo.gov.ph");
+        });
+        try {
+            jdbcTemplate.execute("DELETE FROM system_audit_logs WHERE user_email = 'admin@etayo.gov.ph' OR actor = 'admin@etayo.gov.ph' OR user_email LIKE '%admin@etayo.gov.ph%';");
+        } catch (Exception ignored) {}
 
         // Remove any automatic / dummy staff accounts - Admin assigns staff manually
         userRepository.findByEmail("staff@etayo.gov.ph").ifPresent(user -> {

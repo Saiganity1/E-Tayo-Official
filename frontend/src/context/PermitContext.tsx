@@ -158,8 +158,8 @@ export const isDummyLog = (log: any): boolean => {
   // Fake synthetic evaluation logs created with default staff fallback
   if (id.startsWith("LOG-EVAL-APP-") || id.startsWith("LOG-EVAL-REV-")) return true;
 
-  // Fake dummy emails
-  if (u.includes("citizen@example.com") || u.includes("business@example.com")) return true;
+  // Fake dummy emails & spam logs from removed admin account
+  if (u.includes("citizen@example.com") || u.includes("business@example.com") || u.includes("admin@etayo.gov.ph") || det.includes("admin@etayo.gov.ph") || msg.includes("admin@etayo.gov.ph")) return true;
 
   // Fake matrix sync or dummy startup logs
   if (act === "ZONING_MATRIX_SYNCED" || (act === "SYSTEM_STARTUP" && det.includes("spatial gis mapping engine"))) return true;
@@ -255,7 +255,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
             user: h.actor || evaluator || applicantLabel,
             message: `${h.actor || "Staff"} - ${h.action || "Status Update"} on ${app.id} (${projLabel})`,
             details: h.details || `${h.action} recorded for application ${app.id}.`,
-            userEmail: (h.actor && h.actor.includes("@")) ? h.actor : (app.evaluatorEmail || "admin@etayo.gov.ph"),
+            userEmail: (h.actor && h.actor.includes("@")) ? h.actor : (app.evaluatorEmail || "staff@etayo.gov.ph"),
           }));
         }
       });
@@ -1616,7 +1616,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         action: "EVALUATION_APPROVED",
         category: "application",
         status: "success",
-        user: updatedApp.assignedStaff || updatedApp.evaluatorEmail || "admin@etayo.gov.ph",
+        user: updatedApp.assignedStaff || updatedApp.evaluatorEmail || "Municipal Evaluator",
         message: `Application ${updatedApp.id} (${updatedApp.projectName || updatedApp.projectType}) officially APPROVED`,
         details: updatedApp.remarks || "All requirements and clearances approved by Municipal Planning and Development Office."
       });
@@ -1625,7 +1625,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         action: "EVALUATION_REVISION_REQUESTED",
         category: "application",
         status: "warning",
-        user: updatedApp.assignedStaff || updatedApp.evaluatorEmail || "admin@etayo.gov.ph",
+        user: updatedApp.assignedStaff || updatedApp.evaluatorEmail || "Municipal Evaluator",
         message: `Application ${updatedApp.id} requirements revision requested`,
         details: updatedApp.remarks || "Applicant requested to upload missing engineering plans or documents."
       });
@@ -1634,7 +1634,7 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         action: "EVALUATION_REJECTED",
         category: "application",
         status: "error",
-        user: updatedApp.assignedStaff || updatedApp.evaluatorEmail || "admin@etayo.gov.ph",
+        user: updatedApp.assignedStaff || updatedApp.evaluatorEmail || "Municipal Evaluator",
         message: `Application ${updatedApp.id} (${updatedApp.projectName || updatedApp.projectType}) REJECTED`,
         details: updatedApp.remarks || "Application rejected by municipal evaluator."
       });

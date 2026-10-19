@@ -48,7 +48,7 @@ export async function GET(req: Request) {
               const u = String(l.user || l.userEmail || "").toLowerCase();
               const d = String(l.details || l.action || "").toLowerCase();
               if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return false;
-              if (u.includes("citizen@example.com") || u.includes("business@example.com")) return false;
+              if (u.includes("citizen@example.com") || u.includes("business@example.com") || u.includes("admin@etayo.gov.ph") || d.includes("admin@etayo.gov.ph")) return false;
               if (TEST_CLEANUP_STRINGS.some(s => id.includes(s) || d.includes(s.toLowerCase()))) return false;
               return true;
             });
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
       const u = String(l.user || l.userEmail || "").toLowerCase();
       const d = String(l.details || l.action || "").toLowerCase();
       if (id.startsWith("LOG-SYS-BASE-") || id === "LOG-SYS-01" || id === "LOG-SYS-02") return false;
-      if (u.includes("citizen@example.com") || u.includes("business@example.com")) return false;
+      if (u.includes("citizen@example.com") || u.includes("business@example.com") || u.includes("admin@etayo.gov.ph") || d.includes("admin@etayo.gov.ph")) return false;
       if (TEST_CLEANUP_STRINGS.some(s => id.includes(s) || d.includes(s.toLowerCase()))) return false;
       return true;
     });
