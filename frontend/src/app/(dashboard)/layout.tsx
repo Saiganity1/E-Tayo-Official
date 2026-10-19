@@ -143,7 +143,7 @@ export default function DashboardLayout({
       }
 
       if (pathname.startsWith("/superadmin")) {
-        if (userRoleStr !== "ROLE_SUPERADMIN") {
+        if (userRoleStr !== "ROLE_SUPERADMIN" && userRoleStr !== "ROLE_ADMIN") {
           setIsAuthorized(false);
           router.replace("/applicant/dashboard");
           return;

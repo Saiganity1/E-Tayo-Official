@@ -9,22 +9,13 @@ export default async function SuperadminPage() {
   const token = cookieStore.get("token")?.value;
   const role = cookieStore.get("role")?.value;
 
-  // 1. Unauthenticated gate: Redirect to /login
-  if (!token) {
-    redirect("/login?redirect=%2Fsuperadmin");
+  // 1. Role-based authorization gate: Staff and applicants are redirected
+  if (role === "ROLE_STAFF") {
+    redirect("/staff/dashboard");
+  } else if (role === "ROLE_APPLICANT") {
+    redirect("/applicant/dashboard");
   }
 
-  // 2. Role-based authorization gate: Only ROLE_SUPERADMIN is allowed
-  if (role !== "ROLE_SUPERADMIN") {
-    if (role === "ROLE_ADMIN") {
-      redirect("/admin/dashboard");
-    } else if (role === "ROLE_STAFF") {
-      redirect("/staff/dashboard");
-    } else {
-      redirect("/applicant/dashboard");
-    }
-  }
-
-  // 3. Authorized SuperAdmin: Render control center shell
+  // 2. Authorized SuperAdmin, Admin, or standalone login: Render control center shell
   return <SuperAdminClient />;
 }

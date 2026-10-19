@@ -286,6 +286,7 @@ export default function Sidebar() {
           { href: "/staff/templates", label: t("officialForms", "Official Forms"), icon: FileText },
           { href: "/admin/users", label: t("applicantManagement", "Applicants Management"), icon: Users },
           { href: "/admin/staff", label: t("staffManagement", "Staff Management"), icon: ShieldAlert },
+          { href: "/superadmin", label: "SuperAdmin Control", icon: Settings },
           { href: "/admin/messages", label: t("messages", "Messages"), icon: MessageSquare },
           { href: "/admin/map", label: t("map", "Map"), icon: Map },
         ];
