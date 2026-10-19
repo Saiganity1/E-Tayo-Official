@@ -22,11 +22,12 @@ public class NotificationController {
             @PathVariable String email,
             @RequestParam(required = false, defaultValue = "false") boolean unreadOnly) {
         
+        String cleanEmail = email != null ? email.trim() : "";
         List<Notification> notifications;
         if (unreadOnly) {
-            notifications = notificationRepository.findByRecipientEmailAndIsReadFalseOrderByTimestampDesc(email);
+            notifications = notificationRepository.findByRecipientEmailIgnoreCaseAndIsReadFalseOrderByTimestampDesc(cleanEmail);
         } else {
-            notifications = notificationRepository.findByRecipientEmailOrderByTimestampDesc(email);
+            notifications = notificationRepository.findByRecipientEmailIgnoreCaseOrderByTimestampDesc(cleanEmail);
         }
         
         return ResponseEntity.ok(notifications);
@@ -38,7 +39,7 @@ public class NotificationController {
         if (notifOpt.isPresent()) {
             Notification notification = notifOpt.get();
             notification.setRead(true);
-            notificationRepository.save(notification);
+            notificationRepository.saveAndFlush(notification);
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.notFound().build();
@@ -46,11 +47,22 @@ public class NotificationController {
     
     @PutMapping("/read-all/{email}")
     public ResponseEntity<?> markAllAsRead(@PathVariable String email) {
-        List<Notification> unread = notificationRepository.findByRecipientEmailAndIsReadFalseOrderByTimestampDesc(email);
-        for (Notification n : unread) {
-            n.setRead(true);
+        String cleanEmail = email != null ? email.trim() : "";
+        if (!cleanEmail.isEmpty()) {
+            try {
+                notificationRepository.markAllAsReadForEmail(cleanEmail);
+            } catch (Exception e) {
+                System.err.println("Notice: Direct query markAllAsRead failed, falling back to batch update: " + e.getMessage());
+            }
+
+            List<Notification> unread = notificationRepository.findByRecipientEmailIgnoreCaseAndIsReadFalseOrderByTimestampDesc(cleanEmail);
+            for (Notification n : unread) {
+                n.setRead(true);
+            }
+            if (!unread.isEmpty()) {
+                notificationRepository.saveAllAndFlush(unread);
+            }
         }
-        notificationRepository.saveAll(unread);
         return ResponseEntity.ok().build();
     }
 }

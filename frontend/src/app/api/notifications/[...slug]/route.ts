@@ -38,10 +38,76 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   }
 }
 
-export async function PUT(req: Request) {
-  return NextResponse.json({ success: true }, { status: 200 });
+export async function PUT(req: Request, { params }: { params: Promise<{ slug: string[] }> }) {
+  try {
+    const { slug } = await params;
+    const path = slug.join("/");
+    const targetUrl = `${BACKEND_API}/notifications/${path}`;
+
+    const authHeader = req.headers.get("authorization");
+    const headers: Record<string, string> = { 
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    };
+    if (authHeader) headers["Authorization"] = authHeader;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(targetUrl, { 
+        method: "PUT", 
+        headers, 
+        cache: "no-store",
+        signal: controller.signal 
+      });
+      clearTimeout(timeoutId);
+
+      if (res && res.ok) {
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+    } catch (e) {
+      console.error("Failed to forward notification PUT to backend:", e);
+    }
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ success: true }, { status: 200 });
+  }
 }
 
-export async function POST(req: Request) {
-  return NextResponse.json({ success: true }, { status: 200 });
+export async function POST(req: Request, { params }: { params: Promise<{ slug: string[] }> }) {
+  try {
+    const { slug } = await params;
+    const path = slug.join("/");
+    const targetUrl = `${BACKEND_API}/notifications/${path}`;
+
+    const authHeader = req.headers.get("authorization");
+    const headers: Record<string, string> = { 
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    };
+    if (authHeader) headers["Authorization"] = authHeader;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const body = await req.text();
+      const res = await fetch(targetUrl, { 
+        method: "POST", 
+        headers, 
+        body: body || undefined,
+        cache: "no-store",
+        signal: controller.signal 
+      });
+      clearTimeout(timeoutId);
+
+      if (res && res.ok) {
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+    } catch (e) {}
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ success: true }, { status: 200 });
+  }
 }

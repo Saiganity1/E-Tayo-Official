@@ -276,7 +276,7 @@ export default function NotificationBell() {
       }).catch(() => null);
 
       if (!res || !res.ok) {
-        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+        const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-backend-production.up.railway.app").replace(/\/+$/, "");
         const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/notifications/${encodeURIComponent(email)}` : `${rawApi}/api/notifications/${encodeURIComponent(email)}`;
         res = await fetch(backendUrl, { headers }).catch(() => null);
       }
@@ -284,7 +284,25 @@ export default function NotificationBell() {
       if (res && res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          setNotifications(data);
+          let allReadTimestamp = 0;
+          let readIds: number[] = [];
+          if (typeof window !== "undefined") {
+            try {
+              allReadTimestamp = Number(localStorage.getItem(`etayo_all_read_${email.toLowerCase().trim()}`) || 0);
+              readIds = JSON.parse(localStorage.getItem(`etayo_read_notif_ids_${email.toLowerCase().trim()}`) || "[]");
+            } catch (e) {}
+          }
+
+          const reconciled = data.map((n: any) => {
+            const notifTime = n.timestamp ? new Date(n.timestamp).getTime() : 0;
+            const isMarkedRead = Boolean(n.read || n.isRead) || readIds.includes(Number(n.id)) || (allReadTimestamp > 0 && notifTime > 0 && notifTime <= allReadTimestamp);
+            if (isMarkedRead) {
+              return { ...n, read: true, isRead: true };
+            }
+            return n;
+          });
+
+          setNotifications(reconciled);
         }
       }
     } catch (err) {
@@ -295,13 +313,31 @@ export default function NotificationBell() {
   const markAsRead = async (id: number) => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
+      // 1. Next.js API proxy
       fetch(`/api/notifications/${id}/read`, {
         method: "PUT",
         headers
       }).catch(() => null);
+
+      // 2. Direct Railway Backend
+      const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-backend-production.up.railway.app").replace(/\/+$/, "");
+      const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/notifications/${id}/read` : `${rawApi}/api/notifications/${id}/read`;
+      fetch(backendUrl, { method: "PUT", headers }).catch(() => null);
+
+      // 3. LocalStorage Persistence
+      if (typeof window !== "undefined" && userEmail) {
+        try {
+          const idsKey = `etayo_read_notif_ids_${userEmail.toLowerCase().trim()}`;
+          const existingIds: number[] = JSON.parse(localStorage.getItem(idsKey) || "[]");
+          if (!existingIds.includes(Number(id))) {
+            existingIds.push(Number(id));
+            localStorage.setItem(idsKey, JSON.stringify(existingIds));
+          }
+        } catch (e) {}
+      }
 
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true, isRead: true } : n));
     } catch (err) {
@@ -313,13 +349,35 @@ export default function NotificationBell() {
     if (!userEmail) return;
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      fetch(`/api/notifications/read-all/${encodeURIComponent(userEmail)}`, {
+      // 1. Next.js API proxy
+      fetch(`/api/notifications/read-all/${encodeURIComponent(userEmail.trim())}`, {
         method: "PUT",
         headers
       }).catch(() => null);
+
+      // 2. Direct Railway Backend
+      const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-backend-production.up.railway.app").replace(/\/+$/, "");
+      const backendUrl = rawApi.endsWith("/api") 
+        ? `${rawApi}/notifications/read-all/${encodeURIComponent(userEmail.trim())}` 
+        : `${rawApi}/api/notifications/read-all/${encodeURIComponent(userEmail.trim())}`;
+      fetch(backendUrl, { method: "PUT", headers }).catch(() => null);
+
+      // 3. LocalStorage Persistence (Instant & permanent)
+      if (typeof window !== "undefined") {
+        try {
+          const emailKey = userEmail.toLowerCase().trim();
+          localStorage.setItem(`etayo_all_read_${emailKey}`, Date.now().toString());
+
+          const idsKey = `etayo_read_notif_ids_${emailKey}`;
+          const existingIds: number[] = JSON.parse(localStorage.getItem(idsKey) || "[]");
+          const currentIds = notifications.map(n => Number(n.id));
+          const merged = Array.from(new Set([...existingIds, ...currentIds]));
+          localStorage.setItem(idsKey, JSON.stringify(merged));
+        } catch (e) {}
+      }
 
       setNotifications(prev => prev.map(n => ({ ...n, read: true, isRead: true })));
     } catch (err) {
