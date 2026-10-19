@@ -363,26 +363,26 @@ export const getNumericId = (id?: string): number => {
 export const getAppTimestamp = (app: any): number => {
   if (!app) return 0;
 
-  // 1. High precision ISO timestamps (createdAt, updatedAt, timestamp, etc.)
-  const isoFields = [
-    app.createdAt,
-    app.submittedAt,
-    app.submissionTime,
-    app.timestamp,
-    app.updatedAt
+  // 1. Submission date string (dateSubmitted, submissionDate)
+  // MUST be prioritized over DB row metadata (createdAt/updatedAt) to preserve authentic filing dates
+  const dateFields = [
+    app.dateSubmitted,
+    app.submissionDate
   ];
-  for (const f of isoFields) {
+  for (const f of dateFields) {
     const t = parseDateToTimestamp(f);
     if (t > 0) return t;
   }
 
-  // 2. Submission date string (dateSubmitted, submissionDate, dateApproved)
-  const dateFields = [
-    app.dateSubmitted,
-    app.submissionDate,
-    app.dateApproved
+  // 2. High precision ISO timestamps (submittedAt, submissionTime, timestamp, createdAt, updatedAt)
+  const isoFields = [
+    app.submittedAt,
+    app.submissionTime,
+    app.timestamp,
+    app.createdAt,
+    app.updatedAt
   ];
-  for (const f of dateFields) {
+  for (const f of isoFields) {
     const t = parseDateToTimestamp(f);
     if (t > 0) return t;
   }
@@ -559,7 +559,7 @@ export const groupApplicationsIntoProjectDossiers = (apps: PermitApplication[]):
         approvedCount: isAppApproved ? 1 : 0,
         rejectedCount: isRejected ? 1 : 0,
         actionRequiredCount: isAction ? 1 : 0,
-        latestDate: app.dateSubmitted || (app as any).createdAt || new Date().toISOString()
+        latestDate: app.dateSubmitted || (app as any).createdAt || ""
       });
     }
   });
@@ -646,57 +646,117 @@ export const formatSubmissionDateTime = (
 
   if (typeof appOrDate === "object" && appOrDate !== null) {
     if ("applications" in appOrDate && Array.isArray(appOrDate.applications)) {
-      // It's a ProjectDossier
-      targetApp = appOrDate.applications[0] || null;
-      rawDateVal = appOrDate.latestDate || targetApp?.dateSubmitted || (targetApp as any)?.createdAt;
+      // It's a ProjectDossier:
+      // Prioritize the application awaiting evaluation (pending or under_review)
+      // so the card's timestamp reflects the exact form under review
+      const apps = appOrDate.applications;
+      const pendingApp = apps.find((a: any) => a.status === "pending" || a.status === "under_review");
+      targetApp = pendingApp || apps[apps.length - 1] || apps[0] || null;
+      rawDateVal = targetApp?.dateSubmitted || appOrDate.latestDate || (targetApp as any)?.createdAt;
     } else {
       // It's a PermitApplication
       targetApp = appOrDate;
-      rawDateVal = targetApp.dateSubmitted || targetApp.createdAt || targetApp.submittedAt;
+      rawDateVal = targetApp.dateSubmitted || targetApp.submittedAt || targetApp.createdAt;
     }
   } else {
     rawDateVal = appOrDate;
     targetApp = options?.app || null;
   }
 
+  // Robust date-time string parser (handles "October 14, 2026, 11:35 AM", "Oct 08, 2026, 09:33 PM", ISO strings, etc.)
+  const parseDateTime = (str?: string): { dateObj: Date; hasExplicitTime: boolean; timeStr?: string } | null => {
+    if (!str || typeof str !== "string") return null;
+    const clean = str.trim();
+    if (!clean) return null;
+
+    // Pattern: Month DD, YYYY, HH:MM AM/PM
+    const match = clean.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})(?:,\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?/i);
+    if (match) {
+      const monthNames = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+      const monthAbbr = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+      const mStr = match[1].toLowerCase();
+      let mIdx = monthNames.indexOf(mStr);
+      if (mIdx === -1) mIdx = monthAbbr.indexOf(mStr);
+      if (mIdx !== -1) {
+        const day = parseInt(match[2], 10);
+        const year = parseInt(match[3], 10);
+        const hasTime = Boolean(match[4]);
+        let hour = match[4] ? parseInt(match[4], 10) : 0;
+        const min = match[5] ? parseInt(match[5], 10) : 0;
+        const sec = match[6] ? parseInt(match[6], 10) : 0;
+        const ampm = match[7] ? match[7].toUpperCase() : null;
+        if (ampm === "PM" && hour < 12) hour += 12;
+        if (ampm === "AM" && hour === 12) hour = 0;
+        
+        let explicitTimeStr: string | undefined = undefined;
+        if (hasTime) {
+          const h12 = (hour % 12) || 12;
+          const pad = (n: number) => n.toString().padStart(2, "0");
+          explicitTimeStr = `${pad(h12)}:${pad(min)} ${ampm || (hour >= 12 ? "PM" : "AM")}`;
+        }
+
+        return { 
+          dateObj: new Date(year, mIdx, day, hour, min, sec), 
+          hasExplicitTime: hasTime,
+          timeStr: explicitTimeStr
+        };
+      }
+    }
+
+    const d = new Date(clean);
+    if (!isNaN(d.getTime())) {
+      const hasTime = clean.includes(":") || clean.includes("T") || /am|pm/i.test(clean);
+      return { dateObj: d, hasExplicitTime: hasTime };
+    }
+    return null;
+  };
+
   let resolvedTimestamp: Date | null = null;
   let hasExplicitTime = false;
+  let explicitTimeFormatted: string | null = null;
 
-  const candidateTimestamps = [
-    targetApp?.createdAt,
-    targetApp?.submittedAt,
-    targetApp?.timestamp,
-    targetApp?.submissionTime
-  ];
+  // 1. PRIMARY: Check actual submission date string (dateSubmitted)
+  const primaryDateCandidate = targetApp?.dateSubmitted || rawDateVal;
+  if (primaryDateCandidate && typeof primaryDateCandidate === "string") {
+    const parsed = parseDateTime(primaryDateCandidate);
+    if (parsed) {
+      resolvedTimestamp = parsed.dateObj;
+      hasExplicitTime = parsed.hasExplicitTime;
+      if (parsed.timeStr) explicitTimeFormatted = parsed.timeStr;
+    }
+  }
 
-  for (const c of candidateTimestamps) {
-    if (c) {
-      const d = new Date(c);
-      if (!isNaN(d.getTime())) {
-        resolvedTimestamp = d;
-        hasExplicitTime = true;
-        break;
+  // 2. SECONDARY: If dateSubmitted lacked explicit time, check trackingSteps or historyLog for submission step time
+  if (targetApp && !hasExplicitTime) {
+    if (Array.isArray(targetApp.trackingSteps)) {
+      for (const step of targetApp.trackingSteps) {
+        if (step?.date && typeof step.date === "string" && step.date.includes(":")) {
+          const sParsed = parseDateTime(step.date);
+          if (sParsed && sParsed.hasExplicitTime) {
+            hasExplicitTime = true;
+            if (sParsed.timeStr) explicitTimeFormatted = sParsed.timeStr;
+            if (!resolvedTimestamp) resolvedTimestamp = sParsed.dateObj;
+            break;
+          }
+        }
+      }
+    }
+    if (!hasExplicitTime && Array.isArray(targetApp.historyLog)) {
+      for (const log of targetApp.historyLog) {
+        if (log?.date && typeof log.date === "string" && log.date.includes(":")) {
+          const lParsed = parseDateTime(log.date);
+          if (lParsed && lParsed.hasExplicitTime) {
+            hasExplicitTime = true;
+            if (lParsed.timeStr) explicitTimeFormatted = lParsed.timeStr;
+            if (!resolvedTimestamp) resolvedTimestamp = lParsed.dateObj;
+            break;
+          }
+        }
       }
     }
   }
 
-  // Check if rawDateVal itself has an explicit time component
-  if (!resolvedTimestamp && rawDateVal && typeof rawDateVal === "string") {
-    const cleanStr = rawDateVal.trim();
-    const hasColon = cleanStr.includes(":");
-    const hasAmPm = /am|pm/i.test(cleanStr);
-    const hasIsoT = cleanStr.includes("T");
-
-    const directDate = new Date(cleanStr);
-    if (!isNaN(directDate.getTime())) {
-      resolvedTimestamp = directDate;
-      if (hasColon || hasAmPm || hasIsoT || directDate.getHours() !== 0 || directDate.getMinutes() !== 0) {
-        hasExplicitTime = true;
-      }
-    }
-  }
-
-  // Check systemLogs if available
+  // 3. TERTIARY: Check systemLogs for explicit submission timestamp
   if (!hasExplicitTime && targetApp?.id && Array.isArray(options?.systemLogs)) {
     const appIdLower = String(targetApp.id).toLowerCase();
     const subLog = options?.systemLogs.find((l: any) => {
@@ -712,41 +772,43 @@ export const formatSubmissionDateTime = (
     if (subLog && subLog.timestamp) {
       const logDate = new Date(subLog.timestamp);
       if (!isNaN(logDate.getTime())) {
-        if (!resolvedTimestamp) {
-          resolvedTimestamp = logDate;
-        }
+        if (!resolvedTimestamp) resolvedTimestamp = logDate;
         if (logDate.getHours() !== 0 || logDate.getMinutes() !== 0) {
-          resolvedTimestamp = logDate;
           hasExplicitTime = true;
         }
       }
     }
   }
 
-  // Fallback parsing for human string formats ("October 08, 2026", "2026-10-01", etc.)
-  if (!resolvedTimestamp && rawDateVal) {
-    const cleanStr = String(rawDateVal).trim();
-    const directDate = new Date(cleanStr);
-    if (!isNaN(directDate.getTime())) {
-      resolvedTimestamp = directDate;
-    } else {
-      const parts = cleanStr.split(",");
-      if (parts.length >= 2) {
-        const fallback = new Date(`${parts[0].trim()}, ${parts[1].trim().split(" ")[0]}`);
-        if (!isNaN(fallback.getTime())) {
-          resolvedTimestamp = fallback;
+  // 4. QUATERNARY: Check candidate ISO timestamps ONLY if dateSubmitted was completely missing
+  if (!resolvedTimestamp && targetApp) {
+    const candidateTimestamps = [
+      targetApp.submittedAt,
+      targetApp.timestamp,
+      targetApp.submissionTime,
+      targetApp.createdAt
+    ];
+    for (const c of candidateTimestamps) {
+      if (c) {
+        const d = new Date(c);
+        if (!isNaN(d.getTime())) {
+          resolvedTimestamp = d;
+          hasExplicitTime = true;
+          break;
         }
       }
     }
   }
 
+  // Fallback if resolvedTimestamp is still null
   if (!resolvedTimestamp || isNaN(resolvedTimestamp.getTime())) {
-    const fallbackId = targetApp?.id || "";
+    const fallbackId = targetApp?.id || (appOrDate?.id || "");
     const genTime = getDeterministicFilingTime(fallbackId);
+    const dateStr = typeof rawDateVal === "string" && rawDateVal.trim() ? rawDateVal.trim() : "Recent";
     return {
-      date: typeof rawDateVal === "string" && rawDateVal.trim() ? rawDateVal.trim() : "Recent",
+      date: dateStr,
       time: genTime,
-      full: typeof rawDateVal === "string" && rawDateVal.trim() ? `${rawDateVal.trim()} • ${genTime}` : `Recent • ${genTime}`,
+      full: `${dateStr} • ${genTime}`,
       hasExplicitTime: false
     };
   }
@@ -758,13 +820,17 @@ export const formatSubmissionDateTime = (
   });
 
   let timeFormatted = "";
-  if (hasExplicitTime) {
+  if (explicitTimeFormatted) {
+    timeFormatted = explicitTimeFormatted;
+  } else if (hasExplicitTime) {
     timeFormatted = resolvedTimestamp.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true
     });
   } else {
+    // Legacy records with no explicit time get a STABLE, deterministic office-hours time based on permit ID.
+    // This NEVER changes on re-renders, refreshes, or polling!
     const refId = targetApp?.id || (appOrDate?.id || "");
     timeFormatted = getDeterministicFilingTime(refId);
   }
@@ -773,7 +839,7 @@ export const formatSubmissionDateTime = (
     date: dateFormatted,
     time: timeFormatted,
     full: `${dateFormatted} • ${timeFormatted}`,
-    hasExplicitTime
+    hasExplicitTime: Boolean(hasExplicitTime || explicitTimeFormatted)
   };
 };
 

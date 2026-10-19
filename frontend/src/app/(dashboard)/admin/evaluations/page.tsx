@@ -296,7 +296,7 @@ export default function StaffEvaluationsPage() {
           approvedCount: 0,
           rejectedCount: 0,
           actionRequiredCount: 0,
-          latestDate: app.dateSubmitted || (app as any).createdAt || new Date().toISOString()
+          latestDate: app.dateSubmitted || (app as any).createdAt || ""
         };
       } else {
         const curTime = parseDateToTimestamp(groups[groupKey].latestDate);
@@ -1108,7 +1108,7 @@ export default function StaffEvaluationsPage() {
                             transition: "all 0.15s ease"
                           }}
                         >
-                          <Eye size={15} color={isExpanded ? "#0038A8" : "white"} /> Evaluate ({nextPendingApp.id})
+                          <Eye size={15} color={isExpanded ? "#0038A8" : "white"} /> Evaluate ({nextPendingApp.id.replace(/--+/g, "-")})
                         </Link>
                       )}
 

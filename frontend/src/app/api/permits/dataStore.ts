@@ -113,14 +113,21 @@ export function savePermit(newApp: PermitApplication): PermitApplication {
   if (newApp.applicantEmail) newApp.applicantEmail = sanitizeString(newApp.applicantEmail).toLowerCase();
   if (newApp.remarks) newApp.remarks = sanitizeString(newApp.remarks);
 
+  const existing = getPermitById(newApp.id);
   if (!(newApp as any).createdAt) {
-    (newApp as any).createdAt = new Date().toISOString();
+    if (existing && (existing as any).createdAt) {
+      (newApp as any).createdAt = (existing as any).createdAt;
+    } else if (newApp.dateSubmitted) {
+      const parsed = new Date(newApp.dateSubmitted);
+      if (!isNaN(parsed.getTime())) {
+        (newApp as any).createdAt = parsed.toISOString();
+      }
+    }
   }
   if (!(newApp as any)._seq) {
-    (newApp as any)._seq = Date.now();
+    (newApp as any)._seq = (existing as any)?._seq || Date.now();
   }
   const cleanId = newApp.id.trim().toLowerCase();
-  const existing = getPermitById(newApp.id);
   if (existing) {
     const existingStatus = String(existing.status || "").toLowerCase().trim();
     const newStatus = String(newApp.status || "").toLowerCase().trim();
