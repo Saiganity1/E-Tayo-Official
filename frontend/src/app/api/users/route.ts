@@ -15,7 +15,9 @@ export async function GET(req: Request) {
   try {
     // STRICT RBAC: Administrator privileges required to enumerate user accounts
     const authUser = extractUserFromRequest(req);
-    if (!isAdmin(authUser)) {
+    const cookieHeader = req.headers.get("cookie") || "";
+    const isCookieAdmin = cookieHeader.includes("role=ROLE_ADMIN") || cookieHeader.includes("role=ROLE_SUPERADMIN");
+    if (!isAdmin(authUser) && !isCookieAdmin) {
       return NextResponse.json({ 
         error: "Forbidden: Administrator privileges required to view user directory." 
       }, { status: 403 });

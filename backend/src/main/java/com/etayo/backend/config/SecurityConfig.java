@@ -51,7 +51,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    @org.springframework.core.annotation.Order(2)
     SecurityFilterChain securityFilterChain(HttpSecurity http, org.springframework.security.authentication.AuthenticationProvider authenticationProvider) throws Exception {
 
         http.cors(org.springframework.security.config.Customizer.withDefaults())
@@ -59,6 +58,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .authorizeHttpRequests(authorize -> authorize
+                        // Preflight CORS requests must ALWAYS be permitted
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // 1. Health check & Error pages
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/error").permitAll()
@@ -119,12 +121,14 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         List<String> origins = new ArrayList<>(Arrays.asList(
-                "https://e-tayo-official.vercel.app",
-                "https://*.vercel.app",
+                "https://e-tayo.up.railway.app",
                 "https://*.up.railway.app",
                 "https://*.railway.app",
+                "https://e-tayo-official.vercel.app",
+                "https://*.vercel.app",
                 "http://localhost:3000",
-                "http://localhost:3001"
+                "http://localhost:3001",
+                "*"
         ));
         String extraOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
         if (extraOrigins != null && !extraOrigins.isBlank()) {

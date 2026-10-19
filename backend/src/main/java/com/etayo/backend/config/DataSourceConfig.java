@@ -65,11 +65,15 @@ public class DataSourceConfig {
                             .append(port)
                             .append(path != null ? path : "");
 
+                    boolean isInternal = host != null && (host.endsWith("railway.internal") || host.equals("localhost") || host.equals("127.0.0.1"));
+
                     if (query != null && !query.isEmpty()) {
                         jdbcUrl.append("?").append(query);
-                        if (!query.contains("sslmode=")) {
+                        if (!query.contains("sslmode=") && !isInternal) {
                             jdbcUrl.append("&sslmode=require");
                         }
+                    } else if (isInternal) {
+                        jdbcUrl.append("?sslmode=prefer");
                     } else {
                         // Supabase / Render Postgres external connections require sslmode=require
                         jdbcUrl.append("?sslmode=require");

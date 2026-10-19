@@ -37,7 +37,7 @@ class DataSourceConfigTest {
 
         HikariConfig config = DataSourceConfig.buildHikariConfig(railwayUrl, null, null);
 
-        assertEquals("jdbc:postgresql://postgres.railway.internal:5432/railway?sslmode=require", config.getJdbcUrl());
+        assertEquals("jdbc:postgresql://postgres.railway.internal:5432/railway?sslmode=prefer", config.getJdbcUrl());
         assertEquals("postgres", config.getUsername());
         assertEquals("pass123", config.getPassword());
         assertEquals("org.postgresql.Driver", config.getDriverClassName());

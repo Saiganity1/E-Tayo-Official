@@ -85,6 +85,21 @@ export default function AdminApp() {
     setTimeout(() => setFeedbackToast(null), 4000);
   };
 
+  // Resilient API Fetch Helper: Prefers same-origin Next.js routes to avoid CORS, falls back to direct backend
+  const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+    try {
+      const res = await fetch(endpoint, options);
+      if (res.ok) return res;
+    } catch (e) {
+      console.warn(`Local ${endpoint} fetch failed, falling back to direct API:`, e);
+    }
+    if (API_BASE_URL) {
+      const directUrl = `${API_BASE_URL}${endpoint.replace(/^\/api/, "")}`;
+      return await fetch(directUrl, options);
+    }
+    return new Response(JSON.stringify({ error: "Could not connect to service" }), { status: 500 });
+  };
+
   // Check superadmin session on load
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -114,19 +129,20 @@ export default function AdminApp() {
     setIsLoading(true);
     const token = authToken || localStorage.getItem("token");
     try {
-      const response = await fetch(`${API_BASE_URL}/users`, {
+      const response = await apiFetch("/api/users", {
         headers: {
           "Accept": "application/json",
           ...(token ? { "Authorization": `Bearer ${token}` } : {})
         }
       });
 
-      if (response.ok) {
+      if (response && response.ok) {
         const data = await response.json();
-        setUsers(data);
-      } else if (response.status === 401 || response.status === 403 || response.status === 500) {
-        // Token is invalid/expired or rejected by server - force re-login to obtain fresh JWT
-        console.warn("Session token expired or rejected by server. Prompting re-login.");
+        if (Array.isArray(data)) {
+          setUsers(data);
+        }
+      } else if (response && (response.status === 401 || response.status === 403)) {
+        console.warn("Session token expired or unauthorized. Prompting re-login.");
         localStorage.removeItem("token");
         setIsAuthenticated(false);
         setLoginError("Session expired or unauthorized. Please log in to SuperAdmin.");
@@ -148,7 +164,7 @@ export default function AdminApp() {
     setLoginError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword.trim() }),
@@ -244,8 +260,7 @@ export default function AdminApp() {
     const token = localStorage.getItem("token");
 
     try {
-      // Use standard PUT /api/users/{id} directly to avoid 404s across all backend deployments
-      const response = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
+      const response = await apiFetch(`/api/users/${selectedUser.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -289,7 +304,7 @@ export default function AdminApp() {
 
     try {
       if (selfUser) {
-        const res = await fetch(`${API_BASE_URL}/users/${selfUser.id}`, {
+        const res = await apiFetch(`/api/users/${selfUser.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -339,7 +354,7 @@ export default function AdminApp() {
     const sanitizedEmail = formEmail.trim().toLowerCase();
 
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
+      const response = await apiFetch(`/api/users/${selectedUser.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -377,7 +392,7 @@ export default function AdminApp() {
     const sanitizedPassword = formPassword.trim() || "password123";
 
     try {
-      const response = await fetch(`${API_BASE_URL}/users`, {
+      const response = await apiFetch("/api/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -423,7 +438,7 @@ export default function AdminApp() {
 
     const token = localStorage.getItem("token");
     try {
-      await fetch(`${API_BASE_URL}/users/${user.id}`, {
+      await apiFetch(`/api/users/${user.id}`, {
         method: "DELETE",
         headers: {
           ...(token ? { "Authorization": `Bearer ${token}` } : {})
