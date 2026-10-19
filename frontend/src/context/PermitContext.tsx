@@ -293,12 +293,52 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [userRole, setUserRole] = useState<UserRole>("public");
   const [selectedPermitType, setSelectedPermitType] = useState<PermitType>("building_permit");
 
-  const [applications, setApplications] = useState<PermitApplication[]>([]);
+  const [applications, setApplications] = useState<PermitApplication[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cachedStr = localStorage.getItem("etayo_cached_applications");
+        if (cachedStr) {
+          const parsed = JSON.parse(cachedStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed.filter(a => !isDummyApp(a)).map(a => ({
+              ...a,
+              applicantName: normalizeApplicantName(a.applicantName)
+            }));
+          }
+        }
+      } catch (e) {}
+    }
+    return (INITIAL_APPLICATIONS || []).filter(a => !isDummyApp(a)).map(a => ({
+      ...a,
+      applicantName: normalizeApplicantName(a.applicantName)
+    }));
+  });
   const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
   const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
 
-  // Client-side hydration
+  // Client-side hydration - immediately load cached applications on mount
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const cachedStr = localStorage.getItem("etayo_cached_applications");
+      if (cachedStr) {
+        const parsed = JSON.parse(cachedStr);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setApplications(parsed.filter(a => !isDummyApp(a)).map(a => ({
+            ...a,
+            applicantName: normalizeApplicantName(a.applicantName)
+          })));
+        }
+      } else if (INITIAL_APPLICATIONS && INITIAL_APPLICATIONS.length > 0) {
+        setApplications(INITIAL_APPLICATIONS.filter(a => !isDummyApp(a)).map(a => ({
+          ...a,
+          applicantName: normalizeApplicantName(a.applicantName)
+        })));
+      }
+    } catch (e) {}
+  }, []);
 
   const userRoleRef = useRef<UserRole>(userRole);
   useEffect(() => {
@@ -313,6 +353,22 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Cooldown guard: if Cloudflare / Render returned 429, wait for cooldown to expire
       if (Date.now() < rateLimitCooldownUntil.current) {
         return;
+      }
+
+      // Fast display: ensure applications state is pre-populated without delay
+      if (typeof window !== "undefined") {
+        try {
+          const cachedStr = localStorage.getItem("etayo_cached_applications");
+          if (cachedStr) {
+            const parsed = JSON.parse(cachedStr);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setApplications(prev => (prev.length === 0 ? parsed.filter(a => !isDummyApp(a)).map(a => ({
+                ...a,
+                applicantName: normalizeApplicantName(a.applicantName)
+              })) : prev));
+            }
+          }
+        } catch (e) {}
       }
 
       // If user is on an unauthenticated/auth page (e.g. /login, /register, /), skip background data fetching
@@ -347,18 +403,6 @@ export const PermitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       // If user is unauthenticated, preserve locally submitted applications
       if (!token) {
-        const cachedStr = typeof window !== "undefined" ? localStorage.getItem("etayo_cached_applications") : null;
-        if (cachedStr) {
-          try {
-            const parsed = JSON.parse(cachedStr);
-            if (Array.isArray(parsed)) {
-              setApplications(parsed.filter(a => !isDummyApp(a)).map(a => ({
-                ...a,
-                applicantName: normalizeApplicantName(a.applicantName)
-              })));
-            }
-          } catch (e) {}
-        }
         return;
       }
 

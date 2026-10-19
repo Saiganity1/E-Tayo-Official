@@ -19,7 +19,7 @@ export async function getBackendAdminToken(): Promise<string | null> {
     const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/auth/login` : `${rawApi}/api/auth/login`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
 
     const res = await fetch(backendUrl, {
       method: "POST",

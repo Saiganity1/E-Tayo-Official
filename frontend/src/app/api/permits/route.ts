@@ -82,21 +82,15 @@ export async function GET(req: Request) {
       "Pragma": "no-cache"
     };
 
-    // If caller is staff/admin or using session tokens, use backend admin token to fetch master records
-    let tokenToForward = authHeader?.replace(/^Bearer\s+/i, "") || null;
-    if (isPrivileged || !tokenToForward || tokenToForward.startsWith("admin_session") || tokenToForward.startsWith("staff_session")) {
-      const backendToken = await getBackendAdminToken();
-      if (backendToken) {
-        tokenToForward = backendToken;
-      }
-    }
-    if (tokenToForward) {
+    // Forward client bearer token if valid, but do not block public reads on admin token exchange
+    const tokenToForward = authHeader?.replace(/^Bearer\s+/i, "") || null;
+    if (tokenToForward && !tokenToForward.startsWith("admin_session") && !tokenToForward.startsWith("staff_session")) {
       headers["Authorization"] = `Bearer ${tokenToForward}`;
     }
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
       const res = await fetch(`${BACKEND_API}/permits${url.search}`, {
         method: "GET",
         headers,
