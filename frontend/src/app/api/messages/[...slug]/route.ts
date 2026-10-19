@@ -4,7 +4,7 @@ import { getAllPermits } from "../../permits/dataStore";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-backend-production.up.railway.app").replace(/\/+$/, "");
 const BACKEND_API = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
 
 interface StoredMessage {

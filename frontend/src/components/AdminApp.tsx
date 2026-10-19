@@ -40,7 +40,7 @@ interface UserRecord {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
   ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "")}/api` 
-  : "https://e-tayo-official-by0b.onrender.com/api";
+  : "https://e-tayo-official-backend-production.up.railway.app/api";
 
 export default function AdminApp() {
   const router = useRouter();

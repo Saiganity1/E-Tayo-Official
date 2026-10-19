@@ -11,7 +11,7 @@ import {
 } from "@/utils/security";
 import { getBackendAdminToken } from "@/utils/backendAuth";
 
-const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
+const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-backend-production.up.railway.app").replace(/\/+$/, "");
 const BACKEND_API = rawApi.endsWith("/api") ? rawApi : `${rawApi}/api`;
 
 export const dynamic = "force-dynamic";
@@ -82,15 +82,23 @@ export async function GET(req: Request) {
       "Pragma": "no-cache"
     };
 
-    // Forward client bearer token if valid, but do not block public reads on admin token exchange
-    const tokenToForward = authHeader?.replace(/^Bearer\s+/i, "") || null;
-    if (tokenToForward && !tokenToForward.startsWith("admin_session") && !tokenToForward.startsWith("staff_session")) {
+    // Forward client bearer token if valid, or attach a valid backend admin token for privileged internal operations
+    const clientToken = authHeader?.replace(/^Bearer\s+/i, "") || null;
+    let tokenToForward = clientToken;
+
+    if (!tokenToForward || tokenToForward.startsWith("admin_session") || tokenToForward.startsWith("staff_session")) {
+      if (isPrivileged) {
+        tokenToForward = await getBackendAdminToken();
+      }
+    }
+
+    if (tokenToForward) {
       headers["Authorization"] = `Bearer ${tokenToForward}`;
     }
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       const res = await fetch(`${BACKEND_API}/permits${url.search}`, {
         method: "GET",
         headers,
@@ -105,6 +113,23 @@ export async function GET(req: Request) {
           const data = JSON.parse(text);
           if (Array.isArray(data)) {
             data.forEach(item => savePermit(item));
+            if (isPrivileged && !queryId && !queryEmail && !queryName && data.length > 0) {
+              const totalCount = data.length;
+              let sliceRecords = data;
+              if (hasExplicitLimit) {
+                const startIndex = (page - 1) * limit;
+                sliceRecords = data.slice(startIndex, startIndex + limit);
+              }
+              return NextResponse.json(sliceRecords, {
+                status: 200,
+                headers: {
+                  "X-Total-Count": String(totalCount),
+                  "Content-Range": `permits 0-${sliceRecords.length}/${totalCount}`,
+                  "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+                  "Pragma": "no-cache"
+                }
+              });
+            }
           }
         }
       }

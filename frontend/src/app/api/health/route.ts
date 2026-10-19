@@ -8,7 +8,7 @@ export async function GET() {
   let status: "ok" | "degraded" = "ok";
 
   // Safe and cheap backend check with a fast timeout (1.5s)
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com";
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-backend-production.up.railway.app";
   try {
     const pingTarget = backendUrl.replace(/\/+$/, "") + "/";
     const controller = new AbortController();

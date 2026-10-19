@@ -29,6 +29,7 @@ public class PermitApplication {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "permit_requirements", joinColumns = @JoinColumn(name = "permit_id"))
+    @org.hibernate.annotations.BatchSize(size = 50)
     private List<Requirement> requirements;
 
     @Embedded
@@ -36,6 +37,7 @@ public class PermitApplication {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "permit_tracking_steps", joinColumns = @JoinColumn(name = "permit_id"))
+    @org.hibernate.annotations.BatchSize(size = 50)
     private List<TrackingStep> trackingSteps;
 
     private double estimatedFees;
@@ -46,6 +48,7 @@ public class PermitApplication {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "permit_history_logs", joinColumns = @JoinColumn(name = "permit_id"))
+    @org.hibernate.annotations.BatchSize(size = 50)
     private List<HistoryLog> historyLog;
 
     @Column(columnDefinition = "TEXT")

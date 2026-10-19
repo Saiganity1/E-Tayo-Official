@@ -9,7 +9,7 @@ export const getApiBaseUrl = (): string => {
   if (envUrl && envUrl.trim()) {
     return envUrl.trim().replace(/\/+$/, "");
   }
-  return "https://e-tayo-official-by0b.onrender.com";
+  return "https://e-tayo-official-backend-production.up.railway.app";
 };
 
 export const getBackendApiUrl = (): string => {
@@ -34,9 +34,9 @@ export const getWsUrl = (): string => {
   if (apiBase.startsWith("http://")) {
     // If running in browser over HTTPS, avoid mixed content WS
     if (typeof window !== "undefined" && window.location.protocol === "https:") {
-      return "wss://e-tayo-official-by0b.onrender.com/ws";
+      return "wss://e-tayo-official-backend-production.up.railway.app/ws";
     }
     return apiBase.replace(/^http:\/\//, "ws://") + "/ws";
   }
-  return "wss://e-tayo-official-by0b.onrender.com/ws";
+  return "wss://e-tayo-official-backend-production.up.railway.app/ws";
 };
