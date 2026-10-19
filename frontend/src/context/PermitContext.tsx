@@ -271,7 +271,7 @@ export const buildAccurateSystemLogs = (apps: PermitApplication[], existingLogs:
     });
 };
 
-const STORAGE_VERSION = "etayo_clean_db_v12";
+const STORAGE_VERSION = "etayo_clean_db_v14";
 
 if (typeof window !== "undefined") {
   try {

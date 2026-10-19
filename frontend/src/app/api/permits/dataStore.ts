@@ -12,9 +12,7 @@ export const VULNERABILITY_CLEANUP_IDS = new Set([
   "app-2026-7804"
 ]);
 
-export const SEED_APPLICATIONS: PermitApplication[] = INITIAL_APPLICATIONS.filter(
-  app => !VULNERABILITY_CLEANUP_IDS.has(app.id.trim().toLowerCase())
-);
+export const SEED_APPLICATIONS: PermitApplication[] = [];
 
 // Persistent global variable across Next.js API route calls within one server instance.
 const globalForPermits = globalThis as unknown as {

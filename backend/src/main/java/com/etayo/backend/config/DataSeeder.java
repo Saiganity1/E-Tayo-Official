@@ -34,87 +34,110 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
-        // Drop the constraint that blocks ROLE_SUPERADMIN from being inserted
+    public void run(String... args) {
         try {
-            jdbcTemplate.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check");
-        } catch (Exception e) {
-            System.out.println("Could not drop constraint (might not exist or using H2): " + e.getMessage());
-        }
-
-        // Ensure all notes, details, and remarks columns in PostgreSQL are TEXT
-        try {
-            jdbcTemplate.execute("ALTER TABLE permit_tracking_steps ALTER COLUMN notes TYPE TEXT;");
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.execute("ALTER TABLE permit_history_logs ALTER COLUMN details TYPE TEXT;");
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.execute("ALTER TABLE permit_requirements ALTER COLUMN remarks TYPE TEXT;");
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.execute("ALTER TABLE evaluation_logs ALTER COLUMN comments TYPE TEXT;");
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN remarks TYPE TEXT;");
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN file_url TYPE TEXT;");
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN sketch_image_url TYPE TEXT;");
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN project_description TYPE TEXT;");
-        } catch (Exception ignored) {}
-
-        // Clean up automatic dummy admin account and its spam login logs - Admin assigns users manually
-        userRepository.findByEmail("admin@etayo.gov.ph").ifPresent(admin -> {
-            userRepository.delete(admin);
-            System.out.println("Cleaned up automatic admin account: admin@etayo.gov.ph");
-        });
-        try {
-            jdbcTemplate.execute("DELETE FROM system_audit_logs WHERE user_email = 'admin@etayo.gov.ph' OR actor = 'admin@etayo.gov.ph' OR user_email LIKE '%admin@etayo.gov.ph%';");
-        } catch (Exception ignored) {}
-
-        // Remove any automatic / dummy staff accounts - Admin assigns staff manually
-        userRepository.findByEmail("staff@etayo.gov.ph").ifPresent(user -> {
-            userRepository.delete(user);
-            System.out.println("Cleaned up automatic staff: staff@etayo.gov.ph");
-        });
-        userRepository.findByEmail("dave.sicat@etayo.gov.ph").ifPresent(user -> {
-            userRepository.delete(user);
-            System.out.println("Cleaned up automatic staff: dave.sicat@etayo.gov.ph");
-        });
-
-        // Clean up legacy dummy evaluation logs if present
-        try {
-            evaluationLogRepository.findAll().forEach(l -> {
-                if (l != null && (
-                    "citizen@example.com".equalsIgnoreCase(l.getApplicantEmail()) ||
-                    "business@example.com".equalsIgnoreCase(l.getApplicantEmail())
-                )) {
-                    evaluationLogRepository.delete(l);
-                }
-            });
-        } catch (Exception ignored) {}
-
-        // Ensure default dummy applicant account is removed if present
-        userRepository.findByEmail("applicant@etayo.gov.ph").ifPresent(user -> {
-            userRepository.delete(user);
-            System.out.println("Cleaned up default dummy applicant: applicant@etayo.gov.ph");
-        });
-
-        // Ensure default dummy permit LC-2025-0001 (Juan Dela Cruz) is cleaned up if present
-        permitApplicationRepository.findById("LC-2025-0001").ifPresent(legacyApp -> {
-            if ("Juan Dela Cruz".equalsIgnoreCase(legacyApp.getApplicantName()) || "juan.delacruz@email.com".equalsIgnoreCase(legacyApp.getApplicantEmail())) {
-                permitApplicationRepository.delete(legacyApp);
-                System.out.println("Cleaned up default dummy permit: LC-2025-0001");
+            // Drop the constraint that blocks ROLE_SUPERADMIN from being inserted
+            try {
+                jdbcTemplate.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check");
+            } catch (Exception e) {
+                System.out.println("Could not drop constraint (might not exist or using H2): " + e.getMessage());
             }
-        });
 
-        if (feeStructureRepository.count() == 0) {
-            seedFees();
+            // Ensure all notes, details, and remarks columns in PostgreSQL are TEXT
+            try {
+                jdbcTemplate.execute("ALTER TABLE permit_tracking_steps ALTER COLUMN notes TYPE TEXT;");
+            } catch (Exception ignored) {}
+            try {
+                jdbcTemplate.execute("ALTER TABLE permit_history_logs ALTER COLUMN details TYPE TEXT;");
+            } catch (Exception ignored) {}
+            try {
+                jdbcTemplate.execute("ALTER TABLE permit_requirements ALTER COLUMN remarks TYPE TEXT;");
+            } catch (Exception ignored) {}
+            try {
+                jdbcTemplate.execute("ALTER TABLE evaluation_logs ALTER COLUMN comments TYPE TEXT;");
+            } catch (Exception ignored) {}
+            try {
+                jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN remarks TYPE TEXT;");
+            } catch (Exception ignored) {}
+            try {
+                jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN file_url TYPE TEXT;");
+            } catch (Exception ignored) {}
+            try {
+                jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN sketch_image_url TYPE TEXT;");
+            } catch (Exception ignored) {}
+            try {
+                jdbcTemplate.execute("ALTER TABLE permit_applications ALTER COLUMN project_description TYPE TEXT;");
+            } catch (Exception ignored) {}
+
+            // Clean up refresh tokens for deleted accounts first to avoid FK constraint errors
+            try {
+                jdbcTemplate.execute("DELETE FROM refresh_tokens WHERE user_id IN (SELECT id FROM users WHERE email IN ('admin@etayo.gov.ph', 'staff@etayo.gov.ph'));");
+            } catch (Exception ignored) {}
+
+            // Clean up spam login audit logs
+            try {
+                jdbcTemplate.execute("DELETE FROM system_audit_logs WHERE user_email = 'admin@etayo.gov.ph' OR user_email LIKE '%admin@etayo.gov.ph%';");
+            } catch (Exception ignored) {}
+
+            // Clean up automatic dummy admin account - Admin assigns users manually
+            try {
+                userRepository.findByEmail("admin@etayo.gov.ph").ifPresent(admin -> {
+                    try {
+                        userRepository.delete(admin);
+                        System.out.println("Cleaned up automatic admin account: admin@etayo.gov.ph");
+                    } catch (Exception e) {
+                        System.out.println("Notice: Could not delete admin: " + e.getMessage());
+                    }
+                });
+            } catch (Exception ignored) {}
+
+            // Remove any automatic / dummy staff accounts - Admin assigns staff manually
+            try {
+                userRepository.findByEmail("staff@etayo.gov.ph").ifPresent(user -> {
+                    try {
+                        userRepository.delete(user);
+                        System.out.println("Cleaned up automatic staff: staff@etayo.gov.ph");
+                    } catch (Exception ignored) {}
+                });
+            } catch (Exception ignored) {}
+
+            // Clean up legacy dummy evaluation logs if present
+            try {
+                evaluationLogRepository.findAll().forEach(l -> {
+                    if (l != null && (
+                        "citizen@example.com".equalsIgnoreCase(l.getApplicantEmail()) ||
+                        "business@example.com".equalsIgnoreCase(l.getApplicantEmail())
+                    )) {
+                        evaluationLogRepository.delete(l);
+                    }
+                });
+            } catch (Exception ignored) {}
+
+            // Ensure default dummy applicant account is removed if present
+            try {
+                userRepository.findByEmail("applicant@etayo.gov.ph").ifPresent(user -> {
+                    try {
+                        userRepository.delete(user);
+                        System.out.println("Cleaned up default dummy applicant: applicant@etayo.gov.ph");
+                    } catch (Exception ignored) {}
+                });
+            } catch (Exception ignored) {}
+
+            // Ensure default dummy permit LC-2025-0001 (Juan Dela Cruz) is cleaned up if present
+            try {
+                permitApplicationRepository.findById("LC-2025-0001").ifPresent(legacyApp -> {
+                    if ("Juan Dela Cruz".equalsIgnoreCase(legacyApp.getApplicantName()) || "juan.delacruz@email.com".equalsIgnoreCase(legacyApp.getApplicantEmail())) {
+                        permitApplicationRepository.delete(legacyApp);
+                        System.out.println("Cleaned up default dummy permit: LC-2025-0001");
+                    }
+                });
+            } catch (Exception ignored) {}
+
+            if (feeStructureRepository.count() == 0) {
+                seedFees();
+            }
+        } catch (Throwable t) {
+            System.err.println("Non-fatal startup error in DataSeeder: " + t.getMessage());
         }
     }
 
