@@ -18,7 +18,7 @@ export async function POST(req: Request) {
           status: 429,
           headers: {
             "Retry-After": String(Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000))),
-            "X-RateLimit-Limit": "5",
+            "X-RateLimit-Limit": String(rl.limit || "20"),
             "X-RateLimit-Remaining": String(rl.remaining),
             "X-RateLimit-Reset": String(rl.reset),
           },
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     }
 
     const rateLimitHeaders = {
-      "X-RateLimit-Limit": "5",
+      "X-RateLimit-Limit": String(rl.limit || "20"),
       "X-RateLimit-Remaining": String(rl.remaining),
       "X-RateLimit-Reset": String(rl.reset),
     };

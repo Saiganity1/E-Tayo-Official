@@ -99,7 +99,7 @@ function createSlidingLimiter(
 
 // Sliding window limiters — durable across serverless instances (Upstash)
 export const chatLimiter = createSlidingLimiter("rl:chat", 10, "1 m");
-export const loginLimiter = createSlidingLimiter("rl:login", 5, "15 m");
+export const loginLimiter = createSlidingLimiter("rl:login", 20, "15 m");
 export const otpLimiter = createSlidingLimiter("rl:otp", 6, "15 m");
 
 // Key by real client IP on Vercel (x-forwarded-for is set at the edge)
