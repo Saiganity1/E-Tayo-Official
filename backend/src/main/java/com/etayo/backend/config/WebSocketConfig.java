@@ -45,6 +45,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOriginPatterns(
                         "https://*.vercel.app",
                         "https://e-tayo-official.vercel.app",
+                        "https://*.up.railway.app",
+                        "https://*.railway.app",
                         "http://localhost:3000",
                         "http://localhost:3001",
                         "http://127.0.0.1:3000",

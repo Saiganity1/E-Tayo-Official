@@ -135,7 +135,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.google.com https://*.googleusercontent.com; connect-src 'self' https: wss:; frame-src 'self' https://drive.google.com blob:; frame-ancestors 'self' https://*.vercel.app;"
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.google.com https://*.googleusercontent.com; connect-src 'self' https: wss:; frame-src 'self' https://drive.google.com blob:; frame-ancestors 'self' https://*.vercel.app https://*.up.railway.app https://*.railway.app;"
           }
         ]
       },

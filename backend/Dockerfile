@@ -13,7 +13,7 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 RUN mkdir -p /app/data /app/uploads
 COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8080 10000
+EXPOSE 8080
 ENV PORT=8080
-ENTRYPOINT ["sh", "-c", "java -Xmx384m -Xms128m -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:/dev/./urandom -Dserver.address=0.0.0.0 -Dserver.port=${PORT:-8080} -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Xmx512m -Xms256m -Djava.security.egd=file:/dev/./urandom -Dserver.address=0.0.0.0 -Dserver.port=${PORT:-8080} -jar app.jar"]
 

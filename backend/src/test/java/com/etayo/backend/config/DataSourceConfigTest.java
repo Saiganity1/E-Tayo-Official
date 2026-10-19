@@ -32,6 +32,18 @@ class DataSourceConfigTest {
     }
 
     @Test
+    void testRailwayInternalPostgresUrlParsing() {
+        String railwayUrl = "postgresql://postgres:pass123@postgres.railway.internal:5432/railway";
+
+        HikariConfig config = DataSourceConfig.buildHikariConfig(railwayUrl, null, null);
+
+        assertEquals("jdbc:postgresql://postgres.railway.internal:5432/railway?sslmode=require", config.getJdbcUrl());
+        assertEquals("postgres", config.getUsername());
+        assertEquals("pass123", config.getPassword());
+        assertEquals("org.postgresql.Driver", config.getDriverClassName());
+    }
+
+    @Test
     void testH2FallbackWhenNoUrl() {
         HikariConfig config = DataSourceConfig.buildHikariConfig(null, null, null);
 

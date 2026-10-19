@@ -18,6 +18,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -117,12 +118,23 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList(
+        List<String> origins = new ArrayList<>(Arrays.asList(
                 "https://e-tayo-official.vercel.app",
                 "https://*.vercel.app",
+                "https://*.up.railway.app",
+                "https://*.railway.app",
                 "http://localhost:3000",
                 "http://localhost:3001"
         ));
+        String extraOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
+        if (extraOrigins != null && !extraOrigins.isBlank()) {
+            for (String origin : extraOrigins.split(",")) {
+                if (!origin.trim().isEmpty()) {
+                    origins.add(origin.trim());
+                }
+            }
+        }
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(Arrays.asList("X-Total-Count", "Content-Range", "Authorization"));
