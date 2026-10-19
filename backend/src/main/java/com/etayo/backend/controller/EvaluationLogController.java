@@ -61,15 +61,30 @@ public class EvaluationLogController {
 
         // --- Notification Logic ---
         try {
-            String title = "Permit Update: " + saved.getAction();
-            String messagePreview = "Your application for " + saved.getPermitType() + " was " + saved.getAction() + ". Remarks: " + saved.getComments();
+            String act = saved.getAction() != null ? saved.getAction().toLowerCase() : "updated";
+            String pType = saved.getPermitType() != null 
+                ? (saved.getPermitType().toLowerCase().contains("locational") ? "Locational Clearance"
+                  : saved.getPermitType().toLowerCase().contains("building") ? "Building Permit"
+                  : saved.getPermitType().replace("_", " "))
+                : "Permit";
+
+            String title = pType + " " + (act.contains("release") ? "Released" : act.contains("approv") ? "Approved" : act.contains("review") ? "Under Review" : act.substring(0, 1).toUpperCase() + act.substring(1));
+            String comments = (saved.getComments() != null && !saved.getComments().trim().isEmpty() && !saved.getComments().equalsIgnoreCase("none"))
+                ? saved.getComments().trim()
+                : (act.contains("release") ? "Official receipt verified. Your permit is ready for download."
+                  : act.contains("approv") ? "Application approved. Order of Payment is ready for settlement."
+                  : "Status updated by municipal engineering office.");
+
+            String appId = saved.getApplicationId() != null ? saved.getApplicationId() : "";
+            String messagePreview = !appId.isEmpty() ? String.format("[%s] %s", appId, comments) : comments;
+            String notifLink = !appId.isEmpty() ? ("/applicant/track/" + appId) : "/applicant/track";
             
             com.etayo.backend.model.Notification notification = new com.etayo.backend.model.Notification(
                 saved.getApplicantEmail(),
                 title,
                 messagePreview,
                 "PERMIT_UPDATE",
-                "/applicant/track"
+                notifLink
             );
             notificationRepository.save(notification);
         } catch (Exception e) {

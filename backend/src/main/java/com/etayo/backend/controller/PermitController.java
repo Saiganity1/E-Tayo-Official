@@ -534,18 +534,43 @@ public class PermitController {
                 try {
                     String applicantEmail = existing.getApplicantEmail() != null ? existing.getApplicantEmail() : permit.getApplicantEmail();
                     if (applicantEmail != null && !applicantEmail.trim().isEmpty()) {
-                        String notifTitle = "Application Update: " + permit.getStatus().toUpperCase();
-                        String notifMsg = String.format("Your application %s (%s) has been updated to %s. Remarks: %s",
-                            id,
-                            existing.getPermitType() != null ? existing.getPermitType().replace("_", " ") : "Permit",
-                            permit.getStatus(),
-                            permit.getRemarks() != null ? permit.getRemarks() : "None");
+                        String rawStatus = permit.getStatus() != null ? permit.getStatus().trim().toLowerCase() : "updated";
+                        String pType = existing.getPermitType() != null 
+                            ? (existing.getPermitType().toLowerCase().contains("locational") ? "Locational Clearance"
+                              : existing.getPermitType().toLowerCase().contains("building") ? "Building Permit"
+                              : existing.getPermitType().replace("_", " "))
+                            : "Permit";
+
+                        String notifTitle;
+                        String defaultMsg;
+                        if ("released".equals(rawStatus)) {
+                            notifTitle = pType + " Released";
+                            defaultMsg = "Official receipt verified. Your permit is ready for download.";
+                        } else if ("approved".equals(rawStatus)) {
+                            notifTitle = pType + " Approved";
+                            defaultMsg = "Application approved. Order of Payment is ready for settlement.";
+                        } else if ("under_review".equals(rawStatus)) {
+                            notifTitle = pType + " Under Review";
+                            defaultMsg = "Municipal engineers are evaluating your documents.";
+                        } else if ("rejected".equals(rawStatus) || "action_required".equals(rawStatus)) {
+                            notifTitle = "Action Required: " + pType;
+                            defaultMsg = "Please review requested changes and update your application.";
+                        } else {
+                            notifTitle = pType + " Update";
+                            defaultMsg = "Application status updated to " + rawStatus + ".";
+                        }
+
+                        String remarksClean = (permit.getRemarks() != null && !permit.getRemarks().trim().isEmpty() && !permit.getRemarks().equalsIgnoreCase("none"))
+                            ? permit.getRemarks().trim()
+                            : defaultMsg;
+
+                        String notifMsg = String.format("[%s] %s", id, remarksClean);
                         notificationRepository.save(new com.etayo.backend.model.Notification(
                             applicantEmail.trim(),
                             notifTitle,
                             notifMsg,
                             "PERMIT_UPDATE",
-                            "/applicant/track"
+                            "/applicant/track/" + id
                         ));
                     }
                 } catch (Exception notifEx) {}
@@ -825,18 +850,43 @@ public class PermitController {
                 // In-App Notification
                 try {
                     if (existing.getApplicantEmail() != null && !existing.getApplicantEmail().trim().isEmpty()) {
-                        String notifTitle = "Application Update: " + existing.getStatus().toUpperCase();
-                        String notifMsg = String.format("Your application %s (%s) has been updated to %s. Remarks: %s",
-                            existing.getId(),
-                            existing.getPermitType() != null ? existing.getPermitType().replace("_", " ") : "Permit",
-                            existing.getStatus(),
-                            existing.getRemarks() != null ? existing.getRemarks() : "None");
+                        String rawStatus = existing.getStatus() != null ? existing.getStatus().trim().toLowerCase() : "updated";
+                        String pType = existing.getPermitType() != null 
+                            ? (existing.getPermitType().toLowerCase().contains("locational") ? "Locational Clearance"
+                              : existing.getPermitType().toLowerCase().contains("building") ? "Building Permit"
+                              : existing.getPermitType().replace("_", " "))
+                            : "Permit";
+
+                        String notifTitle;
+                        String defaultMsg;
+                        if ("released".equals(rawStatus)) {
+                            notifTitle = pType + " Released";
+                            defaultMsg = "Official receipt verified. Your permit is ready for download.";
+                        } else if ("approved".equals(rawStatus)) {
+                            notifTitle = pType + " Approved";
+                            defaultMsg = "Application approved. Order of Payment is ready for settlement.";
+                        } else if ("under_review".equals(rawStatus)) {
+                            notifTitle = pType + " Under Review";
+                            defaultMsg = "Municipal engineers are evaluating your documents.";
+                        } else if ("rejected".equals(rawStatus) || "action_required".equals(rawStatus)) {
+                            notifTitle = "Action Required: " + pType;
+                            defaultMsg = "Please review requested changes and update your application.";
+                        } else {
+                            notifTitle = pType + " Update";
+                            defaultMsg = "Application status updated to " + rawStatus + ".";
+                        }
+
+                        String remarksClean = (existing.getRemarks() != null && !existing.getRemarks().trim().isEmpty() && !existing.getRemarks().equalsIgnoreCase("none"))
+                            ? existing.getRemarks().trim()
+                            : defaultMsg;
+
+                        String notifMsg = String.format("[%s] %s", existing.getId(), remarksClean);
                         notificationRepository.save(new com.etayo.backend.model.Notification(
                             existing.getApplicantEmail().trim(),
                             notifTitle,
                             notifMsg,
                             "PERMIT_UPDATE",
-                            "/applicant/track"
+                            "/applicant/track/" + existing.getId()
                         ));
                     }
                 } catch (Exception notifEx) {}
