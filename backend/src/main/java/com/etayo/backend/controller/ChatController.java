@@ -81,10 +81,10 @@ public class ChatController {
 
         // --- Non-blocking Notification Logic ---
         try {
-            String sender = chatMessage.getSenderEmail() != null ? chatMessage.getSenderEmail() : "Staff";
-            String senderDisplay = (sender.toLowerCase().contains("admin") || sender.toLowerCase().contains("obo") || sender.toLowerCase().contains("staff"))
+            String senderRaw = chatMessage.getSenderEmail() != null ? chatMessage.getSenderEmail() : "Staff";
+            String senderDisplay = (senderRaw.toLowerCase().contains("admin") || senderRaw.toLowerCase().contains("obo") || senderRaw.toLowerCase().contains("staff"))
                 ? "Municipal Engineering Staff"
-                : sender;
+                : senderRaw;
             String title = "New Message from " + senderDisplay;
             String messagePreview = chatMessage.getContent() != null ? chatMessage.getContent().trim() : "New message received.";
             if (messagePreview.length() > 80) messagePreview = messagePreview.substring(0, 80) + "...";
