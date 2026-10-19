@@ -19,7 +19,8 @@ import {
   parseDateToTimestamp,
   formatSubmissionDateTime,
   getApplicationEvaluator,
-  normalizeApplicantName
+  normalizeApplicantName,
+  isApplicationReleased
 } from "@/utils/projectGrouping";
 
 type ViewMode = "project" | "applicant" | "flat";
@@ -29,7 +30,7 @@ export default function StaffEvaluationsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("project");
   const [expandedDossiers, setExpandedDossiers] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -193,7 +194,16 @@ export default function StaffEvaluationsPage() {
       const sTerm = String(searchTerm || "").toLowerCase();
 
       const matchesSearch = pName.includes(sTerm) || appId.includes(sTerm) || aName.includes(sTerm) || pAddr.includes(sTerm);
-      const matchesStatus = filterStatus === "all" || app.status === filterStatus;
+      const appStatus = String(app.status || "").toLowerCase().trim();
+      const isReleased = isApplicationReleased(app);
+      const matchesStatus = filterStatus === "all" ||
+        (filterStatus === "released"
+          ? isReleased
+          : filterStatus === "approved"
+            ? (appStatus === "approved" && !isReleased)
+            : filterStatus === "pending"
+              ? (appStatus === "pending" || appStatus === "submitted" || appStatus === "pending_evaluation")
+              : appStatus === filterStatus);
       
       const appType = String(app.permitType || "locational_clearance").toLowerCase();
       const matchesType = filterType === "all" || appType.includes(String(filterType || "").toLowerCase());
@@ -353,9 +363,10 @@ export default function StaffEvaluationsPage() {
 
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case "approved":
       case "released":
-        return { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0", icon: CheckCircle2, label: "Approved" };
+        return { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0", icon: CheckCircle2, label: "Released" };
+      case "approved":
+        return { bg: "#ecfdf5", color: "#059669", border: "#a7f3d0", icon: CheckCircle2, label: "Approved" };
       case "rejected":
         return { bg: "#fef2f2", color: "#dc2626", border: "#fecaca", icon: XCircle, label: "Rejected" };
       case "under_review":
@@ -580,9 +591,27 @@ export default function StaffEvaluationsPage() {
           {/* Filter Status Button */}
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            style={{ background: showFilters ? "#eff6ff" : "white", border: `1px solid ${showFilters ? "#93c5fd" : "#cbd5e1"}`, color: showFilters ? "#1d4ed8" : "#475569", padding: "0.65rem 1.15rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "8px", fontWeight: "700", fontSize: "0.88rem", cursor: "pointer", transition: "all 0.2s" }}
+            style={{ 
+              background: showFilters || filterStatus !== "all" ? "#eff6ff" : "white", 
+              border: `1.5px solid ${showFilters || filterStatus !== "all" ? "#2563eb" : "#cbd5e1"}`, 
+              color: showFilters || filterStatus !== "all" ? "#1d4ed8" : "#475569", 
+              padding: "0.65rem 1.15rem", 
+              borderRadius: "12px", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "8px", 
+              fontWeight: "700", 
+              fontSize: "0.88rem", 
+              cursor: "pointer", 
+              boxShadow: filterStatus !== "all" ? "0 2px 8px rgba(37,99,235,0.15)" : "none",
+              transition: "all 0.2s" 
+            }}
           >
-            <Filter size={16} /> Status Filter <ChevronDown size={15} style={{ transform: showFilters ? "rotate(180deg)" : "rotate(0)", transition: "0.2s" }} />
+            <Filter size={16} color={filterStatus !== "all" ? "#2563eb" : "#64748b"} /> 
+            <span>
+              {filterStatus === "all" ? "Status Filter" : `Status: ${filterStatus === "under_review" ? "Under Review" : filterStatus === "pending" ? "Pending" : filterStatus === "released" ? "Released" : filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}`}
+            </span>
+            <ChevronDown size={15} style={{ transform: showFilters ? "rotate(180deg)" : "rotate(0)", transition: "0.2s" }} />
           </button>
 
           {/* Calendar / Date & Time Filter Button & Popover */}
@@ -919,6 +948,7 @@ export default function StaffEvaluationsPage() {
               { id: "pending", label: "Pending Evaluation" },
               { id: "under_review", label: "Under Review" },
               { id: "approved", label: "Approved" },
+              { id: "released", label: "Released" },
               { id: "rejected", label: "Rejected" }
             ].map(status => (
               <button
@@ -963,6 +993,7 @@ export default function StaffEvaluationsPage() {
 
             return activeDossiers.map(dossier => {
               const hasPending = dossier.pendingCount > 0;
+              const isAllReleased = dossier.applications.length > 0 && dossier.applications.every(a => isApplicationReleased(a));
               const isExpanded = isDossierExpanded(dossier.id, hasPending);
               const nextPendingApp = dossier.applications.find(a => a.status === "pending" || a.status === "under_review");
               const dossierSub = formatSubmissionDateTime(dossier, { systemLogs });
@@ -1037,12 +1068,22 @@ export default function StaffEvaluationsPage() {
                             fontWeight: "800",
                             padding: "3px 10px",
                             borderRadius: "999px",
-                            background: isExpanded ? "#ffffff" : (hasPending ? "#fffbeb" : "#f0fdf4"),
-                            color: isExpanded ? (hasPending ? "#b45309" : "#059669") : (hasPending ? "#b45309" : "#16a34a"),
-                            border: isExpanded ? "none" : (hasPending ? "1px solid #fde68a" : "1px solid #bbf7d0"),
+                            background: isExpanded 
+                              ? "#ffffff" 
+                              : (hasPending ? "#fffbeb" : isAllReleased ? "#f0fdf4" : "#ecfdf5"),
+                            color: isExpanded 
+                              ? (hasPending ? "#b45309" : isAllReleased ? "#16a34a" : "#059669") 
+                              : (hasPending ? "#b45309" : isAllReleased ? "#16a34a" : "#059669"),
+                            border: isExpanded 
+                              ? "none" 
+                              : (hasPending ? "1px solid #fde68a" : isAllReleased ? "1px solid #bbf7d0" : "1px solid #a7f3d0"),
                             boxShadow: isExpanded ? "0 2px 6px rgba(0,0,0,0.18)" : "none"
                           }}>
-                            {hasPending ? `${dossier.pendingCount} Form${dossier.pendingCount > 1 ? "s" : ""} Awaiting Review` : "All Forms Approved ✓"}
+                            {hasPending 
+                              ? `${dossier.pendingCount} Form${dossier.pendingCount > 1 ? "s" : ""} Awaiting Review` 
+                              : isAllReleased 
+                                ? "All Permits Released ✓" 
+                                : "All Forms Approved ✓"}
                           </span>
                         </div>
 
@@ -1140,7 +1181,8 @@ export default function StaffEvaluationsPage() {
 
                       <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
                         {dossier.applications.map((app, appIdx) => {
-                          const statusStyle = getStatusColor(app.status);
+                          const isReleased = isApplicationReleased(app);
+                          const statusStyle = getStatusColor(isReleased ? "released" : app.status);
                           const typeBadge = getPermitTypeBadge(app.permitType);
                           const StatusIcon = statusStyle.icon;
 
@@ -1378,7 +1420,8 @@ export default function StaffEvaluationsPage() {
                 </tr>
               ) : (
                 filteredApps.map((app, i) => {
-                  const statusStyle = getStatusColor(app.status);
+                  const isReleased = isApplicationReleased(app);
+                  const statusStyle = getStatusColor(isReleased ? "released" : app.status);
                   const typeBadge = getPermitTypeBadge(app.permitType);
                   const appSub = formatSubmissionDateTime(app, { systemLogs });
                   const evaluator = getApplicationEvaluator(app, { systemLogs });
