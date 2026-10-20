@@ -94,49 +94,70 @@ const isDummyApp = (app: PermitApplication) => {
   const id = String(app.id || "").toUpperCase().trim();
   const name = String(app.applicantName || "").toLowerCase().trim();
   const email = String(app.applicantEmail || "").toLowerCase().trim();
+  const proj = String(app.projectName || "").toLowerCase().trim();
+  const remarks = String(app.remarks || "").toLowerCase().trim();
 
-  // Explicit fake applications identified by user
+  // Test and pentest prefixes / dummy ID formats
   if (
+    !id ||
+    id === "NULL" ||
+    id.startsWith("TEST") ||
+    id.startsWith("PENTEST") ||
+    id.startsWith("LC-2025-") ||
+    id.startsWith("BP-2025-") ||
     id === "APP-2026-9999" ||
     id === "LC-2026-9314" ||
     id === "LC-2026-1840" ||
     id === "LC-2026-6528" ||
     id === "LC-2026-7811" ||
-    id === "CITIZEN-1477" ||
+    id === "LC-2026-0099" ||
     id === "LC-2026-2911" ||
-    id === "NULL" ||
-    id === "" ||
-    id === "LC-2025-0001" ||
-    id === "BP-2025-0005" ||
+    id === "CITIZEN-1477" ||
     id === "APP-2026-6636" ||
     id === "APP-2026-8101" ||
     id === "APP-2026-7384" ||
     id === "APP-2026-1918" ||
     id === "APP-2026-3962" ||
-    id === "LC-2026-6133" ||
-    id.startsWith("LC-2025-") ||
-    id.startsWith("BP-2025-")
+    id === "APP-2026-3773" ||
+    id === "APP-2026-3692" ||
+    id === "APP-2026-3000" ||
+    id === "APP-2026-2913" ||
+    id === "APP-2026-1731" ||
+    id === "APP-2026-1716" ||
+    id === "LC-2026-6133"
   ) {
     return true;
   }
 
-  // Explicit fake accounts and fake names identified by user
+  // Explicit fake accounts, test emails, and vulnerability probes
   if (
+    !name ||
+    name === "null" ||
     name === "admin user" ||
     name === "maria santos" ||
     name === "unknown applicant" ||
     name === "juan verifier" ||
-    name === "null" ||
+    name === "test user" ||
+    name === "auto audit" ||
+    name.includes("pentest") ||
+    name.includes("probe") ||
+    name.includes("juan dela cruz") ||
+    name === "test" ||
     email === "admin@etayo.gov.ph" ||
     email === "juan.verifier@etayo.gov.ph" ||
     email === "citizen.verifier@gmail.com" ||
     email === "maria.santos@gmail.com" ||
     email === "maria.santos@example.com" ||
-    email === "null" ||
+    email === "test@test.com" ||
+    email === "test@example.com" ||
+    email.includes("audit@") ||
+    email.includes("pentest@") ||
     email.includes("citizen@example.com") ||
     email.includes("business@example.com") ||
-    email.includes("juan.delacruz@email.com") ||
-    name.includes("juan dela cruz")
+    email.includes("juan.delacruz@") ||
+    proj.includes("audit house") ||
+    proj.includes("pentest") ||
+    remarks.includes("vuln-test")
   ) {
     return true;
   }

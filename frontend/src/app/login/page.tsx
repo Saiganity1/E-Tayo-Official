@@ -72,142 +72,32 @@ export default function LoginPage() {
         } catch (e) {}
       }
 
-      // 1. Try Same-Origin Next.js Route first (fast 2.5s timeout)
+      // 1. Authenticate with Next.js API Route (/api/auth/login)
+      const localCtrl = new AbortController();
+      const localTid = setTimeout(() => localCtrl.abort(), 8000);
+      let localRes: Response;
       try {
-        const localCtrl = new AbortController();
-        const localTid = setTimeout(() => localCtrl.abort(), 2500);
-        const localRes = await fetch("/api/auth/login", {
+        localRes = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: sanitizedEmail, password: sanitizedPassword }),
           signal: localCtrl.signal
         });
+      } catch (fetchErr: any) {
+        throw new Error("Unable to connect to the authentication server. Please check your internet connection.");
+      } finally {
         clearTimeout(localTid);
-
-        if (localRes.ok) {
-          data = await localRes.json();
-        } else {
-          const errData = await localRes.json().catch(() => ({}));
-          // If server says account not found or invalid password, stop and throw
-          if (errData.error && (
-            errData.error.includes("not registered") || 
-            errData.error.includes("Account not found") || 
-            errData.error.includes("Invalid password") || 
-            errData.error.includes("staff") || 
-            errData.error.includes("Administrator")
-          )) {
-            throw new Error(errData.error);
-          }
-        }
-      } catch (localErr: any) {
-        if (
-          localErr?.message?.includes("not registered") || 
-          localErr?.message?.includes("Account not found") || 
-          localErr?.message?.includes("Invalid password") || 
-          localErr?.message?.includes("staff")
-        ) {
-          throw localErr;
-        }
       }
 
-      // 2. Direct Backend Fallback (fast 2s timeout)
-      if (!data) {
-        try {
-          const rawApi = (process.env.NEXT_PUBLIC_API_URL || "https://e-tayo-official-by0b.onrender.com").replace(/\/+$/, "");
-          const backendUrl = rawApi.endsWith("/api") ? `${rawApi}/auth/login` : `${rawApi}/api/auth/login`;
-          const directCtrl = new AbortController();
-          const directTid = setTimeout(() => directCtrl.abort(), 2000);
-          const response = await fetch(backendUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: sanitizedEmail, password: sanitizedPassword }),
-            signal: directCtrl.signal
-          });
-          clearTimeout(directTid);
-
-          if (response.ok) {
-            data = await response.json();
-          }
-        } catch (directErr: any) {
-          // Continue to local verification
-        }
+      if (!localRes.ok) {
+        const errData = await localRes.json().catch(() => ({}));
+        throw new Error(errData.error || "Invalid email or password. Please check your credentials.");
       }
 
-      // 3. Strict Verification for Registered / Seed Accounts
-      // UNREGISTERED USERS ARE STRICTLY FORBIDDEN FROM ENTERING!
-      if (!data) {
-        // Check if admin has explicitly assigned this email as staff in localStorage
-        const assignedStaffRaw = typeof window !== "undefined" ? localStorage.getItem("etayo_assigned_staff") : null;
-        let assignedStaffItem: any = null;
-        if (assignedStaffRaw) {
-          try {
-            const list = JSON.parse(assignedStaffRaw);
-            if (Array.isArray(list)) {
-              assignedStaffItem = list.find((u: any) => u.email?.toLowerCase() === sanitizedEmail && u.role === "ROLE_STAFF");
-            }
-          } catch (e) {}
-        }
+      data = await localRes.json();
 
-        if (sanitizedEmail.includes("admin")) {
-          data = {
-            accessToken: `admin_session_${Date.now()}`,
-            role: "ROLE_ADMIN",
-            name: "Municipal Administrator"
-          };
-        } else if (assignedStaffItem) {
-          data = {
-            accessToken: `staff_session_${Date.now()}`,
-            role: "ROLE_STAFF",
-            name: assignedStaffItem.name || "Staff Evaluator"
-          };
-        } else if (registeredUser) {
-          // Verify registered user's password if saved
-          if (registeredUser.password && registeredUser.password !== sanitizedPassword) {
-            throw new Error("Invalid password. Please check your credentials.");
-          }
-          data = {
-            accessToken: `applicant_session_${Date.now()}`,
-            role: registeredUser.role || "ROLE_APPLICANT",
-            name: registeredUser.name || "Applicant"
-          };
-        } else if (sanitizedEmail === "dave.sicat@etayo.gov.ph") {
-          data = {
-            accessToken: `staff_session_${Date.now()}`,
-            role: "ROLE_STAFF",
-            name: "Dave Sicat"
-          };
-        } else if (sanitizedEmail === "gilbert.cruz@etayo.gov.ph") {
-          data = {
-            accessToken: `staff_session_${Date.now()}`,
-            role: "ROLE_STAFF",
-            name: "Engr. Gilbert Cruz"
-          };
-        } else if (sanitizedEmail === "randreb.david@example.com") {
-          data = {
-            accessToken: `applicant_session_${Date.now()}`,
-            role: "ROLE_APPLICANT",
-            name: "RANDREB YUTUC DAVID"
-          };
-        } else if (sanitizedEmail === "kathleen.abarquez@example.com") {
-          data = {
-            accessToken: `applicant_session_${Date.now()}`,
-            role: "ROLE_APPLICANT",
-            name: "Kathleen Ann Abarquez"
-          };
-        } else if (sanitizedEmail === "davesicat@gmail.com") {
-          data = {
-            accessToken: `applicant_session_${Date.now()}`,
-            role: "ROLE_APPLICANT",
-            name: "Dave Sicat"
-          };
-        } else {
-          // NOT REGISTERED: Strictly reject!
-          throw new Error("This account is not registered in the system. Please register first to access eTAYO.");
-        }
-      }
-
-      if (!data) {
-        throw new Error("Unable to authenticate. Please check your credentials.");
+      if (!data || !data.accessToken) {
+        throw new Error("Invalid response from authentication server. Please try again.");
       }
 
       // Ensure displayed name is user's Full Name (never an email)

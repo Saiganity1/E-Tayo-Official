@@ -992,22 +992,6 @@ export interface ResolvedLocation {
  * Otherwise, maps by Barangay (with deterministic jitter by app.id) so pins never disappear or overlap.
  */
 export const resolveAppLocation = (app: any): ResolvedLocation => {
-  if (
-    app?.location &&
-    typeof app.location.lat === "number" &&
-    typeof app.location.lng === "number" &&
-    !isNaN(app.location.lat) &&
-    !isNaN(app.location.lng) &&
-    app.location.lat !== 0 &&
-    app.location.lng !== 0
-  ) {
-    return {
-      lat: Number(app.location.lat),
-      lng: Number(app.location.lng),
-      address: app.location.address || app.projectAddress || "Sto. Tomas, Pampanga"
-    };
-  }
-
   const rawAddr = String(app?.projectAddress || app?.location?.address || app?.barangay || "").toLowerCase();
 
   // Deterministic micro-offset based on app.id so multiple pins in the same barangay do not overlap
@@ -1017,8 +1001,42 @@ export const resolveAppLocation = (app: any): ResolvedLocation => {
     hash = (hash << 5) - hash + idStr.charCodeAt(i);
     hash |= 0;
   }
-  const latOffset = ((Math.abs(hash) % 80) - 40) * 0.0001;
-  const lngOffset = ((Math.abs(hash * 37) % 80) - 40) * 0.0001;
+  const latOffset = ((Math.abs(hash) % 60) - 30) * 0.0001;
+  const lngOffset = ((Math.abs(hash * 37) % 60) - 30) * 0.0001;
+
+  // Strict check: Ignore legacy buggy static default [15.0163, 120.7188] and out-of-bounds coordinates
+  const isBuggyDefault =
+    app?.location &&
+    typeof app.location.lat === "number" &&
+    Math.abs(app.location.lat - 15.0163) < 0.0005 &&
+    Math.abs(app.location.lng - 120.7188) < 0.0005;
+
+  const isWithinStoTomas =
+    app?.location &&
+    typeof app.location.lat === "number" &&
+    typeof app.location.lng === "number" &&
+    app.location.lat >= 14.970 &&
+    app.location.lat <= 15.035 &&
+    app.location.lng >= 120.685 &&
+    app.location.lng <= 120.740;
+
+  if (
+    app?.location &&
+    typeof app.location.lat === "number" &&
+    typeof app.location.lng === "number" &&
+    !isNaN(app.location.lat) &&
+    !isNaN(app.location.lng) &&
+    app.location.lat !== 0 &&
+    app.location.lng !== 0 &&
+    !isBuggyDefault &&
+    isWithinStoTomas
+  ) {
+    return {
+      lat: Number(app.location.lat),
+      lng: Number(app.location.lng),
+      address: app.location.address || app.projectAddress || "Sto. Tomas, Pampanga"
+    };
+  }
 
   if (rawAddr.includes("bartolome")) {
     return { lat: 14.982609 + latOffset, lng: 120.70649 + lngOffset, address: app?.projectAddress || "Brgy. San Bartolome, Sto. Tomas, Pampanga" };

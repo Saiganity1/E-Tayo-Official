@@ -32,7 +32,18 @@ if (!globalForPermits._etayoPermitStore) {
 const store = globalForPermits._etayoPermitStore;
 
 export function getAllPermits(emailFilter?: string, nameFilter?: string): PermitApplication[] {
-  const all = Array.from(store.values());
+  const isDummy = (app: PermitApplication) => {
+    if (!app) return true;
+    const id = String(app.id || "").toUpperCase().trim();
+    const name = String(app.applicantName || "").toLowerCase().trim();
+    const email = String(app.applicantEmail || "").toLowerCase().trim();
+    if (!id || id.startsWith("TEST") || id.startsWith("PENTEST") || id.startsWith("LC-2025-") || id.startsWith("BP-2025-")) return true;
+    if (id === "APP-2026-9999" || id === "LC-2026-9314" || id === "LC-2026-1840" || id === "LC-2026-6528" || id === "LC-2026-0099" || id === "CITIZEN-1477" || id === "APP-2026-3773" || id === "APP-2026-3692" || id === "APP-2026-3000" || id === "APP-2026-2913" || id === "APP-2026-1731" || id === "APP-2026-1716") return true;
+    if (!name || name === "null" || name.includes("test") || name.includes("audit") || name.includes("juan dela cruz") || name.includes("maria santos") || name.includes("verifier")) return true;
+    if (email.includes("audit@") || email.includes("test@") || email.includes("example.com") || email.includes("admin@etayo.gov.ph")) return true;
+    return false;
+  };
+  const all = Array.from(store.values()).filter(a => !isDummy(a));
   all.sort(compareAppsNewestFirst);
   if (!emailFilter && !nameFilter) {
     return all;

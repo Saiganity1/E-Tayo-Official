@@ -123,14 +123,12 @@ public class DataSeeder implements CommandLineRunner {
                 });
             } catch (Exception ignored) {}
 
-            // Ensure default dummy permit LC-2025-0001 (Juan Dela Cruz) is cleaned up if present
+            // Permanently clean up test, audit, and dummy permits from PostgreSQL
             try {
-                permitApplicationRepository.findById("LC-2025-0001").ifPresent(legacyApp -> {
-                    if ("Juan Dela Cruz".equalsIgnoreCase(legacyApp.getApplicantName()) || "juan.delacruz@email.com".equalsIgnoreCase(legacyApp.getApplicantEmail())) {
-                        permitApplicationRepository.delete(legacyApp);
-                        System.out.println("Cleaned up default dummy permit: LC-2025-0001");
-                    }
-                });
+                jdbcTemplate.execute("DELETE FROM permit_requirements WHERE permit_application_id IN (SELECT id FROM permit_applications WHERE id LIKE 'TEST%' OR id LIKE 'PENTEST%' OR id LIKE 'LC-2025%' OR id LIKE 'BP-2025%' OR applicant_email LIKE '%test%' OR applicant_email LIKE '%audit%' OR applicant_name LIKE '%test%' OR applicant_name LIKE '%audit%' OR id IN ('LC-2026-9314', 'LC-2026-6528', 'LC-2026-1840', 'LC-2026-0099', 'CITIZEN-1477', 'APP-2026-9999', 'APP-2026-3773', 'APP-2026-3692', 'APP-2026-3000', 'APP-2026-2913', 'APP-2026-1731', 'APP-2026-1716'));");
+                jdbcTemplate.execute("DELETE FROM permit_tracking_steps WHERE permit_application_id IN (SELECT id FROM permit_applications WHERE id LIKE 'TEST%' OR id LIKE 'PENTEST%' OR id LIKE 'LC-2025%' OR id LIKE 'BP-2025%' OR applicant_email LIKE '%test%' OR applicant_email LIKE '%audit%' OR applicant_name LIKE '%test%' OR applicant_name LIKE '%audit%' OR id IN ('LC-2026-9314', 'LC-2026-6528', 'LC-2026-1840', 'LC-2026-0099', 'CITIZEN-1477', 'APP-2026-9999', 'APP-2026-3773', 'APP-2026-3692', 'APP-2026-3000', 'APP-2026-2913', 'APP-2026-1731', 'APP-2026-1716'));");
+                jdbcTemplate.execute("DELETE FROM permit_history_logs WHERE permit_application_id IN (SELECT id FROM permit_applications WHERE id LIKE 'TEST%' OR id LIKE 'PENTEST%' OR id LIKE 'LC-2025%' OR id LIKE 'BP-2025%' OR applicant_email LIKE '%test%' OR applicant_email LIKE '%audit%' OR applicant_name LIKE '%test%' OR applicant_name LIKE '%audit%' OR id IN ('LC-2026-9314', 'LC-2026-6528', 'LC-2026-1840', 'LC-2026-0099', 'CITIZEN-1477', 'APP-2026-9999', 'APP-2026-3773', 'APP-2026-3692', 'APP-2026-3000', 'APP-2026-2913', 'APP-2026-1731', 'APP-2026-1716'));");
+                jdbcTemplate.execute("DELETE FROM permit_applications WHERE id LIKE 'TEST%' OR id LIKE 'PENTEST%' OR id LIKE 'LC-2025%' OR id LIKE 'BP-2025%' OR applicant_email LIKE '%test%' OR applicant_email LIKE '%audit%' OR applicant_name LIKE '%test%' OR applicant_name LIKE '%audit%' OR id IN ('LC-2026-9314', 'LC-2026-6528', 'LC-2026-1840', 'LC-2026-0099', 'CITIZEN-1477', 'APP-2026-9999', 'APP-2026-3773', 'APP-2026-3692', 'APP-2026-3000', 'APP-2026-2913', 'APP-2026-1731', 'APP-2026-1716');");
             } catch (Exception ignored) {}
 
             if (feeStructureRepository.count() == 0) {

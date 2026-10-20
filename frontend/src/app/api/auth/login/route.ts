@@ -80,16 +80,14 @@ export async function POST(req: Request) {
         return NextResponse.json(data, { headers: rateLimitHeaders });
       }
 
-      // If backend explicitly rejected with 401/400
-      if (res.status === 401 || res.status === 400) {
-        const localUser = findRegisteredUser(sanitizedEmail);
-        if (!localUser) {
-          // Generic error message: Prevents user enumeration
-          return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
-        }
-      }
+      // If backend explicitly rejected (401 unauthorized, 400 bad request, 429 rate limit), strictly return rejection!
+      const errData = await res.json().catch(() => ({}));
+      return NextResponse.json(
+        { error: errData.error || "Invalid email or password." },
+        { status: res.status, headers: rateLimitHeaders }
+      );
     } catch (netErr: any) {
-      console.warn("Backend unreachable / rate-limited during login:", netErr?.message);
+      console.warn("Backend unreachable during login, checking local store:", netErr?.message);
     }
 
     // 2. Strict Authentication against Registered Users

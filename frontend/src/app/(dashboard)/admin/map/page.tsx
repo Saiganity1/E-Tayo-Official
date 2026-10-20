@@ -49,20 +49,33 @@ export default function AdminMapPage() {
   const { language } = useLanguage();
   const isEn = language === "en";
 
+  const realApplications = useMemo(() => {
+    return applications.filter(a => {
+      if (!a || !a.id) return false;
+      const idUpper = String(a.id).toUpperCase().trim();
+      if (idUpper.startsWith("TEST") || idUpper.startsWith("PENTEST") || idUpper.startsWith("LC-2025-") || idUpper.startsWith("BP-2025-")) return false;
+      const nameLower = String(a.applicantName || "").toLowerCase().trim();
+      const emailLower = String(a.applicantEmail || "").toLowerCase().trim();
+      if (nameLower.includes("test") || nameLower.includes("audit") || nameLower.includes("maria santos") || nameLower.includes("juan dela cruz") || nameLower.includes("verifier")) return false;
+      if (emailLower.includes("test@") || emailLower.includes("audit@") || emailLower.includes("example.com") || emailLower.includes("admin@etayo.gov.ph")) return false;
+      return true;
+    });
+  }, [applications]);
+
   const stats = useMemo(() => {
-    const total = applications.length;
-    const pending = applications.filter(a => (a.status || "").toLowerCase() === "pending").length;
-    const underReview = applications.filter(a => (a.status || "").toLowerCase() === "under_review").length;
-    const approved = applications.filter(a => {
+    const total = realApplications.length;
+    const pending = realApplications.filter(a => (a.status || "").toLowerCase() === "pending").length;
+    const underReview = realApplications.filter(a => (a.status || "").toLowerCase() === "under_review").length;
+    const approved = realApplications.filter(a => {
       const st = (a.status || "").toLowerCase();
       return st === "approved" || st === "released";
     }).length;
-    const actionRequired = applications.filter(a => {
+    const actionRequired = realApplications.filter(a => {
       const st = (a.status || "").toLowerCase();
       return st === "rejected" || st === "incomplete_requirements";
     }).length;
     return { total, pending, underReview, approved, actionRequired };
-  }, [applications]);
+  }, [realApplications]);
 
   return (
     <div className="dashboard-page animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 4.2rem)' }}>

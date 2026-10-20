@@ -285,6 +285,17 @@ export default function SpatialMap({
     };
   }, []);
 
+  useEffect(() => {
+    if (!showGeoDataModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowGeoDataModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showGeoDataModal]);
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       mapWrapperRef.current?.requestFullscreen().catch(err => {
@@ -315,6 +326,14 @@ export default function SpatialMap({
   // Filtering Logic
   const filteredApps = useMemo(() => {
     return applications.filter(app => {
+      if (!app || !app.id) return false;
+      const idUpper = String(app.id).toUpperCase().trim();
+      if (idUpper.startsWith("TEST") || idUpper.startsWith("PENTEST") || idUpper.startsWith("LC-2025-") || idUpper.startsWith("BP-2025-")) return false;
+      const nameLower = String(app.applicantName || "").toLowerCase().trim();
+      const emailLower = String(app.applicantEmail || "").toLowerCase().trim();
+      if (nameLower.includes("test") || nameLower.includes("audit") || nameLower.includes("maria santos") || nameLower.includes("juan dela cruz") || nameLower.includes("verifier")) return false;
+      if (emailLower.includes("test@") || emailLower.includes("audit@") || emailLower.includes("example.com") || emailLower.includes("admin@etayo.gov.ph")) return false;
+
       const { category } = getAppProjectCategory(app);
       if (filterType !== 'ALL' && category !== filterType) return false;
       if (searchQuery && !app.projectName?.toLowerCase().includes(searchQuery.toLowerCase()) && !app.id?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -1327,19 +1346,18 @@ export default function SpatialMap({
       {/* GEOSPATIAL & CADASTRAL SPECIFICATION MODAL */}
       {showGeoDataModal && (
         <div 
+          role="dialog"
+          aria-modal="true"
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
             backdropFilter: 'blur(8px)',
-            zIndex: 100000,
+            zIndex: 9999999,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px'
+            padding: '16px'
           }}
           onClick={() => setShowGeoDataModal(false)}
         >
@@ -1347,21 +1365,30 @@ export default function SpatialMap({
             style={{
               background: '#ffffff',
               borderRadius: '20px',
-              maxWidth: '760px',
+              maxWidth: '820px',
               width: '100%',
               maxHeight: '90vh',
-              overflowY: 'auto',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.4)',
               border: '1px solid #e2e8f0',
-              padding: '24px 28px',
-              position: 'relative'
+              position: 'relative',
+              overflow: 'hidden'
             }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '18px' }}>
+            {/* Modal Sticky Header - Always visible with Close Button */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              borderBottom: '1px solid #e2e8f0', 
+              padding: '16px 24px', 
+              background: '#ffffff',
+              flexShrink: 0
+            }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
                   <span style={{ 
                     background: '#eff6ff', 
                     color: '#1d4ed8', 
@@ -1384,208 +1411,237 @@ export default function SpatialMap({
                     RFC 7946 Standard
                   </span>
                 </div>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: '#0f172a' }}>
                   Sto. Tomas, Pampanga Cadastral & Zoning Map Data
                 </h3>
-                <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: '#64748b' }}>
-                  Verified government administrative boundaries and comprehensive land use classification.
-                </p>
               </div>
               <button 
                 onClick={() => setShowGeoDataModal(false)}
+                aria-label="Close"
                 style={{
                   background: '#f1f5f9',
-                  border: 'none',
+                  border: '1px solid #e2e8f0',
                   borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
+                  width: '36px',
+                  height: '36px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  fontSize: '1.2rem',
-                  color: '#475569'
+                  fontSize: '1.4rem',
+                  lineHeight: '1',
+                  color: '#334155',
+                  transition: 'background 0.15s ease'
                 }}
               >
                 &times;
               </button>
             </div>
 
-            {/* Overview Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '20px' }}>
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>PSA PSGC / ZIP</div>
-                <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#1e3a8a' }}>0305421000 • 2020</div>
+            {/* Scrollable Modal Content */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+              {/* Overview Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+                <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>PSA PSGC / ZIP</div>
+                  <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#1e3a8a' }}>0305421000 • 2020</div>
+                </div>
+                <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Official Land Area</div>
+                  <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#0f172a' }}>14.67 km² (1,467.5 ha)</div>
+                </div>
+                <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Population Growth</div>
+                  <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#0f172a' }}>38,062 → 47,809 (2025)</div>
+                </div>
+                <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Seat of Government</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0f172a' }}>San Vicente (P.D. 1441)</div>
+                </div>
+                <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>CLUP Planning Period</div>
+                  <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#16a34a' }}>2016–2025 Enacted</div>
+                </div>
               </div>
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Official Land Area</div>
-                <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#0f172a' }}>14.67 km² (1,467.5 ha)</div>
-              </div>
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Population Growth</div>
-                <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#0f172a' }}>38,062 → 47,809 (2025)</div>
-              </div>
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Seat of Government</div>
-                <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0f172a' }}>San Vicente (P.D. 1441)</div>
-              </div>
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>CLUP Planning Period</div>
-                <div style={{ fontSize: '1.0rem', fontWeight: '800', color: '#16a34a' }}>2016–2025 Enacted</div>
-              </div>
-            </div>
 
-            {/* Barangay Breakdown Table */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>7 Official Barangays (Cadastral & CLUP Profiles)</span>
-                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>Source: CLUP 2016-2025 Table 1, 4 & 5</span>
-              </div>
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem', minWidth: '700px' }}>
-                  <thead>
-                    <tr style={{ background: '#f1f5f9', textAlign: 'left', color: '#475569', fontWeight: '700' }}>
-                      <th style={{ padding: '8px 12px' }}>Barangay</th>
-                      <th style={{ padding: '8px 12px' }}>OTOP (Product)</th>
-                      <th style={{ padding: '8px 12px' }}>CLUP Zone Code</th>
-                      <th style={{ padding: '8px 12px' }}>Land Area</th>
-                      <th style={{ padding: '8px 12px' }}>% Share</th>
-                      <th style={{ padding: '8px 12px' }}>Pop. (2010→2025)</th>
-                      <th style={{ padding: '8px 12px' }}>Flood Risk</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stoTomasZoningGeoJSON.features.map((feat: any, idx: number) => {
-                      const p = feat.properties;
-                      return (
-                        <tr key={idx} style={{ borderTop: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                          <td style={{ padding: '8px 12px', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: p.color, display: 'inline-block' }}></span>
-                            {p.barangay}
-                          </td>
-                          <td style={{ padding: '8px 12px', color: '#92400e', fontWeight: '600' }}>
-                            {p.otop || 'N/A'}
-                          </td>
-                          <td style={{ padding: '8px 12px', color: '#334155' }}>
-                            <span style={{ background: `${p.color}15`, color: p.color, padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>
-                              {p.code}
-                            </span>
-                          </td>
-                          <td style={{ padding: '8px 12px', fontWeight: '600', color: '#475569' }}>
-                            {p.areaKm2} km² ({p.areaHectares || (p.areaKm2 * 100).toFixed(1)} ha)
-                          </td>
-                          <td style={{ padding: '8px 12px', color: '#475569' }}>
-                            {p.landAreaPercent || '-'}
-                          </td>
-                          <td style={{ padding: '8px 12px', color: '#475569' }}>
-                            {p.population2010?.toLocaleString()} → {p.population2025Proj?.toLocaleString()}
-                          </td>
-                          <td style={{ padding: '8px 12px', color: p.floodSusceptibility?.includes('High') ? '#b91c1c' : '#b45309', fontWeight: '600' }}>
-                            {p.floodSusceptibility || 'Moderate'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Official Municipal Land Use Allocation (Table 14) */}
-            {STO_TOMAS_GOVERNMENT_INFO.clupProposedLandUseTable14 && (
+              {/* Barangay Breakdown Table */}
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>CLUP 2016-2025 Proposed Land Use Allocation (Table 14)</span>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>Total: 1,467.50 Hectares (100.0%)</span>
+                  <span>7 Official Barangays (Cadastral & CLUP Profiles)</span>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>Source: CLUP 2016-2025 Table 1, 4 & 5</span>
                 </div>
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflowX: 'auto', maxHeight: '200px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.74rem' }}>
-                    <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem', minWidth: '700px' }}>
+                    <thead>
                       <tr style={{ background: '#f1f5f9', textAlign: 'left', color: '#475569', fontWeight: '700' }}>
-                        <th style={{ padding: '6px 10px' }}>Land Use Category</th>
-                        <th style={{ padding: '6px 10px', textAlign: 'right' }}>Existing 2015 (ha)</th>
-                        <th style={{ padding: '6px 10px', textAlign: 'right' }}>Proposed 2016-2025 (ha)</th>
-                        <th style={{ padding: '6px 10px', textAlign: 'right' }}>Proposed Share (%)</th>
+                        <th style={{ padding: '8px 12px' }}>Barangay</th>
+                        <th style={{ padding: '8px 12px' }}>OTOP (Product)</th>
+                        <th style={{ padding: '8px 12px' }}>CLUP Zone Code</th>
+                        <th style={{ padding: '8px 12px' }}>Land Area</th>
+                        <th style={{ padding: '8px 12px' }}>% Share</th>
+                        <th style={{ padding: '8px 12px' }}>Pop. (2010→2025)</th>
+                        <th style={{ padding: '8px 12px' }}>Flood Risk</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {STO_TOMAS_GOVERNMENT_INFO.clupProposedLandUseTable14.map((row: any, i: number) => (
-                        <tr key={i} style={{ borderTop: '1px solid #f1f5f9', background: i % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                          <td style={{ padding: '6px 10px', fontWeight: '600', color: '#1e293b' }}>{row.category}</td>
-                          <td style={{ padding: '6px 10px', textAlign: 'right', color: '#64748b' }}>{row.existingHa.toFixed(2)} ha</td>
-                          <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: '700', color: '#1e3a8a' }}>{row.proposedHa.toFixed(2)} ha</td>
-                          <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: '600', color: '#16a34a' }}>{row.proposedPct.toFixed(2)}%</td>
-                        </tr>
-                      ))}
+                      {stoTomasZoningGeoJSON.features.map((feat: any, idx: number) => {
+                        const p = feat.properties;
+                        return (
+                          <tr key={idx} style={{ borderTop: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                            <td style={{ padding: '8px 12px', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: p.color, display: 'inline-block' }}></span>
+                              {p.barangay}
+                            </td>
+                            <td style={{ padding: '8px 12px', color: '#92400e', fontWeight: '600' }}>
+                              {p.otop || 'N/A'}
+                            </td>
+                            <td style={{ padding: '8px 12px', color: '#334155' }}>
+                              <span style={{ background: `${p.color}15`, color: p.color, padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>
+                                {p.code}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px 12px', fontWeight: '600', color: '#475569' }}>
+                              {p.areaKm2} km² ({p.areaHectares || (p.areaKm2 * 100).toFixed(1)} ha)
+                            </td>
+                            <td style={{ padding: '8px 12px', color: '#475569' }}>
+                              {p.landAreaPercent || '-'}
+                            </td>
+                            <td style={{ padding: '8px 12px', color: '#475569' }}>
+                              {p.population2010?.toLocaleString()} → {p.population2025Proj?.toLocaleString()}
+                            </td>
+                            <td style={{ padding: '8px 12px', color: p.floodSusceptibility?.includes('High') ? '#b91c1c' : '#b45309', fontWeight: '600' }}>
+                              {p.floodSusceptibility || 'Moderate'}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               </div>
-            )}
 
-            {/* Legal Authorities & File Provenance */}
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px', marginBottom: '20px' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: '800', color: '#1e3a8a', marginBottom: '6px' }}>
-                Legal Framework & Data Provenance (CLUP 2016-2025 Enacted)
-              </div>
-              <ul style={{ margin: '0 0 10px 0', paddingLeft: '18px', fontSize: '0.76rem', color: '#475569', lineHeight: '1.4' }}>
-                <li><strong>Republic Act No. 7160</strong> (Local Government Code of 1991, Sec. 20 (c) CLUP Mandate)</li>
-                <li><strong>Presidential Decree No. 1096</strong> (National Building Code of the Philippines - NBCP)</li>
-                <li><strong>Presidential Decree No. 1441</strong> (Mandating Barrio San Vicente as the Official Seat of Municipal Government)</li>
-                <li><strong>Presidential Decree No. 1067</strong> (Water Code of the Philippines - Mandatory 3m Urban & 20m Agri River Easements)</li>
-                <li><strong>Comprehensive Land Use Plan (CLUP 2016-2025)</strong> & Zoning Ordinance of Sto. Tomas, Pampanga</li>
-                <li><strong>Cadastral Survey Reference</strong>: OpenStreetMap Administrative Relation <code>13255070</code> and Relations <code>21027520–21027526</code></li>
-              </ul>
-              
-              <div style={{ fontSize: '0.76rem', color: '#475569' }}>
-                <strong>Active System File:</strong> <code style={{ background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>/data/sto_tomas_pampanga_cadastral.geojson</code>
+              {/* Official Municipal Land Use Allocation (Table 14) */}
+              {STO_TOMAS_GOVERNMENT_INFO.clupProposedLandUseTable14 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>CLUP 2016-2025 Proposed Land Use Allocation (Table 14)</span>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>Total: 1,467.50 Hectares (100.0%)</span>
+                  </div>
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflowX: 'auto', maxHeight: '200px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.74rem' }}>
+                      <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                        <tr style={{ background: '#f1f5f9', textAlign: 'left', color: '#475569', fontWeight: '700' }}>
+                          <th style={{ padding: '6px 10px' }}>Land Use Category</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'right' }}>Existing 2015 (ha)</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'right' }}>Proposed 2016-2025 (ha)</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'right' }}>Proposed Share (%)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {STO_TOMAS_GOVERNMENT_INFO.clupProposedLandUseTable14.map((row: any, i: number) => (
+                          <tr key={i} style={{ borderTop: '1px solid #f1f5f9', background: i % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                            <td style={{ padding: '6px 10px', fontWeight: '600', color: '#1e293b' }}>{row.category}</td>
+                            <td style={{ padding: '6px 10px', textAlign: 'right', color: '#64748b' }}>{row.existingHa.toFixed(2)} ha</td>
+                            <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: '700', color: '#1e3a8a' }}>{row.proposedHa.toFixed(2)} ha</td>
+                            <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: '600', color: '#16a34a' }}>{row.proposedPct.toFixed(2)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Legal Authorities & File Provenance */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: '800', color: '#1e3a8a', marginBottom: '6px' }}>
+                  Legal Framework & Data Provenance (CLUP 2016-2025 Enacted)
+                </div>
+                <ul style={{ margin: '0 0 10px 0', paddingLeft: '18px', fontSize: '0.76rem', color: '#475569', lineHeight: '1.4' }}>
+                  <li><strong>Republic Act No. 7160</strong> (Local Government Code of 1991, Sec. 20 (c) CLUP Mandate)</li>
+                  <li><strong>Presidential Decree No. 1096</strong> (National Building Code of the Philippines - NBCP)</li>
+                  <li><strong>Presidential Decree No. 1441</strong> (Mandating Barrio San Vicente as the Official Seat of Municipal Government)</li>
+                  <li><strong>Presidential Decree No. 1067</strong> (Water Code of the Philippines - Mandatory 3m Urban & 20m Agri River Easements)</li>
+                  <li><strong>Comprehensive Land Use Plan (CLUP 2016-2025)</strong> & Zoning Ordinance of Sto. Tomas, Pampanga</li>
+                  <li><strong>Cadastral Survey Reference</strong>: OpenStreetMap Administrative Relation <code>13255070</code> and Relations <code>21027520–21027526</code></li>
+                </ul>
+                
+                <div style={{ fontSize: '0.76rem', color: '#475569' }}>
+                  <strong>Active System File:</strong> <code style={{ background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>/data/sto_tomas_pampanga_cadastral.geojson</code>
+                </div>
               </div>
             </div>
 
-            {/* Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <a
-                href="/data/sto_tomas_pampanga_cadastral.geojson"
-                target="_blank"
-                rel="noopener noreferrer"
+            {/* Modal Sticky Footer with Close & Action Buttons */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '12px 24px', 
+              borderTop: '1px solid #e2e8f0', 
+              background: '#f8fafc',
+              flexShrink: 0
+            }}>
+              <button
+                onClick={() => setShowGeoDataModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  color: '#1e293b',
+                  background: '#ffffff',
+                  color: '#475569',
                   border: '1px solid #cbd5e1',
                   borderRadius: '8px',
-                  padding: '9px 16px',
+                  padding: '8px 16px',
                   fontSize: '0.82rem',
-                  fontWeight: '700',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px'
+                  fontWeight: '600',
+                  cursor: 'pointer'
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                View Raw GeoJSON
-              </a>
-              <a
-                href="/data/sto_tomas_pampanga_cadastral.geojson"
-                download="sto_tomas_pampanga_cadastral.geojson"
-                style={{
-                  background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '9px 18px',
-                  fontSize: '0.82rem',
-                  fontWeight: '700',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 8px rgba(30, 64, 175, 0.3)'
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                Download Official Cadastral GeoJSON
-              </a>
+                {isEn ? "Close" : "Isara"}
+              </button>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <a
+                  href="/data/sto_tomas_pampanga_cadastral.geojson"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: '#ffffff',
+                    color: '#1e293b',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '8px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: '700',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                  {isEn ? "View Raw GeoJSON" : "Tingnan ang Raw GeoJSON"}
+                </a>
+                <a
+                  href="/data/sto_tomas_pampanga_cadastral.geojson"
+                  download="sto_tomas_pampanga_cadastral.geojson"
+                  style={{
+                    background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 18px',
+                    fontSize: '0.82rem',
+                    fontWeight: '700',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(30, 64, 175, 0.3)'
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  {isEn ? "Download Official Cadastral GeoJSON" : "I-download ang GeoJSON"}
+                </a>
+              </div>
             </div>
           </div>
         </div>

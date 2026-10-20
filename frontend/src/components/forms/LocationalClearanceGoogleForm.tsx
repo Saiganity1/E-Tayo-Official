@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import { generateLocationalClearancePdf } from "../../utils/locationalClearancePdfGenerator";
+import { BARANGAY_CENTERS, STO_TOMAS_MUNICIPAL_CENTER } from "../../data/stoTomasGeoJSON";
 
 export interface LocationalClearanceFormProps {
   onCancel?: () => void;
@@ -260,8 +261,8 @@ export default function LocationalClearanceGoogleForm({
         fileName: generatedFileName,
         sketchImageUrl: sketchImageBase64 || undefined,
         location: {
-          lat: 15.0163,
-          lng: 120.7188,
+          lat: (BARANGAY_CENTERS[barangay] || STO_TOMAS_MUNICIPAL_CENTER)[0],
+          lng: (BARANGAY_CENTERS[barangay] || STO_TOMAS_MUNICIPAL_CENTER)[1],
           address: fullProjectLocation,
         },
         requirements: [
