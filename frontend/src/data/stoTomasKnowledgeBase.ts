@@ -1474,12 +1474,166 @@ export function extractEntities(query: string) {
 }
 
 /**
+ * Detects if a message is primarily Tagalog/Filipino or English.
+ */
+export function isFilipinoMessage(text: string): boolean {
+  const filipinoWords = [
+    "ano", "bakit", "paano", "saan", "kailan", "sino", "magkano",
+    "ako", "ikaw", "siya", "sya", "kami", "tayo", "sila", "namin",
+    "ko", "mo", "nya", "niya", "natin", "inyo", "akin", "iyo",
+    "ang", "mga", "ng", "sa", "kay", "para", "dahil", "kasi",
+    "may", "mayroon", "wala", "meron", "walang", "hindi", "di",
+    "ba", "po", "opo", "naman", "nga", "pala", "din", "rin", "lang",
+    "mag", "nag", "pag", "um", "in", "ka", "na", "pa", "oo",
+    "magbigay", "bigay", "bigyan", "gawa", "gumawa", "bahay", "lupa"
+  ];
+  const words = text.toLowerCase().split(/\s+/);
+  const matchCount = words.filter(w => filipinoWords.includes(w.replace(/[^a-z]/g, ""))).length;
+  return matchCount > 0;
+}
+
+/**
+ * Strict guardrail to detect off-topic queries such as programming code, general homework,
+ * creative writing, cooking, gaming, or general AI chit-chat outside Sto. Tomas permitting.
+ */
+export function isOffTopicQuery(query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return false;
+
+  // Phrases containing "code" that are valid in municipal/permitting context
+  const safeCodePhrases = [
+    "building code",
+    "fire code",
+    "water code",
+    "revenue code",
+    "sanitation code",
+    "structural code",
+    "electrical code",
+    "plumbing code",
+    "mechanical code",
+    "postal code",
+    "zip code",
+    "qr code",
+    "tracking code",
+    "reference code",
+    "application code",
+    "tax code",
+    "penal code",
+    "local government code"
+  ];
+
+  const containsSafeCode = safeCodePhrases.some(phrase => q.includes(phrase));
+
+  // 1. Programming Languages & Coding Requests
+  const programmingPatterns = [
+    /\bpython\b/i,
+    /\bjavascript\b|\btypescript\b/i,
+    /\b(c\+\+|cpp|csharp|c#)\b/i,
+    /\b(golang|go\s+lang)\b/i,
+    /\b(ruby|ruby on rails)\b/i,
+    /\b(rust\s+lang|rust\s+programming)\b/i,
+    /\bphp\b/i,
+    /\bkotlin\b/i,
+    /\bjava\b(?!\s*(river|bay|street|st\b))/i,
+    /\b(react|angular|vue|svelte|nextjs|django|flask|spring boot|laravel)\b/i,
+    /\b(write|create|generate|provide|give|sample|make)\s+(me\s+)?(a\s+)?(code|script|program|function|algorithm|app|macro)\b/i,
+    /\b(magbigay|gumawa|gawa|mag-code|magcode|turuan)\s+(ka\s+|mo\s+ako\s+)?(ng\s+)?(code|script|program|function|algorithm|coding)\b/i,
+    /\b(source\s*code|coding|programmer|web\s*development|software\s*engineering)\b/i,
+    /\b(html|css)\s+(code|script|styling|tags)\b/i,
+    /\b(sql\s*query|select\s+\*\s+from|insert\s+into|drop\s+table)\b/i,
+    /\b(def\s+[a-zA-Z0-9_]+\s*\(|console\.log|System\.out\.println|print\(["'])/i,
+    /\bdebug\s+(my\s+)?(code|script|program)\b/i
+  ];
+
+  if (programmingPatterns.some(pattern => pattern.test(q))) {
+    return true;
+  }
+
+  // If the word "code" is present but NOT in a safe municipal phrase
+  if (/\bcode\b/i.test(q) && !containsSafeCode) {
+    if (/\b(write|magbigay|gawa|sample|syntax|execute|run|compile|snippet|function)\b/i.test(q)) {
+      return true;
+    }
+  }
+
+  // 2. Jailbreak / Prompt Injection attempts to bypass persona
+  const jailbreakPatterns = [
+    /\bignore\s+(all\s+)?(previous|prior)\s+(instructions|prompts)\b/i,
+    /\byou\s+are\s+now\s+(a|an)\b/i,
+    /\bact\s+as\s+(a|an)\b/i,
+    /\bpretend\s+(to\s+be|you\s+are)\b/i,
+    /\b(dan\s+mode|jailbreak)\b/i,
+    /\bdeveloper\s+mode\b/i
+  ];
+
+  if (jailbreakPatterns.some(pattern => pattern.test(q))) {
+    return true;
+  }
+
+  // 3. Unrelated Creative Writing / General Academic / Non-municipal Requests
+  const unrelatedPatterns = [
+    /\b(write|gumawa|gawa)\s+(ka\s+|mo\s+ako\s+)?(ng\s+)?(tula|poem|sanaysay|essay|story|kwento|song|kanta|joke)\b/i,
+    /\b(solve|lutasin)\s+(this\s+)?(calculus|derivative|integral|algebra|equation|math problem)\b/i,
+    /\b(paano magluto|recipe ng|how to cook|ingredients for)\b/i,
+    /\b(tell me a joke|magpatawa ka|joke nga|magbiro)\b/i
+  ];
+
+  if (unrelatedPatterns.some(pattern => pattern.test(q))) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Generates an empathetic, polite, but firm refusal when an off-topic query is detected,
+ * redirecting the user back to Sto. Tomas, Pampanga permitting services.
+ */
+export function getOffTopicRefusal(query: string): string {
+  const isFilipino = isFilipinoMessage(query);
+
+  if (isFilipino) {
+    return `Mabuhay! Paumanhin po, bilang si **Mang Tomas**, ang inyong AI Virtual Permitting Officer para sa Bayan ng Sto. Tomas, Pampanga (eTAYO), ang aking tungkulin ay nakalaan lamang para sa mga paksang may kinalaman sa ating **Building Permits, Locational Clearances, Zoning, Panuntunan sa Konstruksyon, Pagkwenta ng Permit Fees, at eTAYO Portal services**.
+
+Hindi po ako pinahihintulutang magbigay ng programming code (tulad ng Python) o sumagot sa mga paksang walang kinalaman sa ating sistema at munisipyo.
+
+📌 **Maaari po ninyong itanong sa akin ang mga sumusunod:**
+• *"Ano ang requirements sa pagpapatayo ng bahay?"*
+• *"Magkano ang permit fees para sa 100 sqm?"*
+• *"Bakit kailangan muna ang Locational Clearance?"*
+• *"Kumusta ang status ng application ko?"*
+• *"Ano ang zoning rules sa Barangay San Matias o San Bartolome?"*
+
+May maitutulong po ba ako sa inyong permit application o construction requirements dito sa Sto. Tomas?`;
+  }
+
+  return `Greetings! I apologize, but as **Mang Tomas**, the AI Virtual Permitting Officer for the Municipality of Sto. Tomas, Pampanga (eTAYO), my assistance is strictly dedicated to **Building Permits, Locational / Zoning Clearances, Construction Guidelines, Permit Fee Calculations, and the eTAYO Portal**.
+
+I am not permitted to provide programming code (such as Python) or address inquiries unrelated to our municipal permitting system.
+
+📌 **You may ask me about:**
+• *"What are the requirements for building a house?"*
+• *"How much are the permit fees for 100 sqm?"*
+• *"Why is Locational Clearance required before a Building Permit?"*
+• *"What is the status of my permit application?"*
+• *"What are the zoning guidelines in Barangay San Matias or San Bartolome?"*
+
+How may I assist you with your construction project or permit requirements in Sto. Tomas today?`;
+}
+
+/**
  * Enhanced Semantic ML Matching Engine
  * Uses Token TF-IDF N-gram overlap, entity extraction, and dynamic calculators.
  */
 export function findKnowledgeBaseMatches(query: string, userApplications?: any[]): string {
   const q = query.trim();
   const qLower = q.toLowerCase();
+
+  // STRICT GUARDRAIL: Intercept off-topic questions (e.g., programming code, essays, recipes, etc.)
+  if (isOffTopicQuery(q)) {
+    return getOffTopicRefusal(q);
+  }
+
   const entities = extractEntities(q);
 
   // 1. LIVE USER APPLICATION STATUS CHECK

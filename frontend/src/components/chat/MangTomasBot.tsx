@@ -13,7 +13,7 @@ interface ChatMessage {
   role: "bot" | "user";
   text: string;
   timestamp: Date;
-  source?: "gemini" | "openai" | "local_ml" | "local_ml_calculator" | "error_fallback";
+  source?: "gemini" | "openai" | "local_ml" | "local_ml_calculator" | "error_fallback" | "guardrail";
 }
 
 interface QuickPromptCategory {
@@ -326,6 +326,8 @@ export default function MangTomasBot({
         return "🧠 OpenAI";
       case "local_ml":
         return "🤖 Sto. Tomas ML Engine";
+      case "guardrail":
+        return "🛡️ OBO Guardrail";
       case "error_fallback":
         return "ℹ️ OBO Helpdesk";
       default:
