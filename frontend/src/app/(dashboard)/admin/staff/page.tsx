@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePermitContext } from "../../../../context/PermitContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { formatPhilippineDateTime } from "@/utils/philippineTime";
 
 interface UserData {
@@ -61,6 +62,8 @@ const isDummyRecord = (item: any): boolean => {
 
 export default function AdminStaffPage() {
   const { applications, systemLogs } = usePermitContext();
+  const { language } = useLanguage();
+  const isFil = language === "fil";
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -160,7 +163,7 @@ export default function AdminStaffPage() {
 
   const handlePromoteApplicant = async () => {
     if (!selectedApplicantId) {
-      alert("Pumili ng applicant na ia-assign bilang Staff.");
+      alert(isFil ? "Pumili ng applicant na ia-assign bilang Staff." : "Please select an applicant to assign as Staff.");
       return;
     }
     setIsSubmittingStaff(true);
@@ -188,7 +191,7 @@ export default function AdminStaffPage() {
         } catch (e) {}
       }
 
-      setActionMessage("Matagumpay na nai-assign ang napiling applicant bilang Staff!");
+      setActionMessage(isFil ? "Matagumpay na nai-assign ang napiling applicant bilang Staff!" : "Selected applicant successfully assigned as Staff!");
       setIsAssignModalOpen(false);
       setSelectedApplicantId("");
       await fetchStaff();
@@ -203,7 +206,7 @@ export default function AdminStaffPage() {
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStaffName.trim() || !newStaffEmail.trim()) {
-      alert("Pakilagay ang pangalan at email address ng staff.");
+      alert(isFil ? "Pakilagay ang pangalan at email address ng staff." : "Please enter the staff member's name and email address.");
       return;
     }
 
@@ -242,7 +245,7 @@ export default function AdminStaffPage() {
         } catch (e) {}
       }
 
-      setActionMessage(`Matagumpay na nalikha at nai-assign si ${newStaffName} bilang Staff!`);
+      setActionMessage(isFil ? `Matagumpay na nalikha at nai-assign si ${newStaffName} bilang Staff!` : `Successfully created and assigned ${newStaffName} as Staff!`);
       setIsAssignModalOpen(false);
       setNewStaffName("");
       setNewStaffEmail("");
@@ -257,7 +260,10 @@ export default function AdminStaffPage() {
   };
 
   const handleUnassignStaff = async (staffId: number, staffName: string) => {
-    if (!window.confirm(`Sigurado ka ba na nais mong alisin si ${staffName} mula sa Evaluating Staff? Babalik ang kanyang account bilang regular applicant.`)) {
+    const confirmPrompt = isFil 
+      ? `Sigurado ka ba na nais mong alisin si ${staffName} mula sa Evaluating Staff? Babalik ang kanyang account bilang regular applicant.`
+      : `Are you sure you want to remove ${staffName} from Evaluating Staff? Their account will revert to a regular applicant.`;
+    if (!window.confirm(confirmPrompt)) {
       return;
     }
 
@@ -285,7 +291,7 @@ export default function AdminStaffPage() {
         } catch (e) {}
       }
 
-      setActionMessage(`Matagumpay na inalis si ${staffName} sa listahan ng Staff.`);
+      setActionMessage(isFil ? `Matagumpay na inalis si ${staffName} sa listahan ng Staff.` : `Successfully removed ${staffName} from Staff list.`);
       await fetchStaff();
       setTimeout(() => setActionMessage(null), 4000);
     } catch (err: any) {
@@ -602,7 +608,9 @@ export default function AdminStaffPage() {
               <ShieldAlert size={30} color="#0038A8" /> Staff Management
             </h1>
             <p className="page-subtitle" style={{ fontSize: "0.95rem", color: "#475569", margin: "0.35rem 0 0 0" }}>
-              Manwal na mag-assign ng mga opisyal na magiging evaluating staff para sa pagsusuri ng mga permit.
+              {isFil 
+                ? "Manwal na mag-assign ng mga opisyal na magiging evaluating staff para sa pagsusuri ng mga permit." 
+                : "Manually assign officials who will serve as evaluating staff for permit reviews."}
             </p>
           </div>
 
@@ -647,7 +655,7 @@ export default function AdminStaffPage() {
               }}
             >
               <UserPlus size={18} />
-              <span>Assign Staff Member</span>
+              <span>{isFil ? "Mag-assign ng Kawani" : "Assign Staff Member"}</span>
             </button>
           </div>
         </header>
@@ -676,7 +684,7 @@ export default function AdminStaffPage() {
           {loading ? (
             <div style={{ padding: "3rem", textAlign: "center" }}>
               <div className="spinner" style={{ width: "40px", height: "40px", border: "4px solid rgba(29, 78, 216, 0.2)", borderTopColor: "#1d4ed8", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 1rem auto" }}></div>
-              <p style={{ color: "#64748b" }}>Loading staff...</p>
+              <p style={{ color: "#64748b" }}>{isFil ? "Naglo-load ng staff..." : "Loading staff..."}</p>
             </div>
           ) : error ? (
             <div style={{ padding: "2rem", background: "#fef2f2", color: "#b91c1c", borderRadius: "12px", display: "flex", alignItems: "center", gap: "12px" }}>
@@ -707,10 +715,12 @@ export default function AdminStaffPage() {
                 <Users size={36} />
               </div>
               <h2 style={{ fontSize: "1.35rem", fontWeight: "800", color: "#0f172a", margin: "0 0 8px 0" }}>
-                Walang Staff Accounts sa Sistema
+                {isFil ? "Walang Staff Accounts sa Sistema" : "No Staff Accounts in the System"}
               </h2>
               <p style={{ fontSize: "0.95rem", color: "#64748b", maxWidth: "480px", margin: "0 auto 1.75rem auto", lineHeight: 1.6 }}>
-                Ang system ay walang pre-created o automatic staff accounts. Ikaw bilang Admin ang mag-aassign kung sinong opisyal ang may karapatang mag-evaluate ng mga permit.
+                {isFil
+                  ? "Ang system ay walang pre-created o automatic staff accounts. Ikaw bilang Admin ang mag-aassign kung sinong opisyal ang may karapatang mag-evaluate ng mga permit."
+                  : "The system has no pre-created or automatic staff accounts. As Admin, you assign which officials have authority to evaluate permits."}
               </p>
               <button
                 onClick={openAssignModal}
@@ -730,7 +740,7 @@ export default function AdminStaffPage() {
                 }}
               >
                 <UserPlus size={18} />
-                <span>+ Mag-assign ng Staff Member</span>
+                <span>{isFil ? "+ Mag-assign ng Staff Member" : "+ Assign Staff Member"}</span>
               </button>
             </div>
           ) : (
@@ -862,7 +872,7 @@ export default function AdminStaffPage() {
                     Assign Evaluating Staff
                   </h3>
                   <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                    Pumili sa mga rehistrado o lumikha ng bagong staff account
+                    {isFil ? "Pumili sa mga rehistrado o lumikha ng bagong staff account" : "Select from registered applicants or create a new staff account"}
                   </p>
                 </div>
               </div>
@@ -892,7 +902,7 @@ export default function AdminStaffPage() {
                   transition: "all 0.15s"
                 }}
               >
-                Promote Existing User
+                {isFil ? "I-promote ang Rehistradong User" : "Promote Existing User"}
               </button>
               <button
                 type="button"
@@ -910,7 +920,7 @@ export default function AdminStaffPage() {
                   transition: "all 0.15s"
                 }}
               >
-                Create New Staff
+                {isFil ? "Lumikha ng Bagong Kawani" : "Create New Staff"}
               </button>
             </div>
 
@@ -919,16 +929,16 @@ export default function AdminStaffPage() {
               {assignTab === "promote" ? (
                 <div>
                   <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
-                    Pumili ng Rehistradong Applicant na gagawing Staff:
+                    {isFil ? "Pumili ng Rehistradong Applicant na gagawing Staff:" : "Select a Registered Applicant to promote to Staff:"}
                   </label>
 
                   {loadingApplicants ? (
                     <div style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>
-                      Naglo-load ng applicants...
+                      {isFil ? "Naglo-load ng applicants..." : "Loading applicants..."}
                     </div>
                   ) : applicants.length === 0 ? (
                     <div style={{ padding: "1.5rem", background: "#f8fafc", borderRadius: "12px", textAlign: "center", color: "#64748b", border: "1px dashed #cbd5e1" }}>
-                      Walang applicants na puwedeng i-promote. Gamitin ang "Create New Staff" tab.
+                      {isFil ? "Walang applicants na puwedeng i-promote. Gamitin ang \"Create New Staff\" tab." : "No eligible applicants to promote. Use the \"Create New Staff\" tab."}
                     </div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "240px", overflowY: "auto", paddingRight: "4px" }}>
@@ -1009,7 +1019,7 @@ export default function AdminStaffPage() {
                         required
                         value={newStaffName}
                         onChange={(e) => setNewStaffName(e.target.value)}
-                        placeholder="hal. Engr. Gilbert Cruz o Dave Sicat"
+                        placeholder={isFil ? "hal. Engr. Gilbert Cruz o Dave Sicat" : "e.g. Engr. Gilbert Cruz or Dave Sicat"}
                         style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1.5px solid #cbd5e1", fontSize: "0.92rem", outline: "none" }}
                       />
                     </div>
@@ -1023,7 +1033,7 @@ export default function AdminStaffPage() {
                         required
                         value={newStaffEmail}
                         onChange={(e) => setNewStaffEmail(e.target.value)}
-                        placeholder="hal. gilbert.cruz@etayo.gov.ph"
+                        placeholder={isFil ? "hal. gilbert.cruz@etayo.gov.ph" : "e.g. gilbert.cruz@etayo.gov.ph"}
                         style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1.5px solid #cbd5e1", fontSize: "0.92rem", outline: "none" }}
                       />
                     </div>
@@ -1036,7 +1046,7 @@ export default function AdminStaffPage() {
                         type="password"
                         value={newStaffPassword}
                         onChange={(e) => setNewStaffPassword(e.target.value)}
-                        placeholder="password123 (default kung blangko)"
+                        placeholder={isFil ? "password123 (default kung blangko)" : "password123 (default if blank)"}
                         style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1.5px solid #cbd5e1", fontSize: "0.92rem", outline: "none" }}
                       />
                     </div>
