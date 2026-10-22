@@ -140,7 +140,7 @@ export interface ZoneInfo {
 }
 
 interface LocationPickerMapProps {
-  onLocationChange?: (lat: number, lng: number, zone?: ZoneInfo | null) => void;
+  onLocationChange?: (lat: number, lng: number, zone?: ZoneInfo | null, isUserAction?: boolean) => void;
   selectedBarangay?: string;
   initialLat?: number;
   initialLng?: number;
@@ -195,9 +195,32 @@ export default function LocationPickerMap({
 
     if (onLocationChange) {
       const zoneInfo = getZoneForPoint(lng, lat);
-      onLocationChange(lat, lng, zoneInfo);
+      onLocationChange(lat, lng, zoneInfo, isFromUserAction);
     }
   };
+
+  // Sync when initialLat / initialLng change externally (e.g. from address typing or forward geocoding)
+  useEffect(() => {
+    if (isInternalUpdateRef.current) {
+      return;
+    }
+    if (
+      typeof initialLat === "number" && 
+      typeof initialLng === "number" && 
+      !isNaN(initialLat) && 
+      !isNaN(initialLng) && 
+      initialLat !== 0 && 
+      initialLng !== 0
+    ) {
+      if (Math.abs(position[0] - initialLat) > 0.0001 || Math.abs(position[1] - initialLng) > 0.0001) {
+        setPosition([initialLat, initialLng]);
+        const zoneInfo = getZoneForPoint(initialLng, initialLat);
+        if (onLocationChange) {
+          onLocationChange(initialLat, initialLng, zoneInfo, false);
+        }
+      }
+    }
+  }, [initialLat, initialLng]);
 
   // Sync when selectedBarangay prop changes externally (e.g. user chose from dropdown)
   useEffect(() => {
@@ -225,7 +248,7 @@ export default function LocationPickerMap({
     if (onLocationChange) {
       const initialPos = getInitialPosition();
       const zoneInfo = getZoneForPoint(initialPos[1], initialPos[0]);
-      onLocationChange(initialPos[0], initialPos[1], zoneInfo);
+      onLocationChange(initialPos[0], initialPos[1], zoneInfo, false);
     }
 
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);

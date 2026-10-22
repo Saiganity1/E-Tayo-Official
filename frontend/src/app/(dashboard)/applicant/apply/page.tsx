@@ -33,7 +33,7 @@ import {
   getConditionalPermitForms,
   getPermitFormTemplate
 } from "../../../../data/projectTypeMatrix";
-import { STO_TOMAS_BARANGAYS } from "../../../../data/stoTomasGeoJSON";
+import { STO_TOMAS_BARANGAYS, BARANGAY_CENTERS } from "../../../../data/stoTomasGeoJSON";
 
 const CATEGORY_THEMES: Record<string, { icon: any; color: string; bg: string; border: string; glow: string }> = {
   All: { icon: Layers, color: "#334155", bg: "#f1f5f9", border: "#cbd5e1", glow: "rgba(100, 116, 139, 0.15)" },
@@ -579,8 +579,10 @@ export default function ApplyPage() {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [detectedZone, setDetectedZone] = useState<{barangay?: string, zoneType?: string, description?: string} | null>(null);
+  const [isResolvingAddress, setIsResolvingAddress] = useState(false);
+  const [addressResolvedViaPinpoint, setAddressResolvedViaPinpoint] = useState(false);
 
-  // Auto-sync project information (name, address, applicant) from matched clearance
+  // Auto-sync project information (name, address, dimensions, cost, coordinates) from matched clearance
   useEffect(() => {
     if (matchedClearanceApp) {
       if (matchedClearanceApp.projectName && !projectName) {
@@ -593,11 +595,100 @@ export default function ApplyPage() {
       if (matchedClearanceApp.applicantEmail && !applicantEmail) {
         setApplicantEmail(matchedClearanceApp.applicantEmail);
       }
-      if (matchedClearanceApp.barangay && barangay === "San Bartolome") {
+      if (matchedClearanceApp.barangay) {
         setBarangay(matchedClearanceApp.barangay);
+      }
+      if (!streetAddress) {
+        const rawStreet = (matchedClearanceApp as any).streetLocation || 
+          (matchedClearanceApp.projectAddress ? matchedClearanceApp.projectAddress.split(",")[0].trim() : "");
+        if (rawStreet && !rawStreet.toLowerCase().startsWith("brgy")) {
+          setStreetAddress(rawStreet);
+        }
+      }
+      if (!latitude && (matchedClearanceApp as any).location?.lat) {
+        setLatitude(Number((matchedClearanceApp as any).location.lat).toFixed(6));
+      }
+      if (!longitude && (matchedClearanceApp as any).location?.lng) {
+        setLongitude(Number((matchedClearanceApp as any).location.lng).toFixed(6));
       }
     }
   }, [matchedClearanceApp]);
+
+  // Real-time location discrepancy detection between pinpointed Cadastral Barangay and user address
+  const addressConflictNotice = useMemo(() => {
+    if (!streetAddress) return null;
+    const lower = streetAddress.toLowerCase();
+    for (const b of STO_TOMAS_BARANGAYS) {
+      if (b.toLowerCase() !== barangay.toLowerCase() && lower.includes(b.toLowerCase())) {
+        return `Location Mismatch: Your pinpoint and selected zone is Brgy. ${barangay}, but the street address mentions "${b}". Address must be consistent with the pinpointed cadastral zone.`;
+      }
+    }
+    if (detectedZone?.barangay && detectedZone.barangay.toLowerCase() !== barangay.toLowerCase()) {
+      return `Cadastral Boundary Mismatch: Map pin is located in Brgy. ${detectedZone.barangay}, but form has selected Brgy. ${barangay}. Please synchronize your pin and barangay.`;
+    }
+    return null;
+  }, [streetAddress, barangay, detectedZone?.barangay]);
+
+  // Two-way sync: Forward geocoding when user types address or picks barangay
+  const forwardGeocodeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const forwardGeocodeAddress = useCallback(async (queryAddress: string, queryBarangay: string) => {
+    const cleanAddr = (queryAddress || "").trim();
+    if (!cleanAddr || cleanAddr.length < 3) return;
+
+    if (cleanAddr.toLowerCase().startsWith("purok 1, brgy.")) return;
+
+    try {
+      setIsResolvingAddress(true);
+      const query = `${cleanAddr}, ${queryBarangay}, Santo Tomas, Pampanga`;
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      if (res.ok) {
+        const results = await res.json();
+        if (results && results.length > 0) {
+          const lat = parseFloat(results[0].lat);
+          const lng = parseFloat(results[0].lon);
+          // Check if coordinates are within Sto. Tomas municipal boundary box
+          if (
+            lat >= 14.970 && lat <= 15.035 &&
+            lng >= 120.685 && lng <= 120.740
+          ) {
+            setLatitude(lat.toFixed(6));
+            setLongitude(lng.toFixed(6));
+            setAddressResolvedViaPinpoint(true);
+            return;
+          }
+        }
+      }
+      // If exact street wasn't matched on map, pinpoint to the center of the selected barangay
+      if (BARANGAY_CENTERS[queryBarangay]) {
+        setLatitude(BARANGAY_CENTERS[queryBarangay][0].toFixed(6));
+        setLongitude(BARANGAY_CENTERS[queryBarangay][1].toFixed(6));
+      }
+    } catch (e) {
+      if (BARANGAY_CENTERS[queryBarangay]) {
+        setLatitude(BARANGAY_CENTERS[queryBarangay][0].toFixed(6));
+        setLongitude(BARANGAY_CENTERS[queryBarangay][1].toFixed(6));
+      }
+    } finally {
+      setIsResolvingAddress(false);
+    }
+  }, []);
+
+  const handleStreetAddressChange = (val: string) => {
+    setStreetAddress(val);
+    setAddressResolvedViaPinpoint(false);
+
+    if (forwardGeocodeTimerRef.current) {
+      clearTimeout(forwardGeocodeTimerRef.current);
+    }
+
+    forwardGeocodeTimerRef.current = setTimeout(() => {
+      forwardGeocodeAddress(val, barangay);
+    }, 850);
+  };
 
 
   
@@ -775,6 +866,36 @@ export default function ApplyPage() {
     }
   };
 
+  const handleProceedFromMapping = () => {
+    if (!streetAddress.trim()) {
+      setSubmissionErrorAlert("Please pinpoint your project location or enter a valid Street Address / Sitio.");
+      if (typeof window !== "undefined") window.scrollTo({ top: 300, behavior: "smooth" });
+      return;
+    }
+    if (!lotArea.trim() || Number(lotArea) <= 0) {
+      setSubmissionErrorAlert("Please enter a valid Lot Area in square meters (sq.m).");
+      if (typeof window !== "undefined") window.scrollTo({ top: 400, behavior: "smooth" });
+      return;
+    }
+    if (!floorArea.trim() || Number(floorArea) <= 0) {
+      setSubmissionErrorAlert("Please enter a valid Floor Area in square meters (sq.m).");
+      if (typeof window !== "undefined") window.scrollTo({ top: 400, behavior: "smooth" });
+      return;
+    }
+    if (!projectCost.trim() || Number(projectCost) <= 0) {
+      setSubmissionErrorAlert("Please enter an Estimated Project Cost in PHP.");
+      if (typeof window !== "undefined") window.scrollTo({ top: 400, behavior: "smooth" });
+      return;
+    }
+    if (addressConflictNotice) {
+      setSubmissionErrorAlert(addressConflictNotice);
+      if (typeof window !== "undefined") window.scrollTo({ top: 300, behavior: "smooth" });
+      return;
+    }
+    setSubmissionErrorAlert(null);
+    goToStep(5);
+  };
+
   const handleSubmitApplication = async () => {
     // Only check for duplicate if this exact Locational Clearance already has an active stage 2 building permit by this applicant
     const activeDuplicateApp = allAvailableApps.find((app: any) => {
@@ -812,6 +933,12 @@ export default function ApplyPage() {
 
     if (!streetAddress.trim()) {
       setSubmissionErrorAlert("Cannot submit application: Street Address is required.");
+      if (typeof document !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (addressConflictNotice) {
+      setSubmissionErrorAlert(`Cannot submit application: ${addressConflictNotice}`);
       if (typeof document !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -3221,7 +3348,7 @@ export default function ApplyPage() {
                     initialLat={latitude ? parseFloat(latitude) : undefined}
                     initialLng={longitude ? parseFloat(longitude) : undefined}
                     height="380px"
-                    onLocationChange={async (lat, lng, zone) => {
+                    onLocationChange={async (lat, lng, zone, isUserAction) => {
                       setLatitude(lat.toFixed(6));
                       setLongitude(lng.toFixed(6));
                       
@@ -3229,6 +3356,53 @@ export default function ApplyPage() {
                         setDetectedZone(zone);
                         if (zone.barangay) {
                           setBarangay(zone.barangay);
+                        }
+                      }
+
+                      // Auto-resolve street and sitio from pinpoint coordinates
+                      if (isUserAction || !streetAddress) {
+                        setIsResolvingAddress(true);
+                        try {
+                          const controller = new AbortController();
+                          const timeoutId = setTimeout(() => controller.abort(), 3500);
+                          const res = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+                            { signal: controller.signal }
+                          );
+                          clearTimeout(timeoutId);
+
+                          if (res.ok) {
+                            const data = await res.json();
+                            const road = data.address?.road || data.address?.pedestrian || data.address?.highway;
+                            const sub = data.address?.neighbourhood || data.address?.suburb || data.address?.residential;
+                            const bg = zone?.barangay || data.address?.village || data.address?.quarter;
+
+                            let resolvedStreet = "";
+                            if (road && sub && road !== sub) {
+                              resolvedStreet = `${road}, ${sub}`;
+                            } else if (road) {
+                              resolvedStreet = road;
+                            } else if (sub) {
+                              resolvedStreet = sub;
+                            } else if (bg) {
+                              resolvedStreet = `Purok 1, Brgy. ${bg}`;
+                            }
+
+                            if (resolvedStreet) {
+                              setStreetAddress(resolvedStreet);
+                              setAddressResolvedViaPinpoint(true);
+                            }
+                          } else if (zone?.barangay) {
+                            setStreetAddress(`Purok 1, Brgy. ${zone.barangay}`);
+                            setAddressResolvedViaPinpoint(true);
+                          }
+                        } catch {
+                          if (zone?.barangay) {
+                            setStreetAddress(`Purok 1, Brgy. ${zone.barangay}`);
+                            setAddressResolvedViaPinpoint(true);
+                          }
+                        } finally {
+                          setIsResolvingAddress(false);
                         }
                       }
                     }}
@@ -3257,36 +3431,180 @@ export default function ApplyPage() {
 
                 {/* 4. Site & Dimension Details Card (Placed underneath the map) */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", background: "#f8fafc", padding: "1.5rem", borderRadius: "14px", border: "1px solid #e2e8f0", boxShadow: "0 4px 14px rgba(0, 0, 0, 0.04)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid #e2e8f0", paddingBottom: "0.75rem" }}>
-                    <Building2 size={20} color="#2563eb" />
-                    <h4 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#0f172a" }}>
-                      Site & Dimension Details
-                    </h4>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #e2e8f0", paddingBottom: "0.75rem", flexWrap: "wrap", gap: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Building2 size={20} color="#2563eb" />
+                      <h4 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#0f172a" }}>
+                        Site & Dimension Details
+                      </h4>
+                    </div>
+                    {detectedZone?.barangay && (
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        fontSize: "0.75rem",
+                        fontWeight: "700",
+                        color: "#166534",
+                        background: "#dcfce7",
+                        padding: "3px 10px",
+                        borderRadius: "99px",
+                        border: "1px solid #bbf7d0"
+                      }}>
+                        <CheckCircle2 size={13} color="#16a34a" />
+                        Cadastral Pinpoint Synchronized: Brgy. {detectedZone.barangay}
+                      </span>
+                    )}
                   </div>
+
+                  {/* Real-time Mismatch Alert */}
+                  {addressConflictNotice && (
+                    <div className="animate-fade-in-up" style={{
+                      background: "#fef2f2",
+                      border: "1.5px solid #fca5a5",
+                      borderRadius: "10px",
+                      padding: "0.75rem 1rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      color: "#991b1b",
+                      fontSize: "0.85rem",
+                      fontWeight: "600"
+                    }}>
+                      <AlertTriangle size={18} color="#dc2626" style={{ flexShrink: 0 }} />
+                      <span>{addressConflictNotice}</span>
+                    </div>
+                  )}
+
+                  {/* Step 4 Submission / Validation Banner */}
+                  {submissionErrorAlert && currentStep === 4 && (
+                    <div className="animate-fade-in-up" style={{
+                      background: "#fff1f2",
+                      border: "1.5px solid #fecdd3",
+                      borderRadius: "10px",
+                      padding: "0.85rem 1rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      color: "#9f1239"
+                    }}>
+                      <AlertTriangle size={18} color="#e11d48" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: "0.86rem", fontWeight: "600" }}>{submissionErrorAlert}</span>
+                      <button
+                        type="button"
+                        onClick={() => setSubmissionErrorAlert(null)}
+                        style={{ marginLeft: "auto", background: "none", border: "none", color: "#9f1239", cursor: "pointer", fontWeight: "700", fontSize: "1rem" }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
                   
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem" }}>
                     {/* Left Sub-column: Street Address and Barangay */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                       <div className="form-group">
-                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Street Address / Sitio *</label>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                          <label style={{ fontWeight: "600", color: "#334155", fontSize: "0.88rem", margin: 0 }}>
+                            Street Address / Sitio *
+                          </label>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            {streetAddress && (
+                              <button
+                                type="button"
+                                onClick={() => forwardGeocodeAddress(streetAddress, barangay)}
+                                title="Locate and drop pin at this address on the map"
+                                style={{
+                                  background: "#eff6ff",
+                                  border: "1px solid #bfdbfe",
+                                  color: "#2563eb",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "3px",
+                                  fontSize: "0.72rem",
+                                  fontWeight: "700",
+                                  padding: "2px 7px",
+                                  borderRadius: "6px"
+                                }}
+                              >
+                                <MapPin size={11} color="#2563eb" />
+                                Pin on Map
+                              </button>
+                            )}
+                            {isResolvingAddress && (
+                              <span style={{ fontSize: "0.73rem", color: "#2563eb", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                <RefreshCw size={12} className="animate-spin" /> Syncing with map...
+                              </span>
+                            )}
+                            {!isResolvingAddress && addressResolvedViaPinpoint && (
+                              <span style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                fontSize: "0.72rem",
+                                fontWeight: "700",
+                                color: "#2563eb",
+                                background: "#eff6ff",
+                                padding: "2px 7px",
+                                borderRadius: "99px",
+                                border: "1px solid #bfdbfe"
+                              }}>
+                                <CheckCircle2 size={11} color="#2563eb" />
+                                Synchronized with Map
+                              </span>
+                            )}
+                          </div>
+                        </div>
                         <input 
                           type="text" 
                           required
                           placeholder="e.g. Purok 3, Poblacion Road" 
                           className="form-input" 
                           value={streetAddress}
-                          onChange={e => setStreetAddress(e.target.value)}
+                          onChange={e => handleStreetAddressChange(e.target.value)}
                           style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
                         />
                       </div>
 
                       <div className="form-group">
-                        <label style={{ fontWeight: "600", color: "#334155", marginBottom: "0.4rem", display: "block", fontSize: "0.88rem" }}>Barangay (Santo Tomas) *</label>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                          <label style={{ fontWeight: "600", color: "#334155", fontSize: "0.88rem", margin: 0 }}>
+                            Barangay (Santo Tomas) *
+                          </label>
+                          {detectedZone?.barangay && detectedZone.barangay === barangay && (
+                            <span style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              fontSize: "0.72rem",
+                              fontWeight: "700",
+                              color: "#166534",
+                              background: "#dcfce7",
+                              padding: "2px 7px",
+                              borderRadius: "99px",
+                              border: "1px solid #bbf7d0"
+                            }}>
+                              <CheckCircle2 size={11} color="#16a34a" />
+                              Verified Cadastral Zone
+                            </span>
+                          )}
+                        </div>
                         <select
                           className="form-input"
                           required
                           value={barangay}
-                          onChange={e => setBarangay(e.target.value)}
+                          onChange={e => {
+                            const newB = e.target.value;
+                            setBarangay(newB);
+                            if (BARANGAY_CENTERS[newB]) {
+                              setLatitude(BARANGAY_CENTERS[newB][0].toFixed(6));
+                              setLongitude(BARANGAY_CENTERS[newB][1].toFixed(6));
+                            }
+                            if (streetAddress && streetAddress.trim().length >= 3) {
+                              forwardGeocodeAddress(streetAddress, newB);
+                            }
+                          }}
                           style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: "#ffffff" }}
                         >
                           {STO_TOMAS_BARANGAYS.map(b => (
@@ -4241,7 +4559,7 @@ export default function ApplyPage() {
             ) : currentStep === 4 ? (
               <button 
                 className="btn-primary btn-wizard-next" 
-                onClick={() => goToStep(5)}
+                onClick={handleProceedFromMapping}
                 style={{ 
                   background: "linear-gradient(135deg, #0038A8 0%, #1d4ed8 100%)", 
                   color: "#ffffff",
